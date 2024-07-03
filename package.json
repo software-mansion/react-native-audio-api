@@ -1,0 +1,17 @@
+{
+  "name": "react-native-audio-context-monorepo",
+  "version": "1.0.0",
+  "workspaces": {
+    "packages": [
+      "apps/*"
+    ]
+  },
+  "repository": "https://github.com/software-mansion-labs/react-native-audio-context.git",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.3",
+    "globals": "^15.8.0",
+    "typescript-eslint": "^7.15.0"
+  }
+}
