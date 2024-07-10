@@ -1,5 +1,5 @@
 import { StyleSheet, View, Text } from 'react-native';
-import { JSIExample } from '../../src/JSIExample';
+import JSIExample from '../../src/JSIExample/JSIExample';
 
 export default function App() {
   const sayHello = () => {
