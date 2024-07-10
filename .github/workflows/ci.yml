@@ -1,11 +1,14 @@
 name: CI
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    branches:
+      - main
+  merge_group:
+    types:
+      - checks_requested
 
 jobs:
   lint:
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/lint')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +24,6 @@ jobs:
         run: yarn typecheck
 
   test:
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/test')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
