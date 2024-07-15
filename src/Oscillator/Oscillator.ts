@@ -57,7 +57,7 @@ function verifyInstallation() {
     );
 }
 
-function createOscillatorProxy(): () => OscillatorType {
+function createOscillatorProxy(): (frequency: number) => OscillatorType {
   if (global.__OscillatorProxy) {
     return global.__OscillatorProxy;
   }

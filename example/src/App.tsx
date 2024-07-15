@@ -1,30 +1,33 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Button } from 'react-native';
-import Oscillator from '../../src/Oscillator/Oscillator';
-
-const createOscillator = () => {
-  const a = Oscillator();
-  return a;
-};
+import { AudioContext, type OscillatorType } from 'react-native-audio-context';
 
 const App: React.FC = () => {
-  const osc1 = useRef(createOscillator());
-  const osc2 = useRef(createOscillator());
+  const osc1 = useRef<OscillatorType | null>(null);
+  const osc2 = useRef<OscillatorType | null>(null);
+
+  useEffect(() => {
+    if (!osc2.current) {
+      const context = new AudioContext();
+      osc1.current = context.createOscillator(440);
+      osc2.current = context.createOscillator(880);
+    }
+  }, []);
 
   const start = () => {
-    osc1.current.start();
+    osc1.current?.start();
   };
 
   const stop = () => {
-    osc1.current.stop();
+    osc1.current?.stop();
   };
 
   const start2 = () => {
-    osc2.current.start();
+    osc2.current?.start();
   };
 
   const stop2 = () => {
-    osc2.current.stop();
+    osc2.current?.stop();
   };
 
   return (

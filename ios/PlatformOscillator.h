@@ -9,11 +9,12 @@ typedef struct objc_object IOSOscillator;
 namespace audiocontext {
 	class PlatformOscillator {
 		public:
-			explicit PlatformOscillator();
+			explicit PlatformOscillator(const float frequency);
 			void start() const;
 			void stop() const;
 
 		protected:
 			IOSOscillator *iosOscillator_;
+			float frequency_;
 	};
 } // namespace audiocontext

@@ -3,8 +3,8 @@
 
 namespace audiocontext {
 
-PlatformOscillator::PlatformOscillator() {
-	iosOscillator_ = [[IOSOscillator alloc] init];
+PlatformOscillator::PlatformOscillator(const float frequency) : frequency_(frequency) {
+	iosOscillator_ = [[IOSOscillator alloc] init:frequency];
 }
 
 void PlatformOscillator::start() const {

@@ -43,6 +43,7 @@ namespace audiocontext {
   void OscillatorHostObject::set(jsi::Runtime &runtime, const jsi::PropNameID &propNameId, const jsi::Value &value)
   {
     auto propName = propNameId.utf8(runtime);
+
     throw std::runtime_error("Not yet implemented!");
   }
 

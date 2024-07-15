@@ -6,5 +6,5 @@ export interface OscillatorType {
 // global func declaration for JSI functions
 declare global {
   function nativeCallSyncHook(): unknown;
-  var __OscillatorProxy: () => OscillatorType;
+  var __OscillatorProxy: (frequency: number) => OscillatorType;
 }
