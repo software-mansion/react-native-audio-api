@@ -1,15 +1,38 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-import JSIExample from '../../src/JSIExample/JSIExample';
+import React, { useRef } from 'react';
+import { StyleSheet, View, Button } from 'react-native';
+import Oscillator from '../../src/Oscillator/Oscillator';
+
+const createOscillator = () => {
+  const a = Oscillator();
+  return a;
+};
 
 const App: React.FC = () => {
-  const multiply = () => {
-    return JSIExample.multiply(2, 3);
+  const osc1 = useRef(createOscillator());
+  const osc2 = useRef(createOscillator());
+
+  const start = () => {
+    osc1.current.start();
+  };
+
+  const stop = () => {
+    osc1.current.stop();
+  };
+
+  const start2 = () => {
+    osc2.current.start();
+  };
+
+  const stop2 = () => {
+    osc2.current.stop();
   };
 
   return (
     <View style={styles.container}>
-      <Text>{multiply()}</Text>
+      <Button title="Start1" onPress={start} />
+      <Button title="Stop1" onPress={stop} />
+      <Button title="Start1" onPress={start2} />
+      <Button title="Stop1" onPress={stop2} />
     </View>
   );
 };

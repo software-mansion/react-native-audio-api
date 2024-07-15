@@ -1,2 +1,2 @@
-export * from './JSIExample/JSIExample';
-export * from './JSIExample/types';
+export * from './Oscillator/Oscillator';
+export * from './Oscillator/types';
