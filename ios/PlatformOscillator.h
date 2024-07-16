@@ -16,6 +16,5 @@ namespace audiocontext {
 
 		protected:
 			IOSOscillator *iosOscillator_;
-			float frequency_;
 	};
 } // namespace audiocontext

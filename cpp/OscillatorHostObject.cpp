@@ -37,6 +37,10 @@ namespace audiocontext {
         });
     }
 
+    if (propName == "frequency") {
+      return jsi::Value(frequency_);
+    }
+
     throw std::runtime_error("Not yet implemented!");
   }
 
@@ -45,7 +49,9 @@ namespace audiocontext {
     auto propName = propNameId.utf8(runtime);
 
     if (propName == "frequency") {
-      return platformOscillator_.changeFrequency(static_cast<float>(value.asNumber()));
+      float frequency = static_cast<float>(value.asNumber());
+      frequency_ = frequency;
+      return platformOscillator_.changeFrequency(frequency);
     }
 
     throw std::runtime_error("Not yet implemented!");

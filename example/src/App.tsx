@@ -1,41 +1,45 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View, Button, TextInput } from 'react-native';
 import { AudioContext, type OscillatorNode } from 'react-native-audio-context';
 
 const App: React.FC = () => {
   const [frequency, setFrequency] = useState('440');
-  const osc1 = useRef<OscillatorNode | null>(null);
-  const osc2 = useRef<OscillatorNode | null>(null);
+  const osc = useRef<OscillatorNode | null>(null);
 
-  useEffect(() => {
-    if (!osc2.current) {
+  const start = useCallback(() => {
+    if (!osc.current) {
       const context = new AudioContext();
-      osc1.current = context.createOscillator(440);
-      osc2.current = context.createOscillator(880);
+      osc.current = context.createOscillator(+frequency);
     }
+
+    osc.current.start();
+  }, [frequency]);
+
+  const stop = useCallback(() => {
+    if (!osc.current) {
+      return;
+    }
+
+    osc.current.stop();
   }, []);
 
-  const start = () => {
-    osc1.current?.start();
-  };
-
-  const stop = () => {
-    osc1.current?.stop();
-  };
-
-  const changeFrequency = () => {
-    if (osc1.current) {
-      osc1.current.frequency = parseFloat(frequency);
+  const changeFrequency = useCallback(() => {
+    if (!osc.current) {
+      return;
     }
-  };
 
-  const start2 = () => {
-    osc2.current?.start();
-  };
+    osc.current.frequency = parseFloat(frequency);
+  }, [frequency]);
 
-  const stop2 = () => {
-    osc2.current?.stop();
-  };
+  const getFrequency = useCallback(() => {
+    if (!osc.current) {
+      return;
+    }
+
+    console.log(osc.current.frequency);
+
+    return osc.current.frequency;
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -46,8 +50,7 @@ const App: React.FC = () => {
         onChangeText={(text) => setFrequency(text)}
       />
       <Button title="Change frequency" onPress={changeFrequency} />
-      <Button title="Start1" onPress={start2} />
-      <Button title="Stop1" onPress={stop2} />
+      <Button title="Get current frequency" onPress={getFrequency} />
     </View>
   );
 };
