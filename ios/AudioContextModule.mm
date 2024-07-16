@@ -29,10 +29,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
     runtime.global().setProperty(
         runtime,
-        jsi::String::createFromUtf8(runtime, "__OscillatorProxy"),
+        jsi::String::createFromUtf8(runtime, "createOscillator"),
         jsi::Function::createFromHostFunction(
             runtime,
-            jsi::PropNameID::forUtf8(runtime, "__OscillatorProxy"),
+            jsi::PropNameID::forUtf8(runtime, "createOscillator"),
             0,
             [](jsi::Runtime& runtime, const jsi::Value& thisVal, const jsi::Value* args, size_t count) -> jsi::Value {
                 const float frequency = static_cast<float>(args[0].asNumber());

@@ -7,15 +7,15 @@ import {
 } from '../utils/install';
 
 function verifyInstallation() {
-  if (global.__OscillatorProxy == null)
+  if (global.createOscillator == null)
     throw new Error(
       'Failed to install react-native-audio-context, the native initializer function does not exist. Are you trying to use Oscillator from different JS Runtimes?'
     );
 }
 
-function createOscillatorProxy(): (frequency: number) => OscillatorNode {
-  if (global.__OscillatorProxy) {
-    return global.__OscillatorProxy;
+function createOscillator(): (frequency: number) => OscillatorNode {
+  if (global.createOscillator) {
+    return global.createOscillator;
   }
 
   verifyExpoGo();
@@ -26,12 +26,12 @@ function createOscillatorProxy(): (frequency: number) => OscillatorNode {
   installModule(AudioContextModule);
   verifyInstallation();
 
-  if (global.__OscillatorProxy == null) {
-    throw new Error('Failed to initialize __OscillatorProxy.');
+  if (global.createOscillator == null) {
+    throw new Error('Failed to initialize createOscillator.');
   }
 
-  return global.__OscillatorProxy;
+  return global.createOscillator;
 }
 
 // Call the creator and export what it returns
-export default createOscillatorProxy();
+export default createOscillator();
