@@ -44,6 +44,10 @@ namespace audiocontext {
   {
     auto propName = propNameId.utf8(runtime);
 
+    if (propName == "frequency") {
+      return platformOscillator_.changeFrequency(static_cast<float>(value.asNumber()));
+    }
+
     throw std::runtime_error("Not yet implemented!");
   }
 

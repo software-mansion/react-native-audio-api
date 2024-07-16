@@ -16,4 +16,6 @@
 
 - (void)stop;
 
+- (void)changeFrequency:(float)frequency;
+
 @end

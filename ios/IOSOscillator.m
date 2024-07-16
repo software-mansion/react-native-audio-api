@@ -53,5 +53,9 @@
     }
 }
 
+- (void)changeFrequency:(float)frequency {
+    self.frequency = frequency;
+    [self setBuffer];
+}
 
 @end

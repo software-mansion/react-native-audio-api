@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Button } from 'react-native';
-import { AudioContext, type OscillatorType } from 'react-native-audio-context';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Button, TextInput } from 'react-native';
+import { AudioContext, type OscillatorNode } from 'react-native-audio-context';
 
 const App: React.FC = () => {
-  const osc1 = useRef<OscillatorType | null>(null);
-  const osc2 = useRef<OscillatorType | null>(null);
+  const [frequency, setFrequency] = useState('440');
+  const osc1 = useRef<OscillatorNode | null>(null);
+  const osc2 = useRef<OscillatorNode | null>(null);
 
   useEffect(() => {
     if (!osc2.current) {
@@ -22,6 +23,12 @@ const App: React.FC = () => {
     osc1.current?.stop();
   };
 
+  const changeFrequency = () => {
+    if (osc1.current) {
+      osc1.current.frequency = parseFloat(frequency);
+    }
+  };
+
   const start2 = () => {
     osc2.current?.start();
   };
@@ -34,6 +41,11 @@ const App: React.FC = () => {
     <View style={styles.container}>
       <Button title="Start1" onPress={start} />
       <Button title="Stop1" onPress={stop} />
+      <TextInput
+        value={frequency}
+        onChangeText={(text) => setFrequency(text)}
+      />
+      <Button title="Change frequency" onPress={changeFrequency} />
       <Button title="Start1" onPress={start2} />
       <Button title="Stop1" onPress={stop2} />
     </View>

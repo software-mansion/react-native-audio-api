@@ -15,4 +15,8 @@ void PlatformOscillator::stop() const {
 	[iosOscillator_ stop];
 }
 
+void PlatformOscillator::changeFrequency(const float frequency) const {
+    [iosOscillator_ changeFrequency:frequency];
+}
+
 } // namespace audiocontext

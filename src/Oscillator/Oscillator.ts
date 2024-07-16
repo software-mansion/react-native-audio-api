@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import type { OscillatorType } from './types';
+import type { OscillatorNode } from './types';
 
 function verifyExpoGo() {
   const ExpoConstants =
@@ -57,7 +57,7 @@ function verifyInstallation() {
     );
 }
 
-function createOscillatorProxy(): (frequency: number) => OscillatorType {
+function createOscillatorProxy(): (frequency: number) => OscillatorNode {
   if (global.__OscillatorProxy) {
     return global.__OscillatorProxy;
   }

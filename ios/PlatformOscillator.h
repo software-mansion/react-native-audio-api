@@ -12,6 +12,7 @@ namespace audiocontext {
 			explicit PlatformOscillator(const float frequency);
 			void start() const;
 			void stop() const;
+            void changeFrequency(const float frequency) const;
 
 		protected:
 			IOSOscillator *iosOscillator_;
