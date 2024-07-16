@@ -1,5 +1,7 @@
 #import <IOSOscillator.h>
 
+static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
+
 @implementation IOSOscillator {}
 
 - (instancetype)init:(float)frequency {
@@ -40,15 +42,15 @@
 - (void)setBuffer {
     AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
 
-    double thetaIncrement = 2.0 * M_PI * self.frequency / self.sampleRate;
-    double theta = 0.0;
+    double phaseIncrement = FULL_CIRCLE_RADIANS * self.frequency / self.sampleRate;
+    double phase = 0.0;
     float *audioBufferPointer = self.buffer.floatChannelData[0];
 
     for (int frame = 0; frame < bufferFrameCapacity; frame++) {
-        audioBufferPointer[frame] = sin(theta);
-        theta += thetaIncrement;
-        if (theta > 2.0 * M_PI) {
-            theta -= 2.0 * M_PI;
+        audioBufferPointer[frame] = sin(phase);
+        phase += phaseIncrement;
+        if (phase > FULL_CIRCLE_RADIANS) {
+            phase -= FULL_CIRCLE_RADIANS;
         }
     }
 }
