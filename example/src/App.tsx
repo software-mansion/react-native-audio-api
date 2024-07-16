@@ -7,14 +7,16 @@ const BASE_FREQUENCY = 440;
 const App: React.FC = () => {
   const [frequency, setFrequency] = useState(BASE_FREQUENCY);
   const osc = useRef<OscillatorNode | null>(null);
-  const osc2 = useRef<OscillatorNode | null>(null);
 
   useEffect(() => {
     if (!osc.current) {
       const context = new AudioContext();
       osc.current = context.createOscillator(+frequency);
-      osc2.current = context.createOscillator(+frequency);
     }
+
+    return () => {
+      // TODO: Remove if and add cleanup function
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
