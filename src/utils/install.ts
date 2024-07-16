@@ -1,10 +1,20 @@
 import { NativeModules, Platform } from 'react-native';
 
-export function getAudioContextModule() {
+export function installACModule() {
+  verifyExpoGo();
+
+  const AudioContextModule = getAudioContextModule();
+
+  verifyOnDevice(AudioContextModule);
+  installModule(AudioContextModule);
+  verifyInstallation();
+}
+
+function getAudioContextModule() {
   const AudioContextModule = NativeModules.AudioContext;
   if (AudioContextModule == null) {
     let message =
-      'Failed to install react-native-audio-context: The native `Oscillator` Module could not be found.';
+      'Failed to install react-native-audio-context: The native `AudioContext` Module could not be found.';
     message +=
       '\n* Make sure react-native-audio-context is correctly autolinked (run `npx react-native config` to verify)';
     if (Platform.OS === 'ios' || Platform.OS === 'macos') {
@@ -19,7 +29,7 @@ export function getAudioContextModule() {
   return AudioContextModule;
 }
 
-export function verifyExpoGo() {
+function verifyExpoGo() {
   const ExpoConstants =
     NativeModules.NativeUnimoduleProxy?.modulesConstants?.ExponentConstants;
   if (ExpoConstants != null) {
@@ -33,18 +43,26 @@ export function verifyExpoGo() {
   }
 }
 
-export function verifyOnDevice(Module: any) {
+function verifyOnDevice(Module: any) {
   if (global.nativeCallSyncHook == null || Module.install == null) {
     throw new Error(
-      'Failed to install react-native-audio-context: React Native is not running on-device. Oscillator can only be used when synchronous method invocations (JSI) are possible. If you are using a remote debugger (e.g. Chrome), switch to an on-device debugger (e.g. Flipper) instead.'
+      'Failed to install react-native-audio-context: React Native is not running on-device. Audio Context can only be used when synchronous method invocations (JSI) are possible. If you are using a remote debugger (e.g. Chrome), switch to an on-device debugger (e.g. Flipper) instead.'
     );
   }
 }
 
-export function installModule(Module: any) {
+function installModule(Module: any) {
   const result = Module.install();
-  if (result !== true)
+  if (result !== true) {
     throw new Error(
-      `Failed to install react-native-audio-context: The native Oscillator Module could not be installed! Looks like something went wrong when installing JSI bindings: ${result}`
+      `Failed to install react-native-audio-context: The native Audio Context Module could not be installed! Looks like something went wrong when installing JSI bindings: ${result}`
+    );
+  }
+}
+
+function verifyInstallation() {
+  if (global.createOscillator == null)
+    throw new Error(
+      'Failed to install react-native-audio-context, the native initializer private does not exist. Are you trying to use Audio Context from different JS Runtimes?'
     );
 }
