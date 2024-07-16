@@ -16,7 +16,7 @@ namespace audiocontext {
 	}
 
 	void PlatformOscillator::changeFrequency(const float frequency) const {
-			[iosOscillator_ changeFrequency:frequency];
+		[iosOscillator_ changeFrequency:frequency];
 	}
 
 } // namespace audiocontext
