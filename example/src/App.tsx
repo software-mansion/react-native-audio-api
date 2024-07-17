@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Button, TextInput, Text } from 'react-native';
-import { AudioContext, type OscillatorNode } from 'react-native-audio-context';
+import { AudioContext, type Oscillator } from 'react-native-audio-context';
 
 const BASE_FREQUENCY = 440;
 
 const App: React.FC = () => {
   const [frequency, setFrequency] = useState(BASE_FREQUENCY);
-  const osc = useRef<OscillatorNode | null>(null);
+  const osc = useRef<Oscillator | null>(null);
 
   useEffect(() => {
     if (!osc.current) {

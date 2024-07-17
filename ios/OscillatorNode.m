@@ -1,8 +1,8 @@
-#import <IOSOscillator.h>
+#import <OscillatorNode.h>
 
 static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
 
-@implementation IOSOscillator {}
+@implementation OscillatorNode {}
 
 - (instancetype)init:(float)frequency {
     if (self = [super init]) {
@@ -31,6 +31,7 @@ static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
 }
 
 - (void)start {
+
     [self.playerNode scheduleBuffer:self.buffer atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:nil];
     [self.playerNode play];
 }

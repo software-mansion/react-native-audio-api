@@ -1,6 +1,10 @@
-import type { OscillatorNode } from '../Oscillator';
+import type { Oscillator } from '../types';
+
+type AudioContextProxy = {
+  createOscillator: (frequency: number) => Oscillator;
+};
 
 export declare global {
   function nativeCallSyncHook(): unknown;
-  var createOscillator: (frequency: number) => OscillatorNode;
+  var __AudioContextProxy: AudioContextProxy;
 }

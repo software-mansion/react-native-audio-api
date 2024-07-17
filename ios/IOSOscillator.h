@@ -1,21 +1,20 @@
-#import <Foundation/Foundation.h>
-#import <AVFoundation/AVFoundation.h>
+#pragma once
 
-@interface IOSOscillator : NSObject
+#ifdef __OBJC__ // when compiled as Objective-C++
+#import <OscillatorNode.h>
+#else // when compiled as C++
+typedef struct objc_object OscillatorNode;
+#endif // __OBJC__
 
-@property (nonatomic, strong) AVAudioEngine *audioEngine;
-@property (nonatomic, strong) AVAudioPlayerNode *playerNode;
-@property (nonatomic, strong) AVAudioPCMBuffer *buffer;
-@property (nonatomic, strong) AVAudioFormat *format;
-@property (nonatomic, assign) float frequency;
-@property (nonatomic, assign) double sampleRate;
+namespace audiocontext {
+	class IOSOscillator {
+		public:
+			explicit IOSOscillator(const float frequency);
+			void start() const;
+			void stop() const;
+            void changeFrequency(const float frequency) const;
 
-- (instancetype)init:(float)frequency;
-
-- (void)start;
-
-- (void)stop;
-
-- (void)changeFrequency:(float)frequency;
-
-@end
+		protected:
+			OscillatorNode *OscillatorNode_;
+	};
+} // namespace audiocontext
