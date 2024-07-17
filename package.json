@@ -164,7 +164,7 @@
     "jsSrcsDir": "src"
   },
   "create-react-native-library": {
-    "type": "module-new",
+    "type": "module-legacy",
     "languages": "cpp",
     "version": "0.37.1"
   }
