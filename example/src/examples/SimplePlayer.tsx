@@ -3,7 +3,7 @@ import { Button, StyleSheet, Text, View } from 'react-native';
 
 import { AudioContext, type Oscillator } from 'react-native-audio-context';
 
-function SimplePlayer() {
+const SimplePlayer: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<Oscillator | null>(null);
   const secondaryOscillatorRef = useRef<Oscillator | null>(null);
@@ -40,7 +40,7 @@ function SimplePlayer() {
       <Button title="Stop Oscillator" onPress={stopOscillator} />
     </View>
   );
-}
+};
 
 export default SimplePlayer;
 
