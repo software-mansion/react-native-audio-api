@@ -11,7 +11,8 @@ namespace audiocontext
     auto runtime = reinterpret_cast<jsi::Runtime *>(jsContext);
     auto hostObject = std::make_shared<AudioContextHostObject>(this);
     auto object = jsi::Object::createFromHostObject(*runtime, hostObject);
-    runtime->global().setProperty(*runtime, "__AudioContextProxy", std::move(object));
+
+    runtime->global().setProperty(*runtime, "__AudioContextProxy", object);
   }
 
   jsi::Object AudioContext::createOscillator()
