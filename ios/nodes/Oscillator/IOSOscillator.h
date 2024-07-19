@@ -11,7 +11,7 @@ typedef struct objc_object OscillatorNode;
 namespace audiocontext {
 	class IOSOscillator {
 		public:
-			explicit IOSOscillator(const float frequency);
+			explicit IOSOscillator();
 			void start() const;
 			void stop() const;
       void changeFrequency(const float frequency) const;

@@ -2,9 +2,9 @@
 
 @implementation OscillatorNode {}
 
-- (instancetype)initWithFrequency:(float)frequency {
+- (instancetype)init {
     if (self = [super init]) {
-        self.frequency = frequency;
+        self.frequency = 440;
         self.sampleRate = 44100;
         self.waveType = WaveTypeSine;
 

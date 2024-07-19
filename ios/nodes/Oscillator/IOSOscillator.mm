@@ -2,8 +2,8 @@
 
 namespace audiocontext {
 
-	IOSOscillator::IOSOscillator(const float frequency) {
-		OscillatorNode_ = [[OscillatorNode alloc] initWithFrequency:frequency];
+	IOSOscillator::IOSOscillator() {
+		OscillatorNode_ = [[OscillatorNode alloc] init];
 	}
 
 	void IOSOscillator::start() const {

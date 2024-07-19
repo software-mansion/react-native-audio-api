@@ -28,7 +28,7 @@ namespace audiocontext {
 #ifdef ANDROID
         explicit OscillatorNodeWrapper(std::shared_ptr<OscillatorNode> oscillator) : oscillator_(oscillator) {}
 #else
-        explicit OscillatorNodeWrapper() : oscillator_(std::make_shared<IOSOscillator>(440)) {}
+        explicit OscillatorNodeWrapper() : oscillator_(std::make_shared<IOSOscillator>()) {}
 #endif
 
         jsi::Value getFrequency(jsi::Runtime &runtime, const jsi::PropNameID &propNameId);

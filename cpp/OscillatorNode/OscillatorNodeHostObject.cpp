@@ -71,8 +71,13 @@ namespace audiocontext
 
     if (propName == "type")
     {
-        wrapper_->setType(runtime, propNameId, value);
-      return;
+        std::string waveType = value.getString(runtime).utf8(runtime);
+        if (waveType == "sine" || waveType == "triangle" || waveType == "sawtooth" || waveType == "square") {
+          wrapper_->setType(runtime, propNameId, value);
+          return;
+        }
+
+        throw std::runtime_error("You have to pick correct wave type: ['sine', 'square', 'sawtooth', 'trinagle']");
     }
 
     throw std::runtime_error("Not yet implemented!");

@@ -12,7 +12,7 @@
 @property (nonatomic, assign) float frequency;
 @property (nonatomic, assign) double sampleRate;
 
-- (instancetype)initWithFrequency:(float)frequency;
+- (instancetype)init;
 
 - (void)start;
 

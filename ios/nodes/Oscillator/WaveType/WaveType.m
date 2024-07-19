@@ -6,16 +6,21 @@
 + (WaveTypeEnum)waveTypeFromString:(NSString *)type {
     if ([type isEqualToString:@"sine"]) {
         return WaveTypeSine;
-    } else if ([type isEqualToString:@"square"]) {
-        return WaveTypeSquare;
-    } else if ([type isEqualToString:@"sawtooth"]) {
-        return WaveTypeSawtooth;
-    } else if ([type isEqualToString:@"triangle"]) {
-        return WaveTypeTriangle;
-    } else {
-        NSLog(@"Unknown wave type: %@", type);
-        return WaveTypeSine; // Default value
     }
+
+    if ([type isEqualToString:@"square"]) {
+        return WaveTypeSquare;
+    }
+
+    if ([type isEqualToString:@"sawtooth"]) {
+        return WaveTypeSawtooth;
+    }
+
+    if ([type isEqualToString:@"triangle"]) {
+        return WaveTypeTriangle;
+    }
+
+    @throw [NSException exceptionWithName:@"Invalid wave type" reason:@"You have to pick correct wave type: ['sine', 'square', 'sawtooth', 'trinagle']" userInfo:nil];
 }
 
 + (NSString *)stringFromWaveType:(WaveTypeEnum)waveType {
@@ -28,7 +33,10 @@
             return @"sawtooth";
         case WaveTypeTriangle:
             return @"triangle";
+        default:
+            @throw [NSException exceptionWithName:@"Invalid wave type" reason:@"You have to pick correct wave type: ['sine', 'square', 'sawtooth', 'trinagle']" userInfo:nil];
     }
+
     return nil;
 }
 
@@ -42,7 +50,10 @@
             return (float)(2 * (phase / FULL_CIRCLE_RADIANS - floor(phase / FULL_CIRCLE_RADIANS + 0.5)));
         case WaveTypeTriangle:
             return (float)(2 * fabs(2 * (phase / FULL_CIRCLE_RADIANS - floor(phase / FULL_CIRCLE_RADIANS + 0.5))) - 1);
+        default:
+            @throw [NSException exceptionWithName:@"Invalid wave type" reason:@"You have to pick correct wave type: ['sine', 'square', 'sawtooth', 'trinagle']" userInfo:nil];
     }
+
     return 0;
 }
 
