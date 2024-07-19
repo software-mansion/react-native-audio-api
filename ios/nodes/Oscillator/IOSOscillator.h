@@ -14,8 +14,10 @@ namespace audiocontext {
 			explicit IOSOscillator();
 			void start() const;
 			void stop() const;
-      void changeFrequency(const float frequency) const;
+            void changeFrequency(const float frequency) const;
 			float getFrequency() const;
+            void changeDetune(const float detune) const;
+            float getDetune() const;
 			void setType(const std::string &type) const;
 			std::string getType() const;
 

@@ -22,6 +22,14 @@ namespace audiocontext {
 		return [OscillatorNode_ getFrequency];
 	}
 
+    void IOSOscillator::changeDetune(const float detune) const {
+        [OscillatorNode_ changeDetune:detune];
+    }
+
+    float IOSOscillator::getDetune() const {
+        return [OscillatorNode_ getDetune];
+    }
+
 	void IOSOscillator::setType(const std::string &type) const {
 		NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
 		[OscillatorNode_ setType:nsType];

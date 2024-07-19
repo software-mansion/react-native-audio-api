@@ -1,10 +1,11 @@
 #import <OscillatorNode.h>
 
-@implementation OscillatorNode {}
+@implementation OscillatorNode
 
 - (instancetype)init {
     if (self = [super init]) {
         self.frequency = 440;
+        self.detune = 0;
         self.sampleRate = 44100;
         self.waveType = WaveTypeSine;
 
@@ -41,8 +42,11 @@
 
 - (void)setBuffer {
     AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
-
-    double phaseIncrement = FULL_CIRCLE_RADIANS * self.frequency / self.sampleRate;
+    
+    // Convert cents to HZ
+    double detuneRatio = pow(2.0, self.detune / 1200.0);
+    double detunedFrequency = detuneRatio * self.frequency;
+    double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.sampleRate;
     double phase = 0.0;
     float *audioBufferPointer = self.buffer.floatChannelData[0];
 
@@ -63,6 +67,15 @@
 
 - (float)getFrequency {
     return self.frequency;
+}
+
+- (void)changeDetune:(float)detune {
+    self.detune = detune;
+    [self setBuffer];
+}
+
+- (float)getDetune {
+    return self.detune;
 }
 
 - (void)setType:(NSString *)type {

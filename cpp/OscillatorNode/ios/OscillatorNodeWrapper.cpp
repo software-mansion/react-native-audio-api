@@ -7,10 +7,7 @@ namespace audiocontext {
     }
 
     jsi::Value OscillatorNodeWrapper::getDetune(jsi::Runtime &runtime, const jsi::PropNameID &propNameId) {
-        return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
-        {
-            throw std::runtime_error("[OscillatorNodeHostObject::getDetune] Not yet implemented!");
-        });
+        return jsi::Value(oscillator_->getDetune());
     }
 
     jsi::Value OscillatorNodeWrapper::getType(jsi::Runtime &runtime, const jsi::PropNameID &propNameId) {
@@ -46,7 +43,8 @@ namespace audiocontext {
     }
 
     void OscillatorNodeWrapper::setDetune(jsi::Runtime &runtime, const jsi::PropNameID &propNameId, const jsi::Value &value) {
-        throw std::runtime_error("[OscillatorNodeHostObject::setDetune] Not yet implemented!");
+        double detune = value.getNumber();
+        oscillator_->changeDetune(detune);
     }
 
     void OscillatorNodeWrapper::setType(jsi::Runtime &runtime, const jsi::PropNameID &propNameId, const jsi::Value &value) {

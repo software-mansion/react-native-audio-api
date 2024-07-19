@@ -21,9 +21,9 @@ const App: React.FC = () => {
       secondaryOscillatorRef.current.type = 'square';
 
       // Destination is not implemented on IOS yet
-      const destination = audioContextRef.current.destination();
-      oscillatorRef.current.connect(destination);
-      secondaryOscillatorRef.current.connect(destination);
+      // const destination = audioContextRef.current.destination();
+      // oscillatorRef.current.connect(destination);
+      // secondaryOscillatorRef.current.connect(destination);
     }
 
     return () => {
