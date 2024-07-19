@@ -72,6 +72,10 @@ android {
     }
   }
 
+  packagingOptions {
+    excludes = ["**/libc++_shared.so", "**/libfbjni.so", "**/libjsi.so", "**/libreactnativejni.so", "**/libfolly_json.so", "**/libreanimated.so", "**/libjscexecutor.so", "**/libhermes.so"]
+  }
+
   externalNativeBuild {
     cmake {
       path "CMakeLists.txt"
@@ -125,6 +129,7 @@ dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"
   implementation 'androidx.core:core-ktx:1.13.1'
+  implementation 'com.facebook.fbjni:fbjni:0.6.0'
 }
 
 if (isNewArchitectureEnabled()) {

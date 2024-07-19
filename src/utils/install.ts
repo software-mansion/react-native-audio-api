@@ -1,6 +1,10 @@
 import { NativeModules, Platform } from 'react-native';
 
 export function installACModule() {
+  if (Platform.OS !== 'ios') {
+    return;
+  }
+
   verifyExpoGo();
 
   const AudioContextModule = getAudioContextModule();
@@ -11,7 +15,7 @@ export function installACModule() {
 }
 
 function getAudioContextModule() {
-  const AudioContextModule = NativeModules.AudioContext;
+  const AudioContextModule = NativeModules.AudioContextModule;
   if (AudioContextModule == null) {
     let message =
       'Failed to install react-native-audio-context: The native `AudioContext` Module could not be found.';

@@ -6,13 +6,18 @@
 typedef struct objc_object OscillatorNode;
 #endif // __OBJC__
 
+#include <string>
+
 namespace audiocontext {
 	class IOSOscillator {
 		public:
 			explicit IOSOscillator(const float frequency);
 			void start() const;
 			void stop() const;
-            void changeFrequency(const float frequency) const;
+      void changeFrequency(const float frequency) const;
+			float getFrequency() const;
+			void setType(const std::string &type) const;
+			std::string getType() const;
 
 		protected:
 			OscillatorNode *OscillatorNode_;

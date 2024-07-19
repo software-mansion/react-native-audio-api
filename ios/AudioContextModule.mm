@@ -4,11 +4,12 @@
 #import <React/RCTUtils.h>
 #import <jsi/jsi.h>
 
-#import "../cpp/AudioContextHostObject.h"
+#import "../cpp/AudioContext/AudioContextHostObject.h"
+#import "../cpp/AudioContext/AudioContextWrapper.h"
 
 @implementation AudioContextModule
 
-RCT_EXPORT_MODULE(AudioContext)
+RCT_EXPORT_MODULE(AudioContextModule)
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
@@ -27,7 +28,8 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
     }
     auto& runtime = *jsiRuntime;
 
-    auto hostObject = std::make_shared<audiocontext::AudioContextHostObject>();
+    auto wrapper = std::make_shared<audiocontext::AudioContextWrapper>();
+    auto hostObject = std::make_shared<audiocontext::AudioContextHostObject>(wrapper);
     auto object = jsi::Object::createFromHostObject(runtime, hostObject);
     runtime.global().setProperty(runtime, "__AudioContextProxy", std::move(object));
 

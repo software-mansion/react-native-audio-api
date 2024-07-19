@@ -1,80 +1,66 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Button, TextInput, Text } from 'react-native';
+import React from 'react';
+import { Button, StyleSheet, Text, View } from 'react-native';
+import { useRef, useEffect } from 'react';
+
 import { AudioContext, type Oscillator } from 'react-native-audio-context';
 
-const BASE_FREQUENCY = 440;
-
 const App: React.FC = () => {
-  const [frequency, setFrequency] = useState(BASE_FREQUENCY);
-  const osc = useRef<Oscillator | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const oscillatorRef = useRef<Oscillator | null>(null);
+  const secondaryOscillatorRef = useRef<Oscillator | null>(null);
 
   useEffect(() => {
-    if (!osc.current) {
-      const context = new AudioContext();
-      osc.current = context.createOscillator(+frequency);
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+
+      oscillatorRef.current = audioContextRef.current.createOscillator();
+
+      secondaryOscillatorRef.current =
+        audioContextRef.current.createOscillator();
+      secondaryOscillatorRef.current.frequency = 840;
+      secondaryOscillatorRef.current.type = 'square';
+
+      // Destination is not implemented on IOS yet
+      const destination = audioContextRef.current.destination();
+      oscillatorRef.current.connect(destination);
+      secondaryOscillatorRef.current.connect(destination);
     }
 
     return () => {
-      // TODO: Remove if and add cleanup function
+      //TODO
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (osc.current) {
-      osc.current.frequency = frequency;
-    }
-  }, [frequency]);
-
-  const start = useCallback(() => {
-    osc.current?.start();
-  }, []);
-
-  const stop = useCallback(() => {
-    osc.current?.stop();
-  }, []);
+  const startOscillator = () => {
+    oscillatorRef.current?.start();
+    secondaryOscillatorRef.current?.start();
+  };
+  const stopOscillator = () => {
+    oscillatorRef.current?.stop();
+    secondaryOscillatorRef.current?.stop();
+  };
 
   return (
     <View style={styles.container}>
-      <Button title="Start" onPress={start} />
-      <Button title="Stop" onPress={stop} />
-      <TextInput
-        value={frequency.toString()}
-        onChangeText={(text) => setFrequency(+text)}
-      />
-      <Text>Current frequency: {frequency}</Text>
+      <Text style={styles.title}>React Native Oscillator</Text>
+      <Button title="Start Oscillator" onPress={startOscillator} />
+      <Button title="Stop Oscillator" onPress={stopOscillator} />
     </View>
   );
 };
 
-export default App;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  keys: {
-    fontSize: 14,
-    color: 'grey',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
   },
   title: {
-    fontSize: 16,
-    color: 'black',
-    marginRight: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  textInput: {
-    flex: 1,
-    marginVertical: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'black',
-    borderRadius: 5,
-    padding: 10,
+    fontSize: 20,
+    textAlign: 'center',
+    margin: 10,
   },
 });
+
+export default App;

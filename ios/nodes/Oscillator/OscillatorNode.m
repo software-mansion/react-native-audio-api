@@ -1,13 +1,12 @@
 #import <OscillatorNode.h>
 
-static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
-
 @implementation OscillatorNode {}
 
-- (instancetype)init:(float)frequency {
+- (instancetype)initWithFrequency:(float)frequency {
     if (self = [super init]) {
         self.frequency = frequency;
         self.sampleRate = 44100;
+        self.waveType = WaveTypeSine;
 
         self.audioEngine = [[AVAudioEngine alloc] init];
         self.playerNode = [[AVAudioPlayerNode alloc] init];
@@ -48,7 +47,8 @@ static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
     float *audioBufferPointer = self.buffer.floatChannelData[0];
 
     for (int frame = 0; frame < bufferFrameCapacity; frame++) {
-        audioBufferPointer[frame] = sin(phase);
+        audioBufferPointer[frame] = [WaveType valueForWaveType:self.waveType atPhase:phase];
+
         phase += phaseIncrement;
         if (phase > FULL_CIRCLE_RADIANS) {
             phase -= FULL_CIRCLE_RADIANS;
@@ -59,6 +59,19 @@ static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
 - (void)changeFrequency:(float)frequency {
     self.frequency = frequency;
     [self setBuffer];
+}
+
+- (float)getFrequency {
+    return self.frequency;
+}
+
+- (void)setType:(NSString *)type {
+    self.waveType = [WaveType waveTypeFromString:type];
+    [self setBuffer]; // Update the buffer with the new wave type
+}
+
+- (NSString *)getType {
+    return [WaveType stringFromWaveType:self.waveType];
 }
 
 @end

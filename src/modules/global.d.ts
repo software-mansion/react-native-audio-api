@@ -1,7 +1,8 @@
 import type { Oscillator } from '../types';
 
 type AudioContextProxy = {
-  createOscillator: (frequency: number) => Oscillator;
+  createOscillator: () => Oscillator;
+  destination(): AudioDestinationNode;
 };
 
 export declare global {

@@ -1,3 +1,5 @@
+import { NativeModules, Platform } from 'react-native';
+
 import type {
   AudioDestinationNode,
   BaseAudioContext,
@@ -5,13 +7,17 @@ import type {
 } from './types';
 
 export class AudioContext implements BaseAudioContext {
-  constructor() {}
+  constructor() {
+    if (Platform.OS === 'android') {
+      NativeModules.AudioContextModule.initAudioContext();
+    }
+  }
 
-  public createOscillator(frequency: number): Oscillator {
-    return global.__AudioContextProxy.createOscillator(frequency);
+  public createOscillator(): Oscillator {
+    return global.__AudioContextProxy.createOscillator();
   }
 
   public destination(): AudioDestinationNode {
-    throw new Error('Method not implemented.');
+    return global.__AudioContextProxy.destination();
   }
 }
