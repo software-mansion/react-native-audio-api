@@ -22,32 +22,50 @@ namespace audiocontext
 
     if (propName == "start")
     {
-      return wrapper_->start(runtime, propNameId);
+        return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
+        {
+            auto time = args[0].getNumber();
+            wrapper_->start(time);
+            return jsi::Value::undefined();
+        });
     }
 
     if (propName == "stop")
     {
-        return wrapper_->stop(runtime, propNameId);
+        return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
+        {
+            auto time = args[0].getNumber();
+            wrapper_->stop(time);
+            return jsi::Value::undefined();
+        });
     }
 
     if (propName == "frequency")
     {
-        return wrapper_->getFrequency(runtime, propNameId);
+        auto frequency = wrapper_->getFrequency();
+        return jsi::Value(frequency);
     }
 
     if (propName == "detune")
     {
-        return wrapper_->getDetune(runtime, propNameId);
+        auto detune = wrapper_->getDetune();
+        return jsi::Value(detune);
     }
 
     if (propName == "type")
     {
-        return wrapper_->getType(runtime, propNameId);
+        auto waveType = wrapper_->getType();
+        return jsi::String::createFromUtf8(runtime, waveType);
     }
 
     if (propName == "connect")
     {
-        return wrapper_->connect(runtime, propNameId);
+        return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
+        {
+            auto destination = args[0].getObject(rt).getHostObject<AudioDestinationNodeHostObject>(rt);
+            wrapper_->connect(std::shared_ptr<AudioDestinationNodeWrapper>(destination->wrapper_));
+            return jsi::Value::undefined();
+        });
     }
 
     throw std::runtime_error("Prop not yet implemented!");
@@ -59,25 +77,24 @@ namespace audiocontext
 
     if (propName == "frequency")
     {
-      wrapper_->setFrequency(runtime, propNameId, value);
-      return;
+        double frequency = value.getNumber();
+        wrapper_->setFrequency(frequency);
+        return;
     }
 
     if (propName == "detune")
     {
-        wrapper_->setDetune(runtime, propNameId, value);
-      return;
+
+        double detune = value.getNumber();
+        wrapper_->setDetune(detune);
+        return;
     }
 
     if (propName == "type")
     {
         std::string waveType = value.getString(runtime).utf8(runtime);
-        if (waveType == "sine" || waveType == "triangle" || waveType == "sawtooth" || waveType == "square") {
-          wrapper_->setType(runtime, propNameId, value);
-          return;
-        }
-
-        throw std::runtime_error("You have to pick correct wave type: ['sine', 'square', 'sawtooth', 'trinagle']");
+        wrapper_->setType(waveType);
+        return;
     }
 
     throw std::runtime_error("Not yet implemented!");

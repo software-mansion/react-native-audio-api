@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include <memory>
 
 #ifdef ANDROID
@@ -9,7 +8,6 @@
 #endif
 
 namespace audiocontext {
-    using namespace facebook;
 
 #ifdef ANDROID
     class AudioDestinationNode;

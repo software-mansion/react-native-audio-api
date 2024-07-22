@@ -14,11 +14,17 @@ namespace audiocontext {
         auto propName = propNameId.utf8(runtime);
 
         if(propName == "createOscillator") {
-            return wrapper_->createOscillator(runtime, propNameId);
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto oscillator = wrapper_->createOscillator();
+                auto oscillatorHostObject = OscillatorNodeHostObject::createFromWrapper(oscillator);
+                return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
+            });
         }
 
         if(propName == "destination") {
-            return wrapper_->getDestination(runtime, propNameId);
+            auto destination = wrapper_->getDestination();
+            auto destinationHostObject = AudioDestinationNodeHostObject::createFromWrapper(destination);
+            return jsi::Object::createFromHostObject(runtime, destinationHostObject);
         }
 
         throw std::runtime_error("Not yet implemented!");

@@ -12,7 +12,7 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sin
 
-class OscillatorNode(context: BaseAudioContext, reactContext: ReactApplicationContext) : AudioScheduledSourceNode(context) {
+class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
   private var frequency: Double = 440.0
@@ -30,6 +30,7 @@ class OscillatorNode(context: BaseAudioContext, reactContext: ReactApplicationCo
   private val audioTrack: AudioTrack
   @Volatile private var isPlaying: Boolean = false
   private var playbackThread: Thread? = null
+  private var stopThread: Thread? = null
   private var buffer: ShortArray = ShortArray(1024)
 
   private val mHybridData: HybridData?;
@@ -41,7 +42,7 @@ class OscillatorNode(context: BaseAudioContext, reactContext: ReactApplicationCo
   }
 
   init {
-    mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get())
+    mHybridData = initHybrid()
     val bufferSize = AudioTrack.getMinBufferSize(
       context.sampleRate,
       AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
@@ -51,7 +52,7 @@ class OscillatorNode(context: BaseAudioContext, reactContext: ReactApplicationCo
     )
   }
 
-  external fun initHybrid(l: Long): HybridData?
+  external fun initHybrid(): HybridData?
 
   fun getWaveType(): String {
     return WaveType.toString(waveType)
@@ -61,24 +62,42 @@ class OscillatorNode(context: BaseAudioContext, reactContext: ReactApplicationCo
     waveType = WaveType.fromString(type)
   }
 
-  override fun start() {
+  override fun start(time: Double) {
     if(isPlaying) {
       return
     }
 
-    isPlaying = true
-    audioTrack.play()
-    playbackThread = Thread { generateSound() }.apply{ start()}
+    playbackThread = Thread {
+      try {
+        Thread.sleep((time * 1000).toLong())
+      } catch (e: InterruptedException) {
+        Log.e("OscillatorNode", "Thread sleep error: ${e.message}")
+      }
+
+      isPlaying = true
+      audioTrack.play()
+      generateSound()
+    }.apply { start() }
   }
 
-  override fun stop() {
+  override fun stop(time: Double) {
     if(!isPlaying) {
       return
     }
 
-    isPlaying = false
-    audioTrack.stop()
-    playbackThread?.join()
+    stopThread = Thread {
+      try {
+        Thread.sleep((time * 1000).toLong())
+      } catch (e: InterruptedException) {
+        Log.e("OscillatorNode", "Thread sleep error: ${e.message}")
+      }
+
+      isPlaying = false
+      audioTrack.stop()
+      playbackThread?.join()
+    }.apply { start() }
+
+    stopThread?.join()
   }
 
   private fun generateSound() {

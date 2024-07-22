@@ -7,17 +7,18 @@ import type {
 } from './types';
 
 export class AudioContext implements BaseAudioContext {
+  destination: AudioDestinationNode | null;
+
   constructor() {
+    this.destination = null;
+
     if (Platform.OS === 'android') {
-      NativeModules.AudioContextModule.initAudioContext();
+      NativeModules.AudioContextModule.installAudioContext();
+      this.destination = global.__AudioContext.destination;
     }
   }
 
-  public createOscillator(): Oscillator {
-    return global.__AudioContextProxy.createOscillator();
-  }
-
-  public destination(): AudioDestinationNode {
-    return global.__AudioContextProxy.destination();
+  createOscillator(): Oscillator {
+    return global.__AudioContext.createOscillator();
   }
 }

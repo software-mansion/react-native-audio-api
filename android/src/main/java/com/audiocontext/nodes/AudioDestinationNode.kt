@@ -6,7 +6,7 @@ import com.facebook.jni.HybridData
 import com.facebook.react.bridge.ReactApplicationContext
 
 
-class AudioDestinationNode(context: BaseAudioContext, reactContext: ReactApplicationContext): AudioNode(context) {
+class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs = 1
   override val numberOfOutputs = 0
 
@@ -19,10 +19,10 @@ class AudioDestinationNode(context: BaseAudioContext, reactContext: ReactApplica
   }
 
   init {
-    mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get())
+    mHybridData = initHybrid()
   }
 
-  external fun initHybrid(l: Long): HybridData?
+  external fun initHybrid(): HybridData?
 
   override fun process(buffer: ShortArray, audioTrack: AudioTrack) {
     audioTrack.write(buffer, 0, buffer.size)

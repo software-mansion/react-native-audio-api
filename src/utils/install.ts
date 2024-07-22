@@ -65,7 +65,7 @@ function installModule(Module: any) {
 }
 
 function verifyInstallation() {
-  if (global.__AudioContextProxy == null) {
+  if (global.__AudioContext == null) {
     throw new Error(
       'Failed to install react-native-audio-context, the native initializer private does not exist. Are you trying to use Audio Context from different JS Runtimes?'
     );

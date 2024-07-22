@@ -1,11 +1,9 @@
 #pragma once
 
 #include <fbjni/fbjni.h>
-#include <jsi/jsi.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
-#include "OscillatorNodeHostObject.h"
 #include "AudioDestinationNode.h"
 
 namespace audiocontext {
@@ -14,15 +12,14 @@ namespace audiocontext {
     using namespace facebook::jni;
 
     class AudioDestinationNode;
-    class OscillatorNodeHostObject;
 
     class OscillatorNode : public jni::HybridClass<OscillatorNode> {
     public:
         static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/oscillator/OscillatorNode;";
 
-        static jni::local_ref<OscillatorNode::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis, jlong jsContext)
+        static jni::local_ref<OscillatorNode::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
         {
-          return makeCxxInstance(jThis, jsContext);
+          return makeCxxInstance(jThis);
         }
 
         static void registerNatives() {
@@ -31,8 +28,8 @@ namespace audiocontext {
             });
         }
 
-        void start();
-        void stop();
+        void start(double time);
+        void stop(double time);
         double getFrequency();
         double getDetune();
         std::string getWaveType();
@@ -41,15 +38,12 @@ namespace audiocontext {
         void setWaveType(const std::string& waveType);
         void connect(const AudioDestinationNode &destination);
 
-        std::shared_ptr<OscillatorNodeHostObject> createOscillatorNodeHostObject();
-
     private:
         friend HybridBase;
 
         global_ref<OscillatorNode::javaobject> javaObject_;
-        jlong jsContext_;
 
-        explicit OscillatorNode(jni::alias_ref<OscillatorNode::jhybridobject>& jThis, jlong jsContext);
+        explicit OscillatorNode(jni::alias_ref<OscillatorNode::jhybridobject>& jThis);
     };
 
 } // namespace audiocontext

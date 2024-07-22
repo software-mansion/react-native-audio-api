@@ -3,18 +3,14 @@
 
 namespace audiocontext {
 
-    jsi::Value AudioContextWrapper::createOscillator(jsi::Runtime& runtime, const jsi::PropNameID& propNameId) {
-        return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
-            auto oscillator = audiocontext_->createOscillator();
-            return jsi::Object::createFromHostObject(runtime, oscillator);
-        });
+    std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
+        auto oscillator = audiocontext_->createOscillator();
+        return std::make_shared<OscillatorNodeWrapper>(oscillator);
     }
 
-    jsi::Value AudioContextWrapper::getDestination(jsi::Runtime& runtime, const jsi::PropNameID& propNameId) {
-        return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
-            auto destination = audiocontext_->getDestination();
-            return jsi::Object::createFromHostObject(runtime, destination);
-        });
+    std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() {
+        auto destination = audiocontext_->getDestination();
+        return std::make_shared<AudioDestinationNodeWrapper>(destination);
     }
 } // namespace audiocontext
 #endif

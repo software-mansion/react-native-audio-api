@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { Button, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRef, useEffect } from 'react';
 
 import { AudioContext, type Oscillator } from 'react-native-audio-context';
@@ -21,9 +21,11 @@ const App: React.FC = () => {
       secondaryOscillatorRef.current.type = 'square';
 
       // Destination is not implemented on IOS yet
-      // const destination = audioContextRef.current.destination();
-      // oscillatorRef.current.connect(destination);
-      // secondaryOscillatorRef.current.connect(destination);
+      if (Platform.OS === 'android') {
+        const destination = audioContextRef.current.destination;
+        oscillatorRef.current.connect(destination!);
+        secondaryOscillatorRef.current.connect(destination!);
+      }
     }
 
     return () => {
@@ -32,12 +34,12 @@ const App: React.FC = () => {
   }, []);
 
   const startOscillator = () => {
-    oscillatorRef.current?.start();
-    secondaryOscillatorRef.current?.start();
+    oscillatorRef.current?.start(0);
+    secondaryOscillatorRef.current?.start(0);
   };
   const stopOscillator = () => {
-    oscillatorRef.current?.stop();
-    secondaryOscillatorRef.current?.stop();
+    oscillatorRef.current?.stop(0);
+    secondaryOscillatorRef.current?.stop(0);
   };
 
   return (

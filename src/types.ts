@@ -1,6 +1,6 @@
 export interface BaseAudioContext {
+  destination: AudioDestinationNode | null;
   createOscillator(): Oscillator;
-  destination(): AudioDestinationNode;
 }
 
 export interface AudioNode {
@@ -12,8 +12,8 @@ export interface AudioNode {
 export interface AudioDestinationNode extends AudioNode {}
 
 export interface AudioScheduledSourceNode extends AudioNode {
-  start: () => void;
-  stop: () => void;
+  start: (time: number) => void;
+  stop: (time: number) => void;
 }
 
 type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
