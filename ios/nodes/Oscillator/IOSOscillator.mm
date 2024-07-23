@@ -23,11 +23,11 @@ namespace audiocontext {
 	}
 
 	void IOSOscillator::changeDetune(const float detune) const {
-			[OscillatorNode_ changeDetune:detune];
+		[OscillatorNode_ changeDetune:detune];
 	}
 
 	float IOSOscillator::getDetune() const {
-			return [OscillatorNode_ getDetune];
+		return [OscillatorNode_ getDetune];
 	}
 
 	void IOSOscillator::setType(const std::string &type) const {
