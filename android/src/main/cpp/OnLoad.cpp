@@ -2,6 +2,7 @@
 #include "OscillatorNode.h"
 #include "AudioContext.h"
 #include "AudioDestinationNode.h"
+#include "AudioNode.h"
 
 using namespace audiocontext;
 
@@ -11,5 +12,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
         OscillatorNode::registerNatives();
         AudioContext::registerNatives();
         AudioDestinationNode::registerNatives();
+        AudioNode::registerNatives();
   });
 }

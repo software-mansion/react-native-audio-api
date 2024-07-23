@@ -7,13 +7,15 @@
 #include "OscillatorNodeWrapper.h"
 #endif
 
+#include "AudioNodeWrapper.h"
+
 namespace audiocontext {
 
 #ifdef ANDROID
     class AudioDestinationNode;
 #endif
 
-    class AudioDestinationNodeWrapper {
+    class AudioDestinationNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
     private:
         friend class OscillatorNodeWrapper;
@@ -23,7 +25,7 @@ namespace audiocontext {
 
     public:
 #ifdef ANDROID
-        explicit AudioDestinationNodeWrapper(std::shared_ptr<AudioDestinationNode> destination) : destination_(destination) {}
+        explicit AudioDestinationNodeWrapper(std::shared_ptr<AudioDestinationNode> destination) : AudioNodeWrapper(destination), destination_(destination) {}
 #else
         explicit AudioDestinationNodeWrapper() {}
 #endif

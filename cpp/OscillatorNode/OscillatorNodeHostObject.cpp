@@ -62,8 +62,8 @@ namespace audiocontext
     {
         return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
         {
-            auto destination = args[0].getObject(rt).getHostObject<AudioDestinationNodeHostObject>(rt);
-            wrapper_->connect(std::shared_ptr<AudioDestinationNodeWrapper>(destination->wrapper_));
+            auto node = args[0].getObject(rt).getHostObject<AudioNodeHostObject>(rt);
+            wrapper_->connect(std::shared_ptr<AudioNodeHostObject>(node)->wrapper_);
             return jsi::Value::undefined();
         });
     }

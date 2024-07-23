@@ -2,20 +2,19 @@
 
 #include <jsi/jsi.h>
 #include "OscillatorNodeWrapper.h"
-#include "AudioDestinationNodeHostObject.h"
+#include "AudioNodeHostObject.h"
 
 namespace audiocontext {
     using namespace facebook;
 
     class OscillatorNodeWrapper;
-    class AudioDestinationNodeHostObject;
 
-    class OscillatorNodeHostObject : public jsi::HostObject {
-    private:
+    class OscillatorNodeHostObject : public AudioNodeHostObject {
+    protected:
         std::shared_ptr<OscillatorNodeWrapper> wrapper_;
 
     public:
-        explicit OscillatorNodeHostObject(std::shared_ptr<OscillatorNodeWrapper> wrapper) : wrapper_(wrapper) {}
+        explicit OscillatorNodeHostObject(std::shared_ptr<OscillatorNodeWrapper> wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {}
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
         void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;

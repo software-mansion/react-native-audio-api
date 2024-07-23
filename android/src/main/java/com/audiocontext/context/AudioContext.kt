@@ -3,9 +3,6 @@ package com.audiocontext.context
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
 import com.facebook.jni.HybridData
-import com.facebook.react.bridge.ReactApplicationContext
-
-// nodes
 
 class AudioContext() : BaseAudioContext {
   override val sampleRate: Int = 44100

@@ -13,28 +13,9 @@ namespace audiocontext {
 
     class OscillatorNode;
 
-    class AudioDestinationNode : public jni::HybridClass<AudioDestinationNode> {
+    class AudioDestinationNode : public jni::HybridClass<AudioDestinationNode, AudioNode> {
     public:
         static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/AudioDestinationNode;";
-
-        static jni::local_ref<AudioDestinationNode::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
-        {
-            return makeCxxInstance(jThis);
-        }
-
-        static void registerNatives() {
-            registerHybrid({
-               makeNativeMethod("initHybrid", AudioDestinationNode::initHybrid),
-           });
-        }
-
-    private:
-        friend HybridBase;
-        friend class OscillatorNode;
-
-        global_ref<AudioDestinationNode::javaobject> javaObject_;
-
-        explicit AudioDestinationNode(jni::alias_ref<AudioDestinationNode::jhybridobject>& jThis);
     };
 
 } // namespace audiocontext

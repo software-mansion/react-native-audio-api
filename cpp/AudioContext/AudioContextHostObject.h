@@ -1,6 +1,8 @@
 #pragma once
 
 #include <jsi/jsi.h>
+
+#include <utility>
 #include "AudioContextWrapper.h"
 #include "OscillatorNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
@@ -18,9 +20,8 @@ namespace audiocontext
 
     public:
         explicit AudioContextHostObject(std::shared_ptr<AudioContextWrapper> wrapper) : wrapper_(wrapper) {}
-
 #ifdef ANDROID
-        static void createAndInstallFromWrapper(std::shared_ptr<AudioContextWrapper> wrapper, jlong jsContext) {
+        static void createAndInstallFromWrapper(const std::shared_ptr<AudioContextWrapper>& wrapper, jlong jsContext) {
             auto runtime = reinterpret_cast<jsi::Runtime *>(jsContext);
             auto hostObject = std::make_shared<AudioContextHostObject>(wrapper);
             auto object = jsi::Object::createFromHostObject(*runtime, hostObject);

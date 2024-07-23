@@ -4,9 +4,6 @@ namespace audiocontext {
 
     using namespace facebook::jni;
 
-    OscillatorNode::OscillatorNode(jni::alias_ref<OscillatorNode::jhybridobject> &jThis)
-            : javaObject_(make_global(jThis)){}
-
     void OscillatorNode::start(double time) {
         static const auto method = javaClassLocal()->getMethod<void(jdouble)>("start");
         method(javaObject_.get(), time);
@@ -46,10 +43,5 @@ namespace audiocontext {
         static const auto method = javaClassLocal()->getMethod<void(JString)>("setWaveType");
         method(javaObject_.get(), *make_jstring(waveType));
 
-    }
-
-    void OscillatorNode::connect(const AudioDestinationNode &destination) {
-        const auto method = javaClassLocal()->getMethod<void(AudioDestinationNode::javaobject)>("connect");
-        method(javaObject_.get(), destination.javaObject_.get());
     }
 } // namespace audiocontext

@@ -31,12 +31,8 @@ namespace audiocontext {
         oscillator_->setDetune(detune);
     }
 
-    void OscillatorNodeWrapper::setType(std::string type) {
+    void OscillatorNodeWrapper::setType(const std::string& type) {
         oscillator_->setWaveType(type);
-    }
-
-    void OscillatorNodeWrapper::connect(std::shared_ptr<AudioDestinationNodeWrapper> destination) {
-        oscillator_->connect(*destination->destination_);
     }
 }
 #endif
