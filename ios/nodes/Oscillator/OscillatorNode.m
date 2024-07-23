@@ -46,7 +46,7 @@
     AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
     
     // Convert cents to HZ
-    double detuneRatio = pow(2.0, self.detune / 1200.0);
+    double detuneRatio = pow(2.0, self.detune / OCTAVE_IN_CENTS);
     double detunedFrequency = detuneRatio * self.frequency;
     double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.sampleRate;
     double phase = 0.0;

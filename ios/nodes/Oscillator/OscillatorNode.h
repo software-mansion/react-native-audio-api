@@ -3,6 +3,8 @@
 #import "WaveType.h"
 #import "AudioScheduledSourceNode.h"
 
+static const double OCTAVE_IN_CENTS = 12 * 100;
+
 @interface OscillatorNode : AudioScheduledSourceNode
 
 @property (nonatomic, strong) AVAudioEngine *audioEngine;
