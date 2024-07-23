@@ -35,7 +35,7 @@ namespace audiocontext {
 		[OscillatorNode_ setType:nsType];
 	}
 
-    std::string IOSOscillator::getType() const {
+	std::string IOSOscillator::getType() const {
 		NSString *nsType = [OscillatorNode_ getType];
 		return std::string([nsType UTF8String]);
 	}
