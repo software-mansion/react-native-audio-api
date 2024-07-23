@@ -3,28 +3,30 @@
 @implementation OscillatorNode
 
 - (instancetype)init {
-    if (self = [super init]) {
-        self.frequency = 440;
-        self.detune = 0;
-        self.sampleRate = 44100;
-        self.waveType = WaveTypeSine;
+    if (self != [super init]) {
+      return self;
+    }
 
-        self.audioEngine = [[AVAudioEngine alloc] init];
-        self.playerNode = [[AVAudioPlayerNode alloc] init];
+    self.frequency = 440;
+    self.detune = 0;
+    self.sampleRate = 44100;
+    self.waveType = WaveTypeSine;
 
-        self.format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:1];
-        AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
-        self.buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format frameCapacity:bufferFrameCapacity];
-        self.buffer.frameLength = bufferFrameCapacity;
+    self.audioEngine = [[AVAudioEngine alloc] init];
+    self.playerNode = [[AVAudioPlayerNode alloc] init];
 
-        [self.audioEngine attachNode:self.playerNode];
-        [self.audioEngine connect:self.playerNode to:self.audioEngine.mainMixerNode format: self.format];
-        [self setBuffer];
+    self.format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:1];
+    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
+    self.buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format frameCapacity:bufferFrameCapacity];
+    self.buffer.frameLength = bufferFrameCapacity;
 
-        NSError *error = nil;
-        if (![self.audioEngine startAndReturnError:&error]) {
-            NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
-        }
+    [self.audioEngine attachNode:self.playerNode];
+    [self.audioEngine connect:self.playerNode to:self.audioEngine.mainMixerNode format: self.format];
+    [self setBuffer];
+
+    NSError *error = nil;
+    if (![self.audioEngine startAndReturnError:&error]) {
+        NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
     }
 
     return self;
