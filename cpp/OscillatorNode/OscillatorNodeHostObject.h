@@ -2,6 +2,8 @@
 
 #include <jsi/jsi.h>
 #include "OscillatorNodeWrapper.h"
+#include "AudioDestinationNodeHostObject.h"
+#include "GainNodeHostObject.h"
 #include "AudioNodeHostObject.h"
 
 namespace audiocontext {
@@ -10,7 +12,7 @@ namespace audiocontext {
     class OscillatorNodeWrapper;
 
     class OscillatorNodeHostObject : public AudioNodeHostObject {
-    protected:
+    private:
         std::shared_ptr<OscillatorNodeWrapper> wrapper_;
 
     public:

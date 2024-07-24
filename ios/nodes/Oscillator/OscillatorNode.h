@@ -2,6 +2,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import "WaveType.h"
 #import "AudioScheduledSourceNode.h"
+#import "GainNode.h"
 
 static const double OCTAVE_IN_CENTS = 12 * 100;
 

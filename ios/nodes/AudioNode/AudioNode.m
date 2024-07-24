@@ -20,9 +20,9 @@
     [self.connectedNodes removeAllObjects];
 }
 
-- (void)process {
+- (void)process:(AVAudioPCMBuffer *)buffer engine:(AVAudioEngine *)engine {
     for (AudioNode *node in self.connectedNodes) {
-        [node process];
+        [node process:buffer engine:engine];
     }
 }
 

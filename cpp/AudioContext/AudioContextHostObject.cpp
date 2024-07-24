@@ -13,7 +13,7 @@ namespace audiocontext {
     jsi::Value AudioContextHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID& propNameId) {
         auto propName = propNameId.utf8(runtime);
 
-        if(propName == "createOscillator") {
+        if (propName == "createOscillator") {
             return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
                 auto oscillator = wrapper_->createOscillator();
                 auto oscillatorHostObject = OscillatorNodeHostObject::createFromWrapper(oscillator);
@@ -21,10 +21,18 @@ namespace audiocontext {
             });
         }
 
-        if(propName == "destination") {
+        if (propName == "destination") {
             auto destination = wrapper_->getDestination();
             auto destinationHostObject = AudioDestinationNodeHostObject::createFromWrapper(destination);
             return jsi::Object::createFromHostObject(runtime, destinationHostObject);
+        }
+
+        if (propName == "createGain") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto gainNode = wrapper_->createGainNode();
+                auto gainNodeHostObject = GainNodeHostObject::createFromWrapper(gainNode);
+                return jsi::Object::createFromHostObject(runtime, gainNodeHostObject);
+            });
         }
 
         throw std::runtime_error("Not yet implemented!");

@@ -4,7 +4,11 @@
 
 #ifdef ANDROID
 #include "AudioNode.h"
+#else
+#include "IOSAudioNode.h"
 #endif
+
+#include <iostream>
 
 namespace audiocontext {
     class AudioNodeWrapper {
@@ -14,6 +18,7 @@ namespace audiocontext {
 
         explicit AudioNodeWrapper(std::shared_ptr<AudioNode> node) : node_(node) {}
 #else
+        std::shared_ptr<IOSAudioNode> node_;
         explicit AudioNodeWrapper() {}
 #endif
         void connect(const std::shared_ptr<AudioNodeWrapper> node) const;

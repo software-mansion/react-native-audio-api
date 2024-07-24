@@ -1,6 +1,7 @@
 export interface BaseAudioContext {
   destination: AudioDestinationNode | null;
   createOscillator(): Oscillator;
+  createGain(): Gain;
 }
 
 export interface AudioNode {
@@ -22,4 +23,8 @@ export interface Oscillator extends AudioScheduledSourceNode {
   frequency: number;
   type: WaveType;
   detune: number;
+}
+
+export interface Gain extends AudioNode {
+  gain: number;
 }

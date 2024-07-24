@@ -3,6 +3,7 @@ import { NativeModules, Platform } from 'react-native';
 import type {
   AudioDestinationNode,
   BaseAudioContext,
+  Gain,
   Oscillator,
 } from './types';
 
@@ -20,5 +21,9 @@ export class AudioContext implements BaseAudioContext {
 
   createOscillator(): Oscillator {
     return global.__AudioContext.createOscillator();
+  }
+
+  createGain(): Gain {
+    return global.__AudioContext.createGain();
   }
 }

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "AudioNodeWrapper.h"
+#include "GainNodeWrapper.h"
 
 #ifdef ANDROID
 #include "OscillatorNode.h"
@@ -15,6 +16,7 @@ namespace audiocontext {
 #endif
 
     class OscillatorNodeWrapper: public AudioNodeWrapper {
+    private:
 #ifdef ANDROID
         std::shared_ptr<OscillatorNode> oscillator_;
 #else
@@ -26,7 +28,9 @@ namespace audiocontext {
     explicit OscillatorNodeWrapper( std::shared_ptr<OscillatorNode> oscillator) : AudioNodeWrapper(
             oscillator), oscillator_(oscillator) {}
 #else
-        explicit OscillatorNodeWrapper() : oscillator_(std::make_shared<IOSOscillator>()) {}
+        explicit OscillatorNodeWrapper() : oscillator_(std::make_shared<IOSOscillator>()), AudioNodeWrapper() {
+            node_ = oscillator_;
+        }
 #endif
         double getFrequency();
         double getDetune();

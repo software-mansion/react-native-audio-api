@@ -11,6 +11,7 @@
     self.detune = 0;
     self.sampleRate = 44100;
     self.waveType = WaveTypeSine;
+    self.numberOfOutputs = 1;
 
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.playerNode = [[AVAudioPlayerNode alloc] init];
@@ -33,7 +34,7 @@
 }
 
 - (void)start {
-
+    [self process:self.buffer engine:self.audioEngine];
     [self.playerNode scheduleBuffer:self.buffer atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:nil];
     [self.playerNode play];
 }

@@ -1,9 +1,11 @@
 #include <IOSOscillator.h>
+#include <iostream>
 
 namespace audiocontext {
 
 	IOSOscillator::IOSOscillator() {
 		OscillatorNode_ = [[OscillatorNode alloc] init];
+        AudioNode_ = OscillatorNode_;
 	}
 
 	void IOSOscillator::start() const {

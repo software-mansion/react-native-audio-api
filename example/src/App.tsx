@@ -20,6 +20,11 @@ const App: React.FC = () => {
       secondaryOscillatorRef.current.frequency = 840;
       secondaryOscillatorRef.current.type = 'square';
 
+      const gain = audioContextRef.current.createGain();
+      gain.gain = 1;
+      oscillatorRef.current.connect(gain);
+      secondaryOscillatorRef.current.connect(gain);
+
       // Destination is not implemented on IOS yet
       if (Platform.OS === 'android') {
         const destination = audioContextRef.current.destination;

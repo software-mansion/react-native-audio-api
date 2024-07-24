@@ -5,11 +5,11 @@
 namespace audiocontext {
 
     void AudioNodeWrapper::connect(const std::shared_ptr<AudioNodeWrapper> node) const {
-      throw std::runtime_error("[AudioNodeWrapper::connect] Not yet implemented!");
+        node_->connect(node->node_);
    }
 
     void AudioNodeWrapper::disconnect(const std::shared_ptr<AudioNodeWrapper> node) const {
-			throw std::runtime_error("[AudioNodeWrapper::disconnect] Not yet implemented!");
+		throw std::runtime_error("[AudioNodeWrapper::disconnect] Not yet implemented!");
     }
 }
 #endif

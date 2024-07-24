@@ -6,6 +6,7 @@
 #include "AudioContextWrapper.h"
 #include "OscillatorNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
+#include "GainNodeHostObject.h"
 
 namespace audiocontext
 {
