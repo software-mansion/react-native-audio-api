@@ -7,14 +7,22 @@ namespace audiocontext
   std::vector<jsi::PropNameID> GainNodeHostObject::getPropertyNames(jsi::Runtime &runtime)
   {
     std::vector<jsi::PropNameID> propertyNames;
+      
+    propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "gain"));
+      
     return propertyNames;
   }
 
   jsi::Value GainNodeHostObject::get(jsi::Runtime &runtime, const jsi::PropNameID &propNameId)
   {
     auto propName = propNameId.utf8(runtime);
+      
+    if (propName == "gain") {
+        double gain = wrapper_->getGain();
+        return jsi::Value(gain);
+    }
 
-    throw std::runtime_error("Prop not yet implemented!");
+    return AudioNodeHostObject::get(runtime, propNameId);
   }
 
   void GainNodeHostObject::set(jsi::Runtime &runtime, const jsi::PropNameID &propNameId, const jsi::Value &value)
@@ -27,6 +35,6 @@ namespace audiocontext
         return;
     }
 
-    throw std::runtime_error("Not yet implemented!");
+    return AudioNodeHostObject::set(runtime, propNameId, value);
   }
 }

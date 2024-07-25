@@ -9,7 +9,8 @@ namespace audiocontext {
    }
 
     void AudioNodeWrapper::disconnect(const std::shared_ptr<AudioNodeWrapper> node) const {
-		throw std::runtime_error("[AudioNodeWrapper::disconnect] Not yet implemented!");
+        node_->disconnect(node->node_);
+        node->node_->disconnectAttachedNode(node_);
     }
 }
 #endif

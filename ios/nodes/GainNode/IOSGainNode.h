@@ -13,6 +13,7 @@ namespace audiocontext {
 		public:
 			explicit IOSGainNode();
             void changeGain(const double gain) const;
+            double getGain() const;
         
         protected:
             GainNode *gainNode_;

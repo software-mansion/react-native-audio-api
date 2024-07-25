@@ -13,6 +13,7 @@ namespace audiocontext {
         public:
             AudioNode *AudioNode_;
             void connect(std::shared_ptr<IOSAudioNode> node);
-            void disconnect();
+            void disconnect(std::shared_ptr<IOSAudioNode> node);
+            void disconnectAttachedNode(std::shared_ptr<IOSAudioNode> node);
     };
 } // namespace audiocontext

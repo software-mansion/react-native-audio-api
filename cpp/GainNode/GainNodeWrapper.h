@@ -24,6 +24,7 @@ namespace audiocontext {
                 node_ = gainNode_;
             }
             void setGain(double gain);
+            double getGain();
 #endif
     };
 } // namespace audiocontext

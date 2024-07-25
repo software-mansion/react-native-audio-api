@@ -5,7 +5,11 @@ namespace audiocontext {
         [AudioNode_ connect:(node->AudioNode_)];
     }
 
-    void IOSAudioNode::disconnect() {
-        [AudioNode_ disconnect];
+    void IOSAudioNode::disconnect(std::shared_ptr<IOSAudioNode> node) {
+        [AudioNode_ disconnect:(node->AudioNode_)];
+    }
+
+    void IOSAudioNode::disconnectAttachedNode(std::shared_ptr<IOSAudioNode> node) {
+        [AudioNode_ disconnectAttachedNode:(node->AudioNode_)];
     }
 } // namespace audiocontext

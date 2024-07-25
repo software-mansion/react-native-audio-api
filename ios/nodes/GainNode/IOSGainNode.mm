@@ -3,11 +3,14 @@
 namespace audiocontext {
 
 	IOSGainNode::IOSGainNode() {
-		gainNode_ = [[GainNode alloc] init];
-        AudioNode_ = gainNode_;
+		AudioNode_ = gainNode_ = [[GainNode alloc] init];
 	}
 
     void IOSGainNode::changeGain(const double gain) const {
         [gainNode_ changeGain:gain];
+    }
+
+    double IOSGainNode::getGain() const {
+        return [gainNode_ getGain];
     }
 } // namespace audiocontext

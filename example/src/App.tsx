@@ -2,12 +2,17 @@ import React from 'react';
 import { Button, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRef, useEffect } from 'react';
 
-import { AudioContext, type Oscillator } from 'react-native-audio-context';
+import {
+  AudioContext,
+  type Gain,
+  type Oscillator,
+} from 'react-native-audio-context';
 
 const App: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<Oscillator | null>(null);
   const secondaryOscillatorRef = useRef<Oscillator | null>(null);
+  const gainNodeRef = useRef<Gain | null>(null);
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -20,10 +25,12 @@ const App: React.FC = () => {
       secondaryOscillatorRef.current.frequency = 840;
       secondaryOscillatorRef.current.type = 'square';
 
-      const gain = audioContextRef.current.createGain();
-      gain.gain = 1;
-      oscillatorRef.current.connect(gain);
-      secondaryOscillatorRef.current.connect(gain);
+      gainNodeRef.current = audioContextRef.current.createGain();
+      console.log(gainNodeRef.current.gain);
+      gainNodeRef.current.gain = 1;
+      console.log(gainNodeRef.current.gain);
+      oscillatorRef.current.connect(gainNodeRef.current);
+      secondaryOscillatorRef.current.connect(gainNodeRef.current);
 
       // Destination is not implemented on IOS yet
       if (Platform.OS === 'android') {
@@ -42,6 +49,7 @@ const App: React.FC = () => {
     oscillatorRef.current?.start(0);
     secondaryOscillatorRef.current?.start(0);
   };
+
   const stopOscillator = () => {
     oscillatorRef.current?.stop(0);
     secondaryOscillatorRef.current?.stop(0);
@@ -52,6 +60,21 @@ const App: React.FC = () => {
       <Text style={styles.title}>React Native Oscillator</Text>
       <Button title="Start Oscillator" onPress={startOscillator} />
       <Button title="Stop Oscillator" onPress={stopOscillator} />
+      <Button
+        title="Gain"
+        onPress={() => {
+          if (gainNodeRef.current) {
+            gainNodeRef.current.gain = 0;
+          }
+        }}
+      />
+      <Button
+        title="Disconnect"
+        onPress={() => {
+          oscillatorRef.current?.disconnect(gainNodeRef.current!);
+          // secondaryOscillatorRef.current?.disconnect(gainNodeRef.current);
+        }}
+      />
     </View>
   );
 };

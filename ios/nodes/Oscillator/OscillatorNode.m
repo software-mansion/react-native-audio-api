@@ -34,7 +34,8 @@
 }
 
 - (void)start {
-    [self process:self.buffer engine:self.audioEngine];
+    NSLog(@"START UUID: %@", [self.uuid UUIDString]);
+    [self process:self.buffer engine:self.audioEngine uuid:self.uuid];
     [self.playerNode scheduleBuffer:self.buffer atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:nil];
     [self.playerNode play];
 }
