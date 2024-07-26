@@ -1,5 +1,4 @@
 #include <IOSAudioNode.h>
-#include <iostream>
 
 namespace audiocontext {
     void IOSAudioNode::connect(std::shared_ptr<IOSAudioNode> node) {

@@ -2,8 +2,8 @@
 
 namespace audiocontext {
 
-	IOSAudioContext::IOSAudioContext() {
+    IOSAudioContext::IOSAudioContext() {
         audioContext_ = [[AudioContext alloc] init];
-	}
+    }
 
 } // namespace audiocontext

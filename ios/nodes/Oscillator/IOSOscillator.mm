@@ -1,5 +1,4 @@
 #include <IOSOscillator.h>
-#include <iostream>
 
 namespace audiocontext {
 

@@ -8,8 +8,6 @@
 #include "IOSAudioNode.h"
 #endif
 
-#include <iostream>
-
 namespace audiocontext {
     class AudioNodeWrapper {
     public:
