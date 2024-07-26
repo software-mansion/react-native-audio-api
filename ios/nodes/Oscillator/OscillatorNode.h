@@ -3,12 +3,12 @@
 #import "WaveType.h"
 #import "AudioScheduledSourceNode.h"
 #import "GainNode.h"
+#import "AudioContext.h"
 
 static const double OCTAVE_IN_CENTS = 12 * 100;
 
 @interface OscillatorNode : AudioScheduledSourceNode
 
-@property (nonatomic, strong) AVAudioEngine *audioEngine;
 @property (nonatomic, strong) AVAudioPlayerNode *playerNode;
 @property (nonatomic, strong) AVAudioPCMBuffer *buffer;
 @property (nonatomic, strong) AVAudioFormat *format;
@@ -17,7 +17,7 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 @property (nonatomic, assign) float detune;
 @property (nonatomic, assign) double sampleRate;
 
-- (instancetype)init;
+- (instancetype)init:(AudioContext *)context;
 
 - (void)start;
 

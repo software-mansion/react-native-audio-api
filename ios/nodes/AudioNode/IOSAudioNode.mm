@@ -1,15 +1,20 @@
 #include <IOSAudioNode.h>
+#include <iostream>
 
 namespace audiocontext {
     void IOSAudioNode::connect(std::shared_ptr<IOSAudioNode> node) {
-        [AudioNode_ connect:(node->AudioNode_)];
+        [audioNode_ connect:(node->audioNode_)];
     }
 
     void IOSAudioNode::disconnect(std::shared_ptr<IOSAudioNode> node) {
-        [AudioNode_ disconnect:(node->AudioNode_)];
+        [audioNode_ disconnect:(node->audioNode_)];
     }
 
-    void IOSAudioNode::disconnectAttachedNode(std::shared_ptr<IOSAudioNode> node) {
-        [AudioNode_ disconnectAttachedNode:(node->AudioNode_)];
+    void IOSAudioNode::addConnectedTo(AVAudioPlayerNode *node) {
+        [audioNode_ addConnectedTo:node];
+    }
+
+    void IOSAudioNode::removeConnectedTo(AVAudioPlayerNode *node) {
+        [audioNode_ removeConnectedTo:node];
     }
 } // namespace audiocontext

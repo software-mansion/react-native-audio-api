@@ -3,43 +3,51 @@
 
 namespace audiocontext {
 
-	IOSOscillator::IOSOscillator() {
-		OscillatorNode_ = [[OscillatorNode alloc] init];
-        AudioNode_ = OscillatorNode_;
+	IOSOscillator::IOSOscillator(std::shared_ptr<IOSAudioContext> context) {
+		audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] init:context->audioContext_];
 	}
 
 	void IOSOscillator::start() const {
-		[OscillatorNode_ start];
+		[oscillatorNode_ start];
 	}
 
 	void IOSOscillator::stop() const {
-		[OscillatorNode_ stop];
+		[oscillatorNode_ stop];
 	}
 
 	void IOSOscillator::changeFrequency(const float frequency) const {
-		[OscillatorNode_ changeFrequency:frequency];
+		[oscillatorNode_ changeFrequency:frequency];
 	}
 
 	float IOSOscillator::getFrequency() const {
-		return [OscillatorNode_ getFrequency];
+		return [oscillatorNode_ getFrequency];
 	}
 
 	void IOSOscillator::changeDetune(const float detune) const {
-		[OscillatorNode_ changeDetune:detune];
+		[oscillatorNode_ changeDetune:detune];
 	}
 
 	float IOSOscillator::getDetune() const {
-		return [OscillatorNode_ getDetune];
+		return [oscillatorNode_ getDetune];
 	}
 
 	void IOSOscillator::setType(const std::string &type) const {
 		NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
-		[OscillatorNode_ setType:nsType];
+		[oscillatorNode_ setType:nsType];
 	}
 
 	std::string IOSOscillator::getType() const {
-		NSString *nsType = [OscillatorNode_ getType];
+		NSString *nsType = [oscillatorNode_ getType];
 		return std::string([nsType UTF8String]);
 	}
 
+    void IOSOscillator::connect(std::shared_ptr<IOSAudioNode> node) {
+        IOSAudioNode::connect(node);
+        node->addConnectedTo(oscillatorNode_.playerNode);
+    }
+
+    void IOSOscillator::disconnect(std::shared_ptr<IOSAudioNode> node) {
+        IOSAudioNode::disconnect(node);
+        node->removeConnectedTo(oscillatorNode_.playerNode);
+    }
 } // namespace audiocontext

@@ -4,7 +4,7 @@
 namespace audiocontext {
 
     std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
-        return std::make_shared<OscillatorNodeWrapper>();
+        return std::make_shared<OscillatorNodeWrapper>(audiocontext_);
     }
 
     std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() {
@@ -12,7 +12,7 @@ namespace audiocontext {
     }
 
     std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGainNode() {
-        return std::make_shared<GainNodeWrapper>();
+        return std::make_shared<GainNodeWrapper>(audiocontext_);
     }
 } // namespace audiocontext
 #endif

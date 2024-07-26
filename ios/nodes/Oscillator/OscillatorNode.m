@@ -2,18 +2,17 @@
 
 @implementation OscillatorNode
 
-- (instancetype)init {
-    if (self != [super init]) {
+- (instancetype)init:(AudioContext *)context {
+    if (self != [super init:context]) {
       return self;
     }
-
+    
     self.frequency = 440;
     self.detune = 0;
     self.sampleRate = 44100;
     self.waveType = WaveTypeSine;
     self.numberOfOutputs = 1;
 
-    self.audioEngine = [[AVAudioEngine alloc] init];
     self.playerNode = [[AVAudioPlayerNode alloc] init];
 
     self.format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:1];
@@ -21,21 +20,23 @@
     self.buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format frameCapacity:bufferFrameCapacity];
     self.buffer.frameLength = bufferFrameCapacity;
 
-    [self.audioEngine attachNode:self.playerNode];
-    [self.audioEngine connect:self.playerNode to:self.audioEngine.mainMixerNode format: self.format];
+    [self.context.audioEngine attachNode:self.playerNode];
+    [self.context.audioEngine connect:self.playerNode to:self.context.audioEngine.mainMixerNode format: self.format];
     [self setBuffer];
 
-    NSError *error = nil;
-    if (![self.audioEngine startAndReturnError:&error]) {
-        NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+    if (!self.context.audioEngine.isRunning) {
+        NSError *error = nil;
+        if (![self.context.audioEngine startAndReturnError:&error]) {
+            NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+        }
     }
+
 
     return self;
 }
 
 - (void)start {
-    NSLog(@"START UUID: %@", [self.uuid UUIDString]);
-    [self process:self.buffer engine:self.audioEngine uuid:self.uuid];
+    [self process:self.buffer playerNode:self.playerNode];
     [self.playerNode scheduleBuffer:self.buffer atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:nil];
     [self.playerNode play];
 }

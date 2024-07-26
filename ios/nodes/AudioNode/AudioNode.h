@@ -1,16 +1,19 @@
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import "AudioContext.h"
 
 @interface AudioNode : NSObject
 
 @property (nonatomic, assign) NSInteger numberOfInputs;
 @property (nonatomic, assign) NSInteger numberOfOutputs;
-@property (nonatomic, strong) NSMutableDictionary<NSUUID *, AudioNode *> *connectedNodes;
-@property (nonatomic, strong) NSUUID *uuid;
+@property (nonatomic, strong) NSMutableArray<AudioNode *> *connectedNodes;
+@property (nonatomic, strong) AudioContext *context;
 
+- (instancetype)init:(AudioContext *)context;
+- (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
-- (void)disconnectAttachedNode:(AudioNode *)node;
-- (void)process:(AVAudioPCMBuffer *)buffer engine:(AVAudioEngine *)engine uuid:(NSUUID *)uuid;
+- (void)addConnectedTo:(AVAudioPlayerNode *)node;
+- (void)removeConnectedTo:(AVAudioPlayerNode *)node;
 
 @end

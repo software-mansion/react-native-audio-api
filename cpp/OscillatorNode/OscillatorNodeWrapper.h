@@ -8,6 +8,7 @@
 #include "OscillatorNode.h"
 #else
 #include "IOSOscillator.h"
+#include "IOSAudioContext.h"
 #endif
 
 namespace audiocontext {
@@ -28,7 +29,7 @@ namespace audiocontext {
     explicit OscillatorNodeWrapper( std::shared_ptr<OscillatorNode> oscillator) : AudioNodeWrapper(
             oscillator), oscillator_(oscillator) {}
 #else
-        explicit OscillatorNodeWrapper() : oscillator_(std::make_shared<IOSOscillator>()), AudioNodeWrapper() {
+        explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context) : oscillator_(std::make_shared<IOSOscillator>(context)), AudioNodeWrapper() {
             node_ = oscillator_;
         }
 #endif

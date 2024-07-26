@@ -9,6 +9,7 @@
 #ifdef ANDROID
 #include "AudioContext.h"
 #else
+#include "IOSAudioContext.h"
 #include "OscillatorNodeHostObject.h"
 #endif
 
@@ -23,9 +24,11 @@ namespace audiocontext {
 #endif
 
     class AudioContextWrapper {
-#ifdef ANDROID
     private:
+#ifdef ANDROID
         std::shared_ptr<AudioContext> audiocontext_;
+#else
+        std::shared_ptr<IOSAudioContext> audiocontext_;
 #endif
 
     public:
@@ -33,7 +36,7 @@ namespace audiocontext {
         explicit AudioContextWrapper(
                 std::shared_ptr<AudioContext> audiocontext) : audiocontext_(audiocontext) {}
 #else
-        explicit AudioContextWrapper() {}
+        explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
         std::shared_ptr<OscillatorNodeWrapper> createOscillator();
         std::shared_ptr<AudioDestinationNodeWrapper> getDestination();

@@ -27,7 +27,6 @@ const App: React.FC = () => {
 
       gainNodeRef.current = audioContextRef.current.createGain();
       console.log(gainNodeRef.current.gain);
-      gainNodeRef.current.gain = 1;
       console.log(gainNodeRef.current.gain);
       oscillatorRef.current.connect(gainNodeRef.current);
       secondaryOscillatorRef.current.connect(gainNodeRef.current);
@@ -64,7 +63,7 @@ const App: React.FC = () => {
         title="Gain"
         onPress={() => {
           if (gainNodeRef.current) {
-            gainNodeRef.current.gain = 0;
+            gainNodeRef.current.gain = Math.random();
           }
         }}
       />

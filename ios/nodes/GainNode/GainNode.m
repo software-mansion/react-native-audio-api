@@ -2,39 +2,42 @@
 
 @implementation GainNode
 
-- (instancetype)init {
-    if (self = [super init]) {
+- (instancetype)init:(AudioContext *)context {
+    if (self = [super init:context]) {
         self.gain = 0.5;
-        self.connectedEngines = [NSMutableDictionary dictionary];
+        self.playerNodes = [NSMutableArray array];
     }
 
     return self;
 }
 
-- (void)process:(AVAudioPCMBuffer *)buffer engine:(AVAudioEngine *)engine uuid:(NSUUID *)uuid {
-    if (!self.connectedEngines[uuid]) {
-        self.connectedEngines[uuid] = engine;
-    }
-    
-    engine.mainMixerNode.outputVolume = self.gain;
-}
-
-- (void)disconnectAttachedNode:(AudioNode *)node {
-    AVAudioEngine *engine = self.connectedEngines[node.uuid];
-    engine.mainMixerNode.outputVolume = 0.5;
-    [self.connectedEngines removeObjectForKey:node.uuid];
+- (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
+    playerNode.volume = self.gain;
 }
 
 - (void)changeGain:(double)gain {
     self.gain = gain;
     
-    for (AVAudioEngine *engine in [self.connectedEngines allValues]) {
-        engine.mainMixerNode.outputVolume = gain;
+    for (AVAudioPlayerNode *node in self.playerNodes) {
+        node.volume = gain;
     }
 }
 
 - (double)getGain {
     return self.gain;
+}
+
+- (void)addConnectedTo:(AVAudioPlayerNode *)node {
+    [self.playerNodes addObject:node];
+}
+
+- (void)removeConnectedTo:(AVAudioPlayerNode *)node {
+    node.volume = 0.5;
+    
+    NSUInteger index = [self.playerNodes indexOfObject:node];
+    if (index != NSNotFound) {
+        [self.playerNodes removeObjectAtIndex:index];
+    }
 }
 
 @end

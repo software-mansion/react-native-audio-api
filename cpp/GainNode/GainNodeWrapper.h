@@ -3,6 +3,7 @@
 #ifdef ANDROID
 #else
 #include "IOSGainNode.h"
+#include "IOSAudioContext.h"
 #endif
 
 #include <memory>
@@ -20,7 +21,7 @@ namespace audiocontext {
 #ifdef ANDROID
             explicit GainNodeWrapper() {}
 #else
-            explicit GainNodeWrapper() : gainNode_(std::make_shared<IOSGainNode>()), AudioNodeWrapper() {
+            explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : gainNode_(std::make_shared<IOSGainNode>(context)), AudioNodeWrapper() {
                 node_ = gainNode_;
             }
             void setGain(double gain);

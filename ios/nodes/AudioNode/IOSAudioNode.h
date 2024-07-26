@@ -2,8 +2,10 @@
 
 #ifdef __OBJC__ // when compiled as Objective-C++
 #import <AudioNode.h>
+#import <AVFoundation/AVFoundation.h>
 #else // when compiled as C++
 typedef struct objc_object AudioNode;
+typedef struct objc_object AVAudioPlayerNode;
 #endif // __OBJC__
 
 #import <memory>
@@ -11,9 +13,10 @@ typedef struct objc_object AudioNode;
 namespace audiocontext {
     class IOSAudioNode {
         public:
-            AudioNode *AudioNode_;
-            void connect(std::shared_ptr<IOSAudioNode> node);
-            void disconnect(std::shared_ptr<IOSAudioNode> node);
-            void disconnectAttachedNode(std::shared_ptr<IOSAudioNode> node);
+            AudioNode *audioNode_;
+            virtual void connect(std::shared_ptr<IOSAudioNode> node);
+            virtual void disconnect(std::shared_ptr<IOSAudioNode> node);
+            virtual void addConnectedTo(AVAudioPlayerNode *node);
+            virtual void removeConnectedTo(AVAudioPlayerNode *node);
     };
 } // namespace audiocontext

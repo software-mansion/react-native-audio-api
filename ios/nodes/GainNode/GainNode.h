@@ -5,9 +5,9 @@
 @interface GainNode : AudioNode
 
 @property (nonatomic, assign) float gain;
-@property (nonatomic, strong) NSMutableDictionary<NSUUID *, AVAudioEngine *> *connectedEngines;
+@property (nonatomic, strong) NSMutableArray<AVAudioPlayerNode *> *playerNodes;
 
-- (instancetype)init;
+- (instancetype)init:(AudioContext *)context;
 
 - (void)changeGain:(double)gain;
 
