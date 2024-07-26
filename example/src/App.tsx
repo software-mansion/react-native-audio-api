@@ -14,10 +14,10 @@ const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 
 const App: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [gain, setGain] = useState<number>(INITIAL_GAIN);
-  const [frequency, setFrequency] = useState<number>(INITIAL_FREQUENCY);
-  const [detune, setDetune] = useState<number>(INITIAL_DETUNE);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [gain, setGain] = useState(INITIAL_GAIN);
+  const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
+  const [detune, setDetune] = useState(INITIAL_DETUNE);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<Oscillator | null>(null);

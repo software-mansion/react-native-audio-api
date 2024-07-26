@@ -15,7 +15,7 @@
     playerNode.volume = self.gain;
 }
 
-- (void)changeGain:(double)gain {
+- (void)changeGain:(float)gain {
     self.gain = gain;
     
     for (AVAudioPlayerNode *node in self.playerNodes) {
@@ -23,7 +23,7 @@
     }
 }
 
-- (double)getGain {
+- (float)getGain {
     return self.gain;
 }
 
