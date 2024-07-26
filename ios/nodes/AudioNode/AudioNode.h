@@ -13,7 +13,7 @@
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
-- (void)addConnectedTo:(AVAudioPlayerNode *)node;
-- (void)removeConnectedTo:(AVAudioPlayerNode *)node;
+- (void)syncPlayerNode:(AVAudioPlayerNode *)node;
+- (void)clearPlayerNode:(AVAudioPlayerNode *)node;
 
 @end

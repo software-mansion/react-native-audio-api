@@ -10,11 +10,11 @@ namespace audiocontext {
         [audioNode_ disconnect:(node->audioNode_)];
     }
 
-    void IOSAudioNode::addConnectedTo(AVAudioPlayerNode *node) {
-        [audioNode_ addConnectedTo:node];
+    void IOSAudioNode::syncPlayerNode(AVAudioPlayerNode *node) {
+        [audioNode_ syncPlayerNode:node];
     }
 
-    void IOSAudioNode::removeConnectedTo(AVAudioPlayerNode *node) {
-        [audioNode_ removeConnectedTo:node];
+    void IOSAudioNode::clearPlayerNode(AVAudioPlayerNode *node) {
+        [audioNode_ clearPlayerNode:node];
     }
 } // namespace audiocontext

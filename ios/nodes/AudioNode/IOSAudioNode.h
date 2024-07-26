@@ -16,7 +16,7 @@ namespace audiocontext {
             AudioNode *audioNode_;
             virtual void connect(std::shared_ptr<IOSAudioNode> node);
             virtual void disconnect(std::shared_ptr<IOSAudioNode> node);
-            virtual void addConnectedTo(AVAudioPlayerNode *node);
-            virtual void removeConnectedTo(AVAudioPlayerNode *node);
+            virtual void syncPlayerNode(AVAudioPlayerNode *node);
+            virtual void clearPlayerNode(AVAudioPlayerNode *node);
     };
 } // namespace audiocontext

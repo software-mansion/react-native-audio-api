@@ -63,7 +63,7 @@ const App: React.FC = () => {
         title="Gain"
         onPress={() => {
           if (gainNodeRef.current) {
-            gainNodeRef.current.gain = Math.random();
+            gainNodeRef.current.gain = 0;
           }
         }}
       />

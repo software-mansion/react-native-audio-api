@@ -43,11 +43,11 @@ namespace audiocontext {
 
     void IOSOscillator::connect(std::shared_ptr<IOSAudioNode> node) {
         IOSAudioNode::connect(node);
-        node->addConnectedTo(oscillatorNode_.playerNode);
+        node->syncPlayerNode(oscillatorNode_.playerNode);
     }
 
     void IOSOscillator::disconnect(std::shared_ptr<IOSAudioNode> node) {
         IOSAudioNode::disconnect(node);
-        node->removeConnectedTo(oscillatorNode_.playerNode);
+        node->clearPlayerNode(oscillatorNode_.playerNode);
     }
 } // namespace audiocontext

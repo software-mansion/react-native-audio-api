@@ -30,15 +30,15 @@
     }
 }
 
-- (void)addConnectedTo:(AVAudioPlayerNode *)node {
-    NSLog(@"Attempting to call `addConnectedTo` on a base class where it is not implemented. You must override `addConnectedTo` in a subclass.");
+- (void)syncPlayerNode:(AVAudioPlayerNode *)node {
+    NSLog(@"Attempting to call `syncPlayerNode` on a base class where it is not implemented. You must override `syncPlayerNode` in a subclass.");
     @throw [NSException exceptionWithName:NSInternalInconsistencyException
                                    reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
                                  userInfo:nil];
 }
 
-- (void)removeConnectedTo:(AVAudioPlayerNode *)node {
-    NSLog(@"Attempting to call `removeConnectedTo` on a base class where it is not implemented. You must override `removeConnectedTo` in a subclass.");
+- (void)clearPlayerNode:(AVAudioPlayerNode *)node {
+    NSLog(@"Attempting to call `clearPlayerNode` on a base class where it is not implemented. You must override `clearPlayerNode` in a subclass.");
     @throw [NSException exceptionWithName:NSInternalInconsistencyException
                                    reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
                                  userInfo:nil];

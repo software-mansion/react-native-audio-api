@@ -29,8 +29,8 @@ namespace audiocontext {
     explicit OscillatorNodeWrapper( std::shared_ptr<OscillatorNode> oscillator) : AudioNodeWrapper(
             oscillator), oscillator_(oscillator) {}
 #else
-        explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context) : oscillator_(std::make_shared<IOSOscillator>(context)), AudioNodeWrapper() {
-            node_ = oscillator_;
+        explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
+            node_ = oscillator_ = std::make_shared<IOSOscillator>(context);
         }
 #endif
         double getFrequency();

@@ -23,9 +23,5 @@ namespace audiocontext {
         static std::shared_ptr<GainNodeHostObject> createFromWrapper(std::shared_ptr<GainNodeWrapper> wrapper) {
             return std::make_shared<GainNodeHostObject>(wrapper);
         }
-
-        std::shared_ptr<GainNodeWrapper> getWrapper() {
-            return wrapper_;
-        }
     };
 } // namespace audiocontext

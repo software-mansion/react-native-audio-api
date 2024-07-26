@@ -27,11 +27,11 @@
     return self.gain;
 }
 
-- (void)addConnectedTo:(AVAudioPlayerNode *)node {
+- (void)syncPlayerNode:(AVAudioPlayerNode *)node {
     [self.playerNodes addObject:node];
 }
 
-- (void)removeConnectedTo:(AVAudioPlayerNode *)node {
+- (void)clearPlayerNode:(AVAudioPlayerNode *)node {
     node.volume = 0.5;
     
     NSUInteger index = [self.playerNodes indexOfObject:node];

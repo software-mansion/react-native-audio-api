@@ -21,8 +21,8 @@ namespace audiocontext {
 #ifdef ANDROID
             explicit GainNodeWrapper() {}
 #else
-            explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : gainNode_(std::make_shared<IOSGainNode>(context)), AudioNodeWrapper() {
-                node_ = gainNode_;
+            explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
+                node_ = gainNode_ = std::make_shared<IOSGainNode>(context);
             }
             void setGain(double gain);
             double getGain();

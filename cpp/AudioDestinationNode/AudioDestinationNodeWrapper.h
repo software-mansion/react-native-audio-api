@@ -27,7 +27,7 @@ namespace audiocontext {
 #ifdef ANDROID
         explicit AudioDestinationNodeWrapper(std::shared_ptr<AudioDestinationNode> destination) : AudioNodeWrapper(destination), destination_(destination) {}
 #else
-        explicit AudioDestinationNodeWrapper() {}
+
 #endif
     };
 } // namespace audiocontext
