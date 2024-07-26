@@ -26,7 +26,7 @@ namespace audiocontext {
             void connect(std::shared_ptr<IOSAudioNode>) override;
             void disconnect(std::shared_ptr<IOSAudioNode>) override;
 
-    protected:
+        protected:
             OscillatorNode *oscillatorNode_;
 	};
 } // namespace audiocontext

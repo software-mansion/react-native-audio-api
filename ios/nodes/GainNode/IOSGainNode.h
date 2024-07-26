@@ -10,13 +10,13 @@ typedef struct objc_object GainNode;
 #include "IOSAudioContext.h"
 
 namespace audiocontext {
-	class IOSGainNode : public IOSAudioNode {
-		public:
+    class IOSGainNode : public IOSAudioNode {
+        public:
             explicit IOSGainNode(std::shared_ptr<IOSAudioContext> context);
             void changeGain(const double gain) const;
             double getGain() const;
-        
+
         protected:
             GainNode *gainNode_;
-	};
+    };
 } // namespace audiocontext
