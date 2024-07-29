@@ -10,6 +10,7 @@ interface BaseAudioContext {
   val destination: AudioDestinationNode
   var state: ContextState
 
+  abstract fun getCurrentTime(): Double
   abstract fun createOscillator(): OscillatorNode
   abstract fun createGain(): GainNode
   abstract fun createStereoPanner(): StereoPannerNode

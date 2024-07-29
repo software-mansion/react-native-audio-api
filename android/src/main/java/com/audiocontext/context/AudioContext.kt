@@ -31,8 +31,8 @@ class AudioContext() : BaseAudioContext {
   external fun initHybrid(): HybridData?
   external fun install(jsContext: Long)
 
-  fun getCurrentTime(): Double {
-    return (SystemClock.elapsedRealtimeNanos() - contextStartTime)/1_000_000_000.0
+  override fun getCurrentTime(): Double {
+    return (SystemClock.elapsedRealtimeNanos() - contextStartTime) / 1e9
   }
 
   fun getState(): String {
