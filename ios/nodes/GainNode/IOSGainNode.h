@@ -13,7 +13,7 @@ namespace audiocontext {
     class IOSGainNode : public IOSAudioNode {
         public:
             explicit IOSGainNode(std::shared_ptr<IOSAudioContext> context);
-            void changeGain(const float gain) const;
+            void setGain(const float gain) const;
             float getGain() const;
 
         protected:

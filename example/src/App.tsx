@@ -28,21 +28,27 @@ const App: React.FC = () => {
   const panRef = useRef<StereoPanner | null>(null);
 
   useEffect(() => {
-    audioContextRef.current = new AudioContext();
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
 
-    oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef.current.frequency = INITIAL_FREQUENCY;
-    oscillatorRef.current.detune = INITIAL_DETUNE;
-    oscillatorRef.current.type = 'sine';
+      oscillatorRef.current = audioContextRef.current.createOscillator();
+      oscillatorRef.current.frequency = INITIAL_FREQUENCY;
+      oscillatorRef.current.detune = INITIAL_DETUNE;
+      oscillatorRef.current.type = 'sine';
 
-    gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain = INITIAL_GAIN;
-    oscillatorRef.current.connect(gainRef.current);
-
-    if (Platform.OS === 'android') {
-      const destination = audioContextRef.current.destination;
+      gainRef.current = audioContextRef.current.createGain();
+      gainRef.current.gain = INITIAL_GAIN;
       oscillatorRef.current.connect(gainRef.current);
-      gainRef.current.connect(destination!);
+
+      panRef.current = audioContextRef.current.createStereoPanner();
+      panRef.current.pan = INITIAL_PAN;
+      gainRef.current.connect(panRef.current);
+
+      if (Platform.OS === 'android') {
+        const destination = audioContextRef.current.destination;
+        oscillatorRef.current.connect(gainRef.current);
+        gainRef.current.connect(destination!);
+      }
     }
   }, []);
 

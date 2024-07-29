@@ -6,8 +6,8 @@ namespace audiocontext {
         audioNode_ = gainNode_ = [[GainNode alloc] init:context->audioContext_];
     }
 
-    void IOSGainNode::changeGain(const float gain) const {
-        [gainNode_ changeGain:gain];
+    void IOSGainNode::setGain(const float gain) const {
+        [gainNode_ setGain:gain];
     }
 
     float IOSGainNode::getGain() const {

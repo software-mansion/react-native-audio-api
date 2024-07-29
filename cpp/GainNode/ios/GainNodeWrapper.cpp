@@ -3,7 +3,7 @@
 
 namespace audiocontext {
     void GainNodeWrapper::setGain(double gain) {
-        gain_->changeGain(gain);
+        gain_->setGain(gain);
     }
 
     double GainNodeWrapper::getGain() {

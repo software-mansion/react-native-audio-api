@@ -17,9 +17,9 @@ namespace audiocontext {
             explicit IOSOscillator(std::shared_ptr<IOSAudioContext> context);
             void start() const;
             void stop() const;
-            void changeFrequency(const float frequency) const;
+            void setFrequency(const float frequency) const;
             float getFrequency() const;
-            void changeDetune(const float detune) const;
+            void setDetune(const float detune) const;
             float getDetune() const;
             void setType(const std::string &type) const;
             std::string getType() const;

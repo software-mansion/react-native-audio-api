@@ -24,11 +24,11 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 
 - (void)stop;
 
-- (void)changeFrequency:(float)frequency;
+- (void)setFrequency:(float)frequency;
 
 - (float)getFrequency;
 
-- (void)changeDetune:(float)detune;
+- (void)setDetune:(float)detune;
 
 - (float)getDetune;
 

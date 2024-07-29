@@ -24,11 +24,11 @@ namespace audiocontext {
     }
 
     void OscillatorNodeWrapper::setFrequency(double frequency) {
-        oscillator_->changeFrequency(frequency);
+        oscillator_->setFrequency(frequency);
     }
 
     void OscillatorNodeWrapper::setDetune(double detune) {
-        oscillator_->changeDetune(detune);
+        oscillator_->setDetune(detune);
     }
 
     void OscillatorNodeWrapper::setType(const std::string& type) {

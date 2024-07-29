@@ -2,14 +2,12 @@
 #include "StereoPannerNodeWrapper.h"
 
 namespace audiocontext {
+    void StereoPannerNodeWrapper::setPan(double pan) {
+        panner_->setPan(pan);
+    }
 
     double StereoPannerNodeWrapper::getPan() {
-        throw std::runtime_error("[StereoPannerHostObject::getPan] Not yet implemented!");
+        return panner_->getPan();
     }
-
-    void StereoPannerNodeWrapper::setPan(double pan) {
-        throw std::runtime_error("[StereoPannerHostObject::setPan] Not yet implemented!");
-    }
-} // namespace audiocontext
-
+}
 #endif

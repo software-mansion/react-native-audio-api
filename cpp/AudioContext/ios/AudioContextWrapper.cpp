@@ -16,7 +16,7 @@ namespace audiocontext {
     }
 
     std::shared_ptr<StereoPannerNodeWrapper> AudioContextWrapper::createStereoPanner() {
-        throw std::runtime_error("[AudioContextHostObject::createStereoPanner] Not yet implemented!");
+        return std::make_shared<StereoPannerNodeWrapper>(audiocontext_);
     }
 } // namespace audiocontext
 #endif

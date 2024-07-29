@@ -14,16 +14,16 @@ namespace audiocontext {
         [oscillatorNode_ stop];
     }
 
-    void IOSOscillator::changeFrequency(const float frequency) const {
-        [oscillatorNode_ changeFrequency:frequency];
+    void IOSOscillator::setFrequency(const float frequency) const {
+        [oscillatorNode_ setFrequency:frequency];
     }
 
     float IOSOscillator::getFrequency() const {
         return [oscillatorNode_ getFrequency];
     }
 
-    void IOSOscillator::changeDetune(const float detune) const {
-        [oscillatorNode_ changeDetune:detune];
+    void IOSOscillator::setDetune(const float detune) const {
+        [oscillatorNode_ setDetune:detune];
     }
 
     float IOSOscillator::getDetune() const {

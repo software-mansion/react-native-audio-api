@@ -8,7 +8,7 @@
 
 - (instancetype)init:(AudioContext *)context;
 
-- (void)changeGain:(float)gain;
+- (void)setGain:(float)gain;
 
 - (float)getGain;
 

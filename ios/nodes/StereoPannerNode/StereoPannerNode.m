@@ -1,27 +1,25 @@
-#import <GainNode.h>
+#import "StereoPannerNode.h"
 #import "AudioContext.h"
 
-@implementation GainNode
+@implementation StereoPannerNode
 
 - (instancetype)init:(AudioContext *)context {
     if (self = [super init:context]) {
-        _gain = 0.5;
-        self.numberOfInputs = 1;
-        self.numberOfOutputs = 1;
+        _pan = 0;
     }
 
     return self;
 }
 
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
-    playerNode.volume = _gain;
+    playerNode.pan = _pan;
 
     [super process:buffer playerNode:playerNode];
 }
 
 - (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node {
     if (node == self) {
-        playerNode.volume = 0.5;
+        playerNode.pan = 0;
         
         // Deprocess all nodes connected to the disconnected node
         for (AudioNode *cn in self.connectedNodes) {
@@ -33,13 +31,13 @@
     }
 }
 
-- (void)setGain:(float)gain {
-    _gain = gain;
+- (void)setPan:(float)pan {
+    _pan = pan;
     [self.context processNodes];
 }
 
-- (float)getGain {
-    return _gain;
+- (float)getPan {
+    return _pan;
 }
 
 @end
