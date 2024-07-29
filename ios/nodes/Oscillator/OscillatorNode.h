@@ -1,8 +1,9 @@
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
-#import "WaveType.h"
 #import "AudioScheduledSourceNode.h"
-#import "GainNode.h"
+#import "WaveType.h"
 #import "AudioContext.h"
 
 static const double OCTAVE_IN_CENTS = 12 * 100;

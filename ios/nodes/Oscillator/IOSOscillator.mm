@@ -39,14 +39,4 @@ namespace audiocontext {
         NSString *nsType = [oscillatorNode_ getType];
         return std::string([nsType UTF8String]);
     }
-
-    void IOSOscillator::connect(std::shared_ptr<IOSAudioNode> node) {
-        IOSAudioNode::connect(node);
-        node->syncPlayerNode(oscillatorNode_.playerNode);
-    }
-
-    void IOSOscillator::disconnect(std::shared_ptr<IOSAudioNode> node) {
-        IOSAudioNode::disconnect(node);
-        node->clearPlayerNode(oscillatorNode_.playerNode);
-    }
 } // namespace audiocontext

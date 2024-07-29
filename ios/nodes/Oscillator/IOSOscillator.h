@@ -23,8 +23,6 @@ namespace audiocontext {
             float getDetune() const;
             void setType(const std::string &type) const;
             std::string getType() const;
-            void connect(std::shared_ptr<IOSAudioNode>) override;
-            void disconnect(std::shared_ptr<IOSAudioNode>) override;
 
         protected:
             OscillatorNode *oscillatorNode_;

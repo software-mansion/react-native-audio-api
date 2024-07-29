@@ -14,6 +14,7 @@
     self.numberOfOutputs = 1;
 
     self.playerNode = [[AVAudioPlayerNode alloc] init];
+    self.playerNode.volume = 0.5;
 
     self.format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:1];
     AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
@@ -31,6 +32,7 @@
         }
     }
 
+    [self.context connectOscillator:self];
 
     return self;
 }

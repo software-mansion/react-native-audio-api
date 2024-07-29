@@ -8,12 +8,4 @@ namespace audiocontext {
     void IOSAudioNode::disconnect(std::shared_ptr<IOSAudioNode> node) {
         [audioNode_ disconnect:(node->audioNode_)];
     }
-
-    void IOSAudioNode::syncPlayerNode(AVAudioPlayerNode *node) {
-        [audioNode_ syncPlayerNode:node];
-    }
-
-    void IOSAudioNode::clearPlayerNode(AVAudioPlayerNode *node) {
-        [audioNode_ clearPlayerNode:node];
-    }
 } // namespace audiocontext

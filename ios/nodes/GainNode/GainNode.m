@@ -1,11 +1,11 @@
 #import <GainNode.h>
+#import "AudioContext.h"
 
 @implementation GainNode
 
 - (instancetype)init:(AudioContext *)context {
     if (self = [super init:context]) {
         self.gain = 0.5;
-        self.playerNodes = [NSMutableArray array];
     }
 
     return self;
@@ -13,31 +13,31 @@
 
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
     playerNode.volume = self.gain;
+
+    [super process:buffer playerNode:playerNode];
+}
+
+- (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node {
+    if (node == self) {
+        playerNode.volume = 0.5;
+        
+        // Deprocess all nodes connected to the disconnected node
+        for (AudioNode *cn in self.connectedNodes) {
+            [cn deprocess:buffer playerNode:playerNode nodeToDeprocess:cn];
+        }
+    } else {
+        // Continue searching for disconnected node
+        [super deprocess:buffer playerNode:playerNode nodeToDeprocess:node];
+    }
 }
 
 - (void)changeGain:(float)gain {
     self.gain = gain;
-    
-    for (AVAudioPlayerNode *node in self.playerNodes) {
-        node.volume = gain;
-    }
+    [self.context processNodes];
 }
 
 - (float)getGain {
     return self.gain;
-}
-
-- (void)syncPlayerNode:(AVAudioPlayerNode *)node {
-    [self.playerNodes addObject:node];
-}
-
-- (void)clearPlayerNode:(AVAudioPlayerNode *)node {
-    node.volume = 0.5;
-    
-    NSUInteger index = [self.playerNodes indexOfObject:node];
-    if (index != NSNotFound) {
-        [self.playerNodes removeObjectAtIndex:index];
-    }
 }
 
 @end

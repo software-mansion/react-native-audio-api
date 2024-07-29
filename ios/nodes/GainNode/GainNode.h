@@ -1,11 +1,10 @@
-#import <Foundation/Foundation.h>
+#pragma once
+
 #import "AudioNode.h"
-#import "OscillatorNode.h"
 
 @interface GainNode : AudioNode
 
 @property (nonatomic, assign) float gain;
-@property (nonatomic, strong) NSMutableArray<AVAudioPlayerNode *> *playerNodes;
 
 - (instancetype)init:(AudioContext *)context;
 

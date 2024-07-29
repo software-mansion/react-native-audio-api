@@ -1,4 +1,5 @@
 #import "AudioNode.h"
+#import "AudioContext.h"
 
 @implementation AudioNode
 
@@ -17,6 +18,12 @@
     }
 }
 
+- (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node {
+    for (AudioNode *node in self.connectedNodes) {
+        [node deprocess:buffer playerNode:playerNode nodeToDeprocess:node];
+    }
+}
+
 - (void)connect:(AudioNode *)node {
     if (self.numberOfOutputs > 0) {
         [self.connectedNodes addObject:node];
@@ -26,22 +33,32 @@
 - (void)disconnect:(AudioNode *)node {
     NSUInteger index = [self.connectedNodes indexOfObject:node];
     if (index != NSNotFound) {
+        [self findNodesToDeprocess];
         [self.connectedNodes removeObjectAtIndex:index];
     }
 }
 
-- (void)syncPlayerNode:(AVAudioPlayerNode *)node {
-    NSLog(@"Attempting to call `syncPlayerNode` on a base class where it is not implemented. You must override `syncPlayerNode` in a subclass.");
-    @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                   reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
-                                 userInfo:nil];
+- (void)findNodesToDeprocess {
+    NSMutableArray<OscillatorNode *> *connectedNodes = self.context.connectedOscillators;
+    for (OscillatorNode *node in connectedNodes) {
+        if ([self findNodesToDeprocessHelper:node]) {
+            [node deprocess:node.buffer playerNode:node.playerNode nodeToDeprocess:self];
+        }
+    }
 }
 
-- (void)clearPlayerNode:(AVAudioPlayerNode *)node {
-    NSLog(@"Attempting to call `clearPlayerNode` on a base class where it is not implemented. You must override `clearPlayerNode` in a subclass.");
-    @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                   reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
-                                 userInfo:nil];
+- (Boolean)findNodesToDeprocessHelper:(AudioNode *)node {
+    if (node == self) {
+        return true;
+    }
+    
+    for (AudioNode *cn in node.connectedNodes) {
+        if ([self findNodesToDeprocessHelper:cn]) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 @end

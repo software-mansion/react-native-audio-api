@@ -1,6 +1,9 @@
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
-#import "AudioContext.h"
+
+@class AudioContext;
 
 @interface AudioNode : NSObject
 
@@ -11,9 +14,8 @@
 
 - (instancetype)init:(AudioContext *)context;
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode;
+- (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
-- (void)syncPlayerNode:(AVAudioPlayerNode *)node;
-- (void)clearPlayerNode:(AVAudioPlayerNode *)node;
 
 @end
