@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.util.Log
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.AudioScheduledSourceNode
+import com.audiocontext.nodes.PlaybackParameters
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.ReactApplicationContext
 import kotlin.math.abs
@@ -28,11 +29,10 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
     }
   private var waveType: WaveType = WaveType.SINE
 
-  private val audioTrack: AudioTrack
+  private var playbackParameters: PlaybackParameters
   @Volatile private var isPlaying: Boolean = false
   private var playbackThread: Thread? = null
   private var stopThread: Thread? = null
-  private var buffer: ShortArray = ShortArray(1024)
 
   private val mHybridData: HybridData? = initHybrid();
 
@@ -58,7 +58,10 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
       .build()
 
-    this.audioTrack = AudioTrack(audioAttributes, audioFormat, bufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+    val audioTrack = AudioTrack(audioAttributes, audioFormat, bufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+    val buffer = ShortArray(bufferSize)
+
+    this.playbackParameters = PlaybackParameters(audioTrack, buffer)
   }
 
   fun getWaveType(): String {
@@ -82,7 +85,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       }
 
       isPlaying = true
-      audioTrack.play()
+      playbackParameters.audioTrack.play()
       generateSound()
     }.apply { start() }
   }
@@ -100,7 +103,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       }
 
       isPlaying = false
-      audioTrack.stop()
+      playbackParameters.audioTrack.stop()
       playbackThread?.join()
     }.apply { start() }
 
@@ -114,12 +117,12 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
     while(isPlaying) {
       phaseChange = 2 * Math.PI * (frequency + detune) / context.sampleRate
 
-      for(i in buffer.indices) {
-        buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
+      for(i in playbackParameters.buffer.indices) {
+        playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
         wavePhase += phaseChange
       }
-      process(buffer, audioTrack)
+      process(playbackParameters)
     }
-    audioTrack.flush()
+    playbackParameters.audioTrack.flush()
   }
 }

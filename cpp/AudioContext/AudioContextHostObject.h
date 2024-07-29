@@ -7,6 +7,7 @@
 #include "OscillatorNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
 #include "GainNodeHostObject.h"
+#include "StereoPannerNodeHostObject.h"
 
 namespace audiocontext
 {

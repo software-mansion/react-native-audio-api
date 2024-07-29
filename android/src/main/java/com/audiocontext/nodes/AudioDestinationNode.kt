@@ -1,10 +1,7 @@
 package com.audiocontext.nodes
 
-import android.media.AudioTrack
-import android.util.Log
 import com.audiocontext.context.BaseAudioContext
 import com.facebook.jni.HybridData
-import com.facebook.react.bridge.ReactApplicationContext
 
 
 class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
@@ -19,7 +16,14 @@ class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
     }
   }
 
-  override fun process(buffer: ShortArray, audioTrack: AudioTrack) {
-    audioTrack.write(buffer, 0, buffer.size)
+  private fun setVolumeAndPanning(playbackParameters: PlaybackParameters) {
+    val leftPan = playbackParameters.gain * playbackParameters.leftPan
+    val rightPan = playbackParameters.gain * playbackParameters.rightPan
+    playbackParameters.audioTrack.setStereoVolume(leftPan.toFloat(), rightPan.toFloat())
+  }
+
+  override fun process(playbackParameters: PlaybackParameters) {
+    setVolumeAndPanning(playbackParameters)
+    playbackParameters.audioTrack.write(playbackParameters.buffer, 0, playbackParameters.buffer.size)
   }
 }

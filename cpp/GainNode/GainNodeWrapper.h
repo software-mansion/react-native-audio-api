@@ -1,31 +1,37 @@
 #pragma once
 
+#include <memory>
+#include "AudioNodeWrapper.h"
+
 #ifdef ANDROID
+#include "GainNode.h"
 #else
 #include "IOSGainNode.h"
 #include "IOSAudioContext.h"
 #endif
 
-#include <memory>
-#include "AudioNodeWrapper.h"
-
 namespace audiocontext {
-    class GainNodeWrapper: public AudioNodeWrapper {
-        private:
+
 #ifdef ANDROID
-#else
-            std::shared_ptr<IOSGainNode> gainNode_;
+    class GainNode;
 #endif
 
-        public:
+    class GainNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-            explicit GainNodeWrapper() {}
+    private:
+        std::shared_ptr<GainNode> gain_;
+    public:
+        explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gain) : AudioNodeWrapper(
+                gain), gain_(gain) {}
 #else
-            explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
-                node_ = gainNode_ = std::make_shared<IOSGainNode>(context);
+    private:
+        std::shared_ptr<IOSGainNode> gain_;
+    public:
+        explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
+                node_ = gain_ = std::make_shared<IOSGainNode>(context);
             }
-            void setGain(double gain);
-            double getGain();
 #endif
+        double getGain();
+        void setGain(double gain);
     };
 } // namespace audiocontext

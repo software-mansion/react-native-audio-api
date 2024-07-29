@@ -2,6 +2,7 @@ export interface BaseAudioContext {
   destination: AudioDestinationNode | null;
   createOscillator(): Oscillator;
   createGain(): Gain;
+  createStereoPanner(): StereoPanner;
 }
 
 export interface AudioNode {
@@ -27,4 +28,8 @@ export interface Oscillator extends AudioScheduledSourceNode {
 
 export interface Gain extends AudioNode {
   gain: number;
+}
+
+export interface StereoPanner extends AudioNode {
+  pan: number;
 }

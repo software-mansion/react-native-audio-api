@@ -6,7 +6,7 @@ namespace audiocontext
 
   std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(jsi::Runtime &runtime)
   {
-    std::vector<jsi::PropNameID> propertyNames;
+    std::vector<jsi::PropNameID> propertyNames = AudioNodeHostObject::getPropertyNames(runtime);
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "start"));
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "stop"));
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "frequency"));

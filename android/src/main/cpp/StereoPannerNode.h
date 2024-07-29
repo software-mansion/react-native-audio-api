@@ -11,9 +11,13 @@ namespace audiocontext {
     using namespace facebook;
     using namespace facebook::jni;
 
-    class AudioDestinationNode : public jni::HybridClass<AudioDestinationNode, AudioNode> {
+    class StereoPannerNode : public jni::HybridClass<StereoPannerNode, AudioNode> {
     public:
-        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/AudioDestinationNode;";
+        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/StereoPannerNode;";
+
+        double getPan();
+
+        void setPan(double pan);
     };
 
 } // namespace audiocontext

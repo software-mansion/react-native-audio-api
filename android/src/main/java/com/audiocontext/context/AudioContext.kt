@@ -1,6 +1,8 @@
 package com.audiocontext.context
 
 import com.audiocontext.nodes.AudioDestinationNode
+import com.audiocontext.nodes.GainNode
+import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
 import com.facebook.jni.HybridData
 
@@ -26,5 +28,13 @@ class AudioContext() : BaseAudioContext {
 
   override fun createOscillator(): OscillatorNode {
     return OscillatorNode(this)
+  }
+
+  override fun createGain(): GainNode {
+    return GainNode(this)
+  }
+
+  override fun createStereoPanner(): StereoPannerNode {
+    return StereoPannerNode(this)
   }
 }

@@ -5,8 +5,10 @@ namespace audiocontext {
 
     std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(jsi::Runtime& runtime) {
         std::vector<jsi::PropNameID> propertyNames;
-        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createOscillator"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "destination"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createOscillator"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createGain"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createStereoPanner"));
         return propertyNames;
     }
 
@@ -29,9 +31,17 @@ namespace audiocontext {
 
         if (propName == "createGain") {
             return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
-                auto gainNode = wrapper_->createGainNode();
-                auto gainNodeHostObject = GainNodeHostObject::createFromWrapper(gainNode);
-                return jsi::Object::createFromHostObject(runtime, gainNodeHostObject);
+                auto gain = wrapper_->createGain();
+                auto gainHostObject = GainNodeHostObject::createFromWrapper(gain);
+                return jsi::Object::createFromHostObject(runtime, gainHostObject);
+            });
+        }
+
+        if (propName == "createStereoPanner") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto stereoPanner = wrapper_->createStereoPanner();
+                auto stereoPannerHostObject = StereoPannerNodeHostObject::createFromWrapper(stereoPanner);
+                return jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);
             });
         }
 

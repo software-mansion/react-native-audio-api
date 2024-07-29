@@ -1,7 +1,5 @@
 package com.audiocontext.nodes
 
-import android.media.AudioTrack
-import android.util.Log
 import com.audiocontext.context.BaseAudioContext
 import com.facebook.jni.HybridData
 
@@ -35,7 +33,7 @@ abstract class AudioNode(val context: BaseAudioContext) {
     connectedNodes.clear()
   }
 
-  open fun process(buffer: ShortArray, audioTrack: AudioTrack) {
-    connectedNodes.forEach { it.process(buffer, audioTrack) }
+  open fun process(playbackParameters: PlaybackParameters) {
+    connectedNodes.forEach { it.process(playbackParameters) }
   }
 }

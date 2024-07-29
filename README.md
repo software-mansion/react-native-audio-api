@@ -1,23 +1,13 @@
-The main goal of the project is to reproduce the Web Audio API as accurate as possible in the React Native environment.
+# React Native Audio Context
 
 ## Internal Documentation
 
-- [Basic interfaces description](./internal-docs/basic-interfaces.md)
+[Basic interfaces description](./internal-docs/basic-interfaces.md)
 
 ## Installation
 
 ```sh
 npm install react-native-audio-context
-```
-
-## Usage
-
-```js
-import { multiply } from 'react-native-audio-context';
-
-// ...
-
-const result = multiply(3, 7);
 ```
 
 ## Contributing

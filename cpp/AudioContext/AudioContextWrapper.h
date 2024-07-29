@@ -5,6 +5,7 @@
 #include "OscillatorNodeWrapper.h"
 #include "AudioDestinationNodeWrapper.h"
 #include "GainNodeWrapper.h"
+#include "StereoPannerNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioContext.h"
@@ -34,12 +35,13 @@ namespace audiocontext {
     public:
 #ifdef ANDROID
         explicit AudioContextWrapper(
-                std::shared_ptr<AudioContext> audiocontext) : audiocontext_(audiocontext) {}
+                const std::shared_ptr<AudioContext> &audiocontext) : audiocontext_(audiocontext) {}
 #else
         explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
         std::shared_ptr<OscillatorNodeWrapper> createOscillator();
         std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
-        std::shared_ptr<GainNodeWrapper> createGainNode();
+        std::shared_ptr<GainNodeWrapper> createGain();
+        std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
     };
 } // namespace audiocontext

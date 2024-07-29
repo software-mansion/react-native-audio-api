@@ -7,21 +7,25 @@ import {
   AudioContext,
   type Oscillator,
   type Gain,
+  type StereoPanner,
 } from 'react-native-audio-context';
 
-const INITIAL_GAIN = 0.5;
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
+const INITIAL_GAIN = 0.5;
+const INITIAL_PAN = 0;
 
 const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gain, setGain] = useState(INITIAL_GAIN);
   const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
+  const [pan, setPan] = useState(INITIAL_PAN);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<Oscillator | null>(null);
   const gainRef = useRef<Gain | null>(null);
+  const panRef = useRef<StereoPanner | null>(null);
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
@@ -47,6 +51,14 @@ const App: React.FC = () => {
     setGain(newValue);
     if (gainRef.current) {
       gainRef.current.gain = newValue;
+    }
+  };
+
+  const handlePanChange = (value: number[]) => {
+    const newValue = value[0] || 0;
+    setPan(newValue);
+    if (panRef.current) {
+      panRef.current.pan = newValue;
     }
   };
 
@@ -100,6 +112,17 @@ const App: React.FC = () => {
           minimumValue={0.0}
           maximumValue={1.0}
           step={0.01}
+        />
+      </View>
+      <View style={styles.container}>
+        <Text>Pan: {pan.toFixed(1)}</Text>
+        <Slider
+          containerStyle={styles.slider}
+          value={pan}
+          onValueChange={handlePanChange}
+          minimumValue={-1}
+          maximumValue={1}
+          step={0.1}
         />
       </View>
       <View style={styles.container}>
