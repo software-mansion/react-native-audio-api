@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.SystemClock
 import android.util.Log
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
@@ -29,7 +30,6 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   private var playbackParameters: PlaybackParameters
   @Volatile private var isPlaying: Boolean = false
   private var playbackThread: Thread? = null
-  private var stopThread: Thread? = null
 
   private val mHybridData: HybridData? = initHybrid();
 
@@ -70,41 +70,27 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   }
 
   override fun start(time: Double) {
-    if(isPlaying) {
-      return
-    }
-
     playbackThread = Thread {
-      try {
-        Thread.sleep((time * 1000).toLong())
-      } catch (e: InterruptedException) {
-        Log.e("OscillatorNode", "Thread sleep error: ${e.message}")
+      while(true){
+        if(context.getCurrentTime() >= time){
+          isPlaying = true
+          playbackParameters.audioTrack.play()
+          generateSound()
+          break
+        }
       }
-
-      isPlaying = true
-      playbackParameters.audioTrack.play()
-      generateSound()
     }.apply { start() }
   }
 
   override fun stop(time: Double) {
-    if(!isPlaying) {
-      return
-    }
-
-    stopThread = Thread {
-      try {
-        Thread.sleep((time * 1000).toLong())
-      } catch (e: InterruptedException) {
-        Log.e("OscillatorNode", "Thread sleep error: ${e.message}")
+    while(true){
+      if(context.getCurrentTime() >= time){
+        isPlaying = false
+        playbackParameters.audioTrack.stop()
+        playbackThread?.join()
+        break
       }
-
-      isPlaying = false
-      playbackParameters.audioTrack.stop()
-      playbackThread?.join()
-    }.apply { start() }
-
-    stopThread?.join()
+    }
   }
 
   private fun generateSound() {
