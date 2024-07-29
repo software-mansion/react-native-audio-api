@@ -9,5 +9,6 @@ namespace audiocontext {
     double StereoPannerNodeWrapper::getPan() {
         return panner_->getPan();
     }
-}
+} // namespace audiocontext
+
 #endif
