@@ -3,9 +3,9 @@ const { AudioContextModule } = NativeModules;
 import type {
   BaseAudioContext,
   AudioDestinationNode,
-  Gain,
-  StereoPanner,
-  Oscillator,
+  GainNode,
+  StereoPannerNode,
+  OscillatorNode,
   ContextState,
 } from './types';
 import { installACModule } from './utils/install';
@@ -30,17 +30,17 @@ export class AudioContext implements BaseAudioContext {
     return global.__AudioContext.currentTime;
   }
 
-  createOscillator(): Oscillator {
+  createOscillator(): OscillatorNode {
     return global.__AudioContext.createOscillator();
   }
 
-  createGain(): Gain {
+  createGain(): GainNode {
     return global.__AudioContext.createGain();
   }
 
-  createStereoPanner(): StereoPanner {
+  createStereoPanner(): StereoPannerNode {
     return global.__AudioContext.createStereoPanner();
   }
 }
 
-export type { Oscillator, Gain, StereoPanner };
+export type { GainNode, StereoPannerNode, OscillatorNode };
