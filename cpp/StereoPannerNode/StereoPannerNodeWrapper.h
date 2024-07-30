@@ -32,5 +32,5 @@ namespace audiocontext {
             std::shared_ptr<AudioParamWrapper> panParam_;
         public:
             std::shared_ptr<AudioParamWrapper> getPanParam();
-        };
+    };
 } // namespace audiocontext

@@ -11,17 +11,17 @@
 namespace audiocontext {
     class AudioNodeWrapper {
 #ifdef ANDROID
-    protected:
-        std::shared_ptr<AudioNode> node_;
-    public:
-        explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node) : node_(node) {}
+        protected:
+            std::shared_ptr<AudioNode> node_;
+        public:
+            explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node) : node_(node) {}
 #else
-    public:
-        std::shared_ptr<IOSAudioNode> node_;
-        explicit AudioNodeWrapper() {}
+        public:
+            std::shared_ptr<IOSAudioNode> node_;
+            explicit AudioNodeWrapper() {}
 #endif
-    public:
-        void connect(const std::shared_ptr<AudioNodeWrapper> &node) const;
-        void disconnect(const std::shared_ptr<AudioNodeWrapper> &node) const;
+        public:
+            void connect(const std::shared_ptr<AudioNodeWrapper> &node) const;
+            void disconnect(const std::shared_ptr<AudioNodeWrapper> &node) const;
     };
 } // namespace audiocontext

@@ -19,19 +19,19 @@ namespace audiocontext {
 
     class GainNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-    private:
-        std::shared_ptr<GainNode> gainNode_;
-    public:
-        explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
+        private:
+            std::shared_ptr<GainNode> gainNode_;
+        public:
+            explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
 #else
-    private:
-        std::shared_ptr<IOSGainNode> gain_;
-    public:
-        explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context);
+        private:
+            std::shared_ptr<IOSGainNode> gain_;
+        public:
+            explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif
-    private:
-        std::shared_ptr<AudioParamWrapper> gainParam_;
-    public:
-        std::shared_ptr<AudioParamWrapper> getGainParam();
+        private:
+            std::shared_ptr<AudioParamWrapper> gainParam_;
+        public:
+            std::shared_ptr<AudioParamWrapper> getGainParam();
     };
 } // namespace audiocontext
