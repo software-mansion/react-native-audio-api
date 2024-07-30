@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
+  const kickRef = useRef<Kick | null>(null);
 
   const setUp = (audioContext: AudioContext) => {
     oscillatorRef.current = audioContext.createOscillator();
@@ -104,8 +105,11 @@ const App: React.FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
-    const kick = new Kick(audioContextRef.current);
-    kick.play(audioContextRef.current.getCurrentTime());
+    if (!kickRef.current) {
+      kickRef.current = new Kick(audioContextRef.current);
+    }
+
+    kickRef.current.play(audioContextRef.current.getCurrentTime());
   };
 
   return (
