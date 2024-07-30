@@ -40,7 +40,7 @@ const App: React.FC = () => {
       oscillatorRef.current.connect(gainRef.current);
 
       panRef.current = audioContextRef.current.createStereoPanner();
-      panRef.current.pan = INITIAL_PAN;
+      panRef.current.pan.value = INITIAL_PAN;
       gainRef.current.connect(panRef.current);
 
       if (Platform.OS === 'android') {
@@ -63,7 +63,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 0;
     setPan(newValue);
     if (panRef.current) {
-      panRef.current.pan = newValue;
+      panRef.current.pan.value = newValue;
     }
   };
 

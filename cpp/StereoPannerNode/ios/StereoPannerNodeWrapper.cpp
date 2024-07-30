@@ -2,13 +2,13 @@
 #include "StereoPannerNodeWrapper.h"
 
 namespace audiocontext {
-    void StereoPannerNodeWrapper::setPan(double pan) {
-        panner_->setPan(pan);
+    StereoPannerNodeWrapper::StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
+        node_ = pannerNode_ = std::make_shared<IOSStereoPannerNode>(context);
+        panParam_ = std::make_shared<AudioParamWrapper>(pannerNode_->getAudioParam());
     }
 
-    double StereoPannerNodeWrapper::getPan() {
-        return panner_->getPan();
+    std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam() {
+        return panParam_;
     }
-} // namespace audiocontext
-
+}
 #endif

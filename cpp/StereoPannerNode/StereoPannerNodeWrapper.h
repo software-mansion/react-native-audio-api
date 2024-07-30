@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "AudioNodeWrapper.h"
+#include "AudioParamWrapper.h"
 
 #ifdef ANDROID
 #include "StereoPannerNode.h"
@@ -11,7 +12,6 @@
 #endif
 
 namespace audiocontext {
-
 #ifdef ANDROID
     class StereoPannerNode;
 #endif
@@ -19,19 +19,18 @@ namespace audiocontext {
     class StereoPannerNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
         private:
-            std::shared_ptr<StereoPannerNode> panner_;
+            std::shared_ptr<StereoPannerNode> pannerNode_;
         public:
-            explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &panner) : AudioNodeWrapper(
-                    panner), panner_(panner) {}
+            explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
         private:
-            std::shared_ptr<IOSStereoPannerNode> panner_;
+            std::shared_ptr<IOSStereoPannerNode> pannerNode_;
         public:
-            explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
-                node_ = panner_ = std::make_shared<IOSStereoPannerNode>(context);
-            }
+            explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif
-            double getPan();
-            void setPan(double pan);
+    private:
+        std::shared_ptr<AudioParamWrapper> panParam_;
+    public:
+        std::shared_ptr<AudioParamWrapper> getPanParam();
     };
 } // namespace audiocontext

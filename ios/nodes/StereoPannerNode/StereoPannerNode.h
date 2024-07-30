@@ -1,15 +1,12 @@
 #pragma once
 
 #import "AudioNode.h"
+#import "AudioParam.h"
 
 @interface StereoPannerNode : AudioNode
 
-@property (nonatomic, assign) float pan;
+@property (nonatomic, strong) AudioParam *audioParam;
 
 - (instancetype)init:(AudioContext *)context;
-
-- (void)setPan:(float)pan;
-
-- (float)getPan;
 
 @end
