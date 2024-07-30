@@ -1,5 +1,7 @@
 package com.audiocontext.nodes.parameters
 
+import android.util.Log
+import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.facebook.jni.HybridData
 
 class AudioParam(defaultValue: Double, maxValue: Double, minValue: Double) {
@@ -10,6 +12,7 @@ class AudioParam(defaultValue: Double, maxValue: Double, minValue: Double) {
     get() = field
   private val minValue: Double = minValue
     get() = field
+
 
   private val mHybridData: HybridData?;
 
@@ -31,7 +34,8 @@ class AudioParam(defaultValue: Double, maxValue: Double, minValue: Double) {
 
   fun setValue(value: Double) {
     if(value > maxValue || value < minValue) {
-      throw IllegalArgumentException("Value must be between $minValue and $maxValue")
+      this.value = defaultValue
+      Log.d("AudioParam", "Value out of range, setting to default value")
     }
     this.value = value
   }

@@ -9,14 +9,6 @@ class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs = 1
   override val numberOfOutputs = 0
 
-  private val mHybridData: HybridData? = initHybrid();
-
-  companion object {
-    init {
-      System.loadLibrary("react-native-audio-context")
-    }
-  }
-
   private fun setVolumeAndPanning(playbackParameters: PlaybackParameters) {
     val leftPan = playbackParameters.gain * playbackParameters.leftPan
     val rightPan = playbackParameters.gain * playbackParameters.rightPan

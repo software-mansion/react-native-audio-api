@@ -14,8 +14,6 @@ class GainNode(context: BaseAudioContext): AudioNode(context) {
       field = value
     }
 
-  private val mHybridData: HybridData? = initHybrid();
-
   override fun process(playbackParameters: PlaybackParameters) {
     playbackParameters.gain = gain.getValue()
     super.process(playbackParameters)

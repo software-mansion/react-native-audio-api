@@ -15,8 +15,6 @@ class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
       field = value
     }
 
-  private val mHybridData: HybridData? = initHybrid();
-
   override fun process(playbackParameters: PlaybackParameters) {
     playbackParameters.leftPan = min(1.0 - pan.getValue(), 1.0)
     playbackParameters.rightPan = min(1.0 + pan.getValue(), 1.0)

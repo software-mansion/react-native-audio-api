@@ -84,6 +84,9 @@ const App: React.FC = () => {
   const handlePlayPause = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
+    }
+
+    if (!oscillatorRef.current) {
       setUp(audioContextRef.current);
     }
 
