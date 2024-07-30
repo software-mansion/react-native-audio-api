@@ -6,7 +6,12 @@ class ParamChangeComparator {
       return when {
         o1.startTime > o2.startTime -> 1
         o1.startTime < o2.startTime -> -1
-        else -> 0
+        else ->
+          when {
+            o1.endTime > o2.endTime -> 1
+            o1.endTime < o2.endTime -> -1
+            else -> 0
+          }
       }
     }
   }
