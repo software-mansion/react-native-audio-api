@@ -5,7 +5,6 @@ import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
 import com.audiocontext.nodes.parameters.PlaybackParameters
-import com.facebook.jni.HybridData
 import kotlin.math.min
 
 class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {

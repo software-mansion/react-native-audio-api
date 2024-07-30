@@ -6,8 +6,4 @@ class ParamChange(val startTime: Double, val endTime: Double,
   fun getValueAtTime(time: Double): Double {
     return this.calculateValue(startTime, endTime, startValue, endValue, time)
   }
-
-  override fun toString(): String {
-    return "ParamChange(startTime=$startTime, endTime=$endTime, startValue=$startValue, endValue=$endValue)"
-  }
 }

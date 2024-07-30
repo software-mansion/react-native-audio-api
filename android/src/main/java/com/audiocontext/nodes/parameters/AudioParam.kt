@@ -1,7 +1,6 @@
 package com.audiocontext.nodes.parameters
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.facebook.jni.HybridData
