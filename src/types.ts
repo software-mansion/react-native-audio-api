@@ -20,6 +20,9 @@ export interface AudioParam {
   defaultValue: number;
   minValue: number;
   maxValue: number;
+  setValueAtTime: (value: number, startTime: number) => void;
+  linearRampToValueAtTime: (value: number, endTime: number) => void;
+  exponentialRampToValueAtTime: (value: number, endTime: number) => void;
 }
 
 export interface AudioDestinationNode extends AudioNode {}
