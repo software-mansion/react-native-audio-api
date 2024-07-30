@@ -1,8 +1,8 @@
 #ifndef ANDROID
 #include "AudioParamWrapper.h"
 
-namespace audiocontext{
-
+namespace audiocontext
+{
     double AudioParamWrapper::getValue() {
         return param_->getValue();
     }

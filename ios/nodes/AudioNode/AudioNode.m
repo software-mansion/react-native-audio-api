@@ -39,10 +39,10 @@
 }
 
 - (void)findNodesToDeprocess:(AudioNode *)node {
-    NSMutableArray<OscillatorNode *> *connectedNodes = _context.connectedOscillators;
-    for (OscillatorNode *cn in connectedNodes) {
-        if ([self findNodesToDeprocessHelper:cn]) {
-            [node deprocess:cn.buffer playerNode:cn.playerNode nodeToDeprocess:node];
+    NSMutableArray<OscillatorNode *> *connectedOscillators = _context.connectedOscillators;
+    for (OscillatorNode *osNode in connectedOscillators) {
+        if ([self findNodesToDeprocessHelper:osNode]) {
+            [node deprocess:osNode.buffer playerNode:osNode.playerNode nodeToDeprocess:node];
         }
     }
 }
