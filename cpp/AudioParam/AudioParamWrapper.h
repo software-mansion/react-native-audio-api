@@ -29,5 +29,7 @@ namespace audiocontext {
         double getDefaultValue() const;
         double getMinValue() const;
         double getMaxValue() const;
+        void setValueAtTime(double value, double startTime);
+        void linearRampToValueAtTime(double value, double endTime);
     };
 } // namespace audiocontext

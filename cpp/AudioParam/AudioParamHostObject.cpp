@@ -9,6 +9,8 @@ namespace audiocontext {
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "defaultValue"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "minValue"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "maxValue"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "setValueAtTime"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "linearRampToValueAtTime"));
         return propertyNames;
     }
 
@@ -29,6 +31,24 @@ namespace audiocontext {
 
         if(propName == "maxValue") {
             return jsi::Value(wrapper_->getMaxValue());
+        }
+
+        if(propName == "setValueAtTime") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 2, [this](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) -> jsi::Value {
+                double value = args[0].getNumber();
+                double startTime = args[1].getNumber();
+                wrapper_->setValueAtTime(value, startTime);
+                return jsi::Value::undefined();
+            });
+        }
+
+        if(propName == "linearRampToValueAtTime") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 2, [this](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) -> jsi::Value {
+                double value = args[0].getNumber();
+                double endTime = args[1].getNumber();
+                wrapper_->linearRampToValueAtTime(value, endTime);
+                return jsi::Value::undefined();
+            });
         }
 
         throw std::runtime_error("Not yet implemented!");

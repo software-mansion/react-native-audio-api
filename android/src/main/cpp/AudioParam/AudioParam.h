@@ -30,6 +30,8 @@ namespace audiocontext {
         double getDefaultValue();
         double getMinValue();
         double getMaxValue();
+        void setValueAtTime(double value, double startTime);
+        void linearRampToValueAtTime(double value, double endTime);
 
     protected:
         friend HybridBase;

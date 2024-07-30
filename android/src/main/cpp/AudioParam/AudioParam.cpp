@@ -28,4 +28,14 @@ namespace audiocontext {
         static const auto method = javaClassLocal()->getMethod<double()>("getMaxValue");
         return method(javaObject_.get());
     }
+
+    void AudioParam::setValueAtTime(double value, double startTime) {
+        static const auto method = javaClassLocal()->getMethod<void(double, double)>("setValueAtTime");
+        method(javaObject_.get(), value, startTime);
+    }
+
+    void AudioParam::linearRampToValueAtTime(double value, double endTime) {
+        static const auto method = javaClassLocal()->getMethod<void(double, double)>("linearRampToValueAtTime");
+        method(javaObject_.get(), value, endTime);
+    }
 }

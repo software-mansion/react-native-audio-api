@@ -27,4 +27,12 @@ namespace audiocontext{
     double AudioParamWrapper::getMaxValue() const {
         return maxValue_;
     }
+
+    void AudioParamWrapper::setValueAtTime(double value, double startTime) {
+        param_->setValueAtTime(value, startTime);
+    }
+
+    void AudioParamWrapper::linearRampToValueAtTime(double value, double endTime) {
+        param_->linearRampToValueAtTime(value, endTime);
+    }
 }
