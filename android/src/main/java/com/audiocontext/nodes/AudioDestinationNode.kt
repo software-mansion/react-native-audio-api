@@ -1,6 +1,7 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
+import com.audiocontext.nodes.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
 
 

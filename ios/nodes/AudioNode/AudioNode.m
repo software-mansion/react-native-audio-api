@@ -13,36 +13,36 @@
 }
 
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
-    for (AudioNode *node in self.connectedNodes) {
+    for (AudioNode *node in _connectedNodes) {
         [node process:buffer playerNode:playerNode];
     }
 }
 
 - (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node {
-    for (AudioNode *node in self.connectedNodes) {
+    for (AudioNode *node in _connectedNodes) {
         [node deprocess:buffer playerNode:playerNode nodeToDeprocess:node];
     }
 }
 
 - (void)connect:(AudioNode *)node {
-    if (self.numberOfOutputs > 0) {
-        [self.connectedNodes addObject:node];
+    if (_numberOfOutputs > 0) {
+        [_connectedNodes addObject:node];
     }
 }
 
 - (void)disconnect:(AudioNode *)node {
-    NSUInteger index = [self.connectedNodes indexOfObject:node];
+    NSUInteger index = [_connectedNodes indexOfObject:node];
     if (index != NSNotFound) {
-        [self findNodesToDeprocess];
-        [self.connectedNodes removeObjectAtIndex:index];
+        [self findNodesToDeprocess:node];
+        [_connectedNodes removeObjectAtIndex:index];
     }
 }
 
-- (void)findNodesToDeprocess {
-    NSMutableArray<OscillatorNode *> *connectedNodes = self.context.connectedOscillators;
-    for (OscillatorNode *node in connectedNodes) {
-        if ([self findNodesToDeprocessHelper:node]) {
-            [node deprocess:node.buffer playerNode:node.playerNode nodeToDeprocess:self];
+- (void)findNodesToDeprocess:(AudioNode *)node {
+    NSMutableArray<OscillatorNode *> *connectedNodes = _context.connectedOscillators;
+    for (OscillatorNode *cn in connectedNodes) {
+        if ([self findNodesToDeprocessHelper:cn]) {
+            [node deprocess:cn.buffer playerNode:cn.playerNode nodeToDeprocess:node];
         }
     }
 }

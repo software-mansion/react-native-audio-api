@@ -28,21 +28,26 @@ const App: React.FC = () => {
   const panRef = useRef<StereoPanner | null>(null);
 
   useEffect(() => {
-    audioContextRef.current = new AudioContext();
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
 
-    oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef.current.frequency = INITIAL_FREQUENCY;
-    oscillatorRef.current.detune = INITIAL_DETUNE;
-    oscillatorRef.current.type = 'sine';
+      oscillatorRef.current = audioContextRef.current.createOscillator();
+      oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
+      oscillatorRef.current.detune.value = INITIAL_DETUNE;
+      oscillatorRef.current.type = 'sine';
 
-    gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain = INITIAL_GAIN;
-    oscillatorRef.current.connect(gainRef.current);
-
-    if (Platform.OS === 'android') {
-      const destination = audioContextRef.current.destination;
+      gainRef.current = audioContextRef.current.createGain();
       oscillatorRef.current.connect(gainRef.current);
-      gainRef.current.connect(destination!);
+
+      panRef.current = audioContextRef.current.createStereoPanner();
+      panRef.current.pan.value = INITIAL_PAN;
+      gainRef.current.connect(panRef.current);
+
+      if (Platform.OS === 'android') {
+        const destination = audioContextRef.current.destination;
+        oscillatorRef.current.connect(gainRef.current);
+        gainRef.current.connect(destination!);
+      }
     }
   }, []);
 
@@ -50,7 +55,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 0.0;
     setGain(newValue);
     if (gainRef.current) {
-      gainRef.current.gain = newValue;
+      gainRef.current.gain.value = newValue;
     }
   };
 
@@ -58,7 +63,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 0;
     setPan(newValue);
     if (panRef.current) {
-      panRef.current.pan = newValue;
+      panRef.current.pan.value = newValue;
     }
   };
 
@@ -66,7 +71,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 440;
     setFrequency(newValue);
     if (oscillatorRef.current) {
-      oscillatorRef.current.frequency = newValue;
+      oscillatorRef.current.frequency.value = newValue;
     }
   };
 
@@ -74,7 +79,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 0;
     setDetune(newValue);
     if (oscillatorRef.current) {
-      oscillatorRef.current.detune = newValue;
+      oscillatorRef.current.detune.value = newValue;
     }
   };
 

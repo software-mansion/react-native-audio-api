@@ -6,23 +6,20 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
 import com.audiocontext.context.BaseAudioContext
+import com.audiocontext.nodes.parameters.AudioParam
 import com.audiocontext.nodes.AudioScheduledSourceNode
-import com.audiocontext.nodes.PlaybackParameters
+import com.audiocontext.nodes.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
-import com.facebook.react.bridge.ReactApplicationContext
-import kotlin.math.abs
-import kotlin.math.floor
-import kotlin.math.sin
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
-  private var frequency: Double = 440.0
+  private var frequency: AudioParam = AudioParam(440.0, 1200.0, 100.0)
     get() = field
     set(value) {
       field = value
     }
-  private var detune: Double = 0.0
+  private var detune: AudioParam = AudioParam(0.0, 100.0, -100.0)
     get() = field
     set(value) {
       field = value
@@ -115,7 +112,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
     var phaseChange: Double
 
     while(isPlaying) {
-      phaseChange = 2 * Math.PI * (frequency + detune) / context.sampleRate
+      phaseChange = 2 * Math.PI * (frequency.getValue() + detune.getValue()) / context.sampleRate
 
       for(i in playbackParameters.buffer.indices) {
         playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)

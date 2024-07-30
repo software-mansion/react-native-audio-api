@@ -5,6 +5,7 @@
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include "AudioNode.h"
+#include "AudioParam.h"
 
 namespace audiocontext {
 
@@ -15,9 +16,7 @@ namespace audiocontext {
     public:
         static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/StereoPannerNode;";
 
-        double getPan();
-
-        void setPan(double pan);
+        std::shared_ptr<AudioParam> getPanParam();
     };
 
 } // namespace audiocontext

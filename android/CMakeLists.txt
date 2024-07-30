@@ -19,7 +19,17 @@ include_directories(
         ../cpp/AudioNode
         ../cpp/GainNode
         ../cpp/StereoPannerNode
+        ../cpp/AudioParam
+
         src/main/cpp
+        src/main/cpp/AudioContext
+        src/main/cpp/AudioDestinationNode
+        src/main/cpp/OscillatorNode
+        src/main/cpp/AudioNode
+        src/main/cpp/GainNode
+        src/main/cpp/StereoPannerNode
+        src/main/cpp/AudioParam
+
         ../node_modules/react-native/ReactCommon/jsi
         ../node_modules/react-native/ReactAndroid/src/main/jni/react/jni
         ../node_modules/react-native/ReactAndroid/src/main/jni/third-party/folly
@@ -27,12 +37,13 @@ include_directories(
 
 add_library(react-native-audio-context SHARED
         src/main/cpp/OnLoad.cpp
-        src/main/cpp/AudioContext
-        src/main/cpp/OscillatorNode
-        src/main/cpp/AudioDestinationNode.h
-        src/main/cpp/AudioNode
-        src/main/cpp/GainNode
-        src/main/cpp/StereoPannerNode
+        src/main/cpp/AudioContext/AudioContext
+        src/main/cpp/OscillatorNode/OscillatorNode
+        src/main/cpp/AudioDestinationNode/AudioDestinationNode.h
+        src/main/cpp/AudioNode/AudioNode
+        src/main/cpp/GainNode/GainNode
+        src/main/cpp/StereoPannerNode/StereoPannerNode
+        src/main/cpp/AudioParam/AudioParam
 
         ../cpp/AudioContext/AudioContextHostObject
         ../cpp/AudioContext/AudioContextWrapper.h
@@ -40,7 +51,6 @@ add_library(react-native-audio-context SHARED
 
         ../cpp/AudioDestinationNode/AudioDestinationNodeHostObject
         ../cpp/AudioDestinationNode/AudioDestinationNodeWrapper.h
-        ../cpp/AudioDestinationNode/android/AudioDestinationNodeWrapper.cpp
 
         ../cpp/OscillatorNode/OscillatorNodeHostObject
         ../cpp/OscillatorNode/OscillatorNodeWrapper.h
@@ -57,6 +67,10 @@ add_library(react-native-audio-context SHARED
         ../cpp/StereoPannerNode/StereoPannerNodeHostObject
         ../cpp/StereoPannerNode/StereoPannerNodeWrapper.h
         ../cpp/StereoPannerNode/android/StereoPannerNodeWrapper.cpp
+
+        ../cpp/AudioParam/AudioParamHostObject
+        ../cpp/AudioParam/AudioParamWrapper.h
+        ../cpp/AudioParam/android/AudioParamWrapper.cpp
 )
 
 find_package(ReactAndroid REQUIRED CONFIG)

@@ -4,6 +4,11 @@ namespace audiocontext
 {
     using namespace facebook;
 
+    StereoPannerNodeHostObject::StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {
+        auto panParam = wrapper_->getPanParam();
+        panParam_ = AudioParamHostObject::createFromWrapper(panParam);
+    }
+
     std::vector<jsi::PropNameID> StereoPannerNodeHostObject::getPropertyNames(jsi::Runtime &runtime)
     {
         std::vector<jsi::PropNameID> propertyNames = AudioNodeHostObject::getPropertyNames(runtime);
@@ -17,8 +22,7 @@ namespace audiocontext
 
         if (propName == "pan")
         {
-            auto gain = wrapper_->getPan();
-            return jsi::Value(gain);
+            return jsi::Object::createFromHostObject(runtime, panParam_);
         }
 
         return AudioNodeHostObject::get(runtime, propNameId);
@@ -27,13 +31,6 @@ namespace audiocontext
     void StereoPannerNodeHostObject::set(jsi::Runtime &runtime, const jsi::PropNameID &propNameId, const jsi::Value &value)
     {
         auto propName = propNameId.utf8(runtime);
-
-        if (propName == "pan")
-        {
-            double pan = value.getNumber();
-            wrapper_->setPan(pan);
-            return;
-        }
 
         throw std::runtime_error("Not yet implemented!");
     }

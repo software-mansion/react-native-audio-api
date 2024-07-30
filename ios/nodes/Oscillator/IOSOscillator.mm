@@ -14,22 +14,6 @@ namespace audiocontext {
         [oscillatorNode_ stop];
     }
 
-    void IOSOscillator::changeFrequency(const float frequency) const {
-        [oscillatorNode_ changeFrequency:frequency];
-    }
-
-    float IOSOscillator::getFrequency() const {
-        return [oscillatorNode_ getFrequency];
-    }
-
-    void IOSOscillator::changeDetune(const float detune) const {
-        [oscillatorNode_ changeDetune:detune];
-    }
-
-    float IOSOscillator::getDetune() const {
-        return [oscillatorNode_ getDetune];
-    }
-
     void IOSOscillator::setType(const std::string &type) const {
         NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
         [oscillatorNode_ setType:nsType];
@@ -38,5 +22,17 @@ namespace audiocontext {
     std::string IOSOscillator::getType() const {
         NSString *nsType = [oscillatorNode_ getType];
         return std::string([nsType UTF8String]);
+    }
+
+    std::shared_ptr<IOSAudioParam> IOSOscillator::getFrequencyParam() {
+        std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
+        param->audioParam = oscillatorNode_.frequencyParam;
+        return param;
+    }
+
+    std::shared_ptr<IOSAudioParam> IOSOscillator::getDetuneParam() {
+        std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
+        param->audioParam = oscillatorNode_.detuneParam;
+        return param;
     }
 } // namespace audiocontext

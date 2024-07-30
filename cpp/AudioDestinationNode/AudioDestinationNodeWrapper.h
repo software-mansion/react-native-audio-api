@@ -18,10 +18,10 @@ namespace audiocontext {
     class AudioDestinationNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
     private:
-        std::shared_ptr<AudioDestinationNode> destination_;
+        std::shared_ptr<AudioDestinationNode> destinationNode_;
 
     public:
-        explicit AudioDestinationNodeWrapper(const std::shared_ptr<AudioDestinationNode> &destination) : AudioNodeWrapper(destination), destination_(destination) {}
+        explicit AudioDestinationNodeWrapper(const std::shared_ptr<AudioDestinationNode> &destinationNode) : AudioNodeWrapper(destinationNode), destinationNode_(destinationNode) {}
 #else
     public:
         explicit AudioDestinationNodeWrapper() {}
