@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.util.Log
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.PlaybackParameters
 import kotlinx.coroutines.*
@@ -46,6 +47,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   protected abstract fun generateSound();
 
   fun start(time: Double) {
+    Log.d("AudioScheduledSourceNode", "start, time: $time")
     coroutineScope.launch {
       mutex.withLock {
         if (audioJob?.isActive == true) return@launch
@@ -62,6 +64,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   }
 
   fun stop(time: Double) {
+    Log.d("AudioScheduledSourceNode", "stop, time: $time")
     coroutineScope.launch {
       mutex.withLock {
         launch {

@@ -7,6 +7,7 @@ import com.audiocontext.context.BaseAudioContext
 import com.facebook.jni.HybridData
 import java.util.Optional
 import java.util.PriorityQueue
+import kotlin.math.pow
 
 class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: Double, minValue: Double) {
   private var value: Double = defaultValue
@@ -42,18 +43,14 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
 
   @RequiresApi(Build.VERSION_CODES.N)
   fun getValueAtTime(time: Double): Double {
-    if(changeQueue.isNotEmpty()) {
-      if(!currentChange.isPresent || currentChange.get().endTime < time){ //when the current change is over or there is no current change
+    if (changeQueue.isNotEmpty()) {
+      if (!currentChange.isPresent || currentChange.get().endTime < time) { //when the current change is over or there is no current change
         currentChange = changeQueue.poll()?.let { Optional.of(it) }!!
-
-        if(currentChange.get().startTime >= time) {
-          this.value = currentChange.get().getValueAtTime(time)
-        }
-      } else { //when the current change is still active and the time is within the change
-        if(currentChange.get().startTime >= time) {
-          this.value = currentChange.get().getValueAtTime(time)
-        }
       }
+    }
+
+    if (currentChange.isPresent && currentChange.get().startTime <= time) {
+      this.value = currentChange.get().getValueAtTime(time)
     }
 
     return this.value
@@ -66,7 +63,9 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   @RequiresApi(Build.VERSION_CODES.N)
   fun setValueAtTime(value: Double, time: Double) {
     val endValue = checkValue(value)
-    val calculateValue = { _: Double, _: Double, _: Double, endValueF: Double, _: Double -> endValueF }
+    val calculateValue = { _: Double, _: Double, _: Double, endValueF: Double, _: Double ->
+      endValueF
+    }
     val paramChange = ParamChange(time, time, endValue, endValue, calculateValue)
     changeQueue.add(paramChange)
   }
@@ -82,9 +81,19 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
     changeQueue.add(paramChange)
   }
 
+  @RequiresApi(Build.VERSION_CODES.N)
+  fun exponentialRampToValueAtTime(value: Double, time: Double) {
+    val endValue = checkValue(value)
+    val calculateValue = { startTime: Double, endTime: Double, startValue: Double, endValueF: Double, timeF: Double ->
+      startValue * (endValueF / startValue).pow((timeF - startTime) / (endTime - startTime))
+    }
+
+    val paramChange = ParamChange(getStartTime(), time, getStartValue(), endValue, calculateValue)
+    changeQueue.add(paramChange)
+  }
+
   private fun checkValue(value: Double): Double {
     if(value > maxValue || value < minValue) {
-      Log.d("AudioParam", "Value out of range, setting to default value")
       return defaultValue
     }
     return value
