@@ -1,8 +1,8 @@
 #ifndef ANDROID
 #include "AudioNodeWrapper.h"
 
-namespace audiocontext {
-
+namespace audiocontext
+{
     void AudioNodeWrapper::connect(const std::shared_ptr<AudioNodeWrapper> &node) const {
         node_->connect(node->node_);
    }
@@ -10,5 +10,5 @@ namespace audiocontext {
     void AudioNodeWrapper::disconnect(const std::shared_ptr<AudioNodeWrapper> &node) const {
         node_->disconnect(node->node_);
     }
-}
+} // namespace audiocontext
 #endif

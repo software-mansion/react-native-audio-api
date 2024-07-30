@@ -10,5 +10,5 @@ namespace audiocontext
     void AudioParamWrapper::setValue(double value) {
         param_->setValue(value);
     }
-}
+} // namespace audiocontext
 #endif

@@ -1,8 +1,8 @@
 #ifndef ANDROID
 #include "AudioContextWrapper.h"
 
-namespace audiocontext {
-
+namespace audiocontext
+{
     std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
         return std::make_shared<OscillatorNodeWrapper>(audiocontext_);
     }
