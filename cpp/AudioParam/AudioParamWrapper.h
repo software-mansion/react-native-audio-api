@@ -31,5 +31,6 @@ namespace audiocontext {
         double getMaxValue() const;
         void setValueAtTime(double value, double startTime);
         void linearRampToValueAtTime(double value, double endTime);
+        void exponentialRampToValueAtTime(double value, double endTime);
     };
 } // namespace audiocontext

@@ -35,4 +35,8 @@ namespace audiocontext{
     void AudioParamWrapper::linearRampToValueAtTime(double value, double endTime) {
         param_->linearRampToValueAtTime(value, endTime);
     }
+
+    void AudioParamWrapper::exponentialRampToValueAtTime(double value, double endTime) {
+        param_->exponentialRampToValueAtTime(value, endTime);
+    }
 }

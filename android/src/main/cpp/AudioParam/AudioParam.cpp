@@ -38,4 +38,9 @@ namespace audiocontext {
         static const auto method = javaClassLocal()->getMethod<void(double, double)>("linearRampToValueAtTime");
         method(javaObject_.get(), value, endTime);
     }
+
+    void AudioParam::exponentialRampToValueAtTime(double value, double endTime) {
+        static const auto method = javaClassLocal()->getMethod<void(double, double)>("exponentialRampToValueAtTime");
+        method(javaObject_.get(), value, endTime);
+    }
 }

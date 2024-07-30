@@ -32,6 +32,7 @@ namespace audiocontext {
         double getMaxValue();
         void setValueAtTime(double value, double startTime);
         void linearRampToValueAtTime(double value, double endTime);
+        void exponentialRampToValueAtTime(double value, double endTime);
 
     protected:
         friend HybridBase;
