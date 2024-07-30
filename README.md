@@ -26,7 +26,7 @@ npm install react-native-audio-context
   - [x] createOscillator()
   - [x] createStereoPanner()
   - [ ] createBiquadFilter()
-  - [ ] getCurrentTime()
+  - [x] getCurrentTime()
   - [ ] close()
 
 - [x] AudioNode
