@@ -1,4 +1,4 @@
-package com.audiocontext.nodes
+package com.audiocontext.nodes.parameters
 
 import android.media.AudioTrack
 

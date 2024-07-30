@@ -14,29 +14,25 @@ namespace audiocontext {
         method(javaObject_.get(), time);
     }
 
-    double OscillatorNode::getFrequency() {
-        static const auto method = javaClassLocal()->getMethod<jdouble()>("getFrequency");
-        return method(javaObject_.get());
+    std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() {
+        static const auto method = javaClassLocal()->getMethod<AudioParam()>("getFrequency");
+        auto frquency = method(javaObject_.get());
+        auto frquencyCppInstance = frquency->cthis();
+
+        return std::shared_ptr<AudioParam>(frquencyCppInstance);
     }
 
-    double OscillatorNode::getDetune() {
-        static const auto method = javaClassLocal()->getMethod<jdouble()>("getDetune");
-        return method(javaObject_.get());
+    std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() {
+        static const auto method = javaClassLocal()->getMethod<AudioParam()>("getDetune");
+        auto detune = method(javaObject_.get());
+        auto detuneCppInstance = detune->cthis();
+
+        return std::shared_ptr<AudioParam>(detuneCppInstance);
     }
 
     std::string OscillatorNode::getWaveType() {
         static const auto method = javaClassLocal()->getMethod<JString()>("getWaveType");
         return method(javaObject_.get())->toStdString();
-    }
-
-    void OscillatorNode::setFrequency(double frequency) {
-        static const auto method = javaClassLocal()->getMethod<void(jdouble)>("setFrequency");
-        method(javaObject_.get(), frequency);
-    }
-
-    void OscillatorNode::setDetune(double detune) {
-        static const auto method = javaClassLocal()->getMethod<void(jdouble)>("setDetune");
-        method(javaObject_.get(), detune);
     }
 
     void OscillatorNode::setWaveType(const std::string& waveType) {

@@ -3,36 +3,36 @@
 
 namespace audiocontext {
 
-    double OscillatorNodeWrapper::getFrequency() {
-        return oscillator_->getFrequency();
+    OscillatorNodeWrapper::OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator) : AudioNodeWrapper(
+            oscillator), oscillatorNode_(oscillator) {
+        auto frequencyParam = oscillatorNode_->getFrequencyParam();
+        frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
+        auto detuneParam = oscillatorNode_->getDetuneParam();
+        detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
     }
 
-    double OscillatorNodeWrapper::getDetune() {
-        return oscillator_->getDetune();
+    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam() {
+        return frequencyParam_;
+    }
+
+    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getDetuneParam() {
+        return detuneParam_;
     }
 
     std::string OscillatorNodeWrapper::getType() {
-        return oscillator_->getWaveType();
+        return oscillatorNode_->getWaveType();
     }
 
     void OscillatorNodeWrapper::start(double time) {
-        oscillator_->start(time);
+        oscillatorNode_->start(time);
     }
 
     void OscillatorNodeWrapper::stop(double time) {
-        oscillator_->stop(time);
-    }
-
-    void OscillatorNodeWrapper::setFrequency(double frequency) {
-        oscillator_->setFrequency(frequency);
-    }
-
-    void OscillatorNodeWrapper::setDetune(double detune) {
-        oscillator_->setDetune(detune);
+        oscillatorNode_->stop(time);
     }
 
     void OscillatorNodeWrapper::setType(const std::string& type) {
-        oscillator_->setWaveType(type);
+        oscillatorNode_->setWaveType(type);
     }
 }
 #endif

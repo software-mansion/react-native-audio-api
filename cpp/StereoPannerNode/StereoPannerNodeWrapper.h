@@ -28,9 +28,9 @@ namespace audiocontext {
         public:
             explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif
-    private:
-        std::shared_ptr<AudioParamWrapper> panParam_;
-    public:
-        std::shared_ptr<AudioParamWrapper> getPanParam();
-    };
+        private:
+            std::shared_ptr<AudioParamWrapper> panParam_;
+        public:
+            std::shared_ptr<AudioParamWrapper> getPanParam();
+        };
 } // namespace audiocontext

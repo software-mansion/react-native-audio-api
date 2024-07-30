@@ -8,7 +8,8 @@ namespace audiocontext {
     }
 
     std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() {
-        throw std::runtime_error("[AudioContextHostObject::getDestination] Not yet implemented!");
+        // TODO: Add AudioDestinationNode implementation
+        return std::make_shared<AudioDestinationNodeWrapper>();
     }
 
     std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() {
