@@ -32,8 +32,8 @@ const App: React.FC = () => {
       audioContextRef.current = new AudioContext();
 
       oscillatorRef.current = audioContextRef.current.createOscillator();
-      oscillatorRef.current.frequency = INITIAL_FREQUENCY;
-      oscillatorRef.current.detune = INITIAL_DETUNE;
+      oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
+      oscillatorRef.current.detune.value = INITIAL_DETUNE;
       oscillatorRef.current.type = 'sine';
 
       gainRef.current = audioContextRef.current.createGain();
@@ -71,7 +71,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 440;
     setFrequency(newValue);
     if (oscillatorRef.current) {
-      oscillatorRef.current.frequency = newValue;
+      oscillatorRef.current.frequency.value = newValue;
     }
   };
 
@@ -79,7 +79,7 @@ const App: React.FC = () => {
     const newValue = value[0] || 0;
     setDetune(newValue);
     if (oscillatorRef.current) {
-      oscillatorRef.current.detune = newValue;
+      oscillatorRef.current.detune.value = newValue;
     }
   };
 

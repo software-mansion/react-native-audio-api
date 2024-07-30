@@ -4,6 +4,13 @@ namespace audiocontext
 {
   using namespace facebook;
 
+    OscillatorNodeHostObject::OscillatorNodeHostObject(const std::shared_ptr<OscillatorNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {
+        auto frequencyParam = wrapper->getFrequencyParam();
+        frequencyParam_ = AudioParamHostObject::createFromWrapper(frequencyParam);
+        auto detuneParam = wrapper->getDetuneParam();
+        detuneParam_ = AudioParamHostObject::createFromWrapper(detuneParam);
+    }
+
   std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(jsi::Runtime &runtime)
   {
     std::vector<jsi::PropNameID> propertyNames = AudioNodeHostObject::getPropertyNames(runtime);
@@ -12,8 +19,6 @@ namespace audiocontext
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "frequency"));
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "detune"));
     propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "type"));
-    propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "connect"));
-    propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "disconnect"));
     return propertyNames;
   }
 
@@ -43,14 +48,12 @@ namespace audiocontext
 
     if (propName == "frequency")
     {
-        auto frequency = wrapper_->getFrequency();
-        return jsi::Value(frequency);
+        return jsi::Object::createFromHostObject(runtime, frequencyParam_);
     }
 
     if (propName == "detune")
     {
-        auto detune = wrapper_->getDetune();
-        return jsi::Value(detune);
+        return jsi::Object::createFromHostObject(runtime, detuneParam_);
     }
 
     if (propName == "type")
@@ -66,21 +69,6 @@ namespace audiocontext
   {
     auto propName = propNameId.utf8(runtime);
 
-    if (propName == "frequency")
-    {
-        double frequency = value.getNumber();
-        wrapper_->setFrequency(frequency);
-        return;
-    }
-
-    if (propName == "detune")
-    {
-
-        double detune = value.getNumber();
-        wrapper_->setDetune(detune);
-        return;
-    }
-
     if (propName == "type")
     {
         std::string waveType = value.getString(runtime).utf8(runtime);
@@ -88,6 +76,6 @@ namespace audiocontext
         return;
     }
 
-    return AudioNodeHostObject::set(runtime, propNameId, value);
+    throw std::runtime_error("Not yet implemented!");
   }
 }

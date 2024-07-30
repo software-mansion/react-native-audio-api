@@ -7,7 +7,7 @@ typedef struct objc_object OscillatorNode;
 #endif // __OBJC__
 
 #include <string>
-#include <memory>
+#include "IOSAudioParam.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioContext.h"
 
@@ -17,12 +17,10 @@ namespace audiocontext {
             explicit IOSOscillator(std::shared_ptr<IOSAudioContext> context);
             void start() const;
             void stop() const;
-            void setFrequency(const float frequency) const;
-            float getFrequency() const;
-            void setDetune(const float detune) const;
-            float getDetune() const;
             void setType(const std::string &type) const;
             std::string getType() const;
+            std::shared_ptr<IOSAudioParam> getFrequencyParam();
+            std::shared_ptr<IOSAudioParam> getDetuneParam();
 
         protected:
             OscillatorNode *oscillatorNode_;

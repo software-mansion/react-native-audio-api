@@ -25,9 +25,9 @@ export interface AudioScheduledSourceNode extends AudioNode {
 type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 export interface Oscillator extends AudioScheduledSourceNode {
-  frequency: number;
+  frequency: AudioParam;
   type: WaveType;
-  detune: number;
+  detune: AudioParam;
 }
 
 export interface Gain extends AudioNode {

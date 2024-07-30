@@ -7,8 +7,8 @@
       return self;
     }
     
-    _frequency = 440;
-    _detune = 0;
+    _frequencyParam = [[AudioParam alloc] init:context value:440 minValue:0 maxValue:1600];
+    _detuneParam = [[AudioParam alloc] init:context value:0 minValue:-100 maxValue:100];
     _sampleRate = 44100;
     _waveType = WaveTypeSine;
     self.numberOfOutputs = 1;
@@ -47,12 +47,17 @@
     [self.playerNode stop];
 }
 
+- (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
+    [self setBuffer];
+    [super process:buffer playerNode:playerNode];
+}
+
 - (void)setBuffer {
     AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)_sampleRate;
     
     // Convert cents to HZ
-    double detuneRatio = pow(2.0, _detune / OCTAVE_IN_CENTS);
-    double detunedFrequency = detuneRatio * _frequency;
+    double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
+    double detunedFrequency = detuneRatio * [_frequencyParam getValue];
     double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / _sampleRate;
     double phase = 0.0;
     float *audioBufferPointer = _buffer.floatChannelData[0];
@@ -65,24 +70,6 @@
             phase -= FULL_CIRCLE_RADIANS;
         }
     }
-}
-
-- (void)setFrequency:(float)frequency {
-    _frequency = frequency;
-    [self setBuffer];
-}
-
-- (float)getFrequency {
-    return _frequency;
-}
-
-- (void)setDetune:(float)detune {
-    _detune = detune;
-    [self setBuffer];
-}
-
-- (float)getDetune {
-    return _detune;
 }
 
 - (void)setType:(NSString *)type {
