@@ -5,9 +5,10 @@ import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
 import com.audiocontext.nodes.AudioScheduledSourceNode
+import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
-  private var frequency: AudioParam = AudioParam(context, 440.0, 1200.0, 100.0)
+  private var frequency: AudioParam = AudioParam(context, 440.0, context.sampleRate/2.0, 0.0)
     get() = field
     set(value) {
       field = value
@@ -30,14 +31,17 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   @RequiresApi(Build.VERSION_CODES.N)
   override fun generateSound() {
     var wavePhase = 0.0
-    var phaseChange: Double
 
     while(isPlaying) {
-      phaseChange = 2 * Math.PI * (frequency.getValueAtTime(context.getCurrentTime()) + detune.getValueAtTime(context.getCurrentTime())) / context.sampleRate
-
       for(i in playbackParameters.buffer.indices) {
+        val computedFrequency = frequency.getValueAtTime(context.getCurrentTime()) * 2.0.pow(detune.getValueAtTime(context.getCurrentTime())/ 1200.0)
+        wavePhase += 2.0 * Math.PI * (computedFrequency / context.sampleRate)
+
+        if (wavePhase > 2.0 * Math.PI) {
+          wavePhase -= 2.0 * Math.PI
+        }
         playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
-        wavePhase += phaseChange
+
       }
       process(playbackParameters)
     }
