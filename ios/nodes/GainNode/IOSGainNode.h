@@ -6,6 +6,7 @@
 typedef struct objc_object GainNode;
 #endif // __OBJC__
 
+#include "IOSAudioParam.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioContext.h"
 
@@ -13,8 +14,7 @@ namespace audiocontext {
     class IOSGainNode : public IOSAudioNode {
         public:
             explicit IOSGainNode(std::shared_ptr<IOSAudioContext> context);
-            void setGain(const float gain) const;
-            float getGain() const;
+            std::shared_ptr<IOSAudioParam> getAudioParam();
 
         protected:
             GainNode *gainNode_;
