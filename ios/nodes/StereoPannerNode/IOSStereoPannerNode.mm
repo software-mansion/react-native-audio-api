@@ -7,11 +7,9 @@ namespace audiocontext {
         audioNode_ = panner_ = [[StereoPannerNode alloc] init:context->audioContext_];
     }
 
-    void IOSStereoPannerNode::setPan(const float pan) const {
-        [panner_ setPan:pan];
-    }
-
-    float IOSStereoPannerNode::getPan() const {
-        return [panner_ getPan];
+    std::shared_ptr<IOSAudioParam> IOSStereoPannerNode::getAudioParam() {
+        std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
+        param->audioParam = panner_.audioParam;
+        return param;
     }
 } // namespace audiocontext

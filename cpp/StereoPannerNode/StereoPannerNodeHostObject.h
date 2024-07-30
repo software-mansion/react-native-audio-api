@@ -3,6 +3,7 @@
 #include <jsi/jsi.h>
 #include "StereoPannerNodeWrapper.h"
 #include "AudioNodeHostObject.h"
+#include "AudioParamHostObject.h"
 
 namespace audiocontext {
     using namespace facebook;
@@ -12,9 +13,10 @@ namespace audiocontext {
     class StereoPannerNodeHostObject : public AudioNodeHostObject {
     protected:
         std::shared_ptr<StereoPannerNodeWrapper> wrapper_;
+        std::shared_ptr<AudioParamHostObject> panParam_;
 
     public:
-        explicit StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {}
+        explicit StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNodeWrapper> &wrapper);
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
         void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;

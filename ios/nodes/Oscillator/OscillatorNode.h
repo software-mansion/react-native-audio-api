@@ -5,6 +5,7 @@
 #import "AudioScheduledSourceNode.h"
 #import "WaveType.h"
 #import "AudioContext.h"
+#import "AudioParam.h"
 
 static const double OCTAVE_IN_CENTS = 12 * 100;
 
@@ -13,9 +14,9 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 @property (nonatomic, strong) AVAudioPlayerNode *playerNode;
 @property (nonatomic, strong) AVAudioPCMBuffer *buffer;
 @property (nonatomic, strong) AVAudioFormat *format;
+@property (nonatomic, strong) AudioParam *frequencyParam;
+@property (nonatomic, strong) AudioParam *detuneParam;
 @property (nonatomic, assign) WaveTypeEnum waveType;
-@property (nonatomic, assign) float frequency;
-@property (nonatomic, assign) float detune;
 @property (nonatomic, assign) double sampleRate;
 
 - (instancetype)init:(AudioContext *)context;
@@ -23,14 +24,6 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 - (void)start;
 
 - (void)stop;
-
-- (void)setFrequency:(float)frequency;
-
-- (float)getFrequency;
-
-- (void)setDetune:(float)detune;
-
-- (float)getDetune;
 
 - (void)setType:(NSString *)type;
 

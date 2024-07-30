@@ -30,7 +30,6 @@ namespace audiocontext {
 
     protected:
         friend HybridBase;
-        friend class AudioNode;
 
         global_ref<AudioNode::javaobject> javaObject_;
 

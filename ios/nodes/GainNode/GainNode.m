@@ -5,7 +5,7 @@
 
 - (instancetype)init:(AudioContext *)context {
     if (self = [super init:context]) {
-        _gain = 0.5;
+        _audioParam = [[AudioParam alloc] init:context value:0.5 minValue:0 maxValue:1];
         self.numberOfInputs = 1;
         self.numberOfOutputs = 1;
     }
@@ -14,7 +14,7 @@
 }
 
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
-    playerNode.volume = _gain;
+    playerNode.volume = [_audioParam getValue];
 
     [super process:buffer playerNode:playerNode];
 }
@@ -31,15 +31,6 @@
         // Continue searching for disconnected node
         [super deprocess:buffer playerNode:playerNode nodeToDeprocess:node];
     }
-}
-
-- (void)setGain:(float)gain {
-    _gain = gain;
-    [self.context processNodes];
-}
-
-- (float)getGain {
-    return _gain;
 }
 
 @end

@@ -6,6 +6,7 @@
 typedef struct objc_object StereoPannerNode;
 #endif // __OBJC__
 
+#include "IOSAudioParam.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioContext.h"
 
@@ -13,8 +14,7 @@ namespace audiocontext {
     class IOSStereoPannerNode : public IOSAudioNode {
         public:
             explicit IOSStereoPannerNode(std::shared_ptr<IOSAudioContext> context);
-            void setPan(const float pan) const;
-            float getPan() const;
+            std::shared_ptr<IOSAudioParam> getAudioParam();
 
         protected:
             StereoPannerNode *panner_;

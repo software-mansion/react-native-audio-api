@@ -2,9 +2,8 @@
 
 #include <jsi/jsi.h>
 #include "OscillatorNodeWrapper.h"
-#include "AudioDestinationNodeHostObject.h"
-#include "GainNodeHostObject.h"
 #include "AudioNodeHostObject.h"
+#include "AudioParamHostObject.h"
 
 namespace audiocontext {
     using namespace facebook;
@@ -12,11 +11,13 @@ namespace audiocontext {
     class OscillatorNodeWrapper;
 
     class OscillatorNodeHostObject : public AudioNodeHostObject {
-    private:
+    protected:
         std::shared_ptr<OscillatorNodeWrapper> wrapper_;
+        std::shared_ptr<AudioParamHostObject> frequencyParam_;
+        std::shared_ptr<AudioParamHostObject> detuneParam_;
 
     public:
-        explicit OscillatorNodeHostObject(const std::shared_ptr<OscillatorNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {}
+        explicit OscillatorNodeHostObject(const std::shared_ptr<OscillatorNodeWrapper> &wrapper);
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
         void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;

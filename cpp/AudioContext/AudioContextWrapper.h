@@ -25,23 +25,25 @@ namespace audiocontext {
 #endif
 
     class AudioContextWrapper {
-    private:
 #ifdef ANDROID
-        std::shared_ptr<AudioContext> audiocontext_;
+        private:
+            std::shared_ptr<AudioContext> audiocontext_;
+        
+        public:
+            explicit AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext);
 #else
-        std::shared_ptr<IOSAudioContext> audiocontext_;
+        private:
+            std::shared_ptr<IOSAudioContext> audiocontext_;
+        public:
+            explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
 
-    public:
-#ifdef ANDROID
-        explicit AudioContextWrapper(
-                const std::shared_ptr<AudioContext> &audiocontext) : audiocontext_(audiocontext) {}
-#else
-        explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
-#endif
-        std::shared_ptr<OscillatorNodeWrapper> createOscillator();
-        std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
-        std::shared_ptr<GainNodeWrapper> createGain();
-        std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
+        private:
+            std::shared_ptr<AudioDestinationNodeWrapper> destinationNode_;
+        public:
+            std::shared_ptr<OscillatorNodeWrapper> createOscillator();
+            std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
+            std::shared_ptr<GainNodeWrapper> createGain();
+            std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
     };
 } // namespace audiocontext

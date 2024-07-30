@@ -3,6 +3,11 @@
 namespace audiocontext {
     using namespace facebook;
 
+    AudioContextHostObject::AudioContextHostObject(const std::shared_ptr<AudioContextWrapper>& wrapper) : wrapper_(wrapper) {
+        auto destinationNodeWrapper = wrapper_->getDestination();
+        destinationNode_ = AudioDestinationNodeHostObject::createFromWrapper(destinationNodeWrapper);
+    }
+
     std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(jsi::Runtime& runtime) {
         std::vector<jsi::PropNameID> propertyNames;
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "destination"));
@@ -24,9 +29,7 @@ namespace audiocontext {
         }
 
         if (propName == "destination") {
-            auto destination = wrapper_->getDestination();
-            auto destinationHostObject = AudioDestinationNodeHostObject::createFromWrapper(destination);
-            return jsi::Object::createFromHostObject(runtime, destinationHostObject);
+            return jsi::Object::createFromHostObject(runtime, destinationNode_);
         }
 
         if (propName == "createGain") {
