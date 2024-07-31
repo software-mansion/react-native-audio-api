@@ -16,7 +16,7 @@ export class Kick implements SoundEngine {
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
-    this.tone = 167;
+    this.tone = 125;
     this.decay = 0.5;
     this.volume = 1;
     this.gain = this.audioContext.createGain();
@@ -26,16 +26,7 @@ export class Kick implements SoundEngine {
     this.gain.connect(this.audioContext.destination);
   }
 
-  // setup() {
-  //   this.gain = this.audioContext.createGain();
-  //   this.oscillator = this.audioContext.createOscillator();
-  //   this.oscillator.connect(this.gain);
-  //   this.gain.connect(this.audioContext.destination);
-  // }
-
   play(time: number) {
-    //this.setup();
-
     this.oscillator.frequency.setValueAtTime(this.tone, time);
     this.oscillator.frequency.exponentialRampToValueAtTime(
       0.01,
