@@ -1,3 +1,4 @@
+#ifdef ANDROID
 #include "GainNodeWrapper.h"
 
 namespace audiocontext {
@@ -12,3 +13,4 @@ namespace audiocontext {
         return gainParam_;
     }
 } // namespace audiocontext
+#endif

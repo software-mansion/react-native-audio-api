@@ -9,7 +9,6 @@
 #endif
 
 namespace audiocontext {
-    using namespace facebook;
 
 #ifdef ANDROID
     class GainNode;

@@ -1,3 +1,4 @@
+#ifdef ANDROID
 #include "StereoPannerNodeWrapper.h"
 
 namespace audiocontext {
@@ -12,3 +13,4 @@ namespace audiocontext {
         return panParam_;
     }
 } // namespace audiocontext
+#endif

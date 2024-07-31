@@ -9,7 +9,6 @@
 #endif
 
 namespace audiocontext {
-    using namespace facebook;
 
 #ifdef ANDROID
     class StereoPannerNode;
@@ -23,7 +22,7 @@ namespace audiocontext {
         explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
         public:
-        explicit PannerNodeWrapper() {}
+        explicit StereoPannerNodeWrapper() {}
 #endif
     private:
         std::shared_ptr<AudioParamWrapper> panParam_;
