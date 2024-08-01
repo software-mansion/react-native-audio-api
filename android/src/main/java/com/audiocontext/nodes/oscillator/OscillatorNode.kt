@@ -50,8 +50,11 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   }
 
   fun finalize(){
-    playbackParameters.audioTrack.stop()
-    playbackParameters.audioTrack.release()
-    Log.d("OscillatorNode", "OscillatorNode finalized")
+    try {
+      playbackParameters.audioTrack.stop()
+      playbackParameters.audioTrack.release()
+    } catch (e: Exception) {
+      Log.e("OscillatorNode", "Error while finalizing OscillatorNode", e)
+    }
   }
 }

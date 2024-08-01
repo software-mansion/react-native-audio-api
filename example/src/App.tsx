@@ -112,6 +112,12 @@ const App: React.FC = () => {
     kickRef.current.play(audioContextRef.current.getCurrentTime());
   };
 
+  useEffect(() => {
+    return () => {
+      oscillatorRef.current?.stop(0);
+    };
+  }, []);
+
   return (
     <View style={styles.mainContainer}>
       <Text style={styles.title}>React Native Oscillator</Text>

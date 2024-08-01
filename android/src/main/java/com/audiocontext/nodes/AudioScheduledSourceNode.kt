@@ -17,9 +17,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   protected var playbackParameters: PlaybackParameters
   @Volatile protected var isPlaying: Boolean = false
 
-  private val coroutineScope = CoroutineScope(Dispatchers.Default)
-  private val mutex = Mutex()
-  private var audioJob: Job? = null
+  private var playbackThread: Thread? = null;
 
   init {
     val bufferSize = AudioTrack.getMinBufferSize(
@@ -46,33 +44,38 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   protected abstract fun generateSound();
 
   fun start(time: Double) {
-    coroutineScope.launch {
-      mutex.withLock {
-        if (audioJob?.isActive == true) return@launch
-        audioJob = launch {
-          while (context.getCurrentTime() < time) {
-            delay(1)
-          }
-          isPlaying = true
-          playbackParameters.audioTrack.play()
-          generateSound()
-        }
+//    coroutineScope.launch {
+//      mutex.withLock {
+//        if (audioJob?.isActive == true) return@launch
+//        audioJob = launch {
+//          while (context.getCurrentTime() < time) {
+//            delay(1)
+//          }
+//          isPlaying = true
+//          playbackParameters.audioTrack.play()
+//          generateSound()
+//        }
+//      }
+//    }
+    playbackThread = Thread {
+      while (context.getCurrentTime() < time) {
+        Thread.sleep(1)
       }
+      isPlaying = true
+      playbackParameters.audioTrack.play()
+      generateSound()
     }
+    playbackThread?.start()
   }
 
   fun stop(time: Double) {
-    coroutineScope.launch {
-      mutex.withLock {
-        launch {
-          while (context.getCurrentTime() < time) {
-            delay(1)
-          }
-          isPlaying = false
-          playbackParameters.audioTrack.stop()
-          audioJob?.cancel()
-        }
+    Thread {
+      while (context.getCurrentTime() < time) {
+        Thread.sleep(1)
       }
-    }
+      isPlaying = false
+      playbackParameters.audioTrack.stop()
+      playbackThread?.interrupt()
+    }.start()
   }
 }
