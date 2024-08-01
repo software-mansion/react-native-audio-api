@@ -12,7 +12,6 @@ namespace audiocontext {
 
     class GainNodeHostObject : public AudioNodeHostObject {
     protected:
-        std::shared_ptr<GainNodeWrapper> wrapper_;
         std::shared_ptr<AudioParamHostObject> gainParam_;
 
     public:

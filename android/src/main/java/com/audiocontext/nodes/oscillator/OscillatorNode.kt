@@ -1,6 +1,7 @@
 package com.audiocontext.nodes.oscillator
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
@@ -46,5 +47,11 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       process(playbackParameters)
     }
     playbackParameters.audioTrack.flush()
+  }
+
+  fun finalize(){
+    playbackParameters.audioTrack.stop()
+    playbackParameters.audioTrack.release()
+    Log.d("OscillatorNode", "OscillatorNode finalized")
   }
 }

@@ -4,7 +4,7 @@ namespace audiocontext
 {
     using namespace facebook;
 
-    GainNodeHostObject::GainNodeHostObject(const std::shared_ptr<GainNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {
+    GainNodeHostObject::GainNodeHostObject(const std::shared_ptr<GainNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper) {
         auto gainParamWrapper = wrapper->getGainParam();
         gainParam_ = AudioParamHostObject::createFromWrapper(gainParamWrapper);
     }

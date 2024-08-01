@@ -4,7 +4,7 @@ namespace audiocontext
 {
   using namespace facebook;
 
-    OscillatorNodeHostObject::OscillatorNodeHostObject(const std::shared_ptr<OscillatorNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {
+    OscillatorNodeHostObject::OscillatorNodeHostObject(const std::shared_ptr<OscillatorNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper) {
         auto frequencyParam = wrapper->getFrequencyParam();
         frequencyParam_ = AudioParamHostObject::createFromWrapper(frequencyParam);
         auto detuneParam = wrapper->getDetuneParam();
@@ -31,7 +31,8 @@ namespace audiocontext
         return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
         {
             auto time = args[0].getNumber();
-            wrapper_->start(time);
+            auto wrapper = std::static_pointer_cast<OscillatorNodeWrapper>(wrapper_);
+            wrapper->start(time);
             return jsi::Value::undefined();
         });
     }
@@ -41,7 +42,8 @@ namespace audiocontext
         return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime &rt, const jsi::Value &thisValue, const jsi::Value *args, size_t count) -> jsi::Value
         {
             auto time = args[0].getNumber();
-            wrapper_->stop(time);
+            auto wrapper = std::static_pointer_cast<OscillatorNodeWrapper>(wrapper_);
+            wrapper->stop(time);
             return jsi::Value::undefined();
         });
     }
@@ -58,7 +60,8 @@ namespace audiocontext
 
     if (propName == "type")
     {
-        auto waveType = wrapper_->getType();
+        auto wrapper = std::static_pointer_cast<OscillatorNodeWrapper>(wrapper_);
+        auto waveType = wrapper->getType();
         return jsi::String::createFromUtf8(runtime, waveType);
     }
 
@@ -72,7 +75,8 @@ namespace audiocontext
     if (propName == "type")
     {
         std::string waveType = value.getString(runtime).utf8(runtime);
-        wrapper_->setType(waveType);
+        auto wrapper = std::static_pointer_cast<OscillatorNodeWrapper>(wrapper_);
+        wrapper->setType(waveType);
         return;
     }
 

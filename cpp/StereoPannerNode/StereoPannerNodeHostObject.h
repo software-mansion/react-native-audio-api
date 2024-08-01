@@ -12,7 +12,6 @@ namespace audiocontext {
 
     class StereoPannerNodeHostObject : public AudioNodeHostObject {
     protected:
-        std::shared_ptr<StereoPannerNodeWrapper> wrapper_;
         std::shared_ptr<AudioParamHostObject> panParam_;
 
     public:
