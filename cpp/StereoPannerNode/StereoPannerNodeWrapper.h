@@ -16,8 +16,6 @@ namespace audiocontext {
 
     class StereoPannerNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-    private:
-        std::shared_ptr<StereoPannerNode> pannerNode_;
     public:
         explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
