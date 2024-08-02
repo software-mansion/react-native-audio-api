@@ -40,5 +40,9 @@ namespace audiocontext {
     double AudioContextWrapper::getCurrentTime() {
         return audiocontext_->getCurrentTime();
     }
+
+    void AudioContextWrapper::close() {
+        audiocontext_->close();
+    }
 } // namespace audiocontext
 #endif

@@ -48,6 +48,7 @@ namespace audiocontext
     std::string getState();
     int getSampleRate();
     double getCurrentTime();
+    void close();
 
     void install(jlong jsContext);
 

@@ -66,4 +66,10 @@ namespace audiocontext
         static const auto method = javaClassLocal()->getMethod<jdouble()>("getCurrentTime");
         return method(javaObject_.get());
     }
+
+    void AudioContext::close()
+    {
+        static const auto method = javaClassLocal()->getMethod<void()>("close");
+        method(javaObject_.get());
+    }
 } // namespace audiocontext
