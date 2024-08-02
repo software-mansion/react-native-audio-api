@@ -1,4 +1,4 @@
-#import <Foundation/Foundation.h>
+#pragma once
 
 static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
 

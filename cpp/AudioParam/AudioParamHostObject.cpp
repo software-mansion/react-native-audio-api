@@ -18,8 +18,20 @@ namespace audiocontext {
     jsi::Value AudioParamHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID& propNameId) {
         auto propName = propNameId.utf8(runtime);
 
-        if(propName == "value") {
+        if (propName == "value") {
             return jsi::Value(wrapper_->getValue());
+        }
+        
+        if (propName == "defaultValue") {
+            return jsi::Value(wrapper_->getDefaultValue());
+        }
+
+        if (propName == "minValue") {
+            return jsi::Value(wrapper_->getMinValue());
+        }
+
+        if (propName == "maxValue") {
+            return jsi::Value(wrapper_->getMaxValue());
         }
 
         if(propName == "defaultValue") {

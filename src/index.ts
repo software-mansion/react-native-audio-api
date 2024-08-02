@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 const { AudioContextModule } = NativeModules;
 import type {
   BaseAudioContext,
@@ -13,20 +13,23 @@ import { installACModule } from './utils/install';
 installACModule();
 
 export class AudioContext implements BaseAudioContext {
-  readonly destination: AudioDestinationNode;
+  readonly destination: AudioDestinationNode | null;
   readonly state: ContextState;
   readonly sampleRate: number;
 
   constructor() {
-    if (global.__AudioContext == null) {
+    this.destination = null;
+
+    if (Platform.OS === 'android') {
       AudioContextModule.installAudioContext();
+      this.destination = global.__AudioContext.destination;
     }
-    this.destination = global.__AudioContext.destination;
+
     this.state = global.__AudioContext.state;
     this.sampleRate = global.__AudioContext.sampleRate;
   }
 
-  getCurrentTime(): number {
+  public get currentTime() {
     return global.__AudioContext.currentTime;
   }
 
