@@ -152,10 +152,6 @@ const App: React.FC = () => {
           step={1}
         />
       </View>
-      <Button
-        title="State"
-        onPress={() => console.log(oscillatorRef.current?.context.currentTime)}
-      />
     </View>
   );
 };

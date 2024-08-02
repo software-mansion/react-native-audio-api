@@ -18,7 +18,7 @@ namespace audiocontext {
 #else
         public:
             std::shared_ptr<IOSAudioNode> node_;
-            explicit AudioNodeWrapper() {};
+            explicit AudioNodeWrapper() {}
 #endif
         public:
             int getNumberOfInputs() const;

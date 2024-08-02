@@ -12,10 +12,10 @@ typedef struct objc_object AudioContext;
 namespace audiocontext {
 	class IOSAudioContext {
 		public:
-			explicit IOSAudioContext();
+            explicit IOSAudioContext();
             double getCurrentTime();
             std::string getState();
             double getSampleRate();
-			AudioContext *audioContext_;
+            AudioContext *audioContext_;
 	};
 } // namespace audiocontext
