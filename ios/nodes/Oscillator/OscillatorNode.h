@@ -17,7 +17,6 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 @property (nonatomic, strong) AudioParam *frequencyParam;
 @property (nonatomic, strong) AudioParam *detuneParam;
 @property (nonatomic, assign) WaveTypeEnum waveType;
-@property (nonatomic, assign) double sampleRate;
 
 - (instancetype)init:(AudioContext *)context;
 

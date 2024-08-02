@@ -11,6 +11,9 @@ namespace audiocontext {
         public:
             void setValue(float value);
             float getValue();
+            float getMinValue();
+            float getMaxValue();
+            float getDefaultValue();
             AudioParam *audioParam;
     };
 } // namespace audiocontext

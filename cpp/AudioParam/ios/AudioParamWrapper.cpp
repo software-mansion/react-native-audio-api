@@ -10,5 +10,18 @@ namespace audiocontext
     void AudioParamWrapper::setValue(double value) {
         param_->setValue(value);
     }
+
+    double AudioParamWrapper::getMaxValue() const {
+        return param_->getMaxValue();
+    }
+
+    double AudioParamWrapper::getMinValue() const {
+        return param_->getMinValue();
+    }
+
+    double AudioParamWrapper::getDefaultValue() const {
+        return param_->getDefaultValue();
+    }
 } // namespace audiocontext
 #endif
+

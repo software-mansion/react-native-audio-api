@@ -7,8 +7,8 @@
 
 @interface AudioNode : NSObject
 
-@property (nonatomic, assign) NSInteger numberOfInputs;
-@property (nonatomic, assign) NSInteger numberOfOutputs;
+@property (nonatomic, assign) int numberOfInputs;
+@property (nonatomic, assign) int numberOfOutputs;
 @property (nonatomic, strong) NSMutableArray<AudioNode *> *connectedNodes;
 @property (nonatomic, strong) AudioContext *context;
 
@@ -17,5 +17,7 @@
 - (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
+- (int)getNumberOfInputs;
+- (int)getNumberOfOutputs;
 
 @end

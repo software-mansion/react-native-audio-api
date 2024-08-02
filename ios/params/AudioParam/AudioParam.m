@@ -6,6 +6,7 @@
 - (instancetype)init:(AudioContext *)context value:(float)value minValue:(float)minValue maxValue:(float)maxValue {
     if (self = [super init]) {
         _value = value;
+        _defaultValue = value;
         _minValue = minValue;
         _maxValue = maxValue;
         _context = context;
@@ -26,6 +27,18 @@
 
 - (float)getValue {
     return _value;
+}
+
+- (float)getMinValue {
+    return _minValue;
+}
+
+- (float)getMaxValue {
+    return _maxValue;
+}
+
+- (float)getDefaultValue {
+    return _defaultValue;
 }
 
 @end

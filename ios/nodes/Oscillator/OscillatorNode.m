@@ -9,15 +9,15 @@
     
     _frequencyParam = [[AudioParam alloc] init:context value:440 minValue:0 maxValue:1600];
     _detuneParam = [[AudioParam alloc] init:context value:0 minValue:-100 maxValue:100];
-    _sampleRate = 44100;
     _waveType = WaveTypeSine;
     self.numberOfOutputs = 1;
+    self.numberOfInputs = 0;
 
     _playerNode = [[AVAudioPlayerNode alloc] init];
     _playerNode.volume = 0.5;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:1];
-    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.sampleRate;
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.context.sampleRate channels:1];
+    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.context.sampleRate;
     _buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format frameCapacity:bufferFrameCapacity];
     _buffer.frameLength = bufferFrameCapacity;
 
@@ -53,12 +53,12 @@
 }
 
 - (void)setBuffer {
-    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)_sampleRate;
+    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.context.sampleRate;
     
     // Convert cents to HZ
     double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
-    double detunedFrequency = detuneRatio * [_frequencyParam getValue];
-    double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / _sampleRate;
+    double detunedFrequency = round(detuneRatio * [_frequencyParam getValue]);
+    double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.context.sampleRate;
     double phase = 0.0;
     float *audioBufferPointer = _buffer.floatChannelData[0];
 

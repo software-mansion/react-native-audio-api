@@ -19,5 +19,17 @@ namespace audiocontext
     std::shared_ptr<StereoPannerNodeWrapper> AudioContextWrapper::createStereoPanner() {
         return std::make_shared<StereoPannerNodeWrapper>(audiocontext_);
     }
+
+    double AudioContextWrapper::getCurrentTime() {
+        return audiocontext_->getCurrentTime();
+    }
+
+    std::string AudioContextWrapper::getState() {
+        return audiocontext_->getState();
+    }
+
+    double AudioContextWrapper::getSampleRate() {
+        return audiocontext_->getSampleRate();
+    }
 } // namespace audiocontext
 #endif

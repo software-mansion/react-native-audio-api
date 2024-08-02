@@ -18,9 +18,11 @@ namespace audiocontext {
 #else
         public:
             std::shared_ptr<IOSAudioNode> node_;
-            explicit AudioNodeWrapper() {}
+            explicit AudioNodeWrapper() {};
 #endif
         public:
+            int getNumberOfInputs() const;
+            int getNumberOfOutputs() const;
             void connect(const std::shared_ptr<AudioNodeWrapper> &node) const;
             void disconnect(const std::shared_ptr<AudioNodeWrapper> &node) const;
     };

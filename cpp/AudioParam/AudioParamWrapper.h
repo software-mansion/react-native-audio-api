@@ -19,12 +19,13 @@ namespace audiocontext {
         protected:
             std::shared_ptr<IOSAudioParam> param_;
         public:
-            explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param) {
-                param_ = param;
-            }
+            explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param) : param_(param) {}
 #endif
         public:
             double getValue();
             void setValue(double value);
+            double getDefaultValue() const;
+            double getMinValue() const;
+            double getMaxValue() const;
     };
 } // namespace audiocontext

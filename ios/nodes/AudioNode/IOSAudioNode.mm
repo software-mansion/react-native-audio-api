@@ -8,4 +8,12 @@ namespace audiocontext {
     void IOSAudioNode::disconnect(std::shared_ptr<IOSAudioNode> node) {
         [audioNode_ disconnect:(node->audioNode_)];
     }
+
+    int IOSAudioNode::getNumberOfInputs() {
+        return [audioNode_ getNumberOfInputs];
+    }
+
+    int IOSAudioNode::getNumberOfOutputs() {
+        return [audioNode_ getNumberOfOutputs];
+    }
 } // namespace audiocontext

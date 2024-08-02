@@ -45,5 +45,8 @@ namespace audiocontext {
             std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
             std::shared_ptr<GainNodeWrapper> createGain();
             std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
+            std::string getState();
+            double getSampleRate();
+            double getCurrentTime();
     };
 } // namespace audiocontext

@@ -10,4 +10,16 @@ namespace audiocontext {
         return [audioParam getValue];
     }
 
+    float IOSAudioParam::getMinValue() {
+        return [audioParam getMinValue];
+    }
+
+    float IOSAudioParam::getMaxValue() {
+        return [audioParam getMaxValue];
+    }
+
+    float IOSAudioParam::getDefaultValue() {
+        return [audioParam getDefaultValue];
+    }
+
 } // namespace audiocontext

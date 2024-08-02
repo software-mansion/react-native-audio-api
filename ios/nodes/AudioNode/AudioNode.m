@@ -61,4 +61,12 @@
     return false;
 }
 
+- (int)getNumberOfInputs {
+    return _numberOfInputs;
+}
+
+- (int)getNumberOfOutputs {
+    return _numberOfOutputs;
+}
+
 @end

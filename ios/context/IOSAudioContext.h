@@ -6,12 +6,16 @@
 typedef struct objc_object AudioContext;
 #endif // __OBJC__
 
+#include <string>
 #include "IOSAudioContext.h"
 
 namespace audiocontext {
 	class IOSAudioContext {
 		public:
 			explicit IOSAudioContext();
+            double getCurrentTime();
+            std::string getState();
+            double getSampleRate();
 			AudioContext *audioContext_;
 	};
 } // namespace audiocontext
