@@ -25,7 +25,7 @@ npm install react-native-audio-context
 | 🔘 createOscillator   | ✅  | ✅      |
 | 🔘 createStereoPanner | ✅  | ✅      |
 | 🔘 createBiquadFilter | ⏳  | ⏳      |
-| 🔘 close              | ⏳  | ⏳      |
+| 🔘 close              | ⏳  | ✅      |
 
 </details>
 
