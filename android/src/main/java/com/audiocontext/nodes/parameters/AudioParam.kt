@@ -43,7 +43,8 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   @RequiresApi(Build.VERSION_CODES.N)
   fun getValueAtTime(time: Double): Double {
     if (changeQueue.isNotEmpty()) {
-      if (!currentChange.isPresent || currentChange.get().endTime < time) { //when the current change is over or there is no current change
+      //when the current change is over or there is no current change
+      if (!currentChange.isPresent || currentChange.get().endTime < time) {
         currentChange = changeQueue.poll()?.let { Optional.of(it) }!!
       }
     }

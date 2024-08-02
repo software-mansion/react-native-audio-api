@@ -8,6 +8,7 @@ import com.audiocontext.nodes.AudioScheduledSourceNode
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
+  //https://webaudio.github.io/web-audio-api/#--nyquist-frequency
   private var frequency: AudioParam = AudioParam(context, 440.0, context.sampleRate/2.0, 0.0)
     get() = field
     set(value) {
