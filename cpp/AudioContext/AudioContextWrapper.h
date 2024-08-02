@@ -37,16 +37,17 @@ namespace audiocontext {
         public:
             explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
-
-        private:
-            std::shared_ptr<AudioDestinationNodeWrapper> destinationNode_;
-        public:
-            std::shared_ptr<OscillatorNodeWrapper> createOscillator();
-            std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
-            std::shared_ptr<GainNodeWrapper> createGain();
-            std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
-            std::string getState();
-            double getSampleRate();
-            double getCurrentTime();
+    private:
+        std::shared_ptr<AudioDestinationNodeWrapper> destinationNode_;
+        std::string state_;
+        int sampleRate_;
+    public:
+        std::shared_ptr<OscillatorNodeWrapper> createOscillator();
+        std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
+        std::shared_ptr<GainNodeWrapper> createGain();
+        std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
+        std::string getState();
+        int getSampleRate();
+        double getCurrentTime();
     };
 } // namespace audiocontext

@@ -33,13 +33,13 @@ The `AudioContext` interface is the underlying audio context that manages the st
 &ensp;**`destination`**<br>
 &ensp;&ensp;&ensp;*Returns an `AudioDestinationNode` representing final destination of all audio in the context.*
 
-&ensp;**`sampleRate`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`sampleRate`**<br>
 &ensp;&ensp;&ensp;*Returns a floating point number representing sample rate, in samples per second used by all nodes in this audio context*
 
-&ensp;**`currentTime`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`currentTime`**<br>
 &ensp;&ensp;&ensp;*Returns a floating point number representing an ever-increasing hardware time in seconds. It starts at 0.*
 
-&ensp;**`state`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`state`**<br>
 &ensp;&ensp;&ensp;*Returns a current state of this audio context. There are two states: running and closed.*
 
 #### Methods
@@ -53,10 +53,13 @@ The `AudioContext` interface is the underlying audio context that manages the st
 &ensp;**`createStereoPannerNode()`**<br>
 &ensp;&ensp;&ensp;*Returns and creates `StereoPannerNodeNode`.*
 
-&ensp;**`createBiquadFilter()`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`createBiquadFilter()`**<br>
 &ensp;&ensp;&ensp;*Returns and creates `BiquadFilterNode`.*
 
-&ensp;**`close()`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`getCurrentTime()`**<br>
+&ensp;&ensp;&ensp;*Returns a floating point number representing an ever-increasing hardware time in seconds. It starts at 0.*
+
+&ensp;**`close()`**<br>
 &ensp;&ensp;&ensp;*Closes audio context, releasing any system resources that it uses.*
 
 #### Code snippets
@@ -79,13 +82,13 @@ The `AudioNode` interface is the generic interface for all audio nodes in the au
 
 #### Properties
 
-&ensp;**`context`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`context`**<br>
 &ensp;&ensp;&ensp;*Returns the `AudioContext` associated with this node.*
 
-&ensp;**`numberOfInputs`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`numberOfInputs`**<br>
 &ensp;&ensp;&ensp;*Returns the number of inputs feeding the node. Source nodes are defined as nodes having value 0 for this property*
 
-&ensp;**`numberOfOutputs`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`numberOfOutputs`**<br>
 &ensp;&ensp;&ensp;*Returns the number of outputs coming out of the node. Destination nodes are defined as nodes having value 0 for this property*
 
 #### Methods
@@ -161,24 +164,24 @@ The `AudioParam` interface represents audio parameters that can be time-modulate
 &ensp;**`value`**<br>
 &ensp;&ensp;&ensp;*Returns the current value of this parameter. Initially set to defaultValue.*
 
-&ensp;**`defaultValue`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`defaultValue`**<br>
 &ensp;&ensp;&ensp;*Returns the initial value of this parameter.*
 
-&ensp;**`minValue`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`minValue`**<br>
 &ensp;&ensp;&ensp;*Returns the minimum value of this parameter*
 
-&ensp;**`maxValue`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`maxValue`**<br>
 &ensp;&ensp;&ensp;*Returns the maximum value of this parameter*
 
 #### Methods
 
-&ensp;**`setValueAtTime(value: number, startTime: number)`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`setValueAtTime(value: number, startTime: number)`**<br>
 &ensp;&ensp;&ensp;*Sets the parameter `value` at the specified time given by `startTime`.*
 
-&ensp;**`linearRampToValueAtTime(value: number, endTime: number)`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`linearRampToValueAtTime(value: number, endTime: number)`**<br>
 &ensp;&ensp;&ensp;*Schedules a gradual linear change in the value. New `value` will be reached in the `endTime`.*
 
-&ensp;**`exponentialRampToValueAtTime(value: number, endTime: number)`**:exclamation: not yet implemented :exclamation:<br>
+&ensp;**`exponentialRampToValueAtTime(value: number, endTime: number)`**<br>
 &ensp;&ensp;&ensp;*Schedules a gradual exponential change in the value. New `value` will be reached in the `endTime`.*
 
 #### Code snippets
@@ -269,21 +272,36 @@ panner.pan.value = -0.5;
 
 ---
 
-### BiquadFilterNode
+### BiquadFilterNode 
 
 The `BiquadFilterNode` interface represents a simple low-order filter. It can represent different kinds of filters, tone control devices, and graphic equalizers
 
-#### Creation
+#### Constructor
 
 &ensp;**`AudioContext.createBiquadFilter()`**<br>
 &ensp;&ensp;&ensp;*Returns and creates `BiquadFilterNode` instance in given `AudioContext`.*
 
 #### Properties
 
-:exclamation: not yet implemented :exclamation:
+&ensp;**`frequency`**<br>
+&ensp;&ensp;&ensp;*Returns `AudioParam` representing a frequency in the current filtering algorithm measured in hertz.*
+
+&ensp;**`detune`**<br>
+&ensp;&ensp;&ensp;*Returns `AudioParam` representing detuning of the frequency in cents.*
+
+&ensp;**`Q`**<br>
+&ensp;&ensp;&ensp;*Returns `AudioParam` representing the quality factor.*
+
+&ensp;**`gain`**<br>
+&ensp;&ensp;&ensp;*Returns `AudioParam` representing the gain used in the current filtering algorithm.*
+
+&ensp;**`type`**<br>
+&ensp;&ensp;&ensp;*A string value defining the kind of filtering algorithm the node is implementing. Available values: `"low pass"`, `"high pass"`, `"bandpass"`.*
 
 #### Code snippets
 
 ```js
 const filter = audioContext.createBiquadFilter();
+filter.type = "highpass";
+filter.frequency.value = 1000;
 ```

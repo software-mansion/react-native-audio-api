@@ -17,15 +17,10 @@ namespace audiocontext {
         static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/oscillator/OscillatorNode;";
 
         void start(double time);
-
         void stop(double time);
-
         std::shared_ptr<AudioParam> getFrequencyParam();
-
         std::shared_ptr<AudioParam> getDetuneParam();
-
         std::string getWaveType();
-
         void setWaveType(const std::string &waveType);
     };
 }// namespace audiocontext

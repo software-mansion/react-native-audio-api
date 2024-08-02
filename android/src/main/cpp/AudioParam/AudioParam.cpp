@@ -13,4 +13,19 @@ namespace audiocontext {
         static const auto method = javaClassLocal()->getMethod<void(double)>("setValue");
         method(javaObject_.get(), value);
     }
+
+    double AudioParam::getDefaultValue() {
+        static const auto method = javaClassLocal()->getMethod<double()>("getDefaultValue");
+        return method(javaObject_.get());
+    }
+
+    double AudioParam::getMinValue() {
+        static const auto method = javaClassLocal()->getMethod<double()>("getMinValue");
+        return method(javaObject_.get());
+    }
+
+    double AudioParam::getMaxValue() {
+        static const auto method = javaClassLocal()->getMethod<double()>("getMaxValue");
+        return method(javaObject_.get());
+    }
 }

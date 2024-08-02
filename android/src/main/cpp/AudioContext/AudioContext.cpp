@@ -48,4 +48,22 @@ namespace audiocontext
 
         return std::shared_ptr<StereoPannerNode>(stereoPannerCppInstance);
     }
+
+    std::string AudioContext::getState()
+    {
+        static const auto method = javaClassLocal()->getMethod<JString()>("getState");
+        return method(javaObject_.get())->toStdString();
+    }
+
+    int AudioContext::getSampleRate()
+    {
+        static const auto method = javaClassLocal()->getMethod<jint()>("getSampleRate");
+        return method(javaObject_.get());
+    }
+
+    double AudioContext::getCurrentTime()
+    {
+        static const auto method = javaClassLocal()->getMethod<jdouble()>("getCurrentTime");
+        return method(javaObject_.get());
+    }
 } // namespace audiocontext

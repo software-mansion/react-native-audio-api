@@ -8,6 +8,7 @@ import com.audiocontext.nodes.oscillator.OscillatorNode
 interface BaseAudioContext {
   val sampleRate: Int
   val destination: AudioDestinationNode
+  var state: ContextState
 
   abstract fun createOscillator(): OscillatorNode
   abstract fun createGain(): GainNode

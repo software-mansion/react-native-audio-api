@@ -11,6 +11,9 @@ namespace audiocontext {
     std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(jsi::Runtime& runtime) {
         std::vector<jsi::PropNameID> propertyNames;
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "destination"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "state"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "sampleRate"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "currentTime"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createOscillator"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createGain"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createStereoPanner"));
@@ -22,17 +25,21 @@ namespace audiocontext {
 
     jsi::Value AudioContextHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID& propNameId) {
         auto propName = propNameId.utf8(runtime);
-        
+
+        if (propName == "destination") {
+            return jsi::Object::createFromHostObject(runtime, destinationNode_);
+        }
+
         if (propName == "state") {
             return jsi::String::createFromUtf8(runtime, wrapper_->getState());
         }
 
-        if (propName == "currentTime") {
-            return jsi::Value(wrapper_->getCurrentTime());
-        }
-        
         if (propName == "sampleRate") {
             return jsi::Value(wrapper_->getSampleRate());
+        }
+
+        if (propName == "currentTime") {
+            return jsi::Value(wrapper_->getCurrentTime());
         }
 
         if (propName == "createOscillator") {
@@ -41,10 +48,6 @@ namespace audiocontext {
                 auto oscillatorHostObject = OscillatorNodeHostObject::createFromWrapper(oscillator);
                 return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
             });
-        }
-
-        if (propName == "destination") {
-            return jsi::Object::createFromHostObject(runtime, destinationNode_);
         }
 
         if (propName == "createGain") {

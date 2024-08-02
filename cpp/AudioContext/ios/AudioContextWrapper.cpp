@@ -28,7 +28,7 @@ namespace audiocontext
         return audiocontext_->getState();
     }
 
-    double AudioContextWrapper::getSampleRate() {
+    int AudioContextWrapper::getSampleRate() {
         return audiocontext_->getSampleRate();
     }
 } // namespace audiocontext
