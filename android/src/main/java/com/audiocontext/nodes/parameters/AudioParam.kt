@@ -20,7 +20,7 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   @RequiresApi(Build.VERSION_CODES.N)
   private val changeQueue: PriorityQueue<ParamChange> = PriorityQueue(ParamChangeComparator)
   @RequiresApi(Build.VERSION_CODES.N)
-  private val currentChangeQueue = Optional.empty<ParamChange>()
+  private var currentChange = Optional.empty<ParamChange>()
 
   private val mHybridData: HybridData?;
 

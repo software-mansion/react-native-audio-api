@@ -29,6 +29,8 @@ export class Kick implements SoundEngine {
   }
 
   play(time: number) {
+    this.setup();
+
     this.oscillator.frequency.setValueAtTime(this.tone, time);
     this.oscillator.frequency.exponentialRampToValueAtTime(
       0.01,
