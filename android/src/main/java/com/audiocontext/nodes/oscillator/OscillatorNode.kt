@@ -8,6 +8,7 @@ import com.audiocontext.nodes.AudioScheduledSourceNode
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
+  //https://webaudio.github.io/web-audio-api/#--nyquist-frequency
   private var frequency: AudioParam = AudioParam(context, 440.0, context.sampleRate/2.0, 0.0)
     get() = field
     set(value) {
@@ -40,5 +41,13 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       }
       playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
     }
+  }
+
+  fun finalize(){
+    try {
+      playbackParameters.audioTrack.stop()
+      playbackParameters.audioTrack.release()
+    } catch (e: Exception) {
+      Log.e("OscillatorNode", "Error while finalizing OscillatorNode", e)
   }
 }

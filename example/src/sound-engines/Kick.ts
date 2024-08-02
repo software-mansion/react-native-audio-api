@@ -25,12 +25,10 @@ export class Kick implements SoundEngine {
     this.gain = this.audioContext.createGain();
     this.oscillator = this.audioContext.createOscillator();
     this.oscillator.connect(this.gain);
-    this.gain.connect(this.audioContext.destination);
+    this.gain.connect(this.audioContext.destination!);
   }
 
   play(time: number) {
-    this.setup();
-
     this.oscillator.frequency.setValueAtTime(this.tone, time);
     this.oscillator.frequency.exponentialRampToValueAtTime(
       0.01,

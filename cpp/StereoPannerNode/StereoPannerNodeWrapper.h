@@ -5,6 +5,9 @@
 
 #ifdef ANDROID
 #include "StereoPannerNode.h"
+#else
+#include "IOSStereoPannerNode.h"
+#include "IOSAudioContext.h"
 #endif
 
 namespace audiocontext {
@@ -18,12 +21,14 @@ namespace audiocontext {
     public:
         explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
+        private:
+            std::shared_ptr<IOSStereoPannerNode> pannerNode_;
         public:
-        explicit StereoPannerNodeWrapper() {}
+            explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif
-    private:
-        std::shared_ptr<AudioParamWrapper> panParam_;
-    public:
-        std::shared_ptr<AudioParamWrapper> getPanParam();
+        private:
+            std::shared_ptr<AudioParamWrapper> panParam_;
+        public:
+            std::shared_ptr<AudioParamWrapper> getPanParam();
     };
 } // namespace audiocontext
