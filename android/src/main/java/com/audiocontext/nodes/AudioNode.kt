@@ -6,8 +6,10 @@ import com.facebook.jni.HybridData
 
 
 abstract class AudioNode(val context: BaseAudioContext) {
-  abstract val numberOfInputs: Int;
-  abstract val numberOfOutputs: Int;
+  open val numberOfInputs: Int = 0
+    get() = field
+  open val numberOfOutputs: Int = 0
+    get() = field
   private val connectedNodes = mutableListOf<AudioNode>()
 
   private val mHybridData: HybridData?;

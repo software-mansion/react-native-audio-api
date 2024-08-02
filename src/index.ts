@@ -1,26 +1,40 @@
 import { NativeModules, Platform } from 'react-native';
 const { AudioContextModule } = NativeModules;
 import type {
-  Oscillator,
   BaseAudioContext,
   AudioDestinationNode,
   Gain,
   StereoPanner,
+  Oscillator,
+  ContextState,
 } from './types';
 import { installACModule } from './utils/install';
 
 installACModule();
 
 export class AudioContext implements BaseAudioContext {
-  destination: AudioDestinationNode | null;
+  readonly destination: AudioDestinationNode | null;
+  readonly state: ContextState;
+  readonly sampleRate: number;
 
   constructor() {
     this.destination = null;
+    this.state = 'running';
+    this.sampleRate = 44100;
 
     if (Platform.OS === 'android') {
-      AudioContextModule.installAudioContext();
+      if (global.__AudioContext == null) {
+        AudioContextModule.installAudioContext();
+      }
+
       this.destination = global.__AudioContext.destination;
+      this.state = global.__AudioContext.state;
+      this.sampleRate = global.__AudioContext.sampleRate;
     }
+  }
+
+  getCurrentTime(): number {
+    return global.__AudioContext.currentTime;
   }
 
   createOscillator(): Oscillator {

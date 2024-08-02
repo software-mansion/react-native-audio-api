@@ -25,6 +25,8 @@ namespace audiocontext {
            });
         }
 
+        int getNumberOfInputs();
+        int getNumberOfOutputs();
         void connect(const std::shared_ptr<AudioNode> node);
         void disconnect(const std::shared_ptr<AudioNode> node);
 

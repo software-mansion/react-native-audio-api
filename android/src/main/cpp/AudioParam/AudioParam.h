@@ -27,6 +27,9 @@ namespace audiocontext {
 
         double getValue();
         void setValue(double value);
+        double getDefaultValue();
+        double getMinValue();
+        double getMaxValue();
 
     protected:
         friend HybridBase;

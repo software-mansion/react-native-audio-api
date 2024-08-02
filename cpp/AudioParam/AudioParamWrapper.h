@@ -11,10 +11,10 @@
 namespace audiocontext {
     class AudioParamWrapper {
 #ifdef ANDROID
-        protected:
-            std::shared_ptr<AudioParam> param_;
-        public:
-            explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param) : param_(param) {}
+    protected:
+        std::shared_ptr<AudioParam> param_;
+    public:
+        explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
 #else
         protected:
             std::shared_ptr<IOSAudioParam> param_;
@@ -23,8 +23,15 @@ namespace audiocontext {
                 param_ = param;
             }
 #endif
-        public:
-            double getValue();
-            void setValue(double value);
+    private:
+        double defaultValue_;
+        double minValue_;
+        double maxValue_;
+    public:
+        double getValue();
+        void setValue(double value);
+        double getDefaultValue() const;
+        double getMinValue() const;
+        double getMaxValue() const;
     };
 } // namespace audiocontext

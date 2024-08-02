@@ -2,8 +2,14 @@ package com.audiocontext.nodes.parameters
 
 import com.facebook.jni.HybridData
 
-class AudioParam(val defaultValue: Double, private val maxValue: Double, private val minValue: Double) {
+class AudioParam(defaultValue: Double, maxValue: Double, minValue: Double) {
   private var value: Double = defaultValue
+  private val defaultValue: Double = defaultValue
+    get() = field
+  private val maxValue: Double = maxValue
+    get() = field
+  private val minValue: Double = minValue
+    get() = field
 
   private val mHybridData: HybridData?;
 

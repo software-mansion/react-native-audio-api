@@ -4,8 +4,10 @@
 namespace audiocontext {
 
     AudioContextWrapper::AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext) : audiocontext_(audiocontext) {
-        auto destinationNode = audiocontext_->getDestination();
-        destinationNode_ = std::make_shared<AudioDestinationNodeWrapper>(destinationNode);
+        auto destination = audiocontext_->getDestination();
+        destinationNode_ = std::make_shared<AudioDestinationNodeWrapper>(destination);
+        state_ = audiocontext_->getState();
+        sampleRate_ = audiocontext_->getSampleRate();
     }
 
     std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
@@ -14,8 +16,7 @@ namespace audiocontext {
     }
 
     std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() {
-        auto destination = audiocontext_->getDestination();
-        return std::make_shared<AudioDestinationNodeWrapper>(destination);
+        return destinationNode_;
     }
 
     std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() {
@@ -26,6 +27,18 @@ namespace audiocontext {
     std::shared_ptr<StereoPannerNodeWrapper> AudioContextWrapper::createStereoPanner() {
         auto panner = audiocontext_->createStereoPanner();
         return std::make_shared<StereoPannerNodeWrapper>(panner);
+    }
+
+    std::string AudioContextWrapper::getState() {
+        return state_;
+    }
+
+    int AudioContextWrapper::getSampleRate() {
+        return sampleRate_;
+    }
+
+    double AudioContextWrapper::getCurrentTime() {
+        return audiocontext_->getCurrentTime();
     }
 } // namespace audiocontext
 #endif

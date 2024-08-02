@@ -1,4 +1,5 @@
 #include "AudioNodeHostObject.h"
+#include "AudioContextHostObject.h"
 
 namespace audiocontext {
     using namespace facebook;
@@ -7,6 +8,9 @@ namespace audiocontext {
         std::vector<jsi::PropNameID> propertyNames;
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "connect"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "disconnect"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "numberOfInputs"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "numberOfOutputs"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "context"));
         return propertyNames;
     }
 
@@ -31,6 +35,23 @@ namespace audiocontext {
                 wrapper_->disconnect(std::shared_ptr<AudioNodeHostObject>(node)->wrapper_);
                 return jsi::Value::undefined();
             });
+        }
+
+        if (propName == "numberOfInputs")
+        {
+            return jsi::Value(wrapper_->getNumberOfInputs());
+        }
+
+        if (propName == "numberOfOutputs")
+        {
+            return jsi::Value(wrapper_->getNumberOfOutputs());
+        }
+
+        if (propName == "context")
+        {
+            auto context = runtime.global().getPropertyAsObject(runtime, "__AudioContext");
+            auto hostObject = context.getHostObject<AudioContextHostObject>(runtime);
+            return jsi::Object::createFromHostObject(runtime, hostObject);
         }
 
         throw std::runtime_error("Not yet implemented!");
