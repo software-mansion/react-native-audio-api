@@ -7,6 +7,7 @@
 #endif
 
 namespace audiocontext {
+
     class AudioParamWrapper {
 #ifdef ANDROID
     protected:

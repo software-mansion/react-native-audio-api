@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
 

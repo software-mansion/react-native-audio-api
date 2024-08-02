@@ -1,6 +1,7 @@
 #pragma once
 
 #include <jsi/jsi.h>
+
 #include "AudioParamWrapper.h"
 
 namespace audiocontext {

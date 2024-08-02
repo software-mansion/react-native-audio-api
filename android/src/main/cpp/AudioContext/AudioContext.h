@@ -5,6 +5,8 @@
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
+#include <utility>
+
 #include "AudioContextHostObject.h"
 #include "AudioContextWrapper.h"
 #include "OscillatorNode.h"

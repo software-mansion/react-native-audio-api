@@ -16,9 +16,6 @@
 namespace audiocontext {
     using namespace facebook;
 
-    class OscillatorNodeWrapper;
-    class AudioDestinationNodeWrapper;
-
 #ifdef ANDROID
     class AudioContext;
 #endif

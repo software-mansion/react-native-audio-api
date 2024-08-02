@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
 
@@ -11,6 +10,7 @@
 #endif
 
 namespace audiocontext {
+
 #ifdef ANDROID
     class OscillatorNode;
 #endif

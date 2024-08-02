@@ -1,13 +1,11 @@
 #pragma once
 
-#include <memory>
+#include "AudioNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioDestinationNode.h"
 #include "AudioNodeWrapper.h"
 #endif
-
-#include "AudioNodeWrapper.h"
 
 namespace audiocontext {
 

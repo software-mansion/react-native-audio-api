@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include "AudioDestinationNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 
