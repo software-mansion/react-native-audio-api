@@ -6,9 +6,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.PlaybackParameters
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import java.util.PriorityQueue
 
 abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(context) {
   override val numberOfInputs: Int = 0
@@ -18,6 +16,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null;
+  private val stopQueue = PriorityQueue<Double>()
 
   init {
     val bufferSize = AudioTrack.getMinBufferSize(
@@ -41,22 +40,27 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     this.playbackParameters = PlaybackParameters(audioTrack, buffer)
   }
 
-  protected abstract fun generateSound();
+  private fun generateSound() {
+    while(isPlaying) {
+      generateBuffer()
+      process(playbackParameters)
+      if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
+        handleStop()
+        stopQueue.poll()
+      }
+    }
+    playbackParameters.audioTrack.flush()
+  }
+
+  private fun handleStop(){
+    isPlaying = false
+    playbackParameters.audioTrack.stop()
+    playbackThread?.join()
+  }
+
+  protected abstract fun generateBuffer()
 
   fun start(time: Double) {
-//    coroutineScope.launch {
-//      mutex.withLock {
-//        if (audioJob?.isActive == true) return@launch
-//        audioJob = launch {
-//          while (context.getCurrentTime() < time) {
-//            delay(1)
-//          }
-//          isPlaying = true
-//          playbackParameters.audioTrack.play()
-//          generateSound()
-//        }
-//      }
-//    }
     playbackThread = Thread {
       while (context.getCurrentTime() < time) {
         Thread.sleep(1)
@@ -69,13 +73,6 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   }
 
   fun stop(time: Double) {
-    Thread {
-      while (context.getCurrentTime() < time) {
-        Thread.sleep(1)
-      }
-      isPlaying = false
-      playbackParameters.audioTrack.stop()
-      playbackThread?.interrupt()
-    }.start()
+    stopQueue.add(time)
   }
 }
