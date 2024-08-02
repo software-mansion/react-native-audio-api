@@ -44,6 +44,10 @@ export class AudioContext implements BaseAudioContext {
   createStereoPanner(): StereoPannerNode {
     return global.__AudioContext.createStereoPanner();
   }
+
+  close(): void {
+    global.__AudioContext.close();
+  }
 }
 
 export type { GainNode, StereoPannerNode, OscillatorNode };
