@@ -75,4 +75,9 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   fun stop(time: Double) {
     stopQueue.add(time)
   }
+
+  fun close() {
+    handleStop()
+    playbackParameters.audioTrack.release()
+  }
 }

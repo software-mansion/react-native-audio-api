@@ -1,7 +1,6 @@
 package com.audiocontext.nodes.oscillator
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
@@ -40,15 +39,6 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
         wavePhase -= 2.0 * Math.PI
       }
       playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
-    }
-  }
-
-  fun finalize(){
-    try {
-      playbackParameters.audioTrack.stop()
-      playbackParameters.audioTrack.release()
-    } catch (e: Exception) {
-      Log.e("OscillatorNode", "Error while finalizing OscillatorNode", e)
     }
   }
 }
