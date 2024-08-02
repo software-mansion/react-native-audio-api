@@ -4,6 +4,8 @@
 
 #ifdef ANDROID
 #include "AudioNode.h"
+#else
+#include "IOSAudioNode.h"
 #endif
 
 namespace audiocontext {
@@ -14,8 +16,9 @@ namespace audiocontext {
     public:
         explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node);
 #else
-    public:
-        explicit AudioNodeWrapper() {}
+        public:
+            std::shared_ptr<IOSAudioNode> node_;
+            explicit AudioNodeWrapper() {}
 #endif
     private:
         int numberOfInputs_;

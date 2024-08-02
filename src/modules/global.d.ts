@@ -10,7 +10,7 @@ type AudioContext = {
   createOscillator: () => Oscillator;
   createGain: () => Gain;
   createStereoPanner: () => StereoPanner;
-  destination: AudioDestinationNode;
+  destination: AudioDestinationNode | null;
   state: ContextState;
   sampleRate: number;
   currentTime: number;

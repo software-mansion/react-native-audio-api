@@ -1,7 +1,6 @@
 package com.audiocontext.nodes.oscillator
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.parameters.AudioParam
@@ -9,6 +8,7 @@ import com.audiocontext.nodes.AudioScheduledSourceNode
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
+  //https://webaudio.github.io/web-audio-api/#--nyquist-frequency
   private var frequency: AudioParam = AudioParam(context, 440.0, context.sampleRate/2.0, 0.0)
     get() = field
     set(value) {
@@ -49,6 +49,5 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       playbackParameters.audioTrack.release()
     } catch (e: Exception) {
       Log.e("OscillatorNode", "Error while finalizing OscillatorNode", e)
-    }
   }
 }

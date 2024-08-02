@@ -18,8 +18,8 @@ namespace audiocontext {
     public:
         explicit AudioDestinationNodeWrapper(const std::shared_ptr<AudioDestinationNode> &destinationNode) : AudioNodeWrapper(destinationNode) {}
 #else
-    public:
-        explicit AudioDestinationNodeWrapper() {}
+        public:
+            explicit AudioDestinationNodeWrapper() {}
 #endif
     };
 } // namespace audiocontext

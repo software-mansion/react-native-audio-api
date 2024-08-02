@@ -1,14 +1,12 @@
 #ifndef ANDROID
 #include "OscillatorNodeWrapper.h"
 
-namespace audiocontext {
-
-    double OscillatorNodeWrapper::getFrequency() {
-        return oscillator_->getFrequency();
-    }
-
-    double OscillatorNodeWrapper::getDetune() {
-        return oscillator_->getDetune();
+namespace audiocontext
+{
+    OscillatorNodeWrapper::OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
+        node_ = oscillator_ = std::make_shared<IOSOscillator>(context);
+        frequencyParam_ = std::make_shared<AudioParamWrapper>(oscillator_->getFrequencyParam());
+        detuneParam_ = std::make_shared<AudioParamWrapper>(oscillator_->getDetuneParam());
     }
 
     std::string OscillatorNodeWrapper::getType() {
@@ -23,16 +21,16 @@ namespace audiocontext {
         oscillator_->stop();
     }
 
-    void OscillatorNodeWrapper::setFrequency(double frequency) {
-        oscillator_->changeFrequency(frequency);
-    }
-
-    void OscillatorNodeWrapper::setDetune(double detune) {
-        oscillator_->changeDetune(detune);
-    }
-
     void OscillatorNodeWrapper::setType(const std::string& type) {
         oscillator_->setType(type);
     }
-}
+
+    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam() {
+        return frequencyParam_;
+    }
+
+    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getDetuneParam() {
+        return detuneParam_;
+    }
+} // namespace audiocontext
 #endif

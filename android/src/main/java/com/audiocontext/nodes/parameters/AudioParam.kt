@@ -20,7 +20,7 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   @RequiresApi(Build.VERSION_CODES.N)
   private val changeQueue: PriorityQueue<ParamChange> = PriorityQueue(ParamChangeComparator)
   @RequiresApi(Build.VERSION_CODES.N)
-  private var currentChangeQueue = Optional.empty<ParamChange>()
+  private val currentChangeQueue = Optional.empty<ParamChange>()
 
   private val mHybridData: HybridData?;
 
@@ -43,13 +43,14 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   @RequiresApi(Build.VERSION_CODES.N)
   fun getValueAtTime(time: Double): Double {
     if (changeQueue.isNotEmpty()) {
-      if (!currentChangeQueue.isPresent || currentChangeQueue.get().endTime < time) { //when the current change is over or there is no current change
-        currentChangeQueue = changeQueue.poll()?.let { Optional.of(it) }!!
+      //when the current change is over or there is no current change
+      if (!currentChange.isPresent || currentChange.get().endTime < time) {
+        currentChange = changeQueue.poll()?.let { Optional.of(it) }!!
       }
     }
 
-    if (currentChangeQueue.isPresent && currentChangeQueue.get().startTime <= time) {
-      this.value = currentChangeQueue.get().getValueAtTime(time)
+    if (currentChange.isPresent && currentChange.get().startTime <= time) {
+      this.value = currentChange.get().getValueAtTime(time)
     }
 
     return this.value

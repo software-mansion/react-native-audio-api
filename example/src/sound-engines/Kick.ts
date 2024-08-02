@@ -19,7 +19,6 @@ export class Kick implements SoundEngine {
     this.tone = 125;
     this.decay = 0.5;
     this.volume = 1;
-  }
 
   setup() {
     this.gain = this.audioContext.createGain();
@@ -29,8 +28,6 @@ export class Kick implements SoundEngine {
   }
 
   play(time: number) {
-    this.setup();
-
     this.oscillator.frequency.setValueAtTime(this.tone, time);
     this.oscillator.frequency.exponentialRampToValueAtTime(
       0.01,

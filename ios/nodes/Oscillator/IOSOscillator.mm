@@ -2,42 +2,37 @@
 
 namespace audiocontext {
 
-	IOSOscillator::IOSOscillator() {
-		OscillatorNode_ = [[OscillatorNode alloc] init];
-	}
+    IOSOscillator::IOSOscillator(std::shared_ptr<IOSAudioContext> context) {
+        audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] init:context->audioContext_];
+    }
 
-	void IOSOscillator::start() const {
-		[OscillatorNode_ start];
-	}
+    void IOSOscillator::start() const {
+        [oscillatorNode_ start];
+    }
 
-	void IOSOscillator::stop() const {
-		[OscillatorNode_ stop];
-	}
+    void IOSOscillator::stop() const {
+        [oscillatorNode_ stop];
+    }
 
-	void IOSOscillator::changeFrequency(const float frequency) const {
-		[OscillatorNode_ changeFrequency:frequency];
-	}
+    void IOSOscillator::setType(const std::string &type) const {
+        NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
+        [oscillatorNode_ setType:nsType];
+    }
 
-	float IOSOscillator::getFrequency() const {
-		return [OscillatorNode_ getFrequency];
-	}
+    std::string IOSOscillator::getType() const {
+        NSString *nsType = [oscillatorNode_ getType];
+        return std::string([nsType UTF8String]);
+    }
 
-	void IOSOscillator::changeDetune(const float detune) const {
-		[OscillatorNode_ changeDetune:detune];
-	}
+    std::shared_ptr<IOSAudioParam> IOSOscillator::getFrequencyParam() {
+        std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
+        param->audioParam = oscillatorNode_.frequencyParam;
+        return param;
+    }
 
-	float IOSOscillator::getDetune() const {
-		return [OscillatorNode_ getDetune];
-	}
-
-	void IOSOscillator::setType(const std::string &type) const {
-		NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
-		[OscillatorNode_ setType:nsType];
-	}
-
-	std::string IOSOscillator::getType() const {
-		NSString *nsType = [OscillatorNode_ getType];
-		return std::string([nsType UTF8String]);
-	}
-
+    std::shared_ptr<IOSAudioParam> IOSOscillator::getDetuneParam() {
+        std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
+        param->audioParam = oscillatorNode_.detuneParam;
+        return param;
+    }
 } // namespace audiocontext
