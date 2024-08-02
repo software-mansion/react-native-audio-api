@@ -3,9 +3,9 @@ export interface BaseAudioContext {
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
-  createOscillator(): Oscillator;
-  createGain(): Gain;
-  createStereoPanner(): StereoPanner;
+  createOscillator(): OscillatorNode;
+  createGain(): GainNode;
+  createStereoPanner(): StereoPannerNode;
 }
 
 export interface AudioNode {

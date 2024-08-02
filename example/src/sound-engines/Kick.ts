@@ -23,7 +23,7 @@ export class Kick implements SoundEngine {
     this.oscillator = this.audioContext.createOscillator();
 
     this.oscillator.connect(this.gain);
-    this.gain.connect(this.audioContext.destination);
+    this.gain.connect(this.audioContext.destination!);
   }
 
   play(time: number) {

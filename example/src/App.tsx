@@ -42,7 +42,7 @@ const App: React.FC = () => {
 
       panRef.current = audioContextRef.current.createStereoPanner();
       panRef.current.pan.value = INITIAL_PAN;
-      
+
       oscillatorRef.current.connect(gainRef.current);
       gainRef.current.connect(panRef.current);
 
@@ -110,7 +110,7 @@ const App: React.FC = () => {
       kickRef.current = new Kick(audioContextRef.current);
     }
 
-    kickRef.current.play(audioContextRef.current.getCurrentTime());
+    kickRef.current.play(audioContextRef.current.currentTime);
   };
 
   return (
