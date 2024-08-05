@@ -54,7 +54,11 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun handleStop(){
     isPlaying = false
-    playbackParameters.audioTrack.stop()
+    try {
+      playbackParameters.audioTrack.stop()
+    } catch (e: IllegalStateException) {
+      e.printStackTrace()
+    }
     playbackThread?.join()
   }
 
@@ -76,8 +80,14 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     stopQueue.add(time)
   }
 
-  fun close() {
+  override fun prepareForDeconstruction() {
     handleStop()
     playbackParameters.audioTrack.release()
+    super.prepareForDeconstruction()
+  }
+
+  override fun close() {
+    prepareForDeconstruction()
+    super.close()
   }
 }

@@ -39,4 +39,13 @@ abstract class AudioNode(val context: BaseAudioContext) {
   open fun process(playbackParameters: PlaybackParameters) {
     connectedNodes.forEach { it.process(playbackParameters) }
   }
+
+  protected open fun prepareForDeconstruction() {
+    connectedNodes.clear()
+  }
+
+  open fun close() {
+    mHybridData?.resetNative()
+    connectedNodes.forEach { it.close() }
+  }
 }
