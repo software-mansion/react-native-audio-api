@@ -19,6 +19,9 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 @property (nonatomic, assign) WaveTypeEnum waveType;
 @property (nonatomic, assign) Boolean isPlaying;
 
+@property (nonatomic, assign) float lastTime;
+@property (nonatomic, assign) float deltaTime;
+
 - (instancetype)initWithContext:(AudioContext *)context;
 
 - (void)start:(double)time;

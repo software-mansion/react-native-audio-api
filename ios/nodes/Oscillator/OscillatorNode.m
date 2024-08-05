@@ -1,10 +1,6 @@
 #import <OscillatorNode.h>
 
-@implementation OscillatorNode {
-    float deltaTime;
-    float time;
-    float lastTime;
-}
+@implementation OscillatorNode
 
 - (instancetype)initWithContext:(AudioContext *)context {
     if (self != [super initWithContext:context]) {
@@ -15,7 +11,7 @@
     _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-100 maxValue:100];
     _waveType = WaveTypeSine;
     _isPlaying = NO;
-    deltaTime = 1 / self.context.sampleRate;
+    _deltaTime = 1 / self.context.sampleRate;
     
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
@@ -88,7 +84,7 @@
 }
 
 - (void)setBuffer {
-    time = lastTime = [self.context getCurrentTime];
+    float time = _lastTime = [self.context getCurrentTime];
     
     while (YES) {
         if (![self isPlaying]) {
@@ -110,7 +106,7 @@
             audioBufferPointer[frame] = [WaveType valueForWaveType:_waveType atPhase:phase];
             [self process:_buffer playerNode:_playerNode];
             
-            time += deltaTime;
+            time += _deltaTime;
 
             phase += phaseIncrement;
             if (phase > FULL_CIRCLE_RADIANS) {
@@ -119,10 +115,10 @@
         }
         
         if (currentTime > time) {
-            lastTime = time;
+            _lastTime = time;
         }
         
-        time = lastTime;
+        time = _lastTime;
     }
 }
 
