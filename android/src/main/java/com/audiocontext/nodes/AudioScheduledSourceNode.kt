@@ -59,7 +59,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     } catch (e: IllegalStateException) {
       e.printStackTrace()
     }
-    playbackThread?.join()
+    playbackThread?.interrupt()
   }
 
   protected abstract fun generateBuffer()
@@ -80,10 +80,9 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     stopQueue.add(time)
   }
 
-  override fun prepareForDeconstruction() {
+  private fun prepareForDeconstruction() {
     handleStop()
     playbackParameters.audioTrack.release()
-    super.prepareForDeconstruction()
   }
 
   override fun close() {
