@@ -17,6 +17,8 @@ namespace audiocontext {
 
     class OscillatorNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
+    private:
+        std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
     public:
         explicit OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator);
         ~OscillatorNodeWrapper();
@@ -36,5 +38,6 @@ namespace audiocontext {
             void start(double time);
             void stop(double time);
             void setType(const std::string& type);
+
     };
 } // namespace audiocontext

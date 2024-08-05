@@ -10,6 +10,8 @@ namespace audiocontext {
     class OscillatorNodeWrapper;
 
     class OscillatorNodeHostObject : public AudioNodeHostObject {
+    private:
+        std::shared_ptr<OscillatorNodeWrapper> getOscillatorNodeWrapperFromAudioNodeWrapper();
     protected:
         std::shared_ptr<AudioParamHostObject> frequencyParam_;
         std::shared_ptr<AudioParamHostObject> detuneParam_;

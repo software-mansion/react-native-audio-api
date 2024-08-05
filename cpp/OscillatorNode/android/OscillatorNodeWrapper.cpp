@@ -3,6 +3,10 @@
 
 namespace audiocontext {
 
+    std::shared_ptr<OscillatorNode> OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
+        return std::static_pointer_cast<OscillatorNode>(node_);
+    }
+
     OscillatorNodeWrapper::OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator) : AudioNodeWrapper(
             oscillator) {
         auto frequencyParam = oscillator->getFrequencyParam();
@@ -12,7 +16,7 @@ namespace audiocontext {
     }
 
     OscillatorNodeWrapper::~OscillatorNodeWrapper() {
-        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
         oscillatorNode_->prepareForDeconstruction();
     }
 
@@ -25,22 +29,22 @@ namespace audiocontext {
     }
 
     std::string OscillatorNodeWrapper::getType() {
-        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
         return oscillatorNode_->getWaveType();
     }
 
     void OscillatorNodeWrapper::start(double time) {
-        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
         oscillatorNode_->start(time);
     }
 
     void OscillatorNodeWrapper::stop(double time) {
-        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
         oscillatorNode_->stop(time);
     }
 
     void OscillatorNodeWrapper::setType(const std::string& type) {
-        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
         oscillatorNode_->setWaveType(type);
     }
 }
