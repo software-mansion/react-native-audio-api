@@ -59,6 +59,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     } catch (e: IllegalStateException) {
       e.printStackTrace()
     }
+
     playbackThread?.interrupt()
   }
 
@@ -85,8 +86,11 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     playbackParameters.audioTrack.release()
   }
 
-  override fun close() {
-    prepareForDeconstruction()
-    super.close()
+  fun close() {
+    try {
+      playbackParameters.audioTrack.stop()
+    } catch (e: IllegalStateException) {
+      e.printStackTrace()
+    }
   }
 }
