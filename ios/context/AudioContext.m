@@ -23,12 +23,6 @@
     [self.connectedOscillators addObject:node];
 }
 
-- (void)processNodes {
-    for (OscillatorNode *oscillator in self.connectedOscillators) {
-        [oscillator process:oscillator.buffer playerNode:oscillator.playerNode];
-    }
-}
-
 - (double)getCurrentTime {
     uint64_t currentTime = mach_absolute_time();
     mach_timebase_info_data_t info;

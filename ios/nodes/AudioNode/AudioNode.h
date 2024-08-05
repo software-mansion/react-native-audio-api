@@ -12,7 +12,7 @@
 @property (nonatomic, strong) NSMutableArray<AudioNode *> *connectedNodes;
 @property (nonatomic, strong) AudioContext *context;
 
-- (instancetype)init:(AudioContext *)context;
+- (instancetype)initWithContext:(AudioContext *)context;
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode;
 - (void)deprocess:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode nodeToDeprocess:(AudioNode *)node;
 - (void)connect:(AudioNode *)node;

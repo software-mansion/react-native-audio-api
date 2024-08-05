@@ -14,11 +14,11 @@ namespace audiocontext
     }
 
     void OscillatorNodeWrapper::start(double time) {
-        oscillator_->start();
+        oscillator_->start(time);
     }
 
     void OscillatorNodeWrapper::stop(double time) {
-        oscillator_->stop();
+        oscillator_->stop(time);
     }
 
     void OscillatorNodeWrapper::setType(const std::string& type) {

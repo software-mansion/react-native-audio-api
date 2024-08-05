@@ -3,9 +3,9 @@
 
 @implementation StereoPannerNode
 
-- (instancetype)init:(AudioContext *)context {
-    if (self = [super init:context]) {
-        _audioParam = [[AudioParam alloc] init:context value:0 minValue:-1 maxValue:1];
+- (instancetype)initWithContext:(AudioContext *)context {
+    if (self = [super initWithContext:context]) {
+        _audioParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
         self.numberOfInputs = 1;
         self.numberOfOutputs = 1;
     }
@@ -14,7 +14,7 @@
 }
 
 - (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
-    playerNode.pan = [_audioParam getValue];
+    playerNode.pan = [_audioParam getValueAtTime:[self.context getCurrentTime]];
 
     [super process:buffer playerNode:playerNode];
 }

@@ -3,7 +3,7 @@
 
 @implementation AudioNode
 
-- (instancetype)init:(AudioContext *)context {
+- (instancetype)initWithContext:(AudioContext *)context {
     if (self = [super init]) {
         _connectedNodes = [NSMutableArray array];
         _context = context;

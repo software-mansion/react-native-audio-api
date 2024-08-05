@@ -15,5 +15,9 @@ namespace audiocontext {
             float getMaxValue();
             float getDefaultValue();
             AudioParam *audioParam;
+            void setValueAtTime(float value, double time);
+            void linearRampToValueAtTime(float value, double time);
+            void exponentialRampToValueAtTime(float value, double time);
+
     };
 } // namespace audiocontext

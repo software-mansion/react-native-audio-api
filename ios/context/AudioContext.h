@@ -20,8 +20,6 @@
 
 - (void)connectOscillator:(OscillatorNode *)node;
 
-- (void)processNodes;
-
 - (double)getCurrentTime;
 
 - (NSString *)getState;

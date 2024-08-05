@@ -3,15 +3,15 @@
 namespace audiocontext {
 
     IOSOscillator::IOSOscillator(std::shared_ptr<IOSAudioContext> context) {
-        audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] init:context->audioContext_];
+        audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] initWithContext:context->audioContext_];
     }
 
-    void IOSOscillator::start() const {
-        [oscillatorNode_ start];
+    void IOSOscillator::start(double time) const {
+        [oscillatorNode_ start:time];
     }
 
-    void IOSOscillator::stop() const {
-        [oscillatorNode_ stop];
+    void IOSOscillator::stop(double time) const {
+        [oscillatorNode_ stop:time];
     }
 
     void IOSOscillator::setType(const std::string &type) const {

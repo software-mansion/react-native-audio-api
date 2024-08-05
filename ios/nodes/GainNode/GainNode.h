@@ -7,6 +7,6 @@
 
 @property (nonatomic, strong) AudioParam *audioParam;
 
-- (instancetype)init:(AudioContext *)context;
+- (instancetype)initWithContext:(AudioContext *)context;
 
 @end
