@@ -15,6 +15,7 @@ namespace audiocontext {
         std::shared_ptr<AudioNode> node_;
     public:
         explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node);
+        virtual ~AudioNodeWrapper();
 #else
         public:
             std::shared_ptr<IOSAudioNode> node_;

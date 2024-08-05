@@ -25,4 +25,8 @@ namespace audiocontext {
                 "disconnect");
         method(javaPart_.get(), node->javaPart_.get());
     }
+
+    void AudioNode::prepareForDeconstruction() {
+        javaPart_.reset();
+    }
 }

@@ -38,6 +38,11 @@ namespace audiocontext {
     void OscillatorNode::setWaveType(const std::string& waveType) {
         static const auto method = javaClassLocal()->getMethod<void(JString)>("setWaveType");
         method(javaPart_.get(), *make_jstring(waveType));
+    }
 
+    void OscillatorNode::prepareForDeconstruction() {
+        static const auto method = javaClassLocal()->getMethod<void()>("prepareForDeconstruction");
+        method(javaPart_.get());
+        AudioNode::prepareForDeconstruction();
     }
 } // namespace audiocontext

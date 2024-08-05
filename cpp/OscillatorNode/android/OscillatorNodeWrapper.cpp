@@ -11,6 +11,11 @@ namespace audiocontext {
         detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
     }
 
+    OscillatorNodeWrapper::~OscillatorNodeWrapper() {
+        auto oscillatorNode_ = std::static_pointer_cast<OscillatorNode>(node_);
+        oscillatorNode_->prepareForDeconstruction();
+    }
+
     std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam() {
         return frequencyParam_;
     }

@@ -16,6 +16,7 @@ namespace audiocontext {
         std::shared_ptr<AudioParam> param_;
     public:
         explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
+        ~AudioParamWrapper();
 #else
         protected:
             std::shared_ptr<IOSAudioParam> param_;
