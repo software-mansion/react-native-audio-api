@@ -55,7 +55,7 @@ namespace audiocontext
   private:
     friend HybridBase;
 
-    global_ref<AudioContext::javaobject> javaObject_;
+    global_ref<AudioContext::javaobject> javaPart_;
     std::shared_ptr<AudioDestinationNode> destinationNode_;
 
     explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);

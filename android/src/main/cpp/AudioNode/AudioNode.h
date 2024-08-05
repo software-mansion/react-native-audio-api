@@ -33,7 +33,7 @@ namespace audiocontext {
     protected:
         friend HybridBase;
 
-        global_ref<AudioNode::javaobject> javaObject_;
+        global_ref<AudioNode::javaobject> javaPart_;
 
         explicit AudioNode(jni::alias_ref<AudioNode::jhybridobject>& jThis);
     };

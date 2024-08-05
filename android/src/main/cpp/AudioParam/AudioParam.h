@@ -37,7 +37,7 @@ namespace audiocontext {
     protected:
         friend HybridBase;
 
-        global_ref<AudioParam::javaobject> javaObject_;
+        global_ref<AudioParam::javaobject> javaPart_;
 
         explicit AudioParam(jni::alias_ref<AudioParam::jhybridobject>& jThis);
     };
