@@ -1,6 +1,11 @@
 #include <IOSAudioNode.h>
 
 namespace audiocontext {
+    IOSAudioNode::~IOSAudioNode() {
+        [audioNode_ clean];
+        audioNode_ = nil;
+    }
+
     void IOSAudioNode::connect(std::shared_ptr<IOSAudioNode> node) {
         [audioNode_ connect:(node->audioNode_)];
     }

@@ -6,6 +6,11 @@ namespace audiocontext {
         audioContext_ = [[AudioContext alloc] init];
     }
 
+    IOSAudioContext::~IOSAudioContext() {
+        [audioContext_ clean];
+        audioContext_ = nil;
+    }
+
     double IOSAudioContext::getCurrentTime() {
         return [audioContext_ getCurrentTime];
     }

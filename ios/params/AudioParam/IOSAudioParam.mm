@@ -2,6 +2,11 @@
 
 namespace audiocontext {
 
+    IOSAudioParam::~IOSAudioParam() {
+        [audioParam clean];
+        audioParam = nil;
+    }
+
     void IOSAudioParam::setValue(float value) {
         [audioParam setValue:value];
     }

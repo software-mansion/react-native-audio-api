@@ -7,8 +7,6 @@
       return self;
     }
     
-    self.connectedOscillators = [NSMutableArray array];
-    
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     
@@ -19,8 +17,12 @@
     return self;
 }
 
-- (void)connectOscillator:(OscillatorNode *)node {
-    [self.connectedOscillators addObject:node];
+- (void)clean {
+    if (self.audioEngine.isRunning) {
+        [self.audioEngine stop];
+    }
+
+    self.audioEngine = nil;
 }
 
 - (double)getCurrentTime {

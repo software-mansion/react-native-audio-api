@@ -9,6 +9,7 @@ typedef struct objc_object AudioParam;
 namespace audiocontext {
     class IOSAudioParam {
         public:
+            ~IOSAudioParam();
             void setValue(float value);
             float getValue();
             float getMinValue();

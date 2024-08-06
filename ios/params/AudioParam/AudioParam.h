@@ -16,6 +16,8 @@
 
 - (instancetype)initWithContext:(AudioContext *)context value:(float)value minValue:(float)minValue maxValue:(float)maxValue;
 
+- (void)clean;
+
 - (void)setValue:(float)value;
 
 - (float)getValue;

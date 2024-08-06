@@ -11,14 +11,13 @@
 @interface AudioContext : NSObject
 
 @property (nonatomic, strong) AVAudioEngine *audioEngine;
-@property (nonatomic, strong) NSMutableArray<OscillatorNode *> *connectedOscillators;
 @property (nonatomic, assign) uint64_t contextStartTime;
 @property (nonatomic, assign) ContextStateEnum state;
 @property (nonatomic, assign) double sampleRate;
 
 - (instancetype)init;
 
-- (void)connectOscillator:(OscillatorNode *)node;
+- (void)clean;
 
 - (double)getCurrentTime;
 

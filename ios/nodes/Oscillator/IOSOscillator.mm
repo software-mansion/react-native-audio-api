@@ -6,6 +6,11 @@ namespace audiocontext {
         audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] initWithContext:context->audioContext_];
     }
 
+    IOSOscillator::~IOSOscillator() {
+        [oscillatorNode_ clean];
+        audioNode_ = oscillatorNode_ = nil;
+    }
+
     void IOSOscillator::start(double time) const {
         [oscillatorNode_ start:time];
     }

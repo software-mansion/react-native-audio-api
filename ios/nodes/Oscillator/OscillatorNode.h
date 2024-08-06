@@ -11,18 +11,20 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 
 @interface OscillatorNode : AudioScheduledSourceNode
 
-@property (nonatomic, strong) AVAudioPlayerNode *playerNode;
-@property (nonatomic, strong) AVAudioPCMBuffer *buffer;
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AudioParam *frequencyParam;
 @property (nonatomic, strong) AudioParam *detuneParam;
 @property (nonatomic, assign) WaveTypeEnum waveType;
 @property (nonatomic, assign) Boolean isPlaying;
 
-@property (nonatomic, assign) float lastTime;
 @property (nonatomic, assign) float deltaTime;
 
+@property (nonatomic, strong) AVAudioSourceNode *sourceNode;
+@property (nonatomic, assign) float phase;
+
 - (instancetype)initWithContext:(AudioContext *)context;
+
+- (void)clean;
 
 - (void)start:(double)time;
 

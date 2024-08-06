@@ -38,7 +38,13 @@ const App: React.FC = () => {
       oscillatorRef.current.detune.value = INITIAL_DETUNE;
       oscillatorRef.current.type = 'sine';
 
+      oscillatorRef.current.frequency.setValueAtTime(440, 5);
+      oscillatorRef.current.frequency.linearRampToValueAtTime(880, 8);
+      oscillatorRef.current.frequency.exponentialRampToValueAtTime(200, 12);
+
       gainRef.current = audioContextRef.current.createGain();
+      gainRef.current.gain.setValueAtTime(0.5, 3);
+      gainRef.current.gain.linearRampToValueAtTime(1, 6);
 
       panRef.current = audioContextRef.current.createStereoPanner();
       panRef.current.pan.value = INITIAL_PAN;

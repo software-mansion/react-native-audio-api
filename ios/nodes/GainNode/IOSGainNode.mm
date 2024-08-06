@@ -6,6 +6,11 @@ namespace audiocontext {
         audioNode_ = gainNode_ = [[GainNode alloc] initWithContext:context->audioContext_];
     }
 
+    IOSGainNode::~IOSGainNode() {
+        [gainNode_ clean];
+        audioNode_ = gainNode_ = nil;
+    }
+
     std::shared_ptr<IOSAudioParam> IOSGainNode::getAudioParam() {
         std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
         param->audioParam = gainNode_.audioParam;

@@ -18,6 +18,11 @@
     return self;
 }
 
+- (void)clean {
+    _timeline = nil;
+    _context = nil;
+}
+
 - (void)setValue:(float)value {
     if (value < _minValue || value > _maxValue) {
         NSLog(@"Value out of bounds");
