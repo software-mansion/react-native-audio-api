@@ -49,39 +49,40 @@
 }
 
 - (double)getValueAtTime:(double)time {
-    if ([_timeline count] > 0) {
-        ParamChange *param = [_timeline peekMin];
-        
-        if (param.endTime < [self.context getCurrentTime]) {
-            [_timeline extractMin];
-            _value = param.endValue;
-        }
-        
-        if (time >= param.startTime && time <= param.endTime) {
-            _value = [param getValueAtTime:time];
-        }
+    if ([_timeline count] <= 0) {
+        return _value;
     }
 
+    ParamChange *param = [_timeline peekMin];
+    
+    if (param.endTime < [self.context getCurrentTime]) {
+        [_timeline extractMin];
+        _value = param.endValue;
+    }
+    
+    if (time >= param.startTime && time <= param.endTime) {
+        _value = [param getValueAtTime:time];
+    }
+    
     return _value;
 }
 
 - (double)getStartTime {
-    int count = [_timeline count];
-    if (count > 0) {
-        ParamChange *param = [_timeline peekMax];
-        return param.endTime;
+    if ([_timeline count] <= 0) {
+        return [self.context getCurrentTime];
     }
     
-    return [self.context getCurrentTime];
+    ParamChange *param = [_timeline peekMax];
+    return param.endTime;
 }
 
 - (float)getStartValue {
-    if ([_timeline count]) {
-        ParamChange *param = [_timeline peekMax];
-        return param.endValue;
+    if ([_timeline count] <= 0) {
+        return _value;
     }
     
-    return _value;
+    ParamChange *param = [_timeline peekMax];
+    return param.endValue;
 }
 
 - (void)setValueAtTime:(float)value time:(double)time {
