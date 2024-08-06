@@ -21,7 +21,9 @@ export class AudioContext implements BaseAudioContext {
     this.destination = null;
 
     if (Platform.OS === 'android') {
-      AudioContextModule.installAudioContext();
+      if (global.__AudioContext == null) {
+        AudioContextModule.installAudioContext();
+      }
       this.destination = global.__AudioContext.destination;
     }
 
