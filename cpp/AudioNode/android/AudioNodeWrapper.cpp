@@ -9,7 +9,7 @@ namespace audiocontext {
     }
 
     AudioNodeWrapper::~AudioNodeWrapper() {
-        node_->prepareForDeconstruction();
+        node_->resetJavaPart();
     }
 
     int AudioNodeWrapper::getNumberOfInputs() const {

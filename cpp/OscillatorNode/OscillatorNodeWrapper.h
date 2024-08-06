@@ -21,7 +21,7 @@ namespace audiocontext {
         std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
     public:
         explicit OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator);
-        ~OscillatorNodeWrapper();
+        ~OscillatorNodeWrapper() override;
 #else
         private:
             std::shared_ptr<IOSOscillator> oscillator_;

@@ -43,6 +43,6 @@ namespace audiocontext {
     void OscillatorNode::prepareForDeconstruction() {
         static const auto method = javaClassLocal()->getMethod<void()>("prepareForDeconstruction");
         method(javaPart_.get());
-        AudioNode::prepareForDeconstruction();
+        AudioNode::resetJavaPart();
     }
 } // namespace audiocontext

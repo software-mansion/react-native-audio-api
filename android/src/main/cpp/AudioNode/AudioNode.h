@@ -29,7 +29,7 @@ namespace audiocontext {
         int getNumberOfOutputs();
         void connect(const std::shared_ptr<AudioNode> &node);
         void disconnect(const std::shared_ptr<AudioNode> &node);
-        virtual void prepareForDeconstruction();
+        void resetJavaPart();
 
     protected:
         friend HybridBase;

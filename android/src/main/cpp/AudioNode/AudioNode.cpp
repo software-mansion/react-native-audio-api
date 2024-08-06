@@ -26,7 +26,7 @@ namespace audiocontext {
         method(javaPart_.get(), node->javaPart_.get());
     }
 
-    void AudioNode::prepareForDeconstruction() {
+    void AudioNode::resetJavaPart() {
         javaPart_.reset();
     }
 }
