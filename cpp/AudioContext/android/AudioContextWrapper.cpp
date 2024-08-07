@@ -6,7 +6,6 @@ namespace audiocontext {
     AudioContextWrapper::AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext) : audiocontext_(audiocontext) {
         auto destination = audiocontext_->getDestination();
         destinationNode_ = std::make_shared<AudioDestinationNodeWrapper>(destination);
-        state_ = audiocontext_->getState();
         sampleRate_ = audiocontext_->getSampleRate();
     }
 
@@ -30,7 +29,7 @@ namespace audiocontext {
     }
 
     std::string AudioContextWrapper::getState() {
-        return state_;
+        return audiocontext_->getState();
     }
 
     int AudioContextWrapper::getSampleRate() {

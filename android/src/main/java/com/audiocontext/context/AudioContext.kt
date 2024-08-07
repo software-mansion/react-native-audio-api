@@ -5,7 +5,6 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.SystemClock
-import android.util.Log
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.audiocontext.nodes.GainNode
