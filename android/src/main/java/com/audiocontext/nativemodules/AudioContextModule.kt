@@ -1,5 +1,6 @@
 package com.audiocontext.nativemodules
 
+import android.util.Log
 import com.audiocontext.context.AudioContext
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -12,10 +13,12 @@ class AudioContextModule(private val reactContext: ReactApplicationContext) : Re
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun installAudioContext() {
+  fun install(): Boolean {
     val audioContext = AudioContext()
     val jsContext = reactContext.javaScriptContextHolder!!.get()
     audioContext.install(jsContext)
+
+    return true
   }
 
   companion object {

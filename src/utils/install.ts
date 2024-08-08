@@ -1,10 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
 export function installACModule() {
-  if (Platform.OS !== 'ios') {
-    return;
-  }
-
   verifyExpoGo();
 
   const AudioContextModule = getAudioContextModule();

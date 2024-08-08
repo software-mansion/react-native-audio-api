@@ -34,9 +34,6 @@ namespace audiocontext
     {
       registerHybrid({
           makeNativeMethod("initHybrid", AudioContext::initHybrid),
-      });
-
-      javaClassLocal()->registerNatives({
           makeNativeMethod("install", AudioContext::install),
       });
     }
