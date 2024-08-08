@@ -5,13 +5,11 @@ import type {
   GainNode,
   StereoPannerNode,
   OscillatorNode,
-  ContextState,
 } from './types';
 import { installACModule } from './utils/install';
 
 export class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode | null;
-  readonly state: ContextState;
   readonly sampleRate: number;
 
   constructor() {
@@ -24,13 +22,15 @@ export class AudioContext implements BaseAudioContext {
     if (Platform.OS === 'android') {
       this.destination = global.__AudioContext.destination;
     }
-
-    this.state = global.__AudioContext.state;
     this.sampleRate = global.__AudioContext.sampleRate;
   }
 
   public get currentTime() {
     return global.__AudioContext.currentTime;
+  }
+
+  public get state() {
+    return global.__AudioContext.state;
   }
 
   createOscillator(): OscillatorNode {
