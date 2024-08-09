@@ -41,7 +41,7 @@ class AudioContext() : BaseAudioContext {
   external fun initHybrid(): HybridData?
   external fun install(jsContext: Long)
 
-  private fun initAudioTrack(bufferSize: Int): AudioTrack {
+  private fun initAudioTrack(): AudioTrack {
     val audioAttributes = AudioAttributes.Builder()
       .setUsage(AudioAttributes.USAGE_MEDIA)
       .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -53,7 +53,7 @@ class AudioContext() : BaseAudioContext {
       .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
       .build()
 
-    return AudioTrack(audioAttributes, audioFormat, bufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+    return AudioTrack(audioAttributes, audioFormat, Constants.BUFFER_SIZE, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
   }
 
   override fun getCurrentTime(): Double {
@@ -73,14 +73,12 @@ class AudioContext() : BaseAudioContext {
   }
 
   override fun getPlaybackParameters(): PlaybackParameters {
-    val bufferSize = 128
-
-    val buffer = ShortArray(bufferSize)
+    val buffer = ShortArray(Constants.BUFFER_SIZE)
 
     if(audioTracksList.isNotEmpty()) {
       return PlaybackParameters(audioTracksList.removeFirst(), buffer)
     } else {
-      val audioTrack = initAudioTrack(bufferSize)
+      val audioTrack = initAudioTrack()
 
       return PlaybackParameters(audioTrack, buffer)
     }
