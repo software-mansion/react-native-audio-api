@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include "GainNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
@@ -12,7 +11,6 @@ namespace audiocontext {
 
     class GainNodeHostObject : public AudioNodeHostObject {
     protected:
-        std::shared_ptr<GainNodeWrapper> wrapper_;
         std::shared_ptr<AudioParamHostObject> gainParam_;
 
     public:

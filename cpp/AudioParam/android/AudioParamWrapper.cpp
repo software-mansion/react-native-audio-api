@@ -9,6 +9,10 @@ namespace audiocontext{
         maxValue_ = param->getMaxValue();
     }
 
+    AudioParamWrapper::~AudioParamWrapper() {
+        param_->prepareForDeconstruction();
+    }
+
     double AudioParamWrapper::getValue() {
         return param_->getValue();
     }

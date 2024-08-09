@@ -5,6 +5,8 @@
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
+#include <utility>
+
 #include "AudioContextHostObject.h"
 #include "AudioContextWrapper.h"
 #include "OscillatorNode.h"
@@ -32,9 +34,6 @@ namespace audiocontext
     {
       registerHybrid({
           makeNativeMethod("initHybrid", AudioContext::initHybrid),
-      });
-
-      javaClassLocal()->registerNatives({
           makeNativeMethod("install", AudioContext::install),
       });
     }
@@ -46,13 +45,15 @@ namespace audiocontext
     std::string getState();
     int getSampleRate();
     double getCurrentTime();
+    void close();
 
     void install(jlong jsContext);
 
   private:
     friend HybridBase;
 
-    global_ref<AudioContext::javaobject> javaObject_;
+    global_ref<AudioContext::javaobject> javaPart_;
+    std::shared_ptr<AudioDestinationNode> destinationNode_;
 
     explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
   };

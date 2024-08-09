@@ -57,6 +57,10 @@ const App: React.FC = () => {
         panRef.current.connect(destination!);
       }
     }
+
+    return () => {
+      audioContextRef.current?.close();
+    };
   }, []);
 
   const handleGainChange = (value: number[]) => {
@@ -90,12 +94,6 @@ const App: React.FC = () => {
       oscillatorRef.current.detune.value = newValue;
     }
   };
-
-  useEffect(() => {
-    return () => {
-      oscillatorRef.current?.stop(0);
-    };
-  }, []);
 
   const handlePlayPause = () => {
     if (isPlaying) {

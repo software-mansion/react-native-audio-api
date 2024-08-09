@@ -20,6 +20,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
       field = value
     }
   private var waveType: WaveType = WaveType.SINE
+  private var wavePhase: Double = 0.0
 
   fun getWaveType(): String {
     return WaveType.toString(waveType)
@@ -30,22 +31,15 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  override fun generateSound() {
-    var wavePhase = 0.0
+  override fun generateBuffer() {
+    for(i in playbackParameters.buffer.indices) {
+      val computedFrequency = frequency.getValueAtTime(context.getCurrentTime()) * 2.0.pow(detune.getValueAtTime(context.getCurrentTime())/ 1200.0)
+      wavePhase += 2.0 * Math.PI * (computedFrequency / context.sampleRate)
 
-    while(isPlaying) {
-      for(i in playbackParameters.buffer.indices) {
-        val computedFrequency = frequency.getValueAtTime(context.getCurrentTime()) * 2.0.pow(detune.getValueAtTime(context.getCurrentTime())/ 1200.0)
-        wavePhase += 2.0 * Math.PI * (computedFrequency / context.sampleRate)
-
-        if (wavePhase > 2.0 * Math.PI) {
-          wavePhase -= 2.0 * Math.PI
-        }
-        playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
-
+      if (wavePhase > 2.0 * Math.PI) {
+        wavePhase -= 2.0 * Math.PI
       }
-      process(playbackParameters)
+      playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
     }
-    playbackParameters.audioTrack.flush()
   }
 }

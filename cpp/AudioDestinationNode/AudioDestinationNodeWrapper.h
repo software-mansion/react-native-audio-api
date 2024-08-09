@@ -1,13 +1,11 @@
 #pragma once
 
-#include <memory>
+#include "AudioNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioDestinationNode.h"
 #include "AudioNodeWrapper.h"
 #endif
-
-#include "AudioNodeWrapper.h"
 
 namespace audiocontext {
 
@@ -17,11 +15,8 @@ namespace audiocontext {
 
     class AudioDestinationNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-        private:
-            std::shared_ptr<AudioDestinationNode> destinationNode_;
-
-        public:
-            explicit AudioDestinationNodeWrapper(const std::shared_ptr<AudioDestinationNode> &destinationNode) : AudioNodeWrapper(destinationNode), destinationNode_(destinationNode) {}
+    public:
+        explicit AudioDestinationNodeWrapper(const std::shared_ptr<AudioDestinationNode> &destinationNode) : AudioNodeWrapper(destinationNode) {}
 #else
         public:
             explicit AudioDestinationNodeWrapper() {}

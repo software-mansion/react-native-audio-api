@@ -4,8 +4,8 @@ namespace audiocontext
 {
     using namespace facebook;
 
-    StereoPannerNodeHostObject::StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper), wrapper_(wrapper) {
-        auto panParam = wrapper_->getPanParam();
+    StereoPannerNodeHostObject::StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNodeWrapper> &wrapper) : AudioNodeHostObject(wrapper) {
+        auto panParam = wrapper->getPanParam();
         panParam_ = AudioParamHostObject::createFromWrapper(panParam);
     }
 

@@ -6,6 +6,7 @@ export interface BaseAudioContext {
   createOscillator(): OscillatorNode;
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
+  close(): void;
 }
 
 export interface AudioNode {

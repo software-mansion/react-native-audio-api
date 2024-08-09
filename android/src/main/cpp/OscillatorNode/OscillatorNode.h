@@ -22,5 +22,6 @@ namespace audiocontext {
         std::shared_ptr<AudioParam> getDetuneParam();
         std::string getWaveType();
         void setWaveType(const std::string &waveType);
+        void prepareForDeconstruction();
     };
 }// namespace audiocontext

@@ -9,12 +9,14 @@
 #endif
 
 namespace audiocontext {
+
     class AudioParamWrapper {
 #ifdef ANDROID
     protected:
         std::shared_ptr<AudioParam> param_;
     public:
         explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
+        ~AudioParamWrapper();
 #else
         protected:
             std::shared_ptr<IOSAudioParam> param_;

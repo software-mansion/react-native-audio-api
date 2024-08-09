@@ -5,7 +5,11 @@ namespace audiocontext
 
   using namespace facebook::jni;
 
-    AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis) : javaObject_(make_global(jThis)){}
+    AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis) : javaPart_(make_global(jThis)){
+        static const auto method = javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
+        auto destination = method(javaPart_.get());
+        destinationNode_ = std::shared_ptr<AudioDestinationNode>(destination->cthis());
+    }
 
     void AudioContext::install(jlong jsContext)
     {
@@ -16,7 +20,7 @@ namespace audiocontext
     std::shared_ptr<OscillatorNode> AudioContext::createOscillator()
     {
         static const auto method = javaClassLocal()->getMethod<OscillatorNode()>("createOscillator");
-        auto oscillator = method(javaObject_.get());
+        auto oscillator = method(javaPart_.get());
         auto oscillatorCppInstance = oscillator->cthis();
 
         return std::shared_ptr<OscillatorNode>(oscillatorCppInstance);
@@ -24,17 +28,13 @@ namespace audiocontext
 
     std::shared_ptr<AudioDestinationNode> AudioContext::getDestination()
     {
-        static const auto method = javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
-        auto destination = method(javaObject_.get());
-        auto destinationCppInstance = destination->cthis();
-
-        return std::shared_ptr<AudioDestinationNode>(destinationCppInstance);
+        return destinationNode_;
     }
 
     std::shared_ptr<GainNode> AudioContext::createGain()
     {
         static const auto method = javaClassLocal()->getMethod<GainNode()>("createGain");
-        auto gain = method(javaObject_.get());
+        auto gain = method(javaPart_.get());
         auto gainCppInstance = gain->cthis();
 
         return std::shared_ptr<GainNode>(gainCppInstance);
@@ -43,7 +43,7 @@ namespace audiocontext
     std::shared_ptr<StereoPannerNode> AudioContext::createStereoPanner()
     {
         static const auto method = javaClassLocal()->getMethod<StereoPannerNode()>("createStereoPanner");
-        auto stereoPanner = method(javaObject_.get());
+        auto stereoPanner = method(javaPart_.get());
         auto stereoPannerCppInstance = stereoPanner->cthis();
 
         return std::shared_ptr<StereoPannerNode>(stereoPannerCppInstance);
@@ -52,18 +52,25 @@ namespace audiocontext
     std::string AudioContext::getState()
     {
         static const auto method = javaClassLocal()->getMethod<JString()>("getState");
-        return method(javaObject_.get())->toStdString();
+        return method(javaPart_.get())->toStdString();
     }
 
     int AudioContext::getSampleRate()
     {
         static const auto method = javaClassLocal()->getMethod<jint()>("getSampleRate");
-        return method(javaObject_.get());
+        return method(javaPart_.get());
     }
 
     double AudioContext::getCurrentTime()
     {
         static const auto method = javaClassLocal()->getMethod<jdouble()>("getCurrentTime");
-        return method(javaObject_.get());
+        return method(javaPart_.get());
+    }
+
+    void AudioContext::close()
+    {
+        static const auto method = javaClassLocal()->getMethod<void()>("close");
+        method(javaPart_.get());
+        javaPart_.reset();
     }
 } // namespace audiocontext

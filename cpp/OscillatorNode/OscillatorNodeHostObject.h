@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include "OscillatorNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
@@ -11,8 +10,9 @@ namespace audiocontext {
     class OscillatorNodeWrapper;
 
     class OscillatorNodeHostObject : public AudioNodeHostObject {
+    private:
+        std::shared_ptr<OscillatorNodeWrapper> getOscillatorNodeWrapperFromAudioNodeWrapper();
     protected:
-        std::shared_ptr<OscillatorNodeWrapper> wrapper_;
         std::shared_ptr<AudioParamHostObject> frequencyParam_;
         std::shared_ptr<AudioParamHostObject> detuneParam_;
 

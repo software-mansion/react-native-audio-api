@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
 
@@ -19,10 +18,8 @@ namespace audiocontext {
 
     class StereoPannerNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-        private:
-            std::shared_ptr<StereoPannerNode> pannerNode_;
-        public:
-            explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
+    public:
+        explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
         private:
             std::shared_ptr<IOSStereoPannerNode> pannerNode_;

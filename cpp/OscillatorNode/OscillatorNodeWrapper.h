@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
 
@@ -11,16 +10,18 @@
 #endif
 
 namespace audiocontext {
+
 #ifdef ANDROID
     class OscillatorNode;
 #endif
 
     class OscillatorNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
-        private:
-            std::shared_ptr<OscillatorNode> oscillatorNode_;
-        public:
-            explicit OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator);
+    private:
+        std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
+    public:
+        explicit OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator);
+        ~OscillatorNodeWrapper() override;
 #else
         private:
             std::shared_ptr<IOSOscillator> oscillator_;
@@ -37,5 +38,6 @@ namespace audiocontext {
             void start(double time);
             void stop(double time);
             void setType(const std::string& type);
+
     };
 } // namespace audiocontext

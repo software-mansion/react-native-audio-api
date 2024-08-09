@@ -2,7 +2,6 @@
 
 #include <jsi/jsi.h>
 
-#include <utility>
 #include "AudioContextWrapper.h"
 #include "OscillatorNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"

@@ -8,6 +8,10 @@ namespace audiocontext {
         numberOfOutputs_ = node->getNumberOfOutputs();
     }
 
+    AudioNodeWrapper::~AudioNodeWrapper() {
+        node_->resetJavaPart();
+    }
+
     int AudioNodeWrapper::getNumberOfInputs() const {
         return numberOfInputs_;
     }

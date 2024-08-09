@@ -7,13 +7,14 @@ import type {
 } from '../types';
 
 type AudioContext = {
-  createOscillator: () => Oscillator;
-  createGain: () => Gain;
-  createStereoPanner: () => StereoPanner;
   destination: AudioDestinationNode | null;
   state: ContextState;
   sampleRate: number;
   currentTime: number;
+  createOscillator: () => Oscillator;
+  createGain: () => Gain;
+  createStereoPanner: () => StereoPanner;
+  close: () => void;
 };
 
 export declare global {

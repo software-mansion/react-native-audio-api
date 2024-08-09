@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include "AudioDestinationNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 
@@ -11,11 +10,8 @@ namespace audiocontext {
 
     class AudioDestinationNodeHostObject : public AudioNodeHostObject {
 
-    protected:
-        std::shared_ptr<AudioDestinationNodeWrapper> wrapper_;
-
     public:
-        explicit AudioDestinationNodeHostObject(const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper): AudioNodeHostObject(wrapper), wrapper_(wrapper) {}
+        explicit AudioDestinationNodeHostObject(const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper): AudioNodeHostObject(wrapper) {}
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
         void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;

@@ -27,13 +27,14 @@ namespace audiocontext {
 
         int getNumberOfInputs();
         int getNumberOfOutputs();
-        void connect(const std::shared_ptr<AudioNode> node);
-        void disconnect(const std::shared_ptr<AudioNode> node);
+        void connect(const std::shared_ptr<AudioNode> &node);
+        void disconnect(const std::shared_ptr<AudioNode> &node);
+        void resetJavaPart();
 
     protected:
         friend HybridBase;
 
-        global_ref<AudioNode::javaobject> javaObject_;
+        global_ref<AudioNode::javaobject> javaPart_;
 
         explicit AudioNode(jni::alias_ref<AudioNode::jhybridobject>& jThis);
     };

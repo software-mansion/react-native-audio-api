@@ -1,36 +1,36 @@
-import { NativeModules, Platform } from 'react-native';
-const { AudioContextModule } = NativeModules;
+import { Platform } from 'react-native';
 import type {
   BaseAudioContext,
   AudioDestinationNode,
   GainNode,
   StereoPannerNode,
   OscillatorNode,
-  ContextState,
 } from './types';
 import { installACModule } from './utils/install';
 
-installACModule();
-
 export class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode | null;
-  readonly state: ContextState;
   readonly sampleRate: number;
 
   constructor() {
     this.destination = null;
 
-    if (Platform.OS === 'android') {
-      AudioContextModule.installAudioContext();
-      this.destination = global.__AudioContext.destination;
+    if (global.__AudioContext == null) {
+      installACModule();
     }
 
-    this.state = global.__AudioContext.state;
+    if (Platform.OS === 'android') {
+      this.destination = global.__AudioContext.destination;
+    }
     this.sampleRate = global.__AudioContext.sampleRate;
   }
 
   public get currentTime() {
     return global.__AudioContext.currentTime;
+  }
+
+  public get state() {
+    return global.__AudioContext.state;
   }
 
   createOscillator(): OscillatorNode {
@@ -43,6 +43,10 @@ export class AudioContext implements BaseAudioContext {
 
   createStereoPanner(): StereoPannerNode {
     return global.__AudioContext.createStereoPanner();
+  }
+
+  close(): void {
+    global.__AudioContext.close();
   }
 }
 

@@ -6,7 +6,7 @@ namespace audiocontext{
 
     std::shared_ptr<AudioParam> GainNode::getGainParam() {
         static const auto method = javaClassLocal()->getMethod<AudioParam()>("getGain");
-        auto gain = method(javaObject_.get());
+        auto gain = method(javaPart_.get());
         auto gainCppInstance = gain->cthis();
 
         return std::shared_ptr<AudioParam>(gainCppInstance);

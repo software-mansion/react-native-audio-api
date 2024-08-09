@@ -1,6 +1,7 @@
 #pragma once
 
 #include <jsi/jsi.h>
+
 #include "AudioNodeWrapper.h"
 
 namespace audiocontext {

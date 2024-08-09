@@ -1,6 +1,5 @@
 #pragma once
 
-#include <jsi/jsi.h>
 #include "StereoPannerNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
@@ -12,7 +11,6 @@ namespace audiocontext {
 
     class StereoPannerNodeHostObject : public AudioNodeHostObject {
     protected:
-        std::shared_ptr<StereoPannerNodeWrapper> wrapper_;
         std::shared_ptr<AudioParamHostObject> panParam_;
 
     public:
