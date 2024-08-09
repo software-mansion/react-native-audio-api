@@ -20,6 +20,7 @@ include_directories(
         ../cpp/GainNode
         ../cpp/StereoPannerNode
         ../cpp/AudioParam
+        ../cpp/BiquadFilterNode
 
         src/main/cpp
         src/main/cpp/AudioContext
@@ -29,6 +30,7 @@ include_directories(
         src/main/cpp/GainNode
         src/main/cpp/StereoPannerNode
         src/main/cpp/AudioParam
+        src/main/cpp/BiquadFilterNode
 
         ../node_modules/react-native/ReactCommon/jsi
         ../node_modules/react-native/ReactAndroid/src/main/jni/react/jni
@@ -44,6 +46,7 @@ add_library(react-native-audio-context SHARED
         src/main/cpp/GainNode/GainNode
         src/main/cpp/StereoPannerNode/StereoPannerNode
         src/main/cpp/AudioParam/AudioParam
+        src/main/cpp/BiquadFilterNode/BiquadFilterNode
 
         ../cpp/AudioContext/AudioContextHostObject
         ../cpp/AudioContext/AudioContextWrapper.h
@@ -71,6 +74,10 @@ add_library(react-native-audio-context SHARED
         ../cpp/AudioParam/AudioParamHostObject
         ../cpp/AudioParam/AudioParamWrapper.h
         ../cpp/AudioParam/android/AudioParamWrapper.cpp
+
+        ../cpp/BiquadFilterNode/BiquadFilterNodeHostObject
+        ../cpp/BiquadFilterNode/BiquadFilterWrapper.h
+        ../cpp/BiquadFilterNode/android/BiquadFilterWrapper.cpp
 )
 
 find_package(ReactAndroid REQUIRED CONFIG)
