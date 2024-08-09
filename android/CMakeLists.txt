@@ -76,8 +76,8 @@ add_library(react-native-audio-context SHARED
         ../cpp/AudioParam/android/AudioParamWrapper.cpp
 
         ../cpp/BiquadFilterNode/BiquadFilterNodeHostObject
-        ../cpp/BiquadFilterNode/BiquadFilterWrapper.h
-        ../cpp/BiquadFilterNode/android/BiquadFilterWrapper.cpp
+        ../cpp/BiquadFilterNode/BiquadFilterNodeWrapper.h
+        ../cpp/BiquadFilterNode/android/BiquadFilterNodeWrapper.cpp
 )
 
 find_package(ReactAndroid REQUIRED CONFIG)

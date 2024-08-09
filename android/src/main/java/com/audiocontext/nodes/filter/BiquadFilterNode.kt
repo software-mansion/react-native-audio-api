@@ -15,6 +15,7 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
   private val Q: AudioParam = AudioParam(context, 1.0, Constants.MAX_FILTER_Q, -Constants.MAX_FILTER_Q)
     get() = field
   private val gain: AudioParam = AudioParam(context, 0.0, Constants.MAX_FILTER_GAIN, Constants.MIN_FILTER_GAIN)
+    get() = field
   private var filterType: FilterType = FilterType.LOWPASS
 
   fun getFilterType(): String {

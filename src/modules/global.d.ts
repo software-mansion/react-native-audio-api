@@ -1,7 +1,8 @@
 import type {
-  Oscillator,
-  Gain,
-  StereoPanner,
+  OscillatorNode,
+  GainNode,
+  StereoPannerNode,
+  BiquadFilterNode,
   AudioDestinationNode,
   ContextState,
 } from '../types';
@@ -11,9 +12,10 @@ type AudioContext = {
   state: ContextState;
   sampleRate: number;
   currentTime: number;
-  createOscillator: () => Oscillator;
-  createGain: () => Gain;
-  createStereoPanner: () => StereoPanner;
+  createOscillator: () => OscillatorNode;
+  createGain: () => GainNode;
+  createStereoPanner: () => StereoPannerNode;
+  createBiquadFilter: () => BiquadFilterNode;
   close: () => void;
 };
 
