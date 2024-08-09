@@ -293,7 +293,7 @@ The `BiquadFilterNode` interface represents a simple low-order filter. It can re
 &ensp;&ensp;&ensp;*Returns `AudioParam` representing the gain used in the current filtering algorithm.*
 
 &ensp;**`type`**<br>
-&ensp;&ensp;&ensp;*A string value defining the kind of filtering algorithm the node is implementing. Available values: `"low pass"`, `"high pass"`, `"bandpass"`.*
+&ensp;&ensp;&ensp;*A string value defining the kind of filtering algorithm the node is implementing. Available values: `"low pass"`, `"high pass"`, `"bandpass"`, `"lowshelf"`, `"highshelf"`, `"peaking"`, `"notch"`, `"allpass"` .*
 
 #### Code snippets
 
