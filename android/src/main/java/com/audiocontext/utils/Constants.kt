@@ -12,7 +12,7 @@ object Constants {
   val MAX_DETUNE: Double = 1200 * log2(MOST_POSITIVE_SINGLE_FLOAT)
   const val MAX_GAIN: Double = MOST_POSITIVE_SINGLE_FLOAT
   const val MAX_PAN: Double = 1.0
-  const val MAX_Q: Double = MOST_POSITIVE_SINGLE_FLOAT
+  const val MAX_FILTER_Q: Double = MOST_POSITIVE_SINGLE_FLOAT
   const val MAX_FILTER_FREQUENCY: Double = NYQUIST_FREQUENCY
   const val MIN_FILTER_FREQUENCY: Double = 0.0
   val MAX_FILTER_GAIN = 40 * log10(MOST_POSITIVE_SINGLE_FLOAT)
