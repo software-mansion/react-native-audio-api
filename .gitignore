@@ -29,6 +29,8 @@ DerivedData
 *.xcuserstate
 project.xcworkspace
 
+.xcode.env.local
+
 # Android/IJ
 #
 .classpath

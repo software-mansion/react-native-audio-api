@@ -6,13 +6,13 @@
     if (self != [super initWithContext:context]) {
       return self;
     }
-    
+
     _frequencyParam = [[AudioParam alloc] initWithContext:context value:440 minValue:0 maxValue:1600];
     _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-100 maxValue:100];
     _waveType = WaveTypeSine;
     _isPlaying = NO;
     _deltaTime = 1 / self.context.sampleRate;
-    
+
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
 
@@ -41,9 +41,9 @@
     if (_isPlaying) {
         [self stopPlayback];
     }
-    
+
     [self.context.audioEngine detachNode:self.sourceNode];
-    
+
     _frequencyParam = nil;
     _detuneParam = nil;
     _format = nil;
@@ -53,7 +53,7 @@
     if (_isPlaying) {
         return;
     }
-    
+
     double delay = time - [self.context getCurrentTime];
     if (delay <= 0) {
         [self startPlayback];
@@ -70,7 +70,7 @@
     if (!_isPlaying) {
         return;
     }
-    
+
     double delay = time - [self.context getCurrentTime];
     if (delay <= 0) {
         [self stopPlayback];
@@ -85,20 +85,21 @@
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence timestamp:(const AudioTimeStamp *)timestamp frameCount:(AVAudioFrameCount)frameCount outputData:(AudioBufferList *)outputData {
     float *audioBufferPointer = (float *)outputData->mBuffers[0].mData;
-    
+
     float time = [self.context getCurrentTime];
+
     for (int frame = 0; frame < frameCount; frame++) {
         // Convert cents to HZ
         if (!_isPlaying) {
             audioBufferPointer[frame] = 0;
             continue;
         }
-       
+
         double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
         double detunedFrequency = round(detuneRatio * [_frequencyParam getValueAtTime:time]);
         double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.context.sampleRate;
         audioBufferPointer[frame] = [WaveType valueForWaveType:_waveType atPhase:_phase];
-                    
+
         time += _deltaTime;
 
         _phase += phaseIncrement;
@@ -106,10 +107,10 @@
             _phase -= FULL_CIRCLE_RADIANS;
         }
     }
-    
+
     // Could change the process way to process single frame instead of looping over it again.
     [self process:audioBufferPointer frameCount:frameCount];
-    
+
     return noErr;
 }
 
