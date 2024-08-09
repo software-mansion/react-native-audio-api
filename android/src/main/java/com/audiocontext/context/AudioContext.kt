@@ -7,15 +7,16 @@ import android.media.AudioTrack
 import android.os.SystemClock
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.AudioScheduledSourceNode
+import com.audiocontext.utils.Constants
 import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
 import java.util.LinkedList
 
 class AudioContext() : BaseAudioContext {
-  override val sampleRate: Int = 44100
+  override val sampleRate: Int = Constants.SAMPLE_RATE
     get() = field
   override val destination: AudioDestinationNode = AudioDestinationNode(this)
     get() = field
@@ -71,7 +72,7 @@ class AudioContext() : BaseAudioContext {
     sources.clear()
   }
 
-  override fun getPlaybackParameters(): PlaybackParameters{
+  override fun getPlaybackParameters(): PlaybackParameters {
     val bufferSize = 128
 
     val buffer = ShortArray(bufferSize)

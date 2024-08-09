@@ -1,7 +1,7 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.PlaybackParameters
 import java.util.PriorityQueue
 
 abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(context) {

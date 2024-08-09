@@ -5,7 +5,7 @@ import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.PlaybackParameters
 
 interface BaseAudioContext {
   val sampleRate: Int

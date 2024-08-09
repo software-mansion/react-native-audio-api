@@ -3,22 +3,16 @@ package com.audiocontext.nodes.oscillator
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.AudioParam
+import com.audiocontext.parameters.AudioParam
 import com.audiocontext.nodes.AudioScheduledSourceNode
+import com.audiocontext.utils.Constants
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
-  //https://webaudio.github.io/web-audio-api/#--nyquist-frequency
-  private var frequency: AudioParam = AudioParam(context, 440.0, context.sampleRate/2.0, 0.0)
+  private val frequency: AudioParam = AudioParam(context, 440.0, Constants.NYQUIST_FREQUENCY, -Constants.NYQUIST_FREQUENCY)
     get() = field
-    set(value) {
-      field = value
-    }
-  private var detune: AudioParam = AudioParam(context, 0.0, 100.0, -100.0)
+  private val detune: AudioParam = AudioParam(context, 0.0, Constants.MAX_DETUNE, -Constants.MAX_DETUNE)
     get() = field
-    set(value) {
-      field = value
-    }
   private var waveType: WaveType = WaveType.SINE
   private var wavePhase: Double = 0.0
 

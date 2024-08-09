@@ -13,7 +13,7 @@ import {
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
-const INITIAL_GAIN = 0.5;
+const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
 
 const App: React.FC = () => {
