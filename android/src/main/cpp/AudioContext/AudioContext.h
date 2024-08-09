@@ -13,6 +13,7 @@
 #include "AudioDestinationNode.h"
 #include "GainNode.h"
 #include "StereoPannerNode.h"
+#include "BiquadFilterNode.h"
 
 namespace audiocontext
 {
@@ -42,6 +43,7 @@ namespace audiocontext
     std::shared_ptr<OscillatorNode> createOscillator();
     std::shared_ptr<GainNode> createGain();
     std::shared_ptr<StereoPannerNode> createStereoPanner();
+    std::shared_ptr<BiquadFilterNode> createBiquadFilter();
     std::string getState();
     int getSampleRate();
     double getCurrentTime();

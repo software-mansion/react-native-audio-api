@@ -6,6 +6,7 @@
 #include "AudioDestinationNodeWrapper.h"
 #include "GainNodeWrapper.h"
 #include "StereoPannerNodeWrapper.h"
+#include "BiquadFilterNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioContext.h"
@@ -42,6 +43,7 @@ namespace audiocontext {
         std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
         std::shared_ptr<GainNodeWrapper> createGain();
         std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
+        std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter();
         std::string getState();
         int getSampleRate();
         double getCurrentTime();

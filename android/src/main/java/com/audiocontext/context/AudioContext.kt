@@ -10,6 +10,7 @@ import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.audiocontext.utils.Constants
 import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
+import com.audiocontext.nodes.filter.BiquadFilterNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
 import com.audiocontext.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
@@ -100,5 +101,9 @@ class AudioContext() : BaseAudioContext {
 
   override fun createStereoPanner(): StereoPannerNode {
     return StereoPannerNode(this)
+  }
+
+  override fun createBiquadFilter(): BiquadFilterNode {
+    return BiquadFilterNode(this)
   }
 }

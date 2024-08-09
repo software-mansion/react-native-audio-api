@@ -17,9 +17,8 @@ namespace audiocontext {
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createOscillator"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createGain"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createStereoPanner"));
-        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "state"));
-        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "sampleRate"));
-        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "currentTime"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBiquadFilter"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "close"));
         return propertyNames;
     }
 
@@ -63,6 +62,14 @@ namespace audiocontext {
                 auto stereoPanner = wrapper_->createStereoPanner();
                 auto stereoPannerHostObject = StereoPannerNodeHostObject::createFromWrapper(stereoPanner);
                 return jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);
+            });
+        }
+
+        if (propName == "createBiquadFilter") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto biquadFilter = wrapper_->createBiquadFilter();
+                auto biquadFilterHostObject = BiquadFilterNodeHostObject::createFromWrapper(biquadFilter);
+                return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
             });
         }
 

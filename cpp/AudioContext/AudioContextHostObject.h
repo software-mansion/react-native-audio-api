@@ -7,6 +7,7 @@
 #include "AudioDestinationNodeHostObject.h"
 #include "GainNodeHostObject.h"
 #include "StereoPannerNodeHostObject.h"
+#include "BiquadFilterNodeHostObject.h"
 
 namespace audiocontext
 {

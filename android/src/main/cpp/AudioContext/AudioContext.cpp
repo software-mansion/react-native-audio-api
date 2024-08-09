@@ -49,6 +49,15 @@ namespace audiocontext
         return std::shared_ptr<StereoPannerNode>(stereoPannerCppInstance);
     }
 
+    std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter()
+    {
+        static const auto method = javaClassLocal()->getMethod<BiquadFilterNode()>("createBiquadFilter");
+        auto biquadFilter = method(javaPart_.get());
+        auto biquadFilterCppInstance = biquadFilter->cthis();
+
+        return std::shared_ptr<BiquadFilterNode>(biquadFilterCppInstance);
+    }
+
     std::string AudioContext::getState()
     {
         static const auto method = javaClassLocal()->getMethod<JString()>("getState");

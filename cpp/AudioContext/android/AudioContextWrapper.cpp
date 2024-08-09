@@ -28,6 +28,11 @@ namespace audiocontext {
         return std::make_shared<StereoPannerNodeWrapper>(panner);
     }
 
+    std::shared_ptr<BiquadFilterNodeWrapper> AudioContextWrapper::createBiquadFilter() {
+        auto filter = audiocontext_->createBiquadFilter();
+        return std::make_shared<BiquadFilterNodeWrapper>(filter);
+    }
+
     std::string AudioContextWrapper::getState() {
         return audiocontext_->getState();
     }
