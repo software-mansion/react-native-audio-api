@@ -5,15 +5,11 @@ namespace audiocontext
 
   using namespace facebook::jni;
 
-    AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis) : javaPart_(make_global(jThis)){
-        static const auto method = javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
-        auto destination = method(javaPart_.get());
-        destinationNode_ = std::shared_ptr<AudioDestinationNode>(destination->cthis());
-    }
+    AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis) : javaPart_(make_global(jThis)) {};
 
     void AudioContext::install(jlong jsContext)
     {
-        auto audioContextWrapper = std::make_shared<AudioContextWrapper>(std::shared_ptr<AudioContext>(this));
+        auto audioContextWrapper = std::make_shared<AudioContextWrapper>(this);
         AudioContextHostObject::createAndInstallFromWrapper(audioContextWrapper, jsContext);
     }
 
@@ -28,7 +24,11 @@ namespace audiocontext
 
     std::shared_ptr<AudioDestinationNode> AudioContext::getDestination()
     {
-        return destinationNode_;
+        static const auto method = javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
+        auto destination = method(javaPart_.get());
+        auto destinationCppInstance = destination->cthis();
+
+        return std::shared_ptr<AudioDestinationNode>(destinationCppInstance);
     }
 
     std::shared_ptr<GainNode> AudioContext::createGain()

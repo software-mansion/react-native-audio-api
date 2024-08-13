@@ -29,6 +29,6 @@ namespace audiocontext {
         private:
             std::shared_ptr<AudioParamWrapper> gainParam_;
         public:
-            std::shared_ptr<AudioParamWrapper> getGainParam();
+            std::shared_ptr<AudioParamWrapper> getGainParam() const;
     };
 } // namespace audiocontext

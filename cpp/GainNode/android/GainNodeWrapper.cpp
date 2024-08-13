@@ -9,7 +9,7 @@ namespace audiocontext {
         gainParam_ = std::make_shared<AudioParamWrapper>(gainParam);
     }
 
-    std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() {
+    std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() const {
         return gainParam_;
     }
 } // namespace audiocontext

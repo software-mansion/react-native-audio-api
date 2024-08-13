@@ -7,7 +7,7 @@ namespace audiocontext
         return std::make_shared<OscillatorNodeWrapper>(audiocontext_);
     }
 
-    std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() {
+    std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() const {
         // TODO: Add AudioDestinationNode implementation
         return std::make_shared<AudioDestinationNodeWrapper>();
     }
@@ -33,7 +33,7 @@ namespace audiocontext
         return audiocontext_->getState();
     }
 
-    int AudioContextWrapper::getSampleRate() {
+    int AudioContextWrapper::getSampleRate() const {
         return audiocontext_->getSampleRate();
     }
 } // namespace audiocontext

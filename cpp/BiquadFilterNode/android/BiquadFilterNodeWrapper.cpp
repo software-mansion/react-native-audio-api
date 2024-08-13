@@ -19,20 +19,19 @@ namespace audiocontext {
         gainParam_ = std::make_shared<AudioParamWrapper>(gainParam);
     }
 
-
-    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getFrequencyParam() {
+    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getFrequencyParam() const {
         return frequencyParam_;
     }
 
-    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getDetuneParam() {
+    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getDetuneParam() const {
         return detuneParam_;
     }
 
-    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getQParam() {
+    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getQParam() const {
         return QParam_;
     }
 
-    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getGainParam() {
+    std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getGainParam() const {
         return gainParam_;
     }
 

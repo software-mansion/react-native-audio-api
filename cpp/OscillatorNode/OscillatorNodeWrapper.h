@@ -32,8 +32,8 @@ namespace audiocontext {
             std::shared_ptr<AudioParamWrapper> frequencyParam_;
             std::shared_ptr<AudioParamWrapper> detuneParam_;
         public:
-            std::shared_ptr<AudioParamWrapper> getFrequencyParam();
-            std::shared_ptr<AudioParamWrapper> getDetuneParam();
+            std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
+            std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
             std::string getType();
             void start(double time);
             void stop(double time);
