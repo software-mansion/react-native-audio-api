@@ -27,7 +27,7 @@ abstract class AudioNode(val context: BaseAudioContext) {
   external fun initHybrid(): HybridData?
 
   fun connect(node: AudioNode) {
-    if(this.numberOfOutputs > 0) {
+    if(this.numberOfOutputs > connectedNodes.size) {
       connectedNodes.add(node)
     }
   }
