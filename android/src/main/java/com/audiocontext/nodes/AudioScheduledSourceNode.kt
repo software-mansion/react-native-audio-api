@@ -60,11 +60,13 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     context.addAudioTrack(playbackParameters.audioTrack)
   }
 
-  fun close() {
+  override fun close() {
     try {
-      playbackParameters.audioTrack.stop()
+      handleStop()
     } catch (e: IllegalStateException) {
       e.printStackTrace()
     }
+
+    super.close()
   }
 }

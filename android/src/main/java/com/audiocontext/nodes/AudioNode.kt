@@ -10,7 +10,7 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
-  private val connectedNodes = mutableListOf<AudioNode>()
+  protected val connectedNodes = mutableListOf<AudioNode>()
 
   private val mHybridData: HybridData?;
 
@@ -38,5 +38,10 @@ abstract class AudioNode(val context: BaseAudioContext) {
 
   open fun process(playbackParameters: PlaybackParameters) {
     connectedNodes.forEach { it.process(playbackParameters) }
+  }
+
+  open fun close() {
+    connectedNodes.forEach { it.close() }
+    connectedNodes.clear()
   }
 }

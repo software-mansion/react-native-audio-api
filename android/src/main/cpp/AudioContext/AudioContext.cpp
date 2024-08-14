@@ -75,5 +75,6 @@ namespace audiocontext
     {
         static const auto method = javaClassLocal()->getMethod<void()>("close");
         method(javaPart_.get());
+        javaPart_.reset();
     }
 } // namespace audiocontext

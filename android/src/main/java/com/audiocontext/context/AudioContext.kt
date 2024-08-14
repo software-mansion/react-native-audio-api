@@ -70,6 +70,7 @@ class AudioContext() : BaseAudioContext {
     audioTracksList.forEach { it.release() }
     audioTracksList.clear()
     sources.forEach { it.close() }
+    sources.clear()
   }
 
   override fun getPlaybackParameters(): PlaybackParameters {
