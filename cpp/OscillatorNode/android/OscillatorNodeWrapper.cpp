@@ -3,11 +3,11 @@
 
 namespace audiocontext {
 
-    std::shared_ptr<OscillatorNode> OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
-        return std::static_pointer_cast<OscillatorNode>(node_);
+    OscillatorNode* OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
+        return static_cast<OscillatorNode*>(node_);
     }
 
-    OscillatorNodeWrapper::OscillatorNodeWrapper(const std::shared_ptr<OscillatorNode> &oscillator) : AudioNodeWrapper(
+    OscillatorNodeWrapper::OscillatorNodeWrapper(OscillatorNode *oscillator) : AudioNodeWrapper(
             oscillator) {
         auto frequencyParam = oscillator->getFrequencyParam();
         frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);

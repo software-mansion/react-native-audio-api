@@ -27,8 +27,8 @@ namespace audiocontext {
 
         int getNumberOfInputs();
         int getNumberOfOutputs();
-        void connect(const std::shared_ptr<AudioNode> &node);
-        void disconnect(const std::shared_ptr<AudioNode> &node);
+        void connect(const AudioNode *node);
+        void disconnect(const AudioNode *node);
         void resetJavaPart();
 
     protected:

@@ -12,9 +12,9 @@ namespace audiocontext {
     class AudioNodeWrapper {
 #ifdef ANDROID
     protected:
-        std::shared_ptr<AudioNode> node_;
+        AudioNode* node_;
     public:
-        explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node);
+        explicit AudioNodeWrapper(AudioNode *node);
         virtual ~AudioNodeWrapper();
 #else
         public:

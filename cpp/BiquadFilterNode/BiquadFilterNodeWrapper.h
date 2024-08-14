@@ -17,9 +17,9 @@ namespace audiocontext {
     class BiquadFilterNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
     private:
-        std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
+        BiquadFilterNode* getBiquadFilterNodeFromAudioNode();
     public:
-        explicit BiquadFilterNodeWrapper(const std::shared_ptr<BiquadFilterNode> &biquadFilterNode);
+        explicit BiquadFilterNodeWrapper(BiquadFilterNode *biquadFilterNode);
 #else
     public:
         explicit BiquadFilterNodeWrapper(){};

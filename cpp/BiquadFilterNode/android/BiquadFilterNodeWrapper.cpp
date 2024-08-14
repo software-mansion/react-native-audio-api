@@ -3,11 +3,11 @@
 
 namespace audiocontext {
 
-    std::shared_ptr<BiquadFilterNode> BiquadFilterNodeWrapper::getBiquadFilterNodeFromAudioNode() {
-        return std::static_pointer_cast<BiquadFilterNode>(node_);
+    BiquadFilterNode* BiquadFilterNodeWrapper::getBiquadFilterNodeFromAudioNode() {
+        return static_cast<BiquadFilterNode*>(node_);
     }
 
-    BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(const std::shared_ptr<BiquadFilterNode> &biquadFilterNode)
+    BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(BiquadFilterNode *biquadFilterNode)
             : AudioNodeWrapper(biquadFilterNode) {
         auto frequencyParam = biquadFilterNode->getFrequencyParam();
         frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);

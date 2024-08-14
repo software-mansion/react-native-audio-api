@@ -13,49 +13,44 @@ namespace audiocontext
         AudioContextHostObject::createAndInstallFromWrapper(audioContextWrapper, jsContext);
     }
 
-    std::shared_ptr<OscillatorNode> AudioContext::createOscillator()
-    {
-        static const auto method = javaClassLocal()->getMethod<OscillatorNode()>("createOscillator");
-        auto oscillator = method(javaPart_.get());
-        auto oscillatorCppInstance = oscillator->cthis();
-
-        return std::shared_ptr<OscillatorNode>(oscillatorCppInstance);
-    }
-
-    std::shared_ptr<AudioDestinationNode> AudioContext::getDestination()
+    AudioDestinationNode* AudioContext::getDestination()
     {
         static const auto method = javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
         auto destination = method(javaPart_.get());
-        auto destinationCppInstance = destination->cthis();
 
-        return std::shared_ptr<AudioDestinationNode>(destinationCppInstance);
+       return destination->cthis();
     }
 
-    std::shared_ptr<GainNode> AudioContext::createGain()
+    OscillatorNode* AudioContext::createOscillator()
+    {
+        static const auto method = javaClassLocal()->getMethod<OscillatorNode()>("createOscillator");
+        auto oscillator = method(javaPart_.get());
+
+        return oscillator->cthis();
+    }
+
+    GainNode* AudioContext::createGain()
     {
         static const auto method = javaClassLocal()->getMethod<GainNode()>("createGain");
         auto gain = method(javaPart_.get());
-        auto gainCppInstance = gain->cthis();
 
-        return std::shared_ptr<GainNode>(gainCppInstance);
+        return gain->cthis();
     }
 
-    std::shared_ptr<StereoPannerNode> AudioContext::createStereoPanner()
+    StereoPannerNode* AudioContext::createStereoPanner()
     {
         static const auto method = javaClassLocal()->getMethod<StereoPannerNode()>("createStereoPanner");
         auto stereoPanner = method(javaPart_.get());
-        auto stereoPannerCppInstance = stereoPanner->cthis();
 
-        return std::shared_ptr<StereoPannerNode>(stereoPannerCppInstance);
+        return stereoPanner->cthis();
     }
 
-    std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter()
+    BiquadFilterNode* AudioContext::createBiquadFilter()
     {
         static const auto method = javaClassLocal()->getMethod<BiquadFilterNode()>("createBiquadFilter");
         auto biquadFilter = method(javaPart_.get());
-        auto biquadFilterCppInstance = biquadFilter->cthis();
 
-        return std::shared_ptr<BiquadFilterNode>(biquadFilterCppInstance);
+        return biquadFilter->cthis();
     }
 
     std::string AudioContext::getState()

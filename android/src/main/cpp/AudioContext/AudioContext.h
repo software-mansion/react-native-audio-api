@@ -39,11 +39,11 @@ namespace audiocontext
       });
     }
 
-    std::shared_ptr<AudioDestinationNode> getDestination();
-    std::shared_ptr<OscillatorNode> createOscillator();
-    std::shared_ptr<GainNode> createGain();
-    std::shared_ptr<StereoPannerNode> createStereoPanner();
-    std::shared_ptr<BiquadFilterNode> createBiquadFilter();
+    AudioDestinationNode* getDestination();
+    OscillatorNode* createOscillator();
+    GainNode* createGain();
+    StereoPannerNode* createStereoPanner();
+    BiquadFilterNode* createBiquadFilter();
     std::string getState();
     int getSampleRate();
     double getCurrentTime();

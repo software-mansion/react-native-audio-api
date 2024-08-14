@@ -3,7 +3,7 @@
 
 namespace audiocontext {
 
-    GainNodeWrapper::GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode) : AudioNodeWrapper(
+    GainNodeWrapper::GainNodeWrapper(GainNode *gainNode) : AudioNodeWrapper(
             gainNode) {
         auto gainParam = gainNode->getGainParam();
         gainParam_ = std::make_shared<AudioParamWrapper>(gainParam);

@@ -3,7 +3,7 @@
 
 namespace audiocontext {
 
-    StereoPannerNodeWrapper::StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode) : AudioNodeWrapper(
+    StereoPannerNodeWrapper::StereoPannerNodeWrapper(StereoPannerNode *pannerNode) : AudioNodeWrapper(
             pannerNode) {
         auto panParam = pannerNode->getPanParam();
         panParam_ = std::make_shared<AudioParamWrapper>(panParam);
