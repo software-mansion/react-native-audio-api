@@ -16,10 +16,10 @@ namespace audiocontext {
     public:
         static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/filter/BiquadFilterNode;";
 
-        std::shared_ptr<AudioParam> getFrequencyParam();
-        std::shared_ptr<AudioParam> getDetuneParam();
-        std::shared_ptr<AudioParam> getQParam();
-        std::shared_ptr<AudioParam> getGainParam();
+        AudioParam* getFrequencyParam();
+        AudioParam* getDetuneParam();
+        AudioParam* getQParam();
+        AudioParam* getGainParam();
         std::string getFilterType();
         void setFilterType(const std::string &filterType);
     };

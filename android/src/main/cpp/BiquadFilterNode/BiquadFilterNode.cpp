@@ -4,36 +4,32 @@ namespace audiocontext{
 
     using namespace facebook::jni;
 
-    std::shared_ptr<AudioParam> BiquadFilterNode::getFrequencyParam() {
+    AudioParam* BiquadFilterNode::getFrequencyParam() {
         static const auto method = javaClassLocal()->getMethod<AudioParam()>("getFrequency");
         auto frequency = method(javaPart_.get());
-        auto frequencyCppInstance = frequency->cthis();
 
-        return std::shared_ptr<AudioParam>(frequencyCppInstance);
+        return frequency->cthis();
     }
 
-    std::shared_ptr<AudioParam> BiquadFilterNode::getDetuneParam() {
+    AudioParam* BiquadFilterNode::getDetuneParam() {
         static const auto method = javaClassLocal()->getMethod<AudioParam()>("getDetune");
         auto detune = method(javaPart_.get());
-        auto detuneCppInstance = detune->cthis();
 
-        return std::shared_ptr<AudioParam>(detuneCppInstance);
+        return detune->cthis();
     }
 
-    std::shared_ptr<AudioParam> BiquadFilterNode::getQParam() {
+    AudioParam* BiquadFilterNode::getQParam() {
         static const auto method = javaClassLocal()->getMethod<AudioParam()>("getQ");
         auto Q = method(javaPart_.get());
-        auto QCppInstance = Q->cthis();
 
-        return std::shared_ptr<AudioParam>(QCppInstance);
+        return Q->cthis();
     }
 
-    std::shared_ptr<AudioParam> BiquadFilterNode::getGainParam() {
+    AudioParam* BiquadFilterNode::getGainParam() {
         static const auto method = javaClassLocal()->getMethod<AudioParam()>("getGain");
         auto gain = method(javaPart_.get());
-        auto gainCppInstance = gain->cthis();
 
-        return std::shared_ptr<AudioParam>(gainCppInstance);
+        return gain->cthis();
     }
 
     std::string BiquadFilterNode::getFilterType() {
