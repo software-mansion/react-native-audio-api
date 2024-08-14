@@ -10,7 +10,8 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
-  protected val connectedNodes = mutableListOf<AudioNode>()
+  private val inputNodes = mutableListOf<AudioNode>()
+  private val outputNodes = mutableListOf<AudioNode>()
 
   private val mHybridData: HybridData?;
 
@@ -27,21 +28,24 @@ abstract class AudioNode(val context: BaseAudioContext) {
   external fun initHybrid(): HybridData?
 
   fun connect(node: AudioNode) {
-    if(this.numberOfOutputs > connectedNodes.size) {
-      connectedNodes.add(node)
+    if(numberOfOutputs > outputNodes.size && node.numberOfInputs > node.inputNodes.size) {
+      outputNodes.add(node)
+      node.inputNodes.add(this)
     }
   }
 
-  fun disconnect() {
-    connectedNodes.clear()
+  fun disconnect(node: AudioNode) {
+    outputNodes.remove(node)
+    node.inputNodes.remove(this)
   }
 
   open fun process(playbackParameters: PlaybackParameters) {
-    connectedNodes.forEach { it.process(playbackParameters) }
+    outputNodes.forEach { it.process(playbackParameters) }
   }
 
   open fun close() {
-    connectedNodes.forEach { it.close() }
-    connectedNodes.clear()
+    outputNodes.forEach { it.close() }
+    inputNodes.clear()
+    outputNodes.clear()
   }
 }
