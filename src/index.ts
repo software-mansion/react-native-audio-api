@@ -55,4 +55,4 @@ export class AudioContext implements BaseAudioContext {
   }
 }
 
-export type { GainNode, StereoPannerNode, OscillatorNode };
+export type { GainNode, StereoPannerNode, OscillatorNode, BiquadFilterNode };

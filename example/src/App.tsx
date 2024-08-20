@@ -3,6 +3,7 @@ import { Button, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRef, useState, useEffect } from 'react';
 import { Slider } from '@miblanchard/react-native-slider';
 import { Kick } from './sound-engines/Kick';
+import { HiHat } from './sound-engines/HiHat';
 
 import {
   AudioContext,
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
   const kickRef = useRef<Kick | null>(null);
+  const hiHatRef = useRef<HiHat | null>(null);
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -111,6 +113,18 @@ const App: React.FC = () => {
     kickRef.current.play(audioContextRef.current.currentTime);
   };
 
+  const handlePlayHiHat = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
+    if (!hiHatRef.current) {
+      hiHatRef.current = new HiHat(audioContextRef.current);
+    }
+
+    hiHatRef.current.play(audioContextRef.current.currentTime);
+  };
+
   return (
     <View style={styles.mainContainer}>
       <Text style={styles.title}>React Native Oscillator</Text>
@@ -167,6 +181,9 @@ const App: React.FC = () => {
       <View style={styles.button}>
         <Button title="Play Kick" onPress={handlePlayKick} />
       </View>
+      <View style={styles.button}>
+        <Button title="Play HiHat" onPress={handlePlayHiHat} />
+      </View>
     </View>
   );
 };
@@ -190,6 +207,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: 100,
+    margin: 10,
   },
   slider: {
     width: 300,
