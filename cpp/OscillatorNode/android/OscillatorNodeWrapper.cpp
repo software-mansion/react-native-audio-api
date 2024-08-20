@@ -20,7 +20,7 @@ namespace audiocontext {
         oscillatorNode_->prepareForDeconstruction();
     }
 
-    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam() const{
+    std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam() const {
         return frequencyParam_;
     }
 
