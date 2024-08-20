@@ -41,6 +41,7 @@ const App: React.FC = () => {
       oscillatorRef.current.type = 'sine';
 
       gainRef.current = audioContextRef.current.createGain();
+      gainRef.current.gain.value = INITIAL_GAIN;
 
       panRef.current = audioContextRef.current.createStereoPanner();
       panRef.current.pan.value = INITIAL_PAN;

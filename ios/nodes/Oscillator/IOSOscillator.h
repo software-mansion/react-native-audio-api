@@ -15,8 +15,9 @@ namespace audiocontext {
     class IOSOscillator : public IOSAudioNode {
         public:
             explicit IOSOscillator(std::shared_ptr<IOSAudioContext> context);
-            void start() const;
-            void stop() const;
+            ~IOSOscillator();
+            void start(double time) const;
+            void stop(double time) const;
             void setType(const std::string &type) const;
             std::string getType() const;
             std::shared_ptr<IOSAudioParam> getFrequencyParam();

@@ -2,6 +2,11 @@
 
 namespace audiocontext {
 
+    IOSAudioParam::~IOSAudioParam() {
+        [audioParam clean];
+        audioParam = nil;
+    }
+
     void IOSAudioParam::setValue(float value) {
         [audioParam setValue:value];
     }
@@ -20,6 +25,18 @@ namespace audiocontext {
 
     float IOSAudioParam::getDefaultValue() {
         return [audioParam getDefaultValue];
+    }
+
+    void IOSAudioParam::setValueAtTime(float value, double time) {
+        [audioParam setValueAtTime:value time:time];
+    }
+
+    void IOSAudioParam::linearRampToValueAtTime(float value, double time) {
+        [audioParam linearRampToValueAtTime:value time:time];
+    }
+
+    void IOSAudioParam::exponentialRampToValueAtTime(float value, double time) {
+        [audioParam exponentialRampToValueAtTime:value time:time];
     }
 
 } // namespace audiocontext

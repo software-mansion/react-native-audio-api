@@ -61,7 +61,7 @@ npm install react-native-audio-context
 </details>
 
 <details>
-  <summary><b>AudioParam</b><br/> Android: ✅ <br />iOS: ⏳</summary>
+  <summary><b>AudioParam</b><br/> Android: ✅ <br />iOS: ✅</summary>
 
 | Method / Property              | iOS | Android |
 | ------------------------------ | --- | ------- |
@@ -69,9 +69,9 @@ npm install react-native-audio-context
 | 🔹defaultValue                 | ✅  | ✅      |
 | 🔹minValue                     | ✅  | ✅      |
 | 🔹maxValue                     | ✅  | ✅      |
-| 🔘setValueAtTime               | ⏳  | ✅      |
-| 🔘linearRampToValueAtTime      | ⏳  | ✅      |
-| 🔘exponentialRampToValueAtTime | ⏳  | ✅      |
+| 🔘setValueAtTime               | ✅  | ✅      |
+| 🔘linearRampToValueAtTime      | ✅  | ✅      |
+| 🔘exponentialRampToValueAtTime | ✅  | ✅      |
 
 </details>
 
@@ -96,11 +96,11 @@ npm install react-native-audio-context
 </details>
 
 <details>
-  <summary><b>StereoPannerNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>StereoPannerNode</b><br/> Android: ✅ <br />iOS: ⏳</summary>
 
 | Method / Property | iOS | Android |
 | ----------------- | --- | ------- |
-| 🔹pan             | ✅  | ✅      |
+| 🔹pan             | ⏳  | ✅      |
 
 </details>
 

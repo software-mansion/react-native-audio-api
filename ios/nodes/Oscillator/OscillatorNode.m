@@ -2,28 +2,30 @@
 
 @implementation OscillatorNode
 
-- (instancetype)init:(AudioContext *)context {
-    if (self != [super init:context]) {
+- (instancetype)initWithContext:(AudioContext *)context {
+    if (self != [super initWithContext:context]) {
       return self;
     }
     
-    _frequencyParam = [[AudioParam alloc] init:context value:440 minValue:0 maxValue:1600];
-    _detuneParam = [[AudioParam alloc] init:context value:0 minValue:-100 maxValue:100];
+    _frequencyParam = [[AudioParam alloc] initWithContext:context value:440 minValue:0 maxValue:1600];
+    _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-100 maxValue:100];
     _waveType = WaveTypeSine;
+    _isPlaying = NO;
+    _deltaTime = 1 / self.context.sampleRate;
+    
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
 
-    _playerNode = [[AVAudioPlayerNode alloc] init];
-    _playerNode.volume = 0.5;
-
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.context.sampleRate channels:1];
-    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.context.sampleRate;
-    _buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format frameCapacity:bufferFrameCapacity];
-    _buffer.frameLength = bufferFrameCapacity;
+    _phase = 0.0;
 
-    [self.context.audioEngine attachNode:self.playerNode];
-    [self.context.audioEngine connect:self.playerNode to:self.context.audioEngine.mainMixerNode format: self.format];
-    [self setBuffer];
+    __weak typeof(self) weakSelf = self;
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format renderBlock:^OSStatus(BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+        return [weakSelf renderCallbackWithIsSilence:isSilence timestamp:timestamp frameCount:frameCount outputData:outputData];
+    }];
+
+    [self.context.audioEngine attachNode:self.sourceNode];
+    [self.context.audioEngine connect:self.sourceNode to:self.context.audioEngine.mainMixerNode format:self.format];
 
     if (!self.context.audioEngine.isRunning) {
         NSError *error = nil;
@@ -32,49 +34,91 @@
         }
     }
 
-    [self.context connectOscillator:self];
-
     return self;
 }
 
-- (void)start {
-    [self process:_buffer playerNode:_playerNode];
-    [self.playerNode scheduleBuffer:_buffer atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:nil];
-    [self.playerNode play];
-}
-
-- (void)stop {
-    [self.playerNode stop];
-}
-
-- (void)process:(AVAudioPCMBuffer *)buffer playerNode:(AVAudioPlayerNode *)playerNode {
-    [self setBuffer];
-    [super process:buffer playerNode:playerNode];
-}
-
-- (void)setBuffer {
-    AVAudioFrameCount bufferFrameCapacity = (AVAudioFrameCount)self.context.sampleRate;
+- (void)clean {
+    if (_isPlaying) {
+        [self stopPlayback];
+    }
     
-    // Convert cents to HZ
-    double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
-    double detunedFrequency = round(detuneRatio * [_frequencyParam getValue]);
-    double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.context.sampleRate;
-    double phase = 0.0;
-    float *audioBufferPointer = _buffer.floatChannelData[0];
+    [self.context.audioEngine detachNode:self.sourceNode];
+    
+    _frequencyParam = nil;
+    _detuneParam = nil;
+    _format = nil;
+}
 
-    for (int frame = 0; frame < bufferFrameCapacity; frame++) {
-        audioBufferPointer[frame] = [WaveType valueForWaveType:_waveType atPhase:phase];
+- (void)start:(double)time {
+    if (_isPlaying) {
+        return;
+    }
+    
+    double delay = time - [self.context getCurrentTime];
+    if (delay <= 0) {
+        [self startPlayback];
+    } else {
+        [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(startPlayback) userInfo:nil repeats:NO];
+    }
+}
 
-        phase += phaseIncrement;
-        if (phase > FULL_CIRCLE_RADIANS) {
-            phase -= FULL_CIRCLE_RADIANS;
+- (void)startPlayback {
+    _isPlaying = YES;
+}
+
+- (void)stop:(double)time {
+    if (!_isPlaying) {
+        return;
+    }
+    
+    double delay = time - [self.context getCurrentTime];
+    if (delay <= 0) {
+        [self stopPlayback];
+    } else {
+        [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(stopPlayback) userInfo:nil repeats:NO];
+    }
+}
+
+- (void)stopPlayback {
+    _isPlaying = NO;
+}
+
+- (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence timestamp:(const AudioTimeStamp *)timestamp frameCount:(AVAudioFrameCount)frameCount outputData:(AudioBufferList *)outputData {
+    float *audioBufferPointer = (float *)outputData->mBuffers[0].mData;
+    
+    float time = [self.context getCurrentTime];
+    for (int frame = 0; frame < frameCount; frame++) {
+        // Convert cents to HZ
+        if (!_isPlaying) {
+            audioBufferPointer[frame] = 0;
+            continue;
+        }
+       
+        double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
+        double detunedFrequency = round(detuneRatio * [_frequencyParam getValueAtTime:time]);
+        double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.context.sampleRate;
+        audioBufferPointer[frame] = [WaveType valueForWaveType:_waveType atPhase:_phase];
+                    
+        time += _deltaTime;
+
+        _phase += phaseIncrement;
+        if (_phase > FULL_CIRCLE_RADIANS) {
+            _phase -= FULL_CIRCLE_RADIANS;
         }
     }
+    
+    // Could change the process way to process single frame instead of looping over it again.
+    [self process:audioBufferPointer frameCount:frameCount];
+    
+    return noErr;
+}
+
+- (Boolean)getIsPlaying {
+    return _isPlaying;
 }
 
 - (void)setType:(NSString *)type {
     _waveType = [WaveType waveTypeFromString:type];
-    [self setBuffer]; // Update the buffer with the new wave type
 }
 
 - (NSString *)getType {

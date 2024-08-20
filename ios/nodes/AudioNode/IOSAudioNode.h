@@ -11,6 +11,7 @@ typedef struct objc_object AudioNode;
 namespace audiocontext {
     class IOSAudioNode {
         public:
+            ~IOSAudioNode();
             AudioNode *audioNode_;
             virtual void connect(std::shared_ptr<IOSAudioNode> node);
             virtual void disconnect(std::shared_ptr<IOSAudioNode> node);
