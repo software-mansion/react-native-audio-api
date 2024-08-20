@@ -17,6 +17,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   private fun generateSound() {
     while(isPlaying) {
       generateBuffer()
+      playbackParameters.reset()
       process(playbackParameters)
       if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
         handleStop()

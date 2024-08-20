@@ -9,9 +9,7 @@ class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfOutputs = 0
 
   private fun setVolumeAndPanning(playbackParameters: PlaybackParameters) {
-    val leftPan = playbackParameters.gain * playbackParameters.leftPan
-    val rightPan = playbackParameters.gain * playbackParameters.rightPan
-    playbackParameters.audioTrack.setStereoVolume(leftPan.toFloat(), rightPan.toFloat())
+    playbackParameters.audioTrack.setStereoVolume(playbackParameters.leftPan.toFloat(), playbackParameters.rightPan.toFloat())
   }
 
   override fun process(playbackParameters: PlaybackParameters) {
