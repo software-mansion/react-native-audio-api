@@ -15,7 +15,7 @@ class GainNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
-    playbackParameters.gain = gain.getValueAtTime(context.getCurrentTime())
+    playbackParameters.gain *= gain.getValueAtTime(context.getCurrentTime())
     super.process(playbackParameters)
   }
 }
