@@ -9,19 +9,15 @@ import type {
 import { installACModule } from './utils/install';
 
 export class AudioContext implements BaseAudioContext {
-  readonly destination: AudioDestinationNode | null;
+  readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
   constructor() {
-    this.destination = null;
-
     if (global.__AudioContext == null) {
       installACModule();
     }
 
-    if (Platform.OS === 'android') {
-      this.destination = global.__AudioContext.destination;
-    }
+    this.destination = global.__AudioContext.destination;
     this.sampleRate = global.__AudioContext.sampleRate;
   }
 

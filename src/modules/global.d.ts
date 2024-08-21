@@ -7,7 +7,7 @@ import type {
 } from '../types';
 
 type AudioContext = {
-  destination: AudioDestinationNode | null;
+  destination: AudioDestinationNode;
   state: ContextState;
   sampleRate: number;
   currentTime: number;

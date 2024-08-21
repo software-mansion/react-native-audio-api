@@ -1,5 +1,5 @@
 export interface BaseAudioContext {
-  readonly destination: AudioDestinationNode | null;
+  readonly destination: AudioDestinationNode;
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
