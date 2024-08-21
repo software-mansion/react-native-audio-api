@@ -5,7 +5,7 @@
 
 - (instancetype)initWithContext:(AudioContext *)context {
     if (self = [super initWithContext:context]) {
-        _audioParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
+        _panparam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
         self.numberOfInputs = 1;
         self.numberOfOutputs = 1;
     }
@@ -13,8 +13,8 @@
     return self;
 }
 
-- (void)clean {
-    _audioParam = nil;
+- (void)cleanup {
+    _panParam = nil;
 }
 
 - (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {

@@ -15,7 +15,7 @@ namespace audiocontext {
         public:
             explicit IOSStereoPannerNode(std::shared_ptr<IOSAudioContext> context);
             ~IOSStereoPannerNode();
-            std::shared_ptr<IOSAudioParam> getAudioParam();
+            std::shared_ptr<IOSAudioParam> getPanParam();
 
         protected:
             StereoPannerNode *panner_;
