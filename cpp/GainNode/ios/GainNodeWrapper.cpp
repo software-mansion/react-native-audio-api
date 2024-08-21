@@ -4,8 +4,12 @@
 namespace audiocontext
 {
     GainNodeWrapper::GainNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
-        node_ = gain_ = std::make_shared<IOSGainNode>(context);
-        gainParam_ = std::make_shared<AudioParamWrapper>(gain_->getAudioParam());
+        node_ = std::make_shared<IOSGainNode>(context);
+        gainParam_ = std::make_shared<AudioParamWrapper>(getGainNodeFromAudioNode()->getAudioParam());
+    }
+
+    std::shared_ptr<IOSGainNode> GainNodeWrapper::getGainNodeFromAudioNode() {
+        return std::static_pointer_cast<IOSGainNode>(node_);
     }
 
     std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() {

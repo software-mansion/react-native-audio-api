@@ -22,7 +22,7 @@ namespace audiocontext {
         explicit StereoPannerNodeWrapper(const std::shared_ptr<StereoPannerNode> &pannerNode);
 #else
         private:
-            std::shared_ptr<IOSStereoPannerNode> pannerNode_;
+            std::shared_ptr<IOSStereoPannerNode> getStereoPannerNodeFromAudioNode();
         public:
             explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif

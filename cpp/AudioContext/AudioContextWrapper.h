@@ -31,6 +31,7 @@ namespace audiocontext {
 #else
         private:
             std::shared_ptr<IOSAudioContext> audiocontext_;
+        
         public:
             explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
