@@ -13,7 +13,7 @@
 @property (nonatomic, strong) AudioContext *context;
 
 - (instancetype)initWithContext:(AudioContext *)context;
-- (void)clean;
+- (void)cleanup;
 - (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;

@@ -12,10 +12,11 @@
     return self;
 }
 
-- (void)clean {
+- (void)cleanup {
     _context = nil;
     [_connectedNodes removeAllObjects];
     _connectedNodes = nil;
+    
 }
 
 - (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {
