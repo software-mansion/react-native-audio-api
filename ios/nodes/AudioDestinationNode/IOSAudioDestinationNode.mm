@@ -7,7 +7,6 @@ namespace audiocontext {
     }
     
     IOSAudioDestinationNode::~IOSAudioDestinationNode() {
-        [destination_ clean];
         audioNode_ = destination_ = nil;
     }
 } // namespace audiocontext

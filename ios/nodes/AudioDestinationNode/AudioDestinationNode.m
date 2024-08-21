@@ -12,10 +12,6 @@
     return self;
 }
 
-- (void)clean {
-    // Do nothing
-}
-
 - (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {
     // Do nothing
 }

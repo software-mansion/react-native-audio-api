@@ -7,6 +7,5 @@
 @interface AudioDestinationNode : AudioNode
 
 - (instancetype)initWithContext:(AudioContext *)context;
-- (void)clean;
 
 @end
