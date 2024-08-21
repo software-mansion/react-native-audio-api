@@ -105,15 +105,15 @@ npm install react-native-audio-context
 </details>
 
 <details>
-  <summary><b>BiquadFilterNode</b><br/> Android: ⏳ <br />iOS: ⏳</summary>
+  <summary><b>BiquadFilterNode</b><br/> Android: ✅ <br />iOS: ⏳</summary>
 
 | Method / Property | iOS | Android |
 | ----------------- | --- | ------- |
-| 🔹frequency       | ⏳  | ⏳      |
-| 🔹detune          | ⏳  | ⏳      |
-| 🔹Q               | ⏳  | ⏳      |
-| 🔹gain            | ⏳  | ⏳      |
-| 🔹type            | ⏳  | ⏳      |
+| 🔹frequency       | ⏳  | ✅      |
+| 🔹detune          | ⏳  | ✅      |
+| 🔹Q               | ⏳  | ✅      |
+| 🔹gain            | ⏳  | ✅      |
+| 🔹type            | ⏳  | ✅      |
 
 </details>
 
