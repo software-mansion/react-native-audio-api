@@ -17,7 +17,7 @@
     return self;
 }
 
-- (void)clean {
+- (void)cleanup {
     if (self.audioEngine.isRunning) {
         [self.audioEngine stop];
     }
