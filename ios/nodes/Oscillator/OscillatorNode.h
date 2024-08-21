@@ -24,7 +24,7 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 
 - (instancetype)initWithContext:(AudioContext *)context;
 
-- (void)clean;
+- (void)cleanup;
 
 - (void)start:(double)time;
 

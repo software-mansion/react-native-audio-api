@@ -37,7 +37,7 @@
     return self;
 }
 
-- (void)clean {
+- (void)cleanup {
     if (_isPlaying) {
         [self stopPlayback];
     }

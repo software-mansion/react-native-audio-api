@@ -4,13 +4,13 @@
 namespace audiocontext
 {
     OscillatorNodeWrapper::OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context) : AudioNodeWrapper() {
-        node_ = std::make_shared<IOSOscillator>(context);
+        node_ = std::make_shared<IOSOscillatorNode>(context);
         frequencyParam_ = std::make_shared<AudioParamWrapper>(getOscillatorNodeFromAudioNode()->getFrequencyParam());
         detuneParam_ = std::make_shared<AudioParamWrapper>(getOscillatorNodeFromAudioNode()->getDetuneParam());
     }
 
-    std::shared_ptr<IOSOscillator> OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
-        return std::static_pointer_cast<IOSOscillator>(node_);
+    std::shared_ptr<IOSOscillatorNode> OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
+        return std::static_pointer_cast<IOSOscillatorNode>(node_);
     }
 
     std::string OscillatorNodeWrapper::getType() {
