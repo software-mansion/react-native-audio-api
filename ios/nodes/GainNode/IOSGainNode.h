@@ -15,7 +15,7 @@ namespace audiocontext {
         public:
             explicit IOSGainNode(std::shared_ptr<IOSAudioContext> context);
             ~IOSGainNode();
-            std::shared_ptr<IOSAudioParam> getAudioParam();
+            std::shared_ptr<IOSAudioParam> getGainParam();
 
         protected:
             GainNode *gainNode_;

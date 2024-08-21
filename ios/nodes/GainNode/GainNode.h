@@ -5,9 +5,9 @@
 
 @interface GainNode : AudioNode
 
-@property (nonatomic, strong) AudioParam *audioParam;
+@property (nonatomic, strong) AudioParam *gainParam;
 
 - (instancetype)initWithContext:(AudioContext *)context;
-- (void)clean;
+- (void)cleanup;
 
 @end
