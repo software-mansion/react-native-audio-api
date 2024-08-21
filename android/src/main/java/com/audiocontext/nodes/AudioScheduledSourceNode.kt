@@ -8,7 +8,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
 
-  private var playbackParameters: PlaybackParameters = context.getPlaybackParameters()
+  private var playbackParameters: PlaybackParameters? = context.getPlaybackParameters()
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null;
@@ -16,21 +16,21 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun generateSound() {
     while(isPlaying) {
-      generateBuffer(playbackParameters)
-      playbackParameters.reset()
-      process(playbackParameters)
+      playbackParameters?.let { generateBuffer(it) }
+      playbackParameters?.reset()
+      playbackParameters?.let { process(it) }
       if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
-        handleStop()
+        prepareForDeconstruction()
         stopQueue.poll()
       }
     }
-    playbackParameters.audioTrack.flush()
   }
 
   private fun handleStop(){
     isPlaying = false
     try {
-      playbackParameters.audioTrack.stop()
+      playbackParameters?.audioTrack?.stop()
+      playbackParameters?.audioTrack?.flush()
     } catch (e: IllegalStateException) {
       e.printStackTrace()
     }
@@ -46,7 +46,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
         Thread.sleep(1)
       }
       isPlaying = true
-      playbackParameters.audioTrack.play()
+      playbackParameters?.audioTrack?.play()
       generateSound()
     }
     playbackThread?.start()
@@ -58,7 +58,8 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun prepareForDeconstruction() {
     handleStop()
-    context.addAudioTrack(playbackParameters.audioTrack)
+    playbackParameters?.let { context.addAudioTrack(it.audioTrack) }
+    playbackParameters = null
   }
 
   override fun cleanup() {
