@@ -54,7 +54,13 @@ class AudioContext() : BaseAudioContext {
       .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
       .build()
 
-    return AudioTrack(audioAttributes, audioFormat, Constants.BUFFER_SIZE, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+    val audioTrack = AudioTrack(audioAttributes, audioFormat, Constants.BUFFER_SIZE, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+
+    if (audioTrack.state != AudioTrack.STATE_INITIALIZED) {
+      throw IllegalStateException("Failed to initialize AudioTrack")
+    }
+
+    return audioTrack
   }
 
   override fun getCurrentTime(): Double {
@@ -76,17 +82,21 @@ class AudioContext() : BaseAudioContext {
   override fun getPlaybackParameters(): PlaybackParameters {
     val buffer = ShortArray(Constants.BUFFER_SIZE)
 
-    if(audioTracksList.isNotEmpty()) {
-      return PlaybackParameters(audioTracksList.removeFirst(), buffer)
-    } else {
-      val audioTrack = initAudioTrack()
+    synchronized(audioTracksList) {
+      if(audioTracksList.isNotEmpty()) {
+        return PlaybackParameters(audioTracksList.removeFirst(), buffer)
+      } else {
+        val audioTrack = initAudioTrack()
 
-      return PlaybackParameters(audioTrack, buffer)
+        return PlaybackParameters(audioTrack, buffer)
+      }
     }
   }
 
   override fun addAudioTrack(audioTrack: AudioTrack) {
-    audioTracksList.add(audioTrack)
+    synchronized(audioTracksList) {
+      audioTracksList.add(audioTrack)
+    }
   }
 
   override fun createOscillator(): OscillatorNode {

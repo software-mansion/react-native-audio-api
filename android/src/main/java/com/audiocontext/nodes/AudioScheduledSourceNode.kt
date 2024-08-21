@@ -8,7 +8,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
 
-  protected var playbackParameters: PlaybackParameters = context.getPlaybackParameters()
+  private var playbackParameters: PlaybackParameters = context.getPlaybackParameters()
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null;
@@ -16,7 +16,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun generateSound() {
     while(isPlaying) {
-      generateBuffer()
+      generateBuffer(playbackParameters)
       playbackParameters.reset()
       process(playbackParameters)
       if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
@@ -38,7 +38,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     playbackThread?.interrupt()
   }
 
-  protected abstract fun generateBuffer()
+  protected abstract fun generateBuffer(playbackParameters: PlaybackParameters)
 
   fun start(time: Double) {
     playbackThread = Thread {
