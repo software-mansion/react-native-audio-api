@@ -73,10 +73,10 @@ class AudioContext() : BaseAudioContext {
 
   override fun close() {
     state = ContextState.CLOSED
+    sources.forEach { it.cleanup() }
+    sources.clear()
     audioTracksList.forEach { it.release() }
     audioTracksList.clear()
-    sources.forEach { it.close() }
-    sources.clear()
   }
 
   override fun getPlaybackParameters(): PlaybackParameters {

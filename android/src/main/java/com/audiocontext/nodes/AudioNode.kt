@@ -43,8 +43,8 @@ abstract class AudioNode(val context: BaseAudioContext) {
     outputNodes.forEach { it.process(playbackParameters) }
   }
 
-  open fun close() {
-    outputNodes.forEach { it.close() }
+  open fun cleanup() {
+    outputNodes.forEach { it.cleanup() }
     inputNodes.clear()
     outputNodes.clear()
   }
