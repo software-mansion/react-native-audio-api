@@ -1,4 +1,5 @@
 #import <OscillatorNode.h>
+#import "Constants.h"
 
 @implementation OscillatorNode
 
@@ -7,8 +8,8 @@
       return self;
     }
     
-    _frequencyParam = [[AudioParam alloc] initWithContext:context value:440 minValue:0 maxValue:1600];
-    _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-100 maxValue:100];
+    _frequencyParam = [[AudioParam alloc] initWithContext:context value:440 minValue:-[Constants nyquistFrequency] maxValue:[Constants nyquistFrequency]];
+    _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-[Constants maxDetune] maxValue:[Constants maxDetune]];
     _waveType = WaveTypeSine;
     _isPlaying = NO;
     _deltaTime = 1 / self.context.sampleRate;

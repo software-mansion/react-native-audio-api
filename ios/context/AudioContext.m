@@ -1,4 +1,5 @@
 #import <AudioContext.h>
+#import "Constants.h"
 
 @implementation AudioContext
 
@@ -12,7 +13,7 @@
     
     _contextStartTime = mach_absolute_time();
     _state = ContextStateRunning;
-    _sampleRate = 44100;
+    _sampleRate = [Constants sampleRate];
 
     return self;
 }
