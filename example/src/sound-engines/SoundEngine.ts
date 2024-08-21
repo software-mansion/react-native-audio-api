@@ -6,5 +6,4 @@ export interface SoundEngine {
   decay: number;
   volume: number;
   play: (time: number) => void;
-  setup: () => void;
 }

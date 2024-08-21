@@ -31,28 +31,34 @@ const App: React.FC = () => {
   const kickRef = useRef<Kick | null>(null);
   const hiHatRef = useRef<HiHat | null>(null);
 
+  const setup = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
+    oscillatorRef.current = audioContextRef.current.createOscillator();
+    oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
+    oscillatorRef.current.detune.value = INITIAL_DETUNE;
+    oscillatorRef.current.type = 'sine';
+
+    gainRef.current = audioContextRef.current.createGain();
+    gainRef.current.gain.value = INITIAL_GAIN;
+
+    panRef.current = audioContextRef.current.createStereoPanner();
+    panRef.current.pan.value = INITIAL_PAN;
+
+    oscillatorRef.current.connect(gainRef.current);
+    gainRef.current.connect(panRef.current);
+
+    if (Platform.OS === 'android') {
+      const destination = audioContextRef.current.destination;
+      panRef.current.connect(destination!);
+    }
+  };
+
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
-
-      oscillatorRef.current = audioContextRef.current.createOscillator();
-      oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
-      oscillatorRef.current.detune.value = INITIAL_DETUNE;
-      oscillatorRef.current.type = 'sine';
-
-      gainRef.current = audioContextRef.current.createGain();
-      gainRef.current.gain.value = INITIAL_GAIN;
-
-      panRef.current = audioContextRef.current.createStereoPanner();
-      panRef.current.pan.value = INITIAL_PAN;
-
-      oscillatorRef.current.connect(gainRef.current);
-      gainRef.current.connect(panRef.current);
-
-      if (Platform.OS === 'android') {
-        const destination = audioContextRef.current.destination;
-        panRef.current.connect(destination!);
-      }
     }
 
     return () => {
@@ -96,6 +102,7 @@ const App: React.FC = () => {
     if (isPlaying) {
       oscillatorRef.current?.stop(0);
     } else {
+      setup();
       oscillatorRef.current?.start(0);
     }
 

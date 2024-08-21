@@ -1,8 +1,4 @@
-import {
-  AudioContext,
-  type GainNode,
-  type OscillatorNode,
-} from 'react-native-audio-context';
+import { AudioContext } from 'react-native-audio-context';
 import { Platform } from 'react-native';
 import type { SoundEngine } from './SoundEngine';
 
@@ -11,8 +7,6 @@ export class Kick implements SoundEngine {
   public tone: number;
   public decay: number;
   public volume: number;
-  private gain!: GainNode;
-  private oscillator!: OscillatorNode;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -21,29 +15,22 @@ export class Kick implements SoundEngine {
     this.volume = 1;
   }
 
-  setup() {
-    this.gain = this.audioContext.createGain();
-    this.oscillator = this.audioContext.createOscillator();
-    this.oscillator.connect(this.gain);
-
-    if (Platform.OS === 'android') {
-      this.gain.connect(this.audioContext.destination!);
-    }
-  }
-
   play(time: number) {
-    this.setup();
+    const oscillator = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
 
-    this.oscillator.frequency.setValueAtTime(this.tone, time);
-    this.oscillator.frequency.exponentialRampToValueAtTime(
-      0.01,
-      time + this.decay
-    );
+    oscillator.connect(gain);
+    if (Platform.OS === 'android') {
+      gain.connect(this.audioContext.destination!);
+    }
 
-    this.gain.gain.setValueAtTime(this.volume, time);
-    this.gain.gain.exponentialRampToValueAtTime(0.01, time + this.decay);
+    oscillator.frequency.setValueAtTime(this.tone, time);
+    oscillator.frequency.exponentialRampToValueAtTime(0.01, time + this.decay);
 
-    this.oscillator.start(time);
-    this.oscillator.stop(time + this.decay);
+    gain.gain.setValueAtTime(this.volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + this.decay);
+
+    oscillator.start(time);
+    oscillator.stop(time + this.decay);
   }
 }
