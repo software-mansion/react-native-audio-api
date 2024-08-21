@@ -3,21 +3,22 @@ package com.audiocontext.nodes
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.AudioParam
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.AudioParam
+import com.audiocontext.parameters.PlaybackParameters
+import com.audiocontext.utils.Constants
 
 class GainNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
-  private var gain: AudioParam = AudioParam(context,0.5, 1.0, 0.0)
+  private val gain: AudioParam = AudioParam(context,1.0, Constants.MAX_GAIN, -Constants.MAX_GAIN)
     get() = field
-    set(value) {
-      field = value
-    }
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
-    playbackParameters.gain = gain.getValueAtTime(context.getCurrentTime())
+    val gain = this.gain.getValueAtTime(context.getCurrentTime())
+    playbackParameters.rightPan *= gain
+    playbackParameters.leftPan *= gain
+
     super.process(playbackParameters)
   }
 }

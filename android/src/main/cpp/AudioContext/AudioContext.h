@@ -13,6 +13,7 @@
 #include "AudioDestinationNode.h"
 #include "GainNode.h"
 #include "StereoPannerNode.h"
+#include "BiquadFilterNode.h"
 
 namespace audiocontext
 {
@@ -38,10 +39,11 @@ namespace audiocontext
       });
     }
 
-    std::shared_ptr<AudioDestinationNode> getDestination();
-    std::shared_ptr<OscillatorNode> createOscillator();
-    std::shared_ptr<GainNode> createGain();
-    std::shared_ptr<StereoPannerNode> createStereoPanner();
+    AudioDestinationNode* getDestination();
+    OscillatorNode* createOscillator();
+    GainNode* createGain();
+    StereoPannerNode* createStereoPanner();
+    BiquadFilterNode* createBiquadFilter();
     std::string getState();
     int getSampleRate();
     double getCurrentTime();
@@ -53,7 +55,6 @@ namespace audiocontext
     friend HybridBase;
 
     global_ref<AudioContext::javaobject> javaPart_;
-    std::shared_ptr<AudioDestinationNode> destinationNode_;
 
     explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
   };

@@ -6,6 +6,7 @@
 #include "AudioDestinationNodeWrapper.h"
 #include "GainNodeWrapper.h"
 #include "StereoPannerNodeWrapper.h"
+#include "BiquadFilterNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioContext.h"
@@ -24,10 +25,10 @@ namespace audiocontext {
     class AudioContextWrapper {
 #ifdef ANDROID
         private:
-            std::shared_ptr<AudioContext> audiocontext_;
+            AudioContext* audiocontext_;
 
         public:
-            explicit AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext);
+            explicit AudioContextWrapper(AudioContext* audiocontext);
 #else
         private:
             std::shared_ptr<IOSAudioContext> audiocontext_;
@@ -39,11 +40,12 @@ namespace audiocontext {
         int sampleRate_;
     public:
         std::shared_ptr<OscillatorNodeWrapper> createOscillator();
-        std::shared_ptr<AudioDestinationNodeWrapper> getDestination();
+        std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
         std::shared_ptr<GainNodeWrapper> createGain();
         std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
+        std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter();
         std::string getState();
-        int getSampleRate();
+        int getSampleRate() const;
         double getCurrentTime();
         void close();
     };

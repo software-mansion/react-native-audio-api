@@ -1,4 +1,4 @@
-package com.audiocontext.nodes.parameters
+package com.audiocontext.parameters
 
 class ParamChangeComparator {
   companion object: Comparator<ParamChange> {

@@ -14,13 +14,13 @@ namespace audiocontext {
         return method(javaPart_.get());
     }
 
-    void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
+    void AudioNode::connect(const AudioNode *node) {
         static const auto method = javaClassLocal()->getMethod<void(AudioNode::javaobject)>(
                 "connect");
         method(javaPart_.get(), node->javaPart_.get());
     }
 
-    void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+    void AudioNode::disconnect(const AudioNode *node) {
         static const auto method = javaClassLocal()->getMethod<void(AudioNode::javaobject)>(
                 "disconnect");
         method(javaPart_.get(), node->javaPart_.get());

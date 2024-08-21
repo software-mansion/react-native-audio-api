@@ -12,7 +12,7 @@ namespace audiocontext {
 
     class AudioParam : public jni::HybridClass<AudioParam> {
     public:
-        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/parameters/AudioParam;";
+        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/parameters/AudioParam;";
 
         static jni::local_ref<AudioParam::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
         {

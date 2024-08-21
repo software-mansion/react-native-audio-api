@@ -1,7 +1,7 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
 
 
@@ -10,7 +10,8 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
-  private val connectedNodes = mutableListOf<AudioNode>()
+  private val inputNodes = mutableListOf<AudioNode>()
+  private val outputNodes = mutableListOf<AudioNode>()
 
   private val mHybridData: HybridData?;
 
@@ -27,16 +28,24 @@ abstract class AudioNode(val context: BaseAudioContext) {
   external fun initHybrid(): HybridData?
 
   fun connect(node: AudioNode) {
-    if(this.numberOfOutputs > 0) {
-      connectedNodes.add(node)
+    if(numberOfOutputs > outputNodes.size && node.numberOfInputs > node.inputNodes.size) {
+      outputNodes.add(node)
+      node.inputNodes.add(this)
     }
   }
 
-  fun disconnect() {
-    connectedNodes.clear()
+  fun disconnect(node: AudioNode) {
+    outputNodes.remove(node)
+    node.inputNodes.remove(this)
   }
 
   open fun process(playbackParameters: PlaybackParameters) {
-    connectedNodes.forEach { it.process(playbackParameters) }
+    outputNodes.forEach { it.process(playbackParameters) }
+  }
+
+  open fun close() {
+    outputNodes.forEach { it.close() }
+    inputNodes.clear()
+    outputNodes.clear()
   }
 }

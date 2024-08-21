@@ -1,18 +1,15 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.PlaybackParameters
-import com.facebook.jni.HybridData
+import com.audiocontext.parameters.PlaybackParameters
 
 
 class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
-  override val numberOfInputs = 1
+  override val numberOfInputs = Float.POSITIVE_INFINITY.toInt()
   override val numberOfOutputs = 0
 
   private fun setVolumeAndPanning(playbackParameters: PlaybackParameters) {
-    val leftPan = playbackParameters.gain * playbackParameters.leftPan
-    val rightPan = playbackParameters.gain * playbackParameters.rightPan
-    playbackParameters.audioTrack.setStereoVolume(leftPan.toFloat(), rightPan.toFloat())
+    playbackParameters.audioTrack.setStereoVolume(playbackParameters.leftPan.toFloat(), playbackParameters.rightPan.toFloat())
   }
 
   override fun process(playbackParameters: PlaybackParameters) {

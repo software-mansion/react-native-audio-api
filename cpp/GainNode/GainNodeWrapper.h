@@ -19,7 +19,7 @@ namespace audiocontext {
     class GainNodeWrapper: public AudioNodeWrapper {
 #ifdef ANDROID
     public:
-        explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
+        explicit GainNodeWrapper(GainNode *gainNode);
 #else
         private:
             std::shared_ptr<IOSGainNode> gain_;
@@ -29,6 +29,6 @@ namespace audiocontext {
         private:
             std::shared_ptr<AudioParamWrapper> gainParam_;
         public:
-            std::shared_ptr<AudioParamWrapper> getGainParam();
+            std::shared_ptr<AudioParamWrapper> getGainParam() const;
     };
 } // namespace audiocontext
