@@ -5,7 +5,7 @@
 
 - (instancetype)initWithContext:(AudioContext *)context {
     if (self = [super initWithContext:context]) {
-        _panparam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
+        _panParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
         self.numberOfInputs = 1;
         self.numberOfOutputs = 1;
     }
