@@ -17,6 +17,11 @@
     return self;
 }
 
+- (void)close {
+    [self cleanup];
+    _state = ContextStateClosed;
+}
+
 - (void)cleanup {
     if (self.audioEngine.isRunning) {
         [self.audioEngine stop];

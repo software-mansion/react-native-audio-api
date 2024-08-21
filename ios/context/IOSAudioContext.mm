@@ -11,6 +11,10 @@ namespace audiocontext {
         audioContext_ = nil;
     }
 
+    void IOSAudioContext::close() {
+        [audioContext_ close];
+    }
+
     double IOSAudioContext::getCurrentTime() {
         return [audioContext_ getCurrentTime];
     }

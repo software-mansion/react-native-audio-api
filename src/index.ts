@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import type {
   BaseAudioContext,
   AudioDestinationNode,
@@ -42,9 +41,7 @@ export class AudioContext implements BaseAudioContext {
   }
 
   close(): void {
-    if (Platform.OS === 'android') {
-      global.__AudioContext.close();
-    }
+    global.__AudioContext.close();
   }
 }
 

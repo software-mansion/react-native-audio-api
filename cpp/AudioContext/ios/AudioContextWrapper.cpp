@@ -32,7 +32,7 @@ namespace audiocontext
     }
 
     void AudioContextWrapper::close() {
-        //TODO
+        audiocontext_->close();
     }
 } // namespace audiocontext
 #endif
