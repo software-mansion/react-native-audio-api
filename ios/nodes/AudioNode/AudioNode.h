@@ -2,6 +2,7 @@
 
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import "PlaybackParameters.h"
 
 @class AudioContext;
 
@@ -14,7 +15,7 @@
 
 - (instancetype)initWithContext:(AudioContext *)context;
 - (void)cleanup;
-- (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount;
+- (void)processWithParameters:(PlaybackParameters *)parameters;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
 - (int)getNumberOfInputs;

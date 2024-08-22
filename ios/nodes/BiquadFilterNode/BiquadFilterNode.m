@@ -318,12 +318,12 @@
     }
 }
 
-- (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {
+- (void)processWithParameters:(PlaybackParameters *)parameters {
     [self resetCoefficients];
     [self applyFilter];
     
-    for (int frame = 0; frame < frameCount; frame++) {
-        double input = buffer[frame];
+    for (int frame = 0; frame < parameters.frameCount; frame++) {
+        double input = parameters.leftBuffer[frame];
         double output = _b0 * input + _b1 * _x1 + _b2 * _x2 - _a1 * _y1 - _a2 * _y2;
         
         _x2 = _x1;
@@ -331,10 +331,11 @@
         _y2 = _y1;
         _y1 = output;
         
-        buffer[frame] = output;
+        parameters.leftBuffer[frame] = output;
+        parameters.rightBuffer[frame] = output;
     }
 
-    [super process:buffer frameCount:frameCount];
+    [super processWithParameters:parameters];
 }
 
 @end

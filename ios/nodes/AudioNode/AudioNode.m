@@ -19,9 +19,9 @@
     
 }
 
-- (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {
+- (void)processWithParameters:(PlaybackParameters *)parameters; {
     for (AudioNode *node in _connectedNodes) {
-        [node process:buffer frameCount:frameCount];
+        [node processWithParameters:parameters];
     }
 }
 

@@ -12,8 +12,11 @@
     return self;
 }
 
-- (void)process:(float *)buffer frameCount:(AVAudioFrameCount)frameCount {
-    // Do nothing
+- (void)processWithParameters:(PlaybackParameters *)parameters {
+    for (int frame = 0; frame < parameters.frameCount; frame++) {
+        parameters.leftBuffer[frame] *= parameters.leftGain;
+        parameters.rightBuffer[frame] *= parameters.rightGain;
+    }
 }
 
 @end
