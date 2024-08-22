@@ -301,4 +301,6 @@ The `BiquadFilterNode` interface represents a simple low-order filter. It can re
 const filter = audioContext.createBiquadFilter();
 filter.type = "highpass";
 filter.frequency.value = 1000;
+filter.type = "bandpass";
+filter.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
 ```
