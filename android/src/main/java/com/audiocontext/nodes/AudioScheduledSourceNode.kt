@@ -1,14 +1,14 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.parameters.PlaybackParameters
+import com.audiocontext.parameters.PlaybackParameters
 import java.util.PriorityQueue
 
 abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(context) {
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
 
-  protected var playbackParameters: PlaybackParameters = context.getPlaybackParameters()
+  private var playbackParameters: PlaybackParameters = context.getPlaybackParameters()
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null;
@@ -16,7 +16,8 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun generateSound() {
     while(isPlaying) {
-      generateBuffer()
+      generateBuffer(playbackParameters)
+      playbackParameters.reset()
       process(playbackParameters)
       if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
         handleStop()
@@ -37,7 +38,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     playbackThread?.interrupt()
   }
 
-  protected abstract fun generateBuffer()
+  protected abstract fun generateBuffer(playbackParameters: PlaybackParameters)
 
   fun start(time: Double) {
     playbackThread = Thread {
@@ -60,11 +61,13 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     context.addAudioTrack(playbackParameters.audioTrack)
   }
 
-  fun close() {
+  override fun close() {
     try {
-      playbackParameters.audioTrack.stop()
+      handleStop()
     } catch (e: IllegalStateException) {
       e.printStackTrace()
     }
+
+    super.close()
   }
 }

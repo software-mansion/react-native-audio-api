@@ -12,7 +12,7 @@ namespace audiocontext
         return std::static_pointer_cast<IOSGainNode>(node_);
     }
 
-    std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() {
+    std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() const {
         return gainParam_;
     }
 } // namespace audiocontext

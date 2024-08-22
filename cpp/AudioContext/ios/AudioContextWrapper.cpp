@@ -19,6 +19,11 @@ namespace audiocontext
         return std::make_shared<StereoPannerNodeWrapper>(audiocontext_);
     }
 
+    std::shared_ptr<BiquadFilterNodeWrapper> AudioContextWrapper::createBiquadFilter() {
+        // TODO: Add BiquadFilterNode implementation
+        return std::make_shared<BiquadFilterNodeWrapper>();
+    }
+
     double AudioContextWrapper::getCurrentTime() {
         return audiocontext_->getCurrentTime();
     }
@@ -27,7 +32,7 @@ namespace audiocontext
         return audiocontext_->getState();
     }
 
-    int AudioContextWrapper::getSampleRate() {
+    int AudioContextWrapper::getSampleRate() const {
         return audiocontext_->getSampleRate();
     }
 

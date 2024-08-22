@@ -12,7 +12,7 @@ namespace audiocontext
         return std::static_pointer_cast<IOSStereoPannerNode>(node_);
     }
 
-    std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam() {
+    std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam() const {
         return panParam_;
     }
 } // namespace audiocontext

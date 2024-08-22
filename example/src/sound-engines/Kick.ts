@@ -15,11 +15,11 @@ export class Kick implements SoundEngine {
   }
 
   play(time: number) {
-    const gain = this.audioContext.createGain();
     const oscillator = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
 
     oscillator.connect(gain);
-    gain.connect(this.audioContext.destination!);
+    gain.connect(this.audioContext.destination);
 
     oscillator.frequency.setValueAtTime(this.tone, time);
     oscillator.frequency.exponentialRampToValueAtTime(0.01, time + this.decay);

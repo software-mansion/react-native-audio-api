@@ -18,8 +18,8 @@ namespace audiocontext {
 
         void start(double time);
         void stop(double time);
-        std::shared_ptr<AudioParam> getFrequencyParam();
-        std::shared_ptr<AudioParam> getDetuneParam();
+        AudioParam* getFrequencyParam();
+        AudioParam* getDetuneParam();
         std::string getWaveType();
         void setWaveType(const std::string &waveType);
         void prepareForDeconstruction();

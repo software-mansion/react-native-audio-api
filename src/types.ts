@@ -50,4 +50,22 @@ export interface StereoPannerNode extends AudioNode {
   pan: AudioParam;
 }
 
+type FilterType =
+  | 'lowpass'
+  | 'highpass'
+  | 'bandpass'
+  | 'lowshelf'
+  | 'highshelf'
+  | 'peaking'
+  | 'notch'
+  | 'allpass';
+
+export interface BiquadFilterNode extends AudioNode {
+  frequency: AudioParam;
+  detune: AudioParam;
+  Q: AudioParam;
+  gain: AudioParam;
+  type: FilterType;
+}
+
 export type ContextState = 'running' | 'closed';
