@@ -6,7 +6,9 @@ import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.parameters.AudioParam
 import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.Constants
-import kotlin.math.min
+import kotlin.math.*
+
+// https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
 
 class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs: Int = 1
@@ -16,9 +18,14 @@ class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
-    val currentTime = context.getCurrentTime()
-    playbackParameters.leftPan *= min(1.0 - pan.getValueAtTime(currentTime), 1.0)
-    playbackParameters.rightPan *= min(1.0 + pan.getValueAtTime(currentTime), 1.0)
+    val pan = pan.getValueAtTime(context.getCurrentTime())
+    val x = (pan + 1) / 2;
+
+    val gainL = cos(x * PI / 2);
+    val gainR = sin(x * PI / 2);
+
+    playbackParameters.leftPan *= gainL
+    playbackParameters.rightPan *= gainR
     super.process(playbackParameters)
   }
 }
