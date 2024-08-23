@@ -17,9 +17,9 @@
         self.numberOfOutputs = 1;
         _filterType = FilterTypeLowpass;
     }
-    
+
     [self resetCoefficients];
-    
+
     return self;
 }
 
@@ -28,7 +28,7 @@
     _x2 = 0;
     _y1 = 0;
     _y2 = 0;
-    
+
     _a0 = 1;
     _a1 = 0;
     _a2 = 0;
@@ -117,27 +117,27 @@
 - (void)setBandpassCoefficientsWithFrequency:(double)frequency resonance:(double)resonance {
     double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
     double Q = fmax(0.0, resonance);
-    
+
     if (normalizedFrequency <= 0.0 || normalizedFrequency >= 1.0) {
         [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:0.0 b1:0.0 b2:0.0];
         return;
     }
-    
+
     if (Q <= 0.0) {
         [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
         return;
     }
-    
+
     double w0 = 2.0 * M_PI * normalizedFrequency;
     double alpha = sin(w0) / (2.0 * Q);
-    
+
     double b0 = alpha * Q;
     double b1 = 0.0;
     double b2 = -alpha * Q;
     double a0 = 1.0 + alpha;
     double a1 = -2.0 * cos(w0);
     double a2 = 1.0 - alpha;
-    
+
     [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
 }
 
@@ -283,7 +283,7 @@
     double currentTime = [self.context getCurrentTime];
     double normalizedFrequency = [self.frequencyParam getValueAtTime:currentTime] / [Constants nyquistFrequency];
     double detuneValue = [self.detuneParam getValueAtTime:currentTime];
-    
+
     if (detuneValue != 0.0) {
         normalizedFrequency *= pow(2.0, detuneValue / 1200.0);
     }
@@ -321,16 +321,16 @@
 - (void)processWithParameters:(PlaybackParameters *)parameters {
     [self resetCoefficients];
     [self applyFilter];
-    
+
     for (int frame = 0; frame < parameters.frameCount; frame++) {
         double input = parameters.leftBuffer[frame];
         double output = _b0 * input + _b1 * _x1 + _b2 * _x2 - _a1 * _y1 - _a2 * _y2;
-        
+
         _x2 = _x1;
         _x1 = input;
         _y2 = _y1;
         _y1 = output;
-        
+
         parameters.leftBuffer[frame] = output;
         parameters.rightBuffer[frame] = output;
     }
