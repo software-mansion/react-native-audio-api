@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Platform, StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { useRef, useState, useEffect } from 'react';
 import { Slider } from '@miblanchard/react-native-slider';
 import { Kick } from './sound-engines/Kick';
@@ -49,11 +49,7 @@ const App: React.FC = () => {
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
-
-    if (Platform.OS === 'android') {
-      const destination = audioContextRef.current.destination;
-      panRef.current.connect(destination!);
-    }
+    panRef.current.connect(audioContextRef.current.destination);
   };
 
   useEffect(() => {

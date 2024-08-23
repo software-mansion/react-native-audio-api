@@ -17,7 +17,9 @@
 
 - (instancetype)init;
 
-- (void)clean;
+- (void)close;
+
+- (void)cleanup;
 
 - (double)getCurrentTime;
 

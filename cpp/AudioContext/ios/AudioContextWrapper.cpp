@@ -8,8 +8,7 @@ namespace audiocontext
     }
 
     std::shared_ptr<AudioDestinationNodeWrapper> AudioContextWrapper::getDestination() const {
-        // TODO: Add AudioDestinationNode implementation
-        return std::make_shared<AudioDestinationNodeWrapper>();
+        return std::make_shared<AudioDestinationNodeWrapper>(audiocontext_);
     }
 
     std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() {
@@ -21,8 +20,7 @@ namespace audiocontext
     }
 
     std::shared_ptr<BiquadFilterNodeWrapper> AudioContextWrapper::createBiquadFilter() {
-        // TODO: Add BiquadFilterNode implementation
-        return std::make_shared<BiquadFilterNodeWrapper>();
+        return std::make_shared<BiquadFilterNodeWrapper>(audiocontext_);
     }
 
     double AudioContextWrapper::getCurrentTime() {
@@ -35,6 +33,10 @@ namespace audiocontext
 
     int AudioContextWrapper::getSampleRate() const {
         return audiocontext_->getSampleRate();
+    }
+
+    void AudioContextWrapper::close() {
+        audiocontext_->close();
     }
 } // namespace audiocontext
 #endif

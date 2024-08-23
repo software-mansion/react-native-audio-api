@@ -22,7 +22,8 @@ namespace audiocontext {
         explicit GainNodeWrapper(GainNode *gainNode);
 #else
         private:
-            std::shared_ptr<IOSGainNode> gain_;
+            std::shared_ptr<IOSGainNode> getGainNodeFromAudioNode();
+        
         public:
             explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif

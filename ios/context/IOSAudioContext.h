@@ -14,6 +14,7 @@ namespace audiocontext {
 		public:
             explicit IOSAudioContext();
             ~IOSAudioContext();
+            void close();
             double getCurrentTime();
             std::string getState();
             double getSampleRate();

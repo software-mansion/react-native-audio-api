@@ -3,7 +3,7 @@
 namespace audiocontext {
 
     IOSAudioParam::~IOSAudioParam() {
-        [audioParam clean];
+        [audioParam cleanup];
         audioParam = nil;
     }
 

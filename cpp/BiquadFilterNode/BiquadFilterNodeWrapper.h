@@ -6,6 +6,7 @@
 #ifdef ANDROID
 #include "BiquadFilterNode.h"
 #else
+#include "IOSBiquadFilterNode.h"
 #endif
 
 namespace audiocontext {
@@ -21,8 +22,10 @@ namespace audiocontext {
     public:
         explicit BiquadFilterNodeWrapper(BiquadFilterNode *biquadFilterNode);
 #else
+    private:
+        std::shared_ptr<IOSBiquadFilterNode> getBiquadFilterNodeFromAudioNode();
     public:
-        explicit BiquadFilterNodeWrapper(){};
+        explicit BiquadFilterNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif
     private:
         std::shared_ptr<AudioParamWrapper> frequencyParam_;

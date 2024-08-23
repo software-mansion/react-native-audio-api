@@ -31,7 +31,7 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
   private var x1 = 0.0
   private var x2 = 0.0
   // coefficients
-  private var a1 = 0.0
+  private var a1 = 1.0
   private var a2 = 0.0
   private var b0 = 1.0
   private var b1 = 0.0
@@ -45,7 +45,7 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
     filterType = FilterType.fromString(type)
   }
 
-  private fun reset() {
+  private fun resetCoefficients() {
     y1 = 0.0
     y2 = 0.0
     x1 = 0.0
@@ -281,43 +281,44 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   private fun applyFilter() {
-    var normalizedFrequency = frequency.getValueAtTime(context.getCurrentTime()) / Constants.NYQUIST_FREQUENCY
+    val currentTime = context.getCurrentTime()
+    var normalizedFrequency = frequency.getValueAtTime(currentTime) / Constants.NYQUIST_FREQUENCY
 
-    if (detune.getValueAtTime(context.getCurrentTime()) != 0.0) {
-      normalizedFrequency *= 2.0.pow(detune.getValueAtTime(context.getCurrentTime()) / 1200.0)
+    if (detune.getValueAtTime(currentTime) != 0.0) {
+      normalizedFrequency *= 2.0.pow(detune.getValueAtTime(currentTime) / 1200.0)
     }
 
     when (filterType) {
       FilterType.LOWPASS -> {
-        setLowpassCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()))
+        setLowpassCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime))
       }
       FilterType.HIGHPASS -> {
-        setHighpassCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()))
+        setHighpassCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime))
       }
       FilterType.BANDPASS -> {
-        setBandpassCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()))
+        setBandpassCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime))
       }
       FilterType.LOWSHELF -> {
-        setLowshelfCoefficients(normalizedFrequency, gain.getValueAtTime(context.getCurrentTime()))
+        setLowshelfCoefficients(normalizedFrequency, gain.getValueAtTime(currentTime))
       }
       FilterType.HIGHSHELF -> {
-        setHighshelfCoefficients(normalizedFrequency, gain.getValueAtTime(context.getCurrentTime()))
+        setHighshelfCoefficients(normalizedFrequency, gain.getValueAtTime(currentTime))
       }
       FilterType.PEAKING -> {
-        setPeakingCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()), gain.getValueAtTime(context.getCurrentTime()))
+        setPeakingCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime), gain.getValueAtTime(currentTime))
       }
       FilterType.NOTCH -> {
-        setNotchCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()))
+        setNotchCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime))
       }
       FilterType.ALLPASS -> {
-        setAllpassCoefficients(normalizedFrequency, Q.getValueAtTime(context.getCurrentTime()))
+        setAllpassCoefficients(normalizedFrequency, Q.getValueAtTime(currentTime))
       }
     }
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
-    reset()
+    resetCoefficients()
     applyFilter()
     for (i in playbackParameters.buffer.indices) {
       val input = playbackParameters.buffer[i]

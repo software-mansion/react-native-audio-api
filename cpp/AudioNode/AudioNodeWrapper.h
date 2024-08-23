@@ -17,9 +17,9 @@ namespace audiocontext {
         explicit AudioNodeWrapper(AudioNode *node);
         virtual ~AudioNodeWrapper();
 #else
-        public:
-            std::shared_ptr<IOSAudioNode> node_;
-            explicit AudioNodeWrapper() {}
+    public:
+        std::shared_ptr<IOSAudioNode> node_;
+        explicit AudioNodeWrapper() {}
 #endif
     private:
         int numberOfInputs_;

@@ -8,13 +8,13 @@ namespace audiocontext {
     }
 
     IOSStereoPannerNode::~IOSStereoPannerNode() {
-        [panner_ clean];
+        [panner_ cleanup];
         audioNode_ = panner_ = nil;
     }
 
-    std::shared_ptr<IOSAudioParam> IOSStereoPannerNode::getAudioParam() {
+    std::shared_ptr<IOSAudioParam> IOSStereoPannerNode::getPanParam() {
         std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-        param->audioParam = panner_.audioParam;
+        param->audioParam = panner_.panParam;
         return param;
     }
 } // namespace audiocontext

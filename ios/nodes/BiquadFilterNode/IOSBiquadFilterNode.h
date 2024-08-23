@@ -1,9 +1,9 @@
 #pragma once
 
 #ifdef __OBJC__ // when compiled as Objective-C++
-#import <OscillatorNode.h>
+#import <BiquadFilterNode.h>
 #else // when compiled as C++
-typedef struct objc_object OscillatorNode;
+typedef struct objc_object BiquadFilterNode;
 #endif // __OBJC__
 
 #include <string>
@@ -12,18 +12,18 @@ typedef struct objc_object OscillatorNode;
 #include "IOSAudioContext.h"
 
 namespace audiocontext {
-    class IOSOscillator : public IOSAudioNode {
+    class IOSBiquadFilterNode : public IOSAudioNode {
         public:
-            explicit IOSOscillator(std::shared_ptr<IOSAudioContext> context);
-            ~IOSOscillator();
-            void start(double time) const;
-            void stop(double time) const;
+            explicit IOSBiquadFilterNode(std::shared_ptr<IOSAudioContext> context);
+            ~IOSBiquadFilterNode();
             void setType(const std::string &type) const;
             std::string getType() const;
             std::shared_ptr<IOSAudioParam> getFrequencyParam();
             std::shared_ptr<IOSAudioParam> getDetuneParam();
+            std::shared_ptr<IOSAudioParam> getQParam();
+            std::shared_ptr<IOSAudioParam> getGainParam();
 
         protected:
-            OscillatorNode *oscillatorNode_;
-	};
+            BiquadFilterNode *biquadFilterNode_;
+    };
 } // namespace audiocontext

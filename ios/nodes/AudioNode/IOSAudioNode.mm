@@ -2,7 +2,7 @@
 
 namespace audiocontext {
     IOSAudioNode::~IOSAudioNode() {
-        [audioNode_ clean];
+        [audioNode_ cleanup];
         audioNode_ = nil;
     }
 

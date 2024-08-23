@@ -6,7 +6,7 @@
 #ifdef ANDROID
 #include "OscillatorNode.h"
 #else
-#include "IOSOscillator.h"
+#include "IOSOscillatorNode.h"
 #endif
 
 namespace audiocontext {
@@ -24,7 +24,7 @@ namespace audiocontext {
         ~OscillatorNodeWrapper() override;
 #else
         private:
-            std::shared_ptr<IOSOscillator> oscillator_;
+            std::shared_ptr<IOSOscillatorNode> getOscillatorNodeFromAudioNode();
         public:
             explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context);
 #endif

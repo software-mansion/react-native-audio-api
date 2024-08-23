@@ -1,5 +1,4 @@
 import { AudioContext } from 'react-native-audio-context';
-import { Platform } from 'react-native';
 import type { SoundEngine } from './SoundEngine';
 
 export class Kick implements SoundEngine {
@@ -20,9 +19,7 @@ export class Kick implements SoundEngine {
     const gain = this.audioContext.createGain();
 
     oscillator.connect(gain);
-    if (Platform.OS === 'android') {
-      gain.connect(this.audioContext.destination!);
-    }
+    gain.connect(this.audioContext.destination);
 
     oscillator.frequency.setValueAtTime(this.tone, time);
     oscillator.frequency.exponentialRampToValueAtTime(0.01, time + this.decay);

@@ -1,41 +1,41 @@
-#include <IOSOscillator.h>
+#include <IOSOscillatorNode.h>
 
 namespace audiocontext {
 
-    IOSOscillator::IOSOscillator(std::shared_ptr<IOSAudioContext> context) {
+    IOSOscillatorNode::IOSOscillatorNode(std::shared_ptr<IOSAudioContext> context) {
         audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] initWithContext:context->audioContext_];
     }
 
-    IOSOscillator::~IOSOscillator() {
-        [oscillatorNode_ clean];
+    IOSOscillatorNode::~IOSOscillatorNode() {
+        [oscillatorNode_ cleanup];
         audioNode_ = oscillatorNode_ = nil;
     }
 
-    void IOSOscillator::start(double time) const {
+    void IOSOscillatorNode::start(double time) const {
         [oscillatorNode_ start:time];
     }
 
-    void IOSOscillator::stop(double time) const {
+    void IOSOscillatorNode::stop(double time) const {
         [oscillatorNode_ stop:time];
     }
 
-    void IOSOscillator::setType(const std::string &type) const {
+    void IOSOscillatorNode::setType(const std::string &type) const {
         NSString *nsType = [NSString stringWithUTF8String:type.c_str()];
         [oscillatorNode_ setType:nsType];
     }
 
-    std::string IOSOscillator::getType() const {
+    std::string IOSOscillatorNode::getType() const {
         NSString *nsType = [oscillatorNode_ getType];
         return std::string([nsType UTF8String]);
     }
 
-    std::shared_ptr<IOSAudioParam> IOSOscillator::getFrequencyParam() {
+    std::shared_ptr<IOSAudioParam> IOSOscillatorNode::getFrequencyParam() {
         std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
         param->audioParam = oscillatorNode_.frequencyParam;
         return param;
     }
 
-    std::shared_ptr<IOSAudioParam> IOSOscillator::getDetuneParam() {
+    std::shared_ptr<IOSAudioParam> IOSOscillatorNode::getDetuneParam() {
         std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
         param->audioParam = oscillatorNode_.detuneParam;
         return param;

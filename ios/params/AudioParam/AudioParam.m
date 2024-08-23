@@ -18,7 +18,7 @@
     return self;
 }
 
-- (void)clean {
+- (void)cleanup {
     _timeline = nil;
     _context = nil;
 }

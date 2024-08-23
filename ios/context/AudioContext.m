@@ -1,4 +1,5 @@
 #import <AudioContext.h>
+#import "Constants.h"
 
 @implementation AudioContext
 
@@ -12,12 +13,17 @@
     
     _contextStartTime = mach_absolute_time();
     _state = ContextStateRunning;
-    _sampleRate = 44100;
+    _sampleRate = [Constants sampleRate];
 
     return self;
 }
 
-- (void)clean {
+- (void)close {
+    [self cleanup];
+    _state = ContextStateClosed;
+}
+
+- (void)cleanup {
     if (self.audioEngine.isRunning) {
         [self.audioEngine stop];
     }
