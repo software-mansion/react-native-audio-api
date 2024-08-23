@@ -26,6 +26,7 @@ class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
 
     playbackParameters.leftPan *= gainL
     playbackParameters.rightPan *= gainR
+
     super.process(playbackParameters)
   }
 }

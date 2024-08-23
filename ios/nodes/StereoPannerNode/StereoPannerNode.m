@@ -1,6 +1,8 @@
 #import "StereoPannerNode.h"
 #import "AudioContext.h"
 
+// https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
+
 @implementation StereoPannerNode
 
 - (instancetype)initWithContext:(AudioContext *)context {
@@ -18,10 +20,15 @@
 }
 
 - (void)processWithParameters:(PlaybackParameters *)parameters {
-    double currentTime = [self.context getCurrentTime];
-    parameters.leftGain *= fmin(1.0 - [_panParam getValueAtTime:currentTime], 1.0);
-    parameters.rightGain *= fmin(1.0 + [_panParam getValueAtTime:currentTime], 1.0);
-
+    double pan = [_panParam getValueAtTime:[self.context getCurrentTime]];
+    double x = (pan + 1) / 2;
+    
+    double gainL = cos(x * M_PI / 2);
+    double gainR = sin(x * M_PI / 2);
+    
+    parameters.leftGain *= gainL;
+    parameters.rightGain *= gainR;
+    
     [super processWithParameters:parameters];
 }
 
