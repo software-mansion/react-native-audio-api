@@ -36,23 +36,6 @@ namespace audiocontext {
                 return jsi::Value::undefined();
             });
         }
-        
-        if (propName == "numberOfInputs")
-        {
-            return jsi::Value(wrapper_->getNumberOfInputs());
-        }
-
-        if (propName == "numberOfOutputs")
-        {
-            return jsi::Value(wrapper_->getNumberOfOutputs());
-        }
-        
-        if (propName == "context")
-        {
-            auto context = runtime.global().getPropertyAsObject(runtime, "__AudioContext");
-            auto hostObject = context.getHostObject<AudioContextHostObject>(runtime);
-            return jsi::Object::createFromHostObject(runtime, hostObject);
-        }
 
         if (propName == "numberOfInputs")
         {
