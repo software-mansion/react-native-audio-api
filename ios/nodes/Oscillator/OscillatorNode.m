@@ -12,7 +12,6 @@
     _detuneParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-[Constants maxDetune] maxValue:[Constants maxDetune]];
     _waveType = WaveTypeSine;
     _isPlaying = NO;
-    _deltaTime = 1 / self.context.sampleRate;
     
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
@@ -99,7 +98,7 @@
     
     [_playbackParameters reset];
     
-    float time = [self.context getCurrentTime];
+    
     for (int frame = 0; frame < frameCount; frame++) {
         // Convert cents to HZ
         if (!_isPlaying) {
@@ -108,13 +107,12 @@
             continue;
         }
        
-        double detuneRatio = pow(2.0, [_detuneParam getValue] / OCTAVE_IN_CENTS);
+        float time = [self.context getCurrentTime];
+        double detuneRatio = pow(2.0, [_detuneParam getValueAtTime:time] / OCTAVE_IN_CENTS);
         double detunedFrequency = round(detuneRatio * [_frequencyParam getValueAtTime:time]);
         double phaseIncrement = FULL_CIRCLE_RADIANS * detunedFrequency / self.context.sampleRate;
         leftBuffer[frame] = [WaveType valueForWaveType:_waveType atPhase:_phase];
         rightBuffer[frame] = [WaveType valueForWaveType:_waveType atPhase:_phase];
-                    
-        time += _deltaTime;
 
         _phase += phaseIncrement;
         if (_phase > FULL_CIRCLE_RADIANS) {

@@ -17,7 +17,6 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 @property (nonatomic, assign) WaveTypeEnum waveType;
 @property (nonatomic, assign) Boolean isPlaying;
 
-@property (nonatomic, assign) float deltaTime;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, assign) float phase;
 @property (nonatomic, strong) PlaybackParameters* playbackParameters;
