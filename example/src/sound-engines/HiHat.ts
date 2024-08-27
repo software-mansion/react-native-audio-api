@@ -13,12 +13,12 @@ export class HiHat implements SoundEngine {
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
-    this.tone = 131;
+    this.tone = 40;
     this.decay = 0.5;
     this.volume = 1;
-    this.ratios = [1, 1.342, 1.2312, 1.6532, 1.9523, 2.1523];
-    this.bandpassFilterFrequency = 20000;
-    this.highpassFilterFrequency = 5000;
+    this.ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
+    this.bandpassFilterFrequency = 10000;
+    this.highpassFilterFrequency = 7000;
     this.bandPassQ = 0.2;
   }
 
@@ -44,20 +44,14 @@ export class HiHat implements SoundEngine {
       oscillator.frequency.value = this.tone * ratio;
       oscillator.connect(bandpassFilter);
       oscillator.start(time);
-      oscillator.stop(time + this.decay);
+      oscillator.stop(time + 0.3);
     });
 
-    gain.gain.exponentialRampToValueAtTime(
-      this.volume,
-      time + 0.067 * this.decay
-    );
-    gain.gain.exponentialRampToValueAtTime(
-      this.volume * 0.3,
-      time + 0.1 * this.decay
-    );
-    gain.gain.exponentialRampToValueAtTime(
-      this.volume * 0.00001,
-      time + this.decay
-    );
+    gain.gain.setValueAtTime(0.01, time);
+
+    gain.gain.exponentialRampToValueAtTime(this.volume, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0.3, time + 0.03);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0.001, time + 0.3);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0, time + 0.31);
   }
 }

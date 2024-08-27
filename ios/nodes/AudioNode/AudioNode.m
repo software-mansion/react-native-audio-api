@@ -16,12 +16,18 @@
     _context = nil;
     [_connectedNodes removeAllObjects];
     _connectedNodes = nil;
-    
+
 }
 
 - (void)processWithParameters:(PlaybackParameters *)parameters; {
     for (AudioNode *node in _connectedNodes) {
         [node processWithParameters:parameters];
+    }
+}
+
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList; {
+    for (AudioNode *node in _connectedNodes) {
+        [node process:frameCount bufferList:bufferList];
     }
 }
 

@@ -19,4 +19,8 @@
     }
 }
 
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList {
+  // do nothing
+}
+
 @end
