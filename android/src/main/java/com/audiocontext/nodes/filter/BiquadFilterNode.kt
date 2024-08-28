@@ -334,8 +334,8 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
     val a1 = this.a1
     val a2 = this.a2
 
-    for (i in playbackParameters.buffer.indices) {
-      val input = playbackParameters.buffer[i]
+    for (i in 0 until playbackParameters.audioBuffer.length) {
+      val input = playbackParameters.audioBuffer.getChannelData(0)[i]
       val output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
 
       x2 = x1
@@ -343,7 +343,9 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
       y2 = y1
       y1 = output
 
-      playbackParameters.buffer[i] = output.toInt().toShort()
+      for (j in 0 until playbackParameters.audioBuffer.numberOfChannels) {
+        playbackParameters.audioBuffer.getChannelData(j)[i] = output.toInt().toShort()
+      }
     }
 
     super.process(playbackParameters)

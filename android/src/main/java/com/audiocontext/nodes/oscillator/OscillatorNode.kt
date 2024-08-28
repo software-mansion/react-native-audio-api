@@ -6,11 +6,13 @@ import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.parameters.AudioParam
 import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.audiocontext.parameters.PlaybackParameters
+import com.audiocontext.utils.AudioBuffer
 import com.audiocontext.utils.Constants
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
   override val channelCount = 2
+  override var playbackParameters: PlaybackParameters?
 
   private val frequency: AudioParam = AudioParam(context, 440.0, Constants.NYQUIST_FREQUENCY, -Constants.NYQUIST_FREQUENCY)
     get() = field
@@ -18,6 +20,13 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
     get() = field
   private var waveType: WaveType = WaveType.SINE
   private var wavePhase: Double = 0.0
+
+  init {
+    val audioTrack = context.getAudioTrack()
+    val audioBuffer = AudioBuffer(context.sampleRate, Constants.BUFFER_SIZE, 2)
+
+    playbackParameters = PlaybackParameters(audioTrack, audioBuffer)
+  }
 
   fun getWaveType(): String {
     return WaveType.toString(waveType)
@@ -29,14 +38,16 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun generateBuffer(playbackParameters: PlaybackParameters) {
-    for(i in playbackParameters.buffer.indices) {
+    for (i in 0 until playbackParameters.audioBuffer.length) {
       val computedFrequency = frequency.getValueAtTime(context.getCurrentTime()) * 2.0.pow(detune.getValueAtTime(context.getCurrentTime())/ 1200.0)
       wavePhase += 2.0 * Math.PI * (computedFrequency / context.sampleRate)
 
       if (wavePhase > 2.0 * Math.PI) {
         wavePhase -= 2.0 * Math.PI
       }
-      playbackParameters.buffer[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
+      for (j in 0 until playbackParameters.audioBuffer.numberOfChannels) {
+        playbackParameters.audioBuffer.getChannelData(j)[i] = WaveType.getWaveBufferElement(wavePhase, waveType)
+      }
     }
   }
 }

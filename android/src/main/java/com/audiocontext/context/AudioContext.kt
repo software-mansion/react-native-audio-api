@@ -51,7 +51,7 @@ class AudioContext() : BaseAudioContext {
     val audioFormat = AudioFormat.Builder()
       .setSampleRate(this.sampleRate)
       .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-      .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+      .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
       .build()
 
     val audioTrack = AudioTrack(audioAttributes, audioFormat, Constants.BUFFER_SIZE, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
@@ -79,16 +79,14 @@ class AudioContext() : BaseAudioContext {
     audioTracksList.clear()
   }
 
-  override fun getPlaybackParameters(): PlaybackParameters {
-    val buffer = ShortArray(Constants.BUFFER_SIZE)
-
+  override fun getAudioTrack(): AudioTrack {
     synchronized(audioTracksList) {
       if(audioTracksList.isNotEmpty()) {
-        return PlaybackParameters(audioTracksList.removeFirst(), buffer)
+        return audioTracksList.removeFirst()
       } else {
         val audioTrack = initAudioTrack()
 
-        return PlaybackParameters(audioTrack, buffer)
+        return audioTrack
       }
     }
   }

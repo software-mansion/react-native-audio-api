@@ -12,17 +12,18 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
     get() = field
   private val channels = Array(numberOfChannels) { ShortArray(length) }
 
-  private val mHybridData: HybridData?;
+// private val mHybridData: HybridData?;
 
-  companion object {
-    init {
-      System.loadLibrary("react-native-audio-context")
-    }
-  }
+//  companion object {
+//    init {
+//      System.loadLibrary("react-native-audio-context")
+//    }
+//  }
 
-  init {
-    mHybridData = initHybrid()
-  }
+//  init {
+//    mHybridData = initHybrid()
+//  }
+// external fun initHybrid(): HybridData?
 
   fun getChannelData(channel: Int): ShortArray {
     if (channel < 0 || channel >= numberOfChannels) {
@@ -31,7 +32,5 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
 
     return channels[channel]
   }
-
-  external fun initHybrid(): HybridData?
 }
 

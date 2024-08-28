@@ -9,7 +9,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
 
-  private var playbackParameters: PlaybackParameters? = context.getPlaybackParameters()
+  abstract var playbackParameters: PlaybackParameters?
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null;
