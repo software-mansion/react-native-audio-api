@@ -12,9 +12,9 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val channelCount: Int = 1
     get() = field
-  open val chanelCountMode: String = "explicit"
+  open val channelCountMode: ChannelCountMode = ChannelCountMode.MAX
     get() = field
-  open val channelInterpretation: String = "speakers"
+  open val channelInterpretation: Channelnterpretation = Channelnterpretation.SPEAKERS
     get() = field
   private val inputNodes = mutableListOf<AudioNode>()
   private val outputNodes = mutableListOf<AudioNode>()

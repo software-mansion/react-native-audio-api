@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.audionode.AudioNode
+import com.audiocontext.nodes.audionode.ChannelCountMode
 import com.audiocontext.parameters.AudioParam
 import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.Constants
@@ -14,6 +15,9 @@ import kotlin.math.*
 class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
+  override val channelCount: Int = 2
+  override val channelCountMode: ChannelCountMode = ChannelCountMode.CLAMPED_MAX
+
   private val pan: AudioParam = AudioParam(context,0.0, Constants.MAX_PAN, -Constants.MAX_PAN)
     get() = field
 

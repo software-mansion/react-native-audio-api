@@ -10,6 +10,8 @@ import com.audiocontext.utils.Constants
 import kotlin.math.pow
 
 class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
+  override val channelCount = 2
+
   private val frequency: AudioParam = AudioParam(context, 440.0, Constants.NYQUIST_FREQUENCY, -Constants.NYQUIST_FREQUENCY)
     get() = field
   private val detune: AudioParam = AudioParam(context, 0.0, Constants.MAX_DETUNE, -Constants.MAX_DETUNE)
