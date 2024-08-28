@@ -1,4 +1,4 @@
-package com.audiocontext.nodes
+package com.audiocontext.nodes.audionode
 
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.parameters.PlaybackParameters
@@ -10,8 +10,15 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
+  open val channelCount: Int = 1
+    get() = field
+  open val chanelCountMode: String = "explicit"
+    get() = field
+  open val channelInterpretation: String = "speakers"
+    get() = field
   private val inputNodes = mutableListOf<AudioNode>()
   private val outputNodes = mutableListOf<AudioNode>()
+
 
   private val mHybridData: HybridData?
 

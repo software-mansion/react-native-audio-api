@@ -1,6 +1,7 @@
 package com.audiocontext.nodes
 
 import com.audiocontext.context.BaseAudioContext
+import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.parameters.PlaybackParameters
 import java.util.PriorityQueue
 

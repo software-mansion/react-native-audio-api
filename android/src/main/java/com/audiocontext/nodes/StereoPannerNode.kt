@@ -3,6 +3,7 @@ package com.audiocontext.nodes
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
+import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.parameters.AudioParam
 import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.Constants
