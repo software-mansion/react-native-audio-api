@@ -3,7 +3,7 @@ package com.audiocontext.nodes.filter
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.audiocontext.context.BaseAudioContext
-import com.audiocontext.nodes.AudioNode
+import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.parameters.AudioParam
 import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.Constants
@@ -320,6 +320,18 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
   override fun process(playbackParameters: PlaybackParameters) {
     resetCoefficients()
     applyFilter()
+
+    var x1 = this.x1
+    var x2 = this.x2
+    var y1 = this.y1
+    var y2 = this.y2
+
+    val b0 = this.b0
+    val b1 = this.b1
+    val b2 = this.b2
+    val a1 = this.a1
+    val a2 = this.a2
+
     for (i in playbackParameters.buffer.indices) {
       val input = playbackParameters.buffer[i]
       val output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
