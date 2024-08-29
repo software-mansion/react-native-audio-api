@@ -320,6 +320,8 @@ class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
+    mixBuffers(playbackParameters)
+
     resetCoefficients()
     applyFilter()
 

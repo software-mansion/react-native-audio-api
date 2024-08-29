@@ -17,6 +17,8 @@ class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
   }
 
   override fun process(playbackParameters: PlaybackParameters) {
+    mixBuffers(playbackParameters)
+
     setVolumeAndPanning(playbackParameters)
     val buffer = ShortArray(playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels)
     for (i in 0 until playbackParameters.audioBuffer.length) {
@@ -24,6 +26,7 @@ class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
         buffer[i * playbackParameters.audioBuffer.numberOfChannels + j] = playbackParameters.audioBuffer.getChannelData(j)[i]
       }
     }
+
     playbackParameters.audioTrack.write(buffer, 0, playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels)
   }
 }

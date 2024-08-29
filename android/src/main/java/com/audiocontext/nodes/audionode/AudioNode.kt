@@ -19,7 +19,6 @@ abstract class AudioNode(val context: BaseAudioContext) {
   private val inputNodes = mutableListOf<AudioNode>()
   private val outputNodes = mutableListOf<AudioNode>()
 
-
   private val mHybridData: HybridData?
 
   companion object {
@@ -54,5 +53,10 @@ abstract class AudioNode(val context: BaseAudioContext) {
     outputNodes.forEach { it.cleanup() }
     inputNodes.clear()
     outputNodes.clear()
+  }
+
+  protected fun mixBuffers(playbackParameters: PlaybackParameters) {
+    val buffer = playbackParameters.audioBuffer.mix(channelCount)
+    playbackParameters.audioBuffer = buffer
   }
 }

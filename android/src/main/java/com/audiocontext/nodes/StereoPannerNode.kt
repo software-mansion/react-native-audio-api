@@ -23,11 +23,13 @@ class StereoPannerNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
-    val pan = pan.getValueAtTime(context.getCurrentTime())
-    val x = (pan + 1) / 2;
+    mixBuffers(playbackParameters)
 
-    val gainL = cos(x * PI / 2);
-    val gainR = sin(x * PI / 2);
+    val pan = pan.getValueAtTime(context.getCurrentTime())
+    val x = (pan + 1) / 2
+
+    val gainL = cos(x * PI / 2)
+    val gainR = sin(x * PI / 2)
 
     playbackParameters.leftPan *= gainL
     playbackParameters.rightPan *= gainR

@@ -18,6 +18,8 @@ class GainNode(context: BaseAudioContext): AudioNode(context) {
 
   @RequiresApi(Build.VERSION_CODES.N)
   override fun process(playbackParameters: PlaybackParameters) {
+    mixBuffers(playbackParameters)
+
     val gain = this.gain.getValueAtTime(context.getCurrentTime())
     playbackParameters.rightPan *= gain
     playbackParameters.leftPan *= gain
