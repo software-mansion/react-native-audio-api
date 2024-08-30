@@ -3,7 +3,6 @@ package com.audiocontext.nodes
 import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.parameters.PlaybackParameters
-import java.util.PriorityQueue
 
 abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(context) {
   override val numberOfInputs: Int = 0
@@ -12,17 +11,16 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   abstract var playbackParameters: PlaybackParameters?
   @Volatile protected var isPlaying: Boolean = false
 
-  private var playbackThread: Thread? = null;
-  private val stopQueue = PriorityQueue<Double>()
+  private var playbackThread: Thread? = null
+  private var stopTime: Double? = null
 
   private fun generateSound() {
     while(isPlaying) {
-      playbackParameters?.let { generateBuffer(it) }
+      playbackParameters?.let { getBuffer(it) }
       playbackParameters?.reset()
       playbackParameters?.let { process(it) }
-      if(stopQueue.isNotEmpty() && context.getCurrentTime() >= stopQueue.peek()!!) {
+      if(stopTime != null && context.getCurrentTime() >= stopTime!!) {
         prepareForDeconstruction()
-        stopQueue.poll()
       }
     }
   }
@@ -39,9 +37,13 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     playbackThread?.interrupt()
   }
 
-  protected abstract fun generateBuffer(playbackParameters: PlaybackParameters)
+  protected abstract fun getBuffer(playbackParameters: PlaybackParameters)
 
   fun start(time: Double) {
+    if (playbackParameters == null) {
+      throw IllegalStateException("You can use source only once")
+    }
+
     playbackThread = Thread {
       while (context.getCurrentTime() < time) {
         Thread.sleep(1)
@@ -54,7 +56,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
   }
 
   fun stop(time: Double) {
-    stopQueue.add(time)
+    stopTime = time
   }
 
   private fun prepareForDeconstruction() {

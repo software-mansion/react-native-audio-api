@@ -37,7 +37,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  override fun generateBuffer(playbackParameters: PlaybackParameters) {
+  override fun getBuffer(playbackParameters: PlaybackParameters) {
     for (i in 0 until playbackParameters.audioBuffer.length) {
       val computedFrequency = frequency.getValueAtTime(context.getCurrentTime()) * 2.0.pow(detune.getValueAtTime(context.getCurrentTime())/ 1200.0)
       wavePhase += 2.0 * Math.PI * (computedFrequency / context.sampleRate)

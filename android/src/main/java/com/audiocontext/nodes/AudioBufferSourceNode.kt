@@ -22,7 +22,7 @@ class AudioBufferSourceNode(context: BaseAudioContext) : AudioScheduledSourceNod
     loop = value
   }
 
-  override fun generateBuffer(playbackParameters: PlaybackParameters) {
+  override fun getBuffer(playbackParameters: PlaybackParameters) {
     if (!loop) {
       isPlaying = false
     } else {
