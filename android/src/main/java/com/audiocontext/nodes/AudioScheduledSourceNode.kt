@@ -16,7 +16,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
 
   private fun generateSound() {
     while(isPlaying) {
-      playbackParameters?.let { getBuffer(it) }
+      playbackParameters?.let { fillBuffer(it) }
       playbackParameters?.reset()
       playbackParameters?.let { process(it) }
       if(stopTime != null && context.getCurrentTime() >= stopTime!!) {
@@ -37,7 +37,7 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
     playbackThread?.interrupt()
   }
 
-  protected abstract fun getBuffer(playbackParameters: PlaybackParameters)
+  protected abstract fun fillBuffer(playbackParameters: PlaybackParameters)
 
   fun start(time: Double) {
     if (playbackParameters == null) {
