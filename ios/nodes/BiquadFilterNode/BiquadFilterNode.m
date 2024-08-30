@@ -318,24 +318,39 @@
     }
 }
 
-- (void)processWithParameters:(PlaybackParameters *)parameters {
-    [self resetCoefficients];
-    [self applyFilter];
+- (void) process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList {
+  [self resetCoefficients];
+  [self applyFilter];
 
-    for (int frame = 0; frame < parameters.frameCount; frame++) {
-        double input = parameters.leftBuffer[frame];
-        double output = _b0 * input + _b1 * _x1 + _b2 * _x2 - _a1 * _y1 - _a2 * _y2;
+  float *bufferL = (float *)bufferList->mBuffers[0].mData;
+  float *bufferR = (float *)bufferList->mBuffers[1].mData;
 
-        _x2 = _x1;
-        _x1 = input;
-        _y2 = _y1;
-        _y1 = output;
+  double x1 = _x1;
+  double x2 = _x2;
+  double y1 = _y1;
+  double y2 = _y2;
 
-        parameters.leftBuffer[frame] = output;
-        parameters.rightBuffer[frame] = output;
-    }
+  double b0 = _b0;
+  double b1 = _b1;
+  double b2 = _b2;
+  double a1 = _a1;
+  double a2 = _a2;
 
-    [super processWithParameters:parameters];
+  for (int frame = 0; frame < frameCount; frame++) {
+    double input = bufferL[frame];
+//    double output = _b0 * input + _b1 * _x1 + _b2 * _x2 - _a1 * _y1 - _a2 * _y2;
+    double output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+
+    bufferL[frame] = output;
+    bufferR[frame] = output;
+
+    x2 = x1;
+    x1 = input;
+    y2 = y1;
+    y1 = output;
+  }
+
+  [super process:frameCount bufferList:bufferList];
 }
 
 @end

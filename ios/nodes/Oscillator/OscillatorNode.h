@@ -19,7 +19,6 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, assign) float phase;
-@property (nonatomic, strong) PlaybackParameters* playbackParameters;
 
 
 - (instancetype)initWithContext:(AudioContext *)context;

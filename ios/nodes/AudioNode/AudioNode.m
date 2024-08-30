@@ -19,9 +19,9 @@
     
 }
 
-- (void)processWithParameters:(PlaybackParameters *)parameters; {
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList; {
     for (AudioNode *node in _connectedNodes) {
-        [node processWithParameters:parameters];
+        [node process:frameCount bufferList:bufferList];
     }
 }
 

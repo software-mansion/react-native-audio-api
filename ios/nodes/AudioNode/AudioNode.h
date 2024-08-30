@@ -15,7 +15,7 @@
 
 - (instancetype)initWithContext:(AudioContext *)context;
 - (void)cleanup;
-- (void)processWithParameters:(PlaybackParameters *)parameters;
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList;
 - (void)connect:(AudioNode *)node;
 - (void)disconnect:(AudioNode *)node;
 - (int)getNumberOfInputs;

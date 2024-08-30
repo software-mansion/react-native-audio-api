@@ -10,7 +10,7 @@ export class Kick implements SoundEngine {
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
     this.tone = 125;
-    this.decay = 0.5;
+    this.decay = 0.2;
     this.volume = 1;
   }
 
