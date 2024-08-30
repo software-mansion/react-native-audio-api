@@ -36,23 +36,28 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
       return this
     }
 
-    if (this.numberOfChannels == 1 && outputNumberOfChannels == 2) {
-      val outputBuffer = AudioBuffer(sampleRate, length, 2)
-      outputBuffer.setChannelData(0, channels[0])
-      outputBuffer.setChannelData(1, channels[0])
+    when(this.numberOfChannels) {
+      1 -> {
+        if (outputNumberOfChannels == 2) {
+          val outputBuffer = AudioBuffer(sampleRate, length, 2)
+          outputBuffer.setChannelData(0, channels[0])
+          outputBuffer.setChannelData(1, channels[0])
 
-      return outputBuffer
-    }
-
-    if (this.numberOfChannels == 2 && outputNumberOfChannels == 1) {
-      val outputBuffer = AudioBuffer(sampleRate, length, 1)
-      val outputData = ShortArray(length)
-
-      for (i in 0 until length) {
-        outputData[i] = ((channels[0][i] + channels[1][i]) / 2).toShort()
+          return outputBuffer
+        }
       }
+      2 -> {
+        if (outputNumberOfChannels == 1) {
+          val outputBuffer = AudioBuffer(sampleRate, length, 1)
+          val outputData = ShortArray(length)
 
-      return outputBuffer
+          for (i in 0 until length) {
+            outputData[i] = ((channels[0][i] + channels[1][i]) / 2).toShort()
+          }
+
+          return outputBuffer
+        }
+      }
     }
 
     throw IllegalArgumentException("Unsupported number of channels")

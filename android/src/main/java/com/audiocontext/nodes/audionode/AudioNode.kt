@@ -4,6 +4,8 @@ import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
 
+// channelCount - number of channels used by the node
+
 
 abstract class AudioNode(val context: BaseAudioContext) {
   open val numberOfInputs: Int = 0
