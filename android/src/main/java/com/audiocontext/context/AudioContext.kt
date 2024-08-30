@@ -4,7 +4,9 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.Build
 import android.os.SystemClock
+import androidx.annotation.RequiresApi
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.audiocontext.utils.Constants
@@ -12,7 +14,6 @@ import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.filter.BiquadFilterNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
-import com.audiocontext.parameters.PlaybackParameters
 import com.facebook.jni.HybridData
 import java.util.LinkedList
 
@@ -42,7 +43,7 @@ class AudioContext() : BaseAudioContext {
   external fun initHybrid(): HybridData?
   external fun install(jsContext: Long)
 
-  private fun initAudioTrack(): AudioTrack {
+  private fun initAudioTrack(bufferSize: Int): AudioTrack {
     val audioAttributes = AudioAttributes.Builder()
       .setUsage(AudioAttributes.USAGE_MEDIA)
       .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -54,7 +55,7 @@ class AudioContext() : BaseAudioContext {
       .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
       .build()
 
-    val audioTrack = AudioTrack(audioAttributes, audioFormat, Constants.BUFFER_SIZE, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+    val audioTrack = AudioTrack(audioAttributes, audioFormat, bufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
 
     if (audioTrack.state != AudioTrack.STATE_INITIALIZED) {
       throw IllegalStateException("Failed to initialize AudioTrack")
@@ -79,12 +80,13 @@ class AudioContext() : BaseAudioContext {
     audioTracksList.clear()
   }
 
-  override fun getAudioTrack(): AudioTrack {
+  @RequiresApi(Build.VERSION_CODES.N)
+  override fun getAudioTrack(bufferSize: Int): AudioTrack {
     synchronized(audioTracksList) {
       if(audioTracksList.isNotEmpty()) {
         return audioTracksList.removeFirst()
       } else {
-        val audioTrack = initAudioTrack()
+        val audioTrack = initAudioTrack(bufferSize)
 
         return audioTrack
       }

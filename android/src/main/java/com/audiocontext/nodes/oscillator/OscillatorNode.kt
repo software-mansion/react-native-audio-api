@@ -22,7 +22,7 @@ class OscillatorNode(context: BaseAudioContext) : AudioScheduledSourceNode(conte
   private var wavePhase: Double = 0.0
 
   init {
-    val audioTrack = context.getAudioTrack()
+    val audioTrack = context.getAudioTrack(2 * Constants.BUFFER_SIZE)
     val audioBuffer = AudioBuffer(context.sampleRate, Constants.BUFFER_SIZE, 2)
 
     playbackParameters = PlaybackParameters(audioTrack, audioBuffer)

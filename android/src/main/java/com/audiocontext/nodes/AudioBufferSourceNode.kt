@@ -13,7 +13,7 @@ class AudioBufferSourceNode(context: BaseAudioContext) : AudioScheduledSourceNod
     get() = field
 
   fun setBuffer(buffer: AudioBuffer) {
-    val audioTrack = context.getAudioTrack()
+    val audioTrack = context.getAudioTrack(2 * buffer.length)
     this.buffer = buffer.copy()
     playbackParameters = PlaybackParameters(audioTrack, buffer)
   }

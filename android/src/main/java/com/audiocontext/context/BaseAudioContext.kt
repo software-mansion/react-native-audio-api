@@ -14,7 +14,7 @@ interface BaseAudioContext {
   var state: ContextState
 
   abstract fun getCurrentTime(): Double
-  abstract fun getAudioTrack(): AudioTrack
+  abstract fun getAudioTrack(bufferSize: Int): AudioTrack
   abstract fun addAudioTrack(audioTrack: AudioTrack)
   abstract fun close()
   abstract fun createOscillator(): OscillatorNode
