@@ -31,6 +31,16 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
     channels[channel] = data
   }
 
+  fun copy(): AudioBuffer {
+    val outputBuffer = AudioBuffer(sampleRate, length, numberOfChannels)
+
+    for (i in 0 until numberOfChannels) {
+      outputBuffer.setChannelData(i, channels[i].copyOf())
+    }
+
+    return outputBuffer
+  }
+
   fun mix(outputNumberOfChannels: Int): AudioBuffer {
     if (this.numberOfChannels == outputNumberOfChannels) {
       return this
