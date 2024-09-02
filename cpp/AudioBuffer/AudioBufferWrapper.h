@@ -33,6 +33,6 @@ namespace audiocontext {
         double getDuration() const;
         int getNumberOfChannels() const;
         short** getChannelData(int channel) const;
-
+        void setChannelData(int channel, short** data);
     };
 } // namespace audiocontext

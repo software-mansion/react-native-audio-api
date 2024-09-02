@@ -14,6 +14,8 @@
 #include "GainNode.h"
 #include "StereoPannerNode.h"
 #include "BiquadFilterNode.h"
+#include "AudioBufferSourceNode.h"
+#include "AudioBuffer.h"
 
 namespace audiocontext
 {
@@ -44,6 +46,8 @@ namespace audiocontext
     GainNode* createGain();
     StereoPannerNode* createStereoPanner();
     BiquadFilterNode* createBiquadFilter();
+    AudioBufferSourceNode* createBufferSource();
+    AudioBuffer* createBuffer(int sampleRate, int length, int numberOfChannels);
     std::string getState();
     int getSampleRate();
     double getCurrentTime();

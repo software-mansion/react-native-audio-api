@@ -34,5 +34,9 @@ namespace audiocontext{
     short** AudioBufferWrapper::getChannelData(int channel) const {
         return audioBuffer_->getChannelData(channel);
     }
+
+    void AudioBufferWrapper::setChannelData(int channel, short **data) {
+        audioBuffer_->setChannelData(channel, data);
+    }
 }
 #endif

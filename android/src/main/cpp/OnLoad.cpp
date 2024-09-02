@@ -2,6 +2,7 @@
 #include "AudioContext.h"
 #include "AudioNode.h"
 #include "AudioParam.h"
+#include "AudioBuffer.h"
 
 using namespace audiocontext;
 
@@ -11,5 +12,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
         AudioContext::registerNatives();
         AudioNode::registerNatives();
         AudioParam::registerNatives();
+        AudioBuffer::registerNatives();
   });
 }

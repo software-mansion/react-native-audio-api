@@ -1,5 +1,7 @@
 package com.audiocontext.utils
 
+import com.facebook.jni.HybridData
+
 
 class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
   val sampleRate: Int = sampleRate
@@ -10,7 +12,21 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
     get() = field
   val numberOfChannels: Int = numberOfChannels
     get() = field
-  private val channels = Array(numberOfChannels) { ShortArray(length) }
+  private val channels: Array<ShortArray> = Array(numberOfChannels) { ShortArray(length) }
+
+  private val mHybridData: HybridData?
+
+  companion object {
+    init {
+      System.loadLibrary("react-native-audio-context")
+    }
+  }
+
+  init {
+    mHybridData = initHybrid()
+  }
+
+  external fun initHybrid(): HybridData?
 
   fun getChannelData(channel: Int): ShortArray {
     if (channel < 0 || channel >= numberOfChannels) {

@@ -30,11 +30,24 @@ namespace audiocontext {
         auto length = jArray->size();
 
         auto channelData = new short*[length];
+        auto pin = jArray->pin();
         for (int i = 0; i < length; i++) {
-            channelData[i] = &jArray->pin()[i];
+            channelData[i] = &pin[i];
         }
 
         return channelData;
+    }
+
+    void AudioBuffer::setChannelData(int channel, short** data) {
+        static const auto method = javaClassStatic()->getMethod<void(jint, jshortArray)>("setChannelData");
+        std::vector<jshort> buffer(getLength());
+        for (int i = 0; i < getLength(); i++) {
+            buffer[i] = *data[i];
+        }
+        auto jArray = JArrayShort::newArray(getLength());
+        jArray->setRegion(0, getLength(), buffer.data());
+
+        method(javaPart_, channel, jArray.get());
     }
 
     void AudioBuffer::prepareForDeconstruction() {

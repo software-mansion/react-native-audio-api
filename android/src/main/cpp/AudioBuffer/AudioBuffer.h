@@ -30,6 +30,7 @@ namespace audiocontext {
         double getDuration();
         int getNumberOfChannels();
         short** getChannelData(int channel);
+        void setChannelData(int channel, short** data);
         void prepareForDeconstruction();
 
     protected:

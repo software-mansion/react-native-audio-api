@@ -1,4 +1,5 @@
 #include "AudioBufferHostObject.h"
+#include <android/log.h>
 
 namespace audiocontext {
     using namespace facebook;
@@ -11,6 +12,7 @@ namespace audiocontext {
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "duration"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "numberOfChannels"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "getChannelData"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "setChannelData"));
         return propertyNames;
     }
 
@@ -40,10 +42,26 @@ namespace audiocontext {
 
                 auto array = jsi::Array(rt, wrapper_->getLength());
                 for (int i = 0; i < wrapper_->getLength(); i++) {
-                    array.setValueAtIndex(rt, i, jsi::Value(channelData[i]));
+                    array.setValueAtIndex(rt, i, jsi::Value(*channelData[i]));
                 }
 
                 return array;
+            });
+        }
+
+        if(propName == "setChannelData") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 2, [this](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) -> jsi::Value {
+                int channel = args[0].getNumber();
+                auto array = args[1].getObject(rt).asArray(rt);
+                auto** channelData = new short*[wrapper_->getLength()];
+
+                for (int i = 0; i < wrapper_->getLength(); i++) {
+                    channelData[i] = new short(array.getValueAtIndex(rt, i).getNumber());
+                }
+
+                wrapper_->setChannelData(channel, channelData);
+
+                return jsi::Value::undefined();
             });
         }
 

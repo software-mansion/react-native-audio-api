@@ -53,6 +53,22 @@ namespace audiocontext
         return biquadFilter->cthis();
     }
 
+    AudioBufferSourceNode* AudioContext::createBufferSource()
+    {
+        static const auto method = javaClassLocal()->getMethod<AudioBufferSourceNode()>("createBufferSource");
+        auto bufferSource = method(javaPart_.get());
+
+        return bufferSource->cthis();
+    }
+
+    AudioBuffer* AudioContext::createBuffer(int sampleRate, int length, int numberOfChannels)
+    {
+        static const auto method = javaClassLocal()->getMethod<AudioBuffer(int, int, int)>("createBuffer");
+        auto buffer = method(javaPart_.get(), sampleRate, length, numberOfChannels);
+
+        return buffer->cthis();
+    }
+
     std::string AudioContext::getState()
     {
         static const auto method = javaClassLocal()->getMethod<JString()>("getState");

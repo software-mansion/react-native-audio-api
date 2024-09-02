@@ -25,6 +25,10 @@ namespace audiocontext{
         return nullptr;
     }
 
+    void AudioBufferWrapper::setChannelData(int channel, short **data) {
+        return;
+    }
+
 } // namespace audiocontext
 #endif
 
