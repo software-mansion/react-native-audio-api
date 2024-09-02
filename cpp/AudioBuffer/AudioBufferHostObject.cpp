@@ -37,7 +37,13 @@ namespace audiocontext {
             return jsi::Function::createFromHostFunction(runtime, propNameId, 1, [this](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) -> jsi::Value {
                 int channel = args[0].getNumber();
                 short** channelData = wrapper_->getChannelData(channel);
-                return jsi::Value::null();
+
+                auto array = jsi::Array(rt, wrapper_->getLength());
+                for (int i = 0; i < wrapper_->getLength(); i++) {
+                    array.setValueAtIndex(rt, i, jsi::Value(channelData[i]));
+                }
+
+                return array;
             });
         }
 
