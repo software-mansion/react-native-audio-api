@@ -2,12 +2,13 @@ package com.audiocontext.utils
 
 
 class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
-  val sampleRate = sampleRate
+  val sampleRate: Int = sampleRate
     get() = field
-  val length = length
+  val length: Int = length
     get() = field
-  private val duration = length / sampleRate
- val numberOfChannels = numberOfChannels
+  private val duration: Double = length.toDouble() / sampleRate
+    get() = field
+  val numberOfChannels: Int = numberOfChannels
     get() = field
   private val channels = Array(numberOfChannels) { ShortArray(length) }
 

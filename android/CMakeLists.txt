@@ -21,6 +21,8 @@ set(INCLUDE_DIRS
     ../cpp/StereoPannerNode
     ../cpp/AudioParam
     ../cpp/BiquadFilterNode
+    ../cpp/AudioBuffer
+    ../cpp/AudioBufferSourceNode
 
     src/main/cpp
     src/main/cpp/AudioContext
@@ -31,6 +33,8 @@ set(INCLUDE_DIRS
     src/main/cpp/StereoPannerNode
     src/main/cpp/AudioParam
     src/main/cpp/BiquadFilterNode
+    src/main/cpp/AudioBuffer
+    src/main/cpp/AudioBufferSourceNode
 
     ../node_modules/react-native/ReactCommon/jsi
     ../node_modules/react-native/ReactAndroid/src/main/jni/react/jni
