@@ -4,7 +4,7 @@
 namespace audiocontext {
 
     BiquadFilterNode* BiquadFilterNodeWrapper::getBiquadFilterNodeFromAudioNode() {
-        return dynamic_cast<BiquadFilterNode*>(node_);
+        return static_cast<BiquadFilterNode*>(node_);
     }
 
     BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(BiquadFilterNode *biquadFilterNode)
