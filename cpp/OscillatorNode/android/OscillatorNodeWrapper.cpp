@@ -4,7 +4,7 @@
 namespace audiocontext {
 
     OscillatorNode* OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
-        return static_cast<OscillatorNode*>(node_);
+        return dynamic_cast<OscillatorNode*>(node_);
     }
 
     OscillatorNodeWrapper::OscillatorNodeWrapper(OscillatorNode *oscillator) : AudioNodeWrapper(
