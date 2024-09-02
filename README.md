@@ -32,13 +32,16 @@ npm install react-native-audio-context
 <details>
   <summary><b>AudioNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
 
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹context         | ✅  | ✅      |
-| 🔹numberOfInputs  | ✅  | ✅      |
-| 🔹numberOfOutputs | ✅  | ✅      |
-| 🔘connect         | ✅  | ✅      |
-| 🔘disconnect      | ✅  | ✅      |
+| Method / Property        | iOS | Android |
+| ------------------------ | --- | ------- |
+| 🔹context                | ✅  | ✅      |
+| 🔹numberOfInputs         | ✅  | ✅      |
+| 🔹numberOfOutputs        | ✅  | ✅      |
+| 🔹channelCount           | ⌛  | ✅      |
+| 🔹channelCountMode       | ⌛  | ⌛      |
+| 🔹channelInterpretation  | ⌛  | ⌛      |
+| 🔘connect                | ✅  | ✅      |
+| 🔘disconnect             | ✅  | ✅      |
 
 </details>
 
