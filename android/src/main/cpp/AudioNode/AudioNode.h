@@ -27,6 +27,9 @@ namespace audiocontext {
 
         int getNumberOfInputs();
         int getNumberOfOutputs();
+        int getChannelCount();
+        std::string getChannelCountMode();
+        std::string getChannelInterpretation();
         void connect(const AudioNode *node);
         void disconnect(const AudioNode *node);
         void resetJavaPart();

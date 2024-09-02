@@ -1,11 +1,11 @@
 package com.audiocontext.nodes.audionode
 
-enum class Channelnterpretation {
+enum class ChannelInterpretation {
   SPEAKERS,
   DISCRETE;
 
   companion object {
-    fun fromString(interpretation: String): Channelnterpretation {
+    fun fromString(interpretation: String): ChannelInterpretation {
       return when (interpretation.lowercase()) {
         "speakers" -> SPEAKERS
         "discrete" -> DISCRETE
@@ -13,7 +13,7 @@ enum class Channelnterpretation {
       }
     }
 
-    fun toString(interpretation: Channelnterpretation): String {
+    fun toString(interpretation: ChannelInterpretation): String {
       return when (interpretation) {
         SPEAKERS -> "speakers"
         DISCRETE -> "discrete"

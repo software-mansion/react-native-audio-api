@@ -7,7 +7,7 @@ import com.audiocontext.utils.AudioBuffer
 class AudioBufferSourceNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
   override var playbackParameters: PlaybackParameters? = null
 
-  private var loop: Boolean = false
+  private var loop: Boolean = true
     get() = field
   private var buffer: AudioBuffer? = null
     get() = field
@@ -16,6 +16,7 @@ class AudioBufferSourceNode(context: BaseAudioContext) : AudioScheduledSourceNod
     val audioTrack = context.getAudioTrack(2 * buffer.length)
     this.buffer = buffer.copy()
     playbackParameters = PlaybackParameters(audioTrack, buffer)
+    channelCount = buffer.numberOfChannels
   }
 
   fun setLoop(value: Boolean) {

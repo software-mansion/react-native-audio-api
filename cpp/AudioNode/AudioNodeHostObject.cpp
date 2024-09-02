@@ -10,6 +10,9 @@ namespace audiocontext {
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "disconnect"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "numberOfInputs"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "numberOfOutputs"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "channelCount"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "channelCountMode"));
+        propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "channelInterpretation"));
         propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "context"));
         return propertyNames;
     }
@@ -45,6 +48,21 @@ namespace audiocontext {
         if (propName == "numberOfOutputs")
         {
             return jsi::Value(wrapper_->getNumberOfOutputs());
+        }
+
+        if (propName == "channelCount")
+        {
+            return jsi::Value(wrapper_->getChannelCount());
+        }
+
+        if (propName == "channelCountMode")
+        {
+            return jsi::String::createFromUtf8(runtime, wrapper_->getChannelCountMode());
+        }
+
+        if (propName == "channelInterpretation")
+        {
+            return jsi::String::createFromUtf8(runtime, wrapper_->getChannelInterpretation());
         }
 
         if (propName == "context")

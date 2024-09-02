@@ -14,6 +14,21 @@ namespace audiocontext {
         return method(javaPart_.get());
     }
 
+    int AudioNode::getChannelCount() {
+        static const auto method = javaClassLocal()->getMethod<int()>("getChannelCount");
+        return method(javaPart_.get());
+    }
+
+    std::string AudioNode::getChannelCountMode() {
+        static const auto method = javaClassLocal()->getMethod<JString()>("getChannelCountMode");
+        return method(javaPart_.get())->toStdString();
+    }
+
+    std::string AudioNode::getChannelInterpretation() {
+        static const auto method = javaClassLocal()->getMethod<JString()>("getChannelInterpretation");
+        return method(javaPart_.get())->toStdString();
+    }
+
     void AudioNode::connect(const AudioNode *node) {
         static const auto method = javaClassLocal()->getMethod<void(AudioNode::javaobject)>(
                 "connect");

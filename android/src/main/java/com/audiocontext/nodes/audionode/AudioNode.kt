@@ -12,12 +12,11 @@ abstract class AudioNode(val context: BaseAudioContext) {
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
-  open val channelCount: Int = 1
+  open var channelCount: Int = 1
     get() = field
   open val channelCountMode: ChannelCountMode = ChannelCountMode.MAX
-    get() = field
-  open val channelInterpretation: Channelnterpretation = Channelnterpretation.SPEAKERS
-    get() = field
+  open val channelInterpretation: ChannelInterpretation = ChannelInterpretation.SPEAKERS
+
   private val inputNodes = mutableListOf<AudioNode>()
   private val outputNodes = mutableListOf<AudioNode>()
 
@@ -34,6 +33,14 @@ abstract class AudioNode(val context: BaseAudioContext) {
   }
 
   external fun initHybrid(): HybridData?
+
+  fun getChannelCountMode(): String {
+    return ChannelCountMode.toString(channelCountMode)
+  }
+
+  fun getChannelInterpretation(): String {
+    return ChannelInterpretation.toString(channelInterpretation)
+  }
 
   fun connect(node: AudioNode) {
     if(numberOfOutputs > outputNodes.size && node.numberOfInputs > node.inputNodes.size) {

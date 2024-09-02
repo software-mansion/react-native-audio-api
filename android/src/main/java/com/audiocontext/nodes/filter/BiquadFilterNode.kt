@@ -15,7 +15,7 @@ import kotlin.math.*
 class BiquadFilterNode(context: BaseAudioContext): AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
-  override val channelCount: Int = 2
+  override var channelCount: Int = 2
 
   private val frequency: AudioParam = AudioParam(context, 350.0, Constants.MAX_FILTER_FREQUENCY, Constants.MIN_FILTER_FREQUENCY)
     get() = field

@@ -20,6 +20,18 @@ namespace audiocontext {
         return numberOfOutputs_;
     }
 
+    int AudioNodeWrapper::getChannelCount() const {
+        return node_->getChannelCount();
+    }
+
+    std::string AudioNodeWrapper::getChannelCountMode() const {
+        return node_->getChannelCountMode();
+    }
+
+    std::string AudioNodeWrapper::getChannelInterpretation() const {
+        return node_->getChannelInterpretation();
+    }
+
     void AudioNodeWrapper::connect(const std::shared_ptr<AudioNodeWrapper> &node) const {
         node_->connect(node->node_);
    }
