@@ -14,7 +14,7 @@ namespace audiocontext {
         std::shared_ptr<AudioBufferSourceNodeWrapper> getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
 
     public:
-        explicit AudioBufferSourceNodeHostObject(const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper);
+        explicit AudioBufferSourceNodeHostObject(const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper): AudioNodeHostObject(wrapper) {};
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
         void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;

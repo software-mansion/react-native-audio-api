@@ -32,5 +32,10 @@ namespace audiocontext {
         auto buffer = audioBufferSourceNode->getBuffer();
         return std::make_shared<AudioBufferWrapper>(buffer);
     }
+
+    void AudioBufferSourceNodeWrapper::setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer) {
+        auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+        audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
+    }
 }
 #endif

@@ -24,10 +24,15 @@ namespace audiocontext {
         method(javaPart_.get(), loop);
     }
 
-    AudioBuffer* AudioBufferSourceNode::getBuffer() {
+    AudioBuffer *AudioBufferSourceNode::getBuffer() {
         static const auto method = javaClassLocal()->getMethod<AudioBuffer()>("getBuffer");
         auto buffer = method(javaPart_.get());
 
         return buffer->cthis();
+    }
+
+    void AudioBufferSourceNode::setBuffer(const AudioBuffer* buffer) {
+        static const auto method = javaClassLocal()->getMethod<void(AudioBuffer::javaobject)>("setBuffer");
+        method(javaPart_.get(), buffer->javaPart_.get());
     }
 } // namespace audiocontext

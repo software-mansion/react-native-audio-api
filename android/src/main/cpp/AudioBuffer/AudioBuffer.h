@@ -33,7 +33,7 @@ namespace audiocontext {
         void setChannelData(int channel, short** data);
         void prepareForDeconstruction();
 
-    protected:
+    public:
         friend HybridBase;
 
         global_ref<AudioBuffer::javaobject> javaPart_;

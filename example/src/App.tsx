@@ -50,6 +50,12 @@ const App: React.FC = () => {
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
     panRef.current.connect(audioContextRef.current.destination);
+
+    const buffer = audioContextRef.current.createBuffer(1, 6, 22050);
+    const data = [2, 2, 2, 2, 2, 2];
+    buffer.setChannelData(0, data);
+    const node = audioContextRef.current.createBufferSource();
+    console.log(node.loop);
   };
 
   useEffect(() => {

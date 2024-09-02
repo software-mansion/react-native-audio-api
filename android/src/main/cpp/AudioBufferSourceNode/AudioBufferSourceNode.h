@@ -17,5 +17,6 @@ namespace audiocontext {
         bool getLoop();
         void setLoop(bool loop);
         AudioBuffer* getBuffer();
+        void setBuffer(const AudioBuffer* buffer);
     };
 } // namespace audiocontext

@@ -11,9 +11,9 @@ namespace audiocontext {
 
     class AudioBufferWrapper {
 #ifdef ANDROID
-    protected:
-        AudioBuffer* audioBuffer_;
     public:
+        AudioBuffer* audioBuffer_;
+
         explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
         ~AudioBufferWrapper();
 #else

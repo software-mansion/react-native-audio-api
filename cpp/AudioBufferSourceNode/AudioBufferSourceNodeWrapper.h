@@ -34,5 +34,6 @@ namespace audiocontext {
         void setLoop(bool loop);
         bool getLoop();
         std::shared_ptr<AudioBufferWrapper> getBuffer();
+        void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
     };
 } // namespace audiocontext

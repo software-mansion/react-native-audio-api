@@ -11,10 +11,9 @@ namespace audiocontext {
 
     class AudioBufferHostObject : public jsi::HostObject {
 
-    protected:
+    public:
         std::shared_ptr<AudioBufferWrapper> wrapper_;
 
-    public:
         explicit AudioBufferHostObject(const std::shared_ptr<AudioBufferWrapper> &wrapper) : wrapper_(wrapper) {}
 
         jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;

@@ -75,13 +75,13 @@ namespace audiocontext {
             });
         }
 
-//        if (propName == "createBufferSource") {
-//            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
-//                auto bufferSource = wrapper_->createBufferSource();
-//                auto bufferSourceHostObject = AudioBufferSourceNodeHostObject::createFromWrapper(bufferSource);
-//                return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
-//            });
-//        }
+        if (propName == "createBufferSource") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto bufferSource = wrapper_->createBufferSource();
+                auto bufferSourceHostObject = AudioBufferSourceNodeHostObject::createFromWrapper(bufferSource);
+                return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+            });
+        }
 
         if (propName == "createBuffer") {
             return jsi::Function::createFromHostFunction(runtime, propNameId, 3, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {

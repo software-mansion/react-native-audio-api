@@ -1,4 +1,5 @@
 #include "AudioBufferSourceNodeHostObject.h"
+#include <android/log.h>
 
 namespace audiocontext
 {
@@ -66,6 +67,20 @@ namespace audiocontext
     {
         auto propName = propNameId.utf8(runtime);
 
+        if (propName == "loop")
+        {
+            auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+            wrapper->setLoop(value.getBool());
+            return;
+        }
+
+        if (propName == "buffer")
+        {
+            auto bufferHostObject = value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+            auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+            wrapper->setBuffer(bufferHostObject->wrapper_);
+            return;
+        }
 
         throw std::runtime_error("Not yet implemented!");
     }
