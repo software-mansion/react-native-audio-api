@@ -23,6 +23,14 @@ namespace audiocontext
         return std::make_shared<BiquadFilterNodeWrapper>(audiocontext_);
     }
 
+    std::shared_ptr<AudioBufferSourceNodeWrapper> AudioContextWrapper::createBufferSource() {
+        return std::make_shared<AudioBufferSourceNodeWrapper>();
+    }
+
+    std::shared_ptr<AudioBufferWrapper> AudioContextWrapper::createBuffer(int sampleRate, int length, int numberOfChannels) {
+        return std::make_shared<AudioBufferWrapper>(sampleRate, length, numberOfChannels);
+    }
+
     double AudioContextWrapper::getCurrentTime() {
         return audiocontext_->getCurrentTime();
     }

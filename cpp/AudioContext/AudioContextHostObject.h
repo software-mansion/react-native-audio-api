@@ -8,6 +8,8 @@
 #include "GainNodeHostObject.h"
 #include "StereoPannerNodeHostObject.h"
 #include "BiquadFilterNodeHostObject.h"
+#include "AudioBufferSourceNodeHostObject.h"
+#include "AudioBufferHostObject.h"
 
 namespace audiocontext
 {

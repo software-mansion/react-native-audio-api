@@ -7,6 +7,8 @@
 #include "GainNodeWrapper.h"
 #include "StereoPannerNodeWrapper.h"
 #include "BiquadFilterNodeWrapper.h"
+#include "AudioBufferSourceNodeWrapper.h"
+#include "AudioBufferWrapper.h"
 
 #ifdef ANDROID
 #include "AudioContext.h"
@@ -32,7 +34,7 @@ namespace audiocontext {
 #else
         private:
             std::shared_ptr<IOSAudioContext> audiocontext_;
-        
+
         public:
             explicit AudioContextWrapper(): audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
@@ -45,6 +47,8 @@ namespace audiocontext {
         std::shared_ptr<GainNodeWrapper> createGain();
         std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner();
         std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter();
+        std::shared_ptr<AudioBufferSourceNodeWrapper> createBufferSource();
+        std::shared_ptr<AudioBufferWrapper> createBuffer(int sampleRate, int length, int numberOfChannels);
         std::string getState();
         int getSampleRate() const;
         double getCurrentTime();

@@ -18,6 +18,8 @@ namespace audiocontext {
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createGain"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createStereoPanner"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBiquadFilter"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBufferSource"));
+        propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBuffer"));
         propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "close"));
         return propertyNames;
     }
@@ -70,6 +72,25 @@ namespace audiocontext {
                 auto biquadFilter = wrapper_->createBiquadFilter();
                 auto biquadFilterHostObject = BiquadFilterNodeHostObject::createFromWrapper(biquadFilter);
                 return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
+            });
+        }
+
+//        if (propName == "createBufferSource") {
+//            return jsi::Function::createFromHostFunction(runtime, propNameId, 0, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+//                auto bufferSource = wrapper_->createBufferSource();
+//                auto bufferSourceHostObject = AudioBufferSourceNodeHostObject::createFromWrapper(bufferSource);
+//                return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+//            });
+//        }
+
+        if (propName == "createBuffer") {
+            return jsi::Function::createFromHostFunction(runtime, propNameId, 3, [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
+                auto sampleRate = arguments[0].getNumber();
+                auto length = arguments[1].getNumber();
+                auto numberOfChannels = arguments[2].getNumber();
+                auto buffer = wrapper_->createBuffer(sampleRate, length, numberOfChannels);
+                auto bufferHostObject = AudioBufferHostObject::createFromWrapper(buffer);
+                return jsi::Object::createFromHostObject(runtime, bufferHostObject);
             });
         }
 

@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
+import com.audiocontext.nodes.AudioBufferSourceNode
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.AudioScheduledSourceNode
 import com.audiocontext.utils.Constants
@@ -14,6 +15,7 @@ import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.filter.BiquadFilterNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
+import com.audiocontext.utils.AudioBuffer
 import com.facebook.jni.HybridData
 import java.util.LinkedList
 
@@ -115,5 +117,16 @@ class AudioContext() : BaseAudioContext {
 
   override fun createBiquadFilter(): BiquadFilterNode {
     return BiquadFilterNode(this)
+  }
+
+  override fun createBufferSource(): AudioBufferSourceNode {
+    val bufferSourceNode = AudioBufferSourceNode(this)
+    sources.add(bufferSourceNode)
+    return bufferSourceNode
+  }
+
+  override fun createBuffer(numOfChannels: Int, length: Int, sampleRate: Int): AudioBuffer {
+    val buffer = AudioBuffer(numOfChannels, length, sampleRate)
+    return buffer
   }
 }

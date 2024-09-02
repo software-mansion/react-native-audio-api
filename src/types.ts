@@ -76,3 +76,17 @@ export interface BiquadFilterNode extends AudioNode {
 }
 
 export type ContextState = 'running' | 'closed';
+
+export interface AudioBuffer {
+  readonly length: number;
+  readonly duration: number;
+  readonly sampleRate: number;
+  readonly numberOfChannels: number;
+  getChannelData(channel: number): number[];
+  setChannelData(channel: number, data: number[]): void;
+}
+
+export interface AudioBufferSourceNode extends AudioScheduledSourceNode {
+  buffer: AudioBuffer | null;
+  loop: boolean;
+}
