@@ -1,7 +1,7 @@
 {
   "name": "react-native-audio-context",
   "version": "0.1.0",
-  "description": "The main goal of the project is to reproduce the Web Audio API as accurate as possible in the React Native environment",
+  "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/src/index.d.ts",
@@ -44,8 +44,8 @@
   },
   "keywords": [
     "react-native",
-    "ios",
-    "android"
+    "audio",
+    "audio-api"
   ],
   "repository": {
     "type": "git",
