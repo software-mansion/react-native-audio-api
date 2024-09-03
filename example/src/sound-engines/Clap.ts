@@ -1,6 +1,8 @@
 import { AudioContext } from 'react-native-audio-context';
 import type { SoundEngine } from './SoundEngine';
 
+const MAX_SHORT = 32767;
+
 export class Clap implements SoundEngine {
   public audioContext: AudioContext;
   public tone: number;
@@ -17,13 +19,19 @@ export class Clap implements SoundEngine {
   }
 
   createNoiseBuffer() {
-    const bufferSize = this.audioContext.sampleRate;
-    const buffer = this.audioContext.createBuffer(1, bufferSize, bufferSize);
+    const bufferSize = 256;
+    const buffer = this.audioContext.createBuffer(
+      this.audioContext.sampleRate,
+      256,
+      1
+    );
     const output = new Array<number>(bufferSize);
 
     for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
+      output[i] = (Math.random() * 2 - 1) * MAX_SHORT;
     }
+
+    buffer.setChannelData(0, output);
 
     return buffer;
   }

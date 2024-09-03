@@ -87,6 +87,6 @@ export interface AudioBuffer {
 }
 
 export interface AudioBufferSourceNode extends AudioScheduledSourceNode {
-  buffer: AudioBuffer | null;
+  buffer: AudioBuffer;
   loop: boolean;
 }
