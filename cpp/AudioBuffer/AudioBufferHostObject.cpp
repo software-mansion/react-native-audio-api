@@ -56,7 +56,7 @@ namespace audiocontext {
                 auto** channelData = new short*[wrapper_->getLength()];
 
                 for (int i = 0; i < wrapper_->getLength(); i++) {
-                    channelData[i] = new short(array.getValueAtIndex(rt, i).getNumber());
+                    channelData[i] = new short(array.getValueAtIndex(rt, i).getNumber() * 32767);
                 }
 
                 wrapper_->setChannelData(channel, channelData);

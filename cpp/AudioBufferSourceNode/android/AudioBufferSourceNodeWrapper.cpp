@@ -4,7 +4,7 @@
 namespace audiocontext {
 
     AudioBufferSourceNode *AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
-        return dynamic_cast<AudioBufferSourceNode *>(node_);
+        return static_cast<AudioBufferSourceNode *>(node_);
     }
 
     void AudioBufferSourceNodeWrapper::start(double time) {

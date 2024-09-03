@@ -49,7 +49,8 @@ namespace audiocontext
         if (propName == "loop")
         {
             auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
-            return jsi::Value(wrapper->getLoop());
+            auto loop = wrapper->getLoop();
+            return jsi::Value(loop);
         }
 
         if (propName == "buffer")

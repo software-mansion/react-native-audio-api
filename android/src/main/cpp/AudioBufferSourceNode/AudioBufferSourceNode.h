@@ -19,4 +19,4 @@ namespace audiocontext {
         AudioBuffer* getBuffer();
         void setBuffer(const AudioBuffer* buffer);
     };
-} // namespace audiocontext
+}// namespace audiocontext

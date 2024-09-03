@@ -6,8 +6,6 @@
 #ifdef ANDROID
 #include "AudioBufferSourceNode.h"
 #else
-#include "IOSAudioBufferSourceNode.h"
-#include "IOSAudioContext.h"
 #endif
 
 namespace audiocontext {
