@@ -3,7 +3,6 @@
 #include "AudioContext.h"
 #include "AudioNode.h"
 #include "AudioParam.h"
-#include "AudioBuffer.h"
 
 using namespace audiocontext;
 

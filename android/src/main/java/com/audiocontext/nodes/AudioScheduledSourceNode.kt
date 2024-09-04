@@ -11,6 +11,7 @@ abstract class AudioScheduledSourceNode(
   override val numberOfOutputs: Int = 1
 
   abstract var playbackParameters: PlaybackParameters?
+
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null

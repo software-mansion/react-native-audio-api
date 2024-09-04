@@ -39,11 +39,11 @@ class StereoPannerNode(
     // but it should mix the channels. F.e. pan < 0: leftChannel = leftChannel + leftGain * rightChannel
 
     if (pan <= 0) {
-      playbackParameters.leftPan *= (1+gainL)
+      playbackParameters.leftPan *= (1 + gainL)
       playbackParameters.rightPan *= gainR
     } else {
       playbackParameters.leftPan *= gainL
-      playbackParameters.rightPan *= (1+gainR)
+      playbackParameters.rightPan *= (1 + gainR)
     }
 
     super.process(playbackParameters)
