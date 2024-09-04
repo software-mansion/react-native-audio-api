@@ -8,9 +8,12 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version-file: .nvmrc
-        
-    - name: Setup cpplint
+
+    - name: Setup Python
       uses: actions/setup-python@v1
+
+    - name: Install cpplint
+      shell: bash
       run: pip install cpplint
 
     - name: Cache dependencies
