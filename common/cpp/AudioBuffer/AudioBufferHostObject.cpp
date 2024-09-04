@@ -50,7 +50,7 @@ jsi::Value AudioBufferHostObject::get(
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           int channel = args[0].getNumber();
-          short **channelData = wrapper_->getChannelData(channel);
+          int16_t **channelData = wrapper_->getChannelData(channel);
 
           auto array = jsi::Array(rt, wrapper_->getLength());
           for (int i = 0; i < wrapper_->getLength(); i++) {
@@ -73,11 +73,11 @@ jsi::Value AudioBufferHostObject::get(
             size_t count) -> jsi::Value {
           int channel = args[0].getNumber();
           auto array = args[1].getObject(rt).asArray(rt);
-          auto **channelData = new short *[wrapper_->getLength()];
+          auto **channelData = new int16_t *[wrapper_->getLength()];
 
           for (int i = 0; i < wrapper_->getLength(); i++) {
             channelData[i] =
-                new short(array.getValueAtIndex(rt, i).getNumber() * 32767);
+                new int16_t(array.getValueAtIndex(rt, i).getNumber() * 32767);
           }
 
           wrapper_->setChannelData(channel, channelData);

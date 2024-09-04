@@ -28,13 +28,13 @@ int AudioBuffer::getNumberOfChannels() {
   return method(javaPart_);
 }
 
-short **AudioBuffer::getChannelData(int channel) {
+int16_t **AudioBuffer::getChannelData(int channel) {
   static const auto method =
       javaClassStatic()->getMethod<JArrayShort(jint)>("getChannelData");
   auto jArray = method(javaPart_, channel);
   auto length = jArray->size();
 
-  auto channelData = new short *[length];
+  auto channelData = new int16_t *[length];
   auto pin = jArray->pin();
   for (int i = 0; i < length; i++) {
     channelData[i] = &pin[i];
@@ -43,7 +43,7 @@ short **AudioBuffer::getChannelData(int channel) {
   return channelData;
 }
 
-void AudioBuffer::setChannelData(int channel, short **data) {
+void AudioBuffer::setChannelData(int channel, int16_t **data) {
   static const auto method =
       javaClassStatic()->getMethod<void(jint, jshortArray)>("setChannelData");
   std::vector<jshort> buffer(getLength());

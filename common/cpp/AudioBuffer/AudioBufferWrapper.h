@@ -34,7 +34,7 @@ class AudioBufferWrapper {
   int getLength() const;
   double getDuration() const;
   int getNumberOfChannels() const;
-  short **getChannelData(int channel) const;
-  void setChannelData(int channel, short **data);
+  int16_t **getChannelData(int channel) const;
+  void setChannelData(int channel, int16_t **data) const;
 };
 } // namespace audiocontext

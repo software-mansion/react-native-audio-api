@@ -31,11 +31,11 @@ int AudioBufferWrapper::getNumberOfChannels() const {
   return numberOfChannels;
 }
 
-short **AudioBufferWrapper::getChannelData(int channel) const {
+int16_t **AudioBufferWrapper::getChannelData(int channel) const {
   return audioBuffer_->getChannelData(channel);
 }
 
-void AudioBufferWrapper::setChannelData(int channel, short **data) {
+void AudioBufferWrapper::setChannelData(int channel, int16_t **data) const {
   audioBuffer_->setChannelData(channel, data);
 }
 } // namespace audiocontext
