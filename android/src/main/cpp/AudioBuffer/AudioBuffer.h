@@ -4,8 +4,8 @@
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace audiocontext {
 

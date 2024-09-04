@@ -1,8 +1,8 @@
 #pragma once
 
+#include <string>
 #include "AudioNode.h"
 #include "AudioParam.h"
-#include <string>
 
 namespace audiocontext {
 

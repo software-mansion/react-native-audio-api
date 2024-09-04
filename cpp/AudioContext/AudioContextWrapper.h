@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 #include <string>
+#include <utility>
 
 #include "AudioBufferSourceNodeWrapper.h"
 #include "AudioBufferWrapper.h"
@@ -40,8 +40,7 @@ class AudioContextWrapper {
   std::shared_ptr<IOSAudioContext> audiocontext_;
 
  public:
-  AudioContextWrapper()
-      : audiocontext_(std::make_shared<IOSAudioContext>()) {}
+  AudioContextWrapper() : audiocontext_(std::make_shared<IOSAudioContext>()) {}
 #endif
 
  private:

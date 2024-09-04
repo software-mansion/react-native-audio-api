@@ -1,8 +1,8 @@
 #pragma once
 
+#include <memory>
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
-#include <memory>
 
 #ifdef ANDROID
 #include "StereoPannerNode.h"

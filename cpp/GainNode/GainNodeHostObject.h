@@ -1,10 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <vector>
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
 #include "GainNodeWrapper.h"
-#include <memory>
-#include <vector>
 
 namespace audiocontext {
 using namespace facebook;

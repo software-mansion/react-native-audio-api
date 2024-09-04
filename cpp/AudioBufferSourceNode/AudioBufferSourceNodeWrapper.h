@@ -1,8 +1,8 @@
 #pragma once
 
+#include <memory>
 #include "AudioBufferWrapper.h"
 #include "AudioNodeWrapper.h"
-#include <memory>
 
 #ifdef ANDROID
 #include "AudioBufferSourceNode.h"
