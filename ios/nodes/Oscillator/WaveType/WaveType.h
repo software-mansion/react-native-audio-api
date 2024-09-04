@@ -2,12 +2,7 @@
 
 static const float FULL_CIRCLE_RADIANS = 2 * M_PI;
 
-typedef NS_ENUM(NSInteger, WaveTypeEnum) {
-    WaveTypeSine,
-    WaveTypeSquare,
-    WaveTypeSawtooth,
-    WaveTypeTriangle
-};
+typedef NS_ENUM(NSInteger, WaveTypeEnum) { WaveTypeSine, WaveTypeSquare, WaveTypeSawtooth, WaveTypeTriangle };
 
 @interface WaveType : NSObject
 

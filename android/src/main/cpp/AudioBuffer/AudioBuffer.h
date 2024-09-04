@@ -4,41 +4,44 @@
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
+#include <vector>
+#include <string>
 
 namespace audiocontext {
 
-    using namespace facebook;
-    using namespace facebook::jni;
+using namespace facebook;
+using namespace facebook::jni;
 
-    class AudioBuffer : public jni::HybridClass<AudioBuffer> {
-    public:
-        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/utils/AudioBuffer;";
+class AudioBuffer : public jni::HybridClass<AudioBuffer> {
+ public:
+  static auto constexpr kJavaDescriptor =
+      "Lcom/audiocontext/utils/AudioBuffer;";
 
-        static jni::local_ref<AudioBuffer::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
-        {
-            return makeCxxInstance(jThis);
-        }
+  static jni::local_ref<AudioBuffer::jhybriddata> initHybrid(
+      jni::alias_ref<jhybridobject> jThis) {
+    return makeCxxInstance(jThis);
+  }
 
-        static void registerNatives() {
-            registerHybrid({
-                   makeNativeMethod("initHybrid", AudioBuffer::initHybrid),
-           });
-        }
+  static void registerNatives() {
+    registerHybrid({
+        makeNativeMethod("initHybrid", AudioBuffer::initHybrid),
+    });
+  }
 
-        int getSampleRate();
-        int getLength();
-        double getDuration();
-        int getNumberOfChannels();
-        short** getChannelData(int channel);
-        void setChannelData(int channel, short** data);
-        void prepareForDeconstruction();
+  int getSampleRate();
+  int getLength();
+  double getDuration();
+  int getNumberOfChannels();
+  short **getChannelData(int channel);
+  void setChannelData(int channel, short **data);
+  void prepareForDeconstruction();
 
-    public:
-        friend HybridBase;
+ public:
+  friend HybridBase;
 
-        global_ref<AudioBuffer::javaobject> javaPart_;
+  global_ref<AudioBuffer::javaobject> javaPart_;
 
-        explicit AudioBuffer(jni::alias_ref<AudioBuffer::jhybridobject>& jThis);
-    };
+  explicit AudioBuffer(jni::alias_ref<AudioBuffer::jhybridobject> &jThis);
+};
 
 } // namespace audiocontext

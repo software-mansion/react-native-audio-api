@@ -9,30 +9,32 @@
 
 namespace audiocontext {
 
-    class AudioBufferWrapper {
+class AudioBufferWrapper {
 #ifdef ANDROID
-    public:
-        AudioBuffer* audioBuffer_;
 
-        explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
-        ~AudioBufferWrapper();
+ public:
+  AudioBuffer *audioBuffer_;
+
+  explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
+  ~AudioBufferWrapper();
 #else
-        protected:
 
-        public:
-            explicit AudioBufferWrapper() {}
+ public:
+  AudioBufferWrapper() {}
 #endif
-    private:
-        int sampleRate;
-        int length;
-        double duration;
-        int numberOfChannels;
-    public:
-        int getSampleRate() const;
-        int getLength() const;
-        double getDuration() const;
-        int getNumberOfChannels() const;
-        short** getChannelData(int channel) const;
-        void setChannelData(int channel, short** data);
-    };
+
+ private:
+  int sampleRate;
+  int length;
+  double duration;
+  int numberOfChannels;
+
+ public:
+  int getSampleRate() const;
+  int getLength() const;
+  double getDuration() const;
+  int getNumberOfChannels() const;
+  short **getChannelData(int channel) const;
+  void setChannelData(int channel, short **data);
+};
 } // namespace audiocontext

@@ -5,21 +5,24 @@
 
 @implementation StereoPannerNode
 
-- (instancetype)initWithContext:(AudioContext *)context {
-    if (self = [super initWithContext:context]) {
-        _panParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
-        self.numberOfInputs = 1;
-        self.numberOfOutputs = 1;
-    }
+- (instancetype)initWithContext:(AudioContext *)context
+{
+  if (self = [super initWithContext:context]) {
+    _panParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
+    self.numberOfInputs = 1;
+    self.numberOfOutputs = 1;
+  }
 
-    return self;
+  return self;
 }
 
-- (void)cleanup {
-    _panParam = nil;
+- (void)cleanup
+{
+  _panParam = nil;
 }
 
-- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList; {
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList;
+{
   float time = [self.context getCurrentTime];
   float deltaTime = 1 / self.context.sampleRate;
 

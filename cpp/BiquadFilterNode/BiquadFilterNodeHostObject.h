@@ -1,32 +1,42 @@
 #pragma once
 
-#include "BiquadFilterNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
+#include "BiquadFilterNodeWrapper.h"
+#include <memory>
+#include <vector>
+#include <string>
 
 namespace audiocontext {
-    using namespace facebook;
+using namespace facebook;
 
-    class BiquadFilterNodeWrapper;
+class BiquadFilterNodeWrapper;
 
-    class BiquadFilterNodeHostObject : public AudioNodeHostObject {
-    private:
-        std::shared_ptr<BiquadFilterNodeWrapper> getBiquadFilterNodeWrapperFromAudioNodeWrapper();
-    protected:
-        std::shared_ptr<AudioParamHostObject> frequencyParam_;
-        std::shared_ptr<AudioParamHostObject> detuneParam_;
-        std::shared_ptr<AudioParamHostObject> QParam_;
-        std::shared_ptr<AudioParamHostObject> gainParam_;
+class BiquadFilterNodeHostObject : public AudioNodeHostObject {
+ private:
+  std::shared_ptr<BiquadFilterNodeWrapper>
+  getBiquadFilterNodeWrapperFromAudioNodeWrapper();
 
-    public:
-        explicit BiquadFilterNodeHostObject(const std::shared_ptr<BiquadFilterNodeWrapper> &wrapper);
+ protected:
+  std::shared_ptr<AudioParamHostObject> frequencyParam_;
+  std::shared_ptr<AudioParamHostObject> detuneParam_;
+  std::shared_ptr<AudioParamHostObject> QParam_;
+  std::shared_ptr<AudioParamHostObject> gainParam_;
 
-        jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
-        void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;
-        std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& rt) override;
+ public:
+  explicit BiquadFilterNodeHostObject(
+      const std::shared_ptr<BiquadFilterNodeWrapper> &wrapper);
 
-        static std::shared_ptr<BiquadFilterNodeHostObject> createFromWrapper(const std::shared_ptr<BiquadFilterNodeWrapper> &wrapper) {
-            return std::make_shared<BiquadFilterNodeHostObject>(wrapper);
-        }
-    };
+  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+  void set(
+      jsi::Runtime &runtime,
+      const jsi::PropNameID &name,
+      const jsi::Value &value) override;
+  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+
+  static std::shared_ptr<BiquadFilterNodeHostObject> createFromWrapper(
+      const std::shared_ptr<BiquadFilterNodeWrapper> &wrapper) {
+    return std::make_shared<BiquadFilterNodeHostObject>(wrapper);
+  }
+};
 } // namespace audiocontext

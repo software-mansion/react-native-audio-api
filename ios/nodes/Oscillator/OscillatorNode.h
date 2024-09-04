@@ -1,11 +1,11 @@
 #pragma once
 
-#import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
-#import "AudioScheduledSourceNode.h"
-#import "WaveType.h"
+#import <Foundation/Foundation.h>
 #import "AudioContext.h"
 #import "AudioParam.h"
+#import "AudioScheduledSourceNode.h"
+#import "WaveType.h"
 
 static const double OCTAVE_IN_CENTS = 12 * 100;
 
@@ -19,7 +19,6 @@ static const double OCTAVE_IN_CENTS = 12 * 100;
 
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, assign) float phase;
-
 
 - (instancetype)initWithContext:(AudioContext *)context;
 

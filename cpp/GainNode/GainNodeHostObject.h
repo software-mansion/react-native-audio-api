@@ -1,27 +1,33 @@
 #pragma once
 
-#include "GainNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
+#include "GainNodeWrapper.h"
+#include <memory>
+#include <vector>
 
 namespace audiocontext {
-    using namespace facebook;
+using namespace facebook;
 
-    class GainNodeWrapper;
+class GainNodeWrapper;
 
-    class GainNodeHostObject : public AudioNodeHostObject {
-    protected:
-        std::shared_ptr<AudioParamHostObject> gainParam_;
+class GainNodeHostObject : public AudioNodeHostObject {
+ protected:
+  std::shared_ptr<AudioParamHostObject> gainParam_;
 
-    public:
-        explicit GainNodeHostObject(const std::shared_ptr<GainNodeWrapper> &wrapper);
+ public:
+  explicit GainNodeHostObject(const std::shared_ptr<GainNodeWrapper> &wrapper);
 
-        jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
-        void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;
-        std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& rt) override;
+  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+  void set(
+      jsi::Runtime &runtime,
+      const jsi::PropNameID &name,
+      const jsi::Value &value) override;
+  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
-        static std::shared_ptr<GainNodeHostObject> createFromWrapper(const std::shared_ptr<GainNodeWrapper> &wrapper) {
-            return std::make_shared<GainNodeHostObject>(wrapper);
-        }
-    };
+  static std::shared_ptr<GainNodeHostObject> createFromWrapper(
+      const std::shared_ptr<GainNodeWrapper> &wrapper) {
+    return std::make_shared<GainNodeHostObject>(wrapper);
+  }
+};
 } // namespace audiocontext

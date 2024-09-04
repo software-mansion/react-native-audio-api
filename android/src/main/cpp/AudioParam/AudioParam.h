@@ -7,40 +7,41 @@
 
 namespace audiocontext {
 
-    using namespace facebook;
-    using namespace facebook::jni;
+using namespace facebook;
+using namespace facebook::jni;
 
-    class AudioParam : public jni::HybridClass<AudioParam> {
-    public:
-        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/parameters/AudioParam;";
+class AudioParam : public jni::HybridClass<AudioParam> {
+ public:
+  static auto constexpr kJavaDescriptor =
+      "Lcom/audiocontext/parameters/AudioParam;";
 
-        static jni::local_ref<AudioParam::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
-        {
-            return makeCxxInstance(jThis);
-        }
+  static jni::local_ref<AudioParam::jhybriddata> initHybrid(
+      jni::alias_ref<jhybridobject> jThis) {
+    return makeCxxInstance(jThis);
+  }
 
-        static void registerNatives() {
-            registerHybrid({
-                   makeNativeMethod("initHybrid", AudioParam::initHybrid),
-           });
-        }
+  static void registerNatives() {
+    registerHybrid({
+        makeNativeMethod("initHybrid", AudioParam::initHybrid),
+    });
+  }
 
-        double getValue();
-        void setValue(double value);
-        double getDefaultValue();
-        double getMinValue();
-        double getMaxValue();
-        void setValueAtTime(double value, double startTime);
-        void linearRampToValueAtTime(double value, double endTime);
-        void exponentialRampToValueAtTime(double value, double endTime);
-        void prepareForDeconstruction();
+  double getValue();
+  void setValue(double value);
+  double getDefaultValue();
+  double getMinValue();
+  double getMaxValue();
+  void setValueAtTime(double value, double startTime);
+  void linearRampToValueAtTime(double value, double endTime);
+  void exponentialRampToValueAtTime(double value, double endTime);
+  void prepareForDeconstruction();
 
-    protected:
-        friend HybridBase;
+ protected:
+  friend HybridBase;
 
-        global_ref<AudioParam::javaobject> javaPart_;
+  global_ref<AudioParam::javaobject> javaPart_;
 
-        explicit AudioParam(jni::alias_ref<AudioParam::jhybridobject>& jThis);
-    };
+  explicit AudioParam(jni::alias_ref<AudioParam::jhybridobject> &jThis);
+};
 
 } // namespace audiocontext

@@ -1,10 +1,10 @@
 #pragma once
 
-#import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
-#import "OscillatorNode.h"
-#import "ContextState.h"
+#import <Foundation/Foundation.h>
 #import <mach/mach_time.h>
+#import "ContextState.h"
+#import "OscillatorNode.h"
 
 @class OscillatorNode;
 

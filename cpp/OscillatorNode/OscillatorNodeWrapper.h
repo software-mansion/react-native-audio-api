@@ -2,6 +2,8 @@
 
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
+#include <memory>
+#include <string>
 
 #ifdef ANDROID
 #include "OscillatorNode.h"
@@ -12,32 +14,37 @@
 namespace audiocontext {
 
 #ifdef ANDROID
-    class OscillatorNode;
+class OscillatorNode;
 #endif
 
-    class OscillatorNodeWrapper: public AudioNodeWrapper {
+class OscillatorNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
-    private:
-        OscillatorNode* getOscillatorNodeFromAudioNode();
-    public:
-        explicit OscillatorNodeWrapper(OscillatorNode *oscillator);
-        ~OscillatorNodeWrapper() override;
-#else
-        private:
-            std::shared_ptr<IOSOscillatorNode> getOscillatorNodeFromAudioNode();
-        public:
-            explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context);
-#endif
-        private:
-            std::shared_ptr<AudioParamWrapper> frequencyParam_;
-            std::shared_ptr<AudioParamWrapper> detuneParam_;
-        public:
-            std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
-            std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
-            std::string getType();
-            void start(double time);
-            void stop(double time);
-            void setType(const std::string& type);
 
-    };
+ private:
+  OscillatorNode *getOscillatorNodeFromAudioNode();
+
+ public:
+  explicit OscillatorNodeWrapper(OscillatorNode *oscillator);
+  ~OscillatorNodeWrapper() override;
+#else
+
+ private:
+  std::shared_ptr<IOSOscillatorNode> getOscillatorNodeFromAudioNode();
+
+ public:
+  explicit OscillatorNodeWrapper(std::shared_ptr<IOSAudioContext> context);
+#endif
+
+ private:
+  std::shared_ptr<AudioParamWrapper> frequencyParam_;
+  std::shared_ptr<AudioParamWrapper> detuneParam_;
+
+ public:
+  std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
+  std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
+  std::string getType();
+  void start(double time);
+  void stop(double time);
+  void setType(const std::string &type);
+};
 } // namespace audiocontext

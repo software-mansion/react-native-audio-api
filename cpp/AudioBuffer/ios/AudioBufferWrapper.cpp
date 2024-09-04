@@ -1,34 +1,33 @@
 #ifndef ANDROID
 #include "AudioBufferWrapper.h"
 
-namespace audiocontext{
+namespace audiocontext {
 
-    // TODO: Implement the AudioParamWrapper class
+// TODO: Implement the AudioParamWrapper class
 
-    int AudioBufferWrapper::getSampleRate() const {
-        return 1;
-    }
+int AudioBufferWrapper::getSampleRate() const {
+  return 1;
+}
 
-    int AudioBufferWrapper::getLength() const {
-        return 1;
-    }
+int AudioBufferWrapper::getLength() const {
+  return 1;
+}
 
-    double AudioBufferWrapper::getDuration() const {
-        return 1.0;
-    }
+double AudioBufferWrapper::getDuration() const {
+  return 1.0;
+}
 
-    int AudioBufferWrapper::getNumberOfChannels() const {
-        return 1;
-    }
+int AudioBufferWrapper::getNumberOfChannels() const {
+  return 1;
+}
 
-    short** AudioBufferWrapper::getChannelData(int channel) const {
-        return nullptr;
-    }
+short **AudioBufferWrapper::getChannelData(int channel) const {
+  return nullptr;
+}
 
-    void AudioBufferWrapper::setChannelData(int channel, short **data) {
-        return;
-    }
+void AudioBufferWrapper::setChannelData(int channel, short **data) {
+  return;
+}
 
 } // namespace audiocontext
 #endif
-

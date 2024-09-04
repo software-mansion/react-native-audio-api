@@ -1,7 +1,7 @@
 #pragma once
 
-#import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import <Foundation/Foundation.h>
 #import "PlaybackParameters.h"
 
 @class AudioContext;

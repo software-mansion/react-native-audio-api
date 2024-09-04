@@ -1,6 +1,6 @@
 #pragma once
-#import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import <Foundation/Foundation.h>
 
 @interface PlaybackParameters : NSObject
 
@@ -10,8 +10,10 @@
 @property (nonatomic, assign) float rightGain;
 @property (nonatomic, assign) AVAudioFrameCount frameCount;
 
-- (instancetype)initWithLeftBuffer:(float *)leftBuffer rightBuffer:(float *)rightBuffer frameCount:(AVAudioFrameCount)frameCount;
+- (instancetype)initWithLeftBuffer:(float *)leftBuffer
+                       rightBuffer:(float *)rightBuffer
+                        frameCount:(AVAudioFrameCount)frameCount;
 
--(void)reset;
+- (void)reset;
 
 @end

@@ -4,21 +4,27 @@
 
 @implementation GainNode
 
-- (instancetype)initWithContext:(AudioContext *)context {
-    if (self = [super initWithContext:context]) {
-        _gainParam = [[AudioParam alloc] initWithContext:context value:1 minValue:-[Constants maxGain] maxValue:[Constants maxGain]];
-        self.numberOfInputs = 1;
-        self.numberOfOutputs = 1;
-    }
+- (instancetype)initWithContext:(AudioContext *)context
+{
+  if (self = [super initWithContext:context]) {
+    _gainParam = [[AudioParam alloc] initWithContext:context
+                                               value:1
+                                            minValue:-[Constants maxGain]
+                                            maxValue:[Constants maxGain]];
+    self.numberOfInputs = 1;
+    self.numberOfOutputs = 1;
+  }
 
-    return self;
+  return self;
 }
 
-- (void)cleanup {
-    _gainParam = nil;
+- (void)cleanup
+{
+  _gainParam = nil;
 }
 
-- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList; {
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList;
+{
   float time = [self.context getCurrentTime];
   float deltaTime = 1 / self.context.sampleRate;
 

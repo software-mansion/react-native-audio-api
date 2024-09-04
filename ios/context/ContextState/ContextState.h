@@ -1,9 +1,6 @@
 #pragma once
 
-typedef NS_ENUM(NSInteger, ContextStateEnum) {
-    ContextStateRunning,
-    ContextStateClosed
-};
+typedef NS_ENUM(NSInteger, ContextStateEnum) { ContextStateRunning, ContextStateClosed };
 
 @interface ContextState : NSObject
 

@@ -6,61 +6,60 @@
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <utility>
+#include <string>
 
+#include "AudioBuffer.h"
+#include "AudioBufferSourceNode.h"
 #include "AudioContextHostObject.h"
 #include "AudioContextWrapper.h"
-#include "OscillatorNode.h"
 #include "AudioDestinationNode.h"
-#include "GainNode.h"
-#include "StereoPannerNode.h"
 #include "BiquadFilterNode.h"
-#include "AudioBufferSourceNode.h"
-#include "AudioBuffer.h"
+#include "GainNode.h"
+#include "OscillatorNode.h"
+#include "StereoPannerNode.h"
 
-namespace audiocontext
-{
+namespace audiocontext {
 
-  using namespace facebook;
-  using namespace facebook::jni;
+using namespace facebook;
+using namespace facebook::jni;
 
-  class AudioContext : public jni::HybridClass<AudioContext>
-  {
-  public:
-    static auto constexpr kJavaDescriptor = "Lcom/audiocontext/context/AudioContext;";
+class AudioContext : public jni::HybridClass<AudioContext> {
+ public:
+  static auto constexpr kJavaDescriptor =
+      "Lcom/audiocontext/context/AudioContext;";
 
-    static jni::local_ref<AudioContext::jhybriddata> initHybrid(jni::alias_ref<jhybridobject> jThis)
-    {
-      return makeCxxInstance(jThis);
-    }
+  static jni::local_ref<AudioContext::jhybriddata> initHybrid(
+      jni::alias_ref<jhybridobject> jThis) {
+    return makeCxxInstance(jThis);
+  }
 
-    static void registerNatives()
-    {
-      registerHybrid({
-          makeNativeMethod("initHybrid", AudioContext::initHybrid),
-          makeNativeMethod("install", AudioContext::install),
-      });
-    }
+  static void registerNatives() {
+    registerHybrid({
+        makeNativeMethod("initHybrid", AudioContext::initHybrid),
+        makeNativeMethod("install", AudioContext::install),
+    });
+  }
 
-    AudioDestinationNode* getDestination();
-    OscillatorNode* createOscillator();
-    GainNode* createGain();
-    StereoPannerNode* createStereoPanner();
-    BiquadFilterNode* createBiquadFilter();
-    AudioBufferSourceNode* createBufferSource();
-    AudioBuffer* createBuffer(int sampleRate, int length, int numberOfChannels);
-    std::string getState();
-    int getSampleRate();
-    double getCurrentTime();
-    void close();
+  AudioDestinationNode *getDestination();
+  OscillatorNode *createOscillator();
+  GainNode *createGain();
+  StereoPannerNode *createStereoPanner();
+  BiquadFilterNode *createBiquadFilter();
+  AudioBufferSourceNode *createBufferSource();
+  AudioBuffer *createBuffer(int sampleRate, int length, int numberOfChannels);
+  std::string getState();
+  int getSampleRate();
+  double getCurrentTime();
+  void close();
 
-    void install(jlong jsContext);
+  void install(jlong jsContext);
 
-  private:
-    friend HybridBase;
+ private:
+  friend HybridBase;
 
-    global_ref<AudioContext::javaobject> javaPart_;
+  global_ref<AudioContext::javaobject> javaPart_;
 
-    explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
-  };
+  explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
+};
 
 } // namespace audiocontext

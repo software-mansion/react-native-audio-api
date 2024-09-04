@@ -5,14 +5,14 @@
 
 namespace audiocontext {
 
-    using namespace facebook;
-    using namespace facebook::jni;
+using namespace facebook;
+using namespace facebook::jni;
 
-    class GainNode : public jni::HybridClass<GainNode, AudioNode> {
-    public:
-        static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/GainNode;";
+class GainNode : public jni::HybridClass<GainNode, AudioNode> {
+ public:
+  static auto constexpr kJavaDescriptor = "Lcom/audiocontext/nodes/GainNode;";
 
-        AudioParam* getGainParam();
-    };
+  AudioParam *getGainParam();
+};
 
 } // namespace audiocontext

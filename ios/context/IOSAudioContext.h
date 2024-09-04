@@ -10,14 +10,14 @@ typedef struct objc_object AudioContext;
 #include "IOSAudioContext.h"
 
 namespace audiocontext {
-	class IOSAudioContext {
-		public:
-            explicit IOSAudioContext();
-            ~IOSAudioContext();
-            void close();
-            double getCurrentTime();
-            std::string getState();
-            double getSampleRate();
-            AudioContext *audioContext_;
-	};
+class IOSAudioContext {
+ public:
+  explicit IOSAudioContext();
+  ~IOSAudioContext();
+  void close();
+  double getCurrentTime();
+  std::string getState();
+  double getSampleRate();
+  AudioContext *audioContext_;
+};
 } // namespace audiocontext
