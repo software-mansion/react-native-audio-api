@@ -10,13 +10,13 @@ add_compile_options(${folly_FLAGS})
 file(GLOB_RECURSE SOURCE_FILES
   "src/main/cpp/*.cpp"
   "src/main/cpp/*.h"
-  "../cpp/*.cpp"
-  "../cpp/*.h"
+  "../common/cpp/*.cpp"
+  "../common/cpp/*.h"
 )
 
 add_library(react-native-audio-context SHARED ${SOURCE_FILES})
 
-file(GLOB DIRS CONFIGURE_DEPENDS "src/main/cpp/**" "../cpp/**")
+file(GLOB DIRS CONFIGURE_DEPENDS "src/main/cpp/**" "../common/cpp/**")
 
 target_include_directories(
   react-native-audio-context
