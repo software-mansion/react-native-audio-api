@@ -28,10 +28,18 @@
 
   for (int frame = 0; frame < frameCount; frame += 1) {
     double pan = [_panParam getValueAtTime:[self.context getCurrentTime]];
-    double x = (pan + 1) / 2;
+    double x = ((pan <= 0) ? pan + 1 : pan) * M_PI / 2;
 
-    bufferL[frame] *= cos(x * M_PI / 2);
-    bufferR[frame] *= sin(x * M_PI / 2);
+    double gainL = cos(x);
+    double gainR = sin(x);
+    
+    if (pan <= 0) {
+      bufferL[frame] += bufferR[frame] * gainL;
+      bufferR[frame] *= gainR;
+    } else {
+      bufferL[frame] *= gainL;
+      bufferR[frame] += bufferL * gainR;
+    }
 
     time += deltaTime;
   }
