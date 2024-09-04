@@ -5,8 +5,9 @@ import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.nodes.audionode.ChannelCountMode
 import com.audiocontext.parameters.PlaybackParameters
 
-
-class AudioDestinationNode(context: BaseAudioContext): AudioNode(context) {
+class AudioDestinationNode(
+  context: BaseAudioContext,
+) : AudioNode(context) {
   override val numberOfInputs = Float.POSITIVE_INFINITY.toInt()
   override val numberOfOutputs = 0
   override var channelCount: Int = 2

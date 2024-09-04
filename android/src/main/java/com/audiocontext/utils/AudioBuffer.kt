@@ -2,8 +2,11 @@ package com.audiocontext.utils
 
 import com.facebook.jni.HybridData
 
-
-class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
+class AudioBuffer(
+  sampleRate: Int,
+  length: Int,
+  numberOfChannels: Int,
+) {
   val sampleRate: Int = sampleRate
     get() = field
   val length: Int = length
@@ -36,7 +39,10 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
     return channels[channel]
   }
 
-  private fun setChannelData(channel: Int, data: ShortArray) {
+  private fun setChannelData(
+    channel: Int,
+    data: ShortArray,
+  ) {
     if (channel < 0 || channel >= numberOfChannels) {
       throw IllegalArgumentException("Channel index out of bounds")
     }
@@ -63,7 +69,7 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
       return this
     }
 
-    when(this.numberOfChannels) {
+    when (this.numberOfChannels) {
       1 -> {
         if (outputNumberOfChannels == 2) {
           val outputBuffer = AudioBuffer(sampleRate, length, 2)
@@ -90,4 +96,3 @@ class AudioBuffer(sampleRate: Int, length: Int, numberOfChannels: Int) {
     throw IllegalArgumentException("Unsupported number of channels")
   }
 }
-

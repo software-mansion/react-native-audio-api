@@ -10,16 +10,16 @@ import androidx.annotation.RequiresApi
 import com.audiocontext.nodes.AudioBufferSourceNode
 import com.audiocontext.nodes.AudioDestinationNode
 import com.audiocontext.nodes.AudioScheduledSourceNode
-import com.audiocontext.utils.Constants
 import com.audiocontext.nodes.GainNode
 import com.audiocontext.nodes.StereoPannerNode
 import com.audiocontext.nodes.filter.BiquadFilterNode
 import com.audiocontext.nodes.oscillator.OscillatorNode
 import com.audiocontext.utils.AudioBuffer
+import com.audiocontext.utils.Constants
 import com.facebook.jni.HybridData
 import java.util.LinkedList
 
-class AudioContext() : BaseAudioContext {
+class AudioContext : BaseAudioContext {
   override val sampleRate: Int = Constants.SAMPLE_RATE
     get() = field
   override val destination: AudioDestinationNode = AudioDestinationNode(this)
@@ -43,19 +43,24 @@ class AudioContext() : BaseAudioContext {
   }
 
   external fun initHybrid(): HybridData?
+
   external fun install(jsContext: Long)
 
   private fun initAudioTrack(bufferSize: Int): AudioTrack {
-    val audioAttributes = AudioAttributes.Builder()
-      .setUsage(AudioAttributes.USAGE_MEDIA)
-      .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-      .build()
+    val audioAttributes =
+      AudioAttributes
+        .Builder()
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        .build()
 
-    val audioFormat = AudioFormat.Builder()
-      .setSampleRate(this.sampleRate)
-      .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-      .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-      .build()
+    val audioFormat =
+      AudioFormat
+        .Builder()
+        .setSampleRate(this.sampleRate)
+        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+        .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+        .build()
 
     val audioTrack = AudioTrack(audioAttributes, audioFormat, bufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
 
@@ -66,13 +71,9 @@ class AudioContext() : BaseAudioContext {
     return audioTrack
   }
 
-  override fun getCurrentTime(): Double {
-    return (SystemClock.elapsedRealtimeNanos() - contextStartTime) / 1e9
-  }
+  override fun getCurrentTime(): Double = (SystemClock.elapsedRealtimeNanos() - contextStartTime) / 1e9
 
-  fun getState(): String {
-    return ContextState.toString(state)
-  }
+  fun getState(): String = ContextState.toString(state)
 
   override fun close() {
     state = ContextState.CLOSED
@@ -85,7 +86,7 @@ class AudioContext() : BaseAudioContext {
   @RequiresApi(Build.VERSION_CODES.N)
   override fun getAudioTrack(bufferSize: Int): AudioTrack {
     synchronized(audioTracksList) {
-      if(audioTracksList.isNotEmpty()) {
+      if (audioTracksList.isNotEmpty()) {
         return audioTracksList.removeFirst()
       } else {
         val audioTrack = initAudioTrack(bufferSize)
@@ -107,17 +108,11 @@ class AudioContext() : BaseAudioContext {
     return oscillatorNode
   }
 
-  override fun createGain(): GainNode {
-    return GainNode(this)
-  }
+  override fun createGain(): GainNode = GainNode(this)
 
-  override fun createStereoPanner(): StereoPannerNode {
-    return StereoPannerNode(this)
-  }
+  override fun createStereoPanner(): StereoPannerNode = StereoPannerNode(this)
 
-  override fun createBiquadFilter(): BiquadFilterNode {
-    return BiquadFilterNode(this)
-  }
+  override fun createBiquadFilter(): BiquadFilterNode = BiquadFilterNode(this)
 
   override fun createBufferSource(): AudioBufferSourceNode {
     val bufferSourceNode = AudioBufferSourceNode(this)
@@ -125,7 +120,11 @@ class AudioContext() : BaseAudioContext {
     return bufferSourceNode
   }
 
-  override fun createBuffer(numOfChannels: Int, length: Int, sampleRate: Int): AudioBuffer {
+  override fun createBuffer(
+    numOfChannels: Int,
+    length: Int,
+    sampleRate: Int,
+  ): AudioBuffer {
     val buffer = AudioBuffer(numOfChannels, length, sampleRate)
     return buffer
   }

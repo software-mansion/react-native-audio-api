@@ -8,11 +8,12 @@ enum class FilterType {
   HIGHSHELF,
   PEAKING,
   NOTCH,
-  ALLPASS;
+  ALLPASS,
+  ;
 
   companion object {
-    fun fromString(type: String): FilterType {
-      return when (type.lowercase()) {
+    fun fromString(type: String): FilterType =
+      when (type.lowercase()) {
         "lowpass" -> LOWPASS
         "highpass" -> HIGHPASS
         "bandpass" -> BANDPASS
@@ -23,10 +24,9 @@ enum class FilterType {
         "allpass" -> ALLPASS
         else -> throw IllegalArgumentException("Invalid filter type")
       }
-    }
 
-    fun toString(type: FilterType): String {
-      return when (type) {
+    fun toString(type: FilterType): String =
+      when (type) {
         LOWPASS -> "lowpass"
         HIGHPASS -> "highpass"
         BANDPASS -> "bandpass"
@@ -36,6 +36,5 @@ enum class FilterType {
         NOTCH -> "notch"
         ALLPASS -> "allpass"
       }
-    }
   }
 }

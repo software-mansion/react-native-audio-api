@@ -8,7 +8,12 @@ import java.util.Optional
 import java.util.PriorityQueue
 import kotlin.math.pow
 
-class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: Double, minValue: Double) {
+class AudioParam(
+  val context: BaseAudioContext,
+  defaultValue: Double,
+  maxValue: Double,
+  minValue: Double,
+) {
   private var value: Double = defaultValue
   private val defaultValue: Double = defaultValue
     get() = field
@@ -19,10 +24,11 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
 
   @RequiresApi(Build.VERSION_CODES.N)
   private val changeQueue: PriorityQueue<ParamChange> = PriorityQueue(ParamChangeComparator)
+
   @RequiresApi(Build.VERSION_CODES.N)
   private var currentChange = Optional.empty<ParamChange>()
 
-  private val mHybridData: HybridData?;
+  private val mHybridData: HybridData?
 
   companion object {
     init {
@@ -36,14 +42,12 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
 
   external fun initHybrid(): HybridData?
 
-  fun getValue(): Double {
-    return value
-  }
+  fun getValue(): Double = value
 
   @RequiresApi(Build.VERSION_CODES.N)
   fun getValueAtTime(time: Double): Double {
     if (changeQueue.isNotEmpty()) {
-      //when the current change is over or there is no current change
+      // when the current change is over or there is no current change
       if (!currentChange.isPresent || currentChange.get().endTime < time) {
         currentChange = changeQueue.poll()?.let { Optional.of(it) }!!
       }
@@ -61,7 +65,10 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  fun setValueAtTime(value: Double, time: Double) {
+  fun setValueAtTime(
+    value: Double,
+    time: Double,
+  ) {
     val endValue = checkValue(value)
     val calculateValue = { _: Double, _: Double, _: Double, endValueF: Double, _: Double ->
       endValueF
@@ -71,7 +78,10 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  fun linearRampToValueAtTime(value: Double, time: Double) {
+  fun linearRampToValueAtTime(
+    value: Double,
+    time: Double,
+  ) {
     val endValue = checkValue(value)
     val calculateValue = { startTime: Double, endTime: Double, startValue: Double, endValueF: Double, timeF: Double ->
       startValue + (endValueF - startValue) * (timeF - startTime) / (endTime - startTime)
@@ -82,7 +92,10 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  fun exponentialRampToValueAtTime(value: Double, time: Double) {
+  fun exponentialRampToValueAtTime(
+    value: Double,
+    time: Double,
+  ) {
     val endValue = checkValue(value)
     val calculateValue = { startTime: Double, endTime: Double, startValue: Double, endValueF: Double, timeF: Double ->
       startValue * (endValueF / startValue).pow((timeF - startTime) / (endTime - startTime))
@@ -93,27 +106,25 @@ class AudioParam(val context: BaseAudioContext, defaultValue: Double, maxValue: 
   }
 
   private fun checkValue(value: Double): Double {
-    if(value > maxValue || value < minValue) {
+    if (value > maxValue || value < minValue) {
       return defaultValue
     }
     return value
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  private fun getStartTime(): Double {
-    return if (changeQueue.isEmpty()) {
+  private fun getStartTime(): Double =
+    if (changeQueue.isEmpty()) {
       context.getCurrentTime()
-    } else{
+    } else {
       changeQueue.last().endTime
     }
-  }
 
   @RequiresApi(Build.VERSION_CODES.N)
-  private fun getStartValue(): Double {
-    return if (changeQueue.isEmpty()) {
+  private fun getStartValue(): Double =
+    if (changeQueue.isEmpty()) {
       this.value
-    } else{
+    } else {
       changeQueue.last().endValue
     }
-  }
 }

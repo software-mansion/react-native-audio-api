@@ -5,7 +5,9 @@ import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.AudioBuffer
 import com.audiocontext.utils.Constants
 
-class AudioBufferSourceNode(context: BaseAudioContext) : AudioScheduledSourceNode(context) {
+class AudioBufferSourceNode(
+  context: BaseAudioContext,
+) : AudioScheduledSourceNode(context) {
   override var playbackParameters: PlaybackParameters? = null
 
   private var loop: Boolean = true

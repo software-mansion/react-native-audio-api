@@ -4,28 +4,31 @@ import com.audiocontext.context.BaseAudioContext
 import com.audiocontext.nodes.audionode.AudioNode
 import com.audiocontext.parameters.PlaybackParameters
 
-abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(context) {
+abstract class AudioScheduledSourceNode(
+  context: BaseAudioContext,
+) : AudioNode(context) {
   override val numberOfInputs: Int = 0
   override val numberOfOutputs: Int = 1
 
   abstract var playbackParameters: PlaybackParameters?
+
   @Volatile protected var isPlaying: Boolean = false
 
   private var playbackThread: Thread? = null
   private var stopTime: Double? = null
 
   private fun generateSound() {
-    while(isPlaying) {
+    while (isPlaying) {
       playbackParameters?.let { fillBuffer(it) }
       playbackParameters?.reset()
       playbackParameters?.let { process(it) }
-      if(stopTime != null && context.getCurrentTime() >= stopTime!!) {
+      if (stopTime != null && context.getCurrentTime() >= stopTime!!) {
         prepareForDeconstruction()
       }
     }
   }
 
-  private fun handleStop(){
+  private fun handleStop() {
     isPlaying = false
     try {
       playbackParameters?.audioTrack?.stop()
@@ -44,14 +47,15 @@ abstract class AudioScheduledSourceNode(context: BaseAudioContext) : AudioNode(c
       throw IllegalStateException("You can use source only once")
     }
 
-    playbackThread = Thread {
-      while (context.getCurrentTime() < time) {
-        Thread.sleep(1)
+    playbackThread =
+      Thread {
+        while (context.getCurrentTime() < time) {
+          Thread.sleep(1)
+        }
+        isPlaying = true
+        playbackParameters?.audioTrack?.play()
+        generateSound()
       }
-      isPlaying = true
-      playbackParameters?.audioTrack?.play()
-      generateSound()
-    }
     playbackThread?.start()
   }
 

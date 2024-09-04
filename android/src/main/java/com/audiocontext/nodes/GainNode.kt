@@ -8,12 +8,14 @@ import com.audiocontext.parameters.AudioParam
 import com.audiocontext.parameters.PlaybackParameters
 import com.audiocontext.utils.Constants
 
-class GainNode(context: BaseAudioContext): AudioNode(context) {
+class GainNode(
+  context: BaseAudioContext,
+) : AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
   override var channelCount: Int = 2
 
-  private val gain: AudioParam = AudioParam(context,1.0, Constants.MAX_GAIN, -Constants.MAX_GAIN)
+  private val gain: AudioParam = AudioParam(context, 1.0, Constants.MAX_GAIN, -Constants.MAX_GAIN)
     get() = field
 
   @RequiresApi(Build.VERSION_CODES.N)

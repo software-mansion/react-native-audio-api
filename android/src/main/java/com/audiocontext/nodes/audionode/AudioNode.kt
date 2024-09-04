@@ -6,8 +6,9 @@ import com.facebook.jni.HybridData
 
 // channelCount - number of channels used by the node
 
-
-abstract class AudioNode(val context: BaseAudioContext) {
+abstract class AudioNode(
+  val context: BaseAudioContext,
+) {
   open val numberOfInputs: Int = 0
     get() = field
   open val numberOfOutputs: Int = 0
@@ -34,16 +35,12 @@ abstract class AudioNode(val context: BaseAudioContext) {
 
   external fun initHybrid(): HybridData?
 
-  fun getChannelCountMode(): String {
-    return ChannelCountMode.toString(channelCountMode)
-  }
+  fun getChannelCountMode(): String = ChannelCountMode.toString(channelCountMode)
 
-  fun getChannelInterpretation(): String {
-    return ChannelInterpretation.toString(channelInterpretation)
-  }
+  fun getChannelInterpretation(): String = ChannelInterpretation.toString(channelInterpretation)
 
   fun connect(node: AudioNode) {
-    if(numberOfOutputs > outputNodes.size && node.numberOfInputs > node.inputNodes.size) {
+    if (numberOfOutputs > outputNodes.size && node.numberOfInputs > node.inputNodes.size) {
       outputNodes.add(node)
       node.inputNodes.add(this)
     }
