@@ -371,7 +371,6 @@
 
   for (int frame = 0; frame < frameCount; frame++) {
     double input = bufferL[frame];
-    //    double output = _b0 * input + _b1 * _x1 + _b2 * _x2 - _a1 * _y1 - _a2 * _y2;
     double output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
     bufferL[frame] = output;
