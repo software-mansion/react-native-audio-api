@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "AudioContextWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioContextWrapper::AudioContextWrapper(AudioContext *audiocontext)
     : audiocontext_(audiocontext) {
@@ -67,5 +67,5 @@ double AudioContextWrapper::getCurrentTime() {
 void AudioContextWrapper::close() {
   audiocontext_->close();
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

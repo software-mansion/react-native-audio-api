@@ -1,6 +1,6 @@
 #include <IOSGainNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSGainNode::IOSGainNode(std::shared_ptr<IOSAudioContext> context)
 {
@@ -19,4 +19,4 @@ std::shared_ptr<IOSAudioParam> IOSGainNode::getGainParam()
   param->audioParam = gainNode_.gainParam;
   return param;
 }
-} // namespace audiocontext
+} // namespace audioapi

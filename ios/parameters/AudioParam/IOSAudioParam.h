@@ -6,7 +6,7 @@
 typedef struct objc_object AudioParam;
 #endif // __OBJC__
 
-namespace audiocontext {
+namespace audioapi {
 class IOSAudioParam {
  public:
   ~IOSAudioParam();
@@ -20,4 +20,4 @@ class IOSAudioParam {
   void linearRampToValueAtTime(float value, double time);
   void exponentialRampToValueAtTime(float value, double time);
 };
-} // namespace audiocontext
+} // namespace audioapi

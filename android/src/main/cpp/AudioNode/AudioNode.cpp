@@ -1,6 +1,6 @@
 #include "AudioNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioNode::AudioNode(alias_ref<AudioNode::jhybridobject> &jThis)
     : javaPart_(make_global(jThis)) {}
@@ -50,4 +50,4 @@ void AudioNode::disconnect(const AudioNode *node) {
 void AudioNode::resetJavaPart() {
   javaPart_.reset();
 }
-} // namespace audiocontext
+} // namespace audioapi

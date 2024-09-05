@@ -1,6 +1,6 @@
 #include <IOSAudioDestinationNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSAudioDestinationNode::IOSAudioDestinationNode(std::shared_ptr<IOSAudioContext> context)
 {
@@ -11,4 +11,4 @@ IOSAudioDestinationNode::~IOSAudioDestinationNode()
 {
   audioNode_ = destination_ = nil;
 }
-} // namespace audiocontext
+} // namespace audioapi

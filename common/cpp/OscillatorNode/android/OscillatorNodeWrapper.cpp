@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "OscillatorNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 OscillatorNode *OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
   return static_cast<OscillatorNode *>(node_);
@@ -49,5 +49,5 @@ void OscillatorNodeWrapper::setType(const std::string &type) {
   auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
   oscillatorNode_->setWaveType(type);
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

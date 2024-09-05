@@ -7,32 +7,32 @@
 #else
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
-    class AudioBufferWrapper {
+class AudioBufferWrapper {
 #ifdef ANDROID
-    public:
-        AudioBuffer* audioBuffer_;
+ public:
+  AudioBuffer *audioBuffer_;
 
-        explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
-        ~AudioBufferWrapper();
+  explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
+  ~AudioBufferWrapper();
 #else
-        protected:
-
-        public:
-            explicit AudioBufferWrapper() {}
+ protected:
+ public:
+  explicit AudioBufferWrapper() {}
 #endif
-    private:
-        int sampleRate;
-        int length;
-        double duration;
-        int numberOfChannels;
-    public:
-        int getSampleRate() const;
-        int getLength() const;
-        double getDuration() const;
-        int getNumberOfChannels() const;
-        short** getChannelData(int channel) const;
-        void setChannelData(int channel, short** data);
-    };
-} // namespace audiocontext
+ private:
+  int sampleRate;
+  int length;
+  double duration;
+  int numberOfChannels;
+
+ public:
+  int getSampleRate() const;
+  int getLength() const;
+  double getDuration() const;
+  int getNumberOfChannels() const;
+  short **getChannelData(int channel) const;
+  void setChannelData(int channel, short **data);
+};
+} // namespace audioapi

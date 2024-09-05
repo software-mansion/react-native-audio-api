@@ -1,4 +1,4 @@
-import { AudioContext } from 'react-native-audio-context';
+import { AudioContext } from 'react-native-audio-api';
 import type { SoundEngine } from './SoundEngine';
 
 export class HiHat implements SoundEngine {

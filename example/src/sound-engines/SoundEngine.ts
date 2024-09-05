@@ -1,4 +1,4 @@
-import { AudioContext } from 'react-native-audio-context';
+import { AudioContext } from 'react-native-audio-api';
 
 export interface SoundEngine {
   audioContext: AudioContext;

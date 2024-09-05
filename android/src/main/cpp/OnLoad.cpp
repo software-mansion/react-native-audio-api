@@ -4,7 +4,7 @@
 #include "AudioNode.h"
 #include "AudioParam.h"
 
-using namespace audiocontext;
+using namespace audioapi;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
   return facebook::jni::initialize(vm, [] {

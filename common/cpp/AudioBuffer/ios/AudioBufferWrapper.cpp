@@ -1,7 +1,7 @@
 #ifndef ANDROID
 #include "AudioBufferWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 // TODO: Implement the AudioParamWrapper class
 
@@ -29,5 +29,5 @@ void AudioBufferWrapper::setChannelData(int channel, int16_t **data) {
   return;
 }
 
-} // namespace audiocontext
+} // namespace audioapi
 #endif

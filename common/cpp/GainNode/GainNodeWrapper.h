@@ -11,7 +11,7 @@
 #include "IOSGainNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class GainNode;
@@ -34,4 +34,4 @@ class GainNodeWrapper : public AudioNodeWrapper {
  public:
   std::shared_ptr<AudioParamWrapper> getGainParam() const;
 };
-} // namespace audiocontext
+} // namespace audioapi

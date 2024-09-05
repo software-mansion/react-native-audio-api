@@ -11,7 +11,7 @@
 #include "IOSStereoPannerNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class StereoPannerNode;
@@ -34,4 +34,4 @@ class StereoPannerNodeWrapper : public AudioNodeWrapper {
  public:
   std::shared_ptr<AudioParamWrapper> getPanParam() const;
 };
-} // namespace audiocontext
+} // namespace audioapi

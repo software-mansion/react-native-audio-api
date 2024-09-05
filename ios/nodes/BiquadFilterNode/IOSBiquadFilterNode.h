@@ -11,7 +11,7 @@ typedef struct objc_object BiquadFilterNode;
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
 
-namespace audiocontext {
+namespace audioapi {
 class IOSBiquadFilterNode : public IOSAudioNode {
  public:
   explicit IOSBiquadFilterNode(std::shared_ptr<IOSAudioContext> context);
@@ -26,4 +26,4 @@ class IOSBiquadFilterNode : public IOSAudioNode {
  protected:
   BiquadFilterNode *biquadFilterNode_;
 };
-} // namespace audiocontext
+} // namespace audioapi

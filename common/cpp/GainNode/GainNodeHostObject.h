@@ -6,7 +6,7 @@
 #include "AudioParamHostObject.h"
 #include "GainNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class GainNodeWrapper;
@@ -30,4 +30,4 @@ class GainNodeHostObject : public AudioNodeHostObject {
     return std::make_shared<GainNodeHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi

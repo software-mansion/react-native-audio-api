@@ -7,7 +7,7 @@
 #include "AudioParamHostObject.h"
 #include "OscillatorNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class OscillatorNodeWrapper;
@@ -37,4 +37,4 @@ class OscillatorNodeHostObject : public AudioNodeHostObject {
     return std::make_shared<OscillatorNodeHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi

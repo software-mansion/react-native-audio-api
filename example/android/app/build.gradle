@@ -74,9 +74,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.audiocontextexample"
+    namespace "com.swmansion.audioapiexample"
     defaultConfig {
-        applicationId "com.audiocontextexample"
+        applicationId "com.swmansion.audioapiexample"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

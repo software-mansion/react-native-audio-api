@@ -8,7 +8,7 @@
 #include "IOSAudioParam.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 class AudioParamWrapper {
 #ifdef ANDROID
@@ -44,4 +44,4 @@ class AudioParamWrapper {
   void linearRampToValueAtTime(double value, double endTime);
   void exponentialRampToValueAtTime(double value, double endTime);
 };
-} // namespace audiocontext
+} // namespace audioapi

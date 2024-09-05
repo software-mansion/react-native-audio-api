@@ -1,6 +1,6 @@
 #include "GainNodeHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 GainNodeHostObject::GainNodeHostObject(
@@ -38,4 +38,4 @@ void GainNodeHostObject::set(
 
   return AudioNodeHostObject::set(runtime, propNameId, value);
 }
-} // namespace audiocontext
+} // namespace audioapi

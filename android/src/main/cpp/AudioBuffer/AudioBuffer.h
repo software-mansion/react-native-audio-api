@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -15,7 +15,7 @@ using namespace facebook::jni;
 class AudioBuffer : public jni::HybridClass<AudioBuffer> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/utils/AudioBuffer;";
+      "Lcom/swmansion/audioapi/utils/AudioBuffer;";
 
   static jni::local_ref<AudioBuffer::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis) {
@@ -44,4 +44,4 @@ class AudioBuffer : public jni::HybridClass<AudioBuffer> {
   explicit AudioBuffer(jni::alias_ref<AudioBuffer::jhybridobject> &jThis);
 };
 
-} // namespace audiocontext
+} // namespace audioapi

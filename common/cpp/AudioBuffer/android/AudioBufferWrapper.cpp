@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "AudioBufferWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioBufferWrapper::AudioBufferWrapper(AudioBuffer *audioBuffer) {
   audioBuffer_ = audioBuffer;
@@ -38,5 +38,5 @@ int16_t **AudioBufferWrapper::getChannelData(int channel) const {
 void AudioBufferWrapper::setChannelData(int channel, int16_t **data) const {
   audioBuffer_->setChannelData(channel, data);
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

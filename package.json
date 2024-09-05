@@ -1,5 +1,5 @@
 {
-  "name": "react-native-audio-context",
+  "name": "react-native-audio-api",
   "version": "0.1.0",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "main": "lib/commonjs/index",
@@ -26,7 +26,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-audio-context-example",
+    "example": "yarn workspace react-native-audio-api-example",
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:kotlin",
@@ -49,14 +49,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/software-mansion-labs/react-native-audio-context.git"
+    "url": "git+https://github.com/software-mansion-labs/react-native-audio-api.git"
   },
   "author": "Software Mansion Labs (https://github.com/software-mansion-labs)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/software-mansion-labs/react-native-audio-context/issues"
+    "url": "https://github.com/software-mansion-labs/react-native-audio-api/issues"
   },
-  "homepage": "https://github.com/software-mansion-labs/react-native-audio-context#readme",
+  "homepage": "https://github.com/software-mansion-labs/react-native-audio-api#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
@@ -167,7 +167,7 @@
     ]
   },
   "codegenConfig": {
-    "name": "RNAudioContextSpec",
+    "name": "RNAudioAPISpec",
     "type": "modules",
     "jsSrcsDir": "src"
   },

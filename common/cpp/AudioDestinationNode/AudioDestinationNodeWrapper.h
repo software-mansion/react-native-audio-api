@@ -11,7 +11,7 @@
 #include "IOSAudioDestinationNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class AudioDestinationNode;
@@ -30,4 +30,4 @@ class AudioDestinationNodeWrapper : public AudioNodeWrapper {
   }
 #endif
 };
-} // namespace audiocontext
+} // namespace audioapi

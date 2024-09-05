@@ -1,6 +1,6 @@
 #include "OscillatorNodeHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 std::shared_ptr<OscillatorNodeWrapper>
@@ -100,4 +100,4 @@ void OscillatorNodeHostObject::set(
 
   throw std::runtime_error("Not yet implemented!");
 }
-} // namespace audiocontext
+} // namespace audioapi

@@ -11,7 +11,7 @@ import {
   type OscillatorNode,
   type GainNode,
   type StereoPannerNode,
-} from 'react-native-audio-context';
+} from 'react-native-audio-api';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;

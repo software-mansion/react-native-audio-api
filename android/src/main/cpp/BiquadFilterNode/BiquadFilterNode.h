@@ -4,7 +4,7 @@
 #include "AudioNode.h"
 #include "AudioParam.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -12,7 +12,7 @@ using namespace facebook::jni;
 class BiquadFilterNode : public jni::HybridClass<BiquadFilterNode, AudioNode> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/nodes/filter/BiquadFilterNode;";
+      "Lcom/swmansion/audioapi/nodes/filter/BiquadFilterNode;";
 
   AudioParam *getFrequencyParam();
   AudioParam *getDetuneParam();
@@ -22,4 +22,4 @@ class BiquadFilterNode : public jni::HybridClass<BiquadFilterNode, AudioNode> {
   void setFilterType(const std::string &filterType);
 };
 
-} // namespace audiocontext
+} // namespace audioapi

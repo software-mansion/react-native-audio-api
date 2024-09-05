@@ -1,7 +1,7 @@
 #include "AudioBufferSourceNodeHostObject.h"
 #include <android/log.h>
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 std::shared_ptr<AudioBufferSourceNodeWrapper> AudioBufferSourceNodeHostObject::
@@ -97,4 +97,4 @@ void AudioBufferSourceNodeHostObject::set(
 
   throw std::runtime_error("Not yet implemented!");
 }
-} // namespace audiocontext
+} // namespace audioapi

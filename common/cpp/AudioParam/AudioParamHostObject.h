@@ -6,7 +6,7 @@
 
 #include "AudioParamWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class AudioParamWrapper;
@@ -32,4 +32,4 @@ class AudioParamHostObject : public jsi::HostObject {
     return std::make_shared<AudioParamHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi

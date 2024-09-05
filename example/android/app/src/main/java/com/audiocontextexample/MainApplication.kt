@@ -1,4 +1,4 @@
-package com.audiocontextexample
+package com.swmansion.audioapiexample
 
 import android.app.Application
 import com.facebook.react.PackageList

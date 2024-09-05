@@ -10865,9 +10865,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-audio-context-example@workspace:example":
+"react-native-audio-api-example@workspace:example":
   version: 0.0.0-use.local
-  resolution: "react-native-audio-context-example@workspace:example"
+  resolution: "react-native-audio-api-example@workspace:example"
   dependencies:
     "@babel/core": ^7.20.0
     "@babel/preset-env": ^7.20.0
@@ -10882,9 +10882,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-audio-context@workspace:.":
+"react-native-audio-api@workspace:.":
   version: 0.0.0-use.local
-  resolution: "react-native-audio-context@workspace:."
+  resolution: "react-native-audio-api@workspace:."
   dependencies:
     "@commitlint/config-conventional": ^17.0.2
     "@evilmartians/lefthook": ^1.5.0

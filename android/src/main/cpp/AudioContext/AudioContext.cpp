@@ -1,6 +1,6 @@
 #include "AudioContext.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -93,4 +93,4 @@ void AudioContext::close() {
   method(javaPart_.get());
   javaPart_.reset();
 }
-} // namespace audiocontext
+} // namespace audioapi

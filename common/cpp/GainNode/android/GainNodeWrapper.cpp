@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "GainNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 GainNodeWrapper::GainNodeWrapper(GainNode *gainNode)
     : AudioNodeWrapper(gainNode) {
@@ -12,5 +12,5 @@ GainNodeWrapper::GainNodeWrapper(GainNode *gainNode)
 std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() const {
   return gainParam_;
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

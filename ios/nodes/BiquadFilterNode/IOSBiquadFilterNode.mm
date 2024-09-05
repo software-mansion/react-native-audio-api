@@ -1,6 +1,6 @@
 #include <IOSBiquadFilterNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSBiquadFilterNode::IOSBiquadFilterNode(std::shared_ptr<IOSAudioContext> context)
 {
@@ -52,4 +52,4 @@ std::shared_ptr<IOSAudioParam> IOSBiquadFilterNode::getGainParam()
   param->audioParam = biquadFilterNode_.gainParam;
   return param;
 }
-} // namespace audiocontext
+} // namespace audioapi

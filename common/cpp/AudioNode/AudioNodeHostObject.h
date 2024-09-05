@@ -6,7 +6,7 @@
 
 #include "AudioNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class AudioNodeWrapper;
@@ -26,4 +26,4 @@ class AudioNodeHostObject : public jsi::HostObject {
       const jsi::Value &value) override;
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 };
-} // namespace audiocontext
+} // namespace audioapi

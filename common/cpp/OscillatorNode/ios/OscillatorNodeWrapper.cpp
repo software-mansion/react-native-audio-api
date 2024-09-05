@@ -1,7 +1,7 @@
 #ifndef ANDROID
 #include "OscillatorNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 OscillatorNodeWrapper::OscillatorNodeWrapper(
     std::shared_ptr<IOSAudioContext> context)
     : AudioNodeWrapper() {
@@ -42,5 +42,5 @@ std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getDetuneParam()
     const {
   return detuneParam_;
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

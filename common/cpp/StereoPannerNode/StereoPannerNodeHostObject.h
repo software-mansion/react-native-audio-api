@@ -7,7 +7,7 @@
 #include "AudioParamHostObject.h"
 #include "StereoPannerNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class StereoPannerNodeWrapper;
@@ -32,4 +32,4 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
     return std::make_shared<StereoPannerNodeHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi

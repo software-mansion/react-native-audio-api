@@ -7,7 +7,7 @@
 #else
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 class AudioBufferWrapper {
 #ifdef ANDROID
@@ -37,4 +37,4 @@ class AudioBufferWrapper {
   int16_t **getChannelData(int channel) const;
   void setChannelData(int channel, int16_t **data) const;
 };
-} // namespace audiocontext
+} // namespace audioapi

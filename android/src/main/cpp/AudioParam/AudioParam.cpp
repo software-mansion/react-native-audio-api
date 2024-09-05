@@ -1,6 +1,6 @@
 #include "AudioParam.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioParam::AudioParam(alias_ref<AudioParam::jhybridobject> &jThis)
     : javaPart_(make_global(jThis)) {}
@@ -55,4 +55,4 @@ void AudioParam::exponentialRampToValueAtTime(double value, double endTime) {
 void AudioParam::prepareForDeconstruction() {
   javaPart_.reset();
 }
-} // namespace audiocontext
+} // namespace audioapi

@@ -1,6 +1,6 @@
 #include <IOSAudioParam.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSAudioParam::~IOSAudioParam()
 {
@@ -48,4 +48,4 @@ void IOSAudioParam::exponentialRampToValueAtTime(float value, double time)
   [audioParam exponentialRampToValueAtTime:value time:time];
 }
 
-} // namespace audiocontext
+} // namespace audioapi

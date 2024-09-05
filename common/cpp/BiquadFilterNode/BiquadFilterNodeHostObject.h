@@ -7,7 +7,7 @@
 #include "AudioParamHostObject.h"
 #include "BiquadFilterNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class BiquadFilterNodeWrapper;
@@ -39,4 +39,4 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
     return std::make_shared<BiquadFilterNodeHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi

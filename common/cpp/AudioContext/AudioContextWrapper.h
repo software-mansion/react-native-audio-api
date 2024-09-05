@@ -19,7 +19,7 @@
 #include "OscillatorNodeHostObject.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 #ifdef ANDROID
@@ -61,4 +61,4 @@ class AudioContextWrapper {
   double getCurrentTime();
   void close();
 };
-} // namespace audiocontext
+} // namespace audioapi

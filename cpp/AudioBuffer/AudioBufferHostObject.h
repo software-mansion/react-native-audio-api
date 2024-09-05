@@ -4,24 +4,29 @@
 
 #include "AudioBufferWrapper.h"
 
-namespace audiocontext {
-    using namespace facebook;
+namespace audioapi {
+using namespace facebook;
 
-    class AudioBufferWrapper;
+class AudioBufferWrapper;
 
-    class AudioBufferHostObject : public jsi::HostObject {
+class AudioBufferHostObject : public jsi::HostObject {
+ public:
+  std::shared_ptr<AudioBufferWrapper> wrapper_;
 
-    public:
-        std::shared_ptr<AudioBufferWrapper> wrapper_;
+  explicit AudioBufferHostObject(
+      const std::shared_ptr<AudioBufferWrapper> &wrapper)
+      : wrapper_(wrapper) {}
 
-        explicit AudioBufferHostObject(const std::shared_ptr<AudioBufferWrapper> &wrapper) : wrapper_(wrapper) {}
+  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+  void set(
+      jsi::Runtime &runtime,
+      const jsi::PropNameID &name,
+      const jsi::Value &value) override;
+  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
-        jsi::Value get(jsi::Runtime& runtime, const jsi::PropNameID& name) override;
-        void set(jsi::Runtime& runtime, const jsi::PropNameID& name, const jsi::Value& value) override;
-        std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& rt) override;
-
-        static std::shared_ptr<AudioBufferHostObject> createFromWrapper(const std::shared_ptr<AudioBufferWrapper> &wrapper) {
-            return std::make_shared<AudioBufferHostObject>(wrapper);
-        }
-    };
-} // namespace audiocontext
+  static std::shared_ptr<AudioBufferHostObject> createFromWrapper(
+      const std::shared_ptr<AudioBufferWrapper> &wrapper) {
+    return std::make_shared<AudioBufferHostObject>(wrapper);
+  }
+};
+} // namespace audioapi

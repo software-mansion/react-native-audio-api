@@ -28,11 +28,11 @@ if (isNewArchitectureEnabled()) {
 }
 
 def getExtOrDefault(name) {
-  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["AudioContext_" + name]
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["AudioAPI_" + name]
 }
 
 def getExtOrIntegerDefault(name) {
-  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["AudioContext_" + name]).toInteger()
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["AudioAPI_" + name]).toInteger()
 }
 
 static def supportsNamespace() {
@@ -46,7 +46,7 @@ static def supportsNamespace() {
 
 android {
   if (supportsNamespace()) {
-    namespace "com.audiocontext"
+    namespace "com.swmansion.audioapi"
 
     sourceSets {
       main {
@@ -137,7 +137,7 @@ dependencies {
 if (isNewArchitectureEnabled()) {
   react {
     jsRootDir = file("../src/")
-    libraryName = "react-native-audio-context"
-    codegenJavaPackageName = "com.audiocontext"
+    libraryName = "react-native-audio-api"
+    codegenJavaPackageName = "com.swmansion.audioapi"
   }
 }

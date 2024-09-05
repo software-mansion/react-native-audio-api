@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9.0)
-project(react-native-audio-context)
+project(react-native-audio-api)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 14)
@@ -14,12 +14,12 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/*.h"
 )
 
-add_library(react-native-audio-context SHARED ${SOURCE_FILES})
+add_library(react-native-audio-api SHARED ${SOURCE_FILES})
 
 file(GLOB DIRS CONFIGURE_DEPENDS "src/main/cpp/**" "../common/cpp/**")
 
 target_include_directories(
-  react-native-audio-context
+  react-native-audio-api
   PRIVATE
   ${DIRS}
   ../node_modules/react-native/ReactCommon/jsi
@@ -39,4 +39,4 @@ set(LINK_LIBRARIES
   log
 )
 
-target_link_libraries(react-native-audio-context ${LINK_LIBRARIES})
+target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})

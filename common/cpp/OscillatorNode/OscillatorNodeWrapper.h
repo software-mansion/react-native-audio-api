@@ -11,7 +11,7 @@
 #include "IOSOscillatorNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class OscillatorNode;
@@ -47,4 +47,4 @@ class OscillatorNodeWrapper : public AudioNodeWrapper {
   void stop(double time);
   void setType(const std::string &type);
 };
-} // namespace audiocontext
+} // namespace audioapi

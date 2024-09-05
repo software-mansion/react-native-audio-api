@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "BiquadFilterNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 BiquadFilterNode *BiquadFilterNodeWrapper::getBiquadFilterNodeFromAudioNode() {
   return static_cast<BiquadFilterNode *>(node_);
@@ -48,5 +48,5 @@ void BiquadFilterNodeWrapper::setType(const std::string &filterType) {
   auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
   biquadFilterNode_->setFilterType(filterType);
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

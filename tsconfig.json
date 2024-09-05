@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-audio-context": ["./src/index"]
+      "react-native-audio-api": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

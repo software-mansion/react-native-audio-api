@@ -11,7 +11,7 @@ typedef struct objc_object OscillatorNode;
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
 
-namespace audiocontext {
+namespace audioapi {
 class IOSOscillatorNode : public IOSAudioNode {
  public:
   explicit IOSOscillatorNode(std::shared_ptr<IOSAudioContext> context);
@@ -26,4 +26,4 @@ class IOSOscillatorNode : public IOSAudioNode {
  protected:
   OscillatorNode *oscillatorNode_;
 };
-} // namespace audiocontext
+} // namespace audioapi

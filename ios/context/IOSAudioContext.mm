@@ -1,6 +1,6 @@
 #include <IOSAudioContext.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSAudioContext::IOSAudioContext()
 {
@@ -33,4 +33,4 @@ double IOSAudioContext::getSampleRate()
 {
   return [audioContext_ getSampleRate];
 }
-} // namespace audiocontext
+} // namespace audioapi

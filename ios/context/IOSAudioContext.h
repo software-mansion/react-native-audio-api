@@ -9,7 +9,7 @@ typedef struct objc_object AudioContext;
 #include <string>
 #include "IOSAudioContext.h"
 
-namespace audiocontext {
+namespace audioapi {
 class IOSAudioContext {
  public:
   explicit IOSAudioContext();
@@ -20,4 +20,4 @@ class IOSAudioContext {
   double getSampleRate();
   AudioContext *audioContext_;
 };
-} // namespace audiocontext
+} // namespace audioapi

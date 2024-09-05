@@ -1,6 +1,6 @@
 #include "BiquadFilterNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -46,4 +46,4 @@ void BiquadFilterNode::setFilterType(const std::string &filterType) {
       javaClassLocal()->getMethod<void(JString)>("setFilterType");
   method(javaPart_.get(), *make_jstring(filterType));
 }
-} // namespace audiocontext
+} // namespace audioapi

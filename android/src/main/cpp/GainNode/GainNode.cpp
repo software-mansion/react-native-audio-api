@@ -1,6 +1,6 @@
 #include "GainNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -11,4 +11,4 @@ AudioParam *GainNode::getGainParam() {
 
   return gain->cthis();
 }
-} // namespace audiocontext
+} // namespace audioapi

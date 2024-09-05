@@ -1,6 +1,6 @@
 #include <IOSAudioNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 IOSAudioNode::~IOSAudioNode()
 {
   [audioNode_ cleanup];
@@ -26,4 +26,4 @@ int IOSAudioNode::getNumberOfOutputs()
 {
   return [audioNode_ getNumberOfOutputs];
 }
-} // namespace audiocontext
+} // namespace audioapi

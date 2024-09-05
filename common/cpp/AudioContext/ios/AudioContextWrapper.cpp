@@ -1,7 +1,7 @@
 #ifndef ANDROID
 #include "AudioContextWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
   return std::make_shared<OscillatorNodeWrapper>(audiocontext_);
 }
@@ -53,5 +53,5 @@ int AudioContextWrapper::getSampleRate() const {
 void AudioContextWrapper::close() {
   audiocontext_->close();
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

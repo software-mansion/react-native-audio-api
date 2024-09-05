@@ -9,7 +9,7 @@
 #include "IOSAudioNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 class AudioNodeWrapper {
 #ifdef ANDROID
 
@@ -39,4 +39,4 @@ class AudioNodeWrapper {
   void connect(const std::shared_ptr<AudioNodeWrapper> &node) const;
   void disconnect(const std::shared_ptr<AudioNodeWrapper> &node) const;
 };
-} // namespace audiocontext
+} // namespace audioapi

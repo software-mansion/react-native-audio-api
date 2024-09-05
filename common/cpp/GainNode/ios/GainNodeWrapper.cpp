@@ -1,7 +1,7 @@
 #ifndef ANDROID
 #include "GainNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 GainNodeWrapper::GainNodeWrapper(std::shared_ptr<IOSAudioContext> context)
     : AudioNodeWrapper() {
   node_ = std::make_shared<IOSGainNode>(context);
@@ -16,5 +16,5 @@ std::shared_ptr<IOSGainNode> GainNodeWrapper::getGainNodeFromAudioNode() {
 std::shared_ptr<AudioParamWrapper> GainNodeWrapper::getGainParam() const {
   return gainParam_;
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

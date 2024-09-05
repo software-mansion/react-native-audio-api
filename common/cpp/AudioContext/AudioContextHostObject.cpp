@@ -1,6 +1,6 @@
 #include "AudioContextHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 AudioContextHostObject::AudioContextHostObject(
@@ -188,4 +188,4 @@ void AudioContextHostObject::set(
 
   throw std::runtime_error("Not yet implemented!");
 }
-} // namespace audiocontext
+} // namespace audioapi

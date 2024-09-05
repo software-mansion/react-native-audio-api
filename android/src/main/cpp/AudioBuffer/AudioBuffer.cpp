@@ -1,6 +1,6 @@
 #include "AudioBuffer.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioBuffer::AudioBuffer(jni::alias_ref<AudioBuffer::jhybridobject> &jThis)
     : javaPart_(make_global(jThis)) {}
@@ -60,4 +60,4 @@ void AudioBuffer::prepareForDeconstruction() {
   javaPart_.reset();
 }
 
-} // namespace audiocontext
+} // namespace audioapi

@@ -1,6 +1,6 @@
 #include <IOSOscillatorNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSOscillatorNode::IOSOscillatorNode(std::shared_ptr<IOSAudioContext> context)
 {
@@ -48,4 +48,4 @@ std::shared_ptr<IOSAudioParam> IOSOscillatorNode::getDetuneParam()
   param->audioParam = oscillatorNode_.detuneParam;
   return param;
 }
-} // namespace audiocontext
+} // namespace audioapi

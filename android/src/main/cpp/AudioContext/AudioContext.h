@@ -18,7 +18,7 @@
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -26,7 +26,7 @@ using namespace facebook::jni;
 class AudioContext : public jni::HybridClass<AudioContext> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/context/AudioContext;";
+      "Lcom/swmansion/audioapi/context/AudioContext;";
 
   static jni::local_ref<AudioContext::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis) {
@@ -62,4 +62,4 @@ class AudioContext : public jni::HybridClass<AudioContext> {
   explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
 };
 
-} // namespace audiocontext
+} // namespace audioapi

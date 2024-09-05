@@ -9,7 +9,7 @@
 #else
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class AudioBufferSourceNode;
@@ -40,4 +40,4 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<AudioBufferWrapper> getBuffer();
   void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
 };
-} // namespace audiocontext
+} // namespace audioapi

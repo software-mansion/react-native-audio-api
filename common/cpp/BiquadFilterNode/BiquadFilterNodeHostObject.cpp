@@ -1,6 +1,6 @@
 #include "BiquadFilterNodeHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 std::shared_ptr<BiquadFilterNodeWrapper>
@@ -78,4 +78,4 @@ void BiquadFilterNodeHostObject::set(
 
   throw std::runtime_error("Not yet implemented!");
 }
-} // namespace audiocontext
+} // namespace audioapi

@@ -5,7 +5,7 @@
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -13,7 +13,7 @@ using namespace facebook::jni;
 class AudioParam : public jni::HybridClass<AudioParam> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/parameters/AudioParam;";
+      "Lcom/swmansion/audioapi/parameters/AudioParam;";
 
   static jni::local_ref<AudioParam::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis) {
@@ -44,4 +44,4 @@ class AudioParam : public jni::HybridClass<AudioParam> {
   explicit AudioParam(jni::alias_ref<AudioParam::jhybridobject> &jThis);
 };
 
-} // namespace audiocontext
+} // namespace audioapi

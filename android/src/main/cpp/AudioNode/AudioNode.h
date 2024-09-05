@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -14,7 +14,7 @@ using namespace facebook::jni;
 class AudioNode : public jni::HybridClass<AudioNode> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/nodes/audionode/AudioNode;";
+      "Lcom/swmansion/audioapi/nodes/audionode/AudioNode;";
 
   static jni::local_ref<AudioNode::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis) {
@@ -44,4 +44,4 @@ class AudioNode : public jni::HybridClass<AudioNode> {
   explicit AudioNode(jni::alias_ref<AudioNode::jhybridobject> &jThis);
 };
 
-} // namespace audiocontext
+} // namespace audioapi

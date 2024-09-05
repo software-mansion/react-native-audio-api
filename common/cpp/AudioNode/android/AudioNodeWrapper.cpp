@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "AudioNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioNodeWrapper::AudioNodeWrapper(AudioNode *node) : node_(node) {
   numberOfInputs_ = node->getNumberOfInputs();
@@ -41,6 +41,6 @@ void AudioNodeWrapper::disconnect(
     const std::shared_ptr<AudioNodeWrapper> &node) const {
   node_->disconnect(node->node_);
 }
-} // namespace audiocontext
+} // namespace audioapi
 
 #endif

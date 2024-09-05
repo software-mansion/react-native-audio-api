@@ -1,6 +1,6 @@
 #include "StereoPannerNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -11,4 +11,4 @@ AudioParam *StereoPannerNode::getPanParam() {
 
   return pan->cthis();
 }
-} // namespace audiocontext
+} // namespace audioapi

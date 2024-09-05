@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "StereoPannerNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 StereoPannerNodeWrapper::StereoPannerNodeWrapper(StereoPannerNode *pannerNode)
     : AudioNodeWrapper(pannerNode) {
@@ -13,5 +13,5 @@ std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam()
     const {
   return panParam_;
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

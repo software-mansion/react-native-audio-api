@@ -1,7 +1,7 @@
 
 #include <IOSStereoPannerNode.h>
 
-namespace audiocontext {
+namespace audioapi {
 
 IOSStereoPannerNode::IOSStereoPannerNode(std::shared_ptr<IOSAudioContext> context)
 {
@@ -20,4 +20,4 @@ std::shared_ptr<IOSAudioParam> IOSStereoPannerNode::getPanParam()
   param->audioParam = panner_.panParam;
   return param;
 }
-} // namespace audiocontext
+} // namespace audioapi

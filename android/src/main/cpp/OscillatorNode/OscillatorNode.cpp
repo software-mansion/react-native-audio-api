@@ -1,6 +1,6 @@
 #include "OscillatorNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -49,4 +49,4 @@ void OscillatorNode::prepareForDeconstruction() {
   method(javaPart_.get());
   AudioNode::resetJavaPart();
 }
-} // namespace audiocontext
+} // namespace audioapi

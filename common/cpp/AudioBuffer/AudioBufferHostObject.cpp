@@ -1,7 +1,7 @@
 #include "AudioBufferHostObject.h"
 #include <android/log.h>
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 std::vector<jsi::PropNameID> AudioBufferHostObject::getPropertyNames(
@@ -98,4 +98,4 @@ void AudioBufferHostObject::set(
   throw std::runtime_error("Not yet implemented!");
 }
 
-} // namespace audiocontext
+} // namespace audioapi

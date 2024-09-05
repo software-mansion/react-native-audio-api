@@ -1,6 +1,6 @@
 #include "AudioBufferSourceNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook::jni;
 
@@ -39,4 +39,4 @@ void AudioBufferSourceNode::setBuffer(const AudioBuffer *buffer) {
       javaClassLocal()->getMethod<void(AudioBuffer::javaobject)>("setBuffer");
   method(javaPart_.get(), buffer->javaPart_.get());
 }
-} // namespace audiocontext
+} // namespace audioapi

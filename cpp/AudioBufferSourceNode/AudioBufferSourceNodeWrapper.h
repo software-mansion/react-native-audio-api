@@ -1,37 +1,39 @@
 #pragma once
 
-#include "AudioNodeWrapper.h"
 #include "AudioBufferWrapper.h"
+#include "AudioNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioBufferSourceNode.h"
 #else
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
-    class AudioBufferSourceNode;
+class AudioBufferSourceNode;
 #endif
 
-    class AudioBufferSourceNodeWrapper: public AudioNodeWrapper {
+class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
-    private:
-        AudioBufferSourceNode* getAudioBufferSourceNodeFromAudioNode();
-    public:
-        explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode) : AudioNodeWrapper(audioBufferNode) {}
+ private:
+  AudioBufferSourceNode *getAudioBufferSourceNodeFromAudioNode();
+
+ public:
+  explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode)
+      : AudioNodeWrapper(audioBufferNode) {}
 #else
-        public:
-        explicit AudioBufferSourceNodeWrapper() : AudioNodeWrapper() {
-            node_ = std::make_shared<AudioNode>(context);
-        }
+ public:
+  explicit AudioBufferSourceNodeWrapper() : AudioNodeWrapper() {
+    node_ = std::make_shared<AudioNode>(context);
+  }
 #endif
-    public:
-        void start(double time);
-        void stop(double time);
-        void setLoop(bool loop);
-        bool getLoop();
-        std::shared_ptr<AudioBufferWrapper> getBuffer();
-        void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
-    };
-} // namespace audiocontext
+ public:
+  void start(double time);
+  void stop(double time);
+  void setLoop(bool loop);
+  bool getLoop();
+  std::shared_ptr<AudioBufferWrapper> getBuffer();
+  void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
+};
+} // namespace audioapi

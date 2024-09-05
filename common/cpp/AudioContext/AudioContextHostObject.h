@@ -14,7 +14,7 @@
 #include "OscillatorNodeHostObject.h"
 #include "StereoPannerNodeHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class AudioContextWrapper;
@@ -47,4 +47,4 @@ class AudioContextHostObject : public jsi::HostObject {
       const jsi::Value &value) override;
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 };
-} // namespace audiocontext
+} // namespace audioapi

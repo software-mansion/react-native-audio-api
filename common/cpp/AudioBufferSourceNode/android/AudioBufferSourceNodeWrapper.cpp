@@ -1,7 +1,7 @@
 #ifdef ANDROID
 #include "AudioBufferSourceNodeWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 AudioBufferSourceNode *
 AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
@@ -39,5 +39,5 @@ void AudioBufferSourceNodeWrapper::setBuffer(
   auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
   audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

@@ -2,7 +2,7 @@
 
 #include "AudioNode.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -11,7 +11,7 @@ class AudioDestinationNode
     : public jni::HybridClass<AudioDestinationNode, AudioNode> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/nodes/AudioDestinationNode;";
+      "Lcom/swmansion/audioapi/nodes/AudioDestinationNode;";
 };
 
-} // namespace audiocontext
+} // namespace audioapi

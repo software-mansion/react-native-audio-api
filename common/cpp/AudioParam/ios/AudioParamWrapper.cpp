@@ -1,7 +1,7 @@
 #ifndef ANDROID
 #include "AudioParamWrapper.h"
 
-namespace audiocontext {
+namespace audioapi {
 double AudioParamWrapper::getValue() {
   return param_->getValue();
 }
@@ -35,5 +35,5 @@ void AudioParamWrapper::exponentialRampToValueAtTime(
     double endTime) {
   return param_->exponentialRampToValueAtTime(value, endTime);
 }
-} // namespace audiocontext
+} // namespace audioapi
 #endif

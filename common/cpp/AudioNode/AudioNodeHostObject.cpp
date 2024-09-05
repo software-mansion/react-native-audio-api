@@ -1,7 +1,7 @@
 #include "AudioNodeHostObject.h"
 #include "AudioContextHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 std::vector<jsi::PropNameID> AudioNodeHostObject::getPropertyNames(
@@ -103,4 +103,4 @@ void AudioNodeHostObject::set(
   throw std::runtime_error("Not yet implemented!");
 }
 
-} // namespace audiocontext
+} // namespace audioapi

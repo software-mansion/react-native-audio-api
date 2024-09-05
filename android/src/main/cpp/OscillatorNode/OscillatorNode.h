@@ -4,7 +4,7 @@
 #include "AudioNode.h"
 #include "AudioParam.h"
 
-namespace audiocontext {
+namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
@@ -12,7 +12,7 @@ using namespace facebook::jni;
 class OscillatorNode : public jni::HybridClass<OscillatorNode, AudioNode> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/audiocontext/nodes/oscillator/OscillatorNode;";
+      "Lcom/swmansion/audioapi/nodes/oscillator/OscillatorNode;";
 
   void start(double time);
   void stop(double time);
@@ -22,4 +22,4 @@ class OscillatorNode : public jni::HybridClass<OscillatorNode, AudioNode> {
   void setWaveType(const std::string &waveType);
   void prepareForDeconstruction();
 };
-} // namespace audiocontext
+} // namespace audioapi

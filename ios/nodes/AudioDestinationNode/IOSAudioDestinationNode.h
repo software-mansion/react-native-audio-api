@@ -11,7 +11,7 @@ typedef struct objc_object AudioDestinationNode;
 
 #import <memory>
 
-namespace audiocontext {
+namespace audioapi {
 class IOSAudioDestinationNode : public IOSAudioNode {
  public:
   explicit IOSAudioDestinationNode(std::shared_ptr<IOSAudioContext> context);
@@ -20,4 +20,4 @@ class IOSAudioDestinationNode : public IOSAudioNode {
  protected:
   AudioDestinationNode *destination_;
 };
-} // namespace audiocontext
+} // namespace audioapi

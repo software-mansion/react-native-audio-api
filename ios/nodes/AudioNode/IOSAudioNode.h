@@ -8,7 +8,7 @@ typedef struct objc_object AudioNode;
 
 #import <memory>
 
-namespace audiocontext {
+namespace audioapi {
 class IOSAudioNode {
  public:
   ~IOSAudioNode();
@@ -18,4 +18,4 @@ class IOSAudioNode {
   int getNumberOfInputs();
   int getNumberOfOutputs();
 };
-} // namespace audiocontext
+} // namespace audioapi

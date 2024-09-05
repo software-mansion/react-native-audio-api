@@ -11,7 +11,7 @@
 #include "IOSBiquadFilterNode.h"
 #endif
 
-namespace audiocontext {
+namespace audioapi {
 
 #ifdef ANDROID
 class BiquadFilterNode;
@@ -48,4 +48,4 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
   std::string getType();
   void setType(const std::string &filterType);
 };
-} // namespace audiocontext
+} // namespace audioapi

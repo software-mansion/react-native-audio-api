@@ -6,7 +6,7 @@
 #include "AudioDestinationNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 
-namespace audiocontext {
+namespace audioapi {
 using namespace facebook;
 
 class AudioDestinationNodeWrapper;
@@ -29,4 +29,4 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
     return std::make_shared<AudioDestinationNodeHostObject>(wrapper);
   }
 };
-} // namespace audiocontext
+} // namespace audioapi
