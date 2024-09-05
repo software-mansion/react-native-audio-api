@@ -1,8 +1,8 @@
 package com.swmansion.audioapi.nodes.audionode
 
+import com.facebook.jni.HybridData
 import com.swmansion.audioapi.context.BaseAudioContext
 import com.swmansion.audioapi.parameters.PlaybackParameters
-import com.facebook.jni.HybridData
 
 // channelCount - number of channels used by the node
 

@@ -1,9 +1,9 @@
 package com.swmansion.audioapi.nativemodules
 
-import com.swmansion.audioapi.context.AudioContext
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.swmansion.audioapi.context.AudioContext
 
 class AudioAPIModule(
   private val reactContext: ReactApplicationContext,
