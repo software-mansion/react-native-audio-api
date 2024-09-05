@@ -9,7 +9,7 @@
 
 @implementation AudioAPIModule
 
-RCT_EXPORT_MODULE(AudioContextModule)
+RCT_EXPORT_MODULE(AudioAPIModule)
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
