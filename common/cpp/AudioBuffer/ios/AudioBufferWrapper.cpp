@@ -25,7 +25,7 @@ int16_t **AudioBufferWrapper::getChannelData(int channel) const {
   return nullptr;
 }
 
-void AudioBufferWrapper::setChannelData(int channel, int16_t **data) {
+void AudioBufferWrapper::setChannelData(int channel, int16_t **data) const {
   return;
 }
 

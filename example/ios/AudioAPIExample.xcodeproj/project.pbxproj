@@ -475,6 +475,7 @@
 				DEVELOPMENT_TEAM = WC59N2X3FV;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = AudioAPIExample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Audio API Example";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -502,6 +503,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WC59N2X3FV;
 				INFOPLIST_FILE = AudioAPIExample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Audio API Example";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -4,11 +4,11 @@
 // TODO implement AudioBufferSourceNodeWrapper for iOS
 
 namespace audioapi {
-AudioBufferSourceNode::start(double time) {
+void AudioBufferSourceNodeWrapper::start(double time) {
   return;
 }
 
-AudioBufferSourceNode::stop(double time) {
+void AudioBufferSourceNodeWrapper::stop(double time) {
   return;
 }
 

@@ -30,18 +30,18 @@
   float *bufferR = (float *)bufferList->mBuffers[1].mData;
 
   for (int frame = 0; frame < frameCount; frame += 1) {
-    double pan = [_panParam getValueAtTime:[self.context getCurrentTime]];
-    double x = ((pan <= 0) ? pan + 1 : pan) * M_PI / 2;
+    float pan = [_panParam getValueAtTime:[self.context getCurrentTime]];
+    float x = ((pan <= 0) ? pan + 1 : pan) * M_PI / 2;
 
-    double gainL = cos(x);
-    double gainR = sin(x);
+    float gainL = cos(x);
+    float gainR = sin(x);
 
     if (pan <= 0) {
       bufferL[frame] += bufferR[frame] * gainL;
       bufferR[frame] *= gainR;
     } else {
       bufferL[frame] *= gainL;
-      bufferR[frame] += bufferL * gainR;
+      bufferR[frame] += bufferL[frame] * gainR;
     }
 
     time += deltaTime;
