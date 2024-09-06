@@ -11,17 +11,17 @@ enum class WaveType {
   TRIANGLE,
   ;
 
-  private fun sineWave(wavePhase: Double): Short = (sin(wavePhase) * Short.MAX_VALUE).toInt().toShort()
+  private fun sineWave(wavePhase: Double): Float = sin(wavePhase).toFloat()
 
-  private fun squareWave(wavePhase: Double): Short = ((if (sin(wavePhase) >= 0) 1 else -1) * Short.MAX_VALUE).toShort()
+  private fun squareWave(wavePhase: Double): Float = (if (sin(wavePhase) >= 0) 1.0 else -1.0).toFloat()
 
-  private fun sawtoothWave(wavePhase: Double): Short =
-    ((2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))) * Short.MAX_VALUE).toInt().toShort()
+  private fun sawtoothWave(wavePhase: Double): Float =
+    (2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))).toFloat()
 
-  private fun triangleWave(wavePhase: Double): Short =
-    ((2 * abs(2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))) - 1) * Short.MAX_VALUE).toInt().toShort()
+  private fun triangleWave(wavePhase: Double): Float =
+    (2 * abs(2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))) - 1).toFloat()
 
-  private fun getWaveValue(wavePhase: Double): Short =
+  private fun getWaveValue(wavePhase: Double): Float =
     when (this) {
       SINE -> sineWave(wavePhase)
       SQUARE -> squareWave(wavePhase)
@@ -50,6 +50,6 @@ enum class WaveType {
     fun getWaveBufferElement(
       wavePhase: Double,
       waveType: WaveType,
-    ): Short = waveType.getWaveValue(wavePhase)
+    ): Float = waveType.getWaveValue(wavePhase)
   }
 }

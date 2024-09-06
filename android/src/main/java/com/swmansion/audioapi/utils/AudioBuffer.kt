@@ -15,7 +15,7 @@ class AudioBuffer(
     get() = field
   val numberOfChannels: Int = numberOfChannels
     get() = field
-  private val channels: Array<ShortArray> = Array(numberOfChannels) { ShortArray(length) }
+  private val channels: Array<FloatArray> = Array(numberOfChannels) { FloatArray(length) }
 
   private val mHybridData: HybridData?
 
@@ -31,7 +31,7 @@ class AudioBuffer(
 
   external fun initHybrid(): HybridData?
 
-  fun getChannelData(channel: Int): ShortArray {
+  fun getChannelData(channel: Int): FloatArray {
     if (channel < 0 || channel >= numberOfChannels) {
       throw IllegalArgumentException("Channel index out of bounds")
     }
@@ -41,7 +41,7 @@ class AudioBuffer(
 
   private fun setChannelData(
     channel: Int,
-    data: ShortArray,
+    data: FloatArray,
   ) {
     if (channel < 0 || channel >= numberOfChannels) {
       throw IllegalArgumentException("Channel index out of bounds")
@@ -82,10 +82,10 @@ class AudioBuffer(
       2 -> {
         if (outputNumberOfChannels == 1) {
           val outputBuffer = AudioBuffer(sampleRate, length, 1)
-          val outputData = ShortArray(length)
+          val outputData = FloatArray(length)
 
           for (i in 0 until length) {
-            outputData[i] = ((channels[0][i] + channels[1][i]) / 2).toShort()
+            outputData[i] = (channels[0][i] + channels[1][i]) / 2
           }
 
           return outputBuffer

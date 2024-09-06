@@ -17,7 +17,8 @@ class AudioBufferSourceNode(
 
   init {
     buffer = AudioBuffer(context.sampleRate, Constants.BUFFER_SIZE, 2)
-    playbackParameters = PlaybackParameters(context.getAudioTrack(Constants.BUFFER_SIZE), buffer)
+    val audioTrack = context.getAudioTrack(Constants.BUFFER_SIZE * 2)
+    playbackParameters = PlaybackParameters(audioTrack, buffer)
   }
 
   fun setBuffer(audioBuffer: AudioBuffer) {

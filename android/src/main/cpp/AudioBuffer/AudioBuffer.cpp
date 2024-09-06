@@ -28,13 +28,13 @@ int AudioBuffer::getNumberOfChannels() {
   return method(javaPart_);
 }
 
-int16_t **AudioBuffer::getChannelData(int channel) {
+float **AudioBuffer::getChannelData(int channel) {
   static const auto method =
-      javaClassStatic()->getMethod<JArrayShort(jint)>("getChannelData");
+      javaClassStatic()->getMethod<JArrayFloat(jint)>("getChannelData");
   auto jArray = method(javaPart_, channel);
   auto length = jArray->size();
 
-  auto channelData = new int16_t *[length];
+  auto channelData = new float *[length];
   auto pin = jArray->pin();
   for (int i = 0; i < length; i++) {
     channelData[i] = &pin[i];
@@ -43,14 +43,14 @@ int16_t **AudioBuffer::getChannelData(int channel) {
   return channelData;
 }
 
-void AudioBuffer::setChannelData(int channel, int16_t **data) {
+void AudioBuffer::setChannelData(int channel, float **data) {
   static const auto method =
-      javaClassStatic()->getMethod<void(jint, jshortArray)>("setChannelData");
-  std::vector<jshort> buffer(getLength());
+      javaClassStatic()->getMethod<void(jint, jfloatArray)>("setChannelData");
+  std::vector<jfloat> buffer(getLength());
   for (int i = 0; i < getLength(); i++) {
     buffer[i] = *data[i];
   }
-  auto jArray = JArrayShort::newArray(getLength());
+  auto jArray = JArrayFloat ::newArray(getLength());
   jArray->setRegion(0, getLength(), buffer.data());
 
   method(javaPart_, channel, jArray.get());

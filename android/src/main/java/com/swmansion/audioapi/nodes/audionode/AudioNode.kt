@@ -13,7 +13,7 @@ abstract class AudioNode(
     get() = field
   open val numberOfOutputs: Int = 0
     get() = field
-  open var channelCount: Int = 1
+  open var channelCount: Int = 2
     get() = field
   open val channelCountMode: ChannelCountMode = ChannelCountMode.MAX
   open val channelInterpretation: ChannelInterpretation = ChannelInterpretation.SPEAKERS

@@ -13,7 +13,6 @@ import kotlin.math.pow
 class OscillatorNode(
   context: BaseAudioContext,
 ) : AudioScheduledSourceNode(context) {
-  override var channelCount = 2
   override var playbackParameters: PlaybackParameters?
 
   private val frequency: AudioParam = AudioParam(context, 440.0, Constants.NYQUIST_FREQUENCY, -Constants.NYQUIST_FREQUENCY)
