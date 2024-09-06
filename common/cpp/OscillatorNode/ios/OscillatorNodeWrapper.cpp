@@ -2,14 +2,12 @@
 #include "OscillatorNodeWrapper.h"
 
 namespace audioapi {
-OscillatorNodeWrapper::OscillatorNodeWrapper(
-    std::shared_ptr<IOSAudioContext> context)
-    : AudioNodeWrapper() {
-  node_ = std::make_shared<IOSOscillatorNode>(context);
+OscillatorNodeWrapper::OscillatorNodeWrapper(std::shared_ptr<IOSOscillatorNode> oscillatorNode)
+    : AudioNodeWrapper(oscillatorNode) {
   frequencyParam_ = std::make_shared<AudioParamWrapper>(
-      getOscillatorNodeFromAudioNode()->getFrequencyParam());
+      oscillatorNode->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamWrapper>(
-      getOscillatorNodeFromAudioNode()->getDetuneParam());
+      oscillatorNode->getDetuneParam());
 }
 
 std::shared_ptr<IOSOscillatorNode>

@@ -5,6 +5,7 @@
 #ifdef ANDROID
 #include "AudioBuffer.h"
 #else
+#include "IOSAudioBuffer.h"
 #endif
 
 namespace audioapi {
@@ -20,7 +21,7 @@ class AudioBufferWrapper {
 #else
 
  public:
-  AudioBufferWrapper() {}
+    AudioBufferWrapper(std::shared_ptr<IOSAudioBuffer> buffer);
 #endif
 
  private:

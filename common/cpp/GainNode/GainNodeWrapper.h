@@ -7,7 +7,6 @@
 #ifdef ANDROID
 #include "GainNode.h"
 #else
-#include "IOSAudioContext.h"
 #include "IOSGainNode.h"
 #endif
 
@@ -22,11 +21,8 @@ class GainNodeWrapper : public AudioNodeWrapper {
  public:
   explicit GainNodeWrapper(GainNode *gainNode);
 #else
- private:
-  std::shared_ptr<IOSGainNode> getGainNodeFromAudioNode();
-
  public:
-  explicit GainNodeWrapper(std::shared_ptr<IOSAudioContext> context);
+  explicit GainNodeWrapper(std::shared_ptr<IOSGainNode> gainNode);
 #endif
  private:
   std::shared_ptr<AudioParamWrapper> gainParam_;

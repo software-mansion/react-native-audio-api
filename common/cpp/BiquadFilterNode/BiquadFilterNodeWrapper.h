@@ -31,7 +31,7 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<IOSBiquadFilterNode> getBiquadFilterNodeFromAudioNode();
 
  public:
-  explicit BiquadFilterNodeWrapper(std::shared_ptr<IOSAudioContext> context);
+  explicit BiquadFilterNodeWrapper(std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode);
 #endif
 
  private:

@@ -23,7 +23,7 @@ class AudioNodeWrapper {
 
  public:
   std::shared_ptr<IOSAudioNode> node_;
-  AudioNodeWrapper() {}
+    explicit AudioNodeWrapper(std::shared_ptr<IOSAudioNode> node);
 #endif
 
  private:
