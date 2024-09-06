@@ -15,8 +15,7 @@ enum class WaveType {
 
   private fun squareWave(wavePhase: Double): Float = (if (sin(wavePhase) >= 0) 1.0 else -1.0).toFloat()
 
-  private fun sawtoothWave(wavePhase: Double): Float =
-    (2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))).toFloat()
+  private fun sawtoothWave(wavePhase: Double): Float = (2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))).toFloat()
 
   private fun triangleWave(wavePhase: Double): Float =
     (2 * abs(2 * (wavePhase / (2 * Math.PI) - floor(wavePhase / (2 * Math.PI) + 0.5))) - 1).toFloat()
