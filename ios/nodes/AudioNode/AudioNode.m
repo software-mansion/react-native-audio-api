@@ -8,7 +8,10 @@
   if (self = [super init]) {
     _connectedNodes = [NSMutableArray array];
     _context = context;
-  }
+    _channelCount = 2;
+    _channelCountMode = ChannelCountModeMax;
+    _channelInterpretation = ChannelInterpretationSpeakers;
+}
 
   return self;
 }

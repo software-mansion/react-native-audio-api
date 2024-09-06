@@ -8,6 +8,7 @@
   if (self = [super initWithContext:context]) {
     self.numberOfInputs = INT_MAX;
     self.numberOfOutputs = 0;
+      self.channelCountMode = ChannelCountModeExplicit;
   }
 
   return self;
