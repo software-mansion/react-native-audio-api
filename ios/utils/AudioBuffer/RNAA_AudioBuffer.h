@@ -8,9 +8,7 @@
 @property (nonatomic, readonly) double duration;
 @property (nonatomic) float **channels;
 
-- (instancetype)initWithSampleRate:(int)sampleRate
-                         length:(int)length
-               numberOfChannels:(int)numberOfChannels;
+- (instancetype)initWithSampleRate:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels;
 
 - (float **)getChannelDataForChannel:(int)channel;
 - (void)setChannelData:(int)channel data:(float **)data length:(int)length;

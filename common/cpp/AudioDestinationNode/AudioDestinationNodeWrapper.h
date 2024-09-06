@@ -23,8 +23,9 @@ class AudioDestinationNodeWrapper : public AudioNodeWrapper {
       : AudioNodeWrapper(destinationNode) {}
 #else
  public:
-  explicit AudioDestinationNodeWrapper(std::shared_ptr<IOSAudioDestinationNode> destination)
-    : AudioNodeWrapper(destination) {}
+  explicit AudioDestinationNodeWrapper(
+      std::shared_ptr<IOSAudioDestinationNode> destination)
+      : AudioNodeWrapper(destination) {}
 #endif
 };
 } // namespace audioapi

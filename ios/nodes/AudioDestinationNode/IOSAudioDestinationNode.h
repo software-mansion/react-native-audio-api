@@ -12,8 +12,8 @@ typedef struct objc_object AudioDestinationNode;
 
 namespace audioapi {
 class IOSAudioDestinationNode : public IOSAudioNode {
-    class IOSAudioContext;
-    
+  class IOSAudioContext;
+
  public:
   explicit IOSAudioDestinationNode(AudioContext *context);
   ~IOSAudioDestinationNode();

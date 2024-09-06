@@ -11,7 +11,7 @@
     _panParam = [[AudioParam alloc] initWithContext:context value:0 minValue:-1 maxValue:1];
     self.numberOfInputs = 1;
     self.numberOfOutputs = 1;
-      self.channelCountMode = ChannelCountModeClampedMax;
+    self.channelCountMode = ChannelCountModeClampedMax;
   }
 
   return self;

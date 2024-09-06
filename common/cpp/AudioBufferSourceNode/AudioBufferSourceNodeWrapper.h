@@ -26,12 +26,15 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
   explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode)
       : AudioNodeWrapper(audioBufferNode) {}
 #else
-    
-private:
- std::shared_ptr<IOSAudioBufferSourceNode> getAudioBufferSourceNodeFromAudioNode();
+
+ private:
+  std::shared_ptr<IOSAudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 
  public:
-  AudioBufferSourceNodeWrapper(std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode) : AudioNodeWrapper(bufferSourceNode) {}
+  AudioBufferSourceNodeWrapper(
+      std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode)
+      : AudioNodeWrapper(bufferSourceNode) {}
 #endif
 
  public:

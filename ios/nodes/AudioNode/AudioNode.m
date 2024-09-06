@@ -11,7 +11,7 @@
     _channelCount = 2;
     _channelCountMode = ChannelCountModeMax;
     _channelInterpretation = ChannelInterpretationSpeakers;
-}
+  }
 
   return self;
 }

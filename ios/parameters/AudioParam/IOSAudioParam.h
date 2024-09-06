@@ -9,9 +9,9 @@ typedef struct objc_object AudioParam;
 namespace audioapi {
 class IOSAudioParam {
  public:
-    AudioParam *audioParam_;
-    
-    IOSAudioParam(AudioParam *audioParam);
+  AudioParam *audioParam_;
+
+  IOSAudioParam(AudioParam *audioParam);
   ~IOSAudioParam();
   void setValue(float value);
   float getValue();
