@@ -16,8 +16,7 @@ IOSStereoPannerNode::~IOSStereoPannerNode()
 
 std::shared_ptr<IOSAudioParam> IOSStereoPannerNode::getPanParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = panner_.panParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(panner_.panParam);
   return param;
 }
 } // namespace audioapi

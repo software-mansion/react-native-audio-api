@@ -9,13 +9,15 @@ typedef struct objc_object AudioParam;
 namespace audioapi {
 class IOSAudioParam {
  public:
+    AudioParam *audioParam_;
+    
+    IOSAudioParam(AudioParam *audioParam);
   ~IOSAudioParam();
   void setValue(float value);
   float getValue();
   float getMinValue();
   float getMaxValue();
   float getDefaultValue();
-  AudioParam *audioParam;
   void setValueAtTime(float value, double time);
   void linearRampToValueAtTime(float value, double time);
   void exponentialRampToValueAtTime(float value, double time);

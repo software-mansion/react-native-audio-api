@@ -4,7 +4,6 @@
 #import <Foundation/Foundation.h>
 #import <mach/mach_time.h>
 #import "ContextState.h"
-#import "OscillatorNode.h"
 
 @class OscillatorNode;
 
