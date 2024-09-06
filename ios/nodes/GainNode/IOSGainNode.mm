@@ -2,9 +2,9 @@
 
 namespace audioapi {
 
-IOSGainNode::IOSGainNode(std::shared_ptr<IOSAudioContext> context)
+IOSGainNode::IOSGainNode(AudioContext *context)
 {
-  audioNode_ = gainNode_ = [[GainNode alloc] initWithContext:context->audioContext_];
+  audioNode_ = gainNode_ = [[GainNode alloc] initWithContext:context];
 }
 
 IOSGainNode::~IOSGainNode()

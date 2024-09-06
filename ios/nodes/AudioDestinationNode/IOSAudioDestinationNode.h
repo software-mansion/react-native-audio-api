@@ -6,15 +6,16 @@
 typedef struct objc_object AudioDestinationNode;
 #endif // __OBJC__
 
-#include "IOSAudioContext.h"
 #include "IOSAudioNode.h"
 
 #import <memory>
 
 namespace audioapi {
 class IOSAudioDestinationNode : public IOSAudioNode {
+    class IOSAudioContext;
+    
  public:
-  explicit IOSAudioDestinationNode(std::shared_ptr<IOSAudioContext> context);
+  explicit IOSAudioDestinationNode(AudioContext *context);
   ~IOSAudioDestinationNode();
 
  protected:

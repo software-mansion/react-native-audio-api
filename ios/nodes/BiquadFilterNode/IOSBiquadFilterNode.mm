@@ -2,9 +2,9 @@
 
 namespace audioapi {
 
-IOSBiquadFilterNode::IOSBiquadFilterNode(std::shared_ptr<IOSAudioContext> context)
+IOSBiquadFilterNode::IOSBiquadFilterNode(AudioContext *context)
 {
-  audioNode_ = biquadFilterNode_ = [[BiquadFilterNode alloc] initWithContext:context->audioContext_];
+  audioNode_ = biquadFilterNode_ = [[BiquadFilterNode alloc] initWithContext:context];
 }
 
 IOSBiquadFilterNode::~IOSBiquadFilterNode()

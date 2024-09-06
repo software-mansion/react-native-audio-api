@@ -7,14 +7,13 @@ typedef struct objc_object OscillatorNode;
 #endif // __OBJC__
 
 #include <string>
-#include "IOSAudioContext.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
 
 namespace audioapi {
 class IOSOscillatorNode : public IOSAudioNode {
  public:
-  explicit IOSOscillatorNode(std::shared_ptr<IOSAudioContext> context);
+  explicit IOSOscillatorNode(AudioContext *context);
   ~IOSOscillatorNode();
   void start(double time) const;
   void stop(double time) const;
