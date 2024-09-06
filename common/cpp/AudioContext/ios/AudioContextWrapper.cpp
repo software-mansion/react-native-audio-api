@@ -2,40 +2,51 @@
 #include "AudioContextWrapper.h"
 
 namespace audioapi {
+AudioContextWrapper::AudioContextWrapper() : audiocontext_(std::make_shared<IOSAudioContext>()) {
+    auto destinationNode = audiocontext_->getDestination();
+    destinationNode_ = std::make_shared<AudioDestinationNodeWrapper>(destinationNode);
+    sampleRate_ = audiocontext_->getSampleRate();
+}
+
 std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
   return std::make_shared<OscillatorNodeWrapper>(audiocontext_);
 }
 
 std::shared_ptr<AudioDestinationNodeWrapper>
 AudioContextWrapper::getDestination() const {
-  return std::make_shared<AudioDestinationNodeWrapper>(audiocontext_);
+    return destinationNode_;
 }
 
 std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() {
-  return std::make_shared<GainNodeWrapper>(audiocontext_);
+    auto gainNode = audiocontext_->createGain();
+  return std::make_shared<GainNodeWrapper>(gainNode);
 }
 
 std::shared_ptr<StereoPannerNodeWrapper>
 AudioContextWrapper::createStereoPanner() {
-  return std::make_shared<StereoPannerNodeWrapper>(audiocontext_);
+    auto stereoPannerNode = audiocontext_->createStereoPanner();
+  return std::make_shared<StereoPannerNodeWrapper>(stereoPannerNode);
 }
 
 std::shared_ptr<BiquadFilterNodeWrapper>
 AudioContextWrapper::createBiquadFilter() {
-  return std::make_shared<BiquadFilterNodeWrapper>(audiocontext_);
+    auto biquadFilterNode = audiocontext_->createBiquadFilter();
+  return std::make_shared<BiquadFilterNodeWrapper>(biquadFilterNode);
 }
 
 std::shared_ptr<AudioBufferSourceNodeWrapper>
 AudioContextWrapper::createBufferSource() {
-  return std::make_shared<AudioBufferSourceNodeWrapper>();
+    auto bufferSourceNode = audiocontext_->createBufferSource();
+  return std::make_shared<AudioBufferSourceNodeWrapper>(bufferSourceNode);
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioContextWrapper::createBuffer(
     int sampleRate,
     int length,
     int numberOfChannels) {
+    auto audioBuffer = audiocontext_->createBuffer(sampleRate,length,numberOfChannels);
   return std::make_shared<AudioBufferWrapper>(
-      sampleRate, length, numberOfChannels);
+      audioBuffer);
 }
 
 double AudioContextWrapper::getCurrentTime() {
@@ -47,7 +58,7 @@ std::string AudioContextWrapper::getState() {
 }
 
 int AudioContextWrapper::getSampleRate() const {
-  return audiocontext_->getSampleRate();
+    return sampleRate_;
 }
 
 void AudioContextWrapper::close() {

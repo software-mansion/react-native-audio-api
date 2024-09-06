@@ -40,7 +40,7 @@ class AudioContextWrapper {
   std::shared_ptr<IOSAudioContext> audiocontext_;
 
  public:
-  AudioContextWrapper() : audiocontext_(std::make_shared<IOSAudioContext>()) {}
+    AudioContextWrapper();
 #endif
 
  private:
