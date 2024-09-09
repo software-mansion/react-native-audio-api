@@ -79,7 +79,7 @@ jsi::Value AudioBufferHostObject::get(
                 new float(array.getValueAtIndex(rt, i).getNumber());
           }
 
-          wrapper_->setChannelData(channel, channelData);
+            wrapper_->setChannelData(channel, channelData, wrapper_->getLength());
 
           return jsi::Value::undefined();
         });

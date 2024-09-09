@@ -59,6 +59,10 @@
   return [[AudioBufferSourceNode alloc] initWithContext:self];
 }
 
+- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels {
+    return [[RNAA_AudioBuffer alloc] initWithSampleRate:sampleRate length:length numberOfChannels:numberOfChannels];
+}
+
 - (double)getCurrentTime
 {
   uint64_t currentTime = mach_absolute_time();

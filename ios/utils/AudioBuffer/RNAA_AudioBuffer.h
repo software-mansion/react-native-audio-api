@@ -9,7 +9,7 @@
 @property (nonatomic, assign) int length;
 @property (nonatomic, assign) int numberOfChannels;
 @property (nonatomic, assign) double duration;
-@property (nonatomic, assign) float **channels;
+@property (nonatomic, strong) NSMutableArray<NSMutableArray<NSNumber *> *> *channels;
 
 - (instancetype)initWithSampleRate:(int)sampleRate
                             length:(int)length
@@ -22,7 +22,5 @@
 - (RNAA_AudioBuffer *)copyBuffer;
 
 - (RNAA_AudioBuffer *)mixWithOutputNumberOfChannels:(int)outputNumberOfChannels;
-
-- (void)cleanup;
 
 @end

@@ -5,6 +5,7 @@
 #ifdef ANDROID
 #include "AudioBuffer.h"
 #else
+#include "IOSAudioBuffer.h"
 #endif
 
 namespace audioapi {
@@ -20,7 +21,9 @@ class AudioBufferWrapper {
 #else
 
  public:
-  AudioBufferWrapper() {}
+    std::shared_ptr<IOSAudioBuffer> audioBuffer_;
+    
+    AudioBufferWrapper(std::shared_ptr<IOSAudioBuffer> audioBuffer);
 #endif
 
  private:
@@ -35,6 +38,6 @@ class AudioBufferWrapper {
   double getDuration() const;
   int getNumberOfChannels() const;
   float **getChannelData(int channel) const;
-  void setChannelData(int channel, float **data) const;
+  void setChannelData(int channel, float **data, int length) const;
 };
 } // namespace audioapi

@@ -6,6 +6,7 @@
 @interface Constants : NSObject
 
 + (int)sampleRate;
++ (int)bufferSize;
 + (double)mostPositiveSingleFloat;
 + (double)nyquistFrequency;
 + (double)maxDetune;

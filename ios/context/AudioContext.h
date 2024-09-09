@@ -11,12 +11,14 @@
 #import "GainNode.h"
 #import "OscillatorNode.h"
 #import "StereoPannerNode.h"
+#import "RNAA_AudioBuffer.h"
 
 @class OscillatorNode;
 @class GainNode;
 @class StereoPannerNode;
 @class BiquadFilterNode;
 @class AudioBufferSourceNode;
+@class RNAA_AudioBuffer;
 
 @interface AudioContext : NSObject
 
@@ -41,6 +43,8 @@
 - (BiquadFilterNode *)createBiquadFilter;
 
 - (AudioBufferSourceNode *)createBufferSource;
+
+- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels;
 
 - (double)getCurrentTime;
 

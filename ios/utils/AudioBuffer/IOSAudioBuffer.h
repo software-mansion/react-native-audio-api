@@ -6,7 +6,7 @@
 typedef struct objc_object RNAA_AudioBuffer;
 #endif // __OBJC__
 
-#import "RNAA_AudioBuffer.h"
+#import <stdexcept>
 
 namespace audioapi {
 class IOSAudioBuffer {
@@ -22,7 +22,7 @@ public:
   int getLength();
   int getNumberOfChannels();
   float getDuration();
-  float *getChannelData(int channel);
-  void setChannelData(int channel, float *data, int length);
+  float **getChannelData(int channel);
+  void setChannelData(int channel, float **data, int length);
 };
 } // namespace audioapi

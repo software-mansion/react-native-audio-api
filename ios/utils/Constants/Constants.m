@@ -7,6 +7,11 @@
   return 44100;
 }
 
++ (int)bufferSize
+{
+    return 128;
+}
+
 + (double)mostPositiveSingleFloat
 {
   return FLT_MAX;
