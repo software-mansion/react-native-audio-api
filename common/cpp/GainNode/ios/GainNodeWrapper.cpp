@@ -2,11 +2,10 @@
 #include "GainNodeWrapper.h"
 
 namespace audioapi {
-GainNodeWrapper::GainNodeWrapper(std::shared_ptr<IOSAudioContext> context)
-    : AudioNodeWrapper() {
-  node_ = std::make_shared<IOSGainNode>(context);
-  gainParam_ = std::make_shared<AudioParamWrapper>(
-      getGainNodeFromAudioNode()->getGainParam());
+GainNodeWrapper::GainNodeWrapper(std::shared_ptr<IOSGainNode> gainNode)
+: AudioNodeWrapper(gainNode) {
+    gainParam_ = std::make_shared<AudioParamWrapper>(
+                                                     gainNode->getGainParam());
 }
 
 std::shared_ptr<IOSGainNode> GainNodeWrapper::getGainNodeFromAudioNode() {

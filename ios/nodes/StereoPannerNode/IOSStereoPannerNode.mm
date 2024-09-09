@@ -3,9 +3,9 @@
 
 namespace audioapi {
 
-IOSStereoPannerNode::IOSStereoPannerNode(std::shared_ptr<IOSAudioContext> context)
+IOSStereoPannerNode::IOSStereoPannerNode(StereoPannerNode *stereoPanner)
 {
-  audioNode_ = panner_ = [[StereoPannerNode alloc] initWithContext:context->audioContext_];
+  audioNode_ = panner_ = stereoPanner;
 }
 
 IOSStereoPannerNode::~IOSStereoPannerNode()

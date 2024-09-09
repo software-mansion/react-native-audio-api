@@ -26,7 +26,7 @@ class StereoPannerNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<IOSStereoPannerNode> getStereoPannerNodeFromAudioNode();
 
  public:
-  explicit StereoPannerNodeWrapper(std::shared_ptr<IOSAudioContext> context);
+    StereoPannerNodeWrapper(std::shared_ptr<IOSStereoPannerNode> stereoPannerNode);
 #endif
  private:
   std::shared_ptr<AudioParamWrapper> panParam_;

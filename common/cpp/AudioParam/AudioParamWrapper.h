@@ -25,8 +25,7 @@ class AudioParamWrapper {
   std::shared_ptr<IOSAudioParam> param_;
 
  public:
-  explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param)
-      : param_(param) {}
+    explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param);
 #endif
 
  private:

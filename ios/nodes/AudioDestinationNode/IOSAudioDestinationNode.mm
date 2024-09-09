@@ -2,9 +2,9 @@
 
 namespace audioapi {
 
-IOSAudioDestinationNode::IOSAudioDestinationNode(std::shared_ptr<IOSAudioContext> context)
+IOSAudioDestinationNode::IOSAudioDestinationNode(AudioDestinationNode *destination)
 {
-  audioNode_ = destination_ = [[AudioDestinationNode alloc] initWithContext:context->audioContext_];
+  audioNode_ = destination_ = destination;
 }
 
 IOSAudioDestinationNode::~IOSAudioDestinationNode()

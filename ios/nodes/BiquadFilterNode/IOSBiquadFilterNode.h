@@ -6,15 +6,13 @@
 typedef struct objc_object BiquadFilterNode;
 #endif // __OBJC__
 
-#include <string>
-#include "IOSAudioContext.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
 
 namespace audioapi {
 class IOSBiquadFilterNode : public IOSAudioNode {
  public:
-  explicit IOSBiquadFilterNode(std::shared_ptr<IOSAudioContext> context);
+  explicit IOSBiquadFilterNode(BiquadFilterNode *biquadFilter);
   ~IOSBiquadFilterNode();
   void setType(const std::string &type) const;
   std::string getType() const;

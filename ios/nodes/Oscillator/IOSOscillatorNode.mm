@@ -2,9 +2,9 @@
 
 namespace audioapi {
 
-IOSOscillatorNode::IOSOscillatorNode(std::shared_ptr<IOSAudioContext> context)
+IOSOscillatorNode::IOSOscillatorNode(OscillatorNode *oscillator)
 {
-  audioNode_ = oscillatorNode_ = [[OscillatorNode alloc] initWithContext:context->audioContext_];
+    audioNode_ = oscillatorNode_ = oscillator;
 }
 
 IOSOscillatorNode::~IOSOscillatorNode()

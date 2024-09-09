@@ -6,14 +6,13 @@
 typedef struct objc_object GainNode;
 #endif // __OBJC__
 
-#include "IOSAudioContext.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
 
 namespace audioapi {
 class IOSGainNode : public IOSAudioNode {
  public:
-  explicit IOSGainNode(std::shared_ptr<IOSAudioContext> context);
+  explicit IOSGainNode(GainNode *gainNode);
   ~IOSGainNode();
   std::shared_ptr<IOSAudioParam> getGainParam();
 

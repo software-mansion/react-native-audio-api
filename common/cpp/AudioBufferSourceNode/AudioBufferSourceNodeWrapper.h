@@ -7,6 +7,7 @@
 #ifdef ANDROID
 #include "AudioBufferSourceNode.h"
 #else
+#include "IOSAudioBufferSourceNode.h"
 #endif
 
 namespace audioapi {
@@ -25,9 +26,14 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
   explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode)
       : AudioNodeWrapper(audioBufferNode) {}
 #else
+private:
+    std::shared_ptr<IOSAudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 
  public:
-  AudioBufferSourceNodeWrapper() : AudioNodeWrapper() {}
+  AudioBufferSourceNodeWrapper(
+      std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode)
+      : AudioNodeWrapper(bufferSourceNode) {}
 #endif
 
  public:

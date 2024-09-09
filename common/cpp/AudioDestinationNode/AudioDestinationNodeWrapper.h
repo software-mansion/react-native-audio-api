@@ -7,7 +7,6 @@
 #include "AudioDestinationNode.h"
 #include "AudioNodeWrapper.h"
 #else
-#include "IOSAudioContext.h"
 #include "IOSAudioDestinationNode.h"
 #endif
 
@@ -24,10 +23,7 @@ class AudioDestinationNodeWrapper : public AudioNodeWrapper {
       : AudioNodeWrapper(destinationNode) {}
 #else
  public:
-  explicit AudioDestinationNodeWrapper(std::shared_ptr<IOSAudioContext> context)
-      : AudioNodeWrapper() {
-    node_ = std::make_shared<IOSAudioDestinationNode>(context);
-  }
+    explicit AudioDestinationNodeWrapper(std::shared_ptr<IOSAudioDestinationNode> destination): AudioNodeWrapper(destination) {}
 #endif
 };
 } // namespace audioapi
