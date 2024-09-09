@@ -10,10 +10,9 @@ typedef struct objc_object AudioDestinationNode;
 
 namespace audioapi {
 class IOSAudioDestinationNode : public IOSAudioNode {
-    
-protected:
- AudioDestinationNode *destination_;
-    
+ protected:
+  AudioDestinationNode *destination_;
+
  public:
   explicit IOSAudioDestinationNode(AudioDestinationNode *destination);
   ~IOSAudioDestinationNode();

@@ -11,10 +11,9 @@ typedef struct objc_object AudioNode;
 
 namespace audioapi {
 class IOSAudioNode {
-    
-protected:
-    AudioNode *audioNode_;
-    
+ protected:
+  AudioNode *audioNode_;
+
  public:
   ~IOSAudioNode();
   virtual void connect(std::shared_ptr<IOSAudioNode> node);

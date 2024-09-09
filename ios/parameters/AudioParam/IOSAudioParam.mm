@@ -2,8 +2,9 @@
 
 namespace audioapi {
 
-IOSAudioParam::IOSAudioParam(AudioParam *audioParam) {
-    audioParam_ = audioParam;
+IOSAudioParam::IOSAudioParam(AudioParam *audioParam)
+{
+  audioParam_ = audioParam;
 }
 
 IOSAudioParam::~IOSAudioParam()

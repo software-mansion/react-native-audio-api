@@ -9,7 +9,7 @@
 
 + (int)bufferSize
 {
-    return 128;
+  return 128;
 }
 
 + (double)mostPositiveSingleFloat

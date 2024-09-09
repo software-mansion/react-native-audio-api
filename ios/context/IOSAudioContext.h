@@ -8,13 +8,13 @@ typedef struct objc_object AudioContext;
 
 #include <memory>
 #include <string>
+#include "IOSAudioBuffer.h"
 #include "IOSAudioBufferSourceNode.h"
 #include "IOSAudioDestinationNode.h"
 #include "IOSBiquadFilterNode.h"
 #include "IOSGainNode.h"
 #include "IOSOscillatorNode.h"
 #include "IOSStereoPannerNode.h"
-#include "IOSAudioBuffer.h"
 
 namespace audioapi {
 class IOSAudioContext {
@@ -30,7 +30,8 @@ class IOSAudioContext {
   std::shared_ptr<IOSStereoPannerNode> createStereoPanner();
   std::shared_ptr<IOSBiquadFilterNode> createBiquadFilter();
   std::shared_ptr<IOSAudioBufferSourceNode> createBufferSource();
-std::shared_ptr<IOSAudioBuffer> createBuffer(int sampleRate, int length, int numberOfChannels);
+  std::shared_ptr<IOSAudioBuffer>
+  createBuffer(int sampleRate, int length, int numberOfChannels);
   void close();
   double getCurrentTime();
   std::string getState();

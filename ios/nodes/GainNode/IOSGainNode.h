@@ -11,10 +11,9 @@ typedef struct objc_object GainNode;
 
 namespace audioapi {
 class IOSGainNode : public IOSAudioNode {
-    
-protected:
- GainNode *gainNode_;
-    
+ protected:
+  GainNode *gainNode_;
+
  public:
   explicit IOSGainNode(GainNode *gainNode);
   ~IOSGainNode();

@@ -10,12 +10,10 @@ typedef struct objc_object RNAA_AudioBuffer;
 
 namespace audioapi {
 class IOSAudioBuffer {
-    
  public:
   RNAA_AudioBuffer *audioBuffer_;
-    
-public:
 
+ public:
   IOSAudioBuffer(RNAA_AudioBuffer *audioBuffer);
   ~IOSAudioBuffer();
   int getSampleRate();

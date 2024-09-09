@@ -10,8 +10,8 @@
 #import "ContextState.h"
 #import "GainNode.h"
 #import "OscillatorNode.h"
-#import "StereoPannerNode.h"
 #import "RNAA_AudioBuffer.h"
+#import "StereoPannerNode.h"
 
 @class OscillatorNode;
 @class GainNode;

@@ -8,12 +8,11 @@ typedef struct objc_object AudioParam;
 
 namespace audioapi {
 class IOSAudioParam {
-    
-protected:
-    AudioParam *audioParam_;
-    
+ protected:
+  AudioParam *audioParam_;
+
  public:
-    IOSAudioParam(AudioParam *audioParam);
+  IOSAudioParam(AudioParam *audioParam);
   ~IOSAudioParam();
   void setValue(float value);
   float getValue();

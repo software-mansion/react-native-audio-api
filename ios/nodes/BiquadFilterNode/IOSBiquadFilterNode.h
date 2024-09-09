@@ -11,10 +11,9 @@ typedef struct objc_object BiquadFilterNode;
 
 namespace audioapi {
 class IOSBiquadFilterNode : public IOSAudioNode {
-    
-protected:
- BiquadFilterNode *biquadFilterNode_;
-    
+ protected:
+  BiquadFilterNode *biquadFilterNode_;
+
  public:
   explicit IOSBiquadFilterNode(BiquadFilterNode *biquadFilter);
   ~IOSBiquadFilterNode();

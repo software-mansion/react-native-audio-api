@@ -11,9 +11,7 @@
 @property (nonatomic, assign) double duration;
 @property (nonatomic, strong) NSMutableArray<NSMutableArray<NSNumber *> *> *channels;
 
-- (instancetype)initWithSampleRate:(int)sampleRate
-                            length:(int)length
-                  numberOfChannels:(int)numberOfChannels;
+- (instancetype)initWithSampleRate:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels;
 
 - (float *)getChannelDataForChannel:(int)channel;
 

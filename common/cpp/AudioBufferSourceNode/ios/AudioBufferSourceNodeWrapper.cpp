@@ -11,35 +11,35 @@ AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
 }
 
 void AudioBufferSourceNodeWrapper::start(double time) {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    bufferSource->start(time);
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  bufferSource->start(time);
 }
 
 void AudioBufferSourceNodeWrapper::stop(double time) {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    bufferSource->stop(time);
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  bufferSource->stop(time);
 }
 
 void AudioBufferSourceNodeWrapper::setLoop(bool loop) {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    bufferSource->setLoop(loop);
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  bufferSource->setLoop(loop);
 }
 
 bool AudioBufferSourceNodeWrapper::getLoop() {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    return bufferSource->getLoop();
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  return bufferSource->getLoop();
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioBufferSourceNodeWrapper::getBuffer() {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    auto buffer = bufferSource->getBuffer();
-    return std::make_shared<AudioBufferWrapper>(buffer);
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  auto buffer = bufferSource->getBuffer();
+  return std::make_shared<AudioBufferWrapper>(buffer);
 }
 
 void AudioBufferSourceNodeWrapper::setBuffer(
     const std::shared_ptr<AudioBufferWrapper> &buffer) {
-    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-    bufferSource->setBuffer(buffer->audioBuffer_);
+  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
+  bufferSource->setBuffer(buffer->audioBuffer_);
 }
 } // namespace audioapi
 #endif

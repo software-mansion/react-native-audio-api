@@ -11,10 +11,9 @@ typedef struct objc_object OscillatorNode;
 
 namespace audioapi {
 class IOSOscillatorNode : public IOSAudioNode {
-    
-protected:
- OscillatorNode *oscillatorNode_;
-    
+ protected:
+  OscillatorNode *oscillatorNode_;
+
  public:
   explicit IOSOscillatorNode(OscillatorNode *oscillator);
   ~IOSOscillatorNode();

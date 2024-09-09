@@ -5,16 +5,15 @@
 
 - (instancetype)init
 {
-    if (self = [super init]) {
-        
-        self.audioEngine = [[AVAudioEngine alloc] init];
-        self.audioEngine.mainMixerNode.outputVolume = 1;
-        self.destination = [[AudioDestinationNode alloc] initWithContext:self];
-        
-        _contextStartTime = mach_absolute_time();
-        _state = ContextStateRunning;
-        _sampleRate = [Constants sampleRate];
-    }
+  if (self = [super init]) {
+    self.audioEngine = [[AVAudioEngine alloc] init];
+    self.audioEngine.mainMixerNode.outputVolume = 1;
+    self.destination = [[AudioDestinationNode alloc] initWithContext:self];
+
+    _contextStartTime = mach_absolute_time();
+    _state = ContextStateRunning;
+    _sampleRate = [Constants sampleRate];
+  }
 
   return self;
 }
@@ -59,8 +58,9 @@
   return [[AudioBufferSourceNode alloc] initWithContext:self];
 }
 
-- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels {
-    return [[RNAA_AudioBuffer alloc] initWithSampleRate:sampleRate length:length numberOfChannels:numberOfChannels];
+- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels
+{
+  return [[RNAA_AudioBuffer alloc] initWithSampleRate:sampleRate length:length numberOfChannels:numberOfChannels];
 }
 
 - (double)getCurrentTime

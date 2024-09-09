@@ -11,10 +11,9 @@ typedef struct objc_object StereoPannerNode;
 
 namespace audioapi {
 class IOSStereoPannerNode : public IOSAudioNode {
-    
-protected:
- StereoPannerNode *panner_;
-    
+ protected:
+  StereoPannerNode *panner_;
+
  public:
   explicit IOSStereoPannerNode(StereoPannerNode *stereoPanner);
   ~IOSStereoPannerNode();
