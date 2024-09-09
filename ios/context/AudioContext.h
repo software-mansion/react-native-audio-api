@@ -4,13 +4,13 @@
 #import <Foundation/Foundation.h>
 #import <mach/mach_time.h>
 
-#import "ContextState.h"
-#import "OscillatorNode.h"
-#import "GainNode.h"
-#import "StereoPannerNode.h"
+#import "AudioBufferSourceNode.h"
 #import "AudioDestinationNode.h"
 #import "BiquadFilterNode.h"
-#import "AudioBufferSourceNode.h"
+#import "ContextState.h"
+#import "GainNode.h"
+#import "OscillatorNode.h"
+#import "StereoPannerNode.h"
 
 @class OscillatorNode;
 @class GainNode;
@@ -26,22 +26,21 @@
 @property (nonatomic, assign) ContextStateEnum state;
 @property (nonatomic, assign) double sampleRate;
 
-
 - (instancetype)init;
 
 - (void)close;
 
 - (void)cleanup;
 
-- (OscillatorNode*)createOscillator;
+- (OscillatorNode *)createOscillator;
 
-- (GainNode*)createGain;
+- (GainNode *)createGain;
 
-- (StereoPannerNode*)createStereoPanner;
+- (StereoPannerNode *)createStereoPanner;
 
-- (BiquadFilterNode*)createBiquadFilter;
+- (BiquadFilterNode *)createBiquadFilter;
 
-- (AudioBufferSourceNode*)createBufferSource;
+- (AudioBufferSourceNode *)createBufferSource;
 
 - (double)getCurrentTime;
 

@@ -32,7 +32,8 @@ class OscillatorNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<IOSOscillatorNode> getOscillatorNodeFromAudioNode();
 
  public:
-    explicit OscillatorNodeWrapper(std::shared_ptr<IOSOscillatorNode> oscillatorNode);
+  explicit OscillatorNodeWrapper(
+      std::shared_ptr<IOSOscillatorNode> oscillatorNode);
 #endif
 
  private:

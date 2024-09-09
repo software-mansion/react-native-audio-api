@@ -3,9 +3,8 @@
 
 namespace audioapi {
 GainNodeWrapper::GainNodeWrapper(std::shared_ptr<IOSGainNode> gainNode)
-: AudioNodeWrapper(gainNode) {
-    gainParam_ = std::make_shared<AudioParamWrapper>(
-                                                     gainNode->getGainParam());
+    : AudioNodeWrapper(gainNode) {
+  gainParam_ = std::make_shared<AudioParamWrapper>(gainNode->getGainParam());
 }
 
 std::shared_ptr<IOSGainNode> GainNodeWrapper::getGainNodeFromAudioNode() {

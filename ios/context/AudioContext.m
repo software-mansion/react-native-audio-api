@@ -11,7 +11,7 @@
 
   self.audioEngine = [[AVAudioEngine alloc] init];
   self.audioEngine.mainMixerNode.outputVolume = 1;
-    self.destination = [[AudioDestinationNode alloc] initWithContext:self];
+  self.destination = [[AudioDestinationNode alloc] initWithContext:self];
 
   _contextStartTime = mach_absolute_time();
   _state = ContextStateRunning;
@@ -35,24 +35,29 @@
   self.audioEngine = nil;
 }
 
-- (OscillatorNode*)createOscillator {
-    return [[OscillatorNode alloc] initWithContext:self];
+- (OscillatorNode *)createOscillator
+{
+  return [[OscillatorNode alloc] initWithContext:self];
 }
 
-- (GainNode*)createGain {
-    return [[GainNode alloc] initWithContext:self];
+- (GainNode *)createGain
+{
+  return [[GainNode alloc] initWithContext:self];
 }
 
-- (StereoPannerNode*)createStereoPanner {
-    return [[StereoPannerNode alloc] initWithContext:self];
+- (StereoPannerNode *)createStereoPanner
+{
+  return [[StereoPannerNode alloc] initWithContext:self];
 }
 
-- (BiquadFilterNode*)createBiquadFilter {
-    return [[BiquadFilterNode alloc] initWithContext:self];
+- (BiquadFilterNode *)createBiquadFilter
+{
+  return [[BiquadFilterNode alloc] initWithContext:self];
 }
 
-- (AudioBufferSourceNode*)createBufferSource {
-    return [[AudioBufferSourceNode alloc] initWithContext:self];
+- (AudioBufferSourceNode *)createBufferSource
+{
+  return [[AudioBufferSourceNode alloc] initWithContext:self];
 }
 
 - (double)getCurrentTime

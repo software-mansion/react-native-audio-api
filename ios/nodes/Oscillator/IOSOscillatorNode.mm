@@ -4,7 +4,7 @@ namespace audioapi {
 
 IOSOscillatorNode::IOSOscillatorNode(OscillatorNode *oscillator)
 {
-    audioNode_ = oscillatorNode_ = oscillator;
+  audioNode_ = oscillatorNode_ = oscillator;
 }
 
 IOSOscillatorNode::~IOSOscillatorNode()

@@ -13,10 +13,10 @@ class IOSAudioBufferSourceNode : public IOSAudioNode {
  public:
   explicit IOSAudioBufferSourceNode(AudioBufferSourceNode *bufferSource);
   ~IOSAudioBufferSourceNode();
-    void setLoop(bool loop) const;
-    bool getLoop();
+  void setLoop(bool loop) const;
+  bool getLoop();
 
  protected:
-    AudioBufferSourceNode *bufferSource_;
+  AudioBufferSourceNode *bufferSource_;
 };
 } // namespace audioapi

@@ -1,6 +1,10 @@
 #pragma once
 
-typedef NS_ENUM(NSInteger, ChannelCountModeEnum) { ChannelCountModeMax, ChannelCountModeClampedMax, ChannelCountModeExplicit };
+typedef NS_ENUM(NSInteger, ChannelCountModeEnum) {
+  ChannelCountModeMax,
+  ChannelCountModeClampedMax,
+  ChannelCountModeExplicit
+};
 
 @interface ChannelCountMode : NSObject
 
@@ -8,4 +12,3 @@ typedef NS_ENUM(NSInteger, ChannelCountModeEnum) { ChannelCountModeMax, ChannelC
 + (NSString *)stringFromChannelCountMode:(ChannelCountModeEnum)mode;
 
 @end
-

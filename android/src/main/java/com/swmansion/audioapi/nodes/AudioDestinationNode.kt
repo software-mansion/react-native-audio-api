@@ -28,6 +28,11 @@ class AudioDestinationNode(
       }
     }
 
-    playbackParameters.audioTrack.write(buffer, 0, playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels, WRITE_BLOCKING)
+    playbackParameters.audioTrack.write(
+      buffer,
+      0,
+      playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels,
+      WRITE_BLOCKING,
+    )
   }
 }

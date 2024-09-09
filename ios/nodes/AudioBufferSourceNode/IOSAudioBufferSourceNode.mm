@@ -13,12 +13,14 @@ IOSAudioBufferSourceNode::~IOSAudioBufferSourceNode()
   audioNode_ = bufferSource_ = nil;
 }
 
-void IOSAudioBufferSourceNode::setLoop(bool loop) const {
-    bufferSource_.loop = loop;
+void IOSAudioBufferSourceNode::setLoop(bool loop) const
+{
+  bufferSource_.loop = loop;
 }
 
-bool IOSAudioBufferSourceNode::getLoop() {
-    return bufferSource_.loop;
+bool IOSAudioBufferSourceNode::getLoop()
+{
+  return bufferSource_.loop;
 }
 
 } // namespace audioapi

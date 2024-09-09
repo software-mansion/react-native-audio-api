@@ -32,7 +32,7 @@ std::shared_ptr<AudioBufferWrapper> AudioBufferSourceNodeWrapper::getBuffer() {
 
 void AudioBufferSourceNodeWrapper::setBuffer(
     const std::shared_ptr<AudioBufferWrapper> &buffer) {
-    return;
+  return;
 }
 } // namespace audioapi
 #endif

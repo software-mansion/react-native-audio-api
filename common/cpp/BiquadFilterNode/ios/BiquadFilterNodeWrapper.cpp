@@ -3,16 +3,15 @@
 namespace audioapi {
 
 BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(
-                                                 std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode)
+    std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode)
     : AudioNodeWrapper(biquadFilterNode) {
   frequencyParam_ = std::make_shared<AudioParamWrapper>(
       biquadFilterNode->getFrequencyParam());
-  detuneParam_ = std::make_shared<AudioParamWrapper>(
-      biquadFilterNode->getDetuneParam());
-  QParam_ = std::make_shared<AudioParamWrapper>(
-      biquadFilterNode->getQParam());
-  gainParam_ = std::make_shared<AudioParamWrapper>(
-      biquadFilterNode->getGainParam());
+  detuneParam_ =
+      std::make_shared<AudioParamWrapper>(biquadFilterNode->getDetuneParam());
+  QParam_ = std::make_shared<AudioParamWrapper>(biquadFilterNode->getQParam());
+  gainParam_ =
+      std::make_shared<AudioParamWrapper>(biquadFilterNode->getGainParam());
 }
 
 std::shared_ptr<IOSBiquadFilterNode>
