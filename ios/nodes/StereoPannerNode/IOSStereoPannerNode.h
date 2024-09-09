@@ -11,12 +11,13 @@ typedef struct objc_object StereoPannerNode;
 
 namespace audioapi {
 class IOSStereoPannerNode : public IOSAudioNode {
+    
+protected:
+ StereoPannerNode *panner_;
+    
  public:
   explicit IOSStereoPannerNode(StereoPannerNode *stereoPanner);
   ~IOSStereoPannerNode();
   std::shared_ptr<IOSAudioParam> getPanParam();
-
- protected:
-  StereoPannerNode *panner_;
 };
 } // namespace audioapi

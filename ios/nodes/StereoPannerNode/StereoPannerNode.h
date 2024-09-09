@@ -8,6 +8,7 @@
 @property (nonatomic, strong) AudioParam *panParam;
 
 - (instancetype)initWithContext:(AudioContext *)context;
+
 - (void)cleanup;
 
 @end

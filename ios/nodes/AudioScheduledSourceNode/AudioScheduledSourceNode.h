@@ -5,6 +5,7 @@
 @interface AudioScheduledSourceNode : AudioNode
 
 - (void)start;
+
 - (void)stop;
 
 @end

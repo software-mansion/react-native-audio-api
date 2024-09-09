@@ -8,15 +8,14 @@ typedef struct objc_object AudioDestinationNode;
 
 #include "IOSAudioNode.h"
 
-#import <memory>
-
 namespace audioapi {
 class IOSAudioDestinationNode : public IOSAudioNode {
+    
+protected:
+ AudioDestinationNode *destination_;
+    
  public:
   explicit IOSAudioDestinationNode(AudioDestinationNode *destination);
   ~IOSAudioDestinationNode();
-
- protected:
-  AudioDestinationNode *destination_;
 };
 } // namespace audioapi

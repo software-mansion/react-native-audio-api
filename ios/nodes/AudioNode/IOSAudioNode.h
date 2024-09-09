@@ -11,9 +11,12 @@ typedef struct objc_object AudioNode;
 
 namespace audioapi {
 class IOSAudioNode {
+    
+protected:
+    AudioNode *audioNode_;
+    
  public:
   ~IOSAudioNode();
-  AudioNode *audioNode_;
   virtual void connect(std::shared_ptr<IOSAudioNode> node);
   virtual void disconnect(std::shared_ptr<IOSAudioNode> node);
   int getNumberOfInputs();

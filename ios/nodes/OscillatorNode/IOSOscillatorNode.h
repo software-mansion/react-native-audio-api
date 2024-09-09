@@ -11,6 +11,10 @@ typedef struct objc_object OscillatorNode;
 
 namespace audioapi {
 class IOSOscillatorNode : public IOSAudioNode {
+    
+protected:
+ OscillatorNode *oscillatorNode_;
+    
  public:
   explicit IOSOscillatorNode(OscillatorNode *oscillator);
   ~IOSOscillatorNode();
@@ -20,8 +24,5 @@ class IOSOscillatorNode : public IOSAudioNode {
   std::string getType() const;
   std::shared_ptr<IOSAudioParam> getFrequencyParam();
   std::shared_ptr<IOSAudioParam> getDetuneParam();
-
- protected:
-  OscillatorNode *oscillatorNode_;
 };
 } // namespace audioapi

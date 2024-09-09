@@ -11,12 +11,13 @@ typedef struct objc_object GainNode;
 
 namespace audioapi {
 class IOSGainNode : public IOSAudioNode {
+    
+protected:
+ GainNode *gainNode_;
+    
  public:
   explicit IOSGainNode(GainNode *gainNode);
   ~IOSGainNode();
   std::shared_ptr<IOSAudioParam> getGainParam();
-
- protected:
-  GainNode *gainNode_;
 };
 } // namespace audioapi

@@ -15,8 +15,7 @@ IOSGainNode::~IOSGainNode()
 
 std::shared_ptr<IOSAudioParam> IOSGainNode::getGainParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = gainNode_.gainParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(gainNode_.gainParam);
   return param;
 }
 } // namespace audioapi

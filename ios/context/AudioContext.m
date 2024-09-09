@@ -5,17 +5,16 @@
 
 - (instancetype)init
 {
-  if (self != [super init]) {
-    return self;
-  }
-
-  self.audioEngine = [[AVAudioEngine alloc] init];
-  self.audioEngine.mainMixerNode.outputVolume = 1;
-  self.destination = [[AudioDestinationNode alloc] initWithContext:self];
-
-  _contextStartTime = mach_absolute_time();
-  _state = ContextStateRunning;
-  _sampleRate = [Constants sampleRate];
+    if (self = [super init]) {
+        
+        self.audioEngine = [[AVAudioEngine alloc] init];
+        self.audioEngine.mainMixerNode.outputVolume = 1;
+        self.destination = [[AudioDestinationNode alloc] initWithContext:self];
+        
+        _contextStartTime = mach_absolute_time();
+        _state = ContextStateRunning;
+        _sampleRate = [Constants sampleRate];
+    }
 
   return self;
 }

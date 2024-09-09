@@ -27,29 +27,25 @@ std::string IOSBiquadFilterNode::getType() const
 
 std::shared_ptr<IOSAudioParam> IOSBiquadFilterNode::getFrequencyParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = biquadFilterNode_.frequencyParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(biquadFilterNode_.frequencyParam);
   return param;
 }
 
 std::shared_ptr<IOSAudioParam> IOSBiquadFilterNode::getDetuneParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = biquadFilterNode_.detuneParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(biquadFilterNode_.detuneParam);
   return param;
 }
 
 std::shared_ptr<IOSAudioParam> IOSBiquadFilterNode::getQParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = biquadFilterNode_.QParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(biquadFilterNode_.QParam);
   return param;
 }
 
 std::shared_ptr<IOSAudioParam> IOSBiquadFilterNode::getGainParam()
 {
-  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>();
-  param->audioParam = biquadFilterNode_.gainParam;
+  std::shared_ptr<IOSAudioParam> param = std::make_shared<IOSAudioParam>(biquadFilterNode_.gainParam);
   return param;
 }
 } // namespace audioapi

@@ -18,14 +18,23 @@
 @property (nonatomic, strong) AudioContext *context;
 
 - (instancetype)initWithContext:(AudioContext *)context;
+
 - (void)cleanup;
+
 - (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList;
+
 - (void)connect:(AudioNode *)node;
+
 - (void)disconnect:(AudioNode *)node;
+
 - (int)getNumberOfInputs;
+
 - (int)getNumberOfOutputs;
+
 - (int)getChannelCount;
+
 - (NSString *)getChannelCountMode;
+
 - (NSString *)getChannelInterpretation;
 
 @end

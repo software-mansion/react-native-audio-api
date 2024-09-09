@@ -10,13 +10,14 @@ typedef struct objc_object AudioBufferSourceNode;
 
 namespace audioapi {
 class IOSAudioBufferSourceNode : public IOSAudioNode {
+    
+protected:
+ AudioBufferSourceNode *bufferSource_;
+    
  public:
   explicit IOSAudioBufferSourceNode(AudioBufferSourceNode *bufferSource);
   ~IOSAudioBufferSourceNode();
   void setLoop(bool loop) const;
   bool getLoop();
-
- protected:
-  AudioBufferSourceNode *bufferSource_;
 };
 } // namespace audioapi

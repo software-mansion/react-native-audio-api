@@ -1,7 +1,5 @@
 #pragma once
 
-#import <AVFoundation/AVFoundation.h>
-#import <Foundation/Foundation.h>
 #import "AudioContext.h"
 #import "AudioScheduledSourceNode.h"
 
@@ -9,8 +7,6 @@
 
 @property (nonatomic, assign) Boolean isPlaying;
 @property (nonatomic, assign) bool loop;
-//@property (nonatomic, assign) int bufferIndex;
-//@property (nonatomic, strong) RNAA_AudioBuffer *buffer;
 
 - (instancetype)initWithContext:(AudioContext *)context;
 

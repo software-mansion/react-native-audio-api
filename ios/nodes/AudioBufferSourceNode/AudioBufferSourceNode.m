@@ -5,15 +5,12 @@
 
 - (instancetype)initWithContext:(AudioContext *)context
 {
-  if (self != [super initWithContext:context]) {
-    return self;
+  if (self = [super initWithContext:context]) {
+      self.numberOfOutputs = 1;
+      self.numberOfInputs = 0;
+      self.loop = true;
+      self.isPlaying = true;
   }
-
-  _loop = true;
-  _isPlaying = NO;
-
-  self.numberOfOutputs = 1;
-  self.numberOfInputs = 0;
 
   return self;
 }

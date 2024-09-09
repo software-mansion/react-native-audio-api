@@ -5,49 +5,49 @@
 
 - (instancetype)initWithContext:(AudioContext *)context
 {
-  if (self != [super initWithContext:context]) {
-    return self;
-  }
-
-  _frequencyParam = [[AudioParam alloc] initWithContext:context
-                                                  value:440
-                                               minValue:-[Constants nyquistFrequency]
-                                               maxValue:[Constants nyquistFrequency]];
-  _detuneParam = [[AudioParam alloc] initWithContext:context
-                                               value:0
-                                            minValue:-[Constants maxDetune]
-                                            maxValue:[Constants maxDetune]];
-  _waveType = WaveTypeSine;
-  _isPlaying = NO;
-
-  self.numberOfOutputs = 1;
-  self.numberOfInputs = 0;
-
-  _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.context.sampleRate channels:2];
-  _phase = 0.0;
-
-  __weak typeof(self) weakSelf = self;
-  _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format
-                                              renderBlock:^OSStatus(
-                                                  BOOL *isSilence,
-                                                  const AudioTimeStamp *timestamp,
-                                                  AVAudioFrameCount frameCount,
-                                                  AudioBufferList *outputData) {
-                                                return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                   timestamp:timestamp
-                                                                                  frameCount:frameCount
-                                                                                  outputData:outputData];
-                                              }];
-
-  [self.context.audioEngine attachNode:self.sourceNode];
-  [self.context.audioEngine connect:self.sourceNode to:self.context.audioEngine.mainMixerNode format:self.format];
-
-  if (!self.context.audioEngine.isRunning) {
-    NSError *error = nil;
-    if (![self.context.audioEngine startAndReturnError:&error]) {
-      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+    if (self = [super initWithContext:context]) {
+        
+        _frequencyParam = [[AudioParam alloc] initWithContext:context
+                                                        value:440
+                                                     minValue:-[Constants nyquistFrequency]
+                                                     maxValue:[Constants nyquistFrequency]];
+        _detuneParam = [[AudioParam alloc] initWithContext:context
+                                                     value:0
+                                                  minValue:-[Constants maxDetune]
+                                                  maxValue:[Constants maxDetune]];
+        _waveType = WaveTypeSine;
+        _isPlaying = NO;
+        
+        self.numberOfOutputs = 1;
+        self.numberOfInputs = 0;
+        
+        _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.context.sampleRate channels:2];
+        _phase = 0.0;
+        
+        __weak typeof(self) weakSelf = self;
+        _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format
+                                                    renderBlock:^OSStatus(
+                                                                          BOOL *isSilence,
+                                                                          const AudioTimeStamp *timestamp,
+                                                                          AVAudioFrameCount frameCount,
+                                                                          AudioBufferList *outputData) {
+                                                                              return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                                                 timestamp:timestamp
+                                                                                                                frameCount:frameCount
+                                                                                                                outputData:outputData];
+                                                                          }];
+        
+        [self.context.audioEngine attachNode:self.sourceNode];
+        [self.context.audioEngine connect:self.sourceNode to:self.context.audioEngine.mainMixerNode format:self.format];
+        
+        if (!self.context.audioEngine.isRunning) {
+            NSError *error = nil;
+            if (![self.context.audioEngine startAndReturnError:&error]) {
+                NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+            }
+        }
+        
     }
-  }
 
   return self;
 }
