@@ -12,18 +12,15 @@ int AudioNodeWrapper::getNumberOfOutputs() const {
 }
 
 int AudioNodeWrapper::getChannelCount() const {
-  // TODO: implement
-  return 0;
+  return node_->getChannelCount();
 }
 
 std::string AudioNodeWrapper::getChannelCountMode() const {
-  // TODO: implement
-  return "";
+  return node_->getChannelCountMode();
 }
 
 std::string AudioNodeWrapper::getChannelInterpretation() const {
-  // TODO: implement
-  return "";
+  return node_->getChannelInterpretation();
 }
 
 void AudioNodeWrapper::connect(

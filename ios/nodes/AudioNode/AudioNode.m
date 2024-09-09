@@ -8,6 +8,9 @@
   if (self = [super init]) {
     _connectedNodes = [NSMutableArray array];
     _context = context;
+      _channelCount = 2;
+      _channelCountMode = ChannelCountModeMax;
+      _channelInterpretation = ChannelInterpretationSpeakers;
   }
 
   return self;
@@ -50,6 +53,18 @@
 - (int)getNumberOfOutputs
 {
   return _numberOfOutputs;
+}
+
+- (int)getChannelCount {
+    return _channelCount;
+}
+
+- (NSString*)getChannelCountMode {
+    return [ChannelCountMode stringFromChannelCountMode:self.channelCountMode];
+}
+
+- (NSString*)getChannelInterpretation {
+    return [ChannelInterpretation stringFromChannelInterpretation:self.channelInterpretation];
 }
 
 @end

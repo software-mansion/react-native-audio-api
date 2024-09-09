@@ -6,7 +6,6 @@
 typedef struct objc_object OscillatorNode;
 #endif // __OBJC__
 
-#include <string>
 #include "IOSAudioContext.h"
 #include "IOSAudioNode.h"
 #include "IOSAudioParam.h"
