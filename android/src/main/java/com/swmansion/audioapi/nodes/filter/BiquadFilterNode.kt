@@ -23,7 +23,6 @@ class BiquadFilterNode(
 ) : AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
-  override var channelCount: Int = 2
 
   private val frequency: AudioParam = AudioParam(context, 350.0, Constants.MAX_FILTER_FREQUENCY, Constants.MIN_FILTER_FREQUENCY)
     get() = field
@@ -385,7 +384,7 @@ class BiquadFilterNode(
       y1 = output
 
       for (j in 0 until playbackParameters.audioBuffer.numberOfChannels) {
-        playbackParameters.audioBuffer.getChannelData(j)[i] = output.toInt().toShort()
+        playbackParameters.audioBuffer.getChannelData(j)[i] = output.toFloat()
       }
     }
 

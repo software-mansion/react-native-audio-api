@@ -21,11 +21,11 @@ int AudioBufferWrapper::getNumberOfChannels() const {
   return 1;
 }
 
-int16_t **AudioBufferWrapper::getChannelData(int channel) const {
+float **AudioBufferWrapper::getChannelData(int channel) const {
   return nullptr;
 }
 
-void AudioBufferWrapper::setChannelData(int channel, int16_t **data) const {
+void AudioBufferWrapper::setChannelData(int channel, float **data) const {
   return;
 }
 

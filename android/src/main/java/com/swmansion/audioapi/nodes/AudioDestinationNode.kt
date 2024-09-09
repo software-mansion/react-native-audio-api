@@ -1,5 +1,6 @@
 package com.swmansion.audioapi.nodes
 
+import android.media.AudioTrack.WRITE_BLOCKING
 import com.swmansion.audioapi.context.BaseAudioContext
 import com.swmansion.audioapi.nodes.audionode.AudioNode
 import com.swmansion.audioapi.nodes.audionode.ChannelCountMode
@@ -10,7 +11,6 @@ class AudioDestinationNode(
 ) : AudioNode(context) {
   override val numberOfInputs = Float.POSITIVE_INFINITY.toInt()
   override val numberOfOutputs = 0
-  override var channelCount: Int = 2
   override val channelCountMode: ChannelCountMode = ChannelCountMode.EXPLICIT
 
   private fun setVolumeAndPanning(playbackParameters: PlaybackParameters) {
@@ -21,13 +21,13 @@ class AudioDestinationNode(
     mixBuffers(playbackParameters)
 
     setVolumeAndPanning(playbackParameters)
-    val buffer = ShortArray(playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels)
+    val buffer = FloatArray(playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels)
     for (i in 0 until playbackParameters.audioBuffer.length) {
       for (j in 0 until playbackParameters.audioBuffer.numberOfChannels) {
         buffer[i * playbackParameters.audioBuffer.numberOfChannels + j] = playbackParameters.audioBuffer.getChannelData(j)[i]
       }
     }
 
-    playbackParameters.audioTrack.write(buffer, 0, playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels)
+    playbackParameters.audioTrack.write(buffer, 0, playbackParameters.audioBuffer.length * playbackParameters.audioBuffer.numberOfChannels, WRITE_BLOCKING)
   }
 }

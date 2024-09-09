@@ -19,7 +19,6 @@ class StereoPannerNode(
 ) : AudioNode(context) {
   override val numberOfInputs: Int = 1
   override val numberOfOutputs: Int = 1
-  override var channelCount: Int = 2
   override val channelCountMode: ChannelCountMode = ChannelCountMode.CLAMPED_MAX
 
   private val pan: AudioParam = AudioParam(context, 0.0, Constants.MAX_PAN, -Constants.MAX_PAN)

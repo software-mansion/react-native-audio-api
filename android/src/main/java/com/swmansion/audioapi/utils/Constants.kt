@@ -7,7 +7,7 @@ import kotlin.math.log2
 
 object Constants {
   const val SAMPLE_RATE: Int = 44100
-  const val BUFFER_SIZE = 100
+  const val BUFFER_SIZE = 128
 
   private const val MOST_POSITIVE_SINGLE_FLOAT: Double = (Float.MAX_VALUE).toDouble()
   const val NYQUIST_FREQUENCY: Double = SAMPLE_RATE / 2.0

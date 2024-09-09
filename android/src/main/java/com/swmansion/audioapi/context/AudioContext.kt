@@ -58,7 +58,7 @@ class AudioContext : BaseAudioContext {
       AudioFormat
         .Builder()
         .setSampleRate(this.sampleRate)
-        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+        .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
         .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
         .build()
 
