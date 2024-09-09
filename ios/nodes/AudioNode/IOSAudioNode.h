@@ -7,6 +7,7 @@ typedef struct objc_object AudioNode;
 #endif // __OBJC__
 
 #import <memory>
+#include "AudioContext.h"
 
 namespace audioapi {
 class IOSAudioNode {

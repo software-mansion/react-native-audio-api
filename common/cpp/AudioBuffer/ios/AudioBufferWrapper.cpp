@@ -3,29 +3,31 @@
 
 namespace audioapi {
 
-// TODO: Implement the AudioParamWrapper class
+AudioBufferWrapper::AudioBufferWrapper(std::shared_ptr<IOSAudioBuffer> buffer) {
+    audioBuffer_ = buffer;
+}
 
 int AudioBufferWrapper::getSampleRate() const {
-  return 1;
+    audioBuffer_->getSampleRate();
 }
 
 int AudioBufferWrapper::getLength() const {
-  return 1;
+    audioBuffer_->getLength();
 }
 
 double AudioBufferWrapper::getDuration() const {
-  return 1.0;
+    audioBuffer_->getDuration();
 }
 
 int AudioBufferWrapper::getNumberOfChannels() const {
-  return 1;
+    audioBuffer_->getNumberOfChannels();
 }
 
-int16_t **AudioBufferWrapper::getChannelData(int channel) const {
+float **AudioBufferWrapper::getChannelData(int channel) const {
   return nullptr;
 }
 
-void AudioBufferWrapper::setChannelData(int channel, int16_t **data) const {
+void AudioBufferWrapper::setChannelData(int channel, float **data) const {
   return;
 }
 

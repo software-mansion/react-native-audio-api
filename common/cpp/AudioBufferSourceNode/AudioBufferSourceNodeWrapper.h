@@ -28,7 +28,7 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
 #else
 
  private:
-  std::shared_ptr<IOSAudioBufferSourceNode>
+    std::shared_ptr<IOSAudioBufferSourceNode>
   getAudioBufferSourceNodeFromAudioNode();
 
  public:

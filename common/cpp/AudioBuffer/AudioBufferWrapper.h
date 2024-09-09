@@ -21,6 +21,8 @@ class AudioBufferWrapper {
 #else
 
  public:
+    std::shared_ptr<IOSAudioBuffer> audioBuffer_;
+    
   explicit AudioBufferWrapper(std::shared_ptr<IOSAudioBuffer> buffer);
 #endif
 
