@@ -76,6 +76,6 @@ void BiquadFilterNodeHostObject::set(
     return;
   }
 
-  throw std::runtime_error("Not yet implemented!");
+    return AudioNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi

@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include "AudioBufferHostObject.h"
+#include "AudioScheduledSourceNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 
 namespace audioapi {
@@ -18,7 +20,7 @@ namespace audioapi {
     public:
         explicit AudioScheduledSourceNodeHostObject(
                 const std::shared_ptr<AudioScheduledSourceNodeWrapper> &wrapper)
-                : AudioNodeHostObject(&wrapper) {};
+                : AudioNodeHostObject(wrapper) {}
 
         jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
         void set(
