@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "AudioNodeHostObject.h"
+#include "AudioScheduledSourceNodeHostObject.h"
 #include "AudioParamHostObject.h"
 #include "OscillatorNodeWrapper.h"
 
@@ -12,7 +12,7 @@ using namespace facebook;
 
 class OscillatorNodeWrapper;
 
-class OscillatorNodeHostObject : public AudioNodeHostObject {
+class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  private:
   std::shared_ptr<OscillatorNodeWrapper>
   getOscillatorNodeWrapperFromAudioNodeWrapper();
