@@ -2,7 +2,7 @@
 
 #include <memory>
 #include "AudioBufferWrapper.h"
-#include "AudioNodeWrapper.h"
+#include "AudioScheduledSourceNodeWrapper.h"
 
 #ifdef ANDROID
 #include "AudioBufferSourceNode.h"
@@ -16,7 +16,7 @@ namespace audioapi {
 class AudioBufferSourceNode;
 #endif
 
-class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
+class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
  private:
@@ -24,7 +24,7 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
 
  public:
   explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode)
-      : AudioNodeWrapper(audioBufferNode) {}
+      : AudioScheduledSourceNodeWrapper(audioBufferNode) {}
 #else
 
  private:
@@ -38,8 +38,6 @@ class AudioBufferSourceNodeWrapper : public AudioNodeWrapper {
 #endif
 
  public:
-  void start(double time);
-  void stop(double time);
   void setLoop(bool loop);
   bool getLoop();
   std::shared_ptr<AudioBufferWrapper> getBuffer();

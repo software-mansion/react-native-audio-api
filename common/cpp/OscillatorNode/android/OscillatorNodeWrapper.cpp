@@ -8,7 +8,7 @@ OscillatorNode *OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
 }
 
 OscillatorNodeWrapper::OscillatorNodeWrapper(OscillatorNode *oscillator)
-    : AudioNodeWrapper(oscillator) {
+    : AudioScheduledSourceNodeWrapper(oscillator) {
   auto frequencyParam = oscillator->getFrequencyParam();
   frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
   auto detuneParam = oscillator->getDetuneParam();
@@ -33,16 +33,6 @@ std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getDetuneParam()
 std::string OscillatorNodeWrapper::getType() {
   auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
   return oscillatorNode_->getWaveType();
-}
-
-void OscillatorNodeWrapper::start(double time) {
-  auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
-  oscillatorNode_->start(time);
-}
-
-void OscillatorNodeWrapper::stop(double time) {
-  auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
-  oscillatorNode_->stop(time);
 }
 
 void OscillatorNodeWrapper::setType(const std::string &type) {

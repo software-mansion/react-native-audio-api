@@ -8,16 +8,6 @@ AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
   return static_cast<AudioBufferSourceNode *>(node_);
 }
 
-void AudioBufferSourceNodeWrapper::start(double time) {
-  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-  audioBufferSourceNode->start(time);
-}
-
-void AudioBufferSourceNodeWrapper::stop(double time) {
-  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-  audioBufferSourceNode->stop(time);
-}
-
 bool AudioBufferSourceNodeWrapper::getLoop() {
   auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
   return audioBufferSourceNode->getLoop();

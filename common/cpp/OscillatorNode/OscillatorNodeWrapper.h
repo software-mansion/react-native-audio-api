@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <string>
-#include "AudioNodeWrapper.h"
+#include "AudioScheduledSourceNodeWrapper.h"
 #include "AudioParamWrapper.h"
 
 #ifdef ANDROID
@@ -17,7 +17,7 @@ namespace audioapi {
 class OscillatorNode;
 #endif
 
-class OscillatorNodeWrapper : public AudioNodeWrapper {
+class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
  private:
@@ -44,8 +44,6 @@ class OscillatorNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
   std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
   std::string getType();
-  void start(double time);
-  void stop(double time);
   void setType(const std::string &type);
 };
 } // namespace audioapi
