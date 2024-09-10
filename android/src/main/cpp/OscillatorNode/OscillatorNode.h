@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "AudioNode.h"
+#include "AudioScheduledSourceNode.h"
 #include "AudioParam.h"
 
 namespace audioapi {
@@ -9,13 +9,11 @@ namespace audioapi {
 using namespace facebook;
 using namespace facebook::jni;
 
-class OscillatorNode : public jni::HybridClass<OscillatorNode, AudioNode> {
+class OscillatorNode : public jni::HybridClass<OscillatorNode, AudioScheduledSourceNode> {
  public:
   static auto constexpr kJavaDescriptor =
       "Lcom/swmansion/audioapi/nodes/oscillator/OscillatorNode;";
 
-  void start(double time);
-  void stop(double time);
   AudioParam *getFrequencyParam();
   AudioParam *getDetuneParam();
   std::string getWaveType();

@@ -4,17 +4,6 @@ namespace audioapi {
 
 using namespace facebook::jni;
 
-void OscillatorNode::start(double time) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(jdouble)>("start");
-  method(javaPart_.get(), time);
-}
-
-void OscillatorNode::stop(double time) {
-  static const auto method = javaClassLocal()->getMethod<void(jdouble)>("stop");
-  method(javaPart_.get(), time);
-}
-
 AudioParam *OscillatorNode::getFrequencyParam() {
   static const auto method =
       javaClassLocal()->getMethod<AudioParam()>("getFrequency");
