@@ -27,7 +27,7 @@ type AudioContext = {
   close: () => void;
 };
 
-export declare global {
+declare global {
   function nativeCallSyncHook(): unknown;
   var __AudioContext: AudioContext;
 }

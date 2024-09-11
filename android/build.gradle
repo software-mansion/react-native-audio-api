@@ -35,6 +35,12 @@ def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["AudioAPI_" + name]).toInteger()
 }
 
+def resolveBuildType() {
+    Gradle gradle = getGradle()
+    String tskReqStr = gradle.getStartParameter().getTaskRequests()['args'].toString()
+    return tskReqStr.contains('Release') ? 'release' : 'debug'
+}
+
 static def supportsNamespace() {
   def parsed = Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
   def major = parsed[0].toInteger()
@@ -100,6 +106,16 @@ android {
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
     targetCompatibility JavaVersion.VERSION_1_8
+
+    packagingOptions {
+      doNotStrip resolveBuildType() == 'debug' ? "**/**/*.so" : ''
+
+      excludes = [
+        "**/libjsi.so",
+        "**/libfolly_runtime.so",
+        "**/libreactnativejni.so",
+      ]
+    }
   }
 
   sourceSets {

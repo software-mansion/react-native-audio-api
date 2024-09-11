@@ -8,7 +8,7 @@ import type {
   AudioBufferSourceNode,
   AudioBuffer,
 } from './types';
-import { installACModule } from './utils/install';
+import { installModule } from './utils/install';
 
 export class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -16,7 +16,7 @@ export class AudioContext implements BaseAudioContext {
 
   constructor() {
     if (global.__AudioContext == null) {
-      installACModule();
+      installModule();
     }
 
     this.destination = global.__AudioContext.destination;

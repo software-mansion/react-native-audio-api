@@ -1,0 +1,11 @@
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "production": {
+      "distribution": "internal"
+    }
+  }
+}

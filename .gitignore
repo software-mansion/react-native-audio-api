@@ -44,10 +44,10 @@ android.iml
 
 # Cocoapods
 #
-example/ios/Pods
+apps/**/ios/Pods
 
 # Ruby
-example/vendor/
+apps/**/vendor/
 
 # node.js
 #
@@ -69,6 +69,7 @@ android/keystores/debug.keystore
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+.yarn/cache
 
 # Expo
 .expo/
@@ -81,3 +82,4 @@ lib/
 
 # Android
 .kotlin
+

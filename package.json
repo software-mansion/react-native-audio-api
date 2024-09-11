@@ -26,7 +26,6 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-audio-api-example",
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:kotlin",
@@ -38,7 +37,7 @@
     "format:ios": "find ios/ -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" | xargs clang-format -i --Werror",
     "format:common": "find common/cpp/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:kotlin": "ktlint -F 'android/src/main/java/**'",
-    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
+    "clean": "del-cli android/build apps/**/android/build apps/**/android/app/build apps/**/ios/build lib",
     "prepare": "bob build",
     "release": "release-it"
   },
@@ -90,13 +89,13 @@
     "react-native": "*"
   },
   "workspaces": [
-    "example"
+    "apps/*"
   ],
   "packageManager": "yarn@3.6.1",
   "jest": {
     "preset": "react-native",
     "modulePathIgnorePatterns": [
-      "<rootDir>/example/node_modules",
+      "<rootDir>/apps/**/node_modules",
       "<rootDir>/lib/"
     ]
   },
@@ -129,6 +128,7 @@
       "prettier"
     ],
     "rules": {
+      "react/react-in-jsx-scope": "off",
       "prettier/prettier": [
         "error",
         {
