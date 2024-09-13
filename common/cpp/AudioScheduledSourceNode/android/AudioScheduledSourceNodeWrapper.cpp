@@ -9,13 +9,13 @@ namespace audioapi {
     }
 
     void AudioScheduledSourceNodeWrapper::start(double time) {
-        auto audioBufferSourceNode = getAudioScheduledSourceNodeFromAudioNode();
-        audioBufferSourceNode->start(time);
+        auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
+        audioScheduledSourceNode->start(time);
     }
 
     void AudioScheduledSourceNodeWrapper::stop(double time) {
-        auto audioBufferSourceNode = getAudioScheduledSourceNodeFromAudioNode();
-        audioBufferSourceNode->stop(time);
+        auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
+        audioScheduledSourceNode->stop(time);
     }
 } // namespace audioapi
 #endif

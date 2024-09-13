@@ -1,11 +1,20 @@
 #pragma once
 
+#import "AudioContext.h"
 #import "AudioNode.h"
 
 @interface AudioScheduledSourceNode : AudioNode
 
-- (void)start;
+@property (nonatomic, assign) Boolean isPlaying;
 
-- (void)stop;
+- (instancetype)initWithContext:(AudioContext *)context;
+
+- (void)start:(double)time;
+
+- (void)stop:(double)time;
+
+- (void)startPlayback;
+
+- (void)stopPlayback;
 
 @end

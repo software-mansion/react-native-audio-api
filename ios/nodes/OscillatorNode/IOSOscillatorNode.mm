@@ -4,23 +4,13 @@ namespace audioapi {
 
 IOSOscillatorNode::IOSOscillatorNode(OscillatorNode *oscillator)
 {
-  audioNode_ = oscillatorNode_ = oscillator;
+  audioNode_ = audioScheduledSourceNode_ = oscillatorNode_ = oscillator;
 }
 
 IOSOscillatorNode::~IOSOscillatorNode()
 {
   [oscillatorNode_ cleanup];
-  audioNode_ = oscillatorNode_ = nil;
-}
-
-void IOSOscillatorNode::start(double time) const
-{
-  [oscillatorNode_ start:time];
-}
-
-void IOSOscillatorNode::stop(double time) const
-{
-  [oscillatorNode_ stop:time];
+    audioNode_ = audioScheduledSourceNode_ = oscillatorNode_ = nil;
 }
 
 void IOSOscillatorNode::setType(const std::string &type) const

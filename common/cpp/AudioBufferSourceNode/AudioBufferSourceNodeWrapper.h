@@ -34,7 +34,7 @@ class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
  public:
   AudioBufferSourceNodeWrapper(
       std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode)
-      : AudioNodeWrapper(bufferSourceNode) {}
+      : AudioScheduledSourceNodeWrapper(bufferSourceNode) {}
 #endif
 
  public:

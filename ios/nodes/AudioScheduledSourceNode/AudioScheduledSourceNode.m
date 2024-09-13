@@ -2,24 +2,55 @@
 
 @implementation AudioScheduledSourceNode
 
-- (void)start
+- (instancetype)initWithContext:(AudioContext *)context
 {
-  NSLog(
-      @"Attempting to call `start` on a base class where it is not implemented. You must override `start` in a subclass.");
-  @throw [NSException
-      exceptionWithName:NSInternalInconsistencyException
-                 reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
-               userInfo:nil];
+  if (self = [super init]) {
+      _isPlaying = NO;
+  }
+
+  return self;
 }
 
-- (void)stop
+- (void)start:(double)time
 {
-  NSLog(
-      @"Attempting to call `stop` on a base class where it is not implemented. You must override `stop` in a subclass.");
-  @throw [NSException
-      exceptionWithName:NSInternalInconsistencyException
-                 reason:[NSString stringWithFormat:@"You must override %@ in a subclass", NSStringFromSelector(_cmd)]
-               userInfo:nil];
+  if (_isPlaying) {
+    return;
+  }
+
+  double delay = time - [self.context getCurrentTime];
+  if (delay <= 0) {
+      [self startPlayback];
+  } else {
+    [NSTimer scheduledTimerWithTimeInterval:delay
+                                     target:self
+                                   selector:@selector(startPlayback)
+                                   userInfo:nil
+                                    repeats:NO];
+  }
+}
+
+- (void)startPlayback
+{
+  _isPlaying = YES;
+}
+
+- (void)stop:(double)time
+{
+  if (!_isPlaying) {
+    return;
+  }
+
+  double delay = time - [self.context getCurrentTime];
+  if (delay <= 0) {
+      [self stopPlayback];
+  } else {
+    [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(stopPlayback) userInfo:nil repeats:NO];
+  }
+}
+
+- (void)stopPlayback
+{
+  _isPlaying = NO;
 }
 
 @end
