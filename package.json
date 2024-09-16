@@ -13,7 +13,8 @@
     "build": "yarn workspaces foreach -A -p run build",
     "lint": "yarn workspaces foreach -A -p run lint",
     "format": "yarn workspaces foreach -A -p run format",
-    "clean": "yarn workspaces foreach -A -p run clean"
+    "clean": "yarn workspaces foreach -A -p run clean",
+    "typecheck": "yarn workspaces foreach -A -p run typecheck"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^17.0.2",
