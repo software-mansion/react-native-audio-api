@@ -1,4 +1,5 @@
 #import <OscillatorNode.h>
+#import "AudioContext.h"
 #import "Constants.h"
 
 @implementation OscillatorNode

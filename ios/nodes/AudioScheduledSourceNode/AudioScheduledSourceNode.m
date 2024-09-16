@@ -1,4 +1,5 @@
 #import "AudioScheduledSourceNode.h"
+#import "AudioContext.h"
 
 @implementation AudioScheduledSourceNode
 

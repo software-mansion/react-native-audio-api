@@ -1,7 +1,6 @@
 #pragma once
 
 #import "AudioNode.h"
-#import "AudioContext.h"
 
 @interface AudioScheduledSourceNode : AudioNode
 
