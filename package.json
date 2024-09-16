@@ -1,63 +1,19 @@
 {
-  "name": "react-native-audio-api",
-  "version": "0.1.0",
-  "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
-  "main": "lib/commonjs/index",
-  "module": "lib/module/index",
-  "types": "lib/typescript/src/index.d.ts",
-  "react-native": "src/index",
-  "source": "src/index",
-  "files": [
-    "src",
-    "lib",
-    "android",
-    "ios",
-    "cpp",
-    "*.podspec",
-    "!ios/build",
-    "!android/build",
-    "!android/gradle",
-    "!android/gradlew",
-    "!android/gradlew.bat",
-    "!android/local.properties",
-    "!**/__tests__",
-    "!**/__fixtures__",
-    "!**/__mocks__",
-    "!**/.*"
-  ],
+  "name": "react-native-audio-api-monorepo",
+  "version": "0.0.0",
+  "packageManager": "yarn@3.6.1",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/react-native-audio-api",
+      "apps/*"
+    ]
+  },
   "scripts": {
-    "test": "jest",
-    "typecheck": "tsc --noEmit",
-    "lint": "yarn lint:js && yarn lint:cpp && yarn lint:kotlin",
-    "format": "yarn format:android && yarn format:ios && yarn format:common && yarn format:kotlin",
-    "lint:js": "eslint \"**/*.{js,ts,tsx}\"",
-    "lint:cpp": "./scripts/cpplint.sh",
-    "lint:kotlin": "ktlint 'android/src/main/java/**'",
-    "format:android": "find android/src/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
-    "format:ios": "find ios/ -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" | xargs clang-format -i --Werror",
-    "format:common": "find common/cpp/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
-    "format:kotlin": "ktlint -F 'android/src/main/java/**'",
-    "clean": "del-cli android/build apps/**/android/build apps/**/android/app/build apps/**/ios/build lib",
-    "prepare": "bob build",
-    "release": "release-it"
-  },
-  "keywords": [
-    "react-native",
-    "audio",
-    "audio-api"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/software-mansion-labs/react-native-audio-api.git"
-  },
-  "author": "Software Mansion Labs (https://github.com/software-mansion-labs)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/software-mansion-labs/react-native-audio-api/issues"
-  },
-  "homepage": "https://github.com/software-mansion-labs/react-native-audio-api#readme",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "build": "yarn workspaces foreach -A -p run build",
+    "lint": "yarn workspaces foreach -A -p run lint",
+    "format": "yarn workspaces foreach -A -p run format",
+    "clean": "yarn workspaces foreach -A -p run clean"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^17.0.2",
@@ -80,24 +36,6 @@
     "release-it": "^15.0.0",
     "turbo": "^1.10.7",
     "typescript": "^5.2.2"
-  },
-  "resolutions": {
-    "@types/react": "^18.2.44"
-  },
-  "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
-  },
-  "workspaces": [
-    "apps/*"
-  ],
-  "packageManager": "yarn@3.6.1",
-  "jest": {
-    "preset": "react-native",
-    "modulePathIgnorePatterns": [
-      "<rootDir>/apps/**/node_modules",
-      "<rootDir>/lib/"
-    ]
   },
   "commitlint": {
     "extends": [
@@ -123,6 +61,9 @@
   },
   "eslintConfig": {
     "root": true,
+    "parserOptions": {
+      "requireConfigFile": false
+    },
     "extends": [
       "@react-native",
       "prettier"
@@ -151,29 +92,5 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "useTabs": false
-  },
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "lib",
-    "targets": [
-      "commonjs",
-      "module",
-      [
-        "typescript",
-        {
-          "project": "tsconfig.build.json"
-        }
-      ]
-    ]
-  },
-  "codegenConfig": {
-    "name": "RNAudioAPISpec",
-    "type": "modules",
-    "jsSrcsDir": "src"
-  },
-  "create-react-native-library": {
-    "type": "module-legacy",
-    "languages": "cpp",
-    "version": "0.37.1"
   }
 }

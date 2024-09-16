@@ -12,7 +12,8 @@
   "dependencies": {
     "@miblanchard/react-native-slider": "^2.6.0",
     "react": "18.2.0",
-    "react-native": "0.74.3"
+    "react-native": "0.74.3",
+    "react-native-audio-api": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
