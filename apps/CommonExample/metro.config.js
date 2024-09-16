@@ -11,6 +11,13 @@ const root = path.resolve(__dirname, '../..');
  */
 const config = {
   watchFolders: [root],
+
+  resolver: {
+    nodeModulesPaths: [
+      path.resolve(root, 'node_modules'),
+      path.resolve(__dirname, 'node_modules'),
+    ],
+  },
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

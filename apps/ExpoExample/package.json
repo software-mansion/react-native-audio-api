@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "npx expo start --dev-client",
+    "start": "EXPO_USE_METRO_WORKSPACE_ROOT=1 npx expo start --dev-client",
     "android": "npx expo run:android",
     "ios": "npx expo run:ios",
     "web": "npx expo start --web"
@@ -34,8 +34,7 @@
     "react-native-web": "~0.19.10"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "react-native-builder-bob": "^0.30.2"
+    "@babel/core": "^7.20.0"
   },
   "engines": {
     "node": ">=18"

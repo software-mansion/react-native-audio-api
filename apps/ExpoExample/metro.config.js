@@ -1,7 +1,5 @@
 const path = require('path');
 const { getDefaultConfig } = require('@expo/metro-config');
-const { getConfig } = require('react-native-builder-bob/metro-config');
-const pkg = require('../../package.json');
 
 const root = path.resolve(__dirname, '../..');
 
@@ -11,8 +9,13 @@ const root = path.resolve(__dirname, '../..');
  *
  * @type {import('metro-config').MetroConfig}
  */
-module.exports = getConfig(getDefaultConfig(__dirname), {
-  root,
-  pkg,
-  project: __dirname,
-});
+const config = getDefaultConfig(__dirname);
+
+config.watchFolders = [root];
+
+config.resolver.nodeModulesPaths = [
+  path.resolve(root, 'node_modules'),
+  path.resolve(__dirname, 'node_modules'),
+];
+
+module.exports = config;
