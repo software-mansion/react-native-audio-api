@@ -1,25 +1,18 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "preserveSymlinks": true,
+    "target": "es6",
+    "module": "NodeNext",
     "jsx": "react-native",
-    "lib": ["esnext"],
-    "module": "esnext",
-    "moduleResolution": "node",
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noImplicitUseStrict": false,
-    "noStrictGenericChecks": false,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "resolveJsonModule": true,
     "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "NodeNext",
+    "lib": ["es6", "dom"],
+    "esModuleInterop": true,
     "strict": true,
-    "target": "esnext",
-    "verbatimModuleSyntax": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   }
 }
