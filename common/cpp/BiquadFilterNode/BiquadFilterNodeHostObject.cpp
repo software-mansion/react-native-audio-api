@@ -76,6 +76,6 @@ void BiquadFilterNodeHostObject::set(
     return;
   }
 
-    return AudioNodeHostObject::set(runtime, propNameId, value);
+  return AudioNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi

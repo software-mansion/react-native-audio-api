@@ -11,7 +11,7 @@ std::shared_ptr<AudioBufferSourceNodeWrapper> AudioBufferSourceNodeHostObject::
 std::vector<jsi::PropNameID> AudioBufferSourceNodeHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames =
-          AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
+      AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "loop"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "buffer"));
   return propertyNames;
@@ -58,6 +58,6 @@ void AudioBufferSourceNodeHostObject::set(
     return;
   }
 
-    AudioScheduledSourceNodeHostObject::set(runtime,propNameId,value);
+  AudioScheduledSourceNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi

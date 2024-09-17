@@ -20,7 +20,7 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
 std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames =
-          AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
+      AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "frequency"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "detune"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "type"));
@@ -62,6 +62,6 @@ void OscillatorNodeHostObject::set(
     return;
   }
 
-  return AudioScheduledSourceNodeHostObject::set(runtime,propNameId,value);
+  return AudioScheduledSourceNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi

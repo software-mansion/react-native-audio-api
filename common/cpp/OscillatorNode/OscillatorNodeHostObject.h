@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "AudioScheduledSourceNodeHostObject.h"
 #include "AudioParamHostObject.h"
+#include "AudioScheduledSourceNodeHostObject.h"
 #include "OscillatorNodeWrapper.h"
 
 namespace audioapi {

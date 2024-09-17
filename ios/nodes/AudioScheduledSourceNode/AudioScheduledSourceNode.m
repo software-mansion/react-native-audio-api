@@ -5,8 +5,8 @@
 
 - (instancetype)initWithContext:(AudioContext *)context
 {
-  if (self = [super init]) {
-      _isPlaying = NO;
+  if (self = [super initWithContext:context]) {
+    _isPlaying = NO;
   }
 
   return self;
@@ -20,7 +20,7 @@
 
   double delay = time - [self.context getCurrentTime];
   if (delay <= 0) {
-      [self startPlayback];
+    [self startPlayback];
   } else {
     [NSTimer scheduledTimerWithTimeInterval:delay
                                      target:self
@@ -43,7 +43,7 @@
 
   double delay = time - [self.context getCurrentTime];
   if (delay <= 0) {
-      [self stopPlayback];
+    [self stopPlayback];
   } else {
     [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(stopPlayback) userInfo:nil repeats:NO];
   }

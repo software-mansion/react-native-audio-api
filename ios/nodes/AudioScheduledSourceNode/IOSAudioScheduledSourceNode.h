@@ -6,19 +6,18 @@
 typedef struct objc_object AudioScheduledSourceNode;
 #endif // __OBJC__
 
-#import "IOSAudioNode.h"
 #import <memory>
 #include <string>
+#import "IOSAudioNode.h"
 
 namespace audioapi {
-class IOSAudioScheduledSourceNode: public IOSAudioNode {
+class IOSAudioScheduledSourceNode : public IOSAudioNode {
  protected:
-    AudioScheduledSourceNode *audioScheduledSourceNode_;
+  AudioScheduledSourceNode *audioScheduledSourceNode_;
 
  public:
   ~IOSAudioScheduledSourceNode();
-    void start(double time) const;
-    void stop(double time) const;
+  void start(double time) const;
+  void stop(double time) const;
 };
 } // namespace audioapi
-

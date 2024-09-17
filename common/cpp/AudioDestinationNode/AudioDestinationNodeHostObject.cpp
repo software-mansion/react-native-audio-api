@@ -14,7 +14,7 @@ jsi::Value AudioDestinationNodeHostObject::get(
     const jsi::PropNameID &propNameId) {
   auto propName = propNameId.utf8(runtime);
 
-  return AudioNodeHostObject::get(runtime,propNameId);
+  return AudioNodeHostObject::get(runtime, propNameId);
 }
 
 void AudioDestinationNodeHostObject::set(

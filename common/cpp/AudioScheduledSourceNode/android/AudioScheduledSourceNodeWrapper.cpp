@@ -3,19 +3,19 @@
 
 namespace audioapi {
 
-    AudioScheduledSourceNode *
-    AudioScheduledSourceNodeWrapper::getAudioScheduledSourceNodeFromAudioNode() {
-        return static_cast<AudioScheduledSourceNode *>(node_);
-    }
+AudioScheduledSourceNode *
+AudioScheduledSourceNodeWrapper::getAudioScheduledSourceNodeFromAudioNode() {
+  return static_cast<AudioScheduledSourceNode *>(node_);
+}
 
-    void AudioScheduledSourceNodeWrapper::start(double time) {
-        auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
-        audioScheduledSourceNode->start(time);
-    }
+void AudioScheduledSourceNodeWrapper::start(double time) {
+  auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
+  audioScheduledSourceNode->start(time);
+}
 
-    void AudioScheduledSourceNodeWrapper::stop(double time) {
-        auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
-        audioScheduledSourceNode->stop(time);
-    }
+void AudioScheduledSourceNodeWrapper::stop(double time) {
+  auto audioScheduledSourceNode = getAudioScheduledSourceNodeFromAudioNode();
+  audioScheduledSourceNode->stop(time);
+}
 } // namespace audioapi
 #endif

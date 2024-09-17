@@ -12,7 +12,8 @@ using namespace facebook;
 
 class AudioBufferSourceNodeWrapper;
 
-class AudioBufferSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
+class AudioBufferSourceNodeHostObject
+    : public AudioScheduledSourceNodeHostObject {
  private:
   std::shared_ptr<AudioBufferSourceNodeWrapper>
   getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();

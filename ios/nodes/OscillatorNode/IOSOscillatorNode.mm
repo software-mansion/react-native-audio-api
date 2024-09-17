@@ -10,7 +10,7 @@ IOSOscillatorNode::IOSOscillatorNode(OscillatorNode *oscillator)
 IOSOscillatorNode::~IOSOscillatorNode()
 {
   [oscillatorNode_ cleanup];
-    audioNode_ = audioScheduledSourceNode_ = oscillatorNode_ = nil;
+  audioNode_ = audioScheduledSourceNode_ = oscillatorNode_ = nil;
 }
 
 void IOSOscillatorNode::setType(const std::string &type) const

@@ -6,8 +6,8 @@
 typedef struct objc_object OscillatorNode;
 #endif // __OBJC__
 
-#include "IOSAudioScheduledSourceNode.h"
 #include "IOSAudioParam.h"
+#include "IOSAudioScheduledSourceNode.h"
 
 namespace audioapi {
 class IOSOscillatorNode : public IOSAudioScheduledSourceNode {

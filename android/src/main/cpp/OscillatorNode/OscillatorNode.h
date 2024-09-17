@@ -1,15 +1,16 @@
 #pragma once
 
 #include <string>
-#include "AudioScheduledSourceNode.h"
 #include "AudioParam.h"
+#include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 
 using namespace facebook;
 using namespace facebook::jni;
 
-class OscillatorNode : public jni::HybridClass<OscillatorNode, AudioScheduledSourceNode> {
+class OscillatorNode
+    : public jni::HybridClass<OscillatorNode, AudioScheduledSourceNode> {
  public:
   static auto constexpr kJavaDescriptor =
       "Lcom/swmansion/audioapi/nodes/oscillator/OscillatorNode;";

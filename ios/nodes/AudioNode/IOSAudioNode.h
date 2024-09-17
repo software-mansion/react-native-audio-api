@@ -12,7 +12,7 @@ typedef struct objc_object AudioNode;
 namespace audioapi {
 class IOSAudioNode {
  protected:
-    AudioNode *audioNode_;
+  AudioNode *audioNode_;
 
  public:
   ~IOSAudioNode();

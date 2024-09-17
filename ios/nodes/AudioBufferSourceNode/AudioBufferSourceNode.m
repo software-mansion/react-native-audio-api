@@ -101,7 +101,7 @@
       if (_loop) {
         _bufferIndex = 0;
       } else {
-          [self stopPlayback];
+        [self stopPlayback];
         _bufferIndex = 0;
         break;
       }

@@ -7,11 +7,13 @@ IOSAudioScheduledSourceNode::~IOSAudioScheduledSourceNode()
   audioNode_ = audioScheduledSourceNode_ = nil;
 }
 
-void IOSAudioScheduledSourceNode::start(double time) const {
-    [audioScheduledSourceNode_ start:time];
+void IOSAudioScheduledSourceNode::start(double time) const
+{
+  [audioScheduledSourceNode_ start:time];
 }
 
-void IOSAudioScheduledSourceNode::stop(double time) const {
-    [audioScheduledSourceNode_ stop:time];
+void IOSAudioScheduledSourceNode::stop(double time) const
+{
+  [audioScheduledSourceNode_ stop:time];
 }
 } // namespace audioapi
