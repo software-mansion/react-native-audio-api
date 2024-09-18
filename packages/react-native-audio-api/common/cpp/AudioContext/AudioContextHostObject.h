@@ -28,23 +28,16 @@ class AudioContextHostObject : public jsi::HostObject {
   explicit AudioContextHostObject(
       const std::shared_ptr<AudioContextWrapper> &wrapper);
 
-#ifdef ANDROID
-  static void createAndInstallFromWrapper(
-      const std::shared_ptr<AudioContextWrapper> &wrapper,
-      jlong jsContext) {
-    auto runtime = reinterpret_cast<jsi::Runtime *>(jsContext);
-    auto hostObject = std::make_shared<AudioContextHostObject>(wrapper);
-    auto object = jsi::Object::createFromHostObject(*runtime, hostObject);
-    runtime->global().setProperty(
-        *runtime, "__AudioContext", std::move(object));
-  }
-#endif
-
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
   void set(
       jsi::Runtime &runtime,
       const jsi::PropNameID &name,
       const jsi::Value &value) override;
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+
+  static std::shared_ptr<AudioContextHostObject> createFromWrapper(
+      const std::shared_ptr<AudioContextWrapper> &wrapper) {
+    return std::make_shared<AudioContextHostObject>(wrapper);
+  }
 };
 } // namespace audioapi

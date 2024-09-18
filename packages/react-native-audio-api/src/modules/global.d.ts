@@ -9,7 +9,7 @@ import type {
   ContextState,
 } from '../types';
 
-type AudioContext = {
+export type AudioContextType = {
   destination: AudioDestinationNode;
   state: ContextState;
   sampleRate: number;
@@ -27,7 +27,11 @@ type AudioContext = {
   close: () => void;
 };
 
-declare global {
+type AudioAPI = {
+  createAudioContext: () => AudioContext_;
+};
+
+export declare global {
   function nativeCallSyncHook(): unknown;
-  var __AudioContext: AudioContext;
+  var __AudioAPI: AudioAPI;
 }

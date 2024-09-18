@@ -10,7 +10,7 @@ OscillatorNodeHostObject::getOscillatorNodeWrapperFromAudioNodeWrapper() {
 
 OscillatorNodeHostObject::OscillatorNodeHostObject(
     const std::shared_ptr<OscillatorNodeWrapper> &wrapper)
-    : AudioNodeHostObject(wrapper) {
+    : AudioScheduledSourceNodeHostObject(wrapper) {
   auto frequencyParam = wrapper->getFrequencyParam();
   frequencyParam_ = AudioParamHostObject::createFromWrapper(frequencyParam);
   auto detuneParam = wrapper->getDetuneParam();
@@ -20,9 +20,7 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
 std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames =
-      AudioNodeHostObject::getPropertyNames(runtime);
-  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "start"));
-  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "stop"));
+      AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "frequency"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "detune"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "type"));
@@ -33,40 +31,6 @@ jsi::Value OscillatorNodeHostObject::get(
     jsi::Runtime &runtime,
     const jsi::PropNameID &propNameId) {
   auto propName = propNameId.utf8(runtime);
-
-  if (propName == "start") {
-    return jsi::Function::createFromHostFunction(
-        runtime,
-        propNameId,
-        1,
-        [this](
-            jsi::Runtime &rt,
-            const jsi::Value &thisValue,
-            const jsi::Value *args,
-            size_t count) -> jsi::Value {
-          auto time = args[0].getNumber();
-          auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
-          wrapper->start(time);
-          return jsi::Value::undefined();
-        });
-  }
-
-  if (propName == "stop") {
-    return jsi::Function::createFromHostFunction(
-        runtime,
-        propNameId,
-        1,
-        [this](
-            jsi::Runtime &rt,
-            const jsi::Value &thisValue,
-            const jsi::Value *args,
-            size_t count) -> jsi::Value {
-          auto time = args[0].getNumber();
-          auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
-          wrapper->stop(time);
-          return jsi::Value::undefined();
-        });
-  }
 
   if (propName == "frequency") {
     return jsi::Object::createFromHostObject(runtime, frequencyParam_);
@@ -82,7 +46,7 @@ jsi::Value OscillatorNodeHostObject::get(
     return jsi::String::createFromUtf8(runtime, waveType);
   }
 
-  return AudioNodeHostObject::get(runtime, propNameId);
+  return AudioScheduledSourceNodeHostObject::get(runtime, propNameId);
 }
 
 void OscillatorNodeHostObject::set(
@@ -98,6 +62,6 @@ void OscillatorNodeHostObject::set(
     return;
   }
 
-  throw std::runtime_error("Not yet implemented!");
+  return AudioScheduledSourceNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi

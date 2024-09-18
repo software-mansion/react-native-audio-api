@@ -44,8 +44,6 @@ class AudioContext : BaseAudioContext {
 
   external fun initHybrid(): HybridData?
 
-  external fun install(jsContext: Long)
-
   private fun initAudioTrack(bufferSize: Int): AudioTrack {
     val audioAttributes =
       AudioAttributes

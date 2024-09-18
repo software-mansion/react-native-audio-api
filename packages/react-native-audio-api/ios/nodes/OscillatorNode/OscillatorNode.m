@@ -1,4 +1,5 @@
 #import <OscillatorNode.h>
+#import "AudioContext.h"
 #import "Constants.h"
 
 @implementation OscillatorNode
@@ -15,7 +16,6 @@
                                               minValue:-[Constants maxDetune]
                                               maxValue:[Constants maxDetune]];
     _waveType = WaveTypeSine;
-    _isPlaying = NO;
 
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
@@ -52,7 +52,7 @@
 
 - (void)cleanup
 {
-  if (_isPlaying) {
+  if (self.isPlaying) {
     [self stopPlayback];
   }
 
@@ -61,48 +61,6 @@
   _frequencyParam = nil;
   _detuneParam = nil;
   _format = nil;
-}
-
-- (void)start:(double)time
-{
-  if (_isPlaying) {
-    return;
-  }
-
-  double delay = time - [self.context getCurrentTime];
-  if (delay <= 0) {
-    [self startPlayback];
-  } else {
-    [NSTimer scheduledTimerWithTimeInterval:delay
-                                     target:self
-                                   selector:@selector(startPlayback)
-                                   userInfo:nil
-                                    repeats:NO];
-  }
-}
-
-- (void)startPlayback
-{
-  _isPlaying = YES;
-}
-
-- (void)stop:(double)time
-{
-  if (!_isPlaying) {
-    return;
-  }
-
-  double delay = time - [self.context getCurrentTime];
-  if (delay <= 0) {
-    [self stopPlayback];
-  } else {
-    [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(stopPlayback) userInfo:nil repeats:NO];
-  }
-}
-
-- (void)stopPlayback
-{
-  _isPlaying = NO;
 }
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
@@ -122,7 +80,7 @@
 
   for (int frame = 0; frame < frameCount; frame += 1) {
     // Convert cents to HZ
-    if (!_isPlaying) {
+    if (!self.isPlaying) {
       leftBuffer[frame] = 0;
       rightBuffer[frame] = 0;
       continue;
@@ -145,11 +103,6 @@
   [self process:frameCount bufferList:outputData];
 
   return noErr;
-}
-
-- (Boolean)getIsPlaying
-{
-  return _isPlaying;
 }
 
 - (void)setType:(NSString *)type

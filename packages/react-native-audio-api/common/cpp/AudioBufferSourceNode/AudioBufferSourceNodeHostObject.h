@@ -5,14 +5,15 @@
 
 #include "AudioBufferHostObject.h"
 #include "AudioBufferSourceNodeWrapper.h"
-#include "AudioNodeHostObject.h"
+#include "AudioScheduledSourceNodeHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
 
 class AudioBufferSourceNodeWrapper;
 
-class AudioBufferSourceNodeHostObject : public AudioNodeHostObject {
+class AudioBufferSourceNodeHostObject
+    : public AudioScheduledSourceNodeHostObject {
  private:
   std::shared_ptr<AudioBufferSourceNodeWrapper>
   getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
@@ -20,7 +21,7 @@ class AudioBufferSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
       const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper)
-      : AudioNodeHostObject(wrapper) {}
+      : AudioScheduledSourceNodeHostObject(wrapper) {}
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
   void set(

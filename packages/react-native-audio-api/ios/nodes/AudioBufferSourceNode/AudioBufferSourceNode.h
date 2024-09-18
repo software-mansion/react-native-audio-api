@@ -1,6 +1,5 @@
 #pragma once
 
-#import "AudioContext.h"
 #import "AudioScheduledSourceNode.h"
 #import "Constants.h"
 #import "RNAA_AudioBuffer.h"
@@ -8,7 +7,6 @@
 @interface AudioBufferSourceNode : AudioScheduledSourceNode
 
 @property (nonatomic, strong) AVAudioFormat *format;
-@property (nonatomic, assign) Boolean isPlaying;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, assign) bool loop;
 @property (nonatomic, assign) int bufferIndex;
@@ -17,10 +15,6 @@
 - (instancetype)initWithContext:(AudioContext *)context;
 
 - (void)cleanup;
-
-- (void)start:(double)time;
-
-- (void)stop:(double)time;
 
 - (void)setLoop:(bool)loop;
 

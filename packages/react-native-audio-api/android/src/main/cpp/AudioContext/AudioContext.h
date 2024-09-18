@@ -36,7 +36,6 @@ class AudioContext : public jni::HybridClass<AudioContext> {
   static void registerNatives() {
     registerHybrid({
         makeNativeMethod("initHybrid", AudioContext::initHybrid),
-        makeNativeMethod("install", AudioContext::install),
     });
   }
 

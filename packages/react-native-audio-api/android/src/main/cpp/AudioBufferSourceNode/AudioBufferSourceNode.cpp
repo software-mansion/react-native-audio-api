@@ -4,17 +4,6 @@ namespace audioapi {
 
 using namespace facebook::jni;
 
-void AudioBufferSourceNode::start(double time) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(jdouble)>("start");
-  method(javaPart_.get(), time);
-}
-
-void AudioBufferSourceNode::stop(double time) {
-  static const auto method = javaClassLocal()->getMethod<void(jdouble)>("stop");
-  method(javaPart_.get(), time);
-}
-
 bool AudioBufferSourceNode::getLoop() {
   static const auto method = javaClassLocal()->getMethod<jboolean()>("getLoop");
   return method(javaPart_.get());

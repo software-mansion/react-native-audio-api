@@ -16,13 +16,12 @@
 #include "AudioContext.h"
 #else
 #include "IOSAudioContext.h"
-#include "OscillatorNodeHostObject.h"
 #endif
 
 namespace audioapi {
-using namespace facebook;
 
 #ifdef ANDROID
+using namespace facebook;
 class AudioContext;
 #endif
 

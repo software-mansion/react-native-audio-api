@@ -1,4 +1,5 @@
 #import "AudioBufferSourceNode.h"
+#import "AudioContext.h"
 
 @implementation AudioBufferSourceNode
 
@@ -7,7 +8,6 @@
   self = [super initWithContext:context];
   if (self) {
     _loop = true;
-    _isPlaying = NO;
     _bufferIndex = 0;
     self.channelCount = 2;
     _buffer = [[RNAA_AudioBuffer alloc] initWithSampleRate:context.sampleRate
@@ -51,7 +51,7 @@
 
 - (void)cleanup
 {
-  if (_isPlaying) {
+  if (self.isPlaying) {
     [self stopPlayback];
   }
 
@@ -75,55 +75,13 @@
   [self initAudioSourceNode:_buffer];
 }
 
-- (void)start:(double)time
-{
-  if (_isPlaying) {
-    return;
-  }
-
-  double delay = time - [self.context getCurrentTime];
-  if (delay <= 0) {
-    [self startPlayback];
-  } else {
-    [NSTimer scheduledTimerWithTimeInterval:delay
-                                     target:self
-                                   selector:@selector(startPlayback)
-                                   userInfo:nil
-                                    repeats:NO];
-  }
-}
-
-- (void)startPlayback
-{
-  _isPlaying = YES;
-}
-
-- (void)stop:(double)time
-{
-  if (!_isPlaying) {
-    return;
-  }
-
-  double delay = time - [self.context getCurrentTime];
-  if (delay <= 0) {
-    [self stopPlayback];
-  } else {
-    [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(stopPlayback) userInfo:nil repeats:NO];
-  }
-}
-
-- (void)stopPlayback
-{
-  _isPlaying = NO;
-}
-
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
                               timestamp:(const AudioTimeStamp *)timestamp
                              frameCount:(AVAudioFrameCount)frameCount
                              outputData:(AudioBufferList *)outputData
 {
   for (int frame = 0; frame < frameCount; ++frame) {
-    if (!_isPlaying) {
+    if (!self.isPlaying) {
       for (int channel = 0; channel < outputData->mNumberBuffers; ++channel) {
         float *outBuffer = (float *)outputData->mBuffers[channel].mData;
         outBuffer[frame] = 0.0f;
@@ -143,7 +101,7 @@
       if (_loop) {
         _bufferIndex = 0;
       } else {
-        _isPlaying = NO;
+        [self stopPlayback];
         _bufferIndex = 0;
         break;
       }
@@ -153,11 +111,6 @@
   [self process:frameCount bufferList:outputData];
 
   return noErr;
-}
-
-- (Boolean)getIsPlaying
-{
-  return _isPlaying;
 }
 
 @end

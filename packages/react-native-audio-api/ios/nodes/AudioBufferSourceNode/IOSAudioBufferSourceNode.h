@@ -7,10 +7,10 @@ typedef struct objc_object AudioBufferSourceNode;
 #endif // __OBJC__
 
 #include "IOSAudioBuffer.h"
-#include "IOSAudioNode.h"
+#include "IOSAudioScheduledSourceNode.h"
 
 namespace audioapi {
-class IOSAudioBufferSourceNode : public IOSAudioNode {
+class IOSAudioBufferSourceNode : public IOSAudioScheduledSourceNode {
  protected:
   AudioBufferSourceNode *bufferSource_;
 
@@ -21,7 +21,5 @@ class IOSAudioBufferSourceNode : public IOSAudioNode {
   bool getLoop();
   std::shared_ptr<IOSAudioBuffer> getBuffer();
   void setBuffer(std::shared_ptr<IOSAudioBuffer> buffer);
-  void start(double time);
-  void stop(double time);
 };
 } // namespace audioapi

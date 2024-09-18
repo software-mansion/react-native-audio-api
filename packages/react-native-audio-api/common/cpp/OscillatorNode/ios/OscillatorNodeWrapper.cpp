@@ -4,7 +4,7 @@
 namespace audioapi {
 OscillatorNodeWrapper::OscillatorNodeWrapper(
     std::shared_ptr<IOSOscillatorNode> oscillatorNode)
-    : AudioNodeWrapper(oscillatorNode) {
+    : AudioScheduledSourceNodeWrapper(oscillatorNode) {
   frequencyParam_ =
       std::make_shared<AudioParamWrapper>(oscillatorNode->getFrequencyParam());
   detuneParam_ =
@@ -18,14 +18,6 @@ OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
 
 std::string OscillatorNodeWrapper::getType() {
   return getOscillatorNodeFromAudioNode()->getType();
-}
-
-void OscillatorNodeWrapper::start(double time) {
-  getOscillatorNodeFromAudioNode()->start(time);
-}
-
-void OscillatorNodeWrapper::stop(double time) {
-  getOscillatorNodeFromAudioNode()->stop(time);
 }
 
 void OscillatorNodeWrapper::setType(const std::string &type) {

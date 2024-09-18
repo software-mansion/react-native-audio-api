@@ -10,16 +10,6 @@ AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
   return std::static_pointer_cast<IOSAudioBufferSourceNode>(node_);
 }
 
-void AudioBufferSourceNodeWrapper::start(double time) {
-  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-  bufferSource->start(time);
-}
-
-void AudioBufferSourceNodeWrapper::stop(double time) {
-  auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
-  bufferSource->stop(time);
-}
-
 void AudioBufferSourceNodeWrapper::setLoop(bool loop) {
   auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
   bufferSource->setLoop(loop);

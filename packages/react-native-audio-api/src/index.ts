@@ -1,3 +1,4 @@
+import type { AudioContextType } from './modules/global';
 import type {
   BaseAudioContext,
   AudioDestinationNode,
@@ -10,45 +11,48 @@ import type {
 } from './types';
 import { installModule } from './utils/install';
 
+if (global.__AudioAPI == null) {
+  installModule();
+}
+
 export class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
+  private readonly __AudioContext: AudioContextType;
 
   constructor() {
-    if (global.__AudioContext == null) {
-      installModule();
-    }
+    this.__AudioContext = global.__AudioAPI.createAudioContext();
 
-    this.destination = global.__AudioContext.destination;
-    this.sampleRate = global.__AudioContext.sampleRate;
+    this.destination = this.__AudioContext.destination;
+    this.sampleRate = this.__AudioContext.sampleRate;
   }
 
   public get currentTime() {
-    return global.__AudioContext.currentTime;
+    return this.__AudioContext.currentTime;
   }
 
   public get state() {
-    return global.__AudioContext.state;
+    return this.__AudioContext.state;
   }
 
   createOscillator(): OscillatorNode {
-    return global.__AudioContext.createOscillator();
+    return this.__AudioContext.createOscillator();
   }
 
   createGain(): GainNode {
-    return global.__AudioContext.createGain();
+    return this.__AudioContext.createGain();
   }
 
   createStereoPanner(): StereoPannerNode {
-    return global.__AudioContext.createStereoPanner();
+    return this.__AudioContext.createStereoPanner();
   }
 
   createBiquadFilter(): BiquadFilterNode {
-    return global.__AudioContext.createBiquadFilter();
+    return this.__AudioContext.createBiquadFilter();
   }
 
   createBufferSource(): AudioBufferSourceNode {
-    return global.__AudioContext.createBufferSource();
+    return this.__AudioContext.createBufferSource();
   }
 
   createBuffer(
@@ -56,15 +60,11 @@ export class AudioContext implements BaseAudioContext {
     length: number,
     numOfChannels: number
   ): AudioBuffer {
-    return global.__AudioContext.createBuffer(
-      sampleRate,
-      length,
-      numOfChannels
-    );
+    return this.__AudioContext.createBuffer(sampleRate, length, numOfChannels);
   }
 
   close(): void {
-    global.__AudioContext.close();
+    this.__AudioContext.close();
   }
 }
 

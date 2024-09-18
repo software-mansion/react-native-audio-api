@@ -36,6 +36,6 @@ void StereoPannerNodeHostObject::set(
     const jsi::Value &value) {
   auto propName = propNameId.utf8(runtime);
 
-  throw std::runtime_error("Not yet implemented!");
+  return AudioNodeHostObject::set(runtime, propNameId, value);
 }
 } // namespace audioapi
