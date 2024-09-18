@@ -1,4 +1,5 @@
 import com.android.Version
+import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
   repositories {
@@ -41,6 +42,49 @@ def resolveBuildType() {
     return tskReqStr.contains('Release') ? 'release' : 'debug'
 }
 
+def safeAppExtGet(prop, fallback) {
+  def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+  appProject?.ext?.has(prop) ? appProject.ext.get(prop) : fallback
+}
+
+def resolveReactNativeDirectory() {
+  def reactNativeLocation = safeAppExtGet("REACT_NATIVE_NODE_MODULES_DIR", null)
+
+  if (reactNativeLocation !== null) {
+    return file(reactNativeLocation)
+  }
+
+  // monorepo workaround
+  // react-native can be hoisted or in project's own node_modules
+  def reactNativeFromProjectNodeModules = file("${rootProject.projectDir}/../node_modules/react-native")
+  if (reactNativeFromProjectNodeModules.exists()) {
+      return reactNativeFromProjectNodeModules
+  }
+
+  def reactNativeFromAudioAPIdMonorepo = file("${projectDir}/../../../node_modules/react-native")
+  if (reactNativeFromAudioAPIdMonorepo.exists()) {
+    return reactNativeFromAudioAPIdMonorepo
+  }
+
+  def reactNativeFromNodeModulesWithAudioAPI = file("${projectDir}/../../react-native")
+  if (reactNativeFromNodeModulesWithAudioAPI.exists()) {
+      return reactNativeFromNodeModulesWithAudioAPI
+  }
+
+  throw new GradleException(
+      "[AudioAPI] Unable to resolve react-native location in node_modules. You should project extension property (in `app/build.gradle`) `REACT_NATIVE_NODE_MODULES_DIR` with path to react-native."
+  )
+}
+
+def toPlatformFileString(String path) {
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+      path = path.replace(File.separatorChar, '/' as char)
+  }
+  return path
+}
+
+def reactNativeRootDir = resolveReactNativeDirectory()
+
 static def supportsNamespace() {
   def parsed = Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
   def major = parsed[0].toInteger()
@@ -73,7 +117,8 @@ android {
       cmake {
         cppFlags "-O2 -frtti -fexceptions -Wall -fstack-protector-all"
         abiFilters (*reactNativeArchitectures())
-        arguments "-DANDROID_STL=c++_shared"
+        arguments "-DANDROID_STL=c++_shared",
+                  "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}"
       }
     }
   }

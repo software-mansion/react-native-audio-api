@@ -4,7 +4,7 @@ project(react-native-audio-api)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 14)
 
-include(../node_modules/react-native/ReactAndroid/cmake-utils/folly-flags.cmake)
+include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
 file(GLOB_RECURSE SOURCE_FILES
@@ -22,9 +22,9 @@ target_include_directories(
   react-native-audio-api
   PRIVATE
   ${DIRS}
-  ../node_modules/react-native/ReactCommon/jsi
-  ../node_modules/react-native/ReactAndroid/src/main/jni/react/jni
-  ../node_modules/react-native/ReactAndroid/src/main/jni/third-party/folly
+  "${REACT_NATIVE_DIR}/ReactCommon/jsi"
+  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/jni"
+  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/third-party/folly"
 )
 
 find_package(ReactAndroid REQUIRED CONFIG)

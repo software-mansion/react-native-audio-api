@@ -13245,10 +13245,10 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-native: "npm:0.74.3"
     react-native-audio-api: "workspace:*"
-    react-native-gesture-handler: "npm:~2.16.1"
-    react-native-reanimated: "npm:~3.10.1"
-    react-native-safe-area-context: "npm:4.10.5"
-    react-native-screens: "npm:3.31.1"
+    react-native-gesture-handler: "npm:~2.19.0"
+    react-native-reanimated: "npm:~3.15.2"
+    react-native-safe-area-context: "npm:^4.11.0"
+    react-native-screens: "npm:^3.34.0"
     react-native-web: "npm:~0.19.10"
   languageName: unknown
   linkType: soft
@@ -13358,7 +13358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-gesture-handler@npm:^2.19.0":
+"react-native-gesture-handler@npm:^2.19.0, react-native-gesture-handler@npm:~2.19.0":
   version: 2.19.0
   resolution: "react-native-gesture-handler@npm:2.19.0"
   dependencies:
@@ -13370,22 +13370,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/25c237976b4f41b592e1216d4bd36c1a87233ce15fc18bf0576a2b97138e2064e1f7d013fede6b2a9629b801b2c0df497b0fe44ddf588bcb90c259ed251eca55
-  languageName: node
-  linkType: hard
-
-"react-native-gesture-handler@npm:~2.16.1":
-  version: 2.16.2
-  resolution: "react-native-gesture-handler@npm:2.16.2"
-  dependencies:
-    "@egjs/hammerjs": "npm:^2.0.17"
-    hoist-non-react-statics: "npm:^3.3.0"
-    invariant: "npm:^2.2.4"
-    lodash: "npm:^4.17.21"
-    prop-types: "npm:^15.7.2"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/227799f5e16f9725d81db524fc06c1fbef226835a5ee989642d132748832f7543ebc750d4309e49bcaa0fb6d1e7dd6b74028785e4b755978ab7f66f05b414c18
   languageName: node
   linkType: hard
 
@@ -13402,7 +13386,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-reanimated@npm:^3.15.2":
+"react-native-reanimated@npm:^3.15.2, react-native-reanimated@npm:~3.15.2":
   version: 3.15.2
   resolution: "react-native-reanimated@npm:3.15.2"
   dependencies:
@@ -13425,36 +13409,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-reanimated@npm:~3.10.1":
-  version: 3.10.1
-  resolution: "react-native-reanimated@npm:3.10.1"
-  dependencies:
-    "@babel/plugin-transform-arrow-functions": "npm:^7.0.0-0"
-    "@babel/plugin-transform-nullish-coalescing-operator": "npm:^7.0.0-0"
-    "@babel/plugin-transform-optional-chaining": "npm:^7.0.0-0"
-    "@babel/plugin-transform-shorthand-properties": "npm:^7.0.0-0"
-    "@babel/plugin-transform-template-literals": "npm:^7.0.0-0"
-    "@babel/preset-typescript": "npm:^7.16.7"
-    convert-source-map: "npm:^2.0.0"
-    invariant: "npm:^2.2.4"
-  peerDependencies:
-    "@babel/core": ^7.0.0-0
-    react: "*"
-    react-native: "*"
-  checksum: 10/bb2a0802fd619999dd5d1dd9734875fc14699de29d3537003997e85040dd3a0b430716192388c71544d600fc7abf243af1cfc24ce2513c282b046e8bb3430125
-  languageName: node
-  linkType: hard
-
-"react-native-safe-area-context@npm:4.10.5":
-  version: 4.10.5
-  resolution: "react-native-safe-area-context@npm:4.10.5"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/0bc7b4cd442e7a5deb0470f3b915ec2cf6b54337ea527fc7f5bde4f4dd062d420cb2b40fb886df96853f01951cfcb69a35fb4f6f47561cef5e195d9d68c54c3c
-  languageName: node
-  linkType: hard
-
 "react-native-safe-area-context@npm:^4.11.0":
   version: 4.11.0
   resolution: "react-native-safe-area-context@npm:4.11.0"
@@ -13462,19 +13416,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/f2e616ad3087ebf1ad34f90f4eadc2d6865d3d56bba83bcfb9d04020b4344d892e347b7f55dcd996c4d2edf21b589a5ce710a52e62a7bd86597ed34d130599b2
-  languageName: node
-  linkType: hard
-
-"react-native-screens@npm:3.31.1":
-  version: 3.31.1
-  resolution: "react-native-screens@npm:3.31.1"
-  dependencies:
-    react-freeze: "npm:^1.0.0"
-    warn-once: "npm:^0.1.0"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/54a44fc5a34848195a8e004b9ee2269e8a3560c5fa7922d80eaa1fc6283990d6ef77b3d3ec6004d7df2ad95279d486faf25bb68a82a0e958493891adb7dbac9c
   languageName: node
   linkType: hard
 
