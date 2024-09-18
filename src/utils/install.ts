@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-export function installACModule() {
+export function installAudioAPIModule() {
   verifyExpoGo();
 
   const AudioAPIModule = getAudioAPIModule();
@@ -64,7 +64,7 @@ function installModule(Module: any) {
 }
 
 function verifyInstallation() {
-  if (global.__AudioContext == null) {
+  if (global.__AudioAPI == null) {
     throw new Error(
       'Failed to install react-native-audio-api, the native initializer private does not exist. Are you trying to use Audio Context from different JS Runtimes?'
     );
