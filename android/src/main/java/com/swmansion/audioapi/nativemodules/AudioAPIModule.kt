@@ -3,7 +3,7 @@ package com.swmansion.audioapi.nativemodules
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
-import com.swmansion.audioapi.context.AudioContext
+import com.swmansion.audioapi.module.AudioAPI
 
 class AudioAPIModule(
   private val reactContext: ReactApplicationContext,
@@ -12,9 +12,9 @@ class AudioAPIModule(
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun install(): Boolean {
-    val audioContext = AudioContext()
+    val audioAPI = AudioAPI()
     val jsContext = reactContext.javaScriptContextHolder!!.get()
-    audioContext.install(jsContext)
+    audioAPI.install(jsContext)
 
     return true
   }

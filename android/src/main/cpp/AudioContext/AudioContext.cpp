@@ -7,12 +7,6 @@ using namespace facebook::jni;
 AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis)
     : javaPart_(make_global(jThis)) {}
 
-void AudioContext::install(jlong jsContext) {
-  auto audioContextWrapper = std::make_shared<AudioContextWrapper>(this);
-  AudioContextHostObject::createAndInstallFromWrapper(
-      audioContextWrapper, jsContext);
-}
-
 AudioDestinationNode *AudioContext::getDestination() {
   static const auto method =
       javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");

@@ -16,7 +16,6 @@
 #include "AudioContext.h"
 #else
 #include "IOSAudioContext.h"
-#include "OscillatorNodeHostObject.h"
 #endif
 
 namespace audioapi {
