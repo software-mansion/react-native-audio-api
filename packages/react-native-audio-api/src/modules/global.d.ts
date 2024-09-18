@@ -31,7 +31,7 @@ type AudioAPI = {
   createAudioContext: () => AudioContext_;
 };
 
-export declare global {
+declare global {
   function nativeCallSyncHook(): unknown;
   var __AudioAPI: AudioAPI;
 }
