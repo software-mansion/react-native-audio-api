@@ -8,12 +8,9 @@
 
 #ifdef ANDROID
 #include "AudioAPI.h"
-#else
-#include "IOSAudioAPI.h"
 #endif
 
 namespace audioapi {
-    using namespace facebook;
 
 #ifdef ANDROID
     class AudioAPI;
@@ -29,11 +26,8 @@ namespace audioapi {
         explicit AudioAPIWrapper(AudioAPI *audioAPI): audioAPI_(audioAPI) {}
 #else
 
-        private:
-  std::shared_ptr<IOSAudioAPI> audioAPI_;
-
  public:
-  AudioAPIWrapper();
+  AudioAPIWrapper() {}
 #endif
     public:
         std::shared_ptr<AudioContextWrapper> createAudioContext();

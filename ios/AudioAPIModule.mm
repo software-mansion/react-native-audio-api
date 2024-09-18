@@ -4,8 +4,8 @@
 #import <React/RCTUtils.h>
 #import <jsi/jsi.h>
 
-#import "../common/cpp/AudioContext/AudioContextHostObject.h"
-#import "../common/cpp/AudioContext/AudioContextWrapper.h"
+#import "../common/cpp/AudioAPI/AudioAPIWrapper.h"
+#import "../common/cpp/AudioAPI/AudioAPIHostObject.h"
 
 @implementation AudioAPIModule
 
@@ -28,10 +28,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   }
   auto &runtime = *jsiRuntime;
 
-  auto wrapper = std::make_shared<audioapi::AudioContextWrapper>();
-  auto hostObject = std::make_shared<audioapi::AudioContextHostObject>(wrapper);
+  auto wrapper = std::make_shared<audioapi::AudioAPIWrapper>();
+  auto hostObject = std::make_shared<audioapi::AudioAPIHostObject>(wrapper);
   auto object = jsi::Object::createFromHostObject(runtime, hostObject);
-  runtime.global().setProperty(runtime, "__AudioContext", std::move(object));
+  runtime.global().setProperty(runtime, "__AudioAPI", std::move(object));
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @true;
