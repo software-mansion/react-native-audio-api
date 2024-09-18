@@ -71,7 +71,7 @@ function runInstall(Module: any) {
 }
 
 function verifyInstallation() {
-  if (global.__AudioAPI == null) {
+  if (global.__AudioAPIInstaller == null) {
     throw new Error(
       'Failed to install react-native-audio-api, the native initializer private does not exist. Are you trying to use Audio API from different JS Runtimes?'
     );

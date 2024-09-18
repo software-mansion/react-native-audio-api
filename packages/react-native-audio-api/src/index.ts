@@ -1,4 +1,3 @@
-import type { AudioContextType } from './modules/global';
 import type {
   BaseAudioContext,
   AudioDestinationNode,
@@ -11,17 +10,17 @@ import type {
 } from './types';
 import { installModule } from './utils/install';
 
-if (global.__AudioAPI == null) {
+if (global.__AudioAPIInstaller == null) {
   installModule();
 }
 
 export class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  private readonly __AudioContext: AudioContextType;
+  private readonly __AudioContext: BaseAudioContext;
 
   constructor() {
-    this.__AudioContext = global.__AudioAPI.createAudioContext();
+    this.__AudioContext = global.__AudioAPIInstaller.createAudioContext();
 
     this.destination = this.__AudioContext.destination;
     this.sampleRate = this.__AudioContext.sampleRate;

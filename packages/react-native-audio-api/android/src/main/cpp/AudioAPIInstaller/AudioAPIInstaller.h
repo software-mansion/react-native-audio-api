@@ -7,8 +7,8 @@
 #include <memory>
 #include <utility>
 
-#include "AudioAPIHostObject.h"
-#include "AudioAPIWrapper.h"
+#include "AudioAPIInstallerHostObject.h"
+#include "AudioAPIInstallerWrapper.h"
 #include "AudioContext.h"
 
 namespace audioapi {
@@ -16,20 +16,20 @@ namespace audioapi {
 using namespace facebook;
 using namespace facebook::jni;
 
-class AudioAPI : public jni::HybridClass<AudioAPI> {
+class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/module/AudioAPI;";
+      "Lcom/swmansion/audioapi/module/AudioAPIInstaller;";
 
-  static jni::local_ref<AudioAPI::jhybriddata> initHybrid(
+  static jni::local_ref<AudioAPIInstaller::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis) {
     return makeCxxInstance(jThis);
   }
 
   static void registerNatives() {
     registerHybrid({
-        makeNativeMethod("initHybrid", AudioAPI::initHybrid),
-        makeNativeMethod("install", AudioAPI::install),
+        makeNativeMethod("initHybrid", AudioAPIInstaller::initHybrid),
+        makeNativeMethod("install", AudioAPIInstaller::install),
     });
   }
 
@@ -39,9 +39,10 @@ class AudioAPI : public jni::HybridClass<AudioAPI> {
  private:
   friend HybridBase;
 
-  global_ref<AudioAPI::javaobject> javaPart_;
+  global_ref<AudioAPIInstaller::javaobject> javaPart_;
 
-  explicit AudioAPI(jni::alias_ref<AudioAPI::jhybridobject> &jThis);
+  explicit AudioAPIInstaller(
+      jni::alias_ref<AudioAPIInstaller::jhybridobject> &jThis);
 };
 
 } // namespace audioapi
