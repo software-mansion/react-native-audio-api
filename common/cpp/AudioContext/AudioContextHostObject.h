@@ -34,10 +34,10 @@ class AudioContextHostObject : public jsi::HostObject {
       const jsi::PropNameID &name,
       const jsi::Value &value) override;
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
-    
-    static std::shared_ptr<AudioContextHostObject> createFromWrapper(
-        const std::shared_ptr<AudioContextWrapper> &wrapper) {
-      return std::make_shared<AudioContextHostObject>(wrapper);
-    }
+
+  static std::shared_ptr<AudioContextHostObject> createFromWrapper(
+      const std::shared_ptr<AudioContextWrapper> &wrapper) {
+    return std::make_shared<AudioContextHostObject>(wrapper);
+  }
 };
 } // namespace audioapi

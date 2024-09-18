@@ -13,23 +13,23 @@
 namespace audioapi {
 
 #ifdef ANDROID
-    class AudioAPI;
+class AudioAPI;
 #endif
 
-    class AudioAPIWrapper {
+class AudioAPIWrapper {
 #ifdef ANDROID
 
-    private:
-        AudioAPI *audioAPI_;
+ private:
+  AudioAPI *audioAPI_;
 
-    public:
-        explicit AudioAPIWrapper(AudioAPI *audioAPI): audioAPI_(audioAPI) {}
+ public:
+  explicit AudioAPIWrapper(AudioAPI *audioAPI) : audioAPI_(audioAPI) {}
 #else
 
  public:
   AudioAPIWrapper() {}
 #endif
-    public:
-        std::shared_ptr<AudioContextWrapper> createAudioContext();
-    };
+ public:
+  std::shared_ptr<AudioContextWrapper> createAudioContext();
+};
 } // namespace audioapi

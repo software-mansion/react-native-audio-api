@@ -20,7 +20,5 @@ class AudioAPI {
 
   external fun install(jsContext: Long)
 
-  fun createAudioContext(): AudioContext {
-    return AudioContext()
-  }
+  fun createAudioContext(): AudioContext = AudioContext()
 }

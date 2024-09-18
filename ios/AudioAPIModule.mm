@@ -4,8 +4,8 @@
 #import <React/RCTUtils.h>
 #import <jsi/jsi.h>
 
-#import "../common/cpp/AudioAPI/AudioAPIWrapper.h"
 #import "../common/cpp/AudioAPI/AudioAPIHostObject.h"
+#import "../common/cpp/AudioAPI/AudioAPIWrapper.h"
 
 @implementation AudioAPIModule
 

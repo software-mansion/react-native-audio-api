@@ -3,7 +3,7 @@
 
 namespace audioapi {
 std::shared_ptr<AudioContextWrapper> AudioAPIWrapper::createAudioContext() {
-    return std::make_shared<audioapi::AudioContextWrapper>();
-    }
+  return std::make_shared<audioapi::AudioContextWrapper>();
+}
 } // namespace audioapi
 #endif
