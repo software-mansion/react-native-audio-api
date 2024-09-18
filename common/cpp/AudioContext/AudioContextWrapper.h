@@ -19,9 +19,9 @@
 #endif
 
 namespace audioapi {
-using namespace facebook;
 
 #ifdef ANDROID
+using namespace facebook;
 class AudioContext;
 #endif
 
