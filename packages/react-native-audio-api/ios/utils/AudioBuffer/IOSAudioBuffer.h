@@ -20,7 +20,7 @@ class IOSAudioBuffer {
   int getLength();
   int getNumberOfChannels();
   float getDuration();
-  float **getChannelData(int channel);
-  void setChannelData(int channel, float **data, int length);
+  float *getChannelData(int channel);
+  void setChannelData(int channel, float *data, int length);
 };
 } // namespace audioapi
