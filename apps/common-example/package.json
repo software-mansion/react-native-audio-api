@@ -22,7 +22,7 @@
     "react-native-gesture-handler": "^2.19.0",
     "react-native-reanimated": "^3.15.2",
     "react-native-safe-area-context": "^4.11.0",
-    "react-native-screens": "^3.34.0"
+    "react-native-screens": "3.31.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
@@ -32,11 +32,6 @@
     "@react-native/metro-config": "0.74.85",
     "@react-native/typescript-config": "0.74.85",
     "babel-plugin-module-resolver": "^5.0.0"
-  },
-  "resolutions": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-native": "0.74.3"
   },
   "engines": {
     "node": ">=18"

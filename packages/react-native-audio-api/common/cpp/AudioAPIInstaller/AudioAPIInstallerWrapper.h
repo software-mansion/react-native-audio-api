@@ -7,27 +7,28 @@
 #include "AudioContextWrapper.h"
 
 #ifdef ANDROID
-#include "AudioAPI.h"
+#include "AudioAPIInstaller.h"
 #endif
 
 namespace audioapi {
 
 #ifdef ANDROID
-class AudioAPI;
+class AudioAPIInstaller;
 #endif
 
-class AudioAPIWrapper {
+class AudioAPIInstallerWrapper {
 #ifdef ANDROID
 
  private:
-  AudioAPI *audioAPI_;
+  AudioAPIInstaller *audioAPIInstaller_;
 
  public:
-  explicit AudioAPIWrapper(AudioAPI *audioAPI) : audioAPI_(audioAPI) {}
+  explicit AudioAPIInstallerWrapper(AudioAPIInstaller *audioAPIInstaller)
+      : audioAPIInstaller_(audioAPIInstaller) {}
 #else
 
  public:
-  AudioAPIWrapper() {}
+  AudioAPIInstallerWrapper() {}
 #endif
  public:
   std::shared_ptr<AudioContextWrapper> createAudioContext();

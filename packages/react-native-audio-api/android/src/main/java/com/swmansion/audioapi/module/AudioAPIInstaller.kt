@@ -3,7 +3,7 @@ package com.swmansion.audioapi.module
 import com.facebook.jni.HybridData
 import com.swmansion.audioapi.context.AudioContext
 
-class AudioAPI {
+class AudioAPIInstaller {
   private val mHybridData: HybridData?
 
   companion object {

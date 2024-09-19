@@ -6,6 +6,13 @@ export interface BaseAudioContext {
   createOscillator(): OscillatorNode;
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
+  createBiquadFilter: () => BiquadFilterNode;
+  createBufferSource: () => AudioBufferSourceNode;
+  createBuffer: (
+    channels: number,
+    length: number,
+    sampleRate: number
+  ) => AudioBuffer;
   close(): void;
 }
 

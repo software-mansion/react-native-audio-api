@@ -1,3 +1,11 @@
+allprojects {
+  project.pluginManager.withPlugin("com.facebook.react") {
+    react {
+      reactNativeDir = rootProject.file("../../../node_modules/react-native")
+    }
+  }
+}
+
 buildscript {
   ext {
     buildToolsVersion = "34.0.0"

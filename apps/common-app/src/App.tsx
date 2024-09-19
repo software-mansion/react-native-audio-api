@@ -1,7 +1,8 @@
 import React from 'react';
 import { useRef, useState, useEffect } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { Button, StyleSheet, Text, View } from 'react-native';
+import 'react-native-reanimated';
 
 import {
   AudioContext,

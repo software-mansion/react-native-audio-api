@@ -1,9 +1,9 @@
-#include "AudioAPIHostObject.h"
+#include "AudioAPIInstallerHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
 
-std::vector<jsi::PropNameID> AudioAPIHostObject::getPropertyNames(
+std::vector<jsi::PropNameID> AudioAPIInstallerHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames;
   propertyNames.push_back(
@@ -11,7 +11,7 @@ std::vector<jsi::PropNameID> AudioAPIHostObject::getPropertyNames(
   return propertyNames;
 }
 
-jsi::Value AudioAPIHostObject::get(
+jsi::Value AudioAPIInstallerHostObject::get(
     jsi::Runtime &runtime,
     const jsi::PropNameID &propNameId) {
   auto propName = propNameId.utf8(runtime);
@@ -37,7 +37,7 @@ jsi::Value AudioAPIHostObject::get(
   throw std::runtime_error("Not yet implemented!");
 }
 
-void AudioAPIHostObject::set(
+void AudioAPIInstallerHostObject::set(
     jsi::Runtime &runtime,
     const jsi::PropNameID &propNameId,
     const jsi::Value &value) {

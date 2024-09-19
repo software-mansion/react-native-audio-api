@@ -1,8 +1,9 @@
 #ifndef ANDROID
-#include "AudioAPIWrapper.h"
+#include "AudioAPIInstallerWrapper.h"
 
 namespace audioapi {
-std::shared_ptr<AudioContextWrapper> AudioAPIWrapper::createAudioContext() {
+std::shared_ptr<AudioContextWrapper>
+AudioAPIInstallerWrapper::createAudioContext() {
   return std::make_shared<audioapi::AudioContextWrapper>();
 }
 } // namespace audioapi

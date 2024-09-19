@@ -5,30 +5,32 @@
 #include <utility>
 #include <vector>
 
-#include "AudioAPIWrapper.h"
+#include "AudioAPIInstallerWrapper.h"
 #include "AudioContextHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
 
-class AudioAPIWrapper;
+class AudioAPIInstallerWrapper;
 
-class AudioAPIHostObject : public jsi::HostObject {
+class AudioAPIInstallerHostObject : public jsi::HostObject {
  private:
-  std::shared_ptr<AudioAPIWrapper> wrapper_;
+  std::shared_ptr<AudioAPIInstallerWrapper> wrapper_;
 
  public:
-  explicit AudioAPIHostObject(const std::shared_ptr<AudioAPIWrapper> &wrapper)
+  explicit AudioAPIInstallerHostObject(
+      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper)
       : wrapper_(wrapper) {}
 
 #ifdef ANDROID
   static void createAndInstallFromWrapper(
-      const std::shared_ptr<AudioAPIWrapper> &wrapper,
+      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper,
       jlong jsContext) {
     auto runtime = reinterpret_cast<jsi::Runtime *>(jsContext);
-    auto hostObject = std::make_shared<AudioAPIHostObject>(wrapper);
+    auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(wrapper);
     auto object = jsi::Object::createFromHostObject(*runtime, hostObject);
-    runtime->global().setProperty(*runtime, "__AudioAPI", std::move(object));
+    runtime->global().setProperty(
+        *runtime, "__AudioAPIInstaller", std::move(object));
   }
 #endif
 
