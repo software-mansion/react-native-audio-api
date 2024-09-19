@@ -3695,7 +3695,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-navigation/native@npm:^6.0.2, @react-navigation/native@npm:^6.1.18, @react-navigation/native@npm:~6.1.6":
+"@react-navigation/native@npm:^6.1.18, @react-navigation/native@npm:~6.1.6":
   version: 6.1.18
   resolution: "@react-navigation/native@npm:6.1.18"
   dependencies:
@@ -13230,7 +13230,10 @@ __metadata:
     "@babel/core": "npm:^7.20.0"
     "@expo/vector-icons": "npm:^14.0.2"
     "@miblanchard/react-native-slider": "npm:^2.6.0"
-    "@react-navigation/native": "npm:^6.0.2"
+    "@react-native-community/slider": "npm:^4.5.3"
+    "@react-navigation/native": "npm:^6.1.18"
+    "@react-navigation/native-stack": "npm:^6.11.0"
+    "@react-navigation/stack": "npm:^6.4.1"
     common-app: "workspace:*"
     expo: "npm:~51.0.28"
     expo-constants: "npm:~16.0.2"
@@ -13246,9 +13249,9 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-native: "npm:0.74.3"
     react-native-audio-api: "workspace:*"
-    react-native-gesture-handler: "npm:~2.19.0"
-    react-native-reanimated: "npm:~3.15.2"
-    react-native-safe-area-context: "npm:4.11.0"
+    react-native-gesture-handler: "npm:^2.19.0"
+    react-native-reanimated: "npm:^3.15.2"
+    react-native-safe-area-context: "npm:^4.11.0"
     react-native-screens: "npm:3.31.1"
     react-native-web: "npm:~0.19.10"
   languageName: unknown
@@ -13359,7 +13362,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-gesture-handler@npm:^2.19.0, react-native-gesture-handler@npm:~2.19.0":
+"react-native-gesture-handler@npm:^2.19.0":
   version: 2.19.0
   resolution: "react-native-gesture-handler@npm:2.19.0"
   dependencies:
@@ -13387,7 +13390,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-reanimated@npm:^3.15.2, react-native-reanimated@npm:~3.15.2":
+"react-native-reanimated@npm:^3.15.2":
   version: 3.15.2
   resolution: "react-native-reanimated@npm:3.15.2"
   dependencies:
@@ -13410,7 +13413,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:4.11.0, react-native-safe-area-context@npm:^4.11.0":
+"react-native-safe-area-context@npm:^4.11.0":
   version: 4.11.0
   resolution: "react-native-safe-area-context@npm:4.11.0"
   peerDependencies:
