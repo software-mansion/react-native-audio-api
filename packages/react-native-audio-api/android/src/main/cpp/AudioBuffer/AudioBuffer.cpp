@@ -28,7 +28,7 @@ int AudioBuffer::getNumberOfChannels() {
   return method(javaPart_);
 }
 
-float **AudioBuffer::getChannelData(int channel) {
+float *AudioBuffer::getChannelData(int channel) {
   static const auto method =
       javaClassStatic()->getMethod<JArrayFloat(jint)>("getChannelData");
   auto jArray = method(javaPart_, channel);
@@ -43,7 +43,7 @@ float **AudioBuffer::getChannelData(int channel) {
   return channelData;
 }
 
-void AudioBuffer::setChannelData(int channel, float **data) {
+void AudioBuffer::setChannelData(int channel, float *data) {
   static const auto method =
       javaClassStatic()->getMethod<void(jint, jfloatArray)>("setChannelData");
   std::vector<jfloat> buffer(getLength());

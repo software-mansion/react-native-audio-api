@@ -32,8 +32,8 @@ class AudioBuffer : public jni::HybridClass<AudioBuffer> {
   int getLength();
   double getDuration();
   int getNumberOfChannels();
-  float **getChannelData(int channel);
-  void setChannelData(int channel, float **data);
+  float *getChannelData(int channel);
+  void setChannelData(int channel, float *data);
   void prepareForDeconstruction();
 
  public:
