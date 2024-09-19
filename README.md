@@ -30,7 +30,7 @@ For development purposes there is also simplified description of already impleme
 
 ## Examples
 
-The source code for the example app is unther the [`/apps/common-example`](./apps/common-example/) directory. Check [Example README](./apps/common-example/README.md) file for installation instruction.
+The source code for the example application is unther the [`/apps/common-app`](./apps/common-app/) directory. If you want to play with the API but don't feel like trying it on a real app, you can run the example project. Check [Example README](./apps/common-example/README.md) for installation instructions.
 
 ## Your feedback
 
