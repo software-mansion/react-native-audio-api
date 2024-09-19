@@ -34,7 +34,7 @@ float *AudioBuffer::getChannelData(int channel) const {
   auto jArray = method(javaPart_, channel);
   auto length = jArray->size();
 
-  auto channelData = new float [length];
+  auto channelData = new float[length];
   auto pin = jArray->pin();
   for (int i = 0; i < length; i++) {
     channelData[i] = pin[i];
