@@ -11,6 +11,7 @@
 @property (nonatomic, assign) bool loop;
 @property (nonatomic, assign) int bufferIndex;
 @property (nonatomic, strong) RNAA_AudioBuffer *buffer;
+@property (nonatomic, strong) RNAA_AudioBuffer *mixedBuffer;
 
 - (instancetype)initWithContext:(AudioContext *)context;
 

@@ -19,4 +19,6 @@
 
 - (void)cleanup;
 
+- (RNAA_AudioBuffer *)mixWithOutputNumberOfChannels:(int)outputNumberOfChannels;
+
 @end
