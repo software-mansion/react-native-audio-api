@@ -17,8 +17,6 @@
 
 - (void)setChannelData:(int)channel data:(float *)data length:(int)length;
 
-//- (RNAA_AudioBuffer *)copyBuffer;
-//
-//- (RNAA_AudioBuffer *)mixWithOutputNumberOfChannels:(int)outputNumberOfChannels;
+- (void)cleanup;
 
 @end

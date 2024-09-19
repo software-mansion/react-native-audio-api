@@ -9,7 +9,12 @@ IOSAudioBuffer::IOSAudioBuffer(RNAA_AudioBuffer *audioBuffer)
 
 IOSAudioBuffer::~IOSAudioBuffer()
 {
-  audioBuffer_ = nullptr;
+    if(!audioBuffer_) {
+        return;
+    }
+    
+    [audioBuffer_ cleanup];
+    audioBuffer_ = nullptr;
 }
 
 int IOSAudioBuffer::getSampleRate()
