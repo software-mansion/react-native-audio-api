@@ -6,11 +6,11 @@
 {
   self = [super init];
   if (self) {
-      if (!(numberOfChannels == 1 || numberOfChannels == 2)) {
-        @throw [NSException exceptionWithName:NSInvalidArgumentException
-                                       reason:@"only 1 or 2 channels buffer is allowed"
-                                     userInfo:nil];
-      }
+    if (!(numberOfChannels == 1 || numberOfChannels == 2)) {
+      @throw [NSException exceptionWithName:NSInvalidArgumentException
+                                     reason:@"only 1 or 2 channels buffer is allowed"
+                                   userInfo:nil];
+    }
     _sampleRate = sampleRate;
     _length = length;
     _numberOfChannels = numberOfChannels;
@@ -39,10 +39,10 @@
   }
 
   NSMutableArray<NSNumber *> *channelData = self.channels[channel];
-    
-    float *data = (float *)malloc(_length * sizeof(float));
+
+  float *data = (float *)malloc(_length * sizeof(float));
   for (int i = 0; i < self.length; i++) {
-      data[i] = channelData[i].floatValue;
+    data[i] = channelData[i].floatValue;
   }
   return data;
 }
@@ -66,8 +66,9 @@
   }
 }
 
-- (void)cleanup {
-    _channels = nil;
+- (void)cleanup
+{
+  _channels = nil;
 }
 
 @end

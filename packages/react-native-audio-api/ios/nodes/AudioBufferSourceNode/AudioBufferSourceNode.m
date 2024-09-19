@@ -17,29 +17,28 @@
     self.numberOfOutputs = 1;
     self.numberOfInputs = 0;
 
-      _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:_buffer.sampleRate
-                                                               channels:2];
-      __weak typeof(self) weakSelf = self;
-      _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format
-                                                  renderBlock:^OSStatus(
-                                                      BOOL *isSilence,
-                                                      const AudioTimeStamp *timestamp,
-                                                      AVAudioFrameCount frameCount,
-                                                      AudioBufferList *outputData) {
-                                                    return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                       timestamp:timestamp
-                                                                                      frameCount:frameCount
-                                                                                      outputData:outputData];
-                                                  }];
-      [self.context.audioEngine attachNode:self.sourceNode];
-      [self.context.audioEngine connect:self.sourceNode to:self.context.audioEngine.mainMixerNode format:self.format];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:_buffer.sampleRate channels:2];
+    __weak typeof(self) weakSelf = self;
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format
+                                                renderBlock:^OSStatus(
+                                                    BOOL *isSilence,
+                                                    const AudioTimeStamp *timestamp,
+                                                    AVAudioFrameCount frameCount,
+                                                    AudioBufferList *outputData) {
+                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                     timestamp:timestamp
+                                                                                    frameCount:frameCount
+                                                                                    outputData:outputData];
+                                                }];
+    [self.context.audioEngine attachNode:self.sourceNode];
+    [self.context.audioEngine connect:self.sourceNode to:self.context.audioEngine.mainMixerNode format:self.format];
 
-      if (!self.context.audioEngine.isRunning) {
-        NSError *error = nil;
-        if (![self.context.audioEngine startAndReturnError:&error]) {
-          NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
-        }
+    if (!self.context.audioEngine.isRunning) {
+      NSError *error = nil;
+      if (![self.context.audioEngine startAndReturnError:&error]) {
+        NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
       }
+    }
   }
   return self;
 }
@@ -74,47 +73,47 @@
                              frameCount:(AVAudioFrameCount)frameCount
                              outputData:(AudioBufferList *)outputData
 {
-    if (outputData->mNumberBuffers < 2) {
-      return noErr; // Ensure we have stereo output
+  if (outputData->mNumberBuffers < 2) {
+    return noErr; // Ensure we have stereo output
+  }
+
+  float *leftBuffer = (float *)outputData->mBuffers[0].mData;
+  float *rightBuffer = (float *)outputData->mBuffers[1].mData;
+
+  float *leftBufferData = [_buffer getChannelDataForChannel:0];
+  float *rightBufferData = leftBufferData;
+
+  if (_buffer.numberOfChannels == 2) {
+    rightBufferData = [_buffer getChannelDataForChannel:1];
+  }
+
+  for (int frame = 0; frame < frameCount; frame += 1) {
+    // Convert cents to HZ
+    if (!self.isPlaying) {
+      leftBuffer[frame] = 0;
+      rightBuffer[frame] = 0;
+      continue;
     }
 
-    float *leftBuffer = (float *)outputData->mBuffers[0].mData;
-    float *rightBuffer = (float *)outputData->mBuffers[1].mData;
-    
-    float *leftBufferData = [_buffer getChannelDataForChannel:0];
-    float *rightBufferData = leftBufferData;
-    
-    if (_buffer.numberOfChannels == 2) {
-        rightBufferData = [_buffer getChannelDataForChannel:1];
-    }
+    leftBuffer[frame] = leftBufferData[_bufferIndex];
+    rightBuffer[frame] = rightBufferData[_bufferIndex];
 
-    for (int frame = 0; frame < frameCount; frame += 1) {
-      // Convert cents to HZ
-      if (!self.isPlaying) {
-        leftBuffer[frame] = 0;
-        rightBuffer[frame] = 0;
-        continue;
+    ++_bufferIndex;
+
+    if (_bufferIndex >= _buffer.length) {
+      if (_loop) {
+        _bufferIndex = 0;
+      } else {
+        [self stopPlayback];
+        _bufferIndex = 0;
+        break;
       }
-
-        leftBuffer[frame] = leftBufferData[_bufferIndex];
-        rightBuffer[frame] = rightBufferData[_bufferIndex];
-        
-        ++_bufferIndex;
-
-        if (_bufferIndex >= _buffer.length) {
-          if (_loop) {
-            _bufferIndex = 0;
-          } else {
-            [self stopPlayback];
-            _bufferIndex = 0;
-            break;
-          }
-        }
     }
+  }
 
-    [self process:frameCount bufferList:outputData];
+  [self process:frameCount bufferList:outputData];
 
-    return noErr;
+  return noErr;
 }
 
 @end

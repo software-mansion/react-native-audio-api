@@ -72,11 +72,10 @@ jsi::Value AudioBufferHostObject::get(
             size_t count) -> jsi::Value {
           int channel = args[0].getNumber();
           auto array = args[1].getObject(rt).asArray(rt);
-          auto *channelData = new float [wrapper_->getLength()];
+          auto *channelData = new float[wrapper_->getLength()];
 
           for (int i = 0; i < wrapper_->getLength(); i++) {
-            channelData[i] =
-                float(array.getValueAtIndex(rt, i).getNumber());
+            channelData[i] = float(array.getValueAtIndex(rt, i).getNumber());
           }
 
           wrapper_->setChannelData(channel, channelData, wrapper_->getLength());
