@@ -66,7 +66,7 @@
 - (void)setBuffer:(RNAA_AudioBuffer *)buffer
 {
   _buffer = buffer;
-    _mixedBuffer = [_buffer mixWithOutputNumberOfChannels:self.channelCount];
+  _mixedBuffer = [_buffer mixWithOutputNumberOfChannels:self.channelCount];
 }
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
@@ -74,15 +74,15 @@
                              frameCount:(AVAudioFrameCount)frameCount
                              outputData:(AudioBufferList *)outputData
 {
-    if (outputData->mNumberBuffers < 2) {
-        return noErr; // Ensure we have stereo output
-    }
-    
-    float *leftBuffer = (float *)outputData->mBuffers[0].mData;
-    float *rightBuffer = (float *)outputData->mBuffers[1].mData;
+  if (outputData->mNumberBuffers < 2) {
+    return noErr; // Ensure we have stereo output
+  }
+
+  float *leftBuffer = (float *)outputData->mBuffers[0].mData;
+  float *rightBuffer = (float *)outputData->mBuffers[1].mData;
 
   float *leftBufferData = [_mixedBuffer getChannelDataForChannel:0];
-    float *rightBufferData = [_mixedBuffer getChannelDataForChannel:1];
+  float *rightBufferData = [_mixedBuffer getChannelDataForChannel:1];
 
   for (int frame = 0; frame < frameCount; frame += 1) {
     // Convert cents to HZ
