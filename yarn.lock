@@ -5823,7 +5823,7 @@ __metadata:
     react-native-gesture-handler: "npm:^2.19.0"
     react-native-reanimated: "npm:^3.15.2"
     react-native-safe-area-context: "npm:^4.11.0"
-    react-native-screens: "npm:^3.34.0"
+    react-native-screens: "npm:3.31.1"
   peerDependencies:
     "@react-native-community/slider": "*"
     "@react-navigation/native": "*"
@@ -13249,7 +13249,7 @@ __metadata:
     react-native-gesture-handler: "npm:~2.19.0"
     react-native-reanimated: "npm:~3.15.2"
     react-native-safe-area-context: "npm:4.11.0"
-    react-native-screens: "npm:^3.34.0"
+    react-native-screens: "npm:3.31.1"
     react-native-web: "npm:~0.19.10"
   languageName: unknown
   linkType: soft
@@ -13277,7 +13277,7 @@ __metadata:
     react-native-gesture-handler: "npm:^2.19.0"
     react-native-reanimated: "npm:^3.15.2"
     react-native-safe-area-context: "npm:^4.11.0"
-    react-native-screens: "npm:^3.34.0"
+    react-native-screens: "npm:3.31.1"
   languageName: unknown
   linkType: soft
 
@@ -13420,16 +13420,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-screens@npm:^3.34.0":
-  version: 3.34.0
-  resolution: "react-native-screens@npm:3.34.0"
+"react-native-screens@npm:3.31.1":
+  version: 3.31.1
+  resolution: "react-native-screens@npm:3.31.1"
   dependencies:
     react-freeze: "npm:^1.0.0"
     warn-once: "npm:^0.1.0"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10/dfcbde7de4aae27980191bc64861190b2edece8f0e3988ef7e83ee6a7895df35fe006024d8fa0611cefc1e7dd6d574ce598f1dcb036750dc6b0a5fca073dd2b9
+  checksum: 10/54a44fc5a34848195a8e004b9ee2269e8a3560c5fa7922d80eaa1fc6283990d6ef77b3d3ec6004d7df2ad95279d486faf25bb68a82a0e958493891adb7dbac9c
   languageName: node
   linkType: hard
 
