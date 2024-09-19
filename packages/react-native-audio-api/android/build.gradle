@@ -54,21 +54,10 @@ def resolveReactNativeDirectory() {
     return file(reactNativeLocation)
   }
 
-  // monorepo workaround
-  // react-native can be hoisted or in project's own node_modules
-  def reactNativeFromProjectNodeModules = file("${rootProject.projectDir}/../node_modules/react-native")
-  if (reactNativeFromProjectNodeModules.exists()) {
-      return reactNativeFromProjectNodeModules
-  }
-
-  def reactNativeFromAudioAPIdMonorepo = file("${projectDir}/../../../node_modules/react-native")
-  if (reactNativeFromAudioAPIdMonorepo.exists()) {
-    return reactNativeFromAudioAPIdMonorepo
-  }
-
-  def reactNativeFromNodeModulesWithAudioAPI = file("${projectDir}/../../react-native")
-  if (reactNativeFromNodeModulesWithAudioAPI.exists()) {
-      return reactNativeFromNodeModulesWithAudioAPI
+  // Fallback to node resolver for custom directory structures like monorepos.
+  def reactNativePackage = file(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim())
+  if(reactNativePackage.exists()) {
+      return reactNativePackage.parentFile
   }
 
   throw new GradleException(

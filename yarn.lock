@@ -5811,6 +5811,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "common-app@workspace:apps/common-app"
   dependencies:
+    "@babel/core": "npm:^7.20.0"
     "@react-native-community/slider": "npm:^4.5.3"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
@@ -13247,7 +13248,7 @@ __metadata:
     react-native-audio-api: "workspace:*"
     react-native-gesture-handler: "npm:~2.19.0"
     react-native-reanimated: "npm:~3.15.2"
-    react-native-safe-area-context: "npm:^4.11.0"
+    react-native-safe-area-context: "npm:4.11.0"
     react-native-screens: "npm:^3.34.0"
     react-native-web: "npm:~0.19.10"
   languageName: unknown
@@ -13409,7 +13410,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:^4.11.0":
+"react-native-safe-area-context@npm:4.11.0, react-native-safe-area-context@npm:^4.11.0":
   version: 4.11.0
   resolution: "react-native-safe-area-context@npm:4.11.0"
   peerDependencies:

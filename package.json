@@ -13,7 +13,7 @@
     "build": "yarn workspaces foreach -A -p run build",
     "lint": "yarn workspaces foreach -A -p run lint",
     "format": "yarn workspaces foreach -A -p run format",
-    "clean": "yarn workspaces foreach -A -p run clean",
+    "clean": "del-cli packages/**/android/build apps/**/android/build apps/**/android/app/build apps/**/ios/build packages/**/lib node_modules apps/**/node_modules packages/**/node_modules",
     "typecheck": "yarn workspaces foreach -A -p run typecheck"
   },
   "devDependencies": {
