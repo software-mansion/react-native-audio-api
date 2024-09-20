@@ -1,6 +1,6 @@
-import { DrumMachine } from './DrumMachine';
 import { Metronome } from './Metronome';
 import { Oscillator } from './Oscillator';
+import { DrumMachine } from './DrumMachine';
 
 interface Example {
   title: string;
@@ -25,3 +25,5 @@ export const Examples: Record<string, Example> = {
     screen: DrumMachine,
   },
 } as const;
+
+export type ExampleKey = keyof typeof Examples;

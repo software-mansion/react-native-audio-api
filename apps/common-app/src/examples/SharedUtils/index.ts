@@ -1,3 +1,3 @@
-export * from './soundEngines/Kick';
-export * from './soundEngines/HiHat';
-export * from './soundEngines/Clap';
+export { default as Kick } from './soundEngines/Kick';
+export { default as HiHat } from './soundEngines/HiHat';
+export { default as Clap } from './soundEngines/Clap';

@@ -1,43 +1,43 @@
 import React from 'react';
+import type { FC } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Container } from './components/Container';
+
+import Container from './components/Container';
 import { Examples } from './examples';
 import { layout, colors } from './styles';
 
-//TODO add absolute imports
-
 const Stack = createStackNavigator();
 
-function HomeScreen() {
+const HomeScreen: FC = () => {
   const navigation = useNavigation();
 
   return (
     <Container centered={false}>
-      <ScrollView contentContainerStyle={{ padding: layout.spacing * 2 }}>
-        {Object.keys(Examples).map((key) => (
+      <ScrollView contentContainerStyle={styles.scrollView}>
+        {Object.entries(Examples).map(([key, example]) => (
           <TouchableOpacity
             onPress={() => navigation.navigate(key as never)}
             key={key}
             style={styles.button}
           >
-            <Text style={styles.title}>{Examples[key].title}</Text>
-            <Text style={styles.subtitle}>{Examples[key].subtitle}</Text>
+            <Text style={styles.title}>{example.title}</Text>
+            <Text style={styles.subtitle}>{example.subtitle}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
     </Container>
   );
-}
+};
 
-export default function App() {
+const App: FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: colors.blue,
+            backgroundColor: colors.darkblue,
           },
           headerTintColor: colors.white,
         }}
@@ -58,7 +58,7 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
 
 const styles = StyleSheet.create({
   title: {
@@ -77,4 +77,9 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: layout.radius,
   },
+  scrollView: {
+    padding: layout.spacing * 2,
+  },
 });
+
+export default App;

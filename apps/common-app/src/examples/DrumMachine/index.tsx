@@ -1,1 +1,1 @@
-export * from './DrumMachine';
+export { default as DrumMachine } from './DrumMachine';

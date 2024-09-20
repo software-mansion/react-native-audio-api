@@ -1,7 +1,8 @@
 import { AudioContext } from 'react-native-audio-api';
+
 import type { SoundEngine } from './SoundEngine';
 
-export class HiHat implements SoundEngine {
+class HiHat implements SoundEngine {
   public audioContext: AudioContext;
   public tone: number;
   public decay: number;
@@ -55,3 +56,5 @@ export class HiHat implements SoundEngine {
     });
   }
 }
+
+export default HiHat;

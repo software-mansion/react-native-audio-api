@@ -1,18 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
-import type { ReactNode } from 'react';
+import type { PropsWithChildren, FC } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export function Container({
-  children,
-  style,
-  centered = true,
-}: {
-  children: ReactNode;
+type ContainerProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   centered?: boolean;
-}) {
+}>;
+
+const Container: FC<ContainerProps> = (props) => {
+  const { children, style, centered } = props;
   return (
     <SafeAreaView
       style={[
@@ -27,4 +24,6 @@ export function Container({
       {children}
     </SafeAreaView>
   );
-}
+};
+
+export default Container;

@@ -1,10 +1,7 @@
 import React from 'react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, FC } from 'react';
 import { Button, StyleSheet, Text } from 'react-native';
-
 import Slider from '@react-native-community/slider';
-import { Container } from '../../components/Container';
-
 import {
   AudioContext,
   type GainNode,
@@ -12,12 +9,14 @@ import {
   type StereoPannerNode,
 } from 'react-native-audio-api';
 
+import Container from '../../components/Container';
+
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
 
-export function Oscillator() {
+const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gain, setGain] = useState(INITIAL_GAIN);
   const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
@@ -49,16 +48,6 @@ export function Oscillator() {
     gainRef.current.connect(panRef.current);
     panRef.current.connect(audioContextRef.current.destination);
   };
-
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
 
   const handleGainChange = (newValue: number) => {
     setGain(newValue);
@@ -103,8 +92,18 @@ export function Oscillator() {
     setIsPlaying((prev) => !prev);
   };
 
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
   return (
-    <Container>
+    <Container centered={true}>
       <Button title={isPlaying ? 'Pause' : 'Play'} onPress={handlePlayPause} />
       <Text>Gain: {gain.toFixed(2)}</Text>
       <Slider
@@ -144,7 +143,7 @@ export function Oscillator() {
       />
     </Container>
   );
-}
+};
 
 const styles = StyleSheet.create({
   slider: {
@@ -152,3 +151,5 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 });
+
+export default Oscillator;

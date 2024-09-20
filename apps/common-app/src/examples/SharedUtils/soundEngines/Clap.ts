@@ -1,12 +1,14 @@
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, type AudioBuffer } from 'react-native-audio-api';
+
 import type { SoundEngine } from './SoundEngine';
 
-export class Clap implements SoundEngine {
+class Clap implements SoundEngine {
   public audioContext: AudioContext;
   public tone: number;
   public decay: number;
   public volume: number;
   private pulseWidth: number;
+  private noiseBuffer: AudioBuffer;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -14,6 +16,7 @@ export class Clap implements SoundEngine {
     this.decay = 0.3;
     this.volume = 1;
     this.pulseWidth = 0.025;
+    this.noiseBuffer = this.createNoiseBuffer();
   }
 
   createNoiseBuffer() {
@@ -39,7 +42,7 @@ export class Clap implements SoundEngine {
     const noise = this.audioContext.createBufferSource();
     const filter = this.audioContext.createBiquadFilter();
 
-    noise.buffer = this.createNoiseBuffer();
+    noise.buffer = this.noiseBuffer;
     filter.type = 'bandpass';
     filter.frequency.value = this.tone * 2;
 
@@ -63,3 +66,5 @@ export class Clap implements SoundEngine {
     noise.stop(time + this.decay);
   }
 }
+
+export default Clap;

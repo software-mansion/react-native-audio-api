@@ -1,7 +1,8 @@
 import { AudioContext } from 'react-native-audio-api';
+
 import type { SoundEngine } from './SoundEngine';
 
-export class Kick implements SoundEngine {
+class Kick implements SoundEngine {
   public audioContext: AudioContext;
   public tone: number;
   public decay: number;
@@ -31,3 +32,5 @@ export class Kick implements SoundEngine {
     oscillator.stop(time + this.decay);
   }
 }
+
+export default Kick;

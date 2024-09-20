@@ -1,10 +1,14 @@
-import { Container } from '../../components/Container';
 import { Text } from 'react-native';
+import { FC } from 'react';
 
-export function Metronome() {
+import Container from '../../components/Container';
+
+const Metronome: FC = () => {
   return (
-    <Container>
+    <Container centered={true}>
       <Text>Metronome</Text>
     </Container>
   );
-}
+};
+
+export default Metronome;
