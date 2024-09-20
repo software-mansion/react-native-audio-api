@@ -18,3 +18,23 @@ export const colors = {
   blue: '#007AFF',
   border: 'rgba(0,0,0,0.1)',
 };
+
+type ColorShades = {
+  [key in keyof typeof colors]: {
+    base: string;
+    light: string;
+    dark: string;
+  };
+};
+
+export const colorShades: ColorShades = Object.entries(colors).reduce(
+  (acc, [key, value]) => {
+    acc[key as keyof typeof colors] = {
+      base: value,
+      light: `${value}55`,
+      dark: `${value}DD`,
+    };
+    return acc;
+  },
+  {} as ColorShades
+);

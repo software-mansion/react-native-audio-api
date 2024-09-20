@@ -1,14 +1,10 @@
-import { Text } from 'react-native';
 import { FC } from 'react';
 
 import Container from '../../components/Container';
+import CustomSlider from '../../components/CustomSlider';
 
 const Metronome: FC = () => {
-  return (
-    <Container centered={true}>
-      <Text>Metronome</Text>
-    </Container>
-  );
+  return <CustomSlider />;
 };
 
 export default Metronome;
