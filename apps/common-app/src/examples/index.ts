@@ -2,7 +2,7 @@ import { Metronome } from './Metronome';
 import { Oscillator } from './Oscillator';
 import { DrumMachine } from './DrumMachine';
 
-interface Example {
+export interface Example {
   title: string;
   subtitle: string;
   screen: React.FC;

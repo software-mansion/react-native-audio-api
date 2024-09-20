@@ -5,7 +5,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import Container from './components/Container';
-import { Examples } from './examples';
+import { Examples, ExampleKey, Example } from './examples';
 import { layout, colors } from './styles';
 
 const Stack = createStackNavigator();
@@ -16,16 +16,18 @@ const HomeScreen: FC = () => {
   return (
     <Container centered={false}>
       <ScrollView contentContainerStyle={styles.scrollView}>
-        {Object.entries(Examples).map(([key, example]) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate(key as never)}
-            key={key}
-            style={styles.button}
-          >
-            <Text style={styles.title}>{example.title}</Text>
-            <Text style={styles.subtitle}>{example.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
+        {Object.entries(Examples).map(
+          ([key, example]: [ExampleKey, Example]) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate(key as never)}
+              key={key}
+              style={styles.button}
+            >
+              <Text style={styles.title}>{example.title}</Text>
+              <Text style={styles.subtitle}>{example.subtitle}</Text>
+            </TouchableOpacity>
+          )
+        )}
       </ScrollView>
     </Container>
   );
