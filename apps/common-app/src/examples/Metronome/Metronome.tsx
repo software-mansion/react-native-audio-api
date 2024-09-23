@@ -25,7 +25,7 @@ const Metronome: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const audioContextRef = useRef<null | AudioContext>(null);
-  const intervalRef = useRef<null | number>(null);
+  const intervalRef = useRef<null | NodeJS.Timeout>(null);
   const nextNoteTimeRef = useRef(0.0);
   const currentBeatRef = useRef(0);
 
