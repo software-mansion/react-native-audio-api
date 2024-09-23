@@ -7,6 +7,7 @@ import {
   type GainNode,
   type OscillatorNode,
   type StereoPannerNode,
+  type WaveType,
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
@@ -22,6 +23,7 @@ const Oscillator: FC = () => {
   const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
   const [pan, setPan] = useState(INITIAL_PAN);
+  const [oscillatorType, setOscillatorType] = useState<WaveType>('sine');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -36,7 +38,7 @@ const Oscillator: FC = () => {
     oscillatorRef.current = audioContextRef.current.createOscillator();
     oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
     oscillatorRef.current.detune.value = INITIAL_DETUNE;
-    oscillatorRef.current.type = 'sine';
+    oscillatorRef.current.type = oscillatorType;
 
     gainRef.current = audioContextRef.current.createGain();
     gainRef.current.gain.value = INITIAL_GAIN;
@@ -92,6 +94,23 @@ const Oscillator: FC = () => {
     setIsPlaying((prev) => !prev);
   };
 
+  const toggleOscillatorType = () => {
+    setOscillatorType((prevType: WaveType) => {
+      const nextType =
+        prevType === 'sine'
+          ? 'square'
+          : prevType === 'square'
+            ? 'sawtooth'
+            : prevType === 'sawtooth'
+              ? 'triangle'
+              : 'sine';
+      if (oscillatorRef.current) {
+        oscillatorRef.current.type = nextType;
+      }
+      return nextType;
+    });
+  };
+
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
@@ -140,6 +159,10 @@ const Oscillator: FC = () => {
         minimumValue={0}
         maximumValue={100}
         step={1}
+      />
+      <Button
+        title={`Oscillator Type: ${oscillatorType}`}
+        onPress={toggleOscillatorType}
       />
     </Container>
   );

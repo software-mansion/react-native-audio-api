@@ -48,7 +48,7 @@ export interface AudioScheduledSourceNode extends AudioNode {
   stop: (time: number) => void;
 }
 
-type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 export interface OscillatorNode extends AudioScheduledSourceNode {
   frequency: AudioParam;
