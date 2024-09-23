@@ -3,7 +3,6 @@ import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   clamp,
-  useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
   runOnJS,
@@ -26,31 +25,30 @@ const CustomSlider: FC<CustomSliderProps> = (props) => {
   const { value, onValueChange, minimumValue, maximumValue, step, style } =
     props;
   const x = useSharedValue(0);
-  const aRef = useAnimatedRef<View>();
-  const [width, setWidth] = useState<number>(300);
+  const [sliderWidth, setSliderWidth] = useState<number>(300);
 
   const convertXToValue = useCallback(
     (xValue: number) => {
-      const fraction = xValue / width;
+      const fraction = xValue / sliderWidth;
       const newValue = minimumValue + fraction * (maximumValue - minimumValue);
       runOnJS(onValueChange)(Math.round(newValue / step) * step);
     },
-    [width, minimumValue, maximumValue, step, onValueChange]
+    [sliderWidth, minimumValue, maximumValue, step, onValueChange]
   );
 
   const convertValueToX = useCallback(
     (newValue: number) => {
       const fraction =
         (newValue - minimumValue) / (maximumValue - minimumValue);
-      x.value = fraction * width;
+      x.value = fraction * sliderWidth;
     },
-    [width, minimumValue, maximumValue, x]
+    [sliderWidth, minimumValue, maximumValue, x]
   );
 
   const panGesture = Gesture.Pan()
     .averageTouches(true)
     .onChange((ev) => {
-      x.value = clamp((x.value += ev.changeX), 0, width);
+      x.value = clamp((x.value += ev.changeX), 0, sliderWidth);
       runOnJS(convertXToValue)(x.value);
     })
     .onEnd(() => {
@@ -69,7 +67,7 @@ const CustomSlider: FC<CustomSliderProps> = (props) => {
 
   useEffect(() => {
     if (style && 'width' in style) {
-      setWidth(style.width as number);
+      setSliderWidth(style.width as number);
     }
 
     runOnJS(convertValueToX)(value);
@@ -78,7 +76,10 @@ const CustomSlider: FC<CustomSliderProps> = (props) => {
   return (
     <View style={[styles.default, style]}>
       <GestureDetector gesture={panGesture}>
-        <View ref={aRef} style={styles.slider} hitSlop={hitSlop}>
+        <View
+          style={[styles.slider, styles.default, { width: sliderWidth }]}
+          hitSlop={hitSlop}
+        >
           <Animated.View style={[styles.progress, { width: x }]} />
           <Animated.View style={[styles.knob, animatedStyle]} />
         </View>
@@ -89,7 +90,7 @@ const CustomSlider: FC<CustomSliderProps> = (props) => {
 
 const styles = StyleSheet.create({
   default: {
-    width: 300,
+    width: '80%',
   },
   knob: {
     width: layout.knobSize,

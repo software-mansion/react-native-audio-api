@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
 import { Button, StyleSheet, Text } from 'react-native';
-import Slider from '@react-native-community/slider';
+import CustomSlider from '../../components/CustomSlider';
 import {
   AudioContext,
   type GainNode,
@@ -125,7 +125,7 @@ const Oscillator: FC = () => {
     <Container centered={true}>
       <Button title={isPlaying ? 'Pause' : 'Play'} onPress={handlePlayPause} />
       <Text>Gain: {gain.toFixed(2)}</Text>
-      <Slider
+      <CustomSlider
         style={styles.slider}
         value={gain}
         onValueChange={handleGainChange}
@@ -134,7 +134,7 @@ const Oscillator: FC = () => {
         step={0.01}
       />
       <Text>Pan: {pan.toFixed(1)}</Text>
-      <Slider
+      <CustomSlider
         style={styles.slider}
         value={pan}
         onValueChange={handlePanChange}
@@ -143,7 +143,7 @@ const Oscillator: FC = () => {
         step={0.1}
       />
       <Text>Frequency: {frequency.toFixed(0)}</Text>
-      <Slider
+      <CustomSlider
         style={styles.slider}
         value={frequency}
         onValueChange={handleFrequencyChange}
@@ -152,7 +152,7 @@ const Oscillator: FC = () => {
         step={10}
       />
       <Text>Detune: {detune.toFixed(0)}</Text>
-      <Slider
+      <CustomSlider
         style={styles.slider}
         value={detune}
         onValueChange={handleDetuneChange}
@@ -160,17 +160,15 @@ const Oscillator: FC = () => {
         maximumValue={100}
         step={1}
       />
-      <Button
-        title={`Oscillator Type: ${oscillatorType}`}
-        onPress={toggleOscillatorType}
-      />
+      <Text>Oscillator type: {oscillatorType}</Text>
+      <Button title={`Click to change type`} onPress={toggleOscillatorType} />
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
   slider: {
-    width: 300,
+    width: 250,
     padding: 8,
   },
 });
