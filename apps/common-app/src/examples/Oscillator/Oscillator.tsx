@@ -11,6 +11,7 @@ import {
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
+import { layout } from '../../styles';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
@@ -169,7 +170,7 @@ const Oscillator: FC = () => {
 const styles = StyleSheet.create({
   slider: {
     width: 250,
-    padding: 8,
+    padding: layout.spacing,
   },
 });
 
