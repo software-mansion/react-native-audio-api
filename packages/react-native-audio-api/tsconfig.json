@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "react-native-audio-api": ["./src"],
+      "react-native-audio-api": ["./src"]
     }
   },
   "include": ["src"]
