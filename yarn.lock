@@ -2812,16 +2812,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@miblanchard/react-native-slider@npm:^2.6.0":
-  version: 2.6.0
-  resolution: "@miblanchard/react-native-slider@npm:2.6.0"
-  peerDependencies:
-    react: ">=16.8"
-    react-native: ">=0.59"
-  checksum: 10/1e3fc0892e92d5b414654f8eaf0802e30eda20d2a0c493446423c45685aa8837c7891b71a5cbdef16f10f2b61b32759b4ecb11e70de265c26762369cbae8089b
-  languageName: node
-  linkType: hard
-
 "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1":
   version: 5.1.1-v1
   resolution: "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1"
@@ -12862,8 +12852,6 @@ __metadata:
   dependencies:
     "@babel/core": "npm:^7.20.0"
     "@expo/vector-icons": "npm:^14.0.2"
-    "@miblanchard/react-native-slider": "npm:^2.6.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
@@ -12892,7 +12880,6 @@ __metadata:
     "@babel/core": "npm:^7.20.0"
     "@babel/preset-env": "npm:^7.20.0"
     "@babel/runtime": "npm:^7.20.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-native/babel-preset": "npm:0.74.85"
     "@react-native/metro-config": "npm:0.74.85"
     "@react-native/typescript-config": "npm:0.74.85"
