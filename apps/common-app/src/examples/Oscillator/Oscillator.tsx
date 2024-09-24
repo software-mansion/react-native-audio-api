@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
 import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import CustomSlider from '../../components/CustomSlider';
+import Slider from '../../components/Slider';
 import {
   AudioContext,
   WaveType,
@@ -11,7 +11,7 @@ import {
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
-import { layout, colorShades } from '../../styles';
+import { layout, colors } from '../../styles';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
@@ -38,15 +38,15 @@ const Oscillator: FC = () => {
     }
 
     oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
-    oscillatorRef.current.detune.value = INITIAL_DETUNE;
+    oscillatorRef.current.frequency.value = frequency;
+    oscillatorRef.current.detune.value = detune;
     oscillatorRef.current.type = oscillatorType;
 
     gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain.value = INITIAL_GAIN;
+    gainRef.current.gain.value = gain;
 
     panRef.current = audioContextRef.current.createStereoPanner();
-    panRef.current.pan.value = INITIAL_PAN;
+    panRef.current.pan.value = pan;
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
@@ -115,10 +115,13 @@ const Oscillator: FC = () => {
 
   return (
     <Container centered={true}>
-      <Button title={isPlaying ? 'Pause' : 'Play'} onPress={handlePlayPause} />
+      <Button
+        color={colors.darkblue}
+        title={isPlaying ? 'Pause' : 'Play'}
+        onPress={handlePlayPause}
+      />
       <Text>Gain: {gain.toFixed(2)}</Text>
-      <CustomSlider
-        style={styles.slider}
+      <Slider
         value={gain}
         onValueChange={handleGainChange}
         minimumValue={0.0}
@@ -126,8 +129,7 @@ const Oscillator: FC = () => {
         step={0.01}
       />
       <Text>Pan: {pan.toFixed(1)}</Text>
-      <CustomSlider
-        style={styles.slider}
+      <Slider
         value={pan}
         onValueChange={handlePanChange}
         minimumValue={-1}
@@ -135,8 +137,7 @@ const Oscillator: FC = () => {
         step={0.1}
       />
       <Text>Frequency: {frequency.toFixed(0)}</Text>
-      <CustomSlider
-        style={styles.slider}
+      <Slider
         value={frequency}
         onValueChange={handleFrequencyChange}
         minimumValue={120}
@@ -144,8 +145,7 @@ const Oscillator: FC = () => {
         step={10}
       />
       <Text>Detune: {detune.toFixed(0)}</Text>
-      <CustomSlider
-        style={styles.slider}
+      <Slider
         value={detune}
         onValueChange={handleDetuneChange}
         minimumValue={0}
@@ -178,10 +178,6 @@ const Oscillator: FC = () => {
 };
 
 const styles = StyleSheet.create({
-  slider: {
-    width: 250,
-    padding: layout.spacing,
-  },
   oscillatorTypeContainer: {
     flexDirection: 'row',
     marginTop: 20,
@@ -190,17 +186,17 @@ const styles = StyleSheet.create({
     padding: layout.spacing,
     marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: colorShades.blue.base,
+    borderColor: colors.darkblue,
     borderRadius: layout.radius,
   },
   activeOscillatorButton: {
-    backgroundColor: colorShades.blue.base,
+    backgroundColor: colors.darkblue,
   },
   oscillatorButtonText: {
-    color: colorShades.black.base,
+    color: colors.black,
   },
   activeOscillatorButtonText: {
-    color: colorShades.white.base,
+    color: colors.white,
   },
 });
 
