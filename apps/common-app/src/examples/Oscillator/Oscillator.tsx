@@ -1,21 +1,23 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
-import { Button, StyleSheet, Text } from 'react-native';
+import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import CustomSlider from '../../components/CustomSlider';
 import {
   AudioContext,
+  WaveType,
   type GainNode,
   type OscillatorNode,
   type StereoPannerNode,
-  type WaveType,
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
+import { layout, colorShades } from '../../styles';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
+const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'];
 
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -94,21 +96,11 @@ const Oscillator: FC = () => {
     setIsPlaying((prev) => !prev);
   };
 
-  const toggleOscillatorType = () => {
-    setOscillatorType((prevType: WaveType) => {
-      const nextType =
-        prevType === 'sine'
-          ? 'square'
-          : prevType === 'square'
-            ? 'sawtooth'
-            : prevType === 'sawtooth'
-              ? 'triangle'
-              : 'sine';
-      if (oscillatorRef.current) {
-        oscillatorRef.current.type = nextType;
-      }
-      return nextType;
-    });
+  const handleOscillatorTypeChange = (type: WaveType) => {
+    setOscillatorType(type);
+    if (oscillatorRef.current) {
+      oscillatorRef.current.type = type;
+    }
   };
 
   useEffect(() => {
@@ -160,8 +152,27 @@ const Oscillator: FC = () => {
         maximumValue={100}
         step={1}
       />
-      <Text>Oscillator type: {oscillatorType}</Text>
-      <Button title={`Click to change type`} onPress={toggleOscillatorType} />
+      <View style={styles.oscillatorTypeContainer}>
+        {OSCILLATOR_TYPES.map((type: WaveType) => (
+          <TouchableOpacity
+            key={type}
+            style={[
+              styles.oscillatorButton,
+              type === oscillatorType && styles.activeOscillatorButton,
+            ]}
+            onPress={() => handleOscillatorTypeChange(type)}
+          >
+            <Text
+              style={[
+                styles.oscillatorButtonText,
+                type === oscillatorType && styles.activeOscillatorButtonText,
+              ]}
+            >
+              {type}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </Container>
   );
 };
@@ -169,7 +180,27 @@ const Oscillator: FC = () => {
 const styles = StyleSheet.create({
   slider: {
     width: 250,
-    padding: 8,
+    padding: layout.spacing,
+  },
+  oscillatorTypeContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+  },
+  oscillatorButton: {
+    padding: layout.spacing,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: colorShades.blue.base,
+    borderRadius: layout.radius,
+  },
+  activeOscillatorButton: {
+    backgroundColor: colorShades.blue.base,
+  },
+  oscillatorButtonText: {
+    color: colorShades.black.base,
+  },
+  activeOscillatorButtonText: {
+    color: colorShades.white.base,
   },
 });
 

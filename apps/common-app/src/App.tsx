@@ -19,7 +19,7 @@ const HomeScreen: FC = () => {
         {Object.entries(Examples).map(
           ([key, example]: [ExampleKey, Example]) => (
             <TouchableOpacity
-              onPress={() => navigation.navigate(key as never)}
+              onPress={() => navigation.navigate(key)}
               key={key}
               style={styles.button}
             >
