@@ -1,7 +1,7 @@
 {
   "name": "react-native-audio-api-monorepo",
   "version": "0.0.0",
-  "packageManager": "yarn@4.5.0",
+  "packageManager": "yarn@3.6.4",
   "private": true,
   "workspaces": {
     "packages": [
