@@ -3237,13 +3237,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-community/slider@npm:^4.5.3":
-  version: 4.5.3
-  resolution: "@react-native-community/slider@npm:4.5.3"
-  checksum: 10/d610ba2f0d48f5bcacef6dea7a55f5861ecc8cde599f478fd317cc9c4922853d1b67b5ed628c39c7eed2349b9ba914a4899b093a1d5fcb0a462663d50de1dcc5
-  languageName: node
-  linkType: hard
-
 "@react-native/assets-registry@npm:0.74.85":
   version: 0.74.85
   resolution: "@react-native/assets-registry@npm:0.74.85"
@@ -5581,7 +5574,6 @@ __metadata:
   resolution: "common-app@workspace:apps/common-app"
   dependencies:
     "@babel/core": "npm:^7.20.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
@@ -5594,7 +5586,6 @@ __metadata:
     react-native-safe-area-context: "npm:^4.11.0"
     react-native-screens: "npm:3.31.1"
   peerDependencies:
-    "@react-native-community/slider": "*"
     "@react-navigation/native": "*"
     "@react-navigation/native-stack": "*"
     "@react-navigation/stack": "*"
