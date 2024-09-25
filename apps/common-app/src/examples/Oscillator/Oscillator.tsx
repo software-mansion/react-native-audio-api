@@ -1,7 +1,6 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
 import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import Slider from '../../components/Slider';
 import {
   AudioContext,
   WaveType,
@@ -12,6 +11,8 @@ import {
 
 import Container from '../../components/Container';
 import { layout, colors } from '../../styles';
+import Slider from '../../components/Slider';
+import Spacer from '../../components/Spacer';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
@@ -152,6 +153,7 @@ const Oscillator: FC = () => {
         maximumValue={100}
         step={1}
       />
+      <Spacer.Vertical size={20} />
       <View style={styles.oscillatorTypeContainer}>
         {OSCILLATOR_TYPES.map((type: WaveType) => (
           <TouchableOpacity
@@ -180,7 +182,6 @@ const Oscillator: FC = () => {
 const styles = StyleSheet.create({
   oscillatorTypeContainer: {
     flexDirection: 'row',
-    marginTop: 20,
   },
   oscillatorButton: {
     padding: layout.spacing,
