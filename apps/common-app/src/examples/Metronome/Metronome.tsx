@@ -9,7 +9,7 @@ import { colors } from '../../styles';
 const SCHEDULE_INTERVAL_MS = 25;
 const SCHEDULE_AHEAD_TIME = 0.1;
 
-const DOWNBEAT_FREQUENCY = 1000;
+const DOWN_BEAT_FREQUENCY = 1000;
 const REGULAR_BEAT_FREQUENCY = 500;
 
 const INITIAL_GAIN = 1;
@@ -82,7 +82,7 @@ const Metronome: FC = () => {
 
     oscillator.frequency.value =
       beatNumber % beatsPerBar === 0
-        ? DOWNBEAT_FREQUENCY
+        ? DOWN_BEAT_FREQUENCY
         : REGULAR_BEAT_FREQUENCY;
 
     gain.gain.setValueAtTime(INITIAL_GAIN, time);
