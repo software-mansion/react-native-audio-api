@@ -30,22 +30,25 @@ const Metronome: FC = () => {
   const currentBeatRef = useRef(0);
 
   const handlePlayPause = () => {
-    if (!isPlaying) {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
-
-      setIsPlaying(true);
-      currentBeatRef.current = 0;
-      nextNoteTimeRef.current =
-        audioContextRef.current.currentTime + SCHEDULE_INTERVAL_MS / 1000;
-      intervalRef.current = setInterval(scheduler, SCHEDULE_INTERVAL_MS);
-    } else {
+    if (isPlaying) {
       setIsPlaying(false);
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
+
+      return;
     }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    setIsPlaying(true);
+    currentBeatRef.current = 0;
+    nextNoteTimeRef.current =
+      audioContextRef.current.currentTime + SCHEDULE_INTERVAL_MS / 1000;
+    intervalRef.current = setInterval(scheduler, SCHEDULE_INTERVAL_MS);
   };
 
   const scheduler = () => {
@@ -66,7 +69,7 @@ const Metronome: FC = () => {
     const secondsPerBeat = 60.0 / bpm;
     nextNoteTimeRef.current += secondsPerBeat;
 
-    currentBeatRef.current++;
+    currentBeatRef.current += 1;
     if (currentBeatRef.current === beatsPerBar) {
       currentBeatRef.current = 0;
     }
@@ -111,7 +114,7 @@ const Metronome: FC = () => {
   }, []);
 
   return (
-    <Container centered={true}>
+    <Container centered>
       <Button
         color={colors.darkblue}
         onPress={handlePlayPause}

@@ -115,7 +115,7 @@ const Oscillator: FC = () => {
   }, []);
 
   return (
-    <Container centered={true}>
+    <Container centered>
       <Button
         color={colors.darkblue}
         title={isPlaying ? 'Pause' : 'Play'}
