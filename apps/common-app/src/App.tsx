@@ -1,34 +1,35 @@
 import React from 'react';
 import type { FC } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import Container from './components/Container';
-import { Examples, ExampleKey, Example } from './examples';
+import { Examples, MainStackProps } from './examples';
 import { layout, colors } from './styles';
 
 const Stack = createStackNavigator();
 
 const HomeScreen: FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<MainStackProps>();
 
   return (
     <Container centered={false}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        {Object.entries(Examples).map(
-          ([key, example]: [ExampleKey, Example]) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate(key)}
-              key={key}
-              style={styles.button}
-            >
-              <Text style={styles.title}>{example.title}</Text>
-              <Text style={styles.subtitle}>{example.subtitle}</Text>
-            </TouchableOpacity>
-          )
+      <FlatList
+        contentContainerStyle={styles.scrollView}
+        data={Examples}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate(item.key)}
+            key={item.key}
+            style={styles.button}
+          >
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.subtitle}>{item.subtitle}</Text>
+          </TouchableOpacity>
         )}
-      </ScrollView>
+        keyExtractor={(item) => item.key}
+      />
     </Container>
   );
 };
@@ -49,12 +50,12 @@ const App: FC = () => {
           component={HomeScreen}
           options={{ title: 'Audio API examples' }}
         />
-        {Object.keys(Examples).map((key) => (
+        {Examples.map((item) => (
           <Stack.Screen
-            key={key}
-            name={key}
-            component={Examples[key].screen}
-            options={{ title: Examples[key].title }}
+            key={item.key}
+            name={item.key}
+            component={item.screen}
+            options={{ title: item.title }}
           />
         ))}
       </Stack.Navigator>

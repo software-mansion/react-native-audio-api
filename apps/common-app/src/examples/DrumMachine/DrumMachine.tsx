@@ -1,6 +1,6 @@
 import React from 'react';
-import { useRef, useEffect, FC } from 'react';
 import { Button } from 'react-native';
+import { useRef, useEffect, FC } from 'react';
 import { AudioContext } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
