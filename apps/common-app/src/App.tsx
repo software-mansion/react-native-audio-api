@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FC } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -15,20 +15,25 @@ const HomeScreen: FC = () => {
 
   return (
     <Container centered={false}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        {Object.entries(Examples).map(
-          ([key, example]: [ExampleKey, Example]) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate(key)}
-              key={key}
-              style={styles.button}
-            >
-              <Text style={styles.title}>{example.title}</Text>
-              <Text style={styles.subtitle}>{example.subtitle}</Text>
-            </TouchableOpacity>
-          )
+      <FlatList
+        contentContainerStyle={styles.scrollView}
+        data={Object.entries(Examples)}
+        renderItem={({
+          item: [key, example],
+        }: {
+          item: [ExampleKey, Example];
+        }) => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate(key)}
+            key={key}
+            style={styles.button}
+          >
+            <Text style={styles.title}>{example.title}</Text>
+            <Text style={styles.subtitle}>{example.subtitle}</Text>
+          </TouchableOpacity>
         )}
-      </ScrollView>
+        keyExtractor={([key]) => key}
+      />
     </Container>
   );
 };
