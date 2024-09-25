@@ -40,7 +40,7 @@ const App: FC = () => {
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: colors.darkblue,
+            backgroundColor: colors.main,
           },
           headerTintColor: colors.white,
         }}

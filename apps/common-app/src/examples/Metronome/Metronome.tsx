@@ -29,18 +29,7 @@ const Metronome: FC = () => {
   const nextNoteTimeRef = useRef(0.0);
   const currentBeatRef = useRef(0);
 
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      setIsPlaying(false);
-
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-
-      return;
-    }
-
+  const handlePlay = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
@@ -49,6 +38,35 @@ const Metronome: FC = () => {
     nextNoteTimeRef.current =
       audioContextRef.current.currentTime + SCHEDULE_INTERVAL_MS / 1000;
     intervalRef.current = setInterval(scheduler, SCHEDULE_INTERVAL_MS);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      handlePause();
+
+      return;
+    }
+
+    handlePlay();
+  };
+
+  const handleBpmChange = (newBpm: number) => {
+    setBpm(newBpm);
+    handlePause();
+  };
+
+  const handleBeatsPerBarChange = (newBeatsPerBar: number) => {
+    setBeatsPerBar(newBeatsPerBar);
+    handlePause();
   };
 
   const scheduler = () => {
@@ -116,14 +134,14 @@ const Metronome: FC = () => {
   return (
     <Container centered>
       <Button
-        color={colors.darkblue}
+        color={colors.main}
         onPress={handlePlayPause}
         title={isPlaying ? 'Pause' : 'Play'}
       />
       <Text>BPM: {bpm}</Text>
       <Slider
         value={bpm}
-        onValueChange={setBpm}
+        onValueChange={handleBpmChange}
         minimumValue={30}
         maximumValue={240}
         step={1}
@@ -131,7 +149,7 @@ const Metronome: FC = () => {
       <Text>Beats per bar: {beatsPerBar}</Text>
       <Slider
         value={beatsPerBar}
-        onValueChange={setBeatsPerBar}
+        onValueChange={handleBeatsPerBarChange}
         minimumValue={1}
         maximumValue={8}
         step={1}

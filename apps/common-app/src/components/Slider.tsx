@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   sliderTrack: {
     width: SLIDER_WIDTH,
     height: HANDLE_SIZE + 10,
-    backgroundColor: colors.darkblue,
+    backgroundColor: colors.main,
     borderRadius: 25,
     justifyContent: 'center',
     padding: layout.spacing,

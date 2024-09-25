@@ -117,7 +117,7 @@ const Oscillator: FC = () => {
   return (
     <Container centered>
       <Button
-        color={colors.darkblue}
+        color={colors.main}
         title={isPlaying ? 'Pause' : 'Play'}
         onPress={handlePlayPause}
       />
@@ -187,11 +187,11 @@ const styles = StyleSheet.create({
     padding: layout.spacing,
     marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: colors.darkblue,
+    borderColor: colors.main,
     borderRadius: layout.radius,
   },
   activeOscillatorButton: {
-    backgroundColor: colors.darkblue,
+    backgroundColor: colors.main,
   },
   oscillatorButtonText: {
     color: colors.black,
