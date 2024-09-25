@@ -15,6 +15,5 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "checkJs": true,
   }
 }
