@@ -5,34 +5,30 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import Container from './components/Container';
-import { Examples, ExampleKey, Example } from './examples';
+import { Examples, MainStackProps } from './examples';
 import { layout, colors } from './styles';
 
 const Stack = createStackNavigator();
 
 const HomeScreen: FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<MainStackProps>();
 
   return (
     <Container centered={false}>
       <FlatList
         contentContainerStyle={styles.scrollView}
-        data={Object.entries(Examples)}
-        renderItem={({
-          item: [key, example],
-        }: {
-          item: [ExampleKey, Example];
-        }) => (
+        data={Examples}
+        renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate(key)}
-            key={key}
+            onPress={() => navigation.navigate(item.key)}
+            key={item.key}
             style={styles.button}
           >
-            <Text style={styles.title}>{example.title}</Text>
-            <Text style={styles.subtitle}>{example.subtitle}</Text>
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.subtitle}>{item.subtitle}</Text>
           </TouchableOpacity>
         )}
-        keyExtractor={([key]) => key}
+        keyExtractor={(item) => item.key}
       />
     </Container>
   );
@@ -54,12 +50,12 @@ const App: FC = () => {
           component={HomeScreen}
           options={{ title: 'Audio API examples' }}
         />
-        {Object.keys(Examples).map((key) => (
+        {Examples.map((item) => (
           <Stack.Screen
-            key={key}
-            name={key}
-            component={Examples[key].screen}
-            options={{ title: Examples[key].title }}
+            key={item.key}
+            name={item.key}
+            component={item.screen}
+            options={{ title: item.title }}
           />
         ))}
       </Stack.Navigator>

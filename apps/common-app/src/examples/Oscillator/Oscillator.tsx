@@ -18,7 +18,7 @@ const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
-const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'];
+const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);

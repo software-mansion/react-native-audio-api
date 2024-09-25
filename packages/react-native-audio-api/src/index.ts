@@ -7,6 +7,7 @@ import type {
   BiquadFilterNode,
   AudioBufferSourceNode,
   AudioBuffer,
+  WaveType,
 } from './types';
 import { installModule } from './utils/install';
 
@@ -67,4 +68,12 @@ export class AudioContext implements BaseAudioContext {
   }
 }
 
-export type { GainNode, StereoPannerNode, OscillatorNode, BiquadFilterNode };
+export type {
+  GainNode,
+  StereoPannerNode,
+  OscillatorNode,
+  BiquadFilterNode,
+  AudioBufferSourceNode,
+  AudioBuffer,
+  WaveType,
+};
