@@ -39,7 +39,6 @@ class Scheduler {
   }
 
   private play(beat: number, time: number) {
-    console.log(this.steps);
     this.steps.forEach(({ name, steps }) => {
       if (steps[beat % steps.length]) {
         this.playSound(name, time);
