@@ -18,7 +18,7 @@ const Steps: FC<StepsProps> = (props) => {
   };
 
   return (
-    <View style={styles.steps}>
+    <View style={styles.container}>
       <Text style={styles.text}>{name}</Text>
       <View style={styles.steps}>
         {steps.map((active, idx) => (
@@ -35,6 +35,13 @@ const Steps: FC<StepsProps> = (props) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    display: 'flex',
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   steps: {
     display: 'flex',
     flexDirection: 'row',

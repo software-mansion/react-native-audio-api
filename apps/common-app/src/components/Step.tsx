@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
   step: {
     width: 30,
     height: 45,
-    borderRadius: 10,
     borderColor: colors.black,
     margin: layout.spacing / 2,
     display: 'flex',

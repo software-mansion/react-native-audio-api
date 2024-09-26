@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     padding: layout.spacing,
     marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: colors.main,
+    borderColor: colors.black,
     borderRadius: layout.radius,
   },
   activeOscillatorButton: {
