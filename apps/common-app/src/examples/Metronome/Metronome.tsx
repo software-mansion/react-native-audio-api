@@ -53,7 +53,6 @@ const Metronome: FC = () => {
   const handlePlayPause = () => {
     if (isPlaying) {
       handlePause();
-
       return;
     }
 
