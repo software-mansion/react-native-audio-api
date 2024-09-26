@@ -125,10 +125,16 @@ const Metronome: FC = () => {
   };
 
   useEffect(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+
+      audioContextRef.current?.close();
     };
   }, []);
 
