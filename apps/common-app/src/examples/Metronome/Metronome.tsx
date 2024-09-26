@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, FC } from 'react';
-import { Text, Button } from 'react-native';
+import { Text } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
 import Slider from '../../components/Slider';
 import Container from '../../components/Container';
-import { colors } from '../../styles';
+import PlayPauseButton from '../../components/PlayPauseButton';
+import Spacer from '../../components/Spacer';
 
 const SCHEDULE_INTERVAL_MS = 25;
 const SCHEDULE_AHEAD_TIME = 0.1;
@@ -133,11 +134,11 @@ const Metronome: FC = () => {
 
   return (
     <Container centered>
-      <Button
-        color={colors.main}
-        onPress={handlePlayPause}
+      <PlayPauseButton
+        handlePlayPause={handlePlayPause}
         title={isPlaying ? 'Pause' : 'Play'}
       />
+      <Spacer.Vertical size={20} />
       <Text>BPM: {bpm}</Text>
       <Slider
         value={bpm}

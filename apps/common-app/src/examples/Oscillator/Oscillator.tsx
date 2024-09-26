@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
-import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import {
   AudioContext,
   WaveType,
@@ -10,9 +10,10 @@ import {
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
-import { layout, colors } from '../../styles';
 import Slider from '../../components/Slider';
 import Spacer from '../../components/Spacer';
+import PlayPauseButton from '../../components/PlayPauseButton';
+import { layout, colors } from '../../styles';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
@@ -116,11 +117,11 @@ const Oscillator: FC = () => {
 
   return (
     <Container centered>
-      <Button
-        color={colors.main}
+      <PlayPauseButton
+        handlePlayPause={handlePlayPause}
         title={isPlaying ? 'Pause' : 'Play'}
-        onPress={handlePlayPause}
       />
+      <Spacer.Vertical size={20} />
       <Text>Gain: {gain.toFixed(2)}</Text>
       <Slider
         value={gain}
