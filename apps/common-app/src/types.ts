@@ -1,3 +1,8 @@
-export type Sounds = 'kick' | 'hihat' | 'clap';
+export type SoundName = 'kick' | 'hihat' | 'clap' | 'downbeat' | 'regularbeat';
 
-export type SoundSteps = Record<Sounds, boolean[]>;
+export type SoundRow = {
+  name: SoundName;
+  steps: boolean[];
+};
+
+export type Sounds = SoundRow[];

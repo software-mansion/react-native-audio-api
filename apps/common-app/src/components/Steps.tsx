@@ -3,11 +3,11 @@ import { View, StyleSheet, Text } from 'react-native';
 
 import Step from './Step';
 import { layout } from '../styles';
-import { Sounds } from '../types';
+import { SoundName } from '../types';
 interface StepsProps {
-  name: Sounds;
+  name: SoundName;
   steps: boolean[];
-  handleStepClick: (name: Sounds, idx: number) => void;
+  handleStepClick: (name: SoundName, idx: number) => void;
 }
 
 const Steps: FC<StepsProps> = (props) => {
