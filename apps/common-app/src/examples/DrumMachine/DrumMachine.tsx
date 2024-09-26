@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, FC } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
@@ -7,58 +7,120 @@ import Steps from '../../components/Steps';
 import PlayPauseButton from '../../components/PlayPauseButton';
 import Spacer from '../../components/Spacer';
 import Slider from '../../components/Slider';
-import { Sounds, SoundSteps } from '../../types';
-import { SoundEngine, Kick, Clap, HiHat } from '../SharedUtils';
-import { View } from 'react-native';
+import { Sounds, SoundName } from '../../types';
+import { Kick, Clap, HiHat, Scheduler } from '../SharedUtils';
 
-const STEPS: SoundSteps = {
-  kick: new Array(8).fill(false),
-  hihat: new Array(8).fill(false),
-  clap: new Array(8).fill(false),
-};
+const STEPS: Sounds = [
+  { name: 'kick', steps: new Array(8).fill(false) },
+  { name: 'clap', steps: new Array(8).fill(false) },
+  { name: 'hihat', steps: new Array(8).fill(false) },
+];
 
 const DrumMachine: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const soundEngines = useRef<Record<Sounds, SoundEngine>>(
-    {} as Record<Sounds, SoundEngine>
-  );
-  const [sounds, setSounds] = useState<SoundSteps>(STEPS);
+  const schedulerRef = useRef<null | Scheduler>(null);
+  const kickRef = useRef<Kick | null>(null);
+  const hiHatRef = useRef<HiHat | null>(null);
+  const clapRef = useRef<Clap | null>(null);
+
+  const [sounds, setSounds] = useState<Sounds>(STEPS);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState<number>(120);
 
-  const handleStepClick = (name: Sounds, idx: number) => {
+  const handleStepClick = (name: SoundName, idx: number) => {
     setSounds((prevSounds) => {
-      const newSounds = { ...prevSounds };
-      const steps = newSounds[name];
+      const newSounds = [...prevSounds];
+      const steps = newSounds.find((sound) => sound.name === name)?.steps;
       if (steps) {
-        const newSteps = [...steps];
-        newSteps[idx] = !newSteps[idx];
-        newSounds[name] = newSteps;
+        steps[idx] = !steps[idx];
+      }
+      if (schedulerRef.current) {
+        schedulerRef.current.steps = newSounds;
       }
       return newSounds;
     });
   };
 
+  const handleBpmChange = (newBpm: number) => {
+    handlePause();
+    setBpm(newBpm);
+    if (schedulerRef.current) {
+      schedulerRef.current.bpm = newBpm;
+    }
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    schedulerRef.current?.stop();
+  };
+
   const handlePlayPause = () => {
-    if (!isPlaying) {
-      setIsPlaying(true);
+    if (!audioContextRef.current || !schedulerRef.current) {
       return;
     }
 
-    setIsPlaying(false);
+    if (!isPlaying) {
+      setIsPlaying(true);
+      schedulerRef.current.start();
+    } else {
+      setIsPlaying(false);
+      schedulerRef.current.stop();
+    }
+  };
+
+  const playSound = (name: SoundName, time: number) => {
+    if (!audioContextRef.current || !schedulerRef.current) {
+      return;
+    }
+
+    if (!kickRef.current) {
+      kickRef.current = new Kick(audioContextRef.current);
+    }
+
+    if (!hiHatRef.current) {
+      hiHatRef.current = new HiHat(audioContextRef.current);
+    }
+
+    if (!clapRef.current) {
+      clapRef.current = new Clap(audioContextRef.current);
+    }
+
+    switch (name) {
+      case 'kick':
+        kickRef.current.play(time);
+        break;
+      case 'hihat':
+        hiHatRef.current.play(time);
+        break;
+      case 'clap':
+        clapRef.current.play(time);
+        break;
+      default:
+        break;
+    }
   };
 
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
-      soundEngines.current.kick = new Kick(audioContextRef.current);
-      soundEngines.current.hihat = new HiHat(audioContextRef.current);
-      soundEngines.current.clap = new Clap(audioContextRef.current);
+    }
+
+    if (!schedulerRef.current) {
+      const scheduler = new Scheduler(
+        bpm,
+        8,
+        audioContextRef.current,
+        STEPS,
+        playSound
+      );
+      schedulerRef.current = scheduler;
     }
 
     return () => {
+      schedulerRef.current?.stop();
       audioContextRef.current?.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -71,17 +133,17 @@ const DrumMachine: FC = () => {
       <Text>bpm: {bpm}</Text>
       <Slider
         value={bpm}
-        onValueChange={setBpm}
+        onValueChange={handleBpmChange}
         minimumValue={30}
         maximumValue={240}
         step={1}
       />
       <Spacer.Vertical size={20} />
       <View>
-        {Object.entries(sounds).map(([name, steps]) => (
+        {sounds.map(({ name, steps }) => (
           <Steps
             key={name}
-            name={name as Sounds}
+            name={name as SoundName}
             steps={steps}
             handleStepClick={handleStepClick}
           />
