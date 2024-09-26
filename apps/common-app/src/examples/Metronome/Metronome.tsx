@@ -17,9 +17,12 @@ const STEPS: Sounds = [
   { name: 'regularbeat', steps: [false, true, true, true] },
 ];
 
+const INITIAL_BPM = 120;
+const INITIAL_BEATS_PER_BAR = 4;
+
 const Metronome: FC = () => {
-  const [bpm, setBpm] = useState(120);
-  const [beatsPerBar, setBeatsPerBar] = useState(4);
+  const [bpm, setBpm] = useState(INITIAL_BPM);
+  const [beatsPerBar, setBeatsPerBar] = useState(INITIAL_BEATS_PER_BAR);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const audioContextRef = useRef<null | AudioContext>(null);
@@ -107,8 +110,8 @@ const Metronome: FC = () => {
 
     if (!schedulerRef.current) {
       schedulerRef.current = new Scheduler(
-        bpm,
-        beatsPerBar,
+        INITIAL_BPM,
+        INITIAL_BEATS_PER_BAR,
         audioContextRef.current,
         STEPS,
         playSound
@@ -118,7 +121,6 @@ const Metronome: FC = () => {
       schedulerRef.current?.stop();
       audioContextRef.current?.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -10,6 +10,8 @@ import Slider from '../../components/Slider';
 import { Sounds, SoundName } from '../../types';
 import { Kick, Clap, HiHat, Scheduler } from '../SharedUtils';
 
+const initialBpm = 120;
+
 const STEPS: Sounds = [
   { name: 'kick', steps: new Array(8).fill(false) },
   { name: 'clap', steps: new Array(8).fill(false) },
@@ -25,7 +27,7 @@ const DrumMachine: FC = () => {
 
   const [sounds, setSounds] = useState<Sounds>(STEPS);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState<number>(120);
+  const [bpm, setBpm] = useState<number>(initialBpm);
 
   const handleStepClick = (name: SoundName, idx: number) => {
     setSounds((prevSounds) => {
@@ -107,7 +109,7 @@ const DrumMachine: FC = () => {
 
     if (!schedulerRef.current) {
       const scheduler = new Scheduler(
-        bpm,
+        initialBpm,
         8,
         audioContextRef.current,
         STEPS,
@@ -120,7 +122,6 @@ const DrumMachine: FC = () => {
       schedulerRef.current?.stop();
       audioContextRef.current?.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
