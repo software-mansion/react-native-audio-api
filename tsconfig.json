@@ -16,7 +16,5 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": true,
-    // We set "noEmit" to `true` only in packages which emit files.
-    "noEmit": true
   }
 }
