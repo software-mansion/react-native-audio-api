@@ -3,30 +3,30 @@ import { View, StyleSheet, Text } from 'react-native';
 
 import Step from './Step';
 import { layout } from '../styles';
-
-type Sounds = 'kick' | 'hihat' | 'clap';
+import { Sounds } from '../types';
 interface StepsProps {
   name: Sounds;
   steps: boolean[];
-  handleStepClick: (id: number, name: Sounds) => void;
+  handleStepClick: (name: Sounds, idx: number) => void;
 }
 
 const Steps: FC<StepsProps> = (props) => {
   const { name, steps, handleStepClick } = props;
 
-  // const handleClick = (idx, value) => {
-  //   handleStepClick(name, idx, value);
-  // }
+  const handleClick = (idx: number) => {
+    handleStepClick(name, idx);
+  };
+
   return (
     <View style={styles.steps}>
       <Text style={styles.text}>{name}</Text>
       <View style={styles.steps}>
-        {steps.map((active, id) => (
+        {steps.map((active, idx) => (
           <Step
-            key={id}
-            id={id}
+            key={idx}
+            id={idx}
             active={active}
-            onClick={() => handleStepClick(id, name)}
+            onClick={() => handleClick(idx)}
           />
         ))}
       </View>

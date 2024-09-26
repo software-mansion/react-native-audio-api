@@ -6,7 +6,7 @@ import { colors, layout } from '../styles';
 interface StepProps {
   id: number;
   active: boolean;
-  onClick: (id: number) => void;
+  onClick: (idx: number) => void;
 }
 
 const Step: FC<StepProps> = (props) => {
