@@ -15,7 +15,6 @@ class AudioScheduledSourceNode
 
   void start(double time);
   void stop(double time);
-  void prepareForDeconstruction();
 };
 
 } // namespace audioapi

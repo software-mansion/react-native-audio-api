@@ -10,7 +10,7 @@ AudioParamWrapper::AudioParamWrapper(AudioParam *param) : param_(param) {
 }
 
 AudioParamWrapper::~AudioParamWrapper() {
-  param_->resetJavaPart();
+  //param_->resetJavaPart();
 }
 
 double AudioParamWrapper::getValue() {

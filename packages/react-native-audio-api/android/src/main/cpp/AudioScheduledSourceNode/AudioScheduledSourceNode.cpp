@@ -15,11 +15,4 @@ void AudioScheduledSourceNode::stop(double time) {
   method(javaPart_.get(), time);
 }
 
-void AudioScheduledSourceNode::prepareForDeconstruction() {
-    static const auto method =
-            javaClassLocal()->getMethod<void()>("prepareForDeconstruction");
-    method(javaPart_.get());
-    AudioNode::resetJavaPart();
-}
-
 } // namespace audioapi

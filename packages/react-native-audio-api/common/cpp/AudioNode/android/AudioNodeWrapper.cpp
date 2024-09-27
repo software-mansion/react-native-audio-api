@@ -10,7 +10,7 @@ AudioNodeWrapper::AudioNodeWrapper(AudioNode *node) : node_(node) {
 }
 
 AudioNodeWrapper::~AudioNodeWrapper() {
-  node_->resetJavaPart();
+  //node_->resetJavaPart();
 }
 
 int AudioNodeWrapper::getNumberOfInputs() const {
