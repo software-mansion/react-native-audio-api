@@ -1,5 +1,6 @@
 #ifdef ANDROID
 #include "AudioNodeWrapper.h"
+#include <android/log.h>
 
 namespace audioapi {
 

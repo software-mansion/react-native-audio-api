@@ -19,6 +19,5 @@ class OscillatorNode
   AudioParam *getDetuneParam();
   std::string getWaveType();
   void setWaveType(const std::string &waveType);
-  void prepareForDeconstruction();
 };
 } // namespace audioapi

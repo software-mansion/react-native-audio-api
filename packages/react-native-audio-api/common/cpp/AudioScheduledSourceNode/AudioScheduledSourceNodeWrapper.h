@@ -25,6 +25,7 @@ class AudioScheduledSourceNodeWrapper : public AudioNodeWrapper {
   explicit AudioScheduledSourceNodeWrapper(
       AudioScheduledSourceNode *audioScheduledSourceNode)
       : AudioNodeWrapper(audioScheduledSourceNode) {}
+  ~AudioScheduledSourceNodeWrapper() override;
 #else
 
  private:

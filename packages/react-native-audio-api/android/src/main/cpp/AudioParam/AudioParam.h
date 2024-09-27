@@ -34,7 +34,7 @@ class AudioParam : public jni::HybridClass<AudioParam> {
   void setValueAtTime(double value, double startTime);
   void linearRampToValueAtTime(double value, double endTime);
   void exponentialRampToValueAtTime(double value, double endTime);
-  void prepareForDeconstruction();
+  void resetJavaPart();
 
  protected:
   friend HybridBase;

@@ -15,11 +15,6 @@ OscillatorNodeWrapper::OscillatorNodeWrapper(OscillatorNode *oscillator)
   detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
 }
 
-OscillatorNodeWrapper::~OscillatorNodeWrapper() {
-  auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
-  oscillatorNode_->prepareForDeconstruction();
-}
-
 std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam()
     const {
   return frequencyParam_;
