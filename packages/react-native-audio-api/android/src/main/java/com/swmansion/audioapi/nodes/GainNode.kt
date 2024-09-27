@@ -21,9 +21,13 @@ class GainNode(
   override fun process(playbackParameters: PlaybackParameters) {
     mixBuffers(playbackParameters)
 
-    val gain = this.gain.getValueAtTime(context.getCurrentTime())
-    playbackParameters.rightPan *= gain
-    playbackParameters.leftPan *= gain
+    for (i in 0 until playbackParameters.audioBuffer.length) {
+      val gain = this.gain.getValueAtTime(context.getCurrentTime())
+
+      for (j in 0 until playbackParameters.audioBuffer.numberOfChannels) {
+        playbackParameters.audioBuffer.getChannelData(j)[i] = (playbackParameters.audioBuffer.getChannelData(j)[i] * gain).toFloat()
+      }
+    }
 
     super.process(playbackParameters)
   }
