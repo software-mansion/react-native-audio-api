@@ -20,7 +20,6 @@ abstract class AudioScheduledSourceNode(
   private fun generateSound() {
     while (isPlaying) {
       playbackParameters?.let { fillBuffer(it) }
-      playbackParameters?.reset()
       playbackParameters?.let { process(it) }
       if (stopTime != null && context.getCurrentTime() >= stopTime!!) {
         prepareForDeconstruction()
