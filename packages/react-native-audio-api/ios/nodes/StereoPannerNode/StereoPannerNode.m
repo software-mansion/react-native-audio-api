@@ -22,7 +22,7 @@
   _panParam = nil;
 }
 
-- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList;
+- (void)process:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList
 {
   float time = [self.context getCurrentTime];
   float deltaTime = 1 / self.context.sampleRate;
@@ -36,13 +36,16 @@
 
     float gainL = cos(x);
     float gainR = sin(x);
+    
+    float inputL = bufferL[frame];
+    float inputR = bufferR[frame];
 
     if (pan <= 0) {
-      bufferL[frame] += bufferR[frame] * gainL;
+      bufferL[frame] += inputR * gainL;
       bufferR[frame] *= gainR;
     } else {
       bufferL[frame] *= gainL;
-      bufferR[frame] += bufferL[frame] * gainR;
+      bufferR[frame] += inputL * gainR;
     }
 
     time += deltaTime;
