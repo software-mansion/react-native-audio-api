@@ -18,7 +18,6 @@ class AudioParamWrapper {
 
  public:
   explicit AudioParamWrapper(AudioParam *param);
-  ~AudioParamWrapper();
 #else
 
  protected:

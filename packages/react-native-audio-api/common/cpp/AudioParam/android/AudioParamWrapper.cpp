@@ -9,10 +9,6 @@ AudioParamWrapper::AudioParamWrapper(AudioParam *param) : param_(param) {
   maxValue_ = param->getMaxValue();
 }
 
-AudioParamWrapper::~AudioParamWrapper() {
-  //param_->resetJavaPart();
-}
-
 double AudioParamWrapper::getValue() {
   return param_->getValue();
 }

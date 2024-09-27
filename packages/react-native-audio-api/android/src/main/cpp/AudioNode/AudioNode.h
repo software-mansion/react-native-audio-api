@@ -34,7 +34,6 @@ class AudioNode : public jni::HybridClass<AudioNode> {
   std::string getChannelInterpretation();
   void connect(const AudioNode *node);
   void disconnect(const AudioNode *node);
-  void resetJavaPart();
 
  protected:
   friend HybridBase;
