@@ -28,21 +28,26 @@ class StereoPannerNode(
   override fun process(playbackParameters: PlaybackParameters) {
     mixBuffers(playbackParameters)
 
-    val pan = pan.getValueAtTime(context.getCurrentTime())
-    val x = (if (pan <= 0) pan + 1 else pan) * PI / 2
+    val bufferL = playbackParameters.audioBuffer.getChannelData(0)
+    val bufferR = playbackParameters.audioBuffer.getChannelData(1)
 
-    val gainL = cos(x * PI / 2)
-    val gainR = sin(x * PI / 2)
+    for (i in 0 until playbackParameters.audioBuffer.length) {
+      val pan = pan.getValueAtTime(context.getCurrentTime())
+      val x = (if (pan <= 0) pan + 1 else pan) * PI / 2
 
-    // TODO: This assumes both channels play the same sound (buffer)
-    // but it should mix the channels. F.e. pan < 0: leftChannel = leftChannel + leftGain * rightChannel
+      val gainL = cos(x)
+      val gainR = sin(x)
 
-    if (pan <= 0) {
-      playbackParameters.leftPan *= gainL
-      playbackParameters.rightPan *= gainR
-    } else {
-      playbackParameters.leftPan *= gainL
-      playbackParameters.rightPan *= gainR
+      val inputL = bufferL[i]
+      val inputR = bufferR[i]
+
+      if (pan <= 0) {
+        bufferL[i] += (inputR * gainL).toFloat()
+        bufferR[i] *= (gainR).toFloat()
+      } else {
+        bufferL[i] *= (gainL).toFloat()
+        bufferR[i] += (inputL * gainR).toFloat()
+      }
     }
 
     super.process(playbackParameters)
