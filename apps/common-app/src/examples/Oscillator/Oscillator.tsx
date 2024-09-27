@@ -1,20 +1,24 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
-import { Button, StyleSheet, Text } from 'react-native';
-import Slider from '@react-native-community/slider';
+import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import {
   AudioContext,
+  WaveType,
   type GainNode,
   type OscillatorNode,
   type StereoPannerNode,
 } from 'react-native-audio-api';
 
 import Container from '../../components/Container';
+import { layout, colors } from '../../styles';
+import Slider from '../../components/Slider';
+import Spacer from '../../components/Spacer';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
+const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -22,6 +26,7 @@ const Oscillator: FC = () => {
   const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
   const [pan, setPan] = useState(INITIAL_PAN);
+  const [oscillatorType, setOscillatorType] = useState<WaveType>('sine');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -34,15 +39,15 @@ const Oscillator: FC = () => {
     }
 
     oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef.current.frequency.value = INITIAL_FREQUENCY;
-    oscillatorRef.current.detune.value = INITIAL_DETUNE;
-    oscillatorRef.current.type = 'sine';
+    oscillatorRef.current.frequency.value = frequency;
+    oscillatorRef.current.detune.value = detune;
+    oscillatorRef.current.type = oscillatorType;
 
     gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain.value = INITIAL_GAIN;
+    gainRef.current.gain.value = gain;
 
     panRef.current = audioContextRef.current.createStereoPanner();
-    panRef.current.pan.value = INITIAL_PAN;
+    panRef.current.pan.value = pan;
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
@@ -92,6 +97,13 @@ const Oscillator: FC = () => {
     setIsPlaying((prev) => !prev);
   };
 
+  const handleOscillatorTypeChange = (type: WaveType) => {
+    setOscillatorType(type);
+    if (oscillatorRef.current) {
+      oscillatorRef.current.type = type;
+    }
+  };
+
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
@@ -103,11 +115,14 @@ const Oscillator: FC = () => {
   }, []);
 
   return (
-    <Container centered={true}>
-      <Button title={isPlaying ? 'Pause' : 'Play'} onPress={handlePlayPause} />
+    <Container centered>
+      <Button
+        color={colors.main}
+        title={isPlaying ? 'Pause' : 'Play'}
+        onPress={handlePlayPause}
+      />
       <Text>Gain: {gain.toFixed(2)}</Text>
       <Slider
-        style={styles.slider}
         value={gain}
         onValueChange={handleGainChange}
         minimumValue={0.0}
@@ -116,7 +131,6 @@ const Oscillator: FC = () => {
       />
       <Text>Pan: {pan.toFixed(1)}</Text>
       <Slider
-        style={styles.slider}
         value={pan}
         onValueChange={handlePanChange}
         minimumValue={-1}
@@ -125,7 +139,6 @@ const Oscillator: FC = () => {
       />
       <Text>Frequency: {frequency.toFixed(0)}</Text>
       <Slider
-        style={styles.slider}
         value={frequency}
         onValueChange={handleFrequencyChange}
         minimumValue={120}
@@ -134,21 +147,57 @@ const Oscillator: FC = () => {
       />
       <Text>Detune: {detune.toFixed(0)}</Text>
       <Slider
-        style={styles.slider}
         value={detune}
         onValueChange={handleDetuneChange}
         minimumValue={0}
         maximumValue={100}
         step={1}
       />
+      <Spacer.Vertical size={20} />
+      <View style={styles.oscillatorTypeContainer}>
+        {OSCILLATOR_TYPES.map((type: WaveType) => (
+          <TouchableOpacity
+            key={type}
+            style={[
+              styles.oscillatorButton,
+              type === oscillatorType && styles.activeOscillatorButton,
+            ]}
+            onPress={() => handleOscillatorTypeChange(type)}
+          >
+            <Text
+              style={[
+                styles.oscillatorButtonText,
+                type === oscillatorType && styles.activeOscillatorButtonText,
+              ]}
+            >
+              {type}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  slider: {
-    width: 300,
-    padding: 8,
+  oscillatorTypeContainer: {
+    flexDirection: 'row',
+  },
+  oscillatorButton: {
+    padding: layout.spacing,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: colors.main,
+    borderRadius: layout.radius,
+  },
+  activeOscillatorButton: {
+    backgroundColor: colors.main,
+  },
+  oscillatorButtonText: {
+    color: colors.black,
+  },
+  activeOscillatorButtonText: {
+    color: colors.white,
   },
 });
 

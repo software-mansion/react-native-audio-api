@@ -2830,16 +2830,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@miblanchard/react-native-slider@npm:^2.6.0":
-  version: 2.6.0
-  resolution: "@miblanchard/react-native-slider@npm:2.6.0"
-  peerDependencies:
-    react: ">=16.8"
-    react-native: ">=0.59"
-  checksum: 10/1e3fc0892e92d5b414654f8eaf0802e30eda20d2a0c493446423c45685aa8837c7891b71a5cbdef16f10f2b61b32759b4ecb11e70de265c26762369cbae8089b
-  languageName: node
-  linkType: hard
-
 "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1":
   version: 5.1.1-v1
   resolution: "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1"
@@ -3428,13 +3418,6 @@ __metadata:
   bin:
     rnc-cli: build/bin.js
   checksum: 10/144898574b17c7e01a21d8b156e142f43038f138dbc321e8e7e4c5ee4960ae12f0accae4fc00b0f7f4c25727159cba7e5f664efc70dc90206a62369770c9cbf2
-  languageName: node
-  linkType: hard
-
-"@react-native-community/slider@npm:^4.5.3":
-  version: 4.5.3
-  resolution: "@react-native-community/slider@npm:4.5.3"
-  checksum: 10/d610ba2f0d48f5bcacef6dea7a55f5861ecc8cde599f478fd317cc9c4922853d1b67b5ed628c39c7eed2349b9ba914a4899b093a1d5fcb0a462663d50de1dcc5
   languageName: node
   linkType: hard
 
@@ -6121,7 +6104,6 @@ __metadata:
   resolution: "common-app@workspace:apps/common-app"
   dependencies:
     "@babel/core": "npm:^7.20.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
@@ -6134,7 +6116,6 @@ __metadata:
     react-native-safe-area-context: "npm:^4.11.0"
     react-native-screens: "npm:3.31.1"
   peerDependencies:
-    "@react-native-community/slider": "*"
     "@react-navigation/native": "*"
     "@react-navigation/native-stack": "*"
     "@react-navigation/stack": "*"
@@ -8207,7 +8188,6 @@ __metadata:
     "@babel/core": "npm:^7.20.0"
     "@babel/preset-env": "npm:^7.20.0"
     "@babel/runtime": "npm:^7.20.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-native/babel-preset": "npm:0.75.3"
     "@react-native/eslint-config": "npm:0.75.3"
     "@react-native/metro-config": "npm:0.75.3"
@@ -13486,8 +13466,6 @@ __metadata:
   dependencies:
     "@babel/core": "npm:^7.20.0"
     "@expo/vector-icons": "npm:^14.0.2"
-    "@miblanchard/react-native-slider": "npm:^2.6.0"
-    "@react-native-community/slider": "npm:^4.5.3"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
