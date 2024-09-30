@@ -1,3 +1,5 @@
+@file:Suppress("SpellCheckingInspection", "PropertyName", "PropertyNamingConvention")
+
 package com.swmansion.audioapi.nodes.filter
 
 import android.os.Build
