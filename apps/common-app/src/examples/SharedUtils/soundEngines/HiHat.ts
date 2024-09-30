@@ -36,6 +36,7 @@ class HiHat implements SoundEngine {
     gain.gain.exponentialRampToValueAtTime(this.volume, time + 0.02);
     gain.gain.exponentialRampToValueAtTime(this.volume * 0.33, time + 0.03);
     gain.gain.exponentialRampToValueAtTime(this.volume * 0.0001, time + 0.3);
+    gain.gain.setValueAtTime(0, time + 0.3 + 0.001);
 
     bandpassFilter.connect(highpassFilter);
     highpassFilter.connect(gain);

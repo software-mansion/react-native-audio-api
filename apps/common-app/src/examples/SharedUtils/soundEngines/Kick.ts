@@ -29,6 +29,7 @@ class Kick implements SoundEngine {
     gain.gain.setValueAtTime(0, time);
     gain.gain.setValueAtTime(this.volume, time + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.001, time + this.decay);
+    gain.gain.setValueAtTime(0, time + this.decay + 0.001);
 
     oscillator.start(time);
     oscillator.stop(time + this.decay);
