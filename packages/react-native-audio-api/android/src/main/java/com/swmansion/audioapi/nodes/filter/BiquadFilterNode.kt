@@ -41,11 +41,11 @@ class BiquadFilterNode(
   private var x2 = 0.0
 
   // coefficients
-  private var a1 = 1.0
-  private var a2 = 0.0
   private var b0 = 1.0
   private var b1 = 0.0
   private var b2 = 0.0
+  private var a1 = 1.0
+  private var a2 = 0.0
 
   fun getFilterType(): String = FilterType.toString(filterType)
 
@@ -61,26 +61,24 @@ class BiquadFilterNode(
   }
 
   private fun setNormalizedCoefficients(
-    a0: Double,
-    a1: Double,
-    a2: Double,
     b0: Double,
     b1: Double,
     b2: Double,
+    a0: Double,
+    a1: Double,
+    a2: Double,
   ) {
-    this.a1 = a1 / a0
-    this.a2 = a2 / a0
-    this.b0 = b0 / a0
-    this.b1 = b1 / a0
-    this.b2 = b2 / a0
+    val a0Inverse = 1.0 / a0
+
+    this.b0 = b0 * a0Inverse
+    this.b1 = b1 * a0Inverse
+    this.b2 = b2 * a0Inverse
+    this.a1 = a1 * a0Inverse
+    this.a2 = a2 * a0Inverse
   }
 
-  private fun setLowpassCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-  ) {
+  private fun setLowpassCoefficients(normalizedFrequency: Double, q: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val q = max(0.0, resonance)
 
     if (frequency == 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
@@ -88,32 +86,34 @@ class BiquadFilterNode(
     }
 
     if (frequency <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+      setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
+    val effectiveQ = max(0.0, q)
+    val g = 10.0.pow(0.05 * effectiveQ)
+    val d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2)
 
-    val b0 = (1.0 - cos(w0)) / 2.0
-    val b1 = 1.0 - cos(w0)
-    val b2 = (1.0 - cos(w0)) / 2.0
-    val a0 = 1.0 + alpha
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha
+    val theta = PI * frequency
+    val sn = 0.5 * d * sin(theta)
+    val beta = 0.5 * (1 - sn) / (1 + sn)
+    val gamma = (0.5 + beta) * cos(theta)
+    val alpha = 0.25 * (0.5 + beta - gamma)
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    val b0 = 2 * alpha
+    val b1 = 2 * 2 * alpha
+    val b2 = 2 * alpha
+    val a1 = -2 * gamma
+    val a2 = 2 * beta
+
+    setNormalizedCoefficients(b0, b1, b2, 1.0, a1, a2)
   }
 
-  private fun setHighpassCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-  ) {
+  private fun setHighpassCoefficients(normalizedFrequency: Double, q: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val q = max(0.0, resonance)
 
     if (frequency == 1.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+      setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
@@ -122,201 +122,196 @@ class BiquadFilterNode(
       return
     }
 
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
+    val effectiveQ = max(0.0, q)
+    val g = 10.0.pow(0.05 * effectiveQ)
+    val d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2)
 
-    val b0 = (1.0 + cos(w0)) / 2.0
-    val b1 = -(1.0 + cos(w0))
-    val b2 = (1.0 + cos(w0)) / 2.0
-    val a0 = 1.0 + alpha
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha
+    val theta = PI * frequency
+    val sn = 0.5 * d * sin(theta)
+    val beta = 0.5 * (1 - sn) / (1 + sn)
+    val gamma = (0.5 + beta) * cos(theta)
+    val alpha = 0.25 * (0.5 + beta - gamma)
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    val b0 = 2 * alpha
+    val b1 = -2 * 2 * alpha
+    val b2 = 2 * alpha
+    val a1 = -2 * gamma
+    val a2 = 2 * beta
+
+    setNormalizedCoefficients(b0, b1, b2, 1.0, a1, a2)
   }
 
-  private fun setBandpassCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-  ) {
-    val frequency = max(0.0, normalizedFrequency)
-    val q = max(0.0, resonance)
+  private fun setBandpassCoefficients(normalizedFrequency: Double, q: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val effectiveQ = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+      setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (resonance <= 0.0) {
+    if (effectiveQ <= 0.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-      return
-    }
-
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
-
-    val b0 = alpha * q
-    val b1 = 0.0
-    val b2 = -alpha * q
-    val a0 = 1.0 + alpha
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha
-
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
-  }
-
-  private fun setLowshelfCoefficients(
-    normalizedFrequency: Double,
-    dbGain: Double,
-  ) {
-    val frequency = max(0.0, min(1.0, normalizedFrequency))
-    val a = 10.0.pow(dbGain / 40.0)
-
-    if (frequency == 1.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, a * a, 0.0, 0.0)
-      return
-    }
-
-    if (frequency <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-      return
-    }
-
-    val w0 = 2.0 * PI * frequency
-    val s = 1.0
-    val alpha = sin(w0) / 2.0 * sqrt((a + 1.0 / a) * (1.0 / s - 1.0) + 2.0)
-
-    val b0 = a * ((a + 1.0) - (a - 1.0) * cos(w0) + 2.0 * sqrt(a) * alpha)
-    val b1 = 2.0 * a * ((a - 1.0) - (a + 1.0) * cos(w0))
-    val b2 = a * ((a + 1.0) - (a - 1.0) * cos(w0) - 2.0 * sqrt(a) * alpha)
-    val a0 = (a + 1.0) + (a - 1.0) * cos(w0) + 2.0 * sqrt(a) * alpha
-    val a1 = -2.0 * ((a - 1.0) + (a + 1.0) * cos(w0))
-    val a2 = (a + 1.0) + (a - 1.0) * cos(w0) - 2.0 * sqrt(a) * alpha
-
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
-  }
-
-  private fun setHighshelfCoefficients(
-    normalizedFrequency: Double,
-    dbGain: Double,
-  ) {
-    val frequency = max(0.0, min(1.0, normalizedFrequency))
-    val a = 10.0.pow(dbGain / 40.0)
-
-    if (frequency == 1.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-      return
-    }
-
-    if (frequency <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, a * a, 0.0, 0.0)
       return
     }
 
     val w0 = PI * frequency
-    val s = 1.0
-    val alpha = sin(w0) / 2.0 * sqrt((a + 1.0 / a) * (1.0 / s - 1.0) + 2.0)
+    val alpha = sin(w0) / (2 * effectiveQ)
+    val k = cos(w0)
 
-    val b0 = a * ((a + 1.0) - (a - 1.0) * cos(w0) + 2.0 * sqrt(a) * alpha)
-    val b1 = -2.0 * a * ((a - 1.0) + (a + 1.0) * cos(w0))
-    val b2 = a * ((a + 1.0) + (a - 1.0) * cos(w0) - 2.0 * sqrt(a) * alpha)
-    val a0 = (a + 1.0) - (a - 1.0) * cos(w0) + 2.0 * sqrt(a) * alpha
-    val a1 = 2.0 * ((a - 1.0) + (a + 1.0) * cos(w0))
-    val a2 = (a + 1.0) - (a - 1.0) * cos(w0) - 2.0 * sqrt(a) * alpha
+    val b0 = alpha
+    val b1 = 0.0
+    val b2 = -alpha
+    val a0 = 1.0 + alpha
+    val a1 = -2 * k
+    val a2 = 1.0 - alpha
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setPeakingCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-    dbGain: Double,
-  ) {
-    val frequency = max(0.0, min(1.0, normalizedFrequency))
-    val q = max(0.0, resonance)
-    val a = 10.0.pow(dbGain / 40.0)
+  private fun setLowshelfCoefficients(normalizedFrequency: Double, gain: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val A = 10.0.pow(gain / 40.0)
+
+    if (frequency == 1.0) {
+      setNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0)
+      return
+    }
+
+    if (frequency <= 0.0) {
+      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+      return
+    }
+
+    val w0 = PI * frequency
+    val S = 1.0
+    val alpha = 0.5 * sin(w0) * sqrt((A + 1.0 / A) * (1.0 / S - 1.0) + 2.0)
+    val k = cos(w0)
+    val k2 = 2.0 * sqrt(A) * alpha
+
+    val b0 = A * (A + 1.0 - (A - 1.0) * k + k2)
+    val b1 = 2.0 * A * (A - 1.0 - (A + 1.0) * k)
+    val b2 = A * (A + 1.0 - (A - 1.0) * k - k2)
+    val a0 = A + 1.0 + (A - 1.0) * k + k2
+    val a1 = -2.0 * (A - 1.0 + (A + 1.0) * k)
+    val a2 = A + 1.0 + (A - 1.0) * k - k2
+
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
+  }
+
+  private fun setHighshelfCoefficients(normalizedFrequency: Double, gain: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val A = 10.0.pow(gain / 40.0)
+
+    if (frequency == 1.0) {
+      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+      return
+    }
+
+    if (frequency <= 0.0) {
+      setNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0)
+      return
+    }
+
+    val w0 = PI * frequency
+    val S = 1.0
+    val alpha = 0.5 * sin(w0) * sqrt((A + 1.0 / A) * (1.0 / S - 1.0) + 2.0)
+    val k = cos(w0)
+    val k2 = 2.0 * sqrt(A) * alpha
+
+    val b0 = A * (A + 1.0 + (A - 1.0) * k + k2)
+    val b1 = -2.0 * A * (A - 1.0 + (A + 1.0) * k)
+    val b2 = A * (A + 1.0 + (A - 1.0) * k - k2)
+    val a0 = A + 1.0 - (A - 1.0) * k + k2
+    val a1 = 2.0 * (A - 1.0 - (A + 1.0) * k)
+    val a2 = A + 1.0 - (A - 1.0) * k - k2
+
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
+  }
+
+  private fun setPeakingCoefficients(normalizedFrequency: Double, q: Double, gain: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val effectiveQ = max(0.0, q)
+    val A = 10.0.pow(gain / 40.0)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (q <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    if (effectiveQ <= 0.0) {
+      setNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
+    val w0 = PI * frequency
+    val alpha = sin(w0) / (2 * effectiveQ)
+    val k = cos(w0)
 
-    val b0 = 1.0 + alpha * a
-    val b1 = -2.0 * cos(w0)
-    val b2 = 1.0 - alpha * a
-    val a0 = 1.0 + alpha / a
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha / a
+    val b0 = 1 + alpha * A
+    val b1 = -2 * k
+    val b2 = 1 - alpha * A
+    val a0 = 1 + alpha / A
+    val a1 = -2 * k
+    val a2 = 1 - alpha / A
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setNotchCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-  ) {
-    val frequency = max(0.0, min(1.0, normalizedFrequency))
-    val q = max(0.0, resonance)
+  private fun setNotchCoefficients(normalizedFrequency: Double, q: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val effectiveQ = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (q <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    if (effectiveQ <= 0.0) {
+      setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
+    val w0 = PI * frequency
+    val alpha = sin(w0) / (2 * effectiveQ)
+    val k = cos(w0)
 
     val b0 = 1.0
-    val b1 = -2.0 * cos(w0)
+    val b1 = -2 * k
     val b2 = 1.0
-    val a0 = 1.0 + alpha
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha
+    val a0 = 1 + alpha
+    val a1 = -2 * k
+    val a2 = 1 - alpha
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setAllpassCoefficients(
-    normalizedFrequency: Double,
-    resonance: Double,
-  ) {
-    val frequency = max(0.0, min(1.0, normalizedFrequency))
-    val q = max(0.0, resonance)
+  private fun setAllpassCoefficients(normalizedFrequency: Double, q: Double) {
+    val frequency = max(0.0, min(normalizedFrequency, 1.0))
+    val effectiveQ = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (q <= 0.0) {
-      setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    if (effectiveQ <= 0.0) {
+      setNormalizedCoefficients(-1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    val w0 = 2.0 * PI * frequency
-    val alpha = sin(w0) / (2.0 * q)
+    val w0 = PI * frequency
+    val alpha = sin(w0) / (2 * effectiveQ)
+    val k = cos(w0)
 
-    val b0 = 1.0 - alpha
-    val b1 = -2.0 * cos(w0)
-    val b2 = 1.0 + alpha
-    val a0 = 1.0 + alpha
-    val a1 = -2.0 * cos(w0)
-    val a2 = 1.0 - alpha
+    val b0 = 1 - alpha
+    val b1 = -2 * k
+    val b2 = 1 + alpha
+    val a0 = 1 + alpha
+    val a1 = -2 * k
+    val a2 = 1 - alpha
 
-    setNormalizedCoefficients(a0, a1, a2, b0, b1, b2)
+    setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
   @RequiresApi(Build.VERSION_CODES.N)
@@ -360,6 +355,7 @@ class BiquadFilterNode(
   override fun process(playbackParameters: PlaybackParameters) {
     mixBuffers(playbackParameters)
 
+    setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
     resetCoefficients()
     applyFilter()
 
@@ -387,6 +383,17 @@ class BiquadFilterNode(
         playbackParameters.audioBuffer.getChannelData(j)[i] = output.toFloat()
       }
     }
+
+    this.x1 = x1
+    this.x2 = x2
+    this.y1 = y1
+    this.y2 = y2
+
+    this.b0 = b0
+    this.b1 = b1
+    this.b2 = b2
+    this.a1 = a1
+    this.a2 = a2
 
     super.process(playbackParameters)
   }
