@@ -106,7 +106,7 @@
                      startValue:value
                        endValue:value
                          target:self
-              calculateSelector:@selector(calculateLinearValueWithStartTime:endTime:startValue:endValue:currentTime:)];
+              calculateSelector:@selector(calculateSetValueAtTime:endTime:startValue:endValue:currentTime:)];
   [_timeline insert:param];
 }
 
@@ -137,7 +137,10 @@
                                    endValue:(double)endValue
                                 currentTime:(double)currentTime
 {
-  return startValue + (endValue - startValue) * (currentTime - startTime) / (endTime - startTime);
+  double deltaTime = endTime - startTime;
+  float k = (float)(deltaTime > 0 ? 1 / deltaTime : 0);
+  float x = (float)((currentTime - startTime) * k);
+  return (1 - x) * startValue + x * endValue;
 }
 
 - (void)exponentialRampToValueAtTime:(float)value time:(double)time
