@@ -10,7 +10,7 @@ class AudioBufferSourceNode(
 ) : AudioScheduledSourceNode(context) {
   override var playbackParameters: PlaybackParameters? = null
 
-  private var loop: Boolean = true
+  private var loop: Boolean = false
     get() = field
   private var buffer: AudioBuffer
     get() = field
@@ -38,14 +38,14 @@ class AudioBufferSourceNode(
   override fun fillBuffer(playbackParameters: PlaybackParameters) {
     mixBuffers(playbackParameters)
 
+    for (i in 0 until playbackParameters.audioBuffer.numberOfChannels) {
+      for (j in 0 until playbackParameters.audioBuffer.length) {
+        playbackParameters.audioBuffer.getChannelData(i)[j] = buffer.getChannelData(i)[j % buffer.length]
+      }
+    }
+
     if (!loop) {
       isPlaying = false
-    } else {
-      for (i in 0 until playbackParameters.audioBuffer.numberOfChannels) {
-        for (j in 0 until playbackParameters.audioBuffer.length) {
-          playbackParameters.audioBuffer.getChannelData(i)[j] = buffer.getChannelData(i)[j % buffer.length]
-        }
-      }
     }
   }
 }
