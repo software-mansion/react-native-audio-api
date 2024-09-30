@@ -24,6 +24,7 @@ class MetronomeSound implements SoundEngine {
     gain.gain.setValueAtTime(this.volume, time);
     gain.gain.linearRampToValueAtTime(0.5, time + 0.001);
     gain.gain.linearRampToValueAtTime(0.001, time + this.decay);
+    gain.gain.setValueAtTime(0, time + this.decay + 0.001);
 
     oscillator.connect(gain);
     gain.connect(this.audioContext.destination);

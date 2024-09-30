@@ -69,8 +69,8 @@ class Clap implements SoundEngine {
       this.volume,
       time + (this.pulseCount - 1) * this.pulseWidth
     );
-
     envelope.gain.exponentialRampToValueAtTime(0.001, time + this.decay);
+    envelope.gain.setValueAtTime(0, time + this.decay + 0.001);
 
     noise.start(time);
     noise.stop(time + this.decay);
