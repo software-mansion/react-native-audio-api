@@ -90,8 +90,8 @@ class BiquadFilterNode(
       return
     }
 
-    val effectiveQ = max(0.0, q)
-    val g = 10.0.pow(0.05 * effectiveQ)
+    val Q = max(0.0, q)
+    val g = 10.0.pow(0.05 * Q)
     val d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2)
 
     val theta = PI * frequency
@@ -122,8 +122,8 @@ class BiquadFilterNode(
       return
     }
 
-    val effectiveQ = max(0.0, q)
-    val g = 10.0.pow(0.05 * effectiveQ)
+    val Q = max(0.0, q)
+    val g = 10.0.pow(0.05 * Q)
     val d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2)
 
     val theta = PI * frequency
@@ -143,20 +143,20 @@ class BiquadFilterNode(
 
   private fun setBandpassCoefficients(normalizedFrequency: Double, q: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val effectiveQ = max(0.0, q)
+    val Q = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (effectiveQ <= 0.0) {
+    if (Q <= 0.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
     val w0 = PI * frequency
-    val alpha = sin(w0) / (2 * effectiveQ)
+    val alpha = sin(w0) / (2 * Q)
     val k = cos(w0)
 
     val b0 = alpha
@@ -231,7 +231,7 @@ class BiquadFilterNode(
 
   private fun setPeakingCoefficients(normalizedFrequency: Double, q: Double, gain: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val effectiveQ = max(0.0, q)
+    val Q = max(0.0, q)
     val A = 10.0.pow(gain / 40.0)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
@@ -239,13 +239,13 @@ class BiquadFilterNode(
       return
     }
 
-    if (effectiveQ <= 0.0) {
+    if (Q <= 0.0) {
       setNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
     val w0 = PI * frequency
-    val alpha = sin(w0) / (2 * effectiveQ)
+    val alpha = sin(w0) / (2 * Q)
     val k = cos(w0)
 
     val b0 = 1 + alpha * A
@@ -260,20 +260,20 @@ class BiquadFilterNode(
 
   private fun setNotchCoefficients(normalizedFrequency: Double, q: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val effectiveQ = max(0.0, q)
+    val Q = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (effectiveQ <= 0.0) {
+    if (Q <= 0.0) {
       setNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
     val w0 = PI * frequency
-    val alpha = sin(w0) / (2 * effectiveQ)
+    val alpha = sin(w0) / (2 * Q)
     val k = cos(w0)
 
     val b0 = 1.0
@@ -288,20 +288,20 @@ class BiquadFilterNode(
 
   private fun setAllpassCoefficients(normalizedFrequency: Double, q: Double) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
-    val effectiveQ = max(0.0, q)
+    val Q = max(0.0, q)
 
     if (frequency <= 0.0 || frequency >= 1.0) {
       setNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
-    if (effectiveQ <= 0.0) {
+    if (Q <= 0.0) {
       setNormalizedCoefficients(-1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
       return
     }
 
     val w0 = PI * frequency
-    val alpha = sin(w0) / (2 * effectiveQ)
+    val alpha = sin(w0) / (2 * Q)
     val k = cos(w0)
 
     val b0 = 1 - alpha
