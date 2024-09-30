@@ -77,7 +77,10 @@ class BiquadFilterNode(
     this.a2 = a2 * a0Inverse
   }
 
-  private fun setLowpassCoefficients(normalizedFrequency: Double, q: Double) {
+  private fun setLowpassCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
 
     if (frequency == 1.0) {
@@ -109,7 +112,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, 1.0, a1, a2)
   }
 
-  private fun setHighpassCoefficients(normalizedFrequency: Double, q: Double) {
+  private fun setHighpassCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
 
     if (frequency == 1.0) {
@@ -141,7 +147,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, 1.0, a1, a2)
   }
 
-  private fun setBandpassCoefficients(normalizedFrequency: Double, q: Double) {
+  private fun setBandpassCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val Q = max(0.0, q)
 
@@ -169,7 +178,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setLowshelfCoefficients(normalizedFrequency: Double, gain: Double) {
+  private fun setLowshelfCoefficients(
+    normalizedFrequency: Double,
+    gain: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val A = 10.0.pow(gain / 40.0)
 
@@ -199,7 +211,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setHighshelfCoefficients(normalizedFrequency: Double, gain: Double) {
+  private fun setHighshelfCoefficients(
+    normalizedFrequency: Double,
+    gain: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val A = 10.0.pow(gain / 40.0)
 
@@ -229,7 +244,11 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setPeakingCoefficients(normalizedFrequency: Double, q: Double, gain: Double) {
+  private fun setPeakingCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+    gain: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val Q = max(0.0, q)
     val A = 10.0.pow(gain / 40.0)
@@ -258,7 +277,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setNotchCoefficients(normalizedFrequency: Double, q: Double) {
+  private fun setNotchCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val Q = max(0.0, q)
 
@@ -286,7 +308,10 @@ class BiquadFilterNode(
     setNormalizedCoefficients(b0, b1, b2, a0, a1, a2)
   }
 
-  private fun setAllpassCoefficients(normalizedFrequency: Double, q: Double) {
+  private fun setAllpassCoefficients(
+    normalizedFrequency: Double,
+    q: Double,
+  ) {
     val frequency = max(0.0, min(normalizedFrequency, 1.0))
     val Q = max(0.0, q)
 

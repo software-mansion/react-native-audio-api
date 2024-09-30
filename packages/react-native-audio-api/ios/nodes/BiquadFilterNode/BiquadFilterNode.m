@@ -3,7 +3,8 @@
 #import "Constants.h"
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math formulas for filters
-// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I based mine
+// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I
+// based mine
 
 @implementation BiquadFilterNode
 
@@ -30,7 +31,7 @@
     self.numberOfOutputs = 1;
     _filterType = FilterTypeLowpass;
   }
-  
+
   [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
   [self resetCoefficients];
 
@@ -48,7 +49,7 @@
 - (void)setNormalizedCoefficientsB0:(double)b0 b1:(double)b1 b2:(double)b2 a0:(double)a0 a1:(double)a1 a2:(double)a2
 {
   double a0Inverse = 1 / a0;
-  
+
   self.b0 = b0 * a0Inverse;
   self.b1 = b1 * a0Inverse;
   self.b2 = b2 * a0Inverse;
@@ -87,7 +88,7 @@
     [self setNormalizedCoefficientsB0:0.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
-  
+
   Q = fmax(0.0, Q);
   double g = pow(10.0, 0.05 * Q);
   double d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2);
@@ -120,7 +121,7 @@
     [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
-  
+
   Q = fmax(0.0, Q);
   double g = pow(10.0, 0.05 * Q);
   double d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2);
@@ -338,12 +339,10 @@
       [self setLowpassCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeHighpass:
-      [self setHighpassCoefficientsWithFrequency:normalizedFrequency
-                                       Q:[self.QParam getValueAtTime:currentTime]];
+      [self setHighpassCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeBandpass:
-      [self setBandpassCoefficientsWithFrequency:normalizedFrequency
-                                       Q:[self.QParam getValueAtTime:currentTime]];
+      [self setBandpassCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeLowshelf:
       [self setLowshelfCoefficientsWithFrequency:normalizedFrequency gain:[self.gainParam getValueAtTime:currentTime]];
@@ -353,7 +352,7 @@
       break;
     case FilterTypePeaking:
       [self setPeakingCoefficientsWithFrequency:normalizedFrequency
-                                      Q:[self.QParam getValueAtTime:currentTime]
+                                              Q:[self.QParam getValueAtTime:currentTime]
                                            gain:[self.gainParam getValueAtTime:currentTime]];
       break;
     case FilterTypeNotch:
@@ -398,12 +397,12 @@
     y2 = y1;
     y1 = output;
   }
-  
+
   self.x1 = x1;
   self.x2 = x2;
   self.y1 = y1;
   self.y2 = y2;
-  
+
   self.b0 = b0;
   self.b1 = b1;
   self.b2 = b2;
