@@ -137,10 +137,7 @@
                                    endValue:(double)endValue
                                 currentTime:(double)currentTime
 {
-  double deltaTime = endTime - startTime;
-  float k = (float)(deltaTime > 0 ? 1 / deltaTime : 0);
-  float x = (float)((currentTime - startTime) * k);
-  return (1 - x) * startValue + x * endValue;
+  return startValue + (endValue - startValue) * (currentTime - startTime) / (endTime - startTime);
 }
 
 - (void)exponentialRampToValueAtTime:(float)value time:(double)time
