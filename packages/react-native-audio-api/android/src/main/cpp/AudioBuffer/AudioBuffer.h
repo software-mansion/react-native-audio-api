@@ -34,7 +34,6 @@ class AudioBuffer : public jni::HybridClass<AudioBuffer> {
   int getNumberOfChannels() const;
   float *getChannelData(int channel) const;
   void setChannelData(int channel, const float *data) const;
-  void prepareForDeconstruction();
 
  public:
   friend HybridBase;

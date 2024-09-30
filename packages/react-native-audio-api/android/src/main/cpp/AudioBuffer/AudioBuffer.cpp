@@ -56,8 +56,4 @@ void AudioBuffer::setChannelData(int channel, const float *data) const {
   method(javaPart_, channel, jArray.get());
 }
 
-void AudioBuffer::prepareForDeconstruction() {
-  javaPart_.reset();
-}
-
 } // namespace audioapi

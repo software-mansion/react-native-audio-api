@@ -52,7 +52,4 @@ void AudioParam::exponentialRampToValueAtTime(double value, double endTime) {
   method(javaPart_.get(), value, endTime);
 }
 
-void AudioParam::prepareForDeconstruction() {
-  javaPart_.reset();
-}
 } // namespace audioapi

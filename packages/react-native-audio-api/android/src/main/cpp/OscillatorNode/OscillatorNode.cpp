@@ -32,10 +32,4 @@ void OscillatorNode::setWaveType(const std::string &waveType) {
   method(javaPart_.get(), *make_jstring(waveType));
 }
 
-void OscillatorNode::prepareForDeconstruction() {
-  static const auto method =
-      javaClassLocal()->getMethod<void()>("prepareForDeconstruction");
-  method(javaPart_.get());
-  AudioNode::resetJavaPart();
-}
 } // namespace audioapi

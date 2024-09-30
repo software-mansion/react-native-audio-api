@@ -25,7 +25,6 @@ class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
 
  public:
   explicit OscillatorNodeWrapper(OscillatorNode *oscillator);
-  ~OscillatorNodeWrapper() override;
 #else
 
  private:

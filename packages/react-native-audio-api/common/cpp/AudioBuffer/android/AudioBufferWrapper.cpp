@@ -11,10 +11,6 @@ AudioBufferWrapper::AudioBufferWrapper(AudioBuffer *audioBuffer) {
   numberOfChannels = audioBuffer->getNumberOfChannels();
 }
 
-AudioBufferWrapper::~AudioBufferWrapper() {
-  audioBuffer_->prepareForDeconstruction();
-}
-
 int AudioBufferWrapper::getSampleRate() const {
   return sampleRate;
 }

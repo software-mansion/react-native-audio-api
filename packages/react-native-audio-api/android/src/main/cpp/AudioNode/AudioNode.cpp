@@ -47,7 +47,4 @@ void AudioNode::disconnect(const AudioNode *node) {
   method(javaPart_.get(), node->javaPart_.get());
 }
 
-void AudioNode::resetJavaPart() {
-  javaPart_.reset();
-}
 } // namespace audioapi

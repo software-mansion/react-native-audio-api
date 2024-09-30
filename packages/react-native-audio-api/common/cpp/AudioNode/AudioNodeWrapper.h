@@ -18,7 +18,6 @@ class AudioNodeWrapper {
 
  public:
   explicit AudioNodeWrapper(AudioNode *node);
-  virtual ~AudioNodeWrapper();
 #else
 
  public:

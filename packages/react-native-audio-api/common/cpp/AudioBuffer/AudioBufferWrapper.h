@@ -17,7 +17,6 @@ class AudioBufferWrapper {
   AudioBuffer *audioBuffer_;
 
   explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
-  ~AudioBufferWrapper();
 #else
 
  public:
