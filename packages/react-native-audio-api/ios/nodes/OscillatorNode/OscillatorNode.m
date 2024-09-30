@@ -61,6 +61,7 @@
   _frequencyParam = nil;
   _detuneParam = nil;
   _format = nil;
+  _sourceNode = nil;
 }
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
@@ -104,8 +105,10 @@
           _phase += FULL_CIRCLE_RADIANS;
         }
   }
-
-  [self process:frameCount bufferList:outputData];
+  
+  if (self.isPlaying) {
+    [self process:frameCount bufferList:outputData];
+  }
 
   return noErr;
 }
