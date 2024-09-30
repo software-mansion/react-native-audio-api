@@ -44,10 +44,9 @@ AudioContextWrapper::createBufferSource() {
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioContextWrapper::createBuffer(
-        int numberOfChannels,
+    int numberOfChannels,
     int length,
-    int sampleRate
-    ) {
+    int sampleRate) {
   auto buffer =
       audiocontext_->createBuffer(numberOfChannels, length, sampleRate);
   return std::make_shared<AudioBufferWrapper>(buffer);

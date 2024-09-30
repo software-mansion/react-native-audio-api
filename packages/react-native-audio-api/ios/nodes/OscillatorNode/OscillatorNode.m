@@ -100,12 +100,12 @@
     if (_phase > FULL_CIRCLE_RADIANS) {
       _phase -= FULL_CIRCLE_RADIANS;
     }
-    
+
     if (_phase < 0) {
-          _phase += FULL_CIRCLE_RADIANS;
-        }
+      _phase += FULL_CIRCLE_RADIANS;
+    }
   }
-  
+
   if (self.isPlaying) {
     [self process:frameCount bufferList:outputData];
   }

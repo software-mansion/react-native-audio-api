@@ -1,6 +1,6 @@
 #import <AudioDestinationNode.h>
-#import "AudioContext.h"
 #import <math.h>
+#import "AudioContext.h"
 
 @implementation AudioDestinationNode
 
@@ -15,7 +15,8 @@
   return self;
 }
 
-- (void)normalize:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList {
+- (void)normalize:(AVAudioFrameCount)frameCount bufferList:(AudioBufferList *)bufferList
+{
   float *bufferL = (float *)bufferList->mBuffers[0].mData;
   float *bufferR = (float *)bufferList->mBuffers[1].mData;
 
@@ -23,8 +24,8 @@
   float maxR = 1;
 
   for (int frame = 0; frame < frameCount; frame += 1) {
-    maxL = fmaxf(maxL,fabsf(bufferL[frame]));
-    maxR = fmaxf(maxR,fabsf(bufferR[frame]));
+    maxL = fmaxf(maxL, fabsf(bufferL[frame]));
+    maxR = fmaxf(maxR, fabsf(bufferR[frame]));
   }
 
   for (int frame = 0; frame < frameCount; frame += 1) {

@@ -80,7 +80,9 @@
   switch (self.numberOfChannels) {
     case 1:
       if (outputNumberOfChannels == 2) {
-        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:2 length:self.length sampleRate:self.sampleRate];
+        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:2
+                                                                                     length:self.length
+                                                                                 sampleRate:self.sampleRate];
         float *channelData = [self getChannelDataForChannel:0];
         [outputBuffer setChannelData:0 data:channelData length:self.length];
         [outputBuffer setChannelData:1 data:channelData length:self.length];
@@ -90,7 +92,9 @@
       break;
     case 2:
       if (outputNumberOfChannels == 1) {
-        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:1 length:self.length sampleRate:self.sampleRate];
+        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:1
+                                                                                     length:self.length
+                                                                                 sampleRate:self.sampleRate];
         float *outputData = (float *)malloc(self.length * sizeof(float));
 
         for (int i = 0; i < self.length; i++) {

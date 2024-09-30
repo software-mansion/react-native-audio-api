@@ -33,7 +33,7 @@
 
     for (int bufferNum = 0; bufferNum < bufferList->mNumberBuffers; bufferNum += 1) {
       float *buffer = (float *)bufferList->mBuffers[bufferNum].mData;
-      
+
       buffer[frame] *= currentGain;
     }
 

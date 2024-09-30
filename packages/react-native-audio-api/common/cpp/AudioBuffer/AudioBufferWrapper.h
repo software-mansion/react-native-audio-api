@@ -26,16 +26,16 @@ class AudioBufferWrapper {
 #endif
 
  private:
-    int numberOfChannels;
+  int numberOfChannels;
   int length;
-        int sampleRate;
+  int sampleRate;
   double duration;
 
  public:
-        int getNumberOfChannels() const;
+  int getNumberOfChannels() const;
   int getLength() const;
   double getDuration() const;
-        int getSampleRate() const;
+  int getSampleRate() const;
   float *getChannelData(int channel) const;
   void setChannelData(int channel, float *data, int length) const;
 };

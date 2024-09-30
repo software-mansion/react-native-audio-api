@@ -84,7 +84,7 @@ class AudioParam(
   ) {
     val endValue = checkValue(value)
     val calculateValue = { startTime: Double, endTime: Double, startValue: Double, endValueF: Double, currentTime: Double ->
-      startValue + (endValueF - startValue) * (currentTime - startTime) / (endTime - startTime);
+      startValue + (endValueF - startValue) * (currentTime - startTime) / (endTime - startTime)
     }
 
     val paramChange = ParamChange(getStartTime(), time, getStartValue(), endValue, calculateValue)

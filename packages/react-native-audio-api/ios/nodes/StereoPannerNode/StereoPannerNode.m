@@ -36,7 +36,7 @@
 
     float gainL = cos(x);
     float gainR = sin(x);
-    
+
     float inputL = bufferL[frame];
     float inputR = bufferR[frame];
 

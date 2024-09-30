@@ -100,13 +100,13 @@
 
 - (void)setValueAtTime:(float)value time:(double)time
 {
-  ParamChange *param =
-      [[ParamChange alloc] init:time
-                        endTime:time
-                     startValue:value
-                       endValue:value
-                         target:self
-              calculateSelector:@selector(calculateSetValueAtTime:endTime:startValue:endValue:currentTime:)];
+  ParamChange *param = [[ParamChange alloc] init:time
+                                         endTime:time
+                                      startValue:value
+                                        endValue:value
+                                          target:self
+                               calculateSelector:@selector(calculateSetValueAtTime:
+                                                                           endTime:startValue:endValue:currentTime:)];
   [_timeline insert:param];
 }
 
