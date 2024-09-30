@@ -97,7 +97,7 @@ jsi::Value AudioParamHostObject::get(
             size_t count) -> jsi::Value {
           double value = args[0].getNumber();
           double endTime = args[1].getNumber();
-          wrapper_->linearRampToValueAtTime(value, endTime);
+          wrapper_->exponentialRampToValueAtTime(value, endTime);
           return jsi::Value::undefined();
         });
   }
