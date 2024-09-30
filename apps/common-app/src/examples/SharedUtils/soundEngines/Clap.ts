@@ -8,24 +8,27 @@ class Clap implements SoundEngine {
   public decay: number;
   public volume: number;
   private pulseWidth: number;
+  private pulseCount: number;
   private noiseBuffer: AudioBuffer;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
-    this.tone = 130;
-    this.decay = 0.3;
+    this.tone = 820;
     this.volume = 1;
-    this.pulseWidth = 0.025;
+    this.decay = 0.2;
+    this.pulseWidth = 0.008;
+    this.pulseCount = 4;
     this.noiseBuffer = this.createNoiseBuffer();
   }
 
   createNoiseBuffer() {
-    const bufferSize = 256;
+    const bufferSize = this.audioContext.sampleRate;
     const buffer = this.audioContext.createBuffer(
-      this.audioContext.sampleRate,
-      256,
-      1
+      1,
+      bufferSize,
+      this.audioContext.sampleRate
     );
+
     const output = new Array<number>(bufferSize);
 
     for (let i = 0; i < bufferSize; i++) {
@@ -38,28 +41,35 @@ class Clap implements SoundEngine {
   }
 
   play(time: number) {
-    const envelope = this.audioContext.createGain();
+    // TODO: add delay node once implemented!
     const noise = this.audioContext.createBufferSource();
-    const filter = this.audioContext.createBiquadFilter();
-
     noise.buffer = this.noiseBuffer;
+
+    const filter = this.audioContext.createBiquadFilter();
     filter.type = 'bandpass';
     filter.frequency.value = this.tone * 2;
+    filter.Q.value = 1;
+
+    const envelope = this.audioContext.createGain();
 
     noise.connect(filter);
     filter.connect(envelope);
-    envelope.connect(this.audioContext.destination!);
+    envelope.connect(this.audioContext.destination);
 
-    envelope.gain.setValueAtTime(this.volume, time);
-    envelope.gain.exponentialRampToValueAtTime(0.01, time + this.pulseWidth);
+    for (let i = 0; i < this.pulseCount - 1; i += 1) {
+      envelope.gain.setValueAtTime(this.volume, time + i * this.pulseWidth);
 
-    envelope.gain.setValueAtTime(this.volume, time);
-    envelope.gain.exponentialRampToValueAtTime(
-      0.01,
-      time + 2 * this.pulseWidth
+      envelope.gain.exponentialRampToValueAtTime(
+        0.1,
+        time + (i + 1) * this.pulseWidth
+      );
+    }
+
+    envelope.gain.setValueAtTime(
+      this.volume,
+      time + (this.pulseCount - 1) * this.pulseWidth
     );
 
-    envelope.gain.setValueAtTime(this.volume, time + 2 * this.pulseWidth);
     envelope.gain.exponentialRampToValueAtTime(0.001, time + this.decay);
 
     noise.start(time);

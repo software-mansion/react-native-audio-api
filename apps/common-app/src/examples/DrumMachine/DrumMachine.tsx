@@ -92,10 +92,10 @@ const DrumMachine: FC = () => {
         kickRef.current.play(time);
         break;
       case 'hihat':
-        hiHatRef.current.play(time);
+        hiHatRef.current.play(time + 0.1);
         break;
       case 'clap':
-        clapRef.current.play(time);
+        clapRef.current.play(time + 0.1);
         break;
       default:
         break;

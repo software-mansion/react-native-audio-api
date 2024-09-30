@@ -10,7 +10,6 @@ class HiHat implements SoundEngine {
   private ratios: number[];
   private bandpassFilterFrequency: number;
   private highpassFilterFrequency: number;
-  private bandPassQ: number;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -20,7 +19,6 @@ class HiHat implements SoundEngine {
     this.ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
     this.bandpassFilterFrequency = 10000;
     this.highpassFilterFrequency = 7000;
-    this.bandPassQ = 0.2;
   }
 
   play(time: number) {
@@ -30,17 +28,14 @@ class HiHat implements SoundEngine {
 
     bandpassFilter.type = 'bandpass';
     bandpassFilter.frequency.value = this.bandpassFilterFrequency;
-    bandpassFilter.Q.value = this.bandPassQ;
 
     highpassFilter.type = 'highpass';
     highpassFilter.frequency.value = this.highpassFilterFrequency;
 
-    gain.gain.setValueAtTime(0.01, time);
-
+    gain.gain.setValueAtTime(0.0001, time);
     gain.gain.exponentialRampToValueAtTime(this.volume, time + 0.02);
-    gain.gain.exponentialRampToValueAtTime(this.volume * 0.7, time + 0.03);
-    gain.gain.exponentialRampToValueAtTime(this.volume * 0.001, time + 0.3);
-    gain.gain.exponentialRampToValueAtTime(this.volume * 0, time + 0.31);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0.33, time + 0.03);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0.0001, time + 0.3);
 
     bandpassFilter.connect(highpassFilter);
     highpassFilter.connect(gain);
