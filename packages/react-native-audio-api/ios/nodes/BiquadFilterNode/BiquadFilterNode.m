@@ -4,7 +4,7 @@
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math formulas for filters
 // https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I
-// based mine
+// based mine implementation
 
 @implementation BiquadFilterNode
 
@@ -31,7 +31,8 @@
     self.numberOfOutputs = 1;
     _filterType = FilterTypeLowpass;
   }
-
+  
+  [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
   [self resetCoefficients];
 
   return self;
@@ -43,22 +44,17 @@
   _x2 = 0;
   _y1 = 0;
   _y2 = 0;
-
-  _a0 = 1;
-  _a1 = 0;
-  _a2 = 0;
-  _b0 = 1;
-  _b1 = 0;
-  _b2 = 0;
 }
 
-- (void)setNormalizedCoefficientsA0:(double)a0 a1:(double)a1 a2:(double)a2 b0:(double)b0 b1:(double)b1 b2:(double)b2
+- (void)setNormalizedCoefficientsB0:(double)b0 b1:(double)b1 b2:(double)b2 a0:(double)a0 a1:(double)a1 a2:(double)a2
 {
-  self.a1 = a1 / a0;
-  self.a2 = a2 / a0;
-  self.b0 = b0 / a0;
-  self.b1 = b1 / a0;
-  self.b2 = b2 / a0;
+  double a0Inverse = 1 / a0;
+  
+  self.b0 = b0 * a0Inverse;
+  self.b1 = b1 * a0Inverse;
+  self.b2 = b2 * a0Inverse;
+  self.a1 = a1 * a0Inverse;
+  self.a2 = a2 * a0Inverse;
 }
 
 - (void)cleanup
@@ -79,231 +75,253 @@
   return [FilterType stringFromFilterType:self.filterType];
 }
 
-- (void)setLowpassCoefficientsWithFrequency:(double)frequency resonance:(double)resonance
+- (void)setLowpassCoefficientsWithFrequency:(double)frequency Q:(double)Q
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
 
-  if (normalizedFrequency == 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency == 1.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  if (normalizedFrequency <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:0.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0) {
+    [self setNormalizedCoefficientsB0:0.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
+  
+  Q = fmax(0.0, Q);
+  double g = pow(10.0, 0.05 * Q);
+  double d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2);
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double theta = M_PI * frequency;
+  double sn = 0.5 * d * sin(theta);
+  double beta = 0.5 * (1 - sn) / (1 + sn);
+  double gamma = (0.5 + beta) * cos(theta);
+  double alpha = 0.25 * (0.5 + beta - gamma);
 
-  double b0 = (1.0 - cos(w0)) / 2.0;
-  double b1 = 1.0 - cos(w0);
-  double b2 = (1.0 - cos(w0)) / 2.0;
-  double a0 = 1.0 + alpha;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha;
+  double b0 = 2 * alpha;
+  double b1 = 2 * 2 * alpha;
+  double b2 = 2 * alpha;
+  double a1 = 2 * -gamma;
+  double a2 = 2 * beta;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:1.0 a1:a1 a2:a2];
 }
 
-- (void)setHighpassCoefficientsWithFrequency:(double)frequency resonance:(double)resonance
+- (void)setHighpassCoefficientsWithFrequency:(double)frequency Q:(double)Q
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
 
-  if (normalizedFrequency == 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:0.0 b1:0.0 b2:0.0];
+  if (frequency == 1.0) {
+    [self setNormalizedCoefficientsB0:0.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  if (normalizedFrequency <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
+  
+  Q = fmax(0.0, Q);
+  double g = pow(10.0, 0.05 * Q);
+  double d = sqrt((4 - sqrt(16 - 16 / (g * g))) / 2);
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double theta = M_PI * frequency;
+  double sn = 0.5 * d * sin(theta);
+  double beta = 0.5 * (1 - sn) / (1 + sn);
+  double gamma = (0.5 + beta) * cos(theta);
+  double alpha = 0.25 * (0.5 + beta - gamma);
 
-  double b0 = (1.0 + cos(w0)) / 2.0;
-  double b1 = -(1.0 + cos(w0));
-  double b2 = (1.0 + cos(w0)) / 2.0;
-  double a0 = 1.0 + alpha;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha;
+  double b0 = 2 * alpha;
+  double b1 = 2 * -2 * alpha;
+  double b2 = 2 * alpha;
+  double a1 = 2 * -gamma;
+  double a2 = 2 * beta;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:1.0 a1:a1 a2:a2];
 }
 
-- (void)setBandpassCoefficientsWithFrequency:(double)frequency resonance:(double)resonance
+- (void)setBandpassCoefficientsWithFrequency:(double)frequency Q:(double)Q
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
+  Q = fmax(0.0, Q);
 
-  if (normalizedFrequency <= 0.0 || normalizedFrequency >= 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:0.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    [self setNormalizedCoefficientsB0:0.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
   if (Q <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double w0 = M_PI * frequency;
+  double alpha = sin(w0) / (2 * Q);
+  double k = cos(w0);
 
-  double b0 = alpha * Q;
-  double b1 = 0.0;
-  double b2 = -alpha * Q;
-  double a0 = 1.0 + alpha;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha;
+  double b0 = alpha;
+  double b1 = 0;
+  double b2 = -alpha;
+  double a0 = 1 + alpha;
+  double a1 = -2 * k;
+  double a2 = 1 - alpha;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
 - (void)setLowshelfCoefficientsWithFrequency:(double)frequency gain:(double)gain
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
+  frequency = fmax(0.0, fmin(frequency, 1.0));
   double A = pow(10.0, gain / 40.0);
 
-  if (normalizedFrequency == 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:A * A b1:0.0 b2:0.0];
+  if (frequency == 1.0) {
+    [self setNormalizedCoefficientsB0:A * A b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  if (normalizedFrequency <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double S = 1.0;
-  double alpha = sin(w0) / 2.0 * sqrt((A + 1.0 / A) * (1.0 / S - 1.0) + 2.0);
+  double w0 = M_PI * frequency;
+  double S = 1;
+  double alpha = 0.5 * sin(w0) * sqrt((A + 1 / A) * (1 / S - 1) + 2);
+  double k = cos(w0);
+  double k2 = 2 * sqrt(A) * alpha;
+  double aPlusOne = A + 1;
+  double aMinusOne = A - 1;
 
-  double b0 = A * ((A + 1.0) - (A - 1.0) * cos(w0) + 2.0 * sqrt(A) * alpha);
-  double b1 = 2.0 * A * ((A - 1.0) - (A + 1.0) * cos(w0));
-  double b2 = A * ((A + 1.0) - (A - 1.0) * cos(w0) - 2.0 * sqrt(A) * alpha);
-  double a0 = (A + 1.0) + (A - 1.0) * cos(w0) + 2.0 * sqrt(A) * alpha;
-  double a1 = -2.0 * ((A - 1.0) + (A + 1.0) * cos(w0));
-  double a2 = (A + 1.0) + (A - 1.0) * cos(w0) - 2.0 * sqrt(A) * alpha;
+  double b0 = A * (aPlusOne - aMinusOne * k + k2);
+  double b1 = 2 * A * (aMinusOne - aPlusOne * k);
+  double b2 = A * (aPlusOne - aMinusOne * k - k2);
+  double a0 = aPlusOne + aMinusOne * k + k2;
+  double a1 = -2 * (aMinusOne + aPlusOne * k);
+  double a2 = aPlusOne + aMinusOne * k - k2;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
 - (void)setHighshelfCoefficientsWithFrequency:(double)frequency gain:(double)gain
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
+  frequency = fmax(0.0, fmin(frequency, 1.0));
   double A = pow(10.0, gain / 40.0);
 
-  if (normalizedFrequency == 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency == 1.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  if (normalizedFrequency <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:A * A b1:0.0 b2:0.0];
+  if (frequency <= 0.0) {
+    [self setNormalizedCoefficientsB0:A * A b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = M_PI * normalizedFrequency;
-  double S = 1.0;
-  double alpha = sin(w0) / 2.0 * sqrt((A + 1.0 / A) * (1.0 / S - 1.0) + 2.0);
+  double w0 = M_PI * frequency;
+  double S = 1;
+  double alpha = 0.5 * sin(w0) * sqrt((A + 1 / A) * (1 / S - 1) + 2);
+  double k = cos(w0);
+  double k2 = 2 * sqrt(A) * alpha;
+  double aPlusOne = A + 1;
+  double aMinusOne = A - 1;
 
-  double b0 = A * ((A + 1.0) - (A - 1.0) * cos(w0) + 2.0 * sqrt(A) * alpha);
-  double b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cos(w0));
-  double b2 = A * ((A + 1.0) + (A - 1.0) * cos(w0) - 2.0 * sqrt(A) * alpha);
-  double a0 = (A + 1.0) - (A - 1.0) * cos(w0) + 2.0 * sqrt(A) * alpha;
-  double a1 = 2.0 * ((A - 1.0) + (A + 1.0) * cos(w0));
-  double a2 = (A + 1.0) - (A - 1.0) * cos(w0) - 2.0 * sqrt(A) * alpha;
+  double b0 = A * (aPlusOne + aMinusOne * k + k2);
+  double b1 = -2 * A * (aMinusOne + aPlusOne * k);
+  double b2 = A * (aPlusOne + aMinusOne * k - k2);
+  double a0 = aPlusOne - aMinusOne * k + k2;
+  double a1 = 2 * (aMinusOne - aPlusOne * k);
+  double a2 = aPlusOne - aMinusOne * k - k2;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
-- (void)setPeakingCoefficientsWithFrequency:(double)frequency resonance:(double)resonance gain:(double)gain
+- (void)setPeakingCoefficientsWithFrequency:(double)frequency Q:(double)Q gain:(double)gain
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
+  Q = fmax(0.0, Q);
   double A = pow(10.0, gain / 40.0);
 
-  if (normalizedFrequency <= 0.0 || normalizedFrequency >= 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
   if (Q <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+    [self setNormalizedCoefficientsB0:A * A b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double w0 = M_PI * frequency;
+  double alpha = sin(w0) / (2 * Q);
+  double k = cos(w0);
 
-  double b0 = 1.0 + alpha * A;
-  double b1 = -2.0 * cos(w0);
-  double b2 = 1.0 - alpha * A;
-  double a0 = 1.0 + alpha / A;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha / A;
+  double b0 = 1 + alpha * A;
+  double b1 = -2 * k;
+  double b2 = 1 - alpha * A;
+  double a0 = 1 + alpha / A;
+  double a1 = -2 * k;
+  double a2 = 1 - alpha / A;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
-- (void)setNotchCoefficientsWithFrequency:(double)frequency resonance:(double)resonance
+- (void)setNotchCoefficientsWithFrequency:(double)frequency Q:(double)Q
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
+  Q = fmax(0.0, Q);
 
-  if (normalizedFrequency <= 0.0 || normalizedFrequency >= 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
   if (Q <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+    [self setNormalizedCoefficientsB0:0.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double w0 = M_PI * frequency;
+  double alpha = sin(w0) / (2 * Q);
+  double k = cos(w0);
 
-  double b0 = 1.0;
-  double b1 = -2.0 * cos(w0);
-  double b2 = 1.0;
-  double a0 = 1.0 + alpha;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha;
+  double b0 = 1;
+  double b1 = -2 * k;
+  double b2 = 1;
+  double a0 = 1 + alpha;
+  double a1 = -2 * k;
+  double a2 = 1 - alpha;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
-- (void)setAllpassCoefficientsWithFrequency:(double)frequency resonance:(double)resonance
+- (void)setAllpassCoefficientsWithFrequency:(double)frequency Q:(double)Q
 {
-  double normalizedFrequency = fmax(0.0, fmin(frequency, 1.0));
-  double Q = fmax(0.0, resonance);
+  frequency = fmax(0.0, fmin(frequency, 1.0));
+  Q = fmax(0.0, Q);
 
-  if (normalizedFrequency <= 0.0 || normalizedFrequency >= 1.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    [self setNormalizedCoefficientsB0:1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
   if (Q <= 0.0) {
-    [self setNormalizedCoefficientsA0:1.0 a1:0.0 a2:0.0 b0:1.0 b1:0.0 b2:0.0];
+    [self setNormalizedCoefficientsB0:-1.0 b1:0.0 b2:0.0 a0:1.0 a1:0.0 a2:0.0];
     return;
   }
 
-  double w0 = 2.0 * M_PI * normalizedFrequency;
-  double alpha = sin(w0) / (2.0 * Q);
+  double w0 = M_PI * frequency;
+  double alpha = sin(w0) / (2 * Q);
+  double k = cos(w0);
 
-  double b0 = 1.0 - alpha;
-  double b1 = -2.0 * cos(w0);
-  double b2 = 1.0 + alpha;
-  double a0 = 1.0 + alpha;
-  double a1 = -2.0 * cos(w0);
-  double a2 = 1.0 - alpha;
+  double b0 = 1 - alpha;
+  double b1 = -2 * k;
+  double b2 = 1 + alpha;
+  double a0 = 1 + alpha;
+  double a1 = -2 * k;
+  double a2 = 1 - alpha;
 
-  [self setNormalizedCoefficientsA0:a0 a1:a1 a2:a2 b0:b0 b1:b1 b2:b2];
+  [self setNormalizedCoefficientsB0:b0 b1:b1 b2:b2 a0:a0 a1:a1 a2:a2];
 }
 
 - (void)applyFilter
@@ -318,15 +336,15 @@
 
   switch (self.filterType) {
     case FilterTypeLowpass:
-      [self setLowpassCoefficientsWithFrequency:normalizedFrequency resonance:[self.QParam getValueAtTime:currentTime]];
+      [self setLowpassCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeHighpass:
       [self setHighpassCoefficientsWithFrequency:normalizedFrequency
-                                       resonance:[self.QParam getValueAtTime:currentTime]];
+                                       Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeBandpass:
       [self setBandpassCoefficientsWithFrequency:normalizedFrequency
-                                       resonance:[self.QParam getValueAtTime:currentTime]];
+                                       Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeLowshelf:
       [self setLowshelfCoefficientsWithFrequency:normalizedFrequency gain:[self.gainParam getValueAtTime:currentTime]];
@@ -336,14 +354,14 @@
       break;
     case FilterTypePeaking:
       [self setPeakingCoefficientsWithFrequency:normalizedFrequency
-                                      resonance:[self.QParam getValueAtTime:currentTime]
+                                      Q:[self.QParam getValueAtTime:currentTime]
                                            gain:[self.gainParam getValueAtTime:currentTime]];
       break;
     case FilterTypeNotch:
-      [self setNotchCoefficientsWithFrequency:normalizedFrequency resonance:[self.QParam getValueAtTime:currentTime]];
+      [self setNotchCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     case FilterTypeAllpass:
-      [self setAllpassCoefficientsWithFrequency:normalizedFrequency resonance:[self.QParam getValueAtTime:currentTime]];
+      [self setAllpassCoefficientsWithFrequency:normalizedFrequency Q:[self.QParam getValueAtTime:currentTime]];
       break;
     default:
       break;
@@ -381,6 +399,16 @@
     y2 = y1;
     y1 = output;
   }
+  
+  self.x1 = x1;
+  self.x2 = x2;
+  self.y1 = y1;
+  self.y2 = y2;
+  
+  self.b0 = b0;
+  self.b1 = b1;
+  self.b2 = b2;
+  self.a1 = a1;
 
   [super process:frameCount bufferList:bufferList];
 }

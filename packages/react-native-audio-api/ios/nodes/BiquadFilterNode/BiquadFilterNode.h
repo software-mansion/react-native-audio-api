@@ -20,12 +20,11 @@
 @property (nonatomic, assign) float y2;
 
 // cofficients
-@property (nonatomic, assign) float a0;
-@property (nonatomic, assign) float a1;
-@property (nonatomic, assign) float a2;
 @property (nonatomic, assign) float b0;
 @property (nonatomic, assign) float b1;
 @property (nonatomic, assign) float b2;
+@property (nonatomic, assign) float a1;
+@property (nonatomic, assign) float a2;
 
 - (instancetype)initWithContext:(AudioContext *)context;
 
