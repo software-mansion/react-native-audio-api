@@ -2,7 +2,7 @@
 
 @implementation RNAA_AudioBuffer
 
-- (instancetype)initWithSampleRate:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels
+- (instancetype)initWithNumberOfChannels:(int)numberOfChannels length:(int)length sampleRate:(int)sampleRate
 {
   self = [super init];
   if (self) {
@@ -11,9 +11,9 @@
                                      reason:@"only 1 or 2 channels buffer is allowed"
                                    userInfo:nil];
     }
-    _sampleRate = sampleRate;
-    _length = length;
     _numberOfChannels = numberOfChannels;
+    _length = length;
+    _sampleRate = sampleRate;
     _duration = (double)length / sampleRate;
 
     // Allocate the channels array
@@ -80,9 +80,7 @@
   switch (self.numberOfChannels) {
     case 1:
       if (outputNumberOfChannels == 2) {
-        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithSampleRate:self.sampleRate
-                                                                               length:self.length
-                                                                     numberOfChannels:2];
+        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:2 length:self.length sampleRate:self.sampleRate];
         float *channelData = [self getChannelDataForChannel:0];
         [outputBuffer setChannelData:0 data:channelData length:self.length];
         [outputBuffer setChannelData:1 data:channelData length:self.length];
@@ -92,9 +90,7 @@
       break;
     case 2:
       if (outputNumberOfChannels == 1) {
-        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithSampleRate:self.sampleRate
-                                                                               length:self.length
-                                                                     numberOfChannels:1];
+        RNAA_AudioBuffer *outputBuffer = [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:1 length:self.length sampleRate:self.sampleRate];
         float *outputData = (float *)malloc(self.length * sizeof(float));
 
         for (int i = 0; i < self.length; i++) {

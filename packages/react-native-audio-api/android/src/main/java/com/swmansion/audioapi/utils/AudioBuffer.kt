@@ -1,11 +1,12 @@
 package com.swmansion.audioapi.utils
 
+import android.util.Log
 import com.facebook.jni.HybridData
 
 class AudioBuffer(
-  sampleRate: Int,
-  length: Int,
   numberOfChannels: Int,
+  length: Int,
+  sampleRate: Int,
 ) {
   val sampleRate: Int = sampleRate
     get() = field
@@ -55,7 +56,7 @@ class AudioBuffer(
   }
 
   fun copy(): AudioBuffer {
-    val outputBuffer = AudioBuffer(sampleRate, length, numberOfChannels)
+    val outputBuffer = AudioBuffer(numberOfChannels, length, sampleRate)
 
     for (i in 0 until numberOfChannels) {
       outputBuffer.setChannelData(i, channels[i].copyOf())
@@ -69,10 +70,12 @@ class AudioBuffer(
       return this
     }
 
+    Log.d("AudioBuffer", "Mixing buffer with $numberOfChannels channels to $outputNumberOfChannels channels")
+
     when (this.numberOfChannels) {
       1 -> {
         if (outputNumberOfChannels == 2) {
-          val outputBuffer = AudioBuffer(sampleRate, length, 2)
+          val outputBuffer = AudioBuffer(2, length, sampleRate)
           outputBuffer.setChannelData(0, channels[0])
           outputBuffer.setChannelData(1, channels[0])
 
@@ -81,7 +84,7 @@ class AudioBuffer(
       }
       2 -> {
         if (outputNumberOfChannels == 1) {
-          val outputBuffer = AudioBuffer(sampleRate, length, 1)
+          val outputBuffer = AudioBuffer(1, length, sampleRate)
           val outputData = FloatArray(length)
 
           for (i in 0 until length) {

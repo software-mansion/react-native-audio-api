@@ -53,9 +53,9 @@ std::shared_ptr<IOSAudioBufferSourceNode> IOSAudioContext::createBufferSource()
   return std::make_shared<IOSAudioBufferSourceNode>(bufferSource);
 }
 
-std::shared_ptr<IOSAudioBuffer> IOSAudioContext::createBuffer(int sampleRate, int length, int numberOfChannels)
+std::shared_ptr<IOSAudioBuffer> IOSAudioContext::createBuffer(int numberOfChannels, int length, int sampleRate)
 {
-  auto buffer = [audioContext_ createBuffer:sampleRate length:length numberOfChannels:numberOfChannels];
+  auto buffer = [audioContext_ createBuffer:numberOfChannels length:length sampleRate:sampleRate];
   return std::make_shared<IOSAudioBuffer>(buffer);
 }
 

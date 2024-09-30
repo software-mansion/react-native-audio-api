@@ -24,7 +24,7 @@ class OscillatorNode(
 
   init {
     val audioTrack = context.getAudioTrack(2 * Constants.BUFFER_SIZE)
-    val audioBuffer = AudioBuffer(context.sampleRate, Constants.BUFFER_SIZE, 2)
+    val audioBuffer = AudioBuffer(2, Constants.BUFFER_SIZE, context.sampleRate)
 
     playbackParameters = PlaybackParameters(audioTrack, audioBuffer)
   }

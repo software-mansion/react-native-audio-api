@@ -31,7 +31,7 @@ class IOSAudioContext {
   std::shared_ptr<IOSBiquadFilterNode> createBiquadFilter();
   std::shared_ptr<IOSAudioBufferSourceNode> createBufferSource();
   std::shared_ptr<IOSAudioBuffer>
-  createBuffer(int sampleRate, int length, int numberOfChannels);
+  createBuffer(int numberOfChannels, int length, int sampleRate);
   void close();
   double getCurrentTime();
   std::string getState();

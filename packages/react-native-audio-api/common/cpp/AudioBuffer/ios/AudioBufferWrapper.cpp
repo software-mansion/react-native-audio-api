@@ -12,8 +12,8 @@ AudioBufferWrapper::AudioBufferWrapper(
   numberOfChannels = audioBuffer->getNumberOfChannels();
 }
 
-int AudioBufferWrapper::getSampleRate() const {
-  return sampleRate;
+int AudioBufferWrapper::getNumberOfChannels() const {
+  return numberOfChannels;
 }
 
 int AudioBufferWrapper::getLength() const {
@@ -24,8 +24,8 @@ double AudioBufferWrapper::getDuration() const {
   return duration;
 }
 
-int AudioBufferWrapper::getNumberOfChannels() const {
-  return numberOfChannels;
+int AudioBufferWrapper::getSampleRate() const {
+  return sampleRate;
 }
 
 float *AudioBufferWrapper::getChannelData(int channel) const {

@@ -58,9 +58,9 @@
   return [[AudioBufferSourceNode alloc] initWithContext:self];
 }
 
-- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels
+- (RNAA_AudioBuffer *)createBuffer:(int)numberOfChannels length:(int)length sampleRate:(int)sampleRate
 {
-  return [[RNAA_AudioBuffer alloc] initWithSampleRate:sampleRate length:length numberOfChannels:numberOfChannels];
+  return [[RNAA_AudioBuffer alloc] initWithNumberOfChannels:numberOfChannels length:length sampleRate:sampleRate];
 }
 
 - (double)getCurrentTime

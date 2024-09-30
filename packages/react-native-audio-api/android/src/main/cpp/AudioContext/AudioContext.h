@@ -45,7 +45,7 @@ class AudioContext : public jni::HybridClass<AudioContext> {
   StereoPannerNode *createStereoPanner();
   BiquadFilterNode *createBiquadFilter();
   AudioBufferSourceNode *createBufferSource();
-  AudioBuffer *createBuffer(int sampleRate, int length, int numberOfChannels);
+  AudioBuffer *createBuffer(int numberOfChannels, int length, int sampleRate);
   std::string getState();
   int getSampleRate();
   double getCurrentTime();

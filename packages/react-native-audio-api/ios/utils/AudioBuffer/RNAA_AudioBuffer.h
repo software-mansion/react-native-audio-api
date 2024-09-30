@@ -5,13 +5,13 @@
 
 @interface RNAA_AudioBuffer : NSObject
 
-@property (nonatomic, assign) int sampleRate;
-@property (nonatomic, assign) int length;
 @property (nonatomic, assign) int numberOfChannels;
+@property (nonatomic, assign) int length;
+@property (nonatomic, assign) int sampleRate;
 @property (nonatomic, assign) double duration;
 @property (nonatomic, strong) NSMutableArray<NSMutableArray<NSNumber *> *> *channels;
 
-- (instancetype)initWithSampleRate:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels;
+- (instancetype)initWithNumberOfChannels:(int)numberOfChannels length:(int)length sampleRate:(int)sampleRate;
 
 - (float *)getChannelDataForChannel:(int)channel;
 

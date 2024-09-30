@@ -16,7 +16,7 @@ class AudioBufferSourceNode(
     get() = field
 
   init {
-    buffer = AudioBuffer(context.sampleRate, Constants.BUFFER_SIZE, 2)
+    buffer = AudioBuffer(2, Constants.BUFFER_SIZE, context.sampleRate)
     val audioTrack = context.getAudioTrack(Constants.BUFFER_SIZE * 2)
     playbackParameters = PlaybackParameters(audioTrack, buffer)
   }
@@ -27,7 +27,7 @@ class AudioBufferSourceNode(
     channelCount = audioBuffer.numberOfChannels
 
     val audioTrack = context.getAudioTrack(2 * buffer.length)
-    val buffer = AudioBuffer(buffer.sampleRate, buffer.length, buffer.numberOfChannels)
+    val buffer = AudioBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate)
     playbackParameters = PlaybackParameters(audioTrack, buffer)
   }
 

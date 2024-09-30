@@ -44,7 +44,7 @@
 
 - (AudioBufferSourceNode *)createBufferSource;
 
-- (RNAA_AudioBuffer *)createBuffer:(int)sampleRate length:(int)length numberOfChannels:(int)numberOfChannels;
+- (RNAA_AudioBuffer *)createBuffer:(int)numberOfChannels length:(int)length sampleRate:(int)sampleRate;
 
 - (double)getCurrentTime;
 

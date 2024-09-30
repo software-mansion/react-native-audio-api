@@ -54,7 +54,7 @@ class AudioContextWrapper {
   std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNodeWrapper> createBufferSource();
   std::shared_ptr<AudioBufferWrapper>
-  createBuffer(int sampleRate, int length, int numberOfChannels);
+  createBuffer(int numberOfChannels, int length, int sampleRate);
   std::string getState();
   int getSampleRate() const;
   double getCurrentTime();

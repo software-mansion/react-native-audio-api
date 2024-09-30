@@ -57,10 +57,10 @@ AudioBufferSourceNode *AudioContext::createBufferSource() {
 }
 
 AudioBuffer *
-AudioContext::createBuffer(int sampleRate, int length, int numberOfChannels) {
+AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
   static const auto method =
       javaClassLocal()->getMethod<AudioBuffer(int, int, int)>("createBuffer");
-  auto buffer = method(javaPart_.get(), sampleRate, length, numberOfChannels);
+  auto buffer = method(javaPart_.get(), numberOfChannels, length, sampleRate);
 
   return buffer->cthis();
 }

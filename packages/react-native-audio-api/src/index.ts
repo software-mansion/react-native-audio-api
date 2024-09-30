@@ -56,11 +56,11 @@ export class AudioContext implements BaseAudioContext {
   }
 
   createBuffer(
-    sampleRate: number,
+    numOfChannels: number,
     length: number,
-    numOfChannels: number
+    sampleRate: number
   ): AudioBuffer {
-    return this.__AudioContext.createBuffer(sampleRate, length, numOfChannels);
+    return this.__AudioContext.createBuffer(numOfChannels, length, sampleRate);
   }
 
   close(): void {
