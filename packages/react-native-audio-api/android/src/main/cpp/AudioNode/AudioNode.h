@@ -1,23 +1,26 @@
 #pragma once
 
-#include <fbjni/fbjni.h>
-#include <react/jni/CxxModuleWrapper.h>
-#include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <string>
+#include <vector>
+#include <oboe/Oboe.h>
 
 namespace audioapi {
 
-class AudioNode {
+using namespace oboe;
+
+class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  public:
+    virtual ~AudioNode() = default;
+
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
   std::string getChannelCountMode() const;
   std::string getChannelInterpretation() const;
-  void connect(const std::shared_ptr<AudioNode> &node) const;
-  void disconnect(const std::shared_ptr<AudioNode> &node) const;
+  void connect(const std::shared_ptr<AudioNode> &node);
+  void disconnect(const std::shared_ptr<AudioNode> &node);
 
 protected:
     int numberOfInputs_ = 1;
@@ -27,6 +30,15 @@ protected:
     std::string channelCountMode_ = "max";
     // TODO: Add enum for channelInterpretation
     std::string channelInterpretation_ = "speakers";
+
+    virtual void process(AudioStream *oboeStream,
+                         void *audioData,
+                         int32_t numFrames, int channelCount);
+
+private:
+    std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
+    std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
+
 };
 
 } // namespace audioapi
