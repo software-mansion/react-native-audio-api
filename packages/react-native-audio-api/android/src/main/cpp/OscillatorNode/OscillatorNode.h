@@ -14,15 +14,20 @@ class OscillatorNode : public AudioStreamDataCallback,
  public:
   explicit OscillatorNode();
 
+  std::shared_ptr<AudioParam> getFrequencyParam() const;
+    std::shared_ptr<AudioParam> getDetuneParam() const;
+    std::string getType();
+    void setType(const std::string &type);
+
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,
       void *audioData,
       int32_t numFrames) override;
 
  private:
-  float gain_ = 0.5f;
-  float frequency_ = 440;
-  float detune_ = 0.0;
+  std::shared_ptr<AudioParam> frequency_;
+    std::shared_ptr<AudioParam> detune_;
+    std::string type_ = "sine";
   float phase_ = 0.0;
 };
 } // namespace audioapi

@@ -2,54 +2,30 @@
 
 namespace audioapi {
 
-AudioParam::AudioParam(alias_ref<AudioParam::jhybridobject> &jThis)
-    : javaPart_(make_global(jThis)) {}
+AudioParam::AudioParam(double defaultValue, double minValue, double maxValue)
+    : value_(defaultValue), defaultValue_(defaultValue), minValue_(minValue),
+      maxValue_(maxValue) {}
 
-double AudioParam::getValue() {
-  static const auto method = javaClassLocal()->getMethod<double()>("getValue");
-  return method(javaPart_.get());
-}
+double AudioParam::getValue() const { return value_; }
 
-void AudioParam::setValue(double value) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(double)>("setValue");
-  method(javaPart_.get(), value);
-}
+double AudioParam::getDefaultValue() const { return defaultValue_; }
 
-double AudioParam::getDefaultValue() {
-  static const auto method =
-      javaClassLocal()->getMethod<double()>("getDefaultValue");
-  return method(javaPart_.get());
-}
+double AudioParam::getMinValue() const { return minValue_; }
 
-double AudioParam::getMinValue() {
-  static const auto method =
-      javaClassLocal()->getMethod<double()>("getMinValue");
-  return method(javaPart_.get());
-}
+double AudioParam::getMaxValue() const { return maxValue_; }
 
-double AudioParam::getMaxValue() {
-  static const auto method =
-      javaClassLocal()->getMethod<double()>("getMaxValue");
-  return method(javaPart_.get());
-}
+void AudioParam::setValue(double value) { value_ = value; }
 
 void AudioParam::setValueAtTime(double value, double startTime) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(double, double)>("setValueAtTime");
-  method(javaPart_.get(), value, startTime);
+  //TODO: Implement this
 }
 
 void AudioParam::linearRampToValueAtTime(double value, double endTime) {
-  static const auto method = javaClassLocal()->getMethod<void(double, double)>(
-      "linearRampToValueAtTime");
-  method(javaPart_.get(), value, endTime);
+  //TODO: Implement this
 }
 
 void AudioParam::exponentialRampToValueAtTime(double value, double endTime) {
-  static const auto method = javaClassLocal()->getMethod<void(double, double)>(
-      "exponentialRampToValueAtTime");
-  method(javaPart_.get(), value, endTime);
+  //TODO: Implement this
 }
 
 } // namespace audioapi

@@ -13,7 +13,9 @@ class AudioNode {
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = 2;
+  // TODO: Add enum for channelCountMode
   std::string channelCountMode_ = "max";
+  // TODO: Add enum for channelInterpretation
   std::string channelInterpretation_ = "speakers";
 
  public:

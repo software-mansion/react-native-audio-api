@@ -3,7 +3,7 @@
 
 namespace audioapi {
 
-AudioParamWrapper::AudioParamWrapper(AudioParam *param) : param_(param) {
+AudioParamWrapper::AudioParamWrapper(const std::shared_ptr<AudioParam> &param) : param_(param) {
   defaultValue_ = param->getDefaultValue();
   minValue_ = param->getMinValue();
   maxValue_ = param->getMaxValue();

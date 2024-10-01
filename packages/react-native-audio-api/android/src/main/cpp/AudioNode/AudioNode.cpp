@@ -22,8 +22,12 @@ std::string AudioNode::getChannelInterpretation() const {
   return channelInterpretation_;
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioNode> &node) const {}
+void AudioNode::connect(const std::shared_ptr<AudioNode> &node) const {
+    //TODO: Implement this
+}
 
-void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) const {}
+void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) const {
+    //TODO: Implement this
+}
 
 } // namespace audioapi

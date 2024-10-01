@@ -7,40 +7,22 @@
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
+class AudioParam {
+private:
+    double value_;
+    double defaultValue_;
+    double minValue_;
+    double maxValue_;
 
-class AudioParam : public jni::HybridClass<AudioParam> {
- public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/parameters/AudioParam;";
-
-  static jni::local_ref<AudioParam::jhybriddata> initHybrid(
-      jni::alias_ref<jhybridobject> jThis) {
-    return makeCxxInstance(jThis);
-  }
-
-  static void registerNatives() {
-    registerHybrid({
-        makeNativeMethod("initHybrid", AudioParam::initHybrid),
-    });
-  }
-
-  double getValue();
-  void setValue(double value);
-  double getDefaultValue();
-  double getMinValue();
-  double getMaxValue();
+public:
+    explicit AudioParam(double defaultValue, double minValue, double maxValue);
+    double getValue() const;void setValue(double value);
+  double getDefaultValue() const;
+  double getMinValue() const;
+  double getMaxValue() const;
   void setValueAtTime(double value, double startTime);
   void linearRampToValueAtTime(double value, double endTime);
   void exponentialRampToValueAtTime(double value, double endTime);
-
- protected:
-  friend HybridBase;
-
-  global_ref<AudioParam::javaobject> javaPart_;
-
-  explicit AudioParam(jni::alias_ref<AudioParam::jhybridobject> &jThis);
 };
 
 } // namespace audioapi
