@@ -1,9 +1,9 @@
 #pragma once
 
+#include <oboe/Oboe.h>
 #include <memory>
 #include <string>
 #include <vector>
-#include <oboe/Oboe.h>
 
 // channelCount always equal to 2
 
@@ -12,9 +12,8 @@ namespace audioapi {
 using namespace oboe;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
-
  public:
-    virtual ~AudioNode() = default;
+  virtual ~AudioNode() = default;
 
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
@@ -24,23 +23,24 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
-protected:
-    int numberOfInputs_ = 1;
-    int numberOfOutputs_ = 1;
-    int channelCount_ = 2;
-    // TODO: Add enum for channelCountMode
-    std::string channelCountMode_ = "max";
-    // TODO: Add enum for channelInterpretation
-    std::string channelInterpretation_ = "speakers";
+ protected:
+  int numberOfInputs_ = 1;
+  int numberOfOutputs_ = 1;
+  int channelCount_ = 2;
+  // TODO: Add enum for channelCountMode
+  std::string channelCountMode_ = "max";
+  // TODO: Add enum for channelInterpretation
+  std::string channelInterpretation_ = "speakers";
 
-    virtual void process(AudioStream *oboeStream,
-                         void *audioData,
-                         int32_t numFrames, int channelCount);
+  virtual void process(
+      AudioStream *oboeStream,
+      void *audioData,
+      int32_t numFrames,
+      int channelCount);
 
-private:
-    std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
-    std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
-
+ private:
+  std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
+  std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 };
 
 } // namespace audioapi

@@ -6,19 +6,20 @@
 namespace audioapi {
 
 class GainNode : public AudioNode {
+ public:
+  explicit GainNode();
 
-public:
-    explicit GainNode();
+  std::shared_ptr<AudioParam> getGainParam() const;
 
-    std::shared_ptr<AudioParam> getGainParam() const;
+ protected:
+  void process(
+      AudioStream *oboeStream,
+      void *audioData,
+      int32_t numFrames,
+      int channelCount) override;
 
-protected:
-    void process(AudioStream *oboeStream,
-                 void *audioData,
-                 int32_t numFrames, int channelCount) override;
-
-private:
-    std::shared_ptr<AudioParam> gainParam_;
+ private:
+  std::shared_ptr<AudioParam> gainParam_;
 };
 
 } // namespace audioapi

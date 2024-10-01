@@ -5,17 +5,18 @@
 namespace audioapi {
 
 class AudioDestinationNode : public AudioNode {
-public:
-    explicit AudioDestinationNode();
+ public:
+  explicit AudioDestinationNode();
 
-protected:
-    void process(AudioStream *oboeStream,
-                 void *audioData,
-                 int32_t numFrames, int channelCount) override;
+ protected:
+  void process(
+      AudioStream *oboeStream,
+      void *audioData,
+      int32_t numFrames,
+      int channelCount) override;
 
-private:
-    static void normalize(void *audioData, int32_t numFrames, int channelCount);
-
+ private:
+  static void normalize(void *audioData, int32_t numFrames, int channelCount);
 };
 
 } // namespace audioapi

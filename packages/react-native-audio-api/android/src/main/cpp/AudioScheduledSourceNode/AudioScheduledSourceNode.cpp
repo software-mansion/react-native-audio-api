@@ -3,7 +3,7 @@
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode() : AudioNode() {
-    numberOfInputs_ = 0;
+  numberOfInputs_ = 0;
 }
 
 void AudioScheduledSourceNode::start(double time) {

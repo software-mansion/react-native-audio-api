@@ -8,7 +8,6 @@
 namespace audioapi {
 
 class AudioParam {
-
  public:
   explicit AudioParam(float defaultValue, float minValue, float maxValue);
   float getValue() const;
@@ -20,11 +19,11 @@ class AudioParam {
   void linearRampToValueAtTime(float value, float endTime);
   void exponentialRampToValueAtTime(float value, float endTime);
 
-private:
-    float value_;
-    float defaultValue_;
-    float minValue_;
-    float maxValue_;
+ private:
+  float value_;
+  float defaultValue_;
+  float minValue_;
+  float maxValue_;
 };
 
 } // namespace audioapi

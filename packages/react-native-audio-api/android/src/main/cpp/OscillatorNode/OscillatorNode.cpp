@@ -19,7 +19,7 @@ OscillatorNode::OscillatorNode() : AudioScheduledSourceNode() {
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
-    return frequencyParam_;
+  return frequencyParam_;
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
@@ -49,7 +49,7 @@ DataCallbackResult OscillatorNode::onAudioReady(
       phase_ -= 2 * M_PI;
   }
 
-    process(oboeStream, audioData, numFrames, channelCount_);
+  process(oboeStream, audioData, numFrames, channelCount_);
 
   return DataCallbackResult::Continue;
 }
