@@ -25,8 +25,8 @@ class OscillatorNode : public AudioStreamDataCallback,
       int32_t numFrames) override;
 
  private:
-  std::shared_ptr<AudioParam> frequency_;
-  std::shared_ptr<AudioParam> detune_;
+  std::shared_ptr<AudioParam> frequencyParam_;
+  std::shared_ptr<AudioParam> detuneParam_;
   std::string type_ = "sine";
   float phase_ = 0.0;
 };

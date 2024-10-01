@@ -8,16 +8,17 @@ namespace audioapi {
 using namespace oboe;
 
 class AudioScheduledSourceNode : public AudioNode {
- protected:
-  std::shared_ptr<oboe::AudioStream> mStream;
-
-  static int constexpr sampleRate = 44100;
 
  public:
   explicit AudioScheduledSourceNode();
 
   void start(double time);
   void stop(double time);
+
+protected:
+    std::shared_ptr<oboe::AudioStream> mStream;
+
+    static int constexpr sampleRate = 44100;
 };
 
 } // namespace audioapi

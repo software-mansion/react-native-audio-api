@@ -2,13 +2,12 @@
 
 namespace audioapi {
 
-// using namespace facebook::jni;
-//
-// AudioParam *StereoPannerNode::getPanParam() {
-//   static const auto method =
-//       javaClassLocal()->getMethod<AudioParam()>("getPan");
-//   auto pan = method(javaPart_.get());
-//
-//   return pan->cthis();
-// }
+StereoPannerNode::StereoPannerNode() {
+  panParam_ = std::make_shared<AudioParam>(0.0, -1.0, 1.0);
+}
+
+std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
+  return panParam_;
+}
+
 } // namespace audioapi

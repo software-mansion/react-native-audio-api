@@ -5,18 +5,14 @@
 
 namespace audioapi {
 
-// using namespace facebook;
-// using namespace facebook::jni;
-//
-// class StereoPannerNode : public jni::HybridClass<StereoPannerNode, AudioNode>
-// {
-//  public:
-//   static auto constexpr kJavaDescriptor =
-//       "Lcom/swmansion/audioapi/nodes/StereoPannerNode;";
-//
-//   AudioParam *getPanParam();
-// };
+class StereoPannerNode : public AudioNode {
 
-class StereoPannerNode : public AudioNode {};
+public:
+    explicit StereoPannerNode();
+    std::shared_ptr<AudioParam> getPanParam() const;
+
+private:
+    std::shared_ptr<AudioParam> panParam_;
+};
 
 } // namespace audioapi

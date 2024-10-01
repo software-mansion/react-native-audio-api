@@ -8,11 +8,6 @@
 namespace audioapi {
 
 class AudioParam {
- private:
-  double value_;
-  double defaultValue_;
-  double minValue_;
-  double maxValue_;
 
  public:
   explicit AudioParam(double defaultValue, double minValue, double maxValue);
@@ -24,6 +19,12 @@ class AudioParam {
   void setValueAtTime(double value, double startTime);
   void linearRampToValueAtTime(double value, double endTime);
   void exponentialRampToValueAtTime(double value, double endTime);
+
+private:
+    double value_;
+    double defaultValue_;
+    double minValue_;
+    double maxValue_;
 };
 
 } // namespace audioapi
