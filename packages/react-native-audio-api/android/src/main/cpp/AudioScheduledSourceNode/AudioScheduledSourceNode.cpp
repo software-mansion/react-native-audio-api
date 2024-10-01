@@ -2,7 +2,9 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode() : AudioNode() {}
+AudioScheduledSourceNode::AudioScheduledSourceNode() : AudioNode() {
+    numberOfInputs_ = 0;
+}
 
 void AudioScheduledSourceNode::start(double time) {
   mStream->requestStart();

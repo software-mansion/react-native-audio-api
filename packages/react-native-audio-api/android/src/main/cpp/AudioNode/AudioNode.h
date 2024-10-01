@@ -5,6 +5,8 @@
 #include <vector>
 #include <oboe/Oboe.h>
 
+// channelCount always equal to 2
+
 namespace audioapi {
 
 using namespace oboe;

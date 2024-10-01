@@ -6,7 +6,7 @@ namespace audioapi {
 
 class AudioDestinationNode : public AudioNode {
 public:
-    AudioDestinationNode() = default;
+    explicit AudioDestinationNode();
 
 protected:
     void process(AudioStream *oboeStream,

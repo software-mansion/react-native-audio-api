@@ -2,6 +2,11 @@
 
 namespace audioapi {
 
+AudioDestinationNode::AudioDestinationNode() : AudioNode() {
+    numberOfOutputs_ = 0;
+    channelCountMode_ = "explicit";
+}
+
 void AudioDestinationNode::process(AudioStream *oboeStream,
                                    void *audioData,
                                    int32_t numFrames, int channelCount) {
