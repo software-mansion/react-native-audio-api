@@ -40,9 +40,9 @@ const Oscillator: FC = () => {
     }
 
     oscillatorRef.current = audioContextRef.current.createOscillator();
-    // oscillatorRef.current.frequency.value = frequency;
-    // oscillatorRef.current.detune.value = detune;
-    // oscillatorRef.current.type = oscillatorType;
+    oscillatorRef.current.frequency.value = frequency;
+    oscillatorRef.current.detune.value = detune;
+    oscillatorRef.current.type = oscillatorType;
 
     // gainRef.current = audioContextRef.current.createGain();
     // gainRef.current.gain.value = gain;

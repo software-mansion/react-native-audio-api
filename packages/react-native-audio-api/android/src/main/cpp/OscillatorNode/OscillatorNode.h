@@ -15,9 +15,9 @@ class OscillatorNode : public AudioStreamDataCallback,
   explicit OscillatorNode();
 
   std::shared_ptr<AudioParam> getFrequencyParam() const;
-    std::shared_ptr<AudioParam> getDetuneParam() const;
-    std::string getType();
-    void setType(const std::string &type);
+  std::shared_ptr<AudioParam> getDetuneParam() const;
+  std::string getType();
+  void setType(const std::string &type);
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,
@@ -26,8 +26,8 @@ class OscillatorNode : public AudioStreamDataCallback,
 
  private:
   std::shared_ptr<AudioParam> frequency_;
-    std::shared_ptr<AudioParam> detune_;
-    std::string type_ = "sine";
+  std::shared_ptr<AudioParam> detune_;
+  std::string type_ = "sine";
   float phase_ = 0.0;
 };
 } // namespace audioapi

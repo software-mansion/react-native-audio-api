@@ -14,7 +14,7 @@ class AudioParamWrapper {
 #ifdef ANDROID
 
  protected:
-    std::shared_ptr<AudioParam> param_;
+  std::shared_ptr<AudioParam> param_;
 
  public:
   explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);

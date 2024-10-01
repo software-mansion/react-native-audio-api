@@ -11,10 +11,10 @@ OscillatorNodeWrapper::getOscillatorNodeFromAudioNode() {
 OscillatorNodeWrapper::OscillatorNodeWrapper(
     const std::shared_ptr<OscillatorNode> &oscillator)
     : AudioScheduledSourceNodeWrapper(oscillator) {
-    auto frequencyParam = oscillator->getFrequencyParam();
-    frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
+  auto frequencyParam = oscillator->getFrequencyParam();
+  frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
   auto detuneParam = oscillator->getDetuneParam();
-    detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
+  detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
 }
 
 std::shared_ptr<AudioParamWrapper> OscillatorNodeWrapper::getFrequencyParam()

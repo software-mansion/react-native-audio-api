@@ -8,15 +8,16 @@
 namespace audioapi {
 
 class AudioParam {
-private:
-    double value_;
-    double defaultValue_;
-    double minValue_;
-    double maxValue_;
+ private:
+  double value_;
+  double defaultValue_;
+  double minValue_;
+  double maxValue_;
 
-public:
-    explicit AudioParam(double defaultValue, double minValue, double maxValue);
-    double getValue() const;void setValue(double value);
+ public:
+  explicit AudioParam(double defaultValue, double minValue, double maxValue);
+  double getValue() const;
+  void setValue(double value);
   double getDefaultValue() const;
   double getMinValue() const;
   double getMaxValue() const;
