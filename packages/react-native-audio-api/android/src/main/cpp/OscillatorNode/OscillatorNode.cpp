@@ -12,7 +12,7 @@ OscillatorNode::OscillatorNode() : AudioScheduledSourceNode() {
       ->setPerformanceMode(PerformanceMode::LowLatency)
       ->setChannelCount(channelCount_)
       ->setSampleRate(sampleRate)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::None)
       ->setFormat(AudioFormat::Float)
       ->setDataCallback(this)
       ->openStream(mStream);
@@ -35,7 +35,7 @@ void OscillatorNode::setType(const std::string &type) {
 }
 
 DataCallbackResult OscillatorNode::onAudioReady(
-    oboe::AudioStream *oboeStream,
+    AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
   auto *floatData = (float *)audioData;
@@ -44,11 +44,14 @@ DataCallbackResult OscillatorNode::onAudioReady(
     for (int j = 0; j < channelCount_; j++) {
       floatData[i * channelCount_ + j] = sampleValue;
     }
-    phase_ += frequencyParam_->getValue() * 2 * M_PI / (double)sampleRate;
+    phase_ += frequencyParam_->getValue() * 2 * (float)M_PI / (float)sampleRate;
     if (phase_ >= 2 * M_PI)
       phase_ -= 2 * M_PI;
   }
-  return oboe::DataCallbackResult::Continue;
+
+    process(oboeStream, audioData, numFrames, channelCount_);
+
+  return DataCallbackResult::Continue;
 }
 
 } // namespace audioapi

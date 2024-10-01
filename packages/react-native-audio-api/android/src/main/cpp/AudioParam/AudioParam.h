@@ -10,21 +10,21 @@ namespace audioapi {
 class AudioParam {
 
  public:
-  explicit AudioParam(double defaultValue, double minValue, double maxValue);
-  double getValue() const;
-  void setValue(double value);
-  double getDefaultValue() const;
-  double getMinValue() const;
-  double getMaxValue() const;
-  void setValueAtTime(double value, double startTime);
-  void linearRampToValueAtTime(double value, double endTime);
-  void exponentialRampToValueAtTime(double value, double endTime);
+  explicit AudioParam(float defaultValue, float minValue, float maxValue);
+  float getValue() const;
+  void setValue(float value);
+  float getDefaultValue() const;
+  float getMinValue() const;
+  float getMaxValue() const;
+  void setValueAtTime(float value, float startTime);
+  void linearRampToValueAtTime(float value, float endTime);
+  void exponentialRampToValueAtTime(float value, float endTime);
 
 private:
-    double value_;
-    double defaultValue_;
-    double minValue_;
-    double maxValue_;
+    float value_;
+    float defaultValue_;
+    float minValue_;
+    float maxValue_;
 };
 
 } // namespace audioapi

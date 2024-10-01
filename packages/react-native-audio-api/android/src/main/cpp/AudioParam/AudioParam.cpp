@@ -2,41 +2,41 @@
 
 namespace audioapi {
 
-AudioParam::AudioParam(double defaultValue, double minValue, double maxValue)
+AudioParam::AudioParam(float defaultValue, float minValue, float maxValue)
     : value_(defaultValue),
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue) {}
 
-double AudioParam::getValue() const {
+float AudioParam::getValue() const {
   return value_;
 }
 
-double AudioParam::getDefaultValue() const {
+float AudioParam::getDefaultValue() const {
   return defaultValue_;
 }
 
-double AudioParam::getMinValue() const {
+float AudioParam::getMinValue() const {
   return minValue_;
 }
 
-double AudioParam::getMaxValue() const {
+float AudioParam::getMaxValue() const {
   return maxValue_;
 }
 
-void AudioParam::setValue(double value) {
+void AudioParam::setValue(float value) {
   value_ = value;
 }
 
-void AudioParam::setValueAtTime(double value, double startTime) {
+void AudioParam::setValueAtTime(float value, float startTime) {
   // TODO: Implement this
 }
 
-void AudioParam::linearRampToValueAtTime(double value, double endTime) {
+void AudioParam::linearRampToValueAtTime(float value, float endTime) {
   // TODO: Implement this
 }
 
-void AudioParam::exponentialRampToValueAtTime(double value, double endTime) {
+void AudioParam::exponentialRampToValueAtTime(float value, float endTime) {
   // TODO: Implement this
 }
 

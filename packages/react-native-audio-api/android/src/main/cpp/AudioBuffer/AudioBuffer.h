@@ -9,6 +9,8 @@
 
 namespace audioapi {
 
+    //TODO implement AudioBuffer class
+
 using namespace facebook;
 using namespace facebook::jni;
 
