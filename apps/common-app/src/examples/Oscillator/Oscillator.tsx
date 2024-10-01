@@ -47,12 +47,12 @@ const Oscillator: FC = () => {
     gainRef.current = audioContextRef.current.createGain();
     gainRef.current.gain.value = gain;
 
-    // panRef.current = audioContextRef.current.createStereoPanner();
-    // panRef.current.pan.value = pan;
+    panRef.current = audioContextRef.current.createStereoPanner();
+    panRef.current.pan.value = pan;
 
     oscillatorRef.current.connect(gainRef.current);
-    // gainRef.current.connect(panRef.current);
-    // panRef.current.connect(audioContextRef.current.destination);
+    gainRef.current.connect(panRef.current);
+    panRef.current.connect(audioContextRef.current.destination);
   };
 
   const handleGainChange = (newValue: number) => {
