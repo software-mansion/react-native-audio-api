@@ -29,6 +29,7 @@ target_include_directories(
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
+find_package (oboe REQUIRED CONFIG)
 
 set(LINK_LIBRARIES
   ReactAndroid::jsi
@@ -37,6 +38,7 @@ set(LINK_LIBRARIES
   ReactAndroid::folly_runtime
   android
   log
+  oboe::oboe
 )
 
 target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})
