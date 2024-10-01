@@ -20,7 +20,8 @@ class StereoPannerNode;
 class StereoPannerNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
  public:
-  explicit StereoPannerNodeWrapper(StereoPannerNode *pannerNode);
+  explicit StereoPannerNodeWrapper(
+      const std::shared_ptr<StereoPannerNode> &stereoPannerNode);
 #else
  private:
   std::shared_ptr<IOSStereoPannerNode> getStereoPannerNodeFromAudioNode();

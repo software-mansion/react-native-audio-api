@@ -2,34 +2,33 @@
 
 namespace audioapi {
 
-using namespace facebook::jni;
-
-AudioParam *OscillatorNode::getFrequencyParam() {
-  static const auto method =
-      javaClassLocal()->getMethod<AudioParam()>("getFrequency");
-  auto frequency = method(javaPart_.get());
-
-  return frequency->cthis();
+OscillatorNode::OscillatorNode() : AudioScheduledSourceNode() {
+  AudioStreamBuilder builder;
+  builder.setSharingMode(SharingMode::Shared)
+      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setChannelCount(channelCount_)
+      ->setSampleRate(sampleRate)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setFormat(AudioFormat::Float)
+      ->setDataCallback(this)
+      ->openStream(mStream);
 }
 
-AudioParam *OscillatorNode::getDetuneParam() {
-  static const auto method =
-      javaClassLocal()->getMethod<AudioParam()>("getDetune");
-  auto detune = method(javaPart_.get());
-
-  return detune->cthis();
-}
-
-std::string OscillatorNode::getWaveType() {
-  static const auto method =
-      javaClassLocal()->getMethod<JString()>("getWaveType");
-  return method(javaPart_.get())->toStdString();
-}
-
-void OscillatorNode::setWaveType(const std::string &waveType) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(JString)>("setWaveType");
-  method(javaPart_.get(), *make_jstring(waveType));
+DataCallbackResult OscillatorNode::onAudioReady(
+    oboe::AudioStream *oboeStream,
+    void *audioData,
+    int32_t numFrames) {
+  auto *floatData = (float *)audioData;
+  for (int i = 0; i < numFrames; ++i) {
+    float sampleValue = gain_ * sinf(phase_);
+    for (int j = 0; j < channelCount_; j++) {
+      floatData[i * channelCount_ + j] = sampleValue;
+    }
+    phase_ += frequency_ * 2 * M_PI / (double)sampleRate;
+    if (phase_ >= 2 * M_PI)
+      phase_ -= 2 * M_PI;
+  }
+  return oboe::DataCallbackResult::Continue;
 }
 
 } // namespace audioapi

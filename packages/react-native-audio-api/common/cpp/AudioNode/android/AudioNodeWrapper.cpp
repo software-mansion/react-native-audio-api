@@ -3,7 +3,8 @@
 
 namespace audioapi {
 
-AudioNodeWrapper::AudioNodeWrapper(AudioNode *node) : node_(node) {
+AudioNodeWrapper::AudioNodeWrapper(const std::shared_ptr<AudioNode> &node)
+    : node_(node) {
   numberOfInputs_ = node->getNumberOfInputs();
   numberOfOutputs_ = node->getNumberOfOutputs();
 }

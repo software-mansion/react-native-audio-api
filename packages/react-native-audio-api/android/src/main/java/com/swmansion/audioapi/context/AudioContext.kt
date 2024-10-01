@@ -9,7 +9,6 @@ import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import com.facebook.jni.HybridData
 import com.swmansion.audioapi.nodes.AudioBufferSourceNode
-import com.swmansion.audioapi.nodes.AudioDestinationNode
 import com.swmansion.audioapi.nodes.AudioScheduledSourceNode
 import com.swmansion.audioapi.nodes.GainNode
 import com.swmansion.audioapi.nodes.StereoPannerNode
@@ -22,8 +21,9 @@ import java.util.LinkedList
 class AudioContext : BaseAudioContext {
   override val sampleRate: Int = Constants.SAMPLE_RATE
     get() = field
-  override val destination: AudioDestinationNode = AudioDestinationNode(this)
-    get() = field
+
+  // override val destination: AudioDestinationNode = AudioDestinationNode(this)
+  //  get() = field
   override var state = ContextState.RUNNING
 
   private val contextStartTime: Long

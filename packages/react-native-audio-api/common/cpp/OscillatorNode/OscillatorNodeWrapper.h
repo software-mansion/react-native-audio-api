@@ -21,10 +21,11 @@ class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
  private:
-  OscillatorNode *getOscillatorNodeFromAudioNode();
+  std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
 
  public:
-  explicit OscillatorNodeWrapper(OscillatorNode *oscillator);
+  explicit OscillatorNodeWrapper(
+      const std::shared_ptr<OscillatorNode> &oscillatorNode);
 #else
 
  private:

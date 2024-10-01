@@ -21,10 +21,11 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
 
  private:
-  BiquadFilterNode *getBiquadFilterNodeFromAudioNode();
+  std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
 
  public:
-  explicit BiquadFilterNodeWrapper(BiquadFilterNode *biquadFilterNode);
+  explicit BiquadFilterNodeWrapper(
+      const std::shared_ptr<BiquadFilterNode> &biquadFilterNode);
 #else
 
  private:

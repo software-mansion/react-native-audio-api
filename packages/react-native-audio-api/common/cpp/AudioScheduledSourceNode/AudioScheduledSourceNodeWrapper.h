@@ -5,6 +5,7 @@
 
 #ifdef ANDROID
 #include "AudioScheduledSourceNode.h"
+#include "OscillatorNode.h"
 #else
 #include "IOSAudioScheduledSourceNode.h"
 #endif
@@ -19,11 +20,12 @@ class AudioScheduledSourceNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
 
  private:
-  AudioScheduledSourceNode *getAudioScheduledSourceNodeFromAudioNode();
+  std::shared_ptr<AudioScheduledSourceNode>
+  getAudioScheduledSourceNodeFromAudioNode();
 
  public:
   explicit AudioScheduledSourceNodeWrapper(
-      AudioScheduledSourceNode *audioScheduledSourceNode)
+      const std::shared_ptr<AudioScheduledSourceNode> &audioScheduledSourceNode)
       : AudioNodeWrapper(audioScheduledSourceNode) {}
 #else
 

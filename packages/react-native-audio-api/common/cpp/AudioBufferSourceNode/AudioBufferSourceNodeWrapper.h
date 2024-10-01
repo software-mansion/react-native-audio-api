@@ -20,11 +20,13 @@ class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
  private:
-  AudioBufferSourceNode *getAudioBufferSourceNodeFromAudioNode();
+  std::shared_ptr<AudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 
  public:
-  explicit AudioBufferSourceNodeWrapper(AudioBufferSourceNode *audioBufferNode)
-      : AudioScheduledSourceNodeWrapper(audioBufferNode) {}
+  explicit AudioBufferSourceNodeWrapper(
+      const std::shared_ptr<AudioBufferSourceNode> &audioBufferSourceNode)
+      : AudioScheduledSourceNodeWrapper(audioBufferSourceNode) {}
 #else
 
  private:

@@ -2,17 +2,14 @@
 
 namespace audioapi {
 
-using namespace facebook::jni;
+AudioScheduledSourceNode::AudioScheduledSourceNode() : AudioNode() {}
 
 void AudioScheduledSourceNode::start(double time) {
-  static const auto method =
-      javaClassLocal()->getMethod<void(jdouble)>("start");
-  method(javaPart_.get(), time);
+  mStream->requestStart();
 }
 
 void AudioScheduledSourceNode::stop(double time) {
-  static const auto method = javaClassLocal()->getMethod<void(jdouble)>("stop");
-  method(javaPart_.get(), time);
+  mStream->requestStop();
 }
 
 } // namespace audioapi

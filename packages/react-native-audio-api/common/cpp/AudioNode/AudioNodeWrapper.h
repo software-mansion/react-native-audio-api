@@ -14,10 +14,10 @@ class AudioNodeWrapper {
 #ifdef ANDROID
 
  protected:
-  AudioNode *node_;
+  std::shared_ptr<AudioNode> node_;
 
  public:
-  explicit AudioNodeWrapper(AudioNode *node);
+  explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node);
 #else
 
  public:

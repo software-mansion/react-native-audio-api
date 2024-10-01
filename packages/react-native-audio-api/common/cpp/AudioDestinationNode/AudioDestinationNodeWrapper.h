@@ -19,7 +19,8 @@ class AudioDestinationNode;
 class AudioDestinationNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
  public:
-  explicit AudioDestinationNodeWrapper(AudioDestinationNode *destinationNode)
+  explicit AudioDestinationNodeWrapper(
+      const std::shared_ptr<AudioDestinationNode> &destinationNode)
       : AudioNodeWrapper(destinationNode) {}
 #else
  public:

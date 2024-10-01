@@ -5,15 +5,17 @@
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
+// using namespace facebook;
+// using namespace facebook::jni;
+//
+// class GainNode : public jni::HybridClass<GainNode, AudioNode> {
+//  public:
+//   static auto constexpr kJavaDescriptor =
+//       "Lcom/swmansion/audioapi/nodes/GainNode;";
+//
+//   AudioParam *getGainParam();
+// };
 
-class GainNode : public jni::HybridClass<GainNode, AudioNode> {
- public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/nodes/GainNode;";
-
-  AudioParam *getGainParam();
-};
+class GainNode : public AudioNode {};
 
 } // namespace audioapi

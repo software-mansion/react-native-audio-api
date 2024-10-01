@@ -1,17 +1,20 @@
 #pragma once
 
+#include <oboe/Oboe.h>
 #include "AudioNode.h"
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
+using namespace oboe;
 
-class AudioScheduledSourceNode
-    : public jni::HybridClass<AudioScheduledSourceNode, AudioNode> {
+class AudioScheduledSourceNode : public AudioNode {
+ protected:
+  std::shared_ptr<oboe::AudioStream> mStream;
+
+  static int constexpr sampleRate = 44100;
+
  public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/nodes/AudioScheduledSourceNode;";
+  explicit AudioScheduledSourceNode();
 
   void start(double time);
   void stop(double time);

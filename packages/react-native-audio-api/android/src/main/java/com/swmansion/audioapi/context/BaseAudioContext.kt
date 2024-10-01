@@ -2,7 +2,6 @@ package com.swmansion.audioapi.context
 
 import android.media.AudioTrack
 import com.swmansion.audioapi.nodes.AudioBufferSourceNode
-import com.swmansion.audioapi.nodes.AudioDestinationNode
 import com.swmansion.audioapi.nodes.GainNode
 import com.swmansion.audioapi.nodes.StereoPannerNode
 import com.swmansion.audioapi.nodes.filter.BiquadFilterNode
@@ -11,7 +10,8 @@ import com.swmansion.audioapi.utils.AudioBuffer
 
 interface BaseAudioContext {
   val sampleRate: Int
-  val destination: AudioDestinationNode
+
+  // val destination: AudioDestinationNode
   var state: ContextState
 
   abstract fun getCurrentTime(): Double

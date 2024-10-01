@@ -39,12 +39,12 @@ class AudioContext : public jni::HybridClass<AudioContext> {
     });
   }
 
-  AudioDestinationNode *getDestination();
-  OscillatorNode *createOscillator();
-  GainNode *createGain();
-  StereoPannerNode *createStereoPanner();
-  BiquadFilterNode *createBiquadFilter();
-  AudioBufferSourceNode *createBufferSource();
+  std::shared_ptr<AudioDestinationNode> getDestination();
+  std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<GainNode> createGain();
+  std::shared_ptr<StereoPannerNode> createStereoPanner();
+  std::shared_ptr<BiquadFilterNode> createBiquadFilter();
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   AudioBuffer *createBuffer(int numberOfChannels, int length, int sampleRate);
   std::string getState();
   int getSampleRate();

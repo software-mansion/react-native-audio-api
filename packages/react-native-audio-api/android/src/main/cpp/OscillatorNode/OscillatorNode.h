@@ -1,23 +1,28 @@
 #pragma once
 
+#include <cmath>
 #include <string>
 #include "AudioParam.h"
 #include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
+using namespace oboe;
 
-class OscillatorNode
-    : public jni::HybridClass<OscillatorNode, AudioScheduledSourceNode> {
+class OscillatorNode : public AudioStreamDataCallback,
+                       public AudioScheduledSourceNode {
  public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/nodes/oscillator/OscillatorNode;";
+  explicit OscillatorNode();
 
-  AudioParam *getFrequencyParam();
-  AudioParam *getDetuneParam();
-  std::string getWaveType();
-  void setWaveType(const std::string &waveType);
+  DataCallbackResult onAudioReady(
+      AudioStream *oboeStream,
+      void *audioData,
+      int32_t numFrames) override;
+
+ private:
+  float gain_ = 0.5f;
+  float frequency_ = 440;
+  float detune_ = 0.0;
+  float phase_ = 0.0;
 };
 } // namespace audioapi

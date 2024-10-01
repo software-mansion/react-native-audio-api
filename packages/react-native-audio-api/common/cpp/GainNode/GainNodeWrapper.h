@@ -19,7 +19,7 @@ class GainNode;
 class GainNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
  public:
-  explicit GainNodeWrapper(GainNode *gainNode);
+  explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
 #else
  private:
   std::shared_ptr<IOSGainNode> getGainNodeFromAudioNode();

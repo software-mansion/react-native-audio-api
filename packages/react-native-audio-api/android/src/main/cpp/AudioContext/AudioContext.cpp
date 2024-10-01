@@ -7,53 +7,28 @@ using namespace facebook::jni;
 AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis)
     : javaPart_(make_global(jThis)) {}
 
-AudioDestinationNode *AudioContext::getDestination() {
-  static const auto method =
-      javaClassLocal()->getMethod<AudioDestinationNode()>("getDestination");
-  auto destination = method(javaPart_.get());
-
-  return destination->cthis();
+std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
+  return std::make_shared<AudioDestinationNode>();
 }
 
-OscillatorNode *AudioContext::createOscillator() {
-  static const auto method =
-      javaClassLocal()->getMethod<OscillatorNode()>("createOscillator");
-  auto oscillator = method(javaPart_.get());
-
-  return oscillator->cthis();
+std::shared_ptr<OscillatorNode> AudioContext::createOscillator() {
+  return std::make_shared<OscillatorNode>();
 }
 
-GainNode *AudioContext::createGain() {
-  static const auto method =
-      javaClassLocal()->getMethod<GainNode()>("createGain");
-  auto gain = method(javaPart_.get());
-
-  return gain->cthis();
+std::shared_ptr<GainNode> AudioContext::createGain() {
+  return std::make_shared<GainNode>();
 }
 
-StereoPannerNode *AudioContext::createStereoPanner() {
-  static const auto method =
-      javaClassLocal()->getMethod<StereoPannerNode()>("createStereoPanner");
-  auto stereoPanner = method(javaPart_.get());
-
-  return stereoPanner->cthis();
+std::shared_ptr<StereoPannerNode> AudioContext::createStereoPanner() {
+  return std::make_shared<StereoPannerNode>();
 }
 
-BiquadFilterNode *AudioContext::createBiquadFilter() {
-  static const auto method =
-      javaClassLocal()->getMethod<BiquadFilterNode()>("createBiquadFilter");
-  auto biquadFilter = method(javaPart_.get());
-
-  return biquadFilter->cthis();
+std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
+  return std::make_shared<BiquadFilterNode>();
 }
 
-AudioBufferSourceNode *AudioContext::createBufferSource() {
-  static const auto method =
-      javaClassLocal()->getMethod<AudioBufferSourceNode()>(
-          "createBufferSource");
-  auto bufferSource = method(javaPart_.get());
-
-  return bufferSource->cthis();
+std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
+  return std::make_shared<AudioBufferSourceNode>();
 }
 
 AudioBuffer *

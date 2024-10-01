@@ -8,39 +8,22 @@
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
-
-class AudioNode : public jni::HybridClass<AudioNode> {
- public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/nodes/audionode/AudioNode;";
-
-  static jni::local_ref<AudioNode::jhybriddata> initHybrid(
-      jni::alias_ref<jhybridobject> jThis) {
-    return makeCxxInstance(jThis);
-  }
-
-  static void registerNatives() {
-    registerHybrid({
-        makeNativeMethod("initHybrid", AudioNode::initHybrid),
-    });
-  }
-
-  int getNumberOfInputs();
-  int getNumberOfOutputs();
-  int getChannelCount();
-  std::string getChannelCountMode();
-  std::string getChannelInterpretation();
-  void connect(const AudioNode *node);
-  void disconnect(const AudioNode *node);
-
+class AudioNode {
  protected:
-  friend HybridBase;
+  int numberOfInputs_ = 1;
+  int numberOfOutputs_ = 1;
+  int channelCount_ = 2;
+  std::string channelCountMode_ = "max";
+  std::string channelInterpretation_ = "speakers";
 
-  global_ref<AudioNode::javaobject> javaPart_;
-
-  explicit AudioNode(jni::alias_ref<AudioNode::jhybridobject> &jThis);
+ public:
+  int getNumberOfInputs() const;
+  int getNumberOfOutputs() const;
+  int getChannelCount() const;
+  std::string getChannelCountMode() const;
+  std::string getChannelInterpretation() const;
+  void connect(const std::shared_ptr<AudioNode> &node) const;
+  void disconnect(const std::shared_ptr<AudioNode> &node) const;
 };
 
 } // namespace audioapi
