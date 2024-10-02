@@ -59,4 +59,14 @@ void AudioNode::process(
       });
 }
 
+void AudioNode::cleanup() {
+  std::for_each(
+      outputNodes_.begin(),
+      outputNodes_.end(),
+      [](const std::shared_ptr<AudioNode> &node) { node->cleanup(); });
+
+    outputNodes_.clear();
+    inputNodes_.clear();
+}
+
 } // namespace audioapi

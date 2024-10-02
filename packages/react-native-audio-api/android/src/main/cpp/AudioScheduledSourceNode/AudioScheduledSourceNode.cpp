@@ -14,4 +14,10 @@ void AudioScheduledSourceNode::stop(double time) {
   mStream->requestStop();
 }
 
+void AudioScheduledSourceNode::cleanup() {
+    //TODO cleanup
+  this->stop(0);
+  AudioNode::cleanup();
+}
+
 } // namespace audioapi

@@ -25,7 +25,9 @@ double AudioContext::getCurrentTime() const {
 }
 
 void AudioContext::close() {
-    //TODO implement
+    state_ = "closed";
+    std::for_each(sources_.begin(), sources_.end(), [](auto &source) { source->cleanup(); });
+    sources_.clear();
 }
 
 std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
@@ -33,7 +35,9 @@ std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
 }
 
 std::shared_ptr<OscillatorNode> AudioContext::createOscillator() {
-  return std::make_shared<OscillatorNode>();
+    auto oscillator = std::make_shared<OscillatorNode>();
+    sources_.push_back(oscillator);
+  return oscillator;
 }
 
 std::shared_ptr<GainNode> AudioContext::createGain() {
@@ -49,7 +53,9 @@ std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
 }
 
 std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
-  return std::make_shared<AudioBufferSourceNode>();
+    auto bufferSource = std::make_shared<AudioBufferSourceNode>();
+    sources_.push_back(bufferSource);
+  return bufferSource;
 }
 
 std::shared_ptr<AudioBuffer>

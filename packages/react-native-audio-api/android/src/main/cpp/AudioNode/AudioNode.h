@@ -39,6 +39,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int32_t numFrames,
       int channelCount);
 
+  virtual void cleanup();
+
  private:
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};

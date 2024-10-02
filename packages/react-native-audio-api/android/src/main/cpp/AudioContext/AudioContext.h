@@ -1,9 +1,5 @@
 #pragma once
 
-#include <fbjni/fbjni.h>
-#include <jsi/jsi.h>
-#include <react/jni/CxxModuleWrapper.h>
-#include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -17,6 +13,7 @@
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 
@@ -45,6 +42,7 @@ public:
     std::string state_ = "running";
     int sampleRate_ = 44100;
     double contextStartTime_;
+    std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
 };
 
 } // namespace audioapi

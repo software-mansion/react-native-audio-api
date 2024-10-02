@@ -12,6 +12,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void start(double time);
   void stop(double time);
+  void cleanup();
 
  protected:
   std::shared_ptr<oboe::AudioStream> mStream;
