@@ -23,21 +23,14 @@ namespace audioapi {
 using namespace facebook;
 using namespace facebook::jni;
 
-class AudioContext : public jni::HybridClass<AudioContext> {
- public:
-  static auto constexpr kJavaDescriptor =
-      "Lcom/swmansion/audioapi/context/AudioContext;";
+class AudioContext {
 
-  static jni::local_ref<AudioContext::jhybriddata> initHybrid(
-      jni::alias_ref<jhybridobject> jThis) {
-    return makeCxxInstance(jThis);
-  }
-
-  static void registerNatives() {
-    registerHybrid({
-        makeNativeMethod("initHybrid", AudioContext::initHybrid),
-    });
-  }
+public:
+    explicit AudioContext();
+    std::string getState();
+    int getSampleRate() const;
+    double getCurrentTime() const;
+    void close();
 
   std::shared_ptr<AudioDestinationNode> getDestination();
   std::shared_ptr<OscillatorNode> createOscillator();
@@ -45,20 +38,13 @@ class AudioContext : public jni::HybridClass<AudioContext> {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  AudioBuffer *createBuffer(int numberOfChannels, int length, int sampleRate);
-  std::string getState();
-  int getSampleRate();
-  double getCurrentTime();
-  void close();
-
-  void install(jlong jsContext);
+  std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
 
  private:
-  friend HybridBase;
-
-  global_ref<AudioContext::javaobject> javaPart_;
-
-  explicit AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis);
+    std::shared_ptr<AudioDestinationNode> destination_;
+    std::string state_ = "running";
+    int sampleRate_ = 44100;
+    double contextStartTime_;
 };
 
 } // namespace audioapi

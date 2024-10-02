@@ -19,6 +19,4 @@ class AudioAPIInstaller {
   external fun initHybrid(): HybridData?
 
   external fun install(jsContext: Long)
-
-  fun createAudioContext(): AudioContext = AudioContext()
 }

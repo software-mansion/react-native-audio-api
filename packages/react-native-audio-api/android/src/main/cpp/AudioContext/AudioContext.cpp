@@ -4,11 +4,32 @@ namespace audioapi {
 
 using namespace facebook::jni;
 
-AudioContext::AudioContext(jni::alias_ref<AudioContext::jhybridobject> &jThis)
-    : javaPart_(make_global(jThis)) {}
+AudioContext::AudioContext() {
+    destination_ = std::make_shared<AudioDestinationNode>();
+    auto now = std::chrono::high_resolution_clock ::now();
+    contextStartTime_ = (double) std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+}
+
+std::string AudioContext::getState() {
+    return state_;
+}
+
+int AudioContext::getSampleRate() const {
+    return sampleRate_;
+}
+
+double AudioContext::getCurrentTime() const {
+    auto now = std::chrono::high_resolution_clock ::now();
+    auto currentTime = (double) std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+    return (currentTime - contextStartTime_) / 1e9;
+}
+
+void AudioContext::close() {
+    //TODO implement
+}
 
 std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
-  return std::make_shared<AudioDestinationNode>();
+  return destination_;
 }
 
 std::shared_ptr<OscillatorNode> AudioContext::createOscillator() {
@@ -31,35 +52,8 @@ std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
   return std::make_shared<AudioBufferSourceNode>();
 }
 
-AudioBuffer *
+std::shared_ptr<AudioBuffer>
 AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
-  static const auto method =
-      javaClassLocal()->getMethod<AudioBuffer(int, int, int)>("createBuffer");
-  auto buffer = method(javaPart_.get(), numberOfChannels, length, sampleRate);
-
-  return buffer->cthis();
-}
-
-std::string AudioContext::getState() {
-  static const auto method = javaClassLocal()->getMethod<JString()>("getState");
-  return method(javaPart_.get())->toStdString();
-}
-
-int AudioContext::getSampleRate() {
-  static const auto method =
-      javaClassLocal()->getMethod<jint()>("getSampleRate");
-  return method(javaPart_.get());
-}
-
-double AudioContext::getCurrentTime() {
-  static const auto method =
-      javaClassLocal()->getMethod<jdouble()>("getCurrentTime");
-  return method(javaPart_.get());
-}
-
-void AudioContext::close() {
-  static const auto method = javaClassLocal()->getMethod<void()>("close");
-  method(javaPart_.get());
-  javaPart_.reset();
+  return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 } // namespace audioapi

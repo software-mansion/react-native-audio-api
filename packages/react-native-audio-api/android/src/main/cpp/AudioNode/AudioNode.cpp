@@ -2,6 +2,9 @@
 
 namespace audioapi {
 
+AudioNode::AudioNode() {
+}
+
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
 }

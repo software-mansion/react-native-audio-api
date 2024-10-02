@@ -3,36 +3,41 @@
 
 namespace audioapi {
 
-AudioBufferWrapper::AudioBufferWrapper(AudioBuffer *audioBuffer) {
-  audioBuffer_ = audioBuffer;
-  sampleRate = audioBuffer->getSampleRate();
-  length = audioBuffer->getLength();
-  duration = audioBuffer->getDuration();
-  numberOfChannels = audioBuffer->getNumberOfChannels();
+AudioBufferWrapper::AudioBufferWrapper(const std::shared_ptr<AudioBuffer> &audioBuffer)
+    : audioBuffer_(audioBuffer) {
+//  sampleRate = audioBuffer->getSampleRate();
+//  length = audioBuffer->getLength();
+//  duration = audioBuffer->getDuration();
+//  numberOfChannels = audioBuffer->getNumberOfChannels();
 }
 
 int AudioBufferWrapper::getSampleRate() const {
-  return sampleRate;
+  //return sampleRate;
+    return 0;
 }
 
 int AudioBufferWrapper::getLength() const {
-  return length;
+  //return length;
+    return 0;
 }
 
 double AudioBufferWrapper::getDuration() const {
-  return duration;
+  //return duration;
+    return 0;
 }
 
 int AudioBufferWrapper::getNumberOfChannels() const {
-  return numberOfChannels;
+  //return numberOfChannels;
+    return 0;
 }
 
 float *AudioBufferWrapper::getChannelData(int channel) const {
-  return audioBuffer_->getChannelData(channel);
+  //return audioBuffer_->getChannelData(channel);
+    return nullptr;
 }
 
 void AudioBufferWrapper::setChannelData(int channel, float *data, int) const {
-  audioBuffer_->setChannelData(channel, data);
+  //audioBuffer_->setChannelData(channel, data);
 }
 } // namespace audioapi
 #endif

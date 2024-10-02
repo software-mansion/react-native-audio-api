@@ -14,9 +14,9 @@ class AudioBufferWrapper {
 #ifdef ANDROID
 
  public:
-  AudioBuffer *audioBuffer_;
+    std::shared_ptr<AudioBuffer> audioBuffer_;
 
-  explicit AudioBufferWrapper(AudioBuffer *audioBuffer);
+  explicit AudioBufferWrapper(const std::shared_ptr<AudioBuffer> &audioBuffer);
 #else
 
  public:
