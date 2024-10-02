@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "AudioNode.h"
 
 namespace audioapi {

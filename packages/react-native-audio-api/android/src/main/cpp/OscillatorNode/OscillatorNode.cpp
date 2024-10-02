@@ -38,13 +38,13 @@ DataCallbackResult OscillatorNode::onAudioReady(
     AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
-  auto *floatData = (float *)audioData;
+  auto *floatData = reinterpret_cast<float *>(audioData);
   for (int i = 0; i < numFrames; ++i) {
     float sampleValue = 1 * sinf(phase_);
     for (int j = 0; j < channelCount_; j++) {
       floatData[i * channelCount_ + j] = sampleValue;
     }
-    phase_ += frequencyParam_->getValue() * 2 * (float)M_PI / (float)sampleRate;
+    phase_ += static_cast<float>(frequencyParam_->getValue() * 2 * M_PI / sampleRate);
     if (phase_ >= 2 * M_PI)
       phase_ -= 2 * M_PI;
   }

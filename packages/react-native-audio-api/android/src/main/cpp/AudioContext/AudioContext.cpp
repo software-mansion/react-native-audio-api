@@ -8,9 +8,9 @@ AudioContext::AudioContext() {
   destination_ = std::make_shared<AudioDestinationNode>();
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
-      (double)std::chrono::duration_cast<std::chrono::nanoseconds>(
+          static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
           now.time_since_epoch())
-          .count();
+          .count());
 }
 
 std::string AudioContext::getState() {
@@ -24,9 +24,9 @@ int AudioContext::getSampleRate() const {
 double AudioContext::getCurrentTime() const {
   auto now = std::chrono::high_resolution_clock ::now();
   auto currentTime =
-      (double)std::chrono::duration_cast<std::chrono::nanoseconds>(
+          static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
           now.time_since_epoch())
-          .count();
+          .count());
   return (currentTime - contextStartTime_) / 1e9;
 }
 

@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <string>
+#include <memory>
+
 #include "AudioParam.h"
 #include "AudioScheduledSourceNode.h"
 

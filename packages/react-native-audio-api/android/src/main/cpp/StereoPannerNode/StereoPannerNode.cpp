@@ -22,8 +22,8 @@ void StereoPannerNode::process(
     auto pan = panParam_->getValue();
     auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
-    auto gainL = (float)cos(x);
-    auto gainR = (float)sin(x);
+    auto gainL = static_cast<float>(cos(x));
+    auto gainR = static_cast<float>(sin(x));
 
     auto inputL = buffer[i * 2];
     auto inputR = buffer[i * 2 + 1];
