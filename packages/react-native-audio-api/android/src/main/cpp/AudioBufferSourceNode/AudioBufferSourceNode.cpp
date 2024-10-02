@@ -2,6 +2,5 @@
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode()
-    : AudioScheduledSourceNode() {}
+AudioBufferSourceNode::AudioBufferSourceNode() : AudioScheduledSourceNode() {}
 } // namespace audioapi

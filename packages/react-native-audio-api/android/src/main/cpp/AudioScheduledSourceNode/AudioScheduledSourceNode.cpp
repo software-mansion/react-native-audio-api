@@ -15,7 +15,7 @@ void AudioScheduledSourceNode::stop(double time) {
 }
 
 void AudioScheduledSourceNode::cleanup() {
-    //TODO cleanup
+  // TODO cleanup
   this->stop(0);
   AudioNode::cleanup();
 }

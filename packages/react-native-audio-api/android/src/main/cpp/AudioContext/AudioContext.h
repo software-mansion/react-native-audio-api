@@ -9,11 +9,11 @@
 #include "AudioContextHostObject.h"
 #include "AudioContextWrapper.h"
 #include "AudioDestinationNode.h"
+#include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 
@@ -21,13 +21,12 @@ using namespace facebook;
 using namespace facebook::jni;
 
 class AudioContext {
-
-public:
-    explicit AudioContext();
-    std::string getState();
-    int getSampleRate() const;
-    double getCurrentTime() const;
-    void close();
+ public:
+  explicit AudioContext();
+  std::string getState();
+  int getSampleRate() const;
+  double getCurrentTime() const;
+  void close();
 
   std::shared_ptr<AudioDestinationNode> getDestination();
   std::shared_ptr<OscillatorNode> createOscillator();
@@ -35,14 +34,15 @@ public:
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
+  std::shared_ptr<AudioBuffer>
+  createBuffer(int numberOfChannels, int length, int sampleRate);
 
  private:
-    std::shared_ptr<AudioDestinationNode> destination_;
-    std::string state_ = "running";
-    int sampleRate_ = 44100;
-    double contextStartTime_;
-    std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
+  std::shared_ptr<AudioDestinationNode> destination_;
+  std::string state_ = "running";
+  int sampleRate_ = 44100;
+  double contextStartTime_;
+  std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
 };
 
 } // namespace audioapi

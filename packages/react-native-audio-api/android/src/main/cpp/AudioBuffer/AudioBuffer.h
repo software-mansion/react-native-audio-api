@@ -12,13 +12,13 @@ namespace audioapi {
 // TODO implement AudioBuffer class
 
 class AudioBuffer {
-public:
-    explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
+ public:
+  explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
 
-private:
-    int numberOfChannels_;
-    int length_;
-    int sampleRate_;
+ private:
+  int numberOfChannels_;
+  int length_;
+  int sampleRate_;
 };
 
 } // namespace audioapi

@@ -2,8 +2,7 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode() {
-}
+AudioNode::AudioNode() {}
 
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
@@ -65,8 +64,8 @@ void AudioNode::cleanup() {
       outputNodes_.end(),
       [](const std::shared_ptr<AudioNode> &node) { node->cleanup(); });
 
-    outputNodes_.clear();
-    inputNodes_.clear();
+  outputNodes_.clear();
+  inputNodes_.clear();
 }
 
 } // namespace audioapi

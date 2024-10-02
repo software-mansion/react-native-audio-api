@@ -13,7 +13,7 @@ using namespace oboe;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-    explicit AudioNode();
+  explicit AudioNode();
   virtual ~AudioNode() = default;
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
@@ -24,7 +24,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
  protected:
-    //std::weak_ptr<AudioContext> context_;
+  // std::weak_ptr<AudioContext> context_;
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = 2;

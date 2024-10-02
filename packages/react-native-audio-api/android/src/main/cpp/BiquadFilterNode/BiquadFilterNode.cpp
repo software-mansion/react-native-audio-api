@@ -2,6 +2,5 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode()
-    : AudioNode() {}
+BiquadFilterNode::BiquadFilterNode() : AudioNode() {}
 } // namespace audioapi

@@ -8,7 +8,7 @@ namespace audioapi {
 // TODO implement AudioBufferSourceNode
 
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
-public:
-    explicit AudioBufferSourceNode();
+ public:
+  explicit AudioBufferSourceNode();
 };
 } // namespace audioapi

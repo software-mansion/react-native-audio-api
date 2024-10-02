@@ -16,7 +16,6 @@ void AudioAPIInstaller::install(jlong jsContext) {
 }
 
 AudioContext *AudioAPIInstaller::createAudioContext() {
-
   return new AudioContext();
 }
 

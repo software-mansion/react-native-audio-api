@@ -9,8 +9,8 @@ namespace audioapi {
 // TODO: Implement this class
 
 class BiquadFilterNode : public AudioNode {
-public:
-    explicit BiquadFilterNode();
+ public:
+  explicit BiquadFilterNode();
 };
 
 } // namespace audioapi
