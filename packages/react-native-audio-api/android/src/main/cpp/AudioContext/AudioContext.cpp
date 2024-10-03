@@ -2,8 +2,6 @@
 
 namespace audioapi {
 
-using namespace facebook::jni;
-
 AudioContext::AudioContext() {
   destination_ = std::make_shared<AudioDestinationNode>();
   auto now = std::chrono::high_resolution_clock ::now();

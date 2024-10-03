@@ -18,9 +18,6 @@
 
 namespace audioapi {
 
-using namespace facebook;
-using namespace facebook::jni;
-
 class AudioContext {
  public:
   explicit AudioContext();
