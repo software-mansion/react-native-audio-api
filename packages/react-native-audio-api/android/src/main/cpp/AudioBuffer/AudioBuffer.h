@@ -13,11 +13,11 @@ class AudioBuffer {
   explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
 
   int getNumberOfChannels() const;
-    int getLength() const;
-    int getSampleRate() const;
-    double getDuration() const;
-    float *getChannelData(int channel) const;
-    void setChannelData(int channel, const float *data, int length);
+  int getLength() const;
+  int getSampleRate() const;
+  double getDuration() const;
+  float *getChannelData(int channel) const;
+  void setChannelData(int channel, const float *data, int length);
 
  private:
   int numberOfChannels_;

@@ -1,18 +1,18 @@
-//package com.swmansion.audioapi.nodes.oscillator
+// package com.swmansion.audioapi.nodes.oscillator
 //
-//import android.os.Build
-//import androidx.annotation.RequiresApi
-//import com.swmansion.audioapi.context.BaseAudioContext
-//import com.swmansion.audioapi.nodes.AudioScheduledSourceNode
-//import com.swmansion.audioapi.parameters.AudioParam
-//import com.swmansion.audioapi.parameters.PlaybackParameters
-//import com.swmansion.audioapi.utils.AudioBuffer
-//import com.swmansion.audioapi.utils.Constants
-//import kotlin.math.pow
+// import android.os.Build
+// import androidx.annotation.RequiresApi
+// import com.swmansion.audioapi.context.BaseAudioContext
+// import com.swmansion.audioapi.nodes.AudioScheduledSourceNode
+// import com.swmansion.audioapi.parameters.AudioParam
+// import com.swmansion.audioapi.parameters.PlaybackParameters
+// import com.swmansion.audioapi.utils.AudioBuffer
+// import com.swmansion.audioapi.utils.Constants
+// import kotlin.math.pow
 //
-//class OscillatorNode(
+// class OscillatorNode(
 //  context: BaseAudioContext,
-//) : AudioScheduledSourceNode(context) {
+// ) : AudioScheduledSourceNode(context) {
 //  override var playbackParameters: PlaybackParameters?
 //
 //  private val frequency: AudioParam = AudioParam(context, 440.0, Constants.NYQUIST_FREQUENCY, -Constants.NYQUIST_FREQUENCY)
@@ -52,4 +52,4 @@
 //      }
 //    }
 //  }
-//}
+// }

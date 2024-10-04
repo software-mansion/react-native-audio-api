@@ -3,7 +3,8 @@
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(AudioContext *context) : AudioNode(context) {
+AudioDestinationNode::AudioDestinationNode(AudioContext *context)
+    : AudioNode(context) {
   numberOfOutputs_ = 0;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
 }

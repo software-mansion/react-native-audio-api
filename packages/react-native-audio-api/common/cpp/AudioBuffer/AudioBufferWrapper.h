@@ -22,10 +22,11 @@ class AudioBufferWrapper {
  public:
   std::shared_ptr<IOSAudioBuffer> audioBuffer_;
 
-  explicit AudioBufferWrapper(const std::shared_ptr<IOSAudioBuffer> &audioBuffer);
+  explicit AudioBufferWrapper(
+      const std::shared_ptr<IOSAudioBuffer> &audioBuffer);
 #endif
 
-public:
+ public:
   int getNumberOfChannels() const;
   int getLength() const;
   double getDuration() const;

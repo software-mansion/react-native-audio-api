@@ -2,7 +2,8 @@
 #include "AudioParamWrapper.h"
 
 namespace audioapi {
-AudioParamWrapper::AudioParamWrapper(const std::shared_ptr<IOSAudioParam> &param)
+AudioParamWrapper::AudioParamWrapper(
+    const std::shared_ptr<IOSAudioParam> &param)
     : param_(param) {}
 
 float AudioParamWrapper::getValue() const {
@@ -18,18 +19,19 @@ float AudioParamWrapper::getMaxValue() const {
 }
 
 float AudioParamWrapper::getMinValue() const {
-    return param_->getMinValue();
+  return param_->getMinValue();
 }
 
 float AudioParamWrapper::getDefaultValue() const {
-    return param_->getDefaultValue();
+  return param_->getDefaultValue();
 }
 
 void AudioParamWrapper::setValueAtTime(float value, double startTime) const {
   return param_->setValueAtTime(value, startTime);
 }
 
-void AudioParamWrapper::linearRampToValueAtTime(float value, double endTime) const {
+void AudioParamWrapper::linearRampToValueAtTime(float value, double endTime)
+    const {
   return param_->linearRampToValueAtTime(value, endTime);
 }
 

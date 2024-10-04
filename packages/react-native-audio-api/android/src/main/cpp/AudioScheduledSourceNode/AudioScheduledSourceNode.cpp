@@ -3,7 +3,8 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(AudioContext *context) : AudioNode(context) {
+AudioScheduledSourceNode::AudioScheduledSourceNode(AudioContext *context)
+    : AudioNode(context) {
   numberOfInputs_ = 0;
 }
 

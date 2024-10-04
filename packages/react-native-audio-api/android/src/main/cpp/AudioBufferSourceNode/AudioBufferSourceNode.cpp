@@ -3,5 +3,6 @@
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode(AudioContext *context) : AudioScheduledSourceNode(context) {}
+AudioBufferSourceNode::AudioBufferSourceNode(AudioContext *context)
+    : AudioScheduledSourceNode(context) {}
 } // namespace audioapi

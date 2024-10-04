@@ -14,23 +14,22 @@
 namespace audioapi {
 
 class GainNodeWrapper : public AudioNodeWrapper {
-
 #ifdef ANDROID
  public:
   explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
 #else
 
-public:
+ public:
   explicit GainNodeWrapper(const std::shared_ptr<IOSGainNode> &gainNode);
 
-private:
+ private:
   std::shared_ptr<IOSGainNode> getGainNodeFromAudioNode();
 #endif
 
-public:
+ public:
   std::shared_ptr<AudioParamWrapper> getGainParam() const;
 
-private:
-    std::shared_ptr<AudioParamWrapper> gainParam_;
+ private:
+  std::shared_ptr<AudioParamWrapper> gainParam_;
 };
 } // namespace audioapi

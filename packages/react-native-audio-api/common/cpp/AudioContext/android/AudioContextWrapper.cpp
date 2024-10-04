@@ -3,7 +3,8 @@
 
 namespace audioapi {
 
-AudioContextWrapper::AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext)
+AudioContextWrapper::AudioContextWrapper(
+    const std::shared_ptr<AudioContext> &audiocontext)
     : audioContext_(audiocontext) {
   auto destination = audioContext_->getDestination();
   destination_ = std::make_shared<AudioDestinationNodeWrapper>(destination);
@@ -11,10 +12,11 @@ AudioContextWrapper::AudioContextWrapper(const std::shared_ptr<AudioContext> &au
 
 std::shared_ptr<AudioDestinationNodeWrapper>
 AudioContextWrapper::getDestination() const {
-    return destination_;
+  return destination_;
 }
 
-std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() const {
+std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator()
+    const {
   auto oscillator = audioContext_->createOscillator();
   return std::make_shared<OscillatorNodeWrapper>(oscillator);
 }

@@ -17,19 +17,19 @@ namespace audioapi {
 class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
-public:
+ public:
   explicit OscillatorNodeWrapper(
       const std::shared_ptr<OscillatorNode> &oscillatorNode);
 
-private:
-    std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
+ private:
+  std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
 #else
 
-public:
+ public:
   explicit OscillatorNodeWrapper(
       const std::shared_ptr<IOSOscillatorNode> &oscillatorNode);
 
-private:
+ private:
   std::shared_ptr<IOSOscillatorNode> getOscillatorNodeFromAudioNode();
 #endif
 
@@ -39,8 +39,8 @@ private:
   std::string getType();
   void setType(const std::string &type);
 
-private:
-    std::shared_ptr<AudioParamWrapper> frequencyParam_;
-    std::shared_ptr<AudioParamWrapper> detuneParam_;
+ private:
+  std::shared_ptr<AudioParamWrapper> frequencyParam_;
+  std::shared_ptr<AudioParamWrapper> detuneParam_;
 };
 } // namespace audioapi

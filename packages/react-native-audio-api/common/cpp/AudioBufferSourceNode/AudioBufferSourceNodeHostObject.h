@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "AudioBufferSourceNodeWrapper.h"
 #include "AudioBufferHostObject.h"
+#include "AudioBufferSourceNodeWrapper.h"
 #include "AudioScheduledSourceNodeHostObject.h"
 
 namespace audioapi {

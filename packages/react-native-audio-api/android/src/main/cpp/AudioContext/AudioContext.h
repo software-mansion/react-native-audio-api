@@ -33,23 +33,19 @@ class AudioContext {
   std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
 
+ private:
+  enum class State { RUNNING, CLOSED };
 
-private:
-    enum class State {
-        RUNNING,
-        CLOSED
-    };
-
-    static std::string toString(State state) {
-        switch (state) {
-            case State::RUNNING:
-                return "running";
-            case State::CLOSED:
-                return "closed";
-            default:
-                throw std::invalid_argument("Unknown context state");
-        }
+  static std::string toString(State state) {
+    switch (state) {
+      case State::RUNNING:
+        return "running";
+      case State::CLOSED:
+        return "closed";
+      default:
+        throw std::invalid_argument("Unknown context state");
     }
+  }
 
  private:
   std::shared_ptr<AudioDestinationNode> destination_;

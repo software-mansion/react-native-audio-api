@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <vector>
-#include <set>
 #include <optional>
+#include <set>
+#include <vector>
 
 #include "ParamChange.h"
 
@@ -13,9 +13,13 @@ class AudioContext;
 
 class AudioParam {
  public:
-  explicit AudioParam(AudioContext *context, float defaultValue, float minValue, float maxValue);
+  explicit AudioParam(
+      AudioContext *context,
+      float defaultValue,
+      float minValue,
+      float maxValue);
 
-    float getValue() const;
+  float getValue() const;
   float getValueAtTime(double time);
   void setValue(float value);
   float getDefaultValue() const;
@@ -30,14 +34,13 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-    AudioContext *context_;
+  AudioContext *context_;
   ParamChange *currentChange_;
-    std::set<ParamChange> changesQueue_;
+  std::set<ParamChange> changesQueue_;
 
   void checkValue(float value) const;
   double getStartTime();
   float getStartValue();
-
 };
 
 } // namespace audioapi

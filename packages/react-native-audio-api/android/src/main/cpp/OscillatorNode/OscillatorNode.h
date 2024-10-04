@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cmath>
-#include <string>
 #include <memory>
+#include <string>
 
 #include "AudioParam.h"
 #include "AudioScheduledSourceNode.h"

@@ -10,7 +10,6 @@ StereoPannerNodeWrapper::StereoPannerNodeWrapper(
       std::make_shared<AudioParamWrapper>(stereoPannerNode->getPanParam());
 }
 
-
 std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam()
     const {
   return panParam_;

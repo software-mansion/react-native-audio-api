@@ -3,5 +3,6 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(AudioContext *context) : AudioNode(context) {}
+BiquadFilterNode::BiquadFilterNode(AudioContext *context)
+    : AudioNode(context) {}
 } // namespace audioapi

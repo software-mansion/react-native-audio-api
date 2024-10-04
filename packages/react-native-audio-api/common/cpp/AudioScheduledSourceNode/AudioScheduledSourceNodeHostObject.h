@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "AudioScheduledSourceNodeWrapper.h"
 #include "AudioNodeHostObject.h"
+#include "AudioScheduledSourceNodeWrapper.h"
 
 namespace audioapi {
 using namespace facebook;

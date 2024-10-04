@@ -4,7 +4,8 @@
 namespace audioapi {
 
 AudioBufferWrapper::AudioBufferWrapper(
-    const std::shared_ptr<IOSAudioBuffer> &audioBuffer): audioBuffer_{audioBuffer} {}
+    const std::shared_ptr<IOSAudioBuffer> &audioBuffer)
+    : audioBuffer_{audioBuffer} {}
 
 int AudioBufferWrapper::getNumberOfChannels() const {
   return audioBuffer_->getNumberOfChannels();
@@ -15,11 +16,11 @@ int AudioBufferWrapper::getLength() const {
 }
 
 double AudioBufferWrapper::getDuration() const {
-    return audioBuffer_->getDuration();
+  return audioBuffer_->getDuration();
 }
 
 int AudioBufferWrapper::getSampleRate() const {
-    return audioBuffer_->getSampleRate();
+  return audioBuffer_->getSampleRate();
 }
 
 float *AudioBufferWrapper::getChannelData(int channel) const {

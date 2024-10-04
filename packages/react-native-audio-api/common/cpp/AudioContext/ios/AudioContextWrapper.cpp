@@ -13,12 +13,13 @@ AudioContextWrapper::getDestination() const {
   return destination_;
 }
 
-std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() const {
+std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator()
+    const {
   return std::make_shared<OscillatorNodeWrapper>(
       audioContext_->createOscillator());
 }
 
-std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() const{
+std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() const {
   return std::make_shared<GainNodeWrapper>(audioContext_->createGain());
 }
 

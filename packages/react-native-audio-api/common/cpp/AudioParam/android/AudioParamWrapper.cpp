@@ -10,7 +10,7 @@ float AudioParamWrapper::getValue() const {
   return param_->getValue();
 }
 
-void AudioParamWrapper::setValue(float value) const{
+void AudioParamWrapper::setValue(float value) const {
   param_->setValue(value);
 }
 
@@ -30,13 +30,14 @@ void AudioParamWrapper::setValueAtTime(float value, double startTime) const {
   param_->setValueAtTime(value, startTime);
 }
 
-void AudioParamWrapper::linearRampToValueAtTime(float value, double endTime) const {
+void AudioParamWrapper::linearRampToValueAtTime(float value, double endTime)
+    const {
   param_->linearRampToValueAtTime(value, endTime);
 }
 
 void AudioParamWrapper::exponentialRampToValueAtTime(
     float value,
-    double endTime) const{
+    double endTime) const {
   param_->exponentialRampToValueAtTime(value, endTime);
 }
 } // namespace audioapi

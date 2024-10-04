@@ -19,18 +19,18 @@ class AudioAPIInstaller;
 class AudioAPIInstallerWrapper {
 #ifdef ANDROID
 
-public:
+ public:
   explicit AudioAPIInstallerWrapper(AudioAPIInstaller *audioAPIInstaller);
 
-private:
-    AudioAPIInstaller *audioAPIInstaller_;
+ private:
+  AudioAPIInstaller *audioAPIInstaller_;
 #else
 
  public:
   AudioAPIInstallerWrapper() = default;
 #endif
 
-public:
+ public:
   std::shared_ptr<AudioContextWrapper> createAudioContext() const;
 };
 } // namespace audioapi

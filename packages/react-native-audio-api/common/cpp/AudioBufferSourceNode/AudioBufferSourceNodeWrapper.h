@@ -15,20 +15,20 @@ namespace audioapi {
 class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
 #ifdef ANDROID
 
-public:
+ public:
   explicit AudioBufferSourceNodeWrapper(
       const std::shared_ptr<AudioBufferSourceNode> &audioBufferSourceNode);
 
-private:
-    std::shared_ptr<AudioBufferSourceNode>
-    getAudioBufferSourceNodeFromAudioNode();
+ private:
+  std::shared_ptr<AudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 #else
 
-public:
+ public:
   AudioBufferSourceNodeWrapper(
       const std::shared_ptr<IOSAudioBufferSourceNode> &bufferSourceNode);
 
-private:
+ private:
   std::shared_ptr<IOSAudioBufferSourceNode>
   getAudioBufferSourceNodeFromAudioNode();
 #endif

@@ -3,9 +3,11 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(AudioContext *context) : AudioScheduledSourceNode(context) {
+OscillatorNode::OscillatorNode(AudioContext *context)
+    : AudioScheduledSourceNode(context) {
   // TODO add Constants class
-  frequencyParam_ = std::make_shared<AudioParam>(context, 444.0, -22050.0, 22050.0);
+  frequencyParam_ =
+      std::make_shared<AudioParam>(context, 444.0, -22050.0, 22050.0);
   detuneParam_ = std::make_shared<AudioParam>(context, 0.0, -1200.0, 1200.0);
 
   AudioStreamBuilder builder;
@@ -45,7 +47,9 @@ DataCallbackResult OscillatorNode::onAudioReady(
     for (int j = 0; j < channelCount_; j++) {
       floatData[i * channelCount_ + j] = sampleValue;
     }
-    phase_ += static_cast<float>(frequencyParam_->getValueAtTime(context_->getCurrentTime()) * 2 * M_PI / sampleRate);
+    phase_ += static_cast<float>(
+        frequencyParam_->getValueAtTime(context_->getCurrentTime()) * 2 * M_PI /
+        sampleRate);
     if (phase_ >= 2 * M_PI)
       phase_ -= 2 * M_PI;
   }

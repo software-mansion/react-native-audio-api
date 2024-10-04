@@ -25,10 +25,10 @@ class StereoPannerNodeWrapper : public AudioNodeWrapper {
       const std::shared_ptr<IOSStereoPannerNode> &stereoPannerNode);
 #endif
 
-public:
+ public:
   std::shared_ptr<AudioParamWrapper> getPanParam() const;
 
-private:
-    std::shared_ptr<AudioParamWrapper> panParam_;
+ private:
+  std::shared_ptr<AudioParamWrapper> panParam_;
 };
 } // namespace audioapi

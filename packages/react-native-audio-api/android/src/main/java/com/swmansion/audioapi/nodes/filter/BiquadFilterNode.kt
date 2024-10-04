@@ -1,28 +1,28 @@
-//@file:Suppress("SpellCheckingInspection", "PropertyName", "PropertyNamingConvention")
+// @file:Suppress("SpellCheckingInspection", "PropertyName", "PropertyNamingConvention")
 //
-//package com.swmansion.audioapi.nodes.filter
+// package com.swmansion.audioapi.nodes.filter
 //
-//import android.os.Build
-//import androidx.annotation.RequiresApi
-//import com.swmansion.audioapi.context.BaseAudioContext
-//import com.swmansion.audioapi.nodes.audionode.AudioNode
-//import com.swmansion.audioapi.parameters.AudioParam
-//import com.swmansion.audioapi.parameters.PlaybackParameters
-//import com.swmansion.audioapi.utils.Constants
-//import kotlin.math.PI
-//import kotlin.math.cos
-//import kotlin.math.max
-//import kotlin.math.min
-//import kotlin.math.pow
-//import kotlin.math.sin
-//import kotlin.math.sqrt
+// import android.os.Build
+// import androidx.annotation.RequiresApi
+// import com.swmansion.audioapi.context.BaseAudioContext
+// import com.swmansion.audioapi.nodes.audionode.AudioNode
+// import com.swmansion.audioapi.parameters.AudioParam
+// import com.swmansion.audioapi.parameters.PlaybackParameters
+// import com.swmansion.audioapi.utils.Constants
+// import kotlin.math.PI
+// import kotlin.math.cos
+// import kotlin.math.max
+// import kotlin.math.min
+// import kotlin.math.pow
+// import kotlin.math.sin
+// import kotlin.math.sqrt
 //
-//// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math formulas for filters
-//// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I based mine
+// // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math formulas for filters
+// // https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I based mine
 //
-//class BiquadFilterNode(
+// class BiquadFilterNode(
 //  context: BaseAudioContext,
-//) : AudioNode(context) {
+// ) : AudioNode(context) {
 //  override val numberOfInputs: Int = 1
 //  override val numberOfOutputs: Int = 1
 //
@@ -424,4 +424,4 @@
 //
 //    super.process(playbackParameters)
 //  }
-//}
+// }

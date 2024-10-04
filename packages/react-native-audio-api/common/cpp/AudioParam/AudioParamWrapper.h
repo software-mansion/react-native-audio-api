@@ -13,21 +13,21 @@ namespace audioapi {
 class AudioParamWrapper {
 #ifdef ANDROID
 
-public:
+ public:
   explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
 
-private:
-    std::shared_ptr<AudioParam> param_;
+ private:
+  std::shared_ptr<AudioParam> param_;
 #else
 
-public:
+ public:
   explicit AudioParamWrapper(const std::shared_ptr<IOSAudioParam> &param);
 
-private:
+ private:
   std::shared_ptr<IOSAudioParam> param_;
 #endif
 
-public:
+ public:
   float getValue() const;
   void setValue(float value) const;
   float getDefaultValue() const;

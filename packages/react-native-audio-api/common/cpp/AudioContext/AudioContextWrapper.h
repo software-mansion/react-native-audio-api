@@ -23,22 +23,23 @@ namespace audioapi {
 class AudioContextWrapper {
 #ifdef ANDROID
 
-public:
-    explicit AudioContextWrapper(const std::shared_ptr<AudioContext> &audiocontext);
+ public:
+  explicit AudioContextWrapper(
+      const std::shared_ptr<AudioContext> &audiocontext);
 
-private:
-    std::shared_ptr<AudioContext> audioContext_;
+ private:
+  std::shared_ptr<AudioContext> audioContext_;
 #else
 
-public:
+ public:
   AudioContextWrapper();
 
-private:
+ private:
   std::shared_ptr<IOSAudioContext> audioContext_;
 #endif
 
  public:
-    std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
+  std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
   std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
   std::shared_ptr<GainNodeWrapper> createGain() const;
   std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner() const;
@@ -51,7 +52,7 @@ private:
   double getCurrentTime() const;
   void close() const;
 
-private:
-    std::shared_ptr<AudioDestinationNodeWrapper> destination_;
+ private:
+  std::shared_ptr<AudioDestinationNodeWrapper> destination_;
 };
 } // namespace audioapi

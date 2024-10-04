@@ -3,7 +3,7 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(AudioContext *context): context_(context) {}
+AudioNode::AudioNode(AudioContext *context) : context_(context) {}
 
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
