@@ -18,7 +18,7 @@ namespace audioapi {
 
 class AudioContext {
  public:
-  explicit AudioContext();
+  AudioContext();
   std::string getState();
   int getSampleRate() const;
   double getCurrentTime() const;

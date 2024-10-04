@@ -30,7 +30,7 @@ float *AudioBuffer::getChannelData(int channel) const {
     throw std::invalid_argument("Invalid channel number");
   }
 
-  auto channelData = (float *)malloc(length_ * sizeof(float));
+  auto channelData = reinterpret_cast<float *>(malloc(length_ * sizeof(float)));
   for (int i = 0; i < length_; i++) {
     channelData[i] = channels_[channel][i];
   }
