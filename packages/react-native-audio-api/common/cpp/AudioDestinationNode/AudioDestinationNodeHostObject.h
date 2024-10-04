@@ -14,14 +14,15 @@ class AudioDestinationNodeWrapper;
 class AudioDestinationNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioDestinationNodeHostObject(
-      const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper)
-      : AudioNodeHostObject(wrapper) {}
+      const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+
   void set(
       jsi::Runtime &runtime,
       const jsi::PropNameID &name,
       const jsi::Value &value) override;
+
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
   static std::shared_ptr<AudioDestinationNodeHostObject> createFromWrapper(

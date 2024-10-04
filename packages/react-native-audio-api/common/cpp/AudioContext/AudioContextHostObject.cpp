@@ -7,7 +7,7 @@ AudioContextHostObject::AudioContextHostObject(
     const std::shared_ptr<AudioContextWrapper> &wrapper)
     : wrapper_(wrapper) {
   auto destinationNodeWrapper = wrapper_->getDestination();
-  destinationNode_ =
+  destination_ =
       AudioDestinationNodeHostObject::createFromWrapper(destinationNodeWrapper);
 }
 
@@ -38,7 +38,7 @@ jsi::Value AudioContextHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "destination") {
-    return jsi::Object::createFromHostObject(runtime, destinationNode_);
+    return jsi::Object::createFromHostObject(runtime, destination_);
   }
 
   if (propName == "state") {
@@ -46,11 +46,11 @@ jsi::Value AudioContextHostObject::get(
   }
 
   if (propName == "sampleRate") {
-    return jsi::Value(wrapper_->getSampleRate());
+    return {wrapper_->getSampleRate()};
   }
 
   if (propName == "currentTime") {
-    return jsi::Value(wrapper_->getCurrentTime());
+    return {wrapper_->getCurrentTime()};
   }
 
   if (propName == "createOscillator") {

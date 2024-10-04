@@ -14,13 +14,9 @@ using namespace facebook;
 class AudioAPIInstallerWrapper;
 
 class AudioAPIInstallerHostObject : public jsi::HostObject {
- private:
-  std::shared_ptr<AudioAPIInstallerWrapper> wrapper_;
-
  public:
   explicit AudioAPIInstallerHostObject(
-      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper)
-      : wrapper_(wrapper) {}
+      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper);
 
 #ifdef ANDROID
   static void createAndInstallFromWrapper(
@@ -35,10 +31,15 @@ class AudioAPIInstallerHostObject : public jsi::HostObject {
 #endif
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+
   void set(
       jsi::Runtime &runtime,
       const jsi::PropNameID &name,
       const jsi::Value &value) override;
+
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+
+ private:
+  std::shared_ptr<AudioAPIInstallerWrapper> wrapper_;
 };
 } // namespace audioapi

@@ -3,6 +3,10 @@
 namespace audioapi {
 using namespace facebook;
 
+AudioBufferHostObject::AudioBufferHostObject(
+    const std::shared_ptr<AudioBufferWrapper> &wrapper)
+    : wrapper_(wrapper) {}
+
 std::vector<jsi::PropNameID> AudioBufferHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames;
@@ -23,19 +27,19 @@ jsi::Value AudioBufferHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "sampleRate") {
-    return jsi::Value(wrapper_->getSampleRate());
+    return {wrapper_->getSampleRate()};
   }
 
   if (propName == "length") {
-    return jsi::Value(wrapper_->getLength());
+    return {wrapper_->getLength()};
   }
 
   if (propName == "duration") {
-    return jsi::Value(wrapper_->getDuration());
+    return {wrapper_->getDuration()};
   }
 
   if (propName == "numberOfChannels") {
-    return jsi::Value(wrapper_->getNumberOfChannels());
+    return {wrapper_->getNumberOfChannels()};
   }
 
   if (propName == "getChannelData") {
@@ -48,7 +52,7 @@ jsi::Value AudioBufferHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          int channel = args[0].getNumber();
+          int channel = static_cast<int>(args[0].getNumber());
           float *channelData = wrapper_->getChannelData(channel);
 
           auto array = jsi::Array(rt, wrapper_->getLength());
@@ -70,7 +74,7 @@ jsi::Value AudioBufferHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          int channel = args[0].getNumber();
+          int channel = static_cast<int>(args[0].getNumber());
           auto array = args[1].getObject(rt).asArray(rt);
           auto *channelData = new float[wrapper_->getLength()];
 

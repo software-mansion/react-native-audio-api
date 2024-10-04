@@ -3,6 +3,10 @@
 namespace audioapi {
 using namespace facebook;
 
+AudioAPIInstallerHostObject::AudioAPIInstallerHostObject(
+    const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper)
+    : wrapper_(wrapper) {}
+
 std::vector<jsi::PropNameID> AudioAPIInstallerHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames;

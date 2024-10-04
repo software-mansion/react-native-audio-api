@@ -3,6 +3,10 @@
 namespace audioapi {
 using namespace facebook;
 
+AudioParamHostObject::AudioParamHostObject(
+    const std::shared_ptr<AudioParamWrapper> &wrapper)
+    : wrapper_(wrapper) {}
+
 std::vector<jsi::PropNameID> AudioParamHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
   std::vector<jsi::PropNameID> propertyNames;
@@ -24,31 +28,19 @@ jsi::Value AudioParamHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "value") {
-    return jsi::Value(wrapper_->getValue());
+    return {wrapper_->getValue()};
   }
 
   if (propName == "defaultValue") {
-    return jsi::Value(wrapper_->getDefaultValue());
+    return {wrapper_->getDefaultValue()};
   }
 
   if (propName == "minValue") {
-    return jsi::Value(wrapper_->getMinValue());
+    return {wrapper_->getMinValue()};
   }
 
   if (propName == "maxValue") {
-    return jsi::Value(wrapper_->getMaxValue());
-  }
-
-  if (propName == "defaultValue") {
-    return jsi::Value(wrapper_->getDefaultValue());
-  }
-
-  if (propName == "minValue") {
-    return jsi::Value(wrapper_->getMinValue());
-  }
-
-  if (propName == "maxValue") {
-    return jsi::Value(wrapper_->getMaxValue());
+    return {wrapper_->getMaxValue()};
   }
 
   if (propName == "setValueAtTime") {

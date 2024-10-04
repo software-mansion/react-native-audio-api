@@ -3,6 +3,10 @@
 namespace audioapi {
 using namespace facebook;
 
+AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
+    const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper)
+    : AudioScheduledSourceNodeHostObject(wrapper) {}
+
 std::shared_ptr<AudioBufferSourceNodeWrapper> AudioBufferSourceNodeHostObject::
     getAudioBufferSourceNodeWrapperFromAudioNodeWrapper() {
   return std::static_pointer_cast<AudioBufferSourceNodeWrapper>(wrapper_);
@@ -25,7 +29,7 @@ jsi::Value AudioBufferSourceNodeHostObject::get(
   if (propName == "loop") {
     auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
     auto loop = wrapper->getLoop();
-    return jsi::Value(loop);
+    return {loop};
   }
 
   if (propName == "buffer") {
