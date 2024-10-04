@@ -12,7 +12,7 @@ AudioContext::AudioContext() {
 }
 
 std::string AudioContext::getState() {
-  return state_;
+  return AudioContext::toString(state_);
 }
 
 int AudioContext::getSampleRate() const {
@@ -29,7 +29,7 @@ double AudioContext::getCurrentTime() const {
 }
 
 void AudioContext::close() {
-  state_ = "closed";
+  state_ = State::CLOSED;
   std::for_each(sources_.begin(), sources_.end(), [](auto &source) {
     source->cleanup();
   });
