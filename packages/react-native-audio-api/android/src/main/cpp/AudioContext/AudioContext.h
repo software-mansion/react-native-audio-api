@@ -10,10 +10,10 @@
 #include "AudioDestinationNode.h"
 #include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"
+#include "Constants.h"
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "Constants.h"
 
 namespace audioapi {
 
