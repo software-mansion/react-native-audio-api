@@ -1,9 +1,10 @@
 #include "BiquadFilterNode.h"
 #include "AudioContext.h"
 
-// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math formulas for filters
-// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp - implementation of filters on which I
-// based mine
+// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
+// formulas for filters
+// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp -
+// implementation of filters on which I based mine
 
 namespace audioapi {
 

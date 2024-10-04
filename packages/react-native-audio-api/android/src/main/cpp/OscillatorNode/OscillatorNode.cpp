@@ -44,9 +44,14 @@ DataCallbackResult OscillatorNode::onAudioReady(
   auto *floatData = reinterpret_cast<float *>(audioData);
 
   for (int i = 0; i < numFrames; ++i) {
-      auto detuneRatio = std::pow(2.0f, detuneParam_->getValueAtTime(context_->getCurrentTime()) / 1200.0f);
-      auto detunedFrequency = frequencyParam_->getValueAtTime(context_->getCurrentTime()) * detuneRatio;
-      auto phaseIncrement = static_cast<float>(2 * M_PI *detunedFrequency / sampleRate);
+    auto detuneRatio = std::pow(
+        2.0f,
+        detuneParam_->getValueAtTime(context_->getCurrentTime()) / 1200.0f);
+    auto detunedFrequency =
+        frequencyParam_->getValueAtTime(context_->getCurrentTime()) *
+        detuneRatio;
+    auto phaseIncrement =
+        static_cast<float>(2 * M_PI * detunedFrequency / sampleRate);
     float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
     for (int j = 0; j < channelCount_; j++) {
