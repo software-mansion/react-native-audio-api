@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 
+// https://webaudio.github.io/web-audio-api/
+
 namespace audioapi {
 constexpr int SAMPLE_RATE = 44100;
 constexpr int BUFFER_SIZE = 128;
