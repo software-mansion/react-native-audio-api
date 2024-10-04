@@ -13,6 +13,7 @@
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "Constants.h"
 
 namespace audioapi {
 

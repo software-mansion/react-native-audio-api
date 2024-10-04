@@ -11,14 +11,14 @@ BiquadFilterNodeWrapper::getBiquadFilterNodeFromAudioNode() {
 BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(
     const std::shared_ptr<BiquadFilterNode> &biquadFilterNode)
     : AudioNodeWrapper(biquadFilterNode) {
-  //  auto frequencyParam = biquadFilterNode->getFrequencyParam();
-  //  frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
-  //  auto detuneParam = biquadFilterNode->getDetuneParam();
-  //  detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
-  //  auto QParam = biquadFilterNode->getQParam();
-  //  QParam_ = std::make_shared<AudioParamWrapper>(QParam);
-  //  auto gainParam = biquadFilterNode->getGainParam();
-  //  gainParam_ = std::make_shared<AudioParamWrapper>(gainParam);
+    auto frequencyParam = biquadFilterNode->getFrequencyParam();
+    frequencyParam_ = std::make_shared<AudioParamWrapper>(frequencyParam);
+    auto detuneParam = biquadFilterNode->getDetuneParam();
+    detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
+    auto QParam = biquadFilterNode->getQParam();
+    QParam_ = std::make_shared<AudioParamWrapper>(QParam);
+    auto gainParam = biquadFilterNode->getGainParam();
+    gainParam_ = std::make_shared<AudioParamWrapper>(gainParam);
 }
 
 std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getFrequencyParam()
@@ -42,13 +42,12 @@ std::shared_ptr<AudioParamWrapper> BiquadFilterNodeWrapper::getGainParam()
 
 std::string BiquadFilterNodeWrapper::getType() {
   auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
-  // return biquadFilterNode_->getFilterType();
-  return "";
+  return biquadFilterNode_->getType();
 }
 
 void BiquadFilterNodeWrapper::setType(const std::string &filterType) {
   auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
-  // biquadFilterNode_->setFilterType(filterType);
+  biquadFilterNode_->setType(filterType);
 }
 } // namespace audioapi
 #endif
