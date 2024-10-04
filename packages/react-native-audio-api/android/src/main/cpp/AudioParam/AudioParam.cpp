@@ -1,15 +1,16 @@
 #include "AudioParam.h"
+#include "AudioContext.h"
 
 namespace audioapi {
 
-AudioParam::AudioParam(float defaultValue, float minValue, float maxValue)
+AudioParam::AudioParam(AudioContext *context, float defaultValue, float minValue, float maxValue)
     : value_(defaultValue),
       defaultValue_(defaultValue),
       minValue_(minValue),
-      maxValue_(maxValue) {
-    changesQueue_ = {};
-    currentChange_ = nullptr;
-}
+      maxValue_(maxValue),
+      context_(context),
+      currentChange_(nullptr),
+      changesQueue_() {}
 
 float AudioParam::getValue() const {
   return value_;
@@ -28,15 +29,16 @@ float AudioParam::getMaxValue() const {
 }
 
 void AudioParam::setValue(float value) {
-  value_ = checkValue(value);
+  checkValue(value);
+    value_ = value;
 }
 
 float AudioParam::getValueAtTime(double time) {
     if (!changesQueue_.empty()) {
         if (!currentChange_ || currentChange_->getEndTime() < time) {
-            auto &nextChange = changesQueue_.top();
-            currentChange_ = const_cast<ParamChange*>(&nextChange);
-            changesQueue_.pop();
+           auto change = *changesQueue_.begin();
+           currentChange_ = &change;
+           changesQueue_.erase(changesQueue_.begin());
         }
     }
 
@@ -47,45 +49,56 @@ float AudioParam::getValueAtTime(double time) {
     return value_;
 }
 
-void AudioParam::setValueAtTime(float value, double startTime) {
-  auto endValue = checkValue(value);
+void AudioParam::setValueAtTime(float value, double time) {
+  checkValue(value);
     auto calculateValue = [](double, double, float, float endValue, double) {
         return endValue;
     };
 
-//    auto paramChange = ParamChange(time, time, value, value, calculateValue);
-//    changesQueue_.emplace(paramChange);
+    auto paramChange = ParamChange(time, time, value, value, calculateValue);
+    changesQueue_.insert(paramChange);
 }
 
-void AudioParam::linearRampToValueAtTime(float value, double endTime) {
-    auto endValue = checkValue(value);
+void AudioParam::linearRampToValueAtTime(float value, double time) {
+    checkValue(value);
     auto calculateValue = [](double startTime, double endTime, float startValue, float endValue, double time) {
         return startValue + (endValue - startValue) * (time - startTime) / (endTime - startTime);
     };
 
-//    auto paramChange = ParamChange(time, time, endValue, endValue, calculateValue);
-//    changesQueue_.emplace(paramChange);
+    auto paramChange = ParamChange(getStartTime(), time, getStartValue(), value, calculateValue);
+    changesQueue_.emplace(paramChange);
 }
 
-void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
-  // TODO: Implement this
+void AudioParam::exponentialRampToValueAtTime(float value, double time) {
+    checkValue(value);
+    auto calculateValue = [](double startTime, double endTime, float startValue, float endValue, double time) {
+        return startValue * pow(endValue / startValue, (time - startTime) / (endTime - startTime));
+    };
+
+    auto paramChange = ParamChange(getStartTime(), time, getStartValue(), value, calculateValue);
+    changesQueue_.emplace(paramChange);
 }
 
-float AudioParam::checkValue(float value) const {
+void AudioParam::checkValue(float value) const {
     if (value < minValue_ || value > maxValue_) {
-        return defaultValue_;
+        throw std::invalid_argument("Value out of range");
     }
-
-    return value;
 }
 
 double AudioParam::getStartTime() {
-    //TODO: Implement this
     if (changesQueue_.empty()) {
-        //return context.getCurrentTime();
+        return context_->getCurrentTime();
     }
 
-    return 0.0;
+    return changesQueue_.rbegin()->getEndTime();
+}
+
+float AudioParam::getStartValue() {
+    if (changesQueue_.empty()) {
+        return this->value_;
+    }
+
+    return changesQueue_.rbegin()->getEndValue();
 }
 
 } // namespace audioapi

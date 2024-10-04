@@ -2,17 +2,20 @@
 
 #include <memory>
 #include <vector>
-#include <queue>
+#include <set>
 #include <optional>
 
 #include "ParamChange.h"
 
 namespace audioapi {
 
+class AudioContext;
+
 class AudioParam {
  public:
-  explicit AudioParam(float defaultValue, float minValue, float maxValue);
-  float getValue() const;
+  explicit AudioParam(AudioContext *context, float defaultValue, float minValue, float maxValue);
+
+    float getValue() const;
   float getValueAtTime(double time);
   void setValue(float value);
   float getDefaultValue() const;
@@ -27,10 +30,11 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-  std::priority_queue<ParamChange, std::vector<ParamChange>> changesQueue_;// change ti set
+    AudioContext *context_;
   ParamChange *currentChange_;
+    std::set<ParamChange> changesQueue_;
 
-  float checkValue(float value) const;
+  void checkValue(float value) const;
   double getStartTime();
   float getStartValue();
 

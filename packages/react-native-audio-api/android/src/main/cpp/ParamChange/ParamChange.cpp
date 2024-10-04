@@ -16,14 +16,18 @@ double ParamChange::getStartTime() const {
     return startTime_;
 }
 
-bool ParamChange::operator<(const ParamChange& other) const {
-    if (startTime_ != other.startTime_)
-        return startTime_ > other.startTime_;
-    return endTime_ > other.endTime_;
+float ParamChange::getEndValue() const {
+    return endValue_;
 }
 
 float ParamChange::getValueAtTime(double time) const {
     return calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
+}
+
+bool ParamChange::operator<(const ParamChange& other) const {
+    if (startTime_ != other.startTime_)
+        return startTime_ < other.startTime_;
+    return endTime_ < other.endTime_;
 }
 
 } // namespace audioapi

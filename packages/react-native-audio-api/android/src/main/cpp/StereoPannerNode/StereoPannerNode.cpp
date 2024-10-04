@@ -5,7 +5,7 @@ namespace audioapi {
 
 StereoPannerNode::StereoPannerNode(AudioContext *context) : AudioNode(context) {
   channelCountMode_ = "clamped-max";
-  panParam_ = std::make_shared<AudioParam>(0.0, -1.0, 1.0);
+  panParam_ = std::make_shared<AudioParam>(context, 0.0, -1.0, 1.0);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
@@ -20,7 +20,7 @@ void StereoPannerNode::process(
   auto *buffer = static_cast<float *>(audioData);
 
   for (int i = 0; i < numFrames; i++) {
-    auto pan = panParam_->getValue();
+    auto pan = panParam_->getValueAtTime(context_->getCurrentTime());
     auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
     auto gainL = static_cast<float>(cos(x));
