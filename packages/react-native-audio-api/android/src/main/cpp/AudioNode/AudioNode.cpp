@@ -18,12 +18,11 @@ int AudioNode::getChannelCount() const {
 }
 
 std::string AudioNode::getChannelCountMode() const {
-  return channelCountMode_;
+  return AudioNode::toString(channelCountMode_);
 }
 
 std::string AudioNode::getChannelInterpretation() const {
-    context_-> close();
-  return channelInterpretation_;
+  return AudioNode::toString(channelInterpretation_);
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
