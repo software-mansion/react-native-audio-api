@@ -9,7 +9,7 @@ namespace audioapi {
 
 class GainNode : public AudioNode {
  public:
-  explicit GainNode();
+  explicit GainNode(AudioContext *context);
 
   std::shared_ptr<AudioParam> getGainParam() const;
 

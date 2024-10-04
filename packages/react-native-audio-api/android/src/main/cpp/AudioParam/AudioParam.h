@@ -27,7 +27,7 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-  std::priority_queue<ParamChange, std::vector<ParamChange>> changesQueue_;
+  std::priority_queue<ParamChange, std::vector<ParamChange>> changesQueue_;// change ti set
   ParamChange *currentChange_;
 
   float checkValue(float value) const;

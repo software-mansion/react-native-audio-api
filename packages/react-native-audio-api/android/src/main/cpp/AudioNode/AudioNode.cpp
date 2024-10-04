@@ -1,8 +1,9 @@
 #include "AudioNode.h"
+#include "AudioContext.h"
 
 namespace audioapi {
 
-AudioNode::AudioNode() {}
+AudioNode::AudioNode(AudioContext *context): context_(context) {}
 
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
@@ -21,6 +22,7 @@ std::string AudioNode::getChannelCountMode() const {
 }
 
 std::string AudioNode::getChannelInterpretation() const {
+    context_-> close();
   return channelInterpretation_;
 }
 

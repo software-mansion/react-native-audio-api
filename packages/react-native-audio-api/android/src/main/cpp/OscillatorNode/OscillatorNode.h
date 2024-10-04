@@ -14,7 +14,7 @@ using namespace oboe;
 class OscillatorNode : public AudioStreamDataCallback,
                        public AudioScheduledSourceNode {
  public:
-  explicit OscillatorNode();
+  explicit OscillatorNode(AudioContext *context);
 
   std::shared_ptr<AudioParam> getFrequencyParam() const;
   std::shared_ptr<AudioParam> getDetuneParam() const;

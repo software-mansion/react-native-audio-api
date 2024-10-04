@@ -3,7 +3,7 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
-  destination_ = std::make_shared<AudioDestinationNode>();
+  destination_ = std::make_shared<AudioDestinationNode>(this);
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
           static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -41,25 +41,25 @@ std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
 }
 
 std::shared_ptr<OscillatorNode> AudioContext::createOscillator() {
-  auto oscillator = std::make_shared<OscillatorNode>();
+  auto oscillator = std::make_shared<OscillatorNode>(this);
   sources_.push_back(oscillator);
   return oscillator;
 }
 
 std::shared_ptr<GainNode> AudioContext::createGain() {
-  return std::make_shared<GainNode>();
+  return std::make_shared<GainNode>(this);
 }
 
 std::shared_ptr<StereoPannerNode> AudioContext::createStereoPanner() {
-  return std::make_shared<StereoPannerNode>();
+  return std::make_shared<StereoPannerNode>(this);
 }
 
 std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
-  return std::make_shared<BiquadFilterNode>();
+  return std::make_shared<BiquadFilterNode>(this);
 }
 
 std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>();
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this);
   sources_.push_back(bufferSource);
   return bufferSource;
 }

@@ -8,7 +8,7 @@ namespace audioapi {
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode();
+  explicit AudioDestinationNode(AudioContext *context);
 
  protected:
   void process(

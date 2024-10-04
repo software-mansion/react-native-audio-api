@@ -1,8 +1,9 @@
 #include "AudioDestinationNode.h"
+#include "AudioContext.h"
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode() : AudioNode() {
+AudioDestinationNode::AudioDestinationNode(AudioContext *context) : AudioNode(context) {
   numberOfOutputs_ = 0;
   channelCountMode_ = "explicit";
 }

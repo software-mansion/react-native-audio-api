@@ -10,11 +10,11 @@ using namespace oboe;
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
-  explicit AudioScheduledSourceNode();
+  explicit AudioScheduledSourceNode(AudioContext *context);
 
   void start(double time);
   void stop(double time);
-  void cleanup();
+  void cleanup() override;
 
  protected:
   std::shared_ptr<oboe::AudioStream> mStream;

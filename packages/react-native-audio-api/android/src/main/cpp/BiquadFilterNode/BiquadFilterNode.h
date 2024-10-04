@@ -10,7 +10,7 @@ namespace audioapi {
 
 class BiquadFilterNode : public AudioNode {
  public:
-  explicit BiquadFilterNode();
+  explicit BiquadFilterNode(AudioContext *context);
 };
 
 } // namespace audioapi

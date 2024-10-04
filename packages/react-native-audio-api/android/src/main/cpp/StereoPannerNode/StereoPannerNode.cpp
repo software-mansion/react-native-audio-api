@@ -1,8 +1,9 @@
 #include "StereoPannerNode.h"
+#include "AudioContext.h"
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode() {
+StereoPannerNode::StereoPannerNode(AudioContext *context) : AudioNode(context) {
   channelCountMode_ = "clamped-max";
   panParam_ = std::make_shared<AudioParam>(0.0, -1.0, 1.0);
 }

@@ -1,8 +1,9 @@
 #include "OscillatorNode.h"
+#include "AudioContext.h"
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode() : AudioScheduledSourceNode() {
+OscillatorNode::OscillatorNode(AudioContext *context) : AudioScheduledSourceNode(context) {
   // TODO add Constants class
   frequencyParam_ = std::make_shared<AudioParam>(444.0, -22050.0, 22050.0);
   detuneParam_ = std::make_shared<AudioParam>(0.0, -1200.0, 1200.0);
