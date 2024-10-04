@@ -30,11 +30,11 @@ std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
 }
 
 std::string OscillatorNode::getType() {
-  return type_;
+  return OscillatorNode::toString(type_);
 }
 
 void OscillatorNode::setType(const std::string &type) {
-  type_ = type;
+  type_ = OscillatorNode::fromString(type);
 }
 
 DataCallbackResult OscillatorNode::onAudioReady(
@@ -42,14 +42,17 @@ DataCallbackResult OscillatorNode::onAudioReady(
     void *audioData,
     int32_t numFrames) {
   auto *floatData = reinterpret_cast<float *>(audioData);
+
   for (int i = 0; i < numFrames; ++i) {
-    float sampleValue = 1 * sinf(phase_);
+      auto detuneRatio = std::pow(2.0f, detuneParam_->getValueAtTime(context_->getCurrentTime()) / 1200.0f);
+      auto detunedFrequency = frequencyParam_->getValueAtTime(context_->getCurrentTime()) * detuneRatio;
+      auto phaseIncrement = static_cast<float>(2 * M_PI *detunedFrequency / sampleRate);
+    float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+
     for (int j = 0; j < channelCount_; j++) {
-      floatData[i * channelCount_ + j] = sampleValue;
+      floatData[i * channelCount_ + j] = value;
     }
-    phase_ += static_cast<float>(
-        frequencyParam_->getValueAtTime(context_->getCurrentTime()) * 2 * M_PI /
-        sampleRate);
+    phase_ += phaseIncrement;
     if (phase_ >= 2 * M_PI)
       phase_ -= 2 * M_PI;
   }
