@@ -4,14 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "BiquadFilterNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
-#include "BiquadFilterNodeWrapper.h"
 
 namespace audioapi {
 using namespace facebook;
-
-class BiquadFilterNodeWrapper;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:

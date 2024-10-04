@@ -3,9 +3,7 @@
 
 namespace audioapi {
 
-AudioNodeWrapper::AudioNodeWrapper(std::shared_ptr<IOSAudioNode> node) {
-  node_ = node;
-}
+AudioNodeWrapper::AudioNodeWrapper(std::shared_ptr<IOSAudioNode> node): node_(node) {}
 
 int AudioNodeWrapper::getNumberOfInputs() const {
   return node_->getNumberOfInputs();

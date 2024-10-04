@@ -4,14 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "OscillatorNodeWrapper.h"
 #include "AudioParamHostObject.h"
 #include "AudioScheduledSourceNodeHostObject.h"
-#include "OscillatorNodeWrapper.h"
 
 namespace audioapi {
 using namespace facebook;
-
-class OscillatorNodeWrapper;
 
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:

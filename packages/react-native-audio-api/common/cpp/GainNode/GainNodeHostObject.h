@@ -2,14 +2,13 @@
 
 #include <memory>
 #include <vector>
+
+#include "GainNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
-#include "GainNodeWrapper.h"
 
 namespace audioapi {
 using namespace facebook;
-
-class GainNodeWrapper;
 
 class GainNodeHostObject : public AudioNodeHostObject {
  protected:

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+
 #include "AudioNodeWrapper.h"
 #include "AudioParamWrapper.h"
 
@@ -13,34 +14,24 @@
 
 namespace audioapi {
 
-#ifdef ANDROID
-class BiquadFilterNode;
-#endif
-
 class BiquadFilterNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
 
- private:
-  std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
-
- public:
+public:
   explicit BiquadFilterNodeWrapper(
       const std::shared_ptr<BiquadFilterNode> &biquadFilterNode);
+
+private:
+    std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
 #else
 
- private:
-  std::shared_ptr<IOSBiquadFilterNode> getBiquadFilterNodeFromAudioNode();
-
- public:
+public:
   explicit BiquadFilterNodeWrapper(
       std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode);
-#endif
 
- private:
-  std::shared_ptr<AudioParamWrapper> frequencyParam_;
-  std::shared_ptr<AudioParamWrapper> detuneParam_;
-  std::shared_ptr<AudioParamWrapper> QParam_;
-  std::shared_ptr<AudioParamWrapper> gainParam_;
+private:
+  std::shared_ptr<IOSBiquadFilterNode> getBiquadFilterNodeFromAudioNode();
+#endif
 
  public:
   std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
@@ -49,5 +40,11 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<AudioParamWrapper> getGainParam() const;
   std::string getType();
   void setType(const std::string &filterType);
+
+private:
+    std::shared_ptr<AudioParamWrapper> frequencyParam_;
+    std::shared_ptr<AudioParamWrapper> detuneParam_;
+    std::shared_ptr<AudioParamWrapper> QParam_;
+    std::shared_ptr<AudioParamWrapper> gainParam_;
 };
 } // namespace audioapi

@@ -3,43 +3,39 @@
 
 namespace audioapi {
 AudioParamWrapper::AudioParamWrapper(std::shared_ptr<IOSAudioParam> param)
-    : param_(param) {
-  defaultValue_ = param_->getDefaultValue();
-  minValue_ = param_->getMinValue();
-  maxValue_ = param_->getMaxValue();
-}
+    : param_(param) {}
 
-double AudioParamWrapper::getValue() {
+float AudioParamWrapper::getValue() const {
   return param_->getValue();
 }
 
-void AudioParamWrapper::setValue(double value) {
+void AudioParamWrapper::setValue(float value) const {
   param_->setValue(value);
 }
 
-double AudioParamWrapper::getMaxValue() const {
-  return maxValue_;
+float AudioParamWrapper::getMaxValue() const {
+  return param_->getMaxValue();
 }
 
-double AudioParamWrapper::getMinValue() const {
-  return minValue_;
+float AudioParamWrapper::getMinValue() const {
+    return param_->getMinValue();
 }
 
-double AudioParamWrapper::getDefaultValue() const {
-  return defaultValue_;
+float AudioParamWrapper::getDefaultValue() const {
+    return param_->getDefaultValue();
 }
 
-void AudioParamWrapper::setValueAtTime(double value, double startTime) {
+void AudioParamWrapper::setValueAtTime(float value, double startTime) const {
   return param_->setValueAtTime(value, startTime);
 }
 
-void AudioParamWrapper::linearRampToValueAtTime(double value, double endTime) {
+void AudioParamWrapper::linearRampToValueAtTime(float value, double endTime) const {
   return param_->linearRampToValueAtTime(value, endTime);
 }
 
 void AudioParamWrapper::exponentialRampToValueAtTime(
-    double value,
-    double endTime) {
+    float value,
+    double endTime) const {
   return param_->exponentialRampToValueAtTime(value, endTime);
 }
 } // namespace audioapi

@@ -3,6 +3,10 @@
 
 namespace audioapi {
 
+AudioScheduledSourceNodeWrapper::AudioScheduledSourceNodeWrapper(
+    std::shared_ptr<IOSAudioScheduledSourceNode> audioScheduledSourceNode)
+    : AudioNodeWrapper(audioScheduledSourceNode) {}
+
 std::shared_ptr<IOSAudioScheduledSourceNode>
 AudioScheduledSourceNodeWrapper::getAudioScheduledSourceNodeFromAudioNode() {
   return std::static_pointer_cast<IOSAudioScheduledSourceNode>(node_);

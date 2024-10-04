@@ -5,27 +5,22 @@ namespace audioapi {
 
 AudioBufferWrapper::AudioBufferWrapper(
     const std::shared_ptr<AudioBuffer> &audioBuffer)
-    : audioBuffer_(audioBuffer) {
-    sampleRate = audioBuffer->getSampleRate();
-    length = audioBuffer->getLength();
-    duration = audioBuffer->getDuration();
-    numberOfChannels = audioBuffer->getNumberOfChannels();
-}
+    : audioBuffer_(audioBuffer) {}
 
 int AudioBufferWrapper::getSampleRate() const {
-  return sampleRate;
+  return audioBuffer_->getSampleRate();
 }
 
 int AudioBufferWrapper::getLength() const {
-  return length;
+  return audioBuffer_->getLength();
 }
 
 double AudioBufferWrapper::getDuration() const {
-  return duration;
+  return audioBuffer_->getDuration();
 }
 
 int AudioBufferWrapper::getNumberOfChannels() const {
-  return numberOfChannels;
+  return audioBuffer_->getNumberOfChannels();
 }
 
 float *AudioBufferWrapper::getChannelData(int channel) const {

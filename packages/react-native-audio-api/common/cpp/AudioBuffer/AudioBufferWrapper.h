@@ -25,13 +25,7 @@ class AudioBufferWrapper {
   explicit AudioBufferWrapper(std::shared_ptr<IOSAudioBuffer> audioBuffer);
 #endif
 
- private:
-  int numberOfChannels;
-  int length;
-  int sampleRate;
-  double duration;
-
- public:
+public:
   int getNumberOfChannels() const;
   int getLength() const;
   double getDuration() const;

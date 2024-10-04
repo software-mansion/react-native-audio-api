@@ -9,8 +9,6 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioBufferWrapper;
-
 class AudioBufferHostObject : public jsi::HostObject {
  public:
   std::shared_ptr<AudioBufferWrapper> wrapper_;

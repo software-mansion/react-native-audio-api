@@ -4,14 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "StereoPannerNodeWrapper.h"
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
-#include "StereoPannerNodeWrapper.h"
 
 namespace audioapi {
 using namespace facebook;
-
-class StereoPannerNodeWrapper;
 
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:

@@ -3,66 +3,65 @@
 
 namespace audioapi {
 AudioContextWrapper::AudioContextWrapper()
-    : audiocontext_(std::make_shared<IOSAudioContext>()) {
-  sampleRate_ = audiocontext_->getSampleRate();
-  destinationNode_ = std::make_shared<AudioDestinationNodeWrapper>(
-      audiocontext_->getDestination());
+    : audioContext_(std::make_shared<IOSAudioContext>()) {
+  destination_ = std::make_shared<AudioDestinationNodeWrapper>(
+      audioContext_->getDestination());
 }
 
 std::shared_ptr<AudioDestinationNodeWrapper>
 AudioContextWrapper::getDestination() const {
-  return destinationNode_;
+  return destination_;
 }
 
-std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() {
+std::shared_ptr<OscillatorNodeWrapper> AudioContextWrapper::createOscillator() const {
   return std::make_shared<OscillatorNodeWrapper>(
-      audiocontext_->createOscillator());
+      audioContext_->createOscillator());
 }
 
-std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() {
-  return std::make_shared<GainNodeWrapper>(audiocontext_->createGain());
+std::shared_ptr<GainNodeWrapper> AudioContextWrapper::createGain() const{
+  return std::make_shared<GainNodeWrapper>(audioContext_->createGain());
 }
 
 std::shared_ptr<StereoPannerNodeWrapper>
-AudioContextWrapper::createStereoPanner() {
+AudioContextWrapper::createStereoPanner() const {
   return std::make_shared<StereoPannerNodeWrapper>(
-      audiocontext_->createStereoPanner());
+      audioContext_->createStereoPanner());
 }
 
 std::shared_ptr<BiquadFilterNodeWrapper>
-AudioContextWrapper::createBiquadFilter() {
+AudioContextWrapper::createBiquadFilter() const {
   return std::make_shared<BiquadFilterNodeWrapper>(
-      audiocontext_->createBiquadFilter());
+      audioContext_->createBiquadFilter());
 }
 
 std::shared_ptr<AudioBufferSourceNodeWrapper>
-AudioContextWrapper::createBufferSource() {
+AudioContextWrapper::createBufferSource() const {
   return std::make_shared<AudioBufferSourceNodeWrapper>(
-      audiocontext_->createBufferSource());
+      audioContext_->createBufferSource());
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioContextWrapper::createBuffer(
     int numberOfChannels,
     int length,
-    int sampleRate) {
+    int sampleRate) const {
   return std::make_shared<AudioBufferWrapper>(
-      audiocontext_->createBuffer(numberOfChannels, length, sampleRate));
+      audioContext_->createBuffer(numberOfChannels, length, sampleRate));
 }
 
-double AudioContextWrapper::getCurrentTime() {
-  return audiocontext_->getCurrentTime();
+double AudioContextWrapper::getCurrentTime() const {
+  return audioContext_->getCurrentTime();
 }
 
-std::string AudioContextWrapper::getState() {
-  return audiocontext_->getState();
+std::string AudioContextWrapper::getState() const {
+  return audioContext_->getState();
 }
 
 int AudioContextWrapper::getSampleRate() const {
-  return sampleRate_;
+  return audioContext_->getSampleRate();
 }
 
-void AudioContextWrapper::close() {
-  audiocontext_->close();
+void AudioContextWrapper::close() const {
+  audioContext_->close();
 }
 } // namespace audioapi
 #endif

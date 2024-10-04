@@ -33,7 +33,7 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
     });
   }
 
-  AudioContext *createAudioContext();
+  std::shared_ptr<AudioContext> createAudioContext();
   void install(jlong jsContext);
 
  private:

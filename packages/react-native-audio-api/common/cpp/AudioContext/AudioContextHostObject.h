@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
+#include "AudioContextWrapper.h"
 #include "AudioBufferHostObject.h"
 #include "AudioBufferSourceNodeHostObject.h"
-#include "AudioContextWrapper.h"
 #include "AudioDestinationNodeHostObject.h"
 #include "BiquadFilterNodeHostObject.h"
 #include "GainNodeHostObject.h"
@@ -16,8 +16,6 @@
 
 namespace audioapi {
 using namespace facebook;
-
-class AudioContextWrapper;
 
 class AudioContextHostObject : public jsi::HostObject {
  public:

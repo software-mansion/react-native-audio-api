@@ -7,33 +7,28 @@
 #ifdef ANDROID
 #include "StereoPannerNode.h"
 #else
-#include "IOSAudioContext.h"
 #include "IOSStereoPannerNode.h"
 #endif
 
 namespace audioapi {
 
-#ifdef ANDROID
-class StereoPannerNode;
-#endif
-
 class StereoPannerNodeWrapper : public AudioNodeWrapper {
 #ifdef ANDROID
+
  public:
   explicit StereoPannerNodeWrapper(
       const std::shared_ptr<StereoPannerNode> &stereoPannerNode);
 #else
- private:
-  std::shared_ptr<IOSStereoPannerNode> getStereoPannerNodeFromAudioNode();
 
  public:
   StereoPannerNodeWrapper(
       std::shared_ptr<IOSStereoPannerNode> stereoPannerNode);
 #endif
- private:
-  std::shared_ptr<AudioParamWrapper> panParam_;
 
- public:
+public:
   std::shared_ptr<AudioParamWrapper> getPanParam() const;
+
+private:
+    std::shared_ptr<AudioParamWrapper> panParam_;
 };
 } // namespace audioapi

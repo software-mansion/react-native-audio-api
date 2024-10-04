@@ -7,8 +7,6 @@
 
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
-#include "AudioContextHostObject.h"
-#include "AudioContextWrapper.h"
 #include "AudioDestinationNode.h"
 #include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"

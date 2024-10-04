@@ -10,24 +10,23 @@
 #endif
 
 namespace audioapi {
+
 class AudioNodeWrapper {
 #ifdef ANDROID
 
- protected:
-  std::shared_ptr<AudioNode> node_;
-
- public:
+public:
   explicit AudioNodeWrapper(const std::shared_ptr<AudioNode> &node);
+
+protected:
+    std::shared_ptr<AudioNode> node_;
 #else
 
- public:
-  std::shared_ptr<IOSAudioNode> node_;
+public:
   explicit AudioNodeWrapper(std::shared_ptr<IOSAudioNode> node);
-#endif
 
- private:
-  int numberOfInputs_;
-  int numberOfOutputs_;
+protected:
+    std::shared_ptr<IOSAudioNode> node_;
+#endif
 
  public:
   int getNumberOfInputs() const;

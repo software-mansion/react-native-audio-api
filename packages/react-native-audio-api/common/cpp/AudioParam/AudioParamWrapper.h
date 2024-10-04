@@ -13,33 +13,28 @@ namespace audioapi {
 class AudioParamWrapper {
 #ifdef ANDROID
 
- protected:
-  std::shared_ptr<AudioParam> param_;
-
- public:
+public:
   explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
+
+private:
+    std::shared_ptr<AudioParam> param_;
 #else
 
- protected:
-  std::shared_ptr<IOSAudioParam> param_;
-
- public:
+public:
   explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param);
+
+private:
+  std::shared_ptr<IOSAudioParam> param_;
 #endif
 
- private:
-  double defaultValue_;
-  double minValue_;
-  double maxValue_;
-
- public:
-  double getValue();
-  void setValue(double value);
-  double getDefaultValue() const;
-  double getMinValue() const;
-  double getMaxValue() const;
-  void setValueAtTime(double value, double startTime);
-  void linearRampToValueAtTime(double value, double endTime);
-  void exponentialRampToValueAtTime(double value, double endTime);
+public:
+  float getValue() const;
+  void setValue(float value) const;
+  float getDefaultValue() const;
+  float getMinValue() const;
+  float getMaxValue() const;
+  void setValueAtTime(float value, double startTime) const;
+  void linearRampToValueAtTime(float value, double endTime) const;
+  void exponentialRampToValueAtTime(float value, double endTime) const;
 };
 } // namespace audioapi

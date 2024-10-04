@@ -9,8 +9,6 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioParamWrapper;
-
 class AudioParamHostObject : public jsi::HostObject {
  public:
   explicit AudioParamHostObject(

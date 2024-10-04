@@ -3,13 +3,11 @@
 #include <memory>
 #include <vector>
 
-#include "AudioNodeHostObject.h"
 #include "AudioScheduledSourceNodeWrapper.h"
+#include "AudioNodeHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
-
-class AudioScheduledSourceNodeWrapper;
 
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
