@@ -3,7 +3,7 @@
 namespace audioapi {
 
 BiquadFilterNodeWrapper::BiquadFilterNodeWrapper(
-    std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode)
+    const std::shared_ptr<IOSBiquadFilterNode> &biquadFilterNode)
     : AudioNodeWrapper(biquadFilterNode) {
   frequencyParam_ = std::make_shared<AudioParamWrapper>(
       biquadFilterNode->getFrequencyParam());

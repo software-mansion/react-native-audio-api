@@ -26,7 +26,7 @@ private:
 
 public:
   AudioScheduledSourceNodeWrapper(
-      std::shared_ptr<IOSAudioScheduledSourceNode> audioScheduledSourceNode);
+      const std::shared_ptr<IOSAudioScheduledSourceNode> &audioScheduledSourceNode);
 
 private:
   std::shared_ptr<IOSAudioScheduledSourceNode>

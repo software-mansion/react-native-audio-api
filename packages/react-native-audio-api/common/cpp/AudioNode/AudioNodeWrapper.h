@@ -22,7 +22,7 @@ protected:
 #else
 
 public:
-  explicit AudioNodeWrapper(std::shared_ptr<IOSAudioNode> node);
+  explicit AudioNodeWrapper(const std::shared_ptr<IOSAudioNode> &node);
 
 protected:
     std::shared_ptr<IOSAudioNode> node_;

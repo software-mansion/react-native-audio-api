@@ -6,7 +6,7 @@
 namespace audioapi {
 
 AudioBufferSourceNodeWrapper::AudioBufferSourceNodeWrapper(
-    std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode)
+    const std::shared_ptr<IOSAudioBufferSourceNode> &bufferSourceNode)
     : AudioScheduledSourceNodeWrapper(bufferSourceNode) {}
 
 std::shared_ptr<IOSAudioBufferSourceNode>

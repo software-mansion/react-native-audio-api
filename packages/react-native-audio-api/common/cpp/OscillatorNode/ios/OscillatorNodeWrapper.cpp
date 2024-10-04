@@ -3,7 +3,7 @@
 
 namespace audioapi {
 OscillatorNodeWrapper::OscillatorNodeWrapper(
-    std::shared_ptr<IOSOscillatorNode> oscillatorNode)
+    const std::shared_ptr<IOSOscillatorNode> &oscillatorNode)
     : AudioScheduledSourceNodeWrapper(oscillatorNode) {
   frequencyParam_ =
       std::make_shared<AudioParamWrapper>(oscillatorNode->getFrequencyParam());

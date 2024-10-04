@@ -2,7 +2,7 @@
 #include "AudioParamWrapper.h"
 
 namespace audioapi {
-AudioParamWrapper::AudioParamWrapper(std::shared_ptr<IOSAudioParam> param)
+AudioParamWrapper::AudioParamWrapper(const std::shared_ptr<IOSAudioParam> &param)
     : param_(param) {}
 
 float AudioParamWrapper::getValue() const {

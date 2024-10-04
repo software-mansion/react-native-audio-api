@@ -22,7 +22,7 @@ class StereoPannerNodeWrapper : public AudioNodeWrapper {
 
  public:
   StereoPannerNodeWrapper(
-      std::shared_ptr<IOSStereoPannerNode> stereoPannerNode);
+      const std::shared_ptr<IOSStereoPannerNode> &stereoPannerNode);
 #endif
 
 public:

@@ -22,7 +22,7 @@ class AudioDestinationNodeWrapper : public AudioNodeWrapper {
 
  public:
   explicit AudioDestinationNodeWrapper(
-      std::shared_ptr<IOSAudioDestinationNode> destination)
+      const std::shared_ptr<IOSAudioDestinationNode> &destination)
       : AudioNodeWrapper(destination) {}
 #endif
 };

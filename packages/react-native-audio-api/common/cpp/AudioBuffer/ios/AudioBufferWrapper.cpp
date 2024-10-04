@@ -4,7 +4,7 @@
 namespace audioapi {
 
 AudioBufferWrapper::AudioBufferWrapper(
-    std::shared_ptr<IOSAudioBuffer> audioBuffer): audioBuffer_{audioBuffer} {}
+    const std::shared_ptr<IOSAudioBuffer> &audioBuffer): audioBuffer_{audioBuffer} {}
 
 int AudioBufferWrapper::getNumberOfChannels() const {
   return audioBuffer_->getNumberOfChannels();

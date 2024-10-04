@@ -21,7 +21,7 @@ private:
 #else
 
 public:
-  explicit AudioParamWrapper(std::shared_ptr<IOSAudioParam> param);
+  explicit AudioParamWrapper(const std::shared_ptr<IOSAudioParam> &param);
 
 private:
   std::shared_ptr<IOSAudioParam> param_;

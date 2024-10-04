@@ -27,7 +27,7 @@ private:
 
 public:
   explicit BiquadFilterNodeWrapper(
-      std::shared_ptr<IOSBiquadFilterNode> biquadFilterNode);
+      const std::shared_ptr<IOSBiquadFilterNode> &biquadFilterNode);
 
 private:
   std::shared_ptr<IOSBiquadFilterNode> getBiquadFilterNodeFromAudioNode();

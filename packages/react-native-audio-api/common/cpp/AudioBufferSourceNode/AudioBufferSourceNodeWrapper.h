@@ -26,7 +26,7 @@ private:
 
 public:
   AudioBufferSourceNodeWrapper(
-      std::shared_ptr<IOSAudioBufferSourceNode> bufferSourceNode);
+      const std::shared_ptr<IOSAudioBufferSourceNode> &bufferSourceNode);
 
 private:
   std::shared_ptr<IOSAudioBufferSourceNode>
