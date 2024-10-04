@@ -151,9 +151,9 @@ jsi::Value AudioContextHostObject::get(
             const jsi::Value &thisValue,
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
-          auto numberOfChannels = arguments[0].getNumber();
-          auto length = arguments[1].getNumber();
-          auto sampleRate = arguments[2].getNumber();
+          auto numberOfChannels = static_cast<int>(arguments[0].getNumber());
+          auto length = static_cast<int>(arguments[1].getNumber());
+          auto sampleRate = static_cast<int>(arguments[2].getNumber());
           auto buffer =
               wrapper_->createBuffer(numberOfChannels, length, sampleRate);
           auto bufferHostObject =

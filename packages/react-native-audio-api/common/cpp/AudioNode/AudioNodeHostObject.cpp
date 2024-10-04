@@ -85,10 +85,8 @@ jsi::Value AudioNodeHostObject::get(
   }
 
   if (propName == "context") {
-    auto context =
-        runtime.global().getPropertyAsObject(runtime, "__AudioContext");
-    auto hostObject = context.getHostObject<AudioContextHostObject>(runtime);
-    return jsi::Object::createFromHostObject(runtime, hostObject);
+      //TODO fix this
+    return jsi::Value::undefined();
   }
 
   throw std::runtime_error("Not yet implemented!");
