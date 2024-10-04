@@ -5,7 +5,7 @@ namespace audioapi {
 
 StereoPannerNode::StereoPannerNode(AudioContext *context) : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  panParam_ = std::make_shared<AudioParam>(context, 0.0, -1.0, 1.0);
+  panParam_ = std::make_shared<AudioParam>(context, 0.0, -MAX_PAN, MAX_PAN);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {

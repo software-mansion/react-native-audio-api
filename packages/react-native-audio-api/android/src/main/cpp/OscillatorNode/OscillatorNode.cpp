@@ -5,10 +5,9 @@ namespace audioapi {
 
 OscillatorNode::OscillatorNode(AudioContext *context)
     : AudioScheduledSourceNode(context) {
-  // TODO add Constants class
   frequencyParam_ =
-      std::make_shared<AudioParam>(context, 444.0, -22050.0, 22050.0);
-  detuneParam_ = std::make_shared<AudioParam>(context, 0.0, -1200.0, 1200.0);
+      std::make_shared<AudioParam>(context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
+  detuneParam_ = std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
 
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Shared)

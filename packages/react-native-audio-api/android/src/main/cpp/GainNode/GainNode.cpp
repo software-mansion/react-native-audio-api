@@ -4,7 +4,7 @@
 namespace audioapi {
 
 GainNode::GainNode(AudioContext *context) : AudioNode(context) {
-  gainParam_ = std::make_shared<AudioParam>(context, 1.0, 0.0, 1.0);
+  gainParam_ = std::make_shared<AudioParam>(context, 1.0, -MAX_GAIN, MAX_GAIN);
 }
 
 std::shared_ptr<AudioParam> GainNode::getGainParam() const {

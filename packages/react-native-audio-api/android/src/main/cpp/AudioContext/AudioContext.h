@@ -50,7 +50,7 @@ class AudioContext {
  private:
   std::shared_ptr<AudioDestinationNode> destination_;
   State state_ = State::RUNNING;
-  int sampleRate_ = 44100;
+  int sampleRate_ = SAMPLE_RATE;
   double contextStartTime_;
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
 };
