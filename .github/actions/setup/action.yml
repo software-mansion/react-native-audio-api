@@ -14,7 +14,7 @@ runs:
 
     - name: Install cpplint
       shell: bash
-      run: pip install cpplint
+      run: pip install 'cpplint==1.6.1'
 
     - name: Install ktlint
       shell: bash
