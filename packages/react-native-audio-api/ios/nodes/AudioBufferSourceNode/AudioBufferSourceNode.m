@@ -50,7 +50,9 @@
   }
 
   [self.context.audioEngine detachNode:self.sourceNode];
+
   _format = nil;
+  _mixedBuffer = nil;
 }
 
 - (bool)getLoop
@@ -95,7 +97,7 @@
     leftBuffer[frame] = leftBufferData[_bufferIndex];
     rightBuffer[frame] = rightBufferData[_bufferIndex];
 
-    ++_bufferIndex;
+    _bufferIndex += 1;
 
     if (_bufferIndex >= _buffer.length) {
       if (_loop) {

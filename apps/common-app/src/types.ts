@@ -1,4 +1,4 @@
-export type SoundName = 'kick' | 'hihat' | 'clap' | 'downbeat' | 'regularbeat';
+export type SoundName = 'kick' | 'hi-hat' | 'clap' | 'downbeat' | 'regularbeat';
 
 export type SoundRow = {
   name: SoundName;

@@ -20,27 +20,29 @@
   _target = target;
   _calculateSelector = calculateSelector;
 
+  _invocation = [NSInvocation invocationWithMethodSignature:[self.target methodSignatureForSelector:self.calculateSelector]];
+
+  [_invocation setSelector:self.calculateSelector];
+  [_invocation setTarget:self.target];
+
+  [_invocation setArgument:&_startTime atIndex:2];
+  [_invocation setArgument:&_endTime atIndex:3];
+  [_invocation setArgument:&_startValue atIndex:4];
+  [_invocation setArgument:&_endValue atIndex:5];
+
   return self;
 }
 
 - (double)getValueAtTime:(double)time
 {
   if ([self.target respondsToSelector:self.calculateSelector]) {
-    NSInvocation *invocation =
-        [NSInvocation invocationWithMethodSignature:[self.target methodSignatureForSelector:self.calculateSelector]];
-    [invocation setSelector:self.calculateSelector];
-    [invocation setTarget:self.target];
 
-    [invocation setArgument:&_startTime atIndex:2];
-    [invocation setArgument:&_endTime atIndex:3];
-    [invocation setArgument:&_startValue atIndex:4];
-    [invocation setArgument:&_endValue atIndex:5];
-    [invocation setArgument:&time atIndex:6];
+    [_invocation setArgument:&time atIndex:6];
 
-    [invocation invoke];
+    [_invocation invoke];
 
     double result;
-    [invocation getReturnValue:&result];
+    [_invocation getReturnValue:&result];
     return result;
   }
 

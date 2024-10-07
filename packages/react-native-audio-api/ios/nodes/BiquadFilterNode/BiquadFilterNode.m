@@ -59,6 +59,7 @@
 
 - (void)cleanup
 {
+
   _frequencyParam = nil;
   _detuneParam = nil;
   _QParam = nil;

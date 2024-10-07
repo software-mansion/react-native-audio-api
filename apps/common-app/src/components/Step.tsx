@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Pressable } from 'react-native';
 
 import { colors, layout } from '../styles';
 
@@ -11,22 +11,29 @@ interface StepProps {
 
 const Step: FC<StepProps> = (props) => {
   const { id, active, onClick } = props;
+
   return (
-    <TouchableOpacity
+    <Pressable
       key={id}
       onPress={() => onClick(id)}
-      style={[styles.step, active ? styles.active : styles.inactive]}
+      style={({ pressed }) => [
+        styles.step,
+        pressed ? styles.pressed : active ? styles.active : styles.inactive,
+      ]}
     />
   );
 };
 
+const size = 30;
+
 const styles = StyleSheet.create({
   step: {
-    width: 30,
-    height: 45,
-    borderColor: colors.black,
+    width: size,
+    height: size,
     margin: layout.spacing / 2,
-    display: 'flex',
+  },
+  pressed: {
+    backgroundColor: `${colors.main}88`,
   },
   active: {
     backgroundColor: colors.main,

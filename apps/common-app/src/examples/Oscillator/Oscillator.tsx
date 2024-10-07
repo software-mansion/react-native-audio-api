@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRef, useState, useEffect, FC } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import {
   AudioContext,
   WaveType,
@@ -157,11 +157,15 @@ const Oscillator: FC = () => {
       <Spacer.Vertical size={20} />
       <View style={styles.oscillatorTypeContainer}>
         {OSCILLATOR_TYPES.map((type: WaveType) => (
-          <TouchableOpacity
+          <Pressable
             key={type}
-            style={[
+            style={({ pressed }) => [
               styles.oscillatorButton,
-              type === oscillatorType && styles.activeOscillatorButton,
+              pressed
+                ? styles.pressedOscillatorButton
+                : type === oscillatorType
+                  ? styles.activeOscillatorButton
+                  : styles.inactiveOscillatorButton,
             ]}
             onPress={() => handleOscillatorTypeChange(type)}
           >
@@ -173,7 +177,7 @@ const Oscillator: FC = () => {
             >
               {type}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
     </Container>
@@ -188,14 +192,22 @@ const styles = StyleSheet.create({
     padding: layout.spacing,
     marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: colors.black,
     borderRadius: layout.radius,
   },
   activeOscillatorButton: {
     backgroundColor: colors.main,
+    borderColor: colors.main,
+  },
+  pressedOscillatorButton: {
+    backgroundColor: `${colors.main}88`,
+    borderColor: colors.main,
+  },
+  inactiveOscillatorButton: {
+    borderColor: colors.black,
   },
   oscillatorButtonText: {
     color: colors.black,
+    textTransform: 'capitalize',
   },
   activeOscillatorButtonText: {
     color: colors.white,

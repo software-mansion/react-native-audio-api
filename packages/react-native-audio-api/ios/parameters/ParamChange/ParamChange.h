@@ -8,6 +8,7 @@
 @property (nonatomic) double endValue;
 @property (nonatomic, weak) id target;
 @property (nonatomic) SEL calculateSelector;
+@property (nonatomic, strong) NSInvocation * invocation;
 
 - (instancetype)init:(double)startTime
               endTime:(double)endTime

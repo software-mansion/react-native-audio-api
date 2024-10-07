@@ -30,7 +30,7 @@ class Scheduler {
   }
 
   private nextNote() {
-    const secondsPerBeat = 60.0 / this.bpm;
+    const secondsPerBeat = 60.0 / (this.bpm * 2);
     this.nextNoteTime += secondsPerBeat;
     this.currentBeat += 1;
     if (this.currentBeat === this.beatsPerBar) {

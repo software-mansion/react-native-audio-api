@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FC } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { FlatList, StyleSheet, Text, Pressable } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -19,14 +19,17 @@ const HomeScreen: FC = () => {
         contentContainerStyle={styles.scrollView}
         data={Examples}
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <Pressable
             onPress={() => navigation.navigate(item.key)}
             key={item.key}
-            style={styles.button}
+            style={({ pressed }) => [
+              styles.button,
+              { borderStyle: pressed ? 'solid' : 'dashed' },
+            ]}
           >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.subtitle}>{item.subtitle}</Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
         keyExtractor={(item) => item.key}
       />
@@ -77,7 +80,6 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing,
     borderWidth: 2,
     borderColor: colors.border,
-    borderStyle: 'dashed',
     borderRadius: layout.radius,
   },
   scrollView: {
