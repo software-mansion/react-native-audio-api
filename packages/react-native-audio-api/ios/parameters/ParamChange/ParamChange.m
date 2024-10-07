@@ -20,7 +20,8 @@
   _target = target;
   _calculateSelector = calculateSelector;
 
-  _invocation = [NSInvocation invocationWithMethodSignature:[self.target methodSignatureForSelector:self.calculateSelector]];
+  _invocation =
+      [NSInvocation invocationWithMethodSignature:[self.target methodSignatureForSelector:self.calculateSelector]];
 
   [_invocation setSelector:self.calculateSelector];
   [_invocation setTarget:self.target];
@@ -36,7 +37,6 @@
 - (double)getValueAtTime:(double)time
 {
   if ([self.target respondsToSelector:self.calculateSelector]) {
-
     [_invocation setArgument:&time atIndex:6];
 
     [_invocation invoke];

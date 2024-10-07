@@ -9,22 +9,22 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.destination = [[AudioDestinationNode alloc] initWithContext:self];
-    
+
     self.audioSession = AVAudioSession.sharedInstance;
     NSError *error = nil;
-    
-    // TODO: 
+
+    // TODO:
     // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
     // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
     // But setting a recording category might require some setup first, so lets skip it for now :)
     [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
-    
+
     if (error != nil) {
       @throw error;
     }
-    
+
     [self.audioSession setActive:true error:&error];
-    
+
     if (error != nil) {
       @throw error;
     }
@@ -47,13 +47,13 @@
 {
   NSError *error = nil;
   [self.audioSession setActive:false error:&error];
-  
+
   if (error != nil) {
     @throw error;
   }
-  
+
   self.audioSession = nil;
-  
+
   if (self.audioEngine.isRunning) {
     [self.audioEngine stop];
   }
