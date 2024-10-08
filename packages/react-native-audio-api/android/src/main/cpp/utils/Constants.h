@@ -7,7 +7,7 @@
 
 namespace audioapi {
 constexpr int SAMPLE_RATE = 44100;
-constexpr int BUFFER_SIZE = 128;
+constexpr int CHANNEL_COUNT = 2;
 constexpr float MOST_POSITIVE_SINGLE_FLOAT =
     static_cast<float>(std::numeric_limits<float>::max());
 constexpr float NYQUIST_FREQUENCY = SAMPLE_RATE / 2.0;

@@ -13,11 +13,7 @@ class StereoPannerNode : public AudioNode {
   std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-  void process(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames,
-      int channelCount) override;
+    void processAudio() override;
 
  private:
   std::shared_ptr<AudioParam> panParam_;

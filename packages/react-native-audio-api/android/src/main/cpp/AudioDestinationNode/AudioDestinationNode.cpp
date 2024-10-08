@@ -6,32 +6,27 @@ namespace audioapi {
 AudioDestinationNode::AudioDestinationNode(AudioContext *context)
     : AudioNode(context) {
   numberOfOutputs_ = 0;
+  numberOfInputs_ = 10;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
 }
 
-void AudioDestinationNode::process(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames,
-    int channelCount) {
-  normalize(audioData, numFrames, channelCount);
+const std::vector<float> &AudioDestinationNode::getOutputBuffer() {
+    processAudio();
+    return outputBuffer_;
 }
 
-void AudioDestinationNode::normalize(
-    void *audioData,
-    int32_t numFrames,
-    int channelCount) {
-  auto *outputBuffer = static_cast<float *>(audioData);
-  auto maxValue = 1.0f;
+void AudioDestinationNode::processAudio() {
+    AudioNode::processAudio();
 
-  for (int i = 0; i < numFrames * channelCount; i++) {
-    maxValue = std::max(maxValue, std::abs(outputBuffer[i]));
-  }
+    auto maxValue = 1.0f;
 
-  std::for_each(
-      outputBuffer,
-      outputBuffer + numFrames * channelCount,
-      [maxValue](float &sample) { sample /= maxValue; });
+    for (float i : inputBuffer_) {
+        maxValue = std::max(maxValue, std::abs(i));
+    }
+
+    for (int i = 0; i < inputBuffer_.size(); i++) {
+        outputBuffer_[i] = inputBuffer_[i] / maxValue;
+    }
 }
 
 } // namespace audioapi

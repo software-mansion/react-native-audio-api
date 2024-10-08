@@ -325,42 +325,36 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-void BiquadFilterNode::process(
-    oboe::AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames,
-    int channelCount) {
-  resetCoefficients();
-  applyFilter();
+void BiquadFilterNode::processAudio() {
+    //channelCount_ = 2;
+    AudioNode::processAudio();
 
-  auto *buffer = static_cast<float *>(audioData);
+    resetCoefficients();
+    applyFilter();
 
-  float x1 = x1_;
-  float x2 = x2_;
-  float y1 = y1_;
-  float y2 = y2_;
+    float x1 = x1_;
+    float x2 = x2_;
+    float y1 = y1_;
+    float y2 = y2_;
 
-  float b0 = b0_;
-  float b1 = b1_;
-  float b2 = b2_;
-  float a1 = a1_;
-  float a2 = a2_;
+    float b0 = b0_;
+    float b1 = b1_;
+    float b2 = b2_;
+    float a1 = a1_;
+    float a2 = a2_;
 
-  for (int i = 0; i < numFrames; i++) {
-    auto input = buffer[i * 2];
-    auto output =
-        static_cast<float>(b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2);
+    for (int i = 0; i < context_->getBufferSize(); i++) {
+        auto input = inputBuffer_[2 * i];
+        auto output =
+                static_cast<float>(b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2);
 
-    buffer[2 * i] = output;
-    buffer[2 * i + 1] = output;
+        outputBuffer_[2 * i] = output;
+        outputBuffer_[2 * i + 1] = output;
 
-    x2 = x1;
-    x1 = input;
-    y2 = y1;
-    y1 = output;
-  }
-
-  AudioNode::process(oboeStream, audioData, numFrames, channelCount);
+        x2 = x1;
+        x1 = input;
+        y2 = y1;
+        y1 = output;
+    }
 }
-
 } // namespace audioapi

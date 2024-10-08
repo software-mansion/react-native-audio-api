@@ -3,12 +3,24 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
+    AudioStreamBuilder builder;
+    builder.setSharingMode(SharingMode::Exclusive)
+            ->setFormat(AudioFormat::Float)
+            ->setFormatConversionAllowed(true)
+            ->setPerformanceMode(PerformanceMode::LowLatency)
+            ->setChannelCount(CHANNEL_COUNT)
+            ->setSampleRate(sampleRate_)
+            ->setSampleRateConversionQuality(SampleRateConversionQuality::None)
+            ->setDataCallback(this)
+            ->openStream(mStream_);
+
+    mStream_->requestStart();
+
   destination_ = std::make_shared<AudioDestinationNode>(this);
+
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
-      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                              now.time_since_epoch())
-                              .count());
+      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
 }
 
 std::string AudioContext::getState() {
@@ -28,12 +40,22 @@ double AudioContext::getCurrentTime() const {
   return (currentTime - contextStartTime_) / 1e9;
 }
 
+int32_t AudioContext::getBufferSize() const {
+  return mStream_->getFramesPerBurst();
+}
+
 void AudioContext::close() {
+    //TODO check if this is the correct way to close the stream
   state_ = State::CLOSED;
+
+  mStream_->requestStop();
+  mStream_->close();
+  mStream_.reset();
+
   std::for_each(sources_.begin(), sources_.end(), [](auto &source) {
     source->cleanup();
   });
-  sources_.clear();
+  //sources_.clear();
 }
 
 std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
@@ -67,5 +89,20 @@ std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
 std::shared_ptr<AudioBuffer>
 AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
+}
+
+DataCallbackResult AudioContext::onAudioReady(
+    AudioStream *oboeStream,
+    void *audioData,
+    int32_t numFrames) {
+
+    auto outputBuffer = destination_->getOutputBuffer();
+    auto buffer = static_cast<float *>(audioData);
+
+    for (int i = 0; i < numFrames * CHANNEL_COUNT; i++) {
+        buffer[i] = outputBuffer[i];
+    }
+
+  return DataCallbackResult::Continue;
 }
 } // namespace audioapi

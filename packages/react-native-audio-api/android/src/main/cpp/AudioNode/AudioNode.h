@@ -1,9 +1,9 @@
 #pragma once
 
-#include <oboe/Oboe.h>
 #include <memory>
 #include <string>
 #include <vector>
+#include "Constants.h"
 
 // channelCount always equal to 2
 
@@ -11,10 +11,8 @@ namespace audioapi {
 
 class AudioContext;
 
-using namespace oboe;
-
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
- public:
+public:
   explicit AudioNode(AudioContext *context);
   virtual ~AudioNode() = default;
   int getNumberOfInputs() const;
@@ -58,23 +56,22 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   AudioContext *context_;
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
+  int channelCount_ = CHANNEL_COUNT;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
       ChannelInterpretation::SPEAKERS;
+    std::vector<float> inputBuffer_;
+    std::vector<float> outputBuffer_;
 
-  virtual void process(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames,
-      int channelCount);
-
+  virtual void processAudio();
   virtual void cleanup();
 
  private:
   // TODO check
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
+
+    void mixInputBuffers();
 };
 
 } // namespace audioapi

@@ -11,10 +11,7 @@ namespace audioapi {
 
 // TODO implement OscillatorNode
 
-using namespace oboe;
-
-class OscillatorNode : public AudioStreamDataCallback,
-                       public AudioScheduledSourceNode {
+class OscillatorNode : public AudioScheduledSourceNode {
  public:
   explicit OscillatorNode(AudioContext *context);
 
@@ -23,34 +20,32 @@ class OscillatorNode : public AudioStreamDataCallback,
   std::string getType();
   void setType(const std::string &type);
 
-  DataCallbackResult onAudioReady(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames) override;
+protected:
+    void processAudio() override;
 
  private:
   enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE };
 
   static float sineWave(double wavePhase) {
-    return std::sin(wavePhase);
+    return static_cast<float>(std::sin(wavePhase));
   }
 
   static float squareWave(double wavePhase) {
-    return std::sin(wavePhase) >= 0 ? 1.0f : -1.0f;
+    return static_cast<float>(std::sin(wavePhase) >= 0 ? 1.0 : -1.0);
   }
 
   static float sawtoothWave(double wavePhase) {
-    return 2.0f *
-        (wavePhase / (2 * M_PI) - std::floor(wavePhase / (2 * M_PI) + 0.5));
+    return static_cast<float>(2.0 *
+        (wavePhase / (2 * M_PI) - std::floor(wavePhase / (2 * M_PI) + 0.5)));
   }
 
   static float triangleWave(double wavePhase) {
-    return 2.0f *
+    return static_cast<float>(2.0 *
         std::abs(
                2.0 *
                (wavePhase / (2 * M_PI) -
                 std::floor(wavePhase / (2 * M_PI) + 0.5))) -
-        1.0f;
+        1.0);
   }
 
   static float getWaveValue(double wavePhase, WaveType type) {

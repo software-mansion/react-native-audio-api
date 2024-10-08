@@ -3,7 +3,10 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(AudioContext *context) : context_(context) {}
+AudioNode::AudioNode(AudioContext *context) : context_(context) {
+    inputBuffer_ = std::vector<float>(CHANNEL_COUNT * context_->getBufferSize());
+    outputBuffer_ = std::vector<float>(CHANNEL_COUNT * context_->getBufferSize());
+}
 
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
@@ -45,18 +48,12 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   }
 }
 
-void AudioNode::process(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames,
-    int channelCount) {
-  std::for_each(
-      outputNodes_.begin(),
-      outputNodes_.end(),
-      [&oboeStream, &audioData, &numFrames, &channelCount](
-          const std::shared_ptr<AudioNode> &node) {
-        node->process(oboeStream, audioData, numFrames, channelCount);
-      });
+void AudioNode::processAudio() {
+    for (const auto & inputNode : inputNodes_) {
+        inputNode->processAudio();
+    }
+
+    mixInputBuffers();
 }
 
 void AudioNode::cleanup() {
@@ -67,6 +64,17 @@ void AudioNode::cleanup() {
 
   outputNodes_.clear();
   inputNodes_.clear();
+}
+
+void AudioNode::mixInputBuffers() {
+    float value;
+    for (int i = 0; i < inputBuffer_.size(); i++) {
+        value = 0;
+        for (const auto & inputNode : inputNodes_) {
+            value += inputNode->outputBuffer_[i];
+        }
+        inputBuffer_[i] = value;
+    }
 }
 
 } // namespace audioapi

@@ -1,24 +1,20 @@
 #pragma once
 
 #include <algorithm>
+#include <vector>
 
 #include "AudioNode.h"
 
 namespace audioapi {
 
 class AudioDestinationNode : public AudioNode {
- public:
+public:
   explicit AudioDestinationNode(AudioContext *context);
 
- protected:
-  void process(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames,
-      int channelCount) override;
+  const std::vector<float> &getOutputBuffer();
 
- private:
-  static void normalize(void *audioData, int32_t numFrames, int channelCount);
+protected:
+    void processAudio() override;
 };
 
 } // namespace audioapi

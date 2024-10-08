@@ -9,16 +9,6 @@ OscillatorNode::OscillatorNode(AudioContext *context)
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
   detuneParam_ =
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
-
-  AudioStreamBuilder builder;
-  builder.setSharingMode(SharingMode::Shared)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
-      ->setChannelCount(channelCount_)
-      ->setSampleRate(sampleRate)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::None)
-      ->setFormat(AudioFormat::Float)
-      ->setDataCallback(this)
-      ->openStream(mStream);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -37,34 +27,41 @@ void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
 }
 
-DataCallbackResult OscillatorNode::onAudioReady(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames) {
-  auto *floatData = reinterpret_cast<float *>(audioData);
+void OscillatorNode::processAudio() {
+    if (!isPlaying_) {
+        for (int i = 0; i < context_->getBufferSize(); ++i) {
+            for (int j = 0; j < channelCount_; j++) {
+                outputBuffer_[i * channelCount_ + j] = 0;
+            }
+        }
+    } else {
 
-  for (int i = 0; i < numFrames; ++i) {
-    auto detuneRatio = std::pow(
-        2.0f,
-        detuneParam_->getValueAtTime(context_->getCurrentTime()) / 1200.0f);
-    auto detunedFrequency =
-        frequencyParam_->getValueAtTime(context_->getCurrentTime()) *
-        detuneRatio;
-    auto phaseIncrement =
-        static_cast<float>(2 * M_PI * detunedFrequency / sampleRate);
-    float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+        auto time = context_->getCurrentTime();
+        auto deltaTime = 1 / context_->getSampleRate();
 
-    for (int j = 0; j < channelCount_; j++) {
-      floatData[i * channelCount_ + j] = value;
+
+        for (int i = 0; i < context_->getBufferSize(); ++i) {
+            auto detuneRatio = std::pow(
+                    2.0f,
+                    detuneParam_->getValueAtTime(time) / 1200.0f);
+            auto detunedFrequency =
+                    frequencyParam_->getValueAtTime(time) *
+                    detuneRatio;
+            auto phaseIncrement =
+                    static_cast<float>(2 * M_PI * detunedFrequency / context_->getSampleRate());
+            float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+
+            for (int j = 0; j < channelCount_; j++) {
+                outputBuffer_[i * channelCount_ + j] = value;
+            }
+
+            phase_ += phaseIncrement;
+            time += deltaTime;
+
+            if (phase_ >= 2 * M_PI) {
+                phase_ -= 2 * M_PI;
+            }
+        }
     }
-    phase_ += phaseIncrement;
-    if (phase_ >= 2 * M_PI)
-      phase_ -= 2 * M_PI;
-  }
-
-  process(oboeStream, audioData, numFrames, channelCount_);
-
-  return DataCallbackResult::Continue;
 }
-
 } // namespace audioapi

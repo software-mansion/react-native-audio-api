@@ -1,12 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <thread>
+#include <atomic>
 
 #include "AudioNode.h"
 
 namespace audioapi {
-
-using namespace oboe;
 
 // TODO implement AudioScheduledSourceNode
 
@@ -19,9 +22,12 @@ class AudioScheduledSourceNode : public AudioNode {
   void cleanup() override;
 
  protected:
-  std::shared_ptr<oboe::AudioStream> mStream;
+  std::atomic<bool> isPlaying_;
 
-  static int constexpr sampleRate = 44100;
+private:
+    void startPlayback();
+    void stopPlayback();
+    void waitAndExecute(double time, const std::function<void(double)>& fun);
 };
 
 } // namespace audioapi

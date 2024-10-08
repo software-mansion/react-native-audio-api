@@ -14,33 +14,28 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-void StereoPannerNode::process(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames,
-    int channelCount) {
-  auto *buffer = static_cast<float *>(audioData);
+void StereoPannerNode::processAudio() {
+    //channelCount = 2
+    AudioNode::processAudio();
 
-  for (int i = 0; i < numFrames; i++) {
-    auto pan = panParam_->getValueAtTime(context_->getCurrentTime());
-    auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
+    for (int i = 0; i < context_->getBufferSize(); i++) {
+        auto pan = panParam_->getValueAtTime(context_->getCurrentTime());
+        auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
-    auto gainL = static_cast<float>(cos(x));
-    auto gainR = static_cast<float>(sin(x));
+        auto gainL = static_cast<float>(cos(x));
+        auto gainR = static_cast<float>(sin(x));
 
-    auto inputL = buffer[i * 2];
-    auto inputR = buffer[i * 2 + 1];
+        auto inputL = inputBuffer_[i * 2];
+        auto inputR = inputBuffer_[i * 2 + 1];
 
     if (pan <= 0) {
-      buffer[i * 2] += inputR * gainL;
-      buffer[i * 2 + 1] *= gainR;
+      outputBuffer_[i * 2] = inputL + inputR * gainL;
+      outputBuffer_[i * 2 + 1] = inputR * gainR;
     } else {
-      buffer[i * 2] *= gainL;
-      buffer[i * 2 + 1] += inputL * gainR;
+        outputBuffer_[i * 2] = inputL * gainL;
+        outputBuffer_[i * 2 + 1] = inputR + inputL * gainR;
     }
   }
-
-  AudioNode::process(oboeStream, audioData, numFrames, channelCount);
 }
 
 } // namespace audioapi
