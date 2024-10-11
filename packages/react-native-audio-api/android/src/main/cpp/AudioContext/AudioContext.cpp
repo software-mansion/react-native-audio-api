@@ -76,7 +76,6 @@ std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
 
 std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
   return std::make_shared<AudioBufferSourceNode>(this);
-  ;
 }
 
 std::shared_ptr<AudioBuffer>
