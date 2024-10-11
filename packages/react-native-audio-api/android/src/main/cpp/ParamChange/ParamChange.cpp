@@ -32,7 +32,8 @@ float ParamChange::getStartValue() const {
   return startValue_;
 }
 
-std::function<float(double, double, float, float, double)> ParamChange::getCalculateValue() const {
+std::function<float(double, double, float, float, double)>
+ParamChange::getCalculateValue() const {
   return calculateValue_;
 }
 

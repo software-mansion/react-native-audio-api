@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <algorithm>
+#include <memory>
 
 #include "AudioNode.h"
 #include "AudioParam.h"

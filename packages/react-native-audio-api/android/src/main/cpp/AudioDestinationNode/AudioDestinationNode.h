@@ -1,8 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "AudioNode.h"
 

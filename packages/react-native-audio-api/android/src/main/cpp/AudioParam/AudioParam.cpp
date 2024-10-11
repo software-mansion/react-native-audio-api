@@ -14,13 +14,13 @@ AudioParam::AudioParam(
       maxValue_(maxValue),
       context_(context),
       changesQueue_() {
-    startTime_ = 0;
-    endTime_ = 0;
-    startValue_ = 0;
-    endValue_ = 0;
-    calculateValue_ = [this](double, double, float, float, double) {
-      return value_;
-    };
+  startTime_ = 0;
+  endTime_ = 0;
+  startValue_ = 0;
+  endValue_ = 0;
+  calculateValue_ = [this](double, double, float, float, double) {
+    return value_;
+  };
 }
 
 float AudioParam::getValue() const {
@@ -46,19 +46,20 @@ void AudioParam::setValue(float value) {
 
 float AudioParam::getValueAtTime(double time) {
   if (!changesQueue_.empty()) {
-    if (endTime_< time) {
+    if (endTime_ < time) {
       auto change = *changesQueue_.begin();
       startTime_ = change.getStartTime();
       endTime_ = change.getEndTime();
       startValue_ = change.getStartValue();
-        endValue_ = change.getEndValue();
-        calculateValue_ = change.getCalculateValue();
+      endValue_ = change.getEndValue();
+      calculateValue_ = change.getCalculateValue();
       changesQueue_.erase(changesQueue_.begin());
     }
   }
 
   if (startTime_ <= time) {
-    value_ = calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
+    value_ =
+        calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
   }
 
   return value_;
@@ -81,8 +82,10 @@ void AudioParam::linearRampToValueAtTime(float value, double time) {
                            float startValue,
                            float endValue,
                            double time) {
-      return time >= endTime ? endValue : startValue +
-        (endValue - startValue) * (time - startTime) / (endTime - startTime);
+    return time >= endTime ? endValue
+                           : startValue +
+            (endValue - startValue) * (time - startTime) /
+                (endTime - startTime);
   };
 
   auto paramChange =
@@ -97,9 +100,10 @@ void AudioParam::exponentialRampToValueAtTime(float value, double time) {
                            float startValue,
                            float endValue,
                            double time) {
-
-    return time >= endTime ? endValue : startValue *
-        pow(endValue / startValue, (time - startTime) / (endTime - startTime));
+    return time >= endTime ? endValue
+                           : startValue *
+            pow(endValue / startValue,
+                (time - startTime) / (endTime - startTime));
   };
 
   auto paramChange =
