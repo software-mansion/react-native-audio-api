@@ -18,7 +18,8 @@ class ParamChange {
   double getEndTime() const;
   double getStartTime() const;
   float getEndValue() const;
-  float getValueAtTime(double time) const;
+  float getStartValue() const;
+    std::function<float(double, double, float, float, double)> getCalculateValue() const;
   bool operator<(const ParamChange &other) const;
 
  private:

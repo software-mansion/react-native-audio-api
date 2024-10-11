@@ -28,8 +28,12 @@ float ParamChange::getEndValue() const {
   return endValue_;
 }
 
-float ParamChange::getValueAtTime(double time) const {
-  return calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
+float ParamChange::getStartValue() const {
+  return startValue_;
+}
+
+std::function<float(double, double, float, float, double)> ParamChange::getCalculateValue() const {
+  return calculateValue_;
 }
 
 bool ParamChange::operator<(const ParamChange &other) const {

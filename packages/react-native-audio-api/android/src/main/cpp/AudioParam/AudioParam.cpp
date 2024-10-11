@@ -13,8 +13,15 @@ AudioParam::AudioParam(
       minValue_(minValue),
       maxValue_(maxValue),
       context_(context),
-      currentChange_(nullptr),
-      changesQueue_() {}
+      changesQueue_() {
+    startTime_ = 0;
+    endTime_ = 0;
+    startValue_ = 0;
+    endValue_ = 0;
+    calculateValue_ = [this](double, double, float, float, double) {
+      return value_;
+    };
+}
 
 float AudioParam::getValue() const {
   return value_;
@@ -39,15 +46,19 @@ void AudioParam::setValue(float value) {
 
 float AudioParam::getValueAtTime(double time) {
   if (!changesQueue_.empty()) {
-    if (!currentChange_ || currentChange_->getEndTime() < time) {
+    if (endTime_< time) {
       auto change = *changesQueue_.begin();
-      currentChange_ = &change;
+      startTime_ = change.getStartTime();
+      endTime_ = change.getEndTime();
+      startValue_ = change.getStartValue();
+        endValue_ = change.getEndValue();
+        calculateValue_ = change.getCalculateValue();
       changesQueue_.erase(changesQueue_.begin());
     }
   }
 
-  if (currentChange_ && currentChange_->getStartTime() <= time) {
-    value_ = currentChange_->getValueAtTime(time);
+  if (startTime_ <= time) {
+    value_ = calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
   }
 
   return value_;
@@ -70,7 +81,7 @@ void AudioParam::linearRampToValueAtTime(float value, double time) {
                            float startValue,
                            float endValue,
                            double time) {
-    return startValue +
+      return time >= endTime ? endValue : startValue +
         (endValue - startValue) * (time - startTime) / (endTime - startTime);
   };
 
@@ -86,7 +97,8 @@ void AudioParam::exponentialRampToValueAtTime(float value, double time) {
                            float startValue,
                            float endValue,
                            double time) {
-    return startValue *
+
+    return time >= endTime ? endValue : startValue *
         pow(endValue / startValue, (time - startTime) / (endTime - startTime));
   };
 

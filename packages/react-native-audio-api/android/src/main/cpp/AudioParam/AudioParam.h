@@ -34,8 +34,13 @@ class AudioParam {
   float minValue_;
   float maxValue_;
   AudioContext *context_;
-  ParamChange *currentChange_;
   std::set<ParamChange> changesQueue_;
+
+    double startTime_;
+    double endTime_;
+    float startValue_;
+    float endValue_;
+    std::function<float(double, double, float, float, double)> calculateValue_;
 
   void checkValue(float value) const;
   double getStartTime();
