@@ -325,9 +325,10 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-void BiquadFilterNode::processAudio() {
-    //channelCount_ = 2;
-    AudioNode::processAudio();
+bool BiquadFilterNode::processAudio(float *audioData, int32_t numFrames) {
+    if (!AudioNode::processAudio(audioData, numFrames)) {
+        return false;
+    }
 
     resetCoefficients();
     applyFilter();
@@ -343,18 +344,21 @@ void BiquadFilterNode::processAudio() {
     float a1 = a1_;
     float a2 = a2_;
 
-    for (int i = 0; i < context_->getBufferSize(); i++) {
-        auto input = inputBuffer_[2 * i];
+    for (int i = 0; i < numFrames; i++) {
+        auto input = audioData[i * channelCount_];
         auto output =
                 static_cast<float>(b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2);
 
-        outputBuffer_[2 * i] = output;
-        outputBuffer_[2 * i + 1] = output;
+        for (int j = 0; j < channelCount_; j++) {
+            audioData[i * channelCount_ + j] = output;
+        }
 
         x2 = x1;
         x1 = input;
         y2 = y1;
         y1 = output;
     }
+
+    return true;
 }
 } // namespace audioapi

@@ -23,7 +23,7 @@ class BiquadFilterNode : public AudioNode {
   std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-    void processAudio() override;
+    bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   enum class FilterType {
