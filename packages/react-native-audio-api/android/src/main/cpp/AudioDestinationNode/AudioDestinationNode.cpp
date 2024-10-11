@@ -10,23 +10,28 @@ AudioDestinationNode::AudioDestinationNode(AudioContext *context)
   channelCountMode_ = ChannelCountMode::EXPLICIT;
 }
 
-const std::vector<float> &AudioDestinationNode::getOutputBuffer() {
-    processAudio();
-    return outputBuffer_;
+void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
+  processAudio(audioData, numFrames);
 }
 
-void AudioDestinationNode::processAudio() {
-    AudioNode::processAudio();
+bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
+    int numSamples = numFrames * channelCount_;
 
-    auto maxValue = 1.0f;
-
-    for (float i : inputBuffer_) {
-        maxValue = std::max(maxValue, std::abs(i));
+    if (mixingBuffer == nullptr) {
+        mixingBuffer = std::make_unique<float[]>(numSamples);
     }
 
-    for (int i = 0; i < inputBuffer_.size(); i++) {
-        outputBuffer_[i] = inputBuffer_[i] / maxValue;
+    memset(audioData, 0.0f, sizeof(float) * numSamples);
+
+    for (auto &node: inputNodes_) {
+        if (node->processAudio(mixingBuffer.get(), numFrames)) {
+            for (int i = 0; i < numSamples; i++) {
+                audioData[i] += mixingBuffer[i];
+            }
+        }
     }
+
+    return true;
 }
 
 } // namespace audioapi

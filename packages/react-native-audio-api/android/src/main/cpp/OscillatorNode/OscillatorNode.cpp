@@ -27,20 +27,15 @@ void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
 }
 
-void OscillatorNode::processAudio() {
+bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
     if (!isPlaying_) {
-        for (int i = 0; i < context_->getBufferSize(); ++i) {
-            for (int j = 0; j < channelCount_; j++) {
-                outputBuffer_[i * channelCount_ + j] = 0;
-            }
-        }
+        return false;
     } else {
-
         auto time = context_->getCurrentTime();
         auto deltaTime = 1 / context_->getSampleRate();
 
 
-        for (int i = 0; i < context_->getBufferSize(); ++i) {
+        for (int i = 0; i < numFrames; ++i) {
             auto detuneRatio = std::pow(
                     2.0f,
                     detuneParam_->getValueAtTime(time) / 1200.0f);
@@ -52,7 +47,7 @@ void OscillatorNode::processAudio() {
             float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
             for (int j = 0; j < channelCount_; j++) {
-                outputBuffer_[i * channelCount_ + j] = value;
+                audioData[i * channelCount_ + j] = value;
             }
 
             phase_ += phaseIncrement;
@@ -62,6 +57,8 @@ void OscillatorNode::processAudio() {
                 phase_ -= 2 * M_PI;
             }
         }
+
+        return true;
     }
 }
 } // namespace audioapi

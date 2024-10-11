@@ -11,10 +11,12 @@ class AudioDestinationNode : public AudioNode {
 public:
   explicit AudioDestinationNode(AudioContext *context);
 
-  const std::vector<float> &getOutputBuffer();
+  void renderAudio(float *audioData, int32_t numFrames);
 
 protected:
-    void processAudio() override;
-};
+    bool processAudio(float *audioData, int32_t numFrames) override;
 
+private:
+    std::unique_ptr<float[]> mixingBuffer;
+};
 } // namespace audioapi

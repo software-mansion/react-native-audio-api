@@ -23,6 +23,9 @@ public:
   void connect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
+  // Change public to protected
+    virtual bool processAudio(float *audioData, int32_t numFrames);
+
  protected:
   enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
 
@@ -52,7 +55,7 @@ public:
     }
   }
 
- protected:
+protected:
   AudioContext *context_;
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
@@ -60,18 +63,11 @@ public:
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
       ChannelInterpretation::SPEAKERS;
-    std::vector<float> inputBuffer_;
-    std::vector<float> outputBuffer_;
 
-  virtual void processAudio();
-  virtual void cleanup();
-
- private:
-  // TODO check
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
-    void mixInputBuffers();
+    virtual void cleanup();
 };
 
 } // namespace audioapi

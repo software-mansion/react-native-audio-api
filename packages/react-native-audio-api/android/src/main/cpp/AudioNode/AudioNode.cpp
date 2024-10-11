@@ -3,10 +3,7 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(AudioContext *context) : context_(context) {
-    inputBuffer_ = std::vector<float>(CHANNEL_COUNT * context_->getBufferSize());
-    outputBuffer_ = std::vector<float>(CHANNEL_COUNT * context_->getBufferSize());
-}
+AudioNode::AudioNode(AudioContext *context) : context_(context) {}
 
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
@@ -48,14 +45,6 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   }
 }
 
-void AudioNode::processAudio() {
-    for (const auto & inputNode : inputNodes_) {
-        inputNode->processAudio();
-    }
-
-    mixInputBuffers();
-}
-
 void AudioNode::cleanup() {
   std::for_each(
       outputNodes_.begin(),
@@ -66,15 +55,15 @@ void AudioNode::cleanup() {
   inputNodes_.clear();
 }
 
-void AudioNode::mixInputBuffers() {
-    float value;
-    for (int i = 0; i < inputBuffer_.size(); i++) {
-        value = 0;
-        for (const auto & inputNode : inputNodes_) {
-            value += inputNode->outputBuffer_[i];
+bool AudioNode::processAudio(float *audioData, int32_t numFrames) {
+    bool isPlaying = false;
+    for (auto &node: inputNodes_) {
+        if (node->processAudio(audioData, numFrames)) {
+            isPlaying = true;
         }
-        inputBuffer_[i] = value;
     }
+
+    return isPlaying;
 }
 
 } // namespace audioapi

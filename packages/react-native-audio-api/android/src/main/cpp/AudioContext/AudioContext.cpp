@@ -3,24 +3,14 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
-    AudioStreamBuilder builder;
-    builder.setSharingMode(SharingMode::Exclusive)
-            ->setFormat(AudioFormat::Float)
-            ->setFormatConversionAllowed(true)
-            ->setPerformanceMode(PerformanceMode::LowLatency)
-            ->setChannelCount(CHANNEL_COUNT)
-            ->setSampleRate(sampleRate_)
-            ->setSampleRateConversionQuality(SampleRateConversionQuality::None)
-            ->setDataCallback(this)
-            ->openStream(mStream_);
+    destination_ = std::make_shared<AudioDestinationNode>(this);
 
+    auto now = std::chrono::high_resolution_clock ::now();
+    contextStartTime_ =
+            static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
+
+    buildStream();
     mStream_->requestStart();
-
-  destination_ = std::make_shared<AudioDestinationNode>(this);
-
-  auto now = std::chrono::high_resolution_clock ::now();
-  contextStartTime_ =
-      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
 }
 
 std::string AudioContext::getState() {
@@ -38,10 +28,6 @@ double AudioContext::getCurrentTime() const {
                               now.time_since_epoch())
                               .count());
   return (currentTime - contextStartTime_) / 1e9;
-}
-
-int32_t AudioContext::getBufferSize() const {
-  return mStream_->getFramesPerBurst();
 }
 
 void AudioContext::close() {
@@ -96,13 +82,22 @@ DataCallbackResult AudioContext::onAudioReady(
     void *audioData,
     int32_t numFrames) {
 
-    auto outputBuffer = destination_->getOutputBuffer();
     auto buffer = static_cast<float *>(audioData);
-
-    for (int i = 0; i < numFrames * CHANNEL_COUNT; i++) {
-        buffer[i] = outputBuffer[i];
-    }
+    destination_->renderAudio(buffer, numFrames);
 
   return DataCallbackResult::Continue;
+}
+
+void AudioContext::buildStream() {
+    AudioStreamBuilder builder;
+    builder.setSharingMode(SharingMode::Exclusive)
+            ->setFormat(AudioFormat::Float)
+            ->setFormatConversionAllowed(true)
+            ->setPerformanceMode(PerformanceMode::LowLatency)
+            ->setChannelCount(CHANNEL_COUNT)
+            ->setSampleRate(sampleRate_)
+            ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+            ->setDataCallback(this)
+            ->openStream(mStream_);
 }
 } // namespace audioapi

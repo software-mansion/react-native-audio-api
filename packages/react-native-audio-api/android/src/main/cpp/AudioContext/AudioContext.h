@@ -26,7 +26,6 @@ class AudioContext: public AudioStreamDataCallback {
   std::string getState();
   int getSampleRate() const;
   double getCurrentTime() const;
-  int32_t getBufferSize() const;
   void close();
 
   std::shared_ptr<AudioDestinationNode> getDestination();
@@ -35,7 +34,7 @@ class AudioContext: public AudioStreamDataCallback {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  std::shared_ptr<AudioBuffer>
+  static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
 
  private:
@@ -64,6 +63,8 @@ class AudioContext: public AudioStreamDataCallback {
   int sampleRate_ = SAMPLE_RATE;
   double contextStartTime_;
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
+
+  void buildStream();
 };
 
 } // namespace audioapi

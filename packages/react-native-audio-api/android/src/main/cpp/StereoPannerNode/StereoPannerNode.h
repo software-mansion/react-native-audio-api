@@ -13,10 +13,12 @@ class StereoPannerNode : public AudioNode {
   std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-    void processAudio() override;
+    bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   std::shared_ptr<AudioParam> panParam_;
+
+  void normalize(float *audioData, int32_t numFrames);
 };
 
 } // namespace audioapi

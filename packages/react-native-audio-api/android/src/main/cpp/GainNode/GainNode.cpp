@@ -11,11 +11,16 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
-void GainNode::processAudio() {
-  AudioNode::processAudio();
+bool GainNode::processAudio(float *audioData, int32_t numFrames) {
+    if (!AudioNode::processAudio(audioData, numFrames)) {
+        return false;
+    }
 
-  for (int i = 0; i < inputBuffer_.size(); i++) {
-    outputBuffer_[i] = inputBuffer_[i] * gainParam_->getValueAtTime(context_->getCurrentTime());
-  }
+    for (int i = 0; i < numFrames * channelCount_; i++) {
+        audioData[i] *= gainParam_->getValue();
+    }
+
+    return true;
 }
+
 } // namespace audioapi
