@@ -19,9 +19,6 @@ class Kick implements SoundEngine {
     const oscillator = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
 
-    oscillator.connect(gain);
-    gain.connect(this.audioContext.destination);
-
     oscillator.frequency.setValueAtTime(0, time);
     oscillator.frequency.setValueAtTime(this.tone, time + 0.01);
     oscillator.frequency.exponentialRampToValueAtTime(10, time + this.decay);
@@ -30,6 +27,9 @@ class Kick implements SoundEngine {
     gain.gain.setValueAtTime(this.volume, time + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.001, time + this.decay);
     gain.gain.setValueAtTime(0, time + this.decay + 0.001);
+
+    oscillator.connect(gain);
+    gain.connect(this.audioContext.destination);
 
     oscillator.start(time);
     oscillator.stop(time + this.decay);
