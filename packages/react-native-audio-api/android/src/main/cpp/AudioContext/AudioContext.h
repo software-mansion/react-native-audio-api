@@ -62,9 +62,6 @@ class AudioContext: public AudioStreamDataCallback {
   State state_ = State::RUNNING;
   int sampleRate_ = SAMPLE_RATE;
   double contextStartTime_;
-  std::vector<std::shared_ptr<AudioScheduledSourceNode>> sources_;
-
-  void buildStream();
 };
 
 } // namespace audioapi

@@ -5,6 +5,10 @@ namespace audioapi {
 
 AudioNode::AudioNode(AudioContext *context) : context_(context) {}
 
+AudioNode::~AudioNode() {
+  cleanup();
+}
+
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
 }
@@ -46,11 +50,6 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNode::cleanup() {
-  std::for_each(
-      outputNodes_.begin(),
-      outputNodes_.end(),
-      [](const std::shared_ptr<AudioNode> &node) { node->cleanup(); });
-
   outputNodes_.clear();
   inputNodes_.clear();
 }

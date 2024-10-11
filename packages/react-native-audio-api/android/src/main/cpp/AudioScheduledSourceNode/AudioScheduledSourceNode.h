@@ -19,7 +19,6 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void start(double time);
   void stop(double time);
-  void cleanup() override;
 
  protected:
   std::atomic<bool> isPlaying_;

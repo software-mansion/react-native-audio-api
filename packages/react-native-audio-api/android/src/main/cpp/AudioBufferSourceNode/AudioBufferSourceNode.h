@@ -10,5 +10,7 @@ namespace audioapi {
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferSourceNode(AudioContext *context);
+
+  bool processAudio(float *audioData, int32_t numFrames) override;
 };
 } // namespace audioapi

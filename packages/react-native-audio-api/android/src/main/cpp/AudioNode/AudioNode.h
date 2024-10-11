@@ -14,7 +14,7 @@ class AudioContext;
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
 public:
   explicit AudioNode(AudioContext *context);
-  virtual ~AudioNode() = default;
+  virtual ~AudioNode();
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
@@ -67,7 +67,8 @@ protected:
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
-    virtual void cleanup();
+private:
+  void cleanup();
 };
 
 } // namespace audioapi

@@ -9,7 +9,17 @@ AudioContext::AudioContext() {
     contextStartTime_ =
             static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
 
-    buildStream();
+    AudioStreamBuilder builder;
+    builder.setSharingMode(SharingMode::Exclusive)
+            ->setFormat(AudioFormat::Float)
+            ->setFormatConversionAllowed(true)
+            ->setPerformanceMode(PerformanceMode::LowLatency)
+            ->setChannelCount(CHANNEL_COUNT)
+            ->setSampleRate(sampleRate_)
+            ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+            ->setDataCallback(this)
+            ->openStream(mStream_);
+
     mStream_->requestStart();
 }
 
@@ -31,17 +41,15 @@ double AudioContext::getCurrentTime() const {
 }
 
 void AudioContext::close() {
-    //TODO check if this is the correct way to close the stream
   state_ = State::CLOSED;
 
-  mStream_->requestStop();
-  mStream_->close();
+  if (mStream_) {
+      mStream_->requestStop();
+      mStream_->close();
+  }
   mStream_.reset();
 
-  std::for_each(sources_.begin(), sources_.end(), [](auto &source) {
-    source->cleanup();
-  });
-  //sources_.clear();
+  destination_.reset();
 }
 
 std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
@@ -49,9 +57,7 @@ std::shared_ptr<AudioDestinationNode> AudioContext::getDestination() {
 }
 
 std::shared_ptr<OscillatorNode> AudioContext::createOscillator() {
-  auto oscillator = std::make_shared<OscillatorNode>(this);
-  sources_.push_back(oscillator);
-  return oscillator;
+  return std::make_shared<OscillatorNode>(this);
 }
 
 std::shared_ptr<GainNode> AudioContext::createGain() {
@@ -67,9 +73,7 @@ std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
 }
 
 std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this);
-  sources_.push_back(bufferSource);
-  return bufferSource;
+  return std::make_shared<AudioBufferSourceNode>(this);;
 }
 
 std::shared_ptr<AudioBuffer>
@@ -86,18 +90,5 @@ DataCallbackResult AudioContext::onAudioReady(
     destination_->renderAudio(buffer, numFrames);
 
   return DataCallbackResult::Continue;
-}
-
-void AudioContext::buildStream() {
-    AudioStreamBuilder builder;
-    builder.setSharingMode(SharingMode::Exclusive)
-            ->setFormat(AudioFormat::Float)
-            ->setFormatConversionAllowed(true)
-            ->setPerformanceMode(PerformanceMode::LowLatency)
-            ->setChannelCount(CHANNEL_COUNT)
-            ->setSampleRate(sampleRate_)
-            ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
-            ->setDataCallback(this)
-            ->openStream(mStream_);
 }
 } // namespace audioapi

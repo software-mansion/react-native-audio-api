@@ -20,10 +20,6 @@ void AudioScheduledSourceNode::stop(double time) {
     });
 }
 
-void AudioScheduledSourceNode::cleanup() {
-  AudioNode::cleanup();
-}
-
 void AudioScheduledSourceNode::startPlayback() {
     isPlaying_ = true;
 }
