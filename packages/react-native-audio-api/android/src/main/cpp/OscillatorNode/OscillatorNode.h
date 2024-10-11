@@ -18,8 +18,8 @@ class OscillatorNode : public AudioScheduledSourceNode {
   std::string getType();
   void setType(const std::string &type);
 
-protected:
-    bool processAudio(float *audioData, int32_t numFrames) override;
+ protected:
+  bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE };
@@ -33,16 +33,18 @@ protected:
   }
 
   static float sawtoothWave(double wavePhase) {
-    return static_cast<float>(2.0 *
+    return static_cast<float>(
+        2.0 *
         (wavePhase / (2 * M_PI) - std::floor(wavePhase / (2 * M_PI) + 0.5)));
   }
 
   static float triangleWave(double wavePhase) {
-    return static_cast<float>(2.0 *
-        std::abs(
-               2.0 *
-               (wavePhase / (2 * M_PI) -
-                std::floor(wavePhase / (2 * M_PI) + 0.5))) -
+    return static_cast<float>(
+        2.0 *
+            std::abs(
+                2.0 *
+                (wavePhase / (2 * M_PI) -
+                 std::floor(wavePhase / (2 * M_PI) + 0.5))) -
         1.0);
   }
 

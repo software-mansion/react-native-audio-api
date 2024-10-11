@@ -12,7 +12,7 @@ namespace audioapi {
 class AudioContext;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
-public:
+ public:
   explicit AudioNode(AudioContext *context);
   virtual ~AudioNode();
   int getNumberOfInputs() const;
@@ -24,7 +24,7 @@ public:
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
   // Change public to protected
-    virtual bool processAudio(float *audioData, int32_t numFrames);
+  virtual bool processAudio(float *audioData, int32_t numFrames);
 
  protected:
   enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
@@ -55,7 +55,7 @@ public:
     }
   }
 
-protected:
+ protected:
   AudioContext *context_;
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
@@ -67,7 +67,7 @@ protected:
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
-private:
+ private:
   void cleanup();
 };
 

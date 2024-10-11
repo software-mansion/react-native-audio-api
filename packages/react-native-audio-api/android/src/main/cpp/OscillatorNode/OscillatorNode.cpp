@@ -28,37 +28,34 @@ void OscillatorNode::setType(const std::string &type) {
 }
 
 bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
-    if (!isPlaying_) {
-        return false;
-    } else {
-        auto time = context_->getCurrentTime();
-        auto deltaTime = 1 / context_->getSampleRate();
+  if (!isPlaying_) {
+    return false;
+  } else {
+    auto time = context_->getCurrentTime();
+    auto deltaTime = 1 / context_->getSampleRate();
 
+    for (int i = 0; i < numFrames; ++i) {
+      auto detuneRatio =
+          std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+      auto detunedFrequency =
+          frequencyParam_->getValueAtTime(time) * detuneRatio;
+      auto phaseIncrement = static_cast<float>(
+          2 * M_PI * detunedFrequency / context_->getSampleRate());
+      float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
-        for (int i = 0; i < numFrames; ++i) {
-            auto detuneRatio = std::pow(
-                    2.0f,
-                    detuneParam_->getValueAtTime(time) / 1200.0f);
-            auto detunedFrequency =
-                    frequencyParam_->getValueAtTime(time) *
-                    detuneRatio;
-            auto phaseIncrement =
-                    static_cast<float>(2 * M_PI * detunedFrequency / context_->getSampleRate());
-            float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+      for (int j = 0; j < channelCount_; j++) {
+        audioData[i * channelCount_ + j] = value;
+      }
 
-            for (int j = 0; j < channelCount_; j++) {
-                audioData[i * channelCount_ + j] = value;
-            }
+      phase_ += phaseIncrement;
+      time += deltaTime;
 
-            phase_ += phaseIncrement;
-            time += deltaTime;
-
-            if (phase_ >= 2 * M_PI) {
-                phase_ -= 2 * M_PI;
-            }
-        }
-
-        return true;
+      if (phase_ >= 2 * M_PI) {
+        phase_ -= 2 * M_PI;
+      }
     }
+
+    return true;
+  }
 }
 } // namespace audioapi

@@ -3,24 +3,26 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
-    destination_ = std::make_shared<AudioDestinationNode>(this);
+  destination_ = std::make_shared<AudioDestinationNode>(this);
 
-    auto now = std::chrono::high_resolution_clock ::now();
-    contextStartTime_ =
-            static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
+  auto now = std::chrono::high_resolution_clock ::now();
+  contextStartTime_ =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                              now.time_since_epoch())
+                              .count());
 
-    AudioStreamBuilder builder;
-    builder.setSharingMode(SharingMode::Exclusive)
-            ->setFormat(AudioFormat::Float)
-            ->setFormatConversionAllowed(true)
-            ->setPerformanceMode(PerformanceMode::LowLatency)
-            ->setChannelCount(CHANNEL_COUNT)
-            ->setSampleRate(sampleRate_)
-            ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
-            ->setDataCallback(this)
-            ->openStream(mStream_);
+  AudioStreamBuilder builder;
+  builder.setSharingMode(SharingMode::Exclusive)
+      ->setFormat(AudioFormat::Float)
+      ->setFormatConversionAllowed(true)
+      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setChannelCount(CHANNEL_COUNT)
+      ->setSampleRate(sampleRate_)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setDataCallback(this)
+      ->openStream(mStream_);
 
-    mStream_->requestStart();
+  mStream_->requestStart();
 }
 
 std::string AudioContext::getState() {
@@ -44,8 +46,8 @@ void AudioContext::close() {
   state_ = State::CLOSED;
 
   if (mStream_) {
-      mStream_->requestStop();
-      mStream_->close();
+    mStream_->requestStop();
+    mStream_->close();
   }
   mStream_.reset();
 
@@ -73,7 +75,8 @@ std::shared_ptr<BiquadFilterNode> AudioContext::createBiquadFilter() {
 }
 
 std::shared_ptr<AudioBufferSourceNode> AudioContext::createBufferSource() {
-  return std::make_shared<AudioBufferSourceNode>(this);;
+  return std::make_shared<AudioBufferSourceNode>(this);
+  ;
 }
 
 std::shared_ptr<AudioBuffer>
@@ -85,9 +88,8 @@ DataCallbackResult AudioContext::onAudioReady(
     AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
-
-    auto buffer = static_cast<float *>(audioData);
-    destination_->renderAudio(buffer, numFrames);
+  auto buffer = static_cast<float *>(audioData);
+  destination_->renderAudio(buffer, numFrames);
 
   return DataCallbackResult::Continue;
 }

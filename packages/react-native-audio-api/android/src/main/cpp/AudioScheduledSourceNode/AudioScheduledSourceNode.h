@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <thread>
-#include <atomic>
 
 #include "AudioNode.h"
 
@@ -23,10 +23,10 @@ class AudioScheduledSourceNode : public AudioNode {
  protected:
   std::atomic<bool> isPlaying_;
 
-private:
-    void startPlayback();
-    void stopPlayback();
-    void waitAndExecute(double time, const std::function<void(double)>& fun);
+ private:
+  void startPlayback();
+  void stopPlayback();
+  void waitAndExecute(double time, const std::function<void(double)> &fun);
 };
 
 } // namespace audioapi

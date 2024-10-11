@@ -55,14 +55,14 @@ void AudioNode::cleanup() {
 }
 
 bool AudioNode::processAudio(float *audioData, int32_t numFrames) {
-    bool isPlaying = false;
-    for (auto &node: inputNodes_) {
-        if (node->processAudio(audioData, numFrames)) {
-            isPlaying = true;
-        }
+  bool isPlaying = false;
+  for (auto &node : inputNodes_) {
+    if (node->processAudio(audioData, numFrames)) {
+      isPlaying = true;
     }
+  }
 
-    return isPlaying;
+  return isPlaying;
 }
 
 } // namespace audioapi

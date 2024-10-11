@@ -1,10 +1,10 @@
 #pragma once
 
+#include <oboe/Oboe.h>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <oboe/Oboe.h>
 
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
@@ -20,7 +20,7 @@ namespace audioapi {
 
 using namespace oboe;
 
-class AudioContext: public AudioStreamDataCallback {
+class AudioContext : public AudioStreamDataCallback {
  public:
   AudioContext();
   std::string getState();
@@ -51,14 +51,14 @@ class AudioContext: public AudioStreamDataCallback {
     }
   }
 
-    DataCallbackResult onAudioReady(
-            AudioStream *oboeStream,
-            void *audioData,
-            int32_t numFrames) override;
+  DataCallbackResult onAudioReady(
+      AudioStream *oboeStream,
+      void *audioData,
+      int32_t numFrames) override;
 
  private:
   std::shared_ptr<AudioDestinationNode> destination_;
-    std::shared_ptr<AudioStream> mStream_;
+  std::shared_ptr<AudioStream> mStream_;
   State state_ = State::RUNNING;
   int sampleRate_ = SAMPLE_RATE;
   double contextStartTime_;

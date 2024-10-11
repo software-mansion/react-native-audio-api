@@ -14,7 +14,7 @@ class GainNode : public AudioNode {
   std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-    bool processAudio(float *audioData, int32_t numFrames) override;
+  bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   std::shared_ptr<AudioParam> gainParam_;

@@ -15,23 +15,23 @@ void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
 }
 
 bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
-    int numSamples = numFrames * channelCount_;
+  int numSamples = numFrames * channelCount_;
 
-    if (mixingBuffer == nullptr) {
-        mixingBuffer = std::make_unique<float[]>(numSamples);
+  if (mixingBuffer == nullptr) {
+    mixingBuffer = std::make_unique<float[]>(numSamples);
+  }
+
+  memset(audioData, 0.0f, sizeof(float) * numSamples);
+
+  for (auto &node : inputNodes_) {
+    if (node->processAudio(mixingBuffer.get(), numFrames)) {
+      for (int i = 0; i < numSamples; i++) {
+        audioData[i] += mixingBuffer[i];
+      }
     }
+  }
 
-    memset(audioData, 0.0f, sizeof(float) * numSamples);
-
-    for (auto &node: inputNodes_) {
-        if (node->processAudio(mixingBuffer.get(), numFrames)) {
-            for (int i = 0; i < numSamples; i++) {
-                audioData[i] += mixingBuffer[i];
-            }
-        }
-    }
-
-    return true;
+  return true;
 }
 
 } // namespace audioapi
