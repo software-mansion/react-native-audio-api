@@ -6,7 +6,7 @@
 
 namespace audioapi {
 
-class AudioBuffer: public std::enable_shared_from_this<AudioBuffer> {
+class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
   explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
 
@@ -18,7 +18,7 @@ class AudioBuffer: public std::enable_shared_from_this<AudioBuffer> {
   void setChannelData(int channel, const float *data, int length);
 
  private:
-    friend class AudioBufferSourceNode;
+  friend class AudioBufferSourceNode;
 
   int numberOfChannels_;
   int length_;

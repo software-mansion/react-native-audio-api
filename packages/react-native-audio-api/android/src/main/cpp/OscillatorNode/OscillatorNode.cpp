@@ -55,9 +55,9 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
         phase_ -= 2 * M_PI;
       }
 
-        if (phase_ < 0) {
-            phase_ += 2 * M_PI;
-        }
+      if (phase_ < 0) {
+        phase_ += 2 * M_PI;
+      }
     }
 
     return true;
