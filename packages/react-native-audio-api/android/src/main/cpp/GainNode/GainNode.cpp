@@ -16,8 +16,12 @@ bool GainNode::processAudio(float *audioData, int32_t numFrames) {
     return false;
   }
 
+  auto time = context_->getCurrentTime();
+  auto deltaTime = 1.0 / context_->getSampleRate();
+
   for (int i = 0; i < numFrames * channelCount_; i++) {
-    audioData[i] *= gainParam_->getValue();
+    audioData[i] *= gainParam_->getValueAtTime(time);
+    time += deltaTime;
   }
 
   return true;

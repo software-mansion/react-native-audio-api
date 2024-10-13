@@ -105,7 +105,7 @@ class BiquadFilterNode : public AudioNode {
   float a1_ = 1.0;
   float a2_ = 0;
 
-  float clamp(float value, float min, float max);
+  static float clamp(float value, float min, float max);
   void resetCoefficients();
   void setNormalizedCoefficients(
       float b0,

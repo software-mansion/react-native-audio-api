@@ -20,8 +20,11 @@ bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
     return false;
   }
 
+  auto time = context_->getCurrentTime();
+  auto deltaTime = 1.0 / context_->getSampleRate();
+
   for (int i = 0; i < numFrames; i++) {
-    auto pan = panParam_->getValueAtTime(context_->getCurrentTime());
+    auto pan = panParam_->getValueAtTime(time);
     auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
     auto gainL = static_cast<float>(cos(x));
@@ -37,6 +40,8 @@ bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
       audioData[i * 2] = inputL * gainL;
       audioData[i * 2 + 1] = inputR + inputL * gainR;
     }
+
+    time += deltaTime;
   }
 
   normalize(audioData, numFrames);

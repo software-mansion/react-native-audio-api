@@ -32,15 +32,16 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
     return false;
   } else {
     auto time = context_->getCurrentTime();
-    auto deltaTime = 1 / context_->getSampleRate();
+    auto deltaTime = 1.0 / context_->getSampleRate();
 
     for (int i = 0; i < numFrames; ++i) {
       auto detuneRatio =
           std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
       auto detunedFrequency =
-          frequencyParam_->getValueAtTime(time) * detuneRatio;
+          round(frequencyParam_->getValueAtTime(time) * detuneRatio);
       auto phaseIncrement = static_cast<float>(
           2 * M_PI * detunedFrequency / context_->getSampleRate());
+
       float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
       for (int j = 0; j < channelCount_; j++) {
@@ -53,6 +54,10 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
       if (phase_ >= 2 * M_PI) {
         phase_ -= 2 * M_PI;
       }
+
+        if (phase_ < 0) {
+            phase_ += 2 * M_PI;
+        }
     }
 
     return true;
