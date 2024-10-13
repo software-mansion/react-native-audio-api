@@ -11,8 +11,6 @@
 
 namespace audioapi {
 
-// TODO implement AudioScheduledSourceNode
-
 class AudioScheduledSourceNode : public AudioNode {
  public:
   explicit AudioScheduledSourceNode(AudioContext *context);
