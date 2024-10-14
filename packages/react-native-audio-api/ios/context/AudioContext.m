@@ -10,9 +10,28 @@
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.destination = [[AudioDestinationNode alloc] initWithContext:self];
 
-    _contextStartTime = mach_absolute_time();
-    _state = ContextStateRunning;
-    _sampleRate = [Constants sampleRate];
+    self.audioSession = AVAudioSession.sharedInstance;
+    NSError *error = nil;
+
+    // TODO:
+    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
+    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
+    // But setting a recording category might require some setup first, so lets skip it for now :)
+    [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    [self.audioSession setActive:true error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    self.contextStartTime = mach_absolute_time();
+    self.state = ContextStateRunning;
+    self.sampleRate = [self.audioSession sampleRate];
   }
 
   return self;
@@ -21,11 +40,20 @@
 - (void)close
 {
   [self cleanup];
-  _state = ContextStateClosed;
+  self.state = ContextStateClosed;
 }
 
 - (void)cleanup
 {
+  NSError *error = nil;
+  [self.audioSession setActive:false error:&error];
+
+  if (error != nil) {
+    @throw error;
+  }
+
+  self.audioSession = nil;
+
   if (self.audioEngine.isRunning) {
     [self.audioEngine stop];
   }
@@ -69,18 +97,18 @@
   mach_timebase_info_data_t info;
   mach_timebase_info(&info);
 
-  uint64_t elapsedNano = (currentTime - _contextStartTime) * info.numer / info.denom;
+  uint64_t elapsedNano = (currentTime - self.contextStartTime) * info.numer / info.denom;
   return elapsedNano / 1e9;
 }
 
 - (NSString *)getState
 {
-  return [ContextState toString:_state];
+  return [ContextState toString:self.state];
 }
 
 - (double)getSampleRate
 {
-  return _sampleRate;
+  return self.sampleRate;
 }
 
 @end

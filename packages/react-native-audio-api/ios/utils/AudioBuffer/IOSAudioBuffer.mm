@@ -44,6 +44,7 @@ float *IOSAudioBuffer::getChannelData(int channel)
   }
 
   float *data = [audioBuffer_ getChannelDataForChannel:channel];
+
   if (!data) {
     return nullptr;
   }

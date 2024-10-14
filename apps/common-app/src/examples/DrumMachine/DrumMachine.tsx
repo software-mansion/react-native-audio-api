@@ -15,7 +15,7 @@ const initialBpm = 120;
 const STEPS: Sounds = [
   { name: 'kick', steps: new Array(8).fill(false) },
   { name: 'clap', steps: new Array(8).fill(false) },
-  { name: 'hihat', steps: new Array(8).fill(false) },
+  { name: 'hi-hat', steps: new Array(8).fill(false) },
 ];
 
 const DrumMachine: FC = () => {
@@ -91,7 +91,7 @@ const DrumMachine: FC = () => {
       case 'kick':
         kickRef.current.play(time);
         break;
-      case 'hihat':
+      case 'hi-hat':
         hiHatRef.current.play(time);
         break;
       case 'clap':

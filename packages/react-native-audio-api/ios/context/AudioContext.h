@@ -27,6 +27,7 @@
 @property (nonatomic, assign) uint64_t contextStartTime;
 @property (nonatomic, assign) ContextStateEnum state;
 @property (nonatomic, assign) double sampleRate;
+@property (nonatomic, weak) AVAudioSession *audioSession;
 
 - (instancetype)init;
 
