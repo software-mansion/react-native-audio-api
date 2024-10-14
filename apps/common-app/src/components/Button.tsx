@@ -3,17 +3,17 @@ import { Text, Pressable, StyleSheet } from 'react-native';
 
 import { colors, layout } from '../styles';
 
-interface PlayPauseButtonProps {
+interface ButtonProps {
   title: string;
-  handlePlayPause: () => void;
+  onPress: () => void;
 }
 
-const PlayPauseButton: FC<PlayPauseButtonProps> = (props) => {
-  const { title, handlePlayPause } = props;
+const Button: FC<ButtonProps> = (props) => {
+  const { title, onPress } = props;
 
   return (
     <Pressable
-      onPress={handlePlayPause}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: pressed ? `${colors.main}88` : colors.main },
@@ -36,4 +36,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PlayPauseButton;
+export default Button;

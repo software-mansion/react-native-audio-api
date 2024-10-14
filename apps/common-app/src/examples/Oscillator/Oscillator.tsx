@@ -9,10 +9,7 @@ import {
   type StereoPannerNode,
 } from 'react-native-audio-api';
 
-import Container from '../../components/Container';
-import Slider from '../../components/Slider';
-import Spacer from '../../components/Spacer';
-import PlayPauseButton from '../../components/PlayPauseButton';
+import { Container, Slider, Spacer, Button } from '../../components';
 import { layout, colors } from '../../styles';
 
 const INITIAL_FREQUENCY = 440;
@@ -117,10 +114,7 @@ const Oscillator: FC = () => {
 
   return (
     <Container centered>
-      <PlayPauseButton
-        handlePlayPause={handlePlayPause}
-        title={isPlaying ? 'Pause' : 'Play'}
-      />
+      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
       <Spacer.Vertical size={20} />
       <Text>Gain: {gain.toFixed(2)}</Text>
       <Slider

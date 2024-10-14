@@ -9,6 +9,8 @@ const escape = require('escape-string-regexp');
 
 const duplicatedModules = ['react', 'react-dom', 'react-native'];
 
+const defaultConfig = getDefaultConfig(__dirname);
+
 /**
  * Metro configuration
  * https://facebook.github.io/metro/docs/configuration
@@ -20,6 +22,7 @@ const config = {
   watchFolders: [repostioryRoot],
 
   resolver: {
+    assetExts: [...defaultConfig.resolver.assetExts, 'wav'],
     blacklistRE: exclusionList(
       duplicatedModules.map(
         (m) =>

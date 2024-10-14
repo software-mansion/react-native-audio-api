@@ -1,13 +1,15 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import { Metronome } from './Metronome';
-import { Oscillator } from './Oscillator';
-import { DrumMachine } from './DrumMachine';
+import Piano from './Piano';
+import Metronome from './Metronome';
+import Oscillator from './Oscillator';
+import DrumMachine from './DrumMachine';
 
 type NavigationParamList = {
   Oscillator: undefined;
   Metronome: undefined;
   DrumMachine: undefined;
+  Piano: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -20,12 +22,18 @@ export interface Example {
   screen: React.FC;
 }
 
-export const Examples = [
+export const Examples: Example[] = [
   {
-    key: 'Oscillator',
-    title: 'Oscillator 🔉',
-    subtitle: 'Generate sound waves',
-    screen: Oscillator,
+    key: 'DrumMachine',
+    title: 'Drum Machine 🥁',
+    subtitle: 'Create drum patterns',
+    screen: DrumMachine,
+  },
+  {
+    key: 'Piano',
+    title: 'Simple Piano 🎹',
+    subtitle: 'Play some notes',
+    screen: Piano,
   },
   {
     key: 'Metronome',
@@ -34,9 +42,9 @@ export const Examples = [
     screen: Metronome,
   },
   {
-    key: 'DrumMachine',
-    title: 'Drum Machine 🥁',
-    subtitle: 'Create drum patterns',
-    screen: DrumMachine,
+    key: 'Oscillator',
+    title: 'Oscillator 🔉',
+    subtitle: 'Generate sound waves',
+    screen: Oscillator,
   },
 ] as const;

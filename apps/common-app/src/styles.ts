@@ -15,4 +15,5 @@ export const colors = {
   main: '#428ce7',
   border: 'rgba(0,0,0,0.1)',
   black: '#000000',
+  gray: '#d7d7d7',
 } as const;

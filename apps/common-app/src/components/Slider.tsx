@@ -1,15 +1,11 @@
 import React from 'react';
-import { FC, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import {
-  GestureHandlerRootView,
-  GestureDetector,
-  Gesture,
-} from 'react-native-gesture-handler';
+import { FC, useEffect, useCallback } from 'react';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
+  runOnJS,
   useSharedValue,
   useAnimatedStyle,
-  runOnJS,
 } from 'react-native-reanimated';
 
 import { layout, colors } from '../styles';
@@ -88,13 +84,13 @@ const Slider: FC<SliderProps> = (props) => {
   ]);
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.sliderTrack}>
         <GestureDetector gesture={pan}>
           <Animated.View style={[styles.sliderHandle, sliderStyle]} />
         </GestureDetector>
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 };
 

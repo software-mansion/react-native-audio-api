@@ -1,12 +1,8 @@
-import { useState, useRef, useEffect, FC } from 'react';
 import { Text, View } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
+import { useState, useRef, useEffect, FC } from 'react';
 
-import Container from '../../components/Container';
-import Steps from '../../components/Steps';
-import PlayPauseButton from '../../components/PlayPauseButton';
-import Spacer from '../../components/Spacer';
-import Slider from '../../components/Slider';
+import { Container, Steps, Spacer, Slider, Button } from '../../components';
 import { Sounds, SoundName } from '../../types';
 import { Kick, Clap, HiHat, Scheduler } from '../SharedUtils';
 
@@ -126,10 +122,7 @@ const DrumMachine: FC = () => {
 
   return (
     <Container centered>
-      <PlayPauseButton
-        handlePlayPause={handlePlayPause}
-        title={isPlaying ? 'Pause' : 'Play'}
-      />
+      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
       <Spacer.Vertical size={20} />
       <Text>bpm: {bpm}</Text>
       <Slider

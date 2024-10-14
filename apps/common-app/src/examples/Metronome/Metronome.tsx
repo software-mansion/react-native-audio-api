@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef, FC } from 'react';
 import { Text } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
-import Slider from '../../components/Slider';
-import Container from '../../components/Container';
-import PlayPauseButton from '../../components/PlayPauseButton';
-import Spacer from '../../components/Spacer';
+import { Container, Slider, Spacer, Button } from '../../components';
 import { Scheduler, MetronomeSound } from '../SharedUtils';
 import { Sounds, SoundName } from '../../types';
 
@@ -125,10 +122,7 @@ const Metronome: FC = () => {
 
   return (
     <Container centered>
-      <PlayPauseButton
-        handlePlayPause={handlePlayPause}
-        title={isPlaying ? 'Pause' : 'Play'}
-      />
+      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
       <Spacer.Vertical size={20} />
       <Text>BPM: {bpm}</Text>
       <Slider

@@ -1,1 +1,1 @@
-export { default as Oscillator } from './Oscillator';
+export { default } from './Oscillator';
