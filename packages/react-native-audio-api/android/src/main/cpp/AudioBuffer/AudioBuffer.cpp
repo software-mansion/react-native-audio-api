@@ -11,10 +11,10 @@ AudioBuffer::AudioBuffer(int numberOfChannels, int length, int sampleRate)
     throw std::invalid_argument("Invalid number of channels");
   }
 
-  channels_ = static_cast<float **>(malloc(numberOfChannels * sizeof(float *)));
+  channels_ = new float*[numberOfChannels];
 
   for (int i = 0; i < numberOfChannels; i++) {
-    channels_[i] = static_cast<float *>(malloc(length * sizeof(float)));
+    channels_[i] = new float[length];
 
     for (int j = 0; j < length; j++) {
       channels_[i][j] = 0.0f;

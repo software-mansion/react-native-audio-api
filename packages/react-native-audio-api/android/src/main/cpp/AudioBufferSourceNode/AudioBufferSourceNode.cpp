@@ -6,7 +6,7 @@ namespace audioapi {
 AudioBufferSourceNode::AudioBufferSourceNode(AudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
-  buffer_ = std::make_shared<AudioBuffer>(2, 428, context->getSampleRate());
+  buffer_ = std::nullopt;
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -14,7 +14,11 @@ bool AudioBufferSourceNode::getLoop() const {
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
-  return buffer_;
+    if (!buffer_.has_value()) {
+        throw std::runtime_error("Buffer is not set");
+    }
+
+    return buffer_.value();
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
@@ -27,18 +31,18 @@ void AudioBufferSourceNode::setBuffer(
 }
 
 bool AudioBufferSourceNode::processAudio(float *audioData, int32_t numFrames) {
-  if (!isPlaying_) {
+  if (!isPlaying_ || !buffer_.has_value()) {
     return false;
   } else {
     for (int i = 0; i < numFrames; ++i) {
       for (int j = 0; j < channelCount_; j++) {
         audioData[i * channelCount_ + j] =
-            buffer_->getChannelData(j)[bufferIndex_];
+            buffer_.value()->getChannelData(j)[bufferIndex_];
       }
 
       bufferIndex_++;
 
-      if (bufferIndex_ >= buffer_->getLength()) {
+      if (bufferIndex_ >= buffer_.value()->getLength()) {
         if (loop_) {
           bufferIndex_ = 0;
         } else {
