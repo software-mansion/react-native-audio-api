@@ -55,7 +55,7 @@ void AudioBuffer::setChannelData(int channel, const float *data, int length) {
     throw std::invalid_argument("Invalid data length");
   }
 
-  memcpy(channels_[channel], data, length * sizeof(float));
+  std::copy(data, data + length, channels_[channel]);
 }
 
 std::shared_ptr<AudioBuffer> AudioBuffer::mix(int outputNumberOfChannels) {
