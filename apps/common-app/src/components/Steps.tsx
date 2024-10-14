@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
   },
   text: {
     margin: layout.spacing,
+    textTransform: 'capitalize',
   },
 });
 

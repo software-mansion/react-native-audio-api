@@ -58,10 +58,10 @@
 
   [self.context.audioEngine detachNode:self.sourceNode];
 
-  _frequencyParam = nil;
-  _detuneParam = nil;
-  _format = nil;
-  _sourceNode = nil;
+  self.format = nil;
+  self.sourceNode = nil;
+  self.detuneParam = nil;
+  self.frequencyParam = nil;
 }
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence

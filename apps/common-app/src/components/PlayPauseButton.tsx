@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, Pressable, StyleSheet } from 'react-native';
 
 import { colors, layout } from '../styles';
 
@@ -12,23 +12,26 @@ const PlayPauseButton: FC<PlayPauseButtonProps> = (props) => {
   const { title, handlePlayPause } = props;
 
   return (
-    <TouchableOpacity onPress={handlePlayPause} style={styles.button}>
+    <Pressable
+      onPress={handlePlayPause}
+      style={({ pressed }) => [
+        styles.button,
+        { backgroundColor: pressed ? `${colors.main}88` : colors.main },
+      ]}
+    >
       <Text style={styles.text}>{title}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
     padding: layout.spacing,
-    backgroundColor: colors.main,
-    borderWidth: 1,
-    borderColor: colors.black,
     borderRadius: layout.radius,
     width: 100,
   },
   text: {
-    color: colors.black,
+    color: colors.white,
     textAlign: 'center',
   },
 });

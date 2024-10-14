@@ -8,11 +8,11 @@ export const layout = {
   knobSize: 24,
   indicatorSize: 48,
   screenWidth: width,
-};
+} as const;
 
 export const colors = {
   white: '#ffffff',
   main: '#428ce7',
   border: 'rgba(0,0,0,0.1)',
   black: '#000000',
-};
+} as const;
