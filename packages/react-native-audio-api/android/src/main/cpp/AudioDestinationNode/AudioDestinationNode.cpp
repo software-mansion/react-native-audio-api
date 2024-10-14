@@ -3,11 +3,12 @@
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(AudioContext *context)
+AudioDestinationNode::AudioDestinationNode(AudioContext *context, int32_t numFrames)
     : AudioNode(context) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
+  mixingBuffer = std::make_unique<float[]>(numFrames * CHANNEL_COUNT);
 }
 
 void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
@@ -15,11 +16,7 @@ void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
 }
 
 bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
-  int numSamples = numFrames * channelCount_;
-
-  if (mixingBuffer == nullptr) {
-    mixingBuffer = std::make_unique<float[]>(numSamples);
-  }
+  int numSamples = numFrames * CHANNEL_COUNT;
 
   memset(audioData, 0.0f, sizeof(float) * numSamples);
 

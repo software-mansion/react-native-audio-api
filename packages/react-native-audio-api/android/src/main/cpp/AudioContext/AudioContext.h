@@ -60,7 +60,7 @@ class AudioContext : public AudioStreamDataCallback {
   std::shared_ptr<AudioDestinationNode> destination_;
   std::shared_ptr<AudioStream> mStream_;
   State state_ = State::RUNNING;
-  int sampleRate_ = SAMPLE_RATE;
+  int sampleRate_;
   double contextStartTime_;
 };
 

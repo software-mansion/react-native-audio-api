@@ -10,7 +10,7 @@ namespace audioapi {
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(AudioContext *context);
+  explicit AudioDestinationNode(AudioContext *context, int32_t numFrames);
 
   void renderAudio(float *audioData, int32_t numFrames);
 

@@ -3,8 +3,6 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
-  destination_ = std::make_shared<AudioDestinationNode>(this);
-
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
       static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -17,10 +15,12 @@ AudioContext::AudioContext() {
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(PerformanceMode::LowLatency)
       ->setChannelCount(CHANNEL_COUNT)
-      ->setSampleRate(sampleRate_)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Fastest)
       ->setDataCallback(this)
       ->openStream(mStream_);
+
+  destination_ = std::make_shared<AudioDestinationNode>(this, mStream_->getFramesPerBurst());
+  sampleRate_ = mStream_->getSampleRate();
 
   mStream_->requestStart();
 }
