@@ -50,14 +50,7 @@ bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
 }
 
 void StereoPannerNode::normalize(float *audioData, int32_t numFrames) {
-  auto maxValue = 1.0f;
-
-  for (int i = 0; i < numFrames * channelCount_; i++) {
-    maxValue = std::max(maxValue, std::abs(audioData[i]));
-  }
-
-  for (int i = 0; i < numFrames * channelCount_; i++) {
-    audioData[i] /= maxValue;
-  }
+  auto maxValue = std::max(1.0f, VectorMath::maximumMagnitude(audioData, numFrames * channelCount_));
+  VectorMath::multiplyByScalar(audioData, 1.0f / maxValue, audioData, numFrames * channelCount_);
 }
 } // namespace audioapi
