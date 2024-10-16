@@ -79,10 +79,12 @@ float maximumMagnitude(const float* inputVector, size_t numberOfElementsToProces
 
 #else
 
+#if defined(HAVE_X86_SSE2)
 static inline bool is16ByteAligned(const float* vector)
 {
     return !(reinterpret_cast<uintptr_t>(vector) & 0x0F);
 }
+#endif
 
 void multiplyByScalar(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess)
 {
