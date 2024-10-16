@@ -25,7 +25,7 @@ bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
 
   for (auto &node : inputNodes_) {
     if (node->processAudio(mixingBuffer.get(), numFrames)) {
-        VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
+      VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
     }
   }
 

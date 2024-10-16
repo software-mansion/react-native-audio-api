@@ -14,11 +14,11 @@ bool AudioBufferSourceNode::getLoop() const {
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
-    if (!buffer_.has_value()) {
-        throw std::runtime_error("Buffer is not set");
-    }
+  if (!buffer_.has_value()) {
+    throw std::runtime_error("Buffer is not set");
+  }
 
-    return buffer_.value();
+  return buffer_.value();
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
