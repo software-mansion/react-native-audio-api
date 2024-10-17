@@ -24,6 +24,14 @@ file(GLOB_RECURSE SOURCE_FILES
   "src/main/cpp/*.h"
   "../common/cpp/*.cpp"
   "../common/cpp/*.h"
+  "../common/cpp/core/*.cpp"
+  "../common/cpp/core/*.h"
+  "../common/cpp/wrappers/*.cpp"
+  "../common/cpp/wrappers/*.h"
+  "../common/cpp/HostObjects/*.cpp"
+  "../common/cpp/HostObjects/*.h"
+  "../common/cpp/utils/*.cpp"
+  "../common/cpp/utils/*.h"
 )
 
 add_library(react-native-audio-api SHARED ${SOURCE_FILES})

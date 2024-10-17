@@ -23,7 +23,9 @@ namespace audioapi {
     }
 
     void AudioPlayer::start() {
-        mStream_->requestStart();
+        if (mStream_) {
+            mStream_->requestStart();
+        }
     }
 
     void AudioPlayer::stop() {
