@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "BiquadFilterNodeWrapper.h"
 
 namespace audioapi {
@@ -50,4 +49,3 @@ void BiquadFilterNodeWrapper::setType(const std::string &filterType) {
   biquadFilterNode_->setType(filterType);
 }
 } // namespace audioapi
-#endif

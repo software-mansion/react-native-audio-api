@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioNodeWrapper.h"
 
 namespace audioapi {
@@ -36,5 +35,3 @@ void AudioNodeWrapper::disconnect(
   node_->disconnect(node->node_);
 }
 } // namespace audioapi
-
-#endif

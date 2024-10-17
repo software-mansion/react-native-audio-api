@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioBufferSourceNodeWrapper.h"
 
 namespace audioapi {
@@ -34,4 +33,3 @@ void AudioBufferSourceNodeWrapper::setBuffer(
   audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
 }
 } // namespace audioapi
-#endif

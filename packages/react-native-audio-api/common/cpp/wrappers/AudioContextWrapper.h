@@ -11,34 +11,16 @@
 #include "GainNodeWrapper.h"
 #include "OscillatorNodeWrapper.h"
 #include "StereoPannerNodeWrapper.h"
-
-#ifdef ANDROID
 #include "AudioContext.h"
-#else
-#include "IOSAudioContext.h"
-#endif
 
 namespace audioapi {
 
 class AudioContextWrapper {
-#ifdef ANDROID
 
  public:
   explicit AudioContextWrapper(
       const std::shared_ptr<AudioContext> &audiocontext);
 
- private:
-  std::shared_ptr<AudioContext> audioContext_;
-#else
-
- public:
-  AudioContextWrapper();
-
- private:
-  std::shared_ptr<IOSAudioContext> audioContext_;
-#endif
-
- public:
   std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
   std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
   std::shared_ptr<GainNodeWrapper> createGain() const;
@@ -54,5 +36,6 @@ class AudioContextWrapper {
 
  private:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;
+    std::shared_ptr<AudioContext> audioContext_;
 };
 } // namespace audioapi

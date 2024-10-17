@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioParamWrapper.h"
 
 namespace audioapi {
@@ -41,4 +40,3 @@ void AudioParamWrapper::exponentialRampToValueAtTime(
   param_->exponentialRampToValueAtTime(value, endTime);
 }
 } // namespace audioapi
-#endif

@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "OscillatorNodeWrapper.h"
 
 namespace audioapi {
@@ -37,4 +36,3 @@ void OscillatorNodeWrapper::setType(const std::string &type) {
   oscillatorNode_->setType(type);
 }
 } // namespace audioapi
-#endif

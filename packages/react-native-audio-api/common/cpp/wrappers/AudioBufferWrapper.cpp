@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioBufferWrapper.h"
 
 namespace audioapi {
@@ -32,4 +31,3 @@ void AudioBufferWrapper::setChannelData(int channel, float *data, int length)
   audioBuffer_->setChannelData(channel, data, length);
 }
 } // namespace audioapi
-#endif

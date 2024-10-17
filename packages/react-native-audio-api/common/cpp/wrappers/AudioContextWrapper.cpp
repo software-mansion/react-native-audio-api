@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioContextWrapper.h"
 
 namespace audioapi {
@@ -69,4 +68,3 @@ void AudioContextWrapper::close() const {
   audioContext_->close();
 }
 } // namespace audioapi
-#endif

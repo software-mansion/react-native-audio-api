@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "StereoPannerNodeWrapper.h"
 
 namespace audioapi {
@@ -15,4 +14,3 @@ std::shared_ptr<AudioParamWrapper> StereoPannerNodeWrapper::getPanParam()
   return panParam_;
 }
 } // namespace audioapi
-#endif

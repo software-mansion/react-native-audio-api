@@ -2,31 +2,16 @@
 
 #include <memory>
 
-#ifdef ANDROID
 #include "AudioBuffer.h"
-#else
-#include "IOSAudioBuffer.h"
-#endif
 
 namespace audioapi {
 
 class AudioBufferWrapper {
-#ifdef ANDROID
 
  public:
-  std::shared_ptr<AudioBuffer> audioBuffer_;
-
   explicit AudioBufferWrapper(const std::shared_ptr<AudioBuffer> &audioBuffer);
-#else
 
- public:
-  std::shared_ptr<IOSAudioBuffer> audioBuffer_;
-
-  explicit AudioBufferWrapper(
-      const std::shared_ptr<IOSAudioBuffer> &audioBuffer);
-#endif
-
- public:
+    std::shared_ptr<AudioBuffer> audioBuffer_;
   int getNumberOfChannels() const;
   int getLength() const;
   double getDuration() const;

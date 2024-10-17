@@ -1,4 +1,3 @@
-#ifdef ANDROID
 #include "AudioScheduledSourceNodeWrapper.h"
 
 namespace audioapi {
@@ -22,4 +21,3 @@ void AudioScheduledSourceNodeWrapper::stop(double time) {
   audioScheduledSourceNode->stop(time);
 }
 } // namespace audioapi
-#endif
