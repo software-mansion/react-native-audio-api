@@ -1,6 +1,5 @@
 #pragma once
 
-#include <oboe/Oboe.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -11,16 +10,15 @@
 #include "AudioDestinationNode.h"
 #include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"
-#include "Constants.h"
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "Constants.h"
+#include "AudioPlayer.h"
 
 namespace audioapi {
 
-using namespace oboe;
-
-class AudioContext : public AudioStreamDataCallback {
+class AudioContext {
  public:
   AudioContext();
   std::string getState();
@@ -36,6 +34,7 @@ class AudioContext : public AudioStreamDataCallback {
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
+  void renderAudio(float *audioData, int32_t numFrames);
 
  private:
   enum class State { RUNNING, CLOSED };
@@ -51,14 +50,9 @@ class AudioContext : public AudioStreamDataCallback {
     }
   }
 
-  DataCallbackResult onAudioReady(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames) override;
-
  private:
   std::shared_ptr<AudioDestinationNode> destination_;
-  std::shared_ptr<AudioStream> mStream_;
+  std::shared_ptr<AudioPlayer> audioPlayer_;
   State state_ = State::RUNNING;
   int sampleRate_;
   double contextStartTime_;

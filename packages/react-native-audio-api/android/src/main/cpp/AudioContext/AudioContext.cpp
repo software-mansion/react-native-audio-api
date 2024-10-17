@@ -3,26 +3,18 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
+    audioPlayer_ = std::make_shared<AudioPlayer>(this);
+    destination_ = std::make_shared<AudioDestinationNode>(this, audioPlayer_->getFramesPerBurst());
+
+    sampleRate_ = audioPlayer_->getSampleRate();
+
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
       static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
                               now.time_since_epoch())
                               .count());
 
-  AudioStreamBuilder builder;
-  builder.setSharingMode(SharingMode::Exclusive)
-      ->setFormat(AudioFormat::Float)
-      ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
-      ->setChannelCount(CHANNEL_COUNT)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::Fastest)
-      ->setDataCallback(this)
-      ->openStream(mStream_);
-
-  destination_ = std::make_shared<AudioDestinationNode>(this, mStream_->getFramesPerBurst());
-  sampleRate_ = mStream_->getSampleRate();
-
-  mStream_->requestStart();
+    audioPlayer_->start();
 }
 
 std::string AudioContext::getState() {
@@ -45,12 +37,11 @@ double AudioContext::getCurrentTime() const {
 void AudioContext::close() {
   state_ = State::CLOSED;
 
-  if (mStream_) {
-    mStream_->requestStop();
-    mStream_->close();
+  if (audioPlayer_) {
+    audioPlayer_->stop();
   }
-  mStream_.reset();
 
+  audioPlayer_.reset();
   destination_.reset();
 }
 
@@ -83,13 +74,11 @@ AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
-DataCallbackResult AudioContext::onAudioReady(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames) {
-  auto buffer = static_cast<float *>(audioData);
-  destination_->renderAudio(buffer, numFrames);
+void AudioContext::renderAudio(float *audioData, int32_t numFrames) {
+  if (state_ == State::CLOSED) {
+    return;
+  }
 
-  return DataCallbackResult::Continue;
+  destination_->renderAudio(audioData, numFrames);
 }
 } // namespace audioapi
