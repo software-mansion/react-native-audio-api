@@ -8,6 +8,8 @@
 
 #ifdef ANDROID
 #include "AudioAPIInstaller.h"
+#else
+#include "AudioContext.h"
 #endif
 
 namespace audioapi {

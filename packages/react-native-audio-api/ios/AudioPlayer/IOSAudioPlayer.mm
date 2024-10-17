@@ -1,15 +1,16 @@
-#include <IOSAudioPlayere.h>
+#include <IOSAudioPlayer.h>
+#include "AudioContext.h"
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer()
+IOSAudioPlayer::IOSAudioPlayer(AudioContext *context): context_(context)
 {
-  audioPlayer_ = nil;
+  audioPlayer_ = [[AudioPlayer alloc] init];
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
-  // audioPlayer_ stop
+  //cleanup
   audioPlayer_ = nil;
 }
 
@@ -35,7 +36,7 @@ void IOSAudioPlayer::stop()
 
 void IOSAudioPlayer::renderAudio(float *audioData, int32_t numFrames)
 {
-  //todo
+  context_->getSampleRate();
 }
 } // namespace audioapi
 

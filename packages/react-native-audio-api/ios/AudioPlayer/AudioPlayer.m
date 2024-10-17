@@ -7,7 +7,6 @@
   if (self = [super init]) {
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
-    self.destination = [[AudioDestinationNode alloc] initWithContext:self];
 
     self.audioSession = AVAudioSession.sharedInstance;
     NSError *error = nil;
@@ -42,16 +41,6 @@
                                                                                     frameCount:frameCount
                                                                                     outputData:outputData];
                                                 }];
-
-    [self.audioEngine attachNode:self.sourceNode];
-    [self.audioEngine connect:self.sourceNode to:self.audioEngine.mainMixerNode format:self.format];
-
-    if (!self.audioEngine.isRunning) {
-      NSError *error = nil;
-      if (![self.audioEngine startAndReturnError:&error]) {
-        NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
-      }
-    }
   }
 
   return self;
@@ -69,7 +58,15 @@
 
 - (void)start
 {
-  //
+  [self.audioEngine attachNode:self.sourceNode];
+  [self.audioEngine connect:self.sourceNode to:self.audioEngine.mainMixerNode format:self.format];
+
+  if (!self.audioEngine.isRunning) {
+    NSError *error = nil;
+    if (![self.audioEngine startAndReturnError:&error]) {
+      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+    }
+  }
 }
 
 - (void)stop
@@ -101,8 +98,8 @@
     return noErr; // Ensure we have stereo output
   }
 
-  float *leftBuffer = (float *)outputData->mBuffers[0].mData;
-  float *rightBuffer = (float *)outputData->mBuffers[1].mData;
+  //float *leftBuffer = (float *)outputData->mBuffers[0].mData;
+  //float *rightBuffer = (float *)outputData->mBuffers[1].mData;
 
   return noErr;
 }

@@ -3,7 +3,11 @@
 namespace audioapi {
 
 AudioContext::AudioContext() {
+#ifdef ANDROID
     audioPlayer_ = std::make_shared<AudioPlayer>(this);
+#else
+    audioPlayer_ = std::make_shared<IOSAudioPlayer>(this);
+#endif
     destination_ = std::make_shared<AudioDestinationNode>(this, audioPlayer_->getFramesPerBurst());
 
     sampleRate_ = audioPlayer_->getSampleRate();

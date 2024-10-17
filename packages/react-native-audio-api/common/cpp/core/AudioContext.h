@@ -14,7 +14,12 @@
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
 #include "Constants.h"
+
+#ifdef ANDROID
 #include "AudioPlayer.h"
+#else
+#include "IOSAudioPlayer.h"
+#endif
 
 namespace audioapi {
 
@@ -52,7 +57,11 @@ class AudioContext {
 
  private:
   std::shared_ptr<AudioDestinationNode> destination_;
+#ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
+#else
+    std::shared_ptr<IOSAudioPlayer> audioPlayer_;
+#endif
   State state_ = State::RUNNING;
   int sampleRate_;
   double contextStartTime_;
