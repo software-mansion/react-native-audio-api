@@ -49,9 +49,6 @@ class PianoNote {
 
     this.oscillator.stop(tNow + 0.1);
 
-    this.gain.disconnect(this.audioContext.destination);
-    this.oscillator.disconnect(this.gain);
-
     this.oscillator = null;
     this.gain = null;
   }

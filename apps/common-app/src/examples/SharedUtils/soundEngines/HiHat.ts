@@ -41,7 +41,7 @@ class HiHat implements SoundEngine {
       gain.gain.exponentialRampToValueAtTime(this.volume * 0.33, time + 0.03);
       gain.gain.exponentialRampToValueAtTime(this.volume * 0.0001, time + 0.3);
       gain.gain.setValueAtTime(0, time + 0.3 + 0.001);
-      //number of inputs of filter is 1 on android- check it
+
       oscillator.connect(bandpassFilter);
       bandpassFilter.connect(highpassFilter);
       highpassFilter.connect(gain);

@@ -30,6 +30,10 @@ const Piano: FC = () => {
     });
 
     notesRef.current = newNotes as Record<KeyName, PianoNote>;
+
+    return () => {
+      audioContextRef.current?.close();
+    };
   }, []);
 
   return (
