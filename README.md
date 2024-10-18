@@ -7,19 +7,23 @@ allowing developers to generate and modify audio in exact same way it is possibl
 
 ## Installation
 
+| ⚠️ Important!                             |
+| ----------------------------------------- |
+| This Library is not yet published on npm! |
+
 1. Install `react-native-audio-api` library
 
    ```bash
    # using npm
    npm install react-native-audio-api
 
-   # OR using Yarn
+   # or using Yarn
    yarn add react-native-audio-api
    ```
 
 ## Documentation
 
-react-native-audio-api tries to strictly follow the Web Audi API specification, which can be found at [https://www.w3.org/TR/webaudio/](https://www.w3.org/TR/webaudio/).
+`react-native-audio-api` tries to strictly follow the Web Audi API specification, which can be found at [https://www.w3.org/TR/webaudio/](https://www.w3.org/TR/webaudio/).
 <br />
 [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) is usefull resource to get familiar with audio processing basics.
 
@@ -36,12 +40,6 @@ The source code for the example application is unther the [`/apps/common-app`](.
 
 We are open to new ideas and general feedback. If you want to share your opinion about `react-native-audio-api` or have some thoughts about how it could be further developed, don't hesitate to create an issue or contact the maintainers directly.
 
-## Roadmap
-
-- [ ] Split existing examples separate screens using react-navigation
-- [ ] Add simple drum machine implementation
-- [ ] Add example using AudioBufferSourceNode
-
 ## License
 
 react-native-audio-api library is licensed under [The MIT License](./LICENSE)
@@ -54,7 +52,7 @@ This project has been bult and is maintained thanks to the support from [Softwar
 
 ## Community Discord
 
-[Join the Software Mansion Community Discord](https://discord.swmansion.com) to chat about React Native Audio API or other Software Mansion libraries.
+<a href="https://discord.swmansion.com" target="_blank" rel="noopener noreferrer">Join the Software Mansion Community Discord</a> to chat about React Native Audio API or other Software Mansion libraries.
 
 ## react-native-audio-api is created by Software Mansion
 
