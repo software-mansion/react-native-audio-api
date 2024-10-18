@@ -15,12 +15,12 @@ class AudioContext;
 class IOSAudioPlayer {
  protected:
   AudioPlayer *audioPlayer_;
-  std::function<void(float*, int)> renderAudio_;
+  std::function<void(float *, int)> renderAudio_;
 
  public:
-  explicit IOSAudioPlayer(const std::function<void(float*, int)> &renderAudio);
+  explicit IOSAudioPlayer(const std::function<void(float *, int)> &renderAudio);
   ~IOSAudioPlayer();
-  
+
   int getSampleRate() const;
   void start();
   void stop();

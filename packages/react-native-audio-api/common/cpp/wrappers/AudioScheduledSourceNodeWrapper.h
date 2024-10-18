@@ -8,14 +8,13 @@
 namespace audioapi {
 
 class AudioScheduledSourceNodeWrapper : public AudioNodeWrapper {
-
  public:
   explicit AudioScheduledSourceNodeWrapper(
       const std::shared_ptr<AudioScheduledSourceNode>
           &audioScheduledSourceNode);
 
-    void start(double time);
-    void stop(double time);
+  void start(double time);
+  void stop(double time);
 
  private:
   std::shared_ptr<AudioScheduledSourceNode>

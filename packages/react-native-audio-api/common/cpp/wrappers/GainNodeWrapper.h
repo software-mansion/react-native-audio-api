@@ -9,7 +9,6 @@
 namespace audioapi {
 
 class GainNodeWrapper : public AudioNodeWrapper {
-
  public:
   explicit GainNodeWrapper(const std::shared_ptr<GainNode> &gainNode);
 

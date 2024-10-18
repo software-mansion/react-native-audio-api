@@ -6,17 +6,16 @@
 
 #include "AudioBufferSourceNodeWrapper.h"
 #include "AudioBufferWrapper.h"
+#include "AudioContext.h"
 #include "AudioDestinationNodeWrapper.h"
 #include "BiquadFilterNodeWrapper.h"
 #include "GainNodeWrapper.h"
 #include "OscillatorNodeWrapper.h"
 #include "StereoPannerNodeWrapper.h"
-#include "AudioContext.h"
 
 namespace audioapi {
 
 class AudioContextWrapper {
-
  public:
   explicit AudioContextWrapper(
       const std::shared_ptr<AudioContext> &audiocontext);
@@ -36,6 +35,6 @@ class AudioContextWrapper {
 
  private:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;
-    std::shared_ptr<AudioContext> audioContext_;
+  std::shared_ptr<AudioContext> audioContext_;
 };
 } // namespace audioapi

@@ -1,20 +1,20 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <functional>
 
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
 #include "AudioDestinationNode.h"
 #include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"
+#include "Constants.h"
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "Constants.h"
 
 #ifdef ANDROID
 #include "AudioPlayer.h"
@@ -40,7 +40,7 @@ class AudioContext {
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
-  std::function<void(float*, int)> renderAudio();
+  std::function<void(float *, int)> renderAudio();
 
  private:
   enum class State { RUNNING, CLOSED };
@@ -61,7 +61,7 @@ class AudioContext {
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
-    std::shared_ptr<IOSAudioPlayer> audioPlayer_;
+  std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
   State state_ = State::RUNNING;
   int sampleRate_;

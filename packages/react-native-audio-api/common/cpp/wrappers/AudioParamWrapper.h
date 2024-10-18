@@ -7,7 +7,6 @@
 namespace audioapi {
 
 class AudioParamWrapper {
-
  public:
   explicit AudioParamWrapper(const std::shared_ptr<AudioParam> &param);
 
@@ -20,7 +19,7 @@ class AudioParamWrapper {
   void linearRampToValueAtTime(float value, double endTime) const;
   void exponentialRampToValueAtTime(float value, double endTime) const;
 
-private:
-    std::shared_ptr<AudioParam> param_;
+ private:
+  std::shared_ptr<AudioParam> param_;
 };
 } // namespace audioapi

@@ -7,11 +7,10 @@
 namespace audioapi {
 
 class AudioBufferWrapper {
-
  public:
   explicit AudioBufferWrapper(const std::shared_ptr<AudioBuffer> &audioBuffer);
 
-    std::shared_ptr<AudioBuffer> audioBuffer_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
   int getNumberOfChannels() const;
   int getLength() const;
   double getDuration() const;

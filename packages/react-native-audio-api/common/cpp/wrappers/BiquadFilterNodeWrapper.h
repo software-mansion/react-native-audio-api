@@ -10,7 +10,6 @@
 namespace audioapi {
 
 class BiquadFilterNodeWrapper : public AudioNodeWrapper {
-
  public:
   explicit BiquadFilterNodeWrapper(
       const std::shared_ptr<BiquadFilterNode> &biquadFilterNode);
@@ -28,6 +27,6 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
   std::shared_ptr<AudioParamWrapper> QParam_;
   std::shared_ptr<AudioParamWrapper> gainParam_;
 
-    std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
+  std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
 };
 } // namespace audioapi

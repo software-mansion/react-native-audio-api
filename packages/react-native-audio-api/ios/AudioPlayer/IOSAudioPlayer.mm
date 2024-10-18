@@ -2,12 +2,12 @@
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(float*, int)> &renderAudio) : renderAudio_(renderAudio)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(float *, int)> &renderAudio) : renderAudio_(renderAudio)
 {
   RenderAudioBlock renderAudioBlock = ^(float *audioData, int numFrames) {
-          renderAudio_(audioData, numFrames);
-      };
-  
+    renderAudio_(audioData, numFrames);
+  };
+
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
 }
 
@@ -32,4 +32,3 @@ void IOSAudioPlayer::stop()
   return [audioPlayer_ stop];
 }
 } // namespace audioapi
-

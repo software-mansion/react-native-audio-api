@@ -9,7 +9,6 @@
 namespace audioapi {
 
 class StereoPannerNodeWrapper : public AudioNodeWrapper {
-
  public:
   explicit StereoPannerNodeWrapper(
       const std::shared_ptr<StereoPannerNode> &stereoPannerNode);

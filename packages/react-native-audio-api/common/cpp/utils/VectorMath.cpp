@@ -198,8 +198,8 @@ void addScalar(
   size_t n = numberOfElementsToProcess;
 
 #if defined(HAVE_X86_SSE2)
-// If the inputVector address is not 16-byte aligned, the first several frames
-// (at most three) should be processed separately.
+  // If the inputVector address is not 16-byte aligned, the first several frames
+  // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
     *outputVector = *inputVector + scalar;
     inputVector++;
@@ -474,8 +474,8 @@ void multiply(
   size_t n = numberOfElementsToProcess;
 
 #if defined(HAVE_X86_SSE2)
-// If the inputVector1 address is not 16-byte aligned, the first several frames
-// (at most three) should be processed separately.
+  // If the inputVector1 address is not 16-byte aligned, the first several
+  // frames (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
     *outputVector = *inputVector1 * *inputVector2;
     inputVector1++;

@@ -4,13 +4,13 @@ namespace audioapi {
 
 AudioContext::AudioContext() {
 #ifdef ANDROID
-    audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
+  audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
-    audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
 #endif
-    destination_ = std::make_shared<AudioDestinationNode>(this);
+  destination_ = std::make_shared<AudioDestinationNode>(this);
 
-    sampleRate_ = audioPlayer_->getSampleRate();
+  sampleRate_ = audioPlayer_->getSampleRate();
 
   auto now = std::chrono::high_resolution_clock ::now();
   contextStartTime_ =
@@ -18,7 +18,7 @@ AudioContext::AudioContext() {
                               now.time_since_epoch())
                               .count());
 
-    audioPlayer_->start();
+  audioPlayer_->start();
 }
 
 std::string AudioContext::getState() {
@@ -78,12 +78,12 @@ AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
-std::function<void(float*, int)> AudioContext::renderAudio() {
+std::function<void(float *, int)> AudioContext::renderAudio() {
   if (state_ == State::CLOSED) {
-    return [](float*, int) {};
+    return [](float *, int) {};
   }
 
-  return [this](float* data, int frames) {
+  return [this](float *data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }

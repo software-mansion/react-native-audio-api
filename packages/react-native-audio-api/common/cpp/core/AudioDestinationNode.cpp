@@ -17,9 +17,9 @@ void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
 bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
   int numSamples = numFrames * CHANNEL_COUNT;
 
-    if (mixingBuffer == nullptr) {
-        mixingBuffer = std::make_unique<float[]>(numSamples);
-    }
+  if (mixingBuffer == nullptr) {
+    mixingBuffer = std::make_unique<float[]>(numSamples);
+  }
 
   memset(audioData, 0.0f, sizeof(float) * numSamples);
 

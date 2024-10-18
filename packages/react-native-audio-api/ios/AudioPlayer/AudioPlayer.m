@@ -27,9 +27,9 @@
     if (error != nil) {
       @throw error;
     }
-    
+
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:[self.audioSession sampleRate] channels:2];
-    
+
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
                                                 renderBlock:^OSStatus(
@@ -42,7 +42,7 @@
                                                                                     frameCount:frameCount
                                                                                     outputData:outputData];
                                                 }];
-    
+
     self.buffer = nil;
   }
 
@@ -70,11 +70,10 @@
 - (void)stop
 {
   [self.audioEngine detachNode:self.sourceNode];
-  
+
   if (self.audioEngine.isRunning) {
     [self.audioEngine stop];
   }
-
 
   NSError *error = nil;
   [self.audioSession setActive:false error:&error];
@@ -89,10 +88,9 @@
   self.audioEngine = nil;
   self.audioSession = nil;
   self.renderAudio = nil;
-  
+
   free(_buffer);
 }
-
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
                               timestamp:(const AudioTimeStamp *)timestamp
@@ -102,16 +100,16 @@
   if (outputData->mNumberBuffers < 2) {
     return noErr; // Ensure we have stereo output
   }
-  
+
   if (!self.buffer) {
     self.buffer = malloc(frameCount * 2 * sizeof(float));
   }
-  
+
   float *leftBuffer = (float *)outputData->mBuffers[0].mData;
   float *rightBuffer = (float *)outputData->mBuffers[1].mData;
-  
+
   self.renderAudio(self.buffer, frameCount);
-  
+
   for (int frame = 0; frame < frameCount; frame += 1) {
     leftBuffer[frame] = self.buffer[frame * 2];
     rightBuffer[frame] = self.buffer[frame * 2 + 1];
@@ -121,4 +119,3 @@
 }
 
 @end
-

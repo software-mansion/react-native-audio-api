@@ -2,14 +2,13 @@
 
 #include <memory>
 
+#include "AudioBufferSourceNode.h"
 #include "AudioBufferWrapper.h"
 #include "AudioScheduledSourceNodeWrapper.h"
-#include "AudioBufferSourceNode.h"
 
 namespace audioapi {
 
 class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
-
  public:
   explicit AudioBufferSourceNodeWrapper(
       const std::shared_ptr<AudioBufferSourceNode> &audioBufferSourceNode);
@@ -19,8 +18,8 @@ class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
   std::shared_ptr<AudioBufferWrapper> getBuffer();
   void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
 
-private:
-    std::shared_ptr<AudioBufferSourceNode>
-    getAudioBufferSourceNodeFromAudioNode();
+ private:
+  std::shared_ptr<AudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 };
 } // namespace audioapi
