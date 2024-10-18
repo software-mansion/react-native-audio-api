@@ -22,7 +22,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
   bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
-  enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE };
+  enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE, CUSTOM };
 
   static float sineWave(double wavePhase) {
     return static_cast<float>(std::sin(wavePhase));
@@ -76,6 +76,8 @@ class OscillatorNode : public AudioScheduledSourceNode {
       return WaveType::SAWTOOTH;
     if (lowerType == "triangle")
       return WaveType::TRIANGLE;
+    if (lowerType == "custom")
+        return WaveType::CUSTOM;
 
     throw std::invalid_argument("Unknown wave type: " + type);
   }
@@ -90,6 +92,8 @@ class OscillatorNode : public AudioScheduledSourceNode {
         return "sawtooth";
       case WaveType::TRIANGLE:
         return "triangle";
+        case WaveType::CUSTOM:
+        return "custom";
       default:
         throw std::invalid_argument("Unknown wave type");
     }

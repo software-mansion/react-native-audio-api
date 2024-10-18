@@ -43,10 +43,12 @@ class AudioContext {
   std::function<void(float *, int)> renderAudio();
 
  private:
-  enum class State { RUNNING, CLOSED };
+  enum class State { SUSPENDED, RUNNING, CLOSED };
 
   static std::string toString(State state) {
     switch (state) {
+    case State::SUSPENDED:
+        return "suspended";
       case State::RUNNING:
         return "running";
       case State::CLOSED:
