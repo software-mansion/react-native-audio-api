@@ -11,10 +11,9 @@ namespace audioapi {
 
     class AudioPlayer : public AudioStreamDataCallback {
     public:
-        explicit AudioPlayer(AudioContext *context);
+        explicit AudioPlayer(const std::function<void(float*, int)> &renderAudio);
 
         int getSampleRate() const;
-        int getFramesPerBurst() const;
         void start();
         void stop();
 
@@ -24,7 +23,7 @@ namespace audioapi {
                 int32_t numFrames) override;
 
     private:
-        AudioContext *context_;
+        std::function<void(float*, int)> renderAudio_;
         std::shared_ptr<AudioStream> mStream_;
     };
 

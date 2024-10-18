@@ -4,11 +4,11 @@ namespace audioapi {
 
 AudioContext::AudioContext() {
 #ifdef ANDROID
-    audioPlayer_ = std::make_shared<AudioPlayer>(this);
+    audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
-    audioPlayer_ = std::make_shared<IOSAudioPlayer>(this);
+    audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
 #endif
-    destination_ = std::make_shared<AudioDestinationNode>(this, audioPlayer_->getFramesPerBurst());
+    destination_ = std::make_shared<AudioDestinationNode>(this);
 
     sampleRate_ = audioPlayer_->getSampleRate();
 
@@ -78,11 +78,13 @@ AudioContext::createBuffer(int numberOfChannels, int length, int sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
-void AudioContext::renderAudio(float *audioData, int32_t numFrames) {
+std::function<void(float*, int)> AudioContext::renderAudio() {
   if (state_ == State::CLOSED) {
-    return;
+    return [](float*, int) {};
   }
 
-  destination_->renderAudio(audioData, numFrames);
+  return [this](float* data, int frames) {
+    destination_->renderAudio(data, frames);
+  };
 }
 } // namespace audioapi

@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <functional>
 
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
@@ -39,7 +40,7 @@ class AudioContext {
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
-  void renderAudio(float *audioData, int32_t numFrames);
+  std::function<void(float*, int)> renderAudio();
 
  private:
   enum class State { RUNNING, CLOSED };
