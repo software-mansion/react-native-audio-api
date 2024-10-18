@@ -1,5 +1,11 @@
 <img src="./internal-docs/assets/react-native-audio-api-gh-cover.png" alt="React Native Audio API" width="100%">
 
+### ⚠️ Pre-Alpha
+
+This library is at a very early stage of development. There are know performance issues and the library is not yet suitable for real production applications. We will be publishing the first alpha version of the library in the upcoming days, stay tunned! 🎶
+
+If you have questions about the library, our progress, plans or just want to say "hi!" you can reach us in our <a href="https://discord.swmansion.com" target="_blank" rel="noopener noreferrer">discord server</a>
+
 ### React Native Audio API
 
 `react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
@@ -7,17 +13,13 @@ allowing developers to generate and modify audio in exact same way it is possibl
 
 ## Installation
 
-| ⚠️ Important!                             |
-| ----------------------------------------- |
-| This Library is not yet published on npm! |
-
 1. Install `react-native-audio-api` library
 
    ```bash
    # using npm
    npm install react-native-audio-api
 
-   # or using Yarn
+   # or using yarn
    yarn add react-native-audio-api
    ```
 
@@ -42,11 +44,11 @@ We are open to new ideas and general feedback. If you want to share your opinion
 
 ## License
 
-react-native-audio-api library is licensed under [The MIT License](./LICENSE)
+react-native-audio-api library is licensed under [The MIT License](./LICENSE). Some of the source code uses implementation directly copied from Webkit and copyrights are held by respective organizations, check [COPYING](./COPYING) file for further details
 
 ## Credits
 
-This project has been bult and is maintained thanks to the support from [Software Mansion](https://swmansion.com)
+This project has been built and is maintained thanks to the support from [Software Mansion](https://swmansion.com)
 
 [![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-reanimated-github 'Software Mansion')](https://swmansion.com)
 
