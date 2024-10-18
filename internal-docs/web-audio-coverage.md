@@ -1,133 +1,166 @@
-## Web Audio API coverage
+# Web Audio API coverage
+
+## Completed Features (**5** out of 33 features)
+![](https://geps.dev/progress/15?dangerColor=006600&warningColor=006600&successColor=006600)
+
+- **AudioScheduledSourceNode**
+- **AudioDestinationNode**
+- **GainNode**
+- **StereoPannerNode**
+- **AudioNode**
+
+## In Progress (**7** out of 33 features)
+![](https://geps.dev/progress/21?dangerColor=ff9900&warningColor=ff9900&successColor=ff9900)
 
 <details>
-  <summary><b>AudioContext</b><br/> Android: ✅ <br/>iOS: ✅</summary>
+  <summary><b>AudioContext</b></summary>
 
-| Method / Property     | iOS | Android |
-| --------------------- | --- | ------- |
-| 🔹 destination        | ✅  | ✅      |
-| 🔹 sampleRate         | ✅  | ✅      |
-| 🔹 state              | ✅  | ✅      |
-| 🔹 currentTime        | ✅  | ✅      |
-| 🔘 createGain         | ✅  | ✅      |
-| 🔘 createOscillator   | ✅  | ✅      |
-| 🔘 createStereoPanner | ✅  | ✅      |
-| 🔘 createBiquadFilter | ✅  | ✅      |
-| 🔘 close              | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹 baseLatency                  |   ❌  |
+| 🔹 outputLatency                |   ❌  |
+| 🔹 sinkId                       |   ❌  |
+| 🔘 close                        |   ✅  |
+| 🔘 createMediaElementSource     |   ❌  |
+| 🔘 createMediaStreamSource      |   ❌  |
+| 🔘 createMediaStreamTrackSource |   ❌  |
+| 🔘 resume                       |   ❌  |
+| 🔘 setSinkId                    |   ❌  |
+| 🔘 suspend                      |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>AudioParam</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>AudioBuffer</b></summary>
 
-| Method / Property              | iOS | Android |
-| ------------------------------ | --- | ------- |
-| 🔹value                        | ✅  | ✅      |
-| 🔹defaultValue                 | ✅  | ✅      |
-| 🔹minValue                     | ✅  | ✅      |
-| 🔹maxValue                     | ✅  | ✅      |
-| 🔘setValueAtTime               | ✅  | ✅      |
-| 🔘linearRampToValueAtTime      | ✅  | ✅      |
-| 🔘exponentialRampToValueAtTime | ✅  | ✅      |
-
-</details>
-
-<details>
-  <summary><b>AudioBuffer</b><br/> Android: ✅ <br />iOS: ✅</summary>
-
-| Method / Property              | iOS | Android |
-| ------------------------------ | --- | ------- |
-| 🔹sampleRate                   | ✅  | ✅      |
-| 🔹length                       | ✅  | ✅      |
-| 🔹duration                     | ✅  | ✅      |
-| 🔹numberOfChannels             | ✅  | ✅      |
-| 🔘getChannelData               | ✅  | ✅      |
-| 🔘setChannelData               | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹sampleRate                    |   ✅  |
+| 🔹length                        |   ✅  |
+| 🔹duration                      |   ✅  |
+| 🔹numberOfChannels              |   ✅  |
+| 🔘getChannelData                |   ✅  |
+| 🔘getChannelData                |   ✅  |
+| 🔘setChannelData                |   ✅  |
+| 🔘copyFromChannel               |   ❌  |
+| 🔘copyToChannel                 |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>AudioNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>AudioBufferSourceNode</b></summary>
 
-| Method / Property       | iOS | Android |
-| ----------------------- | --- | ------- |
-| 🔹context               | ✅  | ✅      |
-| 🔹numberOfInputs        | ✅  | ✅      |
-| 🔹numberOfOutputs       | ✅  | ✅      |
-| 🔹channelCount          | ✅  | ✅      |
-| 🔹channelCountMode      | ✅  | ✅      |
-| 🔹channelInterpretation | ✅  | ✅      |
-| 🔘connect               | ✅  | ✅      |
-| 🔘disconnect            | ✅  | ✅      |
-
-</details>
-
-<details>
-  <summary><b>AudioScheduledSourceNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
-
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔘start           | ✅  | ✅      |
-| 🔘stop            | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹buffer                        |   ✅  |
+| 🔹detune                        |   ❌  |
+| 🔹loop                          |   ✅  |
+| 🔹loopStart                     |   ❌  |
+| 🔹loopEnd                       |   ❌  |
+| 🔹playBackRate                  |   ❌  |
+| 🔘start(overridden)             |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>AudioDestinationNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>AudioParam</b></summary>
 
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-
-</details>
-
-<details>
-  <summary><b>OscillatorNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
-
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹frequency       | ✅  | ✅      |
-| 🔹detune          | ✅  | ✅      |
-| 🔹type            | ✅  | ✅      |
-
-</details>
-
-<details>
-  <summary><b>GainNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
-
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹gain            | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹value                         |   ✅  |
+| 🔹defaultValue                  |   ✅  |
+| 🔹minValue                      |   ✅  |
+| 🔹maxValue                      |   ✅  |
+| 🔘setValueAtTime                |   ✅  |
+| 🔘linearRampToValueAtTime       |   ✅  |
+| 🔘setTargetAtTime               |   ❌  |
+| 🔘setValueCurveAtTime           |   ❌  |
+| 🔘cancelScheduledValues         |   ❌  |
+| 🔘cancelAndHoldAtTime           |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>StereoPannerNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>BaseAudioContext</b></summary>
 
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹pan             | ✅  | ✅      |
+|    Property 🔹/ Method 🔘   | state |
+| --------------------------- | ----- |
+| 🔹 audioWorklet             |   ❌  |
+| 🔹 currentTime              |   ✅  |
+| 🔹 destination              |   ✅  |
+| 🔹 listener                 |   ❌  |
+| 🔹 sampleRate               |   ✅  |
+| 🔹 state                    |   ✅  |
+| 🔘 createAnalyser           |   ❌  |
+| 🔘 createBiquadFilter       |   ✅  |
+| 🔘 createBuffer             |   ✅  |
+| 🔘 createBufferSource       |   ✅  |
+| 🔘 createConstantSource     |   ❌  |
+| 🔘 createChannelMerger      |   ❌  |
+| 🔘 createChannelSplitter    |   ❌  |
+| 🔘 createConvolver          |   ❌  |
+| 🔘 createDelay              |   ❌  |
+| 🔘 createDynamicsCompressor |   ❌  |
+| 🔘 createGain               |   ✅  |
+| 🔘 createIIRFilter          |   ❌  |
+| 🔘 createOscillator         |   ✅  |
+| 🔘 createPanner             |   ❌  |
+| 🔘 createPeriodicWave       |   ❌  |
+| 🔘 createStereoPanner       |   ✅  |
+| 🔘 createWaveShaper         |   ❌  |
+| 🔘 decodeAudioData          |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>BiquadFilterNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>OscillatorNode</b></summary>
 
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹frequency       | ✅  | ✅      |
-| 🔹detune          | ✅  | ✅      |
-| 🔹Q               | ✅  | ✅      |
-| 🔹gain            | ✅  | ✅      |
-| 🔹type            | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹frequency                     |   ✅  |
+| 🔹detune                        |   ✅  |
+| 🔹type                          |   ✅  |
+| 🔘setPeriodicWave               |   ❌  |
 
 </details>
 
 <details>
-  <summary><b>AudioBufferSourceNode</b><br/> Android: ✅ <br />iOS: ✅</summary>
+  <summary><b>BiquadFilterNodee</b></summary>
 
-| Method / Property | iOS | Android |
-| ----------------- | --- | ------- |
-| 🔹buffer          | ✅  | ✅      |
-| 🔹loop            | ✅  | ✅      |
+|      Property 🔹/ Method 🔘     | state |
+| ------------------------------- | ----- |
+| 🔹frequency                     |   ✅  |
+| 🔹detune                        |   ✅  |
+| 🔹Q                             |   ✅  |
+| 🔹gain                          |   ✅  |
+| 🔹type                          |   ✅  |
+| 🔘getFrequencyRespons           |   ❌  |
 
 </details>
+
+
+## Planned Features (**21** out of 33 features)
+
+![](https://geps.dev/progress/64?dangerColor=800000&warningColor=800000&successColor=800000)
+
+- **AudioParamMap**
+- **MediaElementAudioSourceNode**
+- **MediaStremAudioSourceNode**
+- **MediaStremTrackAudioSourceNode**
+- **MediaElementAudioSourceNode**
+- **ConvolverNode**
+- **DelayNode**
+- **DynamicsCompressorNode**
+- **WaveShaperNode**
+- **PeriodicWave**
+- **IRRFilterNode**
+- **MediaStreamAudioDestinationNode**
+- **AnalyserNode**
+- **ChannelSplitterNode**
+- **MergerNode**
+- **AudioListener**
+- **PannerNode**
+- **AudioWorkletNode**
+- **AudioWorkletProcessor**
+- **AudioWorkletGlobalScope**
+- **OfflineAudioContext**

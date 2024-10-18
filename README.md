@@ -23,9 +23,8 @@ react-native-audio-api tries to strictly follow the Web Audi API specification, 
 <br />
 [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) is usefull resource to get familiar with audio processing basics.
 
-For development purposes there is also simplified description of already implemented interfaces as well as overview on Web Audio API coverage.
+For development purposes there is overview on Web Audio API coverage.
 
-- [Basic interfaces description](./internal-docs/basic-interfaces.md)
 - [Web Audio API coverage](./internal-docs/web-audio-coverage.md)
 
 ## Examples
@@ -48,7 +47,7 @@ react-native-audio-api library is licensed under [The MIT License](./LICENSE)
 
 ## Credits
 
-This project has been bult and is maintained thanks to the support from [Software Mansion](https://swmansion.com)
+This project has been built and is maintained thanks to the support from [Software Mansion](https://swmansion.com)
 
 [![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-reanimated-github 'Software Mansion')](https://swmansion.com)
 
