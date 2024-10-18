@@ -1,27 +1,25 @@
 #include <IOSAudioPlayer.h>
-#include "AudioContext.h"
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(AudioContext *context): context_(context)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(float*, int)> &renderAudio) : renderAudio_(renderAudio)
 {
-  audioPlayer_ = [[AudioPlayer alloc] init];
+  RenderAudioBlock renderAudioBlock = ^(float *audioData, int numFrames) {
+          renderAudio_(audioData, numFrames);
+      };
+  
+  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
-  //cleanup
-  audioPlayer_ = nil;
+  stop();
+  [audioPlayer_ cleanup];
 }
 
 int IOSAudioPlayer::getSampleRate() const
 {
   return [audioPlayer_ getSampleRate];
-}
-
-int IOSAudioPlayer::getFramesPerBurst() const
-{
-  return [audioPlayer_ getFramesPerBurst];
 }
 
 void IOSAudioPlayer::start()
@@ -32,11 +30,6 @@ void IOSAudioPlayer::start()
 void IOSAudioPlayer::stop()
 {
   return [audioPlayer_ stop];
-}
-
-void IOSAudioPlayer::renderAudio(float *audioData, int32_t numFrames)
-{
-  context_->getSampleRate();
 }
 } // namespace audioapi
 

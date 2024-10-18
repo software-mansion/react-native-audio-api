@@ -2,9 +2,10 @@
 
 @implementation AudioPlayer
 
-- (instancetype)init
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
 {
   if (self = [super init]) {
+    self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
 
@@ -30,7 +31,7 @@
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:[self.audioSession sampleRate] channels:2];
     
     __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:_format
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
                                                 renderBlock:^OSStatus(
                                                     BOOL *isSilence,
                                                     const AudioTimeStamp *timestamp,
@@ -41,6 +42,8 @@
                                                                                     frameCount:frameCount
                                                                                     outputData:outputData];
                                                 }];
+    
+    self.buffer = nil;
   }
 
   return self;
@@ -49,11 +52,6 @@
 - (int)getSampleRate
 {
   return [self.audioSession sampleRate];
-}
-
-- (int)getFramesPerBurst
-{
-  return 1;
 }
 
 - (void)start
@@ -73,21 +71,28 @@
 {
   [self.audioEngine detachNode:self.sourceNode];
   
+  if (self.audioEngine.isRunning) {
+    [self.audioEngine stop];
+  }
+
+
   NSError *error = nil;
   [self.audioSession setActive:false error:&error];
 
   if (error != nil) {
     @throw error;
   }
-
-  self.audioSession = nil;
-
-  if (self.audioEngine.isRunning) {
-    [self.audioEngine stop];
-  }
-
-  self.audioEngine = nil;
 }
+
+- (void)cleanup
+{
+  self.audioEngine = nil;
+  self.audioSession = nil;
+  self.renderAudio = nil;
+  
+  free(_buffer);
+}
+
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
                               timestamp:(const AudioTimeStamp *)timestamp
@@ -97,9 +102,20 @@
   if (outputData->mNumberBuffers < 2) {
     return noErr; // Ensure we have stereo output
   }
-
-  //float *leftBuffer = (float *)outputData->mBuffers[0].mData;
-  //float *rightBuffer = (float *)outputData->mBuffers[1].mData;
+  
+  if (!self.buffer) {
+    self.buffer = malloc(frameCount * 2 * sizeof(float));
+  }
+  
+  float *leftBuffer = (float *)outputData->mBuffers[0].mData;
+  float *rightBuffer = (float *)outputData->mBuffers[1].mData;
+  
+  self.renderAudio(self.buffer, frameCount);
+  
+  for (int frame = 0; frame < frameCount; frame += 1) {
+    leftBuffer[frame] = self.buffer[frame * 2];
+    rightBuffer[frame] = self.buffer[frame * 2 + 1];
+  }
 
   return noErr;
 }
