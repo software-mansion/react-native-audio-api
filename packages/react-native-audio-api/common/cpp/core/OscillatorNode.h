@@ -77,7 +77,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
     if (lowerType == "triangle")
       return WaveType::TRIANGLE;
     if (lowerType == "custom")
-        return WaveType::CUSTOM;
+      return WaveType::CUSTOM;
 
     throw std::invalid_argument("Unknown wave type: " + type);
   }
@@ -92,7 +92,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
         return "sawtooth";
       case WaveType::TRIANGLE:
         return "triangle";
-        case WaveType::CUSTOM:
+      case WaveType::CUSTOM:
         return "custom";
       default:
         throw std::invalid_argument("Unknown wave type");

@@ -47,7 +47,7 @@ class AudioContext {
 
   static std::string toString(State state) {
     switch (state) {
-    case State::SUSPENDED:
+      case State::SUSPENDED:
         return "suspended";
       case State::RUNNING:
         return "running";
