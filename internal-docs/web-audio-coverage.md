@@ -1,21 +1,36 @@
 # Web Audio API coverage
 
-## Completed Features (**5** out of 33 features)
+List below shows which interfaces has been completed, are in progress or not yet started. Status of each interface is based on availability of each method and property that should be available to the API user. Progress on internal features and implementation that are not part of user-facing apis, are not yet covered here.
 
-![](https://geps.dev/progress/15?dangerColor=006600&warningColor=006600&successColor=006600)
+Some of the noticeable implementation details that are still in progress or not yet started are:
 
-- **AudioScheduledSourceNode**
-- **AudioDestinationNode**
-- **GainNode**
-- **StereoPannerNode**
-- **AudioNode**
+- Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
+- Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## In Progress (**7** out of 33 features)
-
-![](https://geps.dev/progress/21?dangerColor=ff9900&warningColor=ff9900&successColor=ff9900)
+## Completed (**5** out of 33)
 
 <details>
-  <summary><b>AudioContext</b></summary>
+ <summary><b>✅ AudioScheduledSourceNode</b></summary>
+</details>
+<details>
+ <summary><b>✅ AudioDestinationNode</b></summary>
+</details>
+<details>
+ <summary><b>✅ GainNode</b></summary>
+</details>
+<details>
+ <summary><b>✅ StereoPannerNode</b></summary>
+</details>
+<details>
+ <summary><b>✅ AudioNode</b></summary>
+</details>
+
+## In Progress (**7** out of 33)
+
+<details>
+  <summary><b>🚧 AudioContext</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘          | state |
 | ------------------------------- | ----- |
@@ -30,10 +45,14 @@
 | 🔘 setSinkId                    | ❌    |
 | 🔘 suspend                      | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>AudioBuffer</b></summary>
+  <summary><b>🚧 AudioBuffer</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘 | state |
 | ---------------------- | ----- |
@@ -47,10 +66,14 @@
 | 🔘copyFromChannel      | ❌    |
 | 🔘copyToChannel        | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>AudioBufferSourceNode</b></summary>
+  <summary><b>🚧 AudioBufferSourceNode</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘 | state |
 | ---------------------- | ----- |
@@ -62,10 +85,14 @@
 | 🔹playBackRate         | ❌    |
 | 🔘start(overridden)    | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>AudioParam</b></summary>
+  <summary><b>🚧 AudioParam</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘    | state |
 | ------------------------- | ----- |
@@ -80,10 +107,14 @@
 | 🔘cancelScheduledValues   | ❌    |
 | 🔘cancelAndHoldAtTime     | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>BaseAudioContext</b></summary>
+  <summary><b>🚧 BaseAudioContext</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘      | state |
 | --------------------------- | ----- |
@@ -112,10 +143,14 @@
 | 🔘 createWaveShaper         | ❌    |
 | 🔘 decodeAudioData          | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>OscillatorNode</b></summary>
+  <summary><b>🚧 OscillatorNode</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘 | state |
 | ---------------------- | ----- |
@@ -124,10 +159,14 @@
 | 🔹type                 | ✅    |
 | 🔘setPeriodicWave      | ❌    |
 
+</div>
+
 </details>
 
 <details>
-  <summary><b>BiquadFilterNode</b></summary>
+  <summary><b>🚧 BiquadFilterNode</b></summary>
+
+<div style="padding: 16px; padding-left: 42px;">
 
 | Property 🔹/ Method 🔘 | state |
 | ---------------------- | ----- |
@@ -136,32 +175,74 @@
 | 🔹Q                    | ✅    |
 | 🔹gain                 | ✅    |
 | 🔹type                 | ✅    |
-| 🔘getFrequencyRespons  | ❌    |
+| 🔘getFrequencyResponse | ❌    |
+
+</div>
 
 </details>
 
-## Planned Features (**21** out of 33 features)
+## Not yet available (**21** out of 33)
 
-![](https://geps.dev/progress/64?dangerColor=800000&warningColor=800000&successColor=800000)
-
-- **AudioParamMap**
-- **MediaElementAudioSourceNode**
-- **MediaStremAudioSourceNode**
-- **MediaStremTrackAudioSourceNode**
-- **MediaElementAudioSourceNode**
-- **ConvolverNode**
-- **DelayNode**
-- **DynamicsCompressorNode**
-- **WaveShaperNode**
-- **PeriodicWave**
-- **IRRFilterNode**
-- **MediaStreamAudioDestinationNode**
-- **AnalyserNode**
-- **ChannelSplitterNode**
-- **MergerNode**
-- **AudioListener**
-- **PannerNode**
-- **AudioWorkletNode**
-- **AudioWorkletProcessor**
-- **AudioWorkletGlobalScope**
-- **OfflineAudioContext**
+<details>
+ <summary><b>❌ AudioParamMap</b></summary>
+</details>
+<details>
+ <summary><b>❌ MediaElementAudioSourceNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ MediaStreamAudioSourceNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ MediaStreamTrackAudioSourceNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ ConvolverNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ DelayNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ DynamicsCompressorNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ WaveShaperNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ PeriodicWave</b></summary>
+</details>
+<details>
+ <summary><b>❌ IRRFilterNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ MediaStreamAudioDestinationNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ AnalyserNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ ChannelSplitterNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ MergerNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ AudioListener</b></summary>
+</details>
+<details>
+ <summary><b>❌ PannerNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ AudioWorkletNode</b></summary>
+</details>
+<details>
+ <summary><b>❌ AudioWorkletProcessor</b></summary>
+</details>
+<details>
+ <summary><b>❌ AudioWorkletGlobalScope</b></summary>
+</details>
+<details>
+ <summary><b>❌ OfflineAudioContext</b></summary>
+</details>
+<details>
+ <summary><b>❌ AudioParamMap</b></summary>
+</details>
