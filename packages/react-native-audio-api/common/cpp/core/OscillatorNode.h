@@ -13,9 +13,9 @@ class OscillatorNode : public AudioScheduledSourceNode {
  public:
   explicit OscillatorNode(BaseAudioContext *context);
 
-  std::shared_ptr<AudioParam> getFrequencyParam() const;
-  std::shared_ptr<AudioParam> getDetuneParam() const;
-  std::string getType();
+  [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
+  [[nodiscard]] std::string getType();
   void setType(const std::string &type);
 
  protected:

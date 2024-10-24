@@ -18,12 +18,12 @@ class AudioParam {
       float minValue,
       float maxValue);
 
-  float getValue() const;
+  [[nodiscard]] float getValue() const;
   float getValueAtTime(double time);
   void setValue(float value);
-  float getDefaultValue() const;
-  float getMinValue() const;
-  float getMaxValue() const;
+  [[nodiscard]] float getDefaultValue() const;
+  [[nodiscard]] float getMinValue() const;
+  [[nodiscard]] float getMaxValue() const;
   void setValueAtTime(float value, double startTime);
   void linearRampToValueAtTime(float value, double endTime);
   void exponentialRampToValueAtTime(float value, double endTime);

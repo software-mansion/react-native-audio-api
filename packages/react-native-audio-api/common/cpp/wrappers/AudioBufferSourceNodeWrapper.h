@@ -14,8 +14,8 @@ class AudioBufferSourceNodeWrapper : public AudioScheduledSourceNodeWrapper {
       const std::shared_ptr<AudioBufferSourceNode> &audioBufferSourceNode);
 
   void setLoop(bool loop);
-  bool getLoop();
-  std::shared_ptr<AudioBufferWrapper> getBuffer();
+  [[nodiscard]] bool getLoop();
+  [[nodiscard]] std::shared_ptr<AudioBufferWrapper> getBuffer();
   void setBuffer(const std::shared_ptr<AudioBufferWrapper> &buffer);
 
  private:

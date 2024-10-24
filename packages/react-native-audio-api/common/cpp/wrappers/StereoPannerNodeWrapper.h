@@ -13,7 +13,7 @@ class StereoPannerNodeWrapper : public AudioNodeWrapper {
   explicit StereoPannerNodeWrapper(
       const std::shared_ptr<StereoPannerNode> &stereoPannerNode);
 
-  std::shared_ptr<AudioParamWrapper> getPanParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getPanParam() const;
 
  private:
   std::shared_ptr<AudioParamWrapper> panParam_;

@@ -11,11 +11,11 @@ class AudioBufferWrapper {
   explicit AudioBufferWrapper(const std::shared_ptr<AudioBuffer> &audioBuffer);
 
   std::shared_ptr<AudioBuffer> audioBuffer_;
-  int getNumberOfChannels() const;
-  int getLength() const;
-  double getDuration() const;
-  int getSampleRate() const;
-  float *getChannelData(int channel) const;
+  [[nodiscard]] int getNumberOfChannels() const;
+  [[nodiscard]] int getLength() const;
+  [[nodiscard]] double getDuration() const;
+  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] float *getChannelData(int channel) const;
   void setChannelData(int channel, float *data, int length) const;
 };
 } // namespace audioapi

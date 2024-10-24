@@ -11,7 +11,7 @@ class GainNode : public AudioNode {
  public:
   explicit GainNode(BaseAudioContext *context);
 
-  std::shared_ptr<AudioParam> getGainParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
   bool processAudio(float *audioData, int32_t numFrames) override;

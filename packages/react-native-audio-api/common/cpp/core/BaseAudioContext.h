@@ -28,8 +28,8 @@ class BaseAudioContext {
  public:
   BaseAudioContext();
   std::string getState();
-  int getSampleRate() const;
-  double getCurrentTime() const;
+  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] double getCurrentTime() const;
 
   std::shared_ptr<AudioDestinationNode> getDestination();
   std::shared_ptr<OscillatorNode> createOscillator();

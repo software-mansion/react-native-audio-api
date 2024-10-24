@@ -20,17 +20,21 @@ class BaseAudioContextWrapper {
   explicit BaseAudioContextWrapper(
       const std::shared_ptr<BaseAudioContext> &context);
 
-  std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
-  std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
-  std::shared_ptr<GainNodeWrapper> createGain() const;
-  std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner() const;
-  std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter() const;
-  std::shared_ptr<AudioBufferSourceNodeWrapper> createBufferSource() const;
-  std::shared_ptr<AudioBufferWrapper>
+  [[nodiscard]] std::shared_ptr<AudioDestinationNodeWrapper> getDestination()
+      const;
+  [[nodiscard]] std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
+  [[nodiscard]] std::shared_ptr<GainNodeWrapper> createGain() const;
+  [[nodiscard]] std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner()
+      const;
+  [[nodiscard]] std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter()
+      const;
+  [[nodiscard]] std::shared_ptr<AudioBufferSourceNodeWrapper>
+  createBufferSource() const;
+  [[nodiscard]] std::shared_ptr<AudioBufferWrapper>
   createBuffer(int numberOfChannels, int length, int sampleRate) const;
-  std::string getState() const;
-  int getSampleRate() const;
-  double getCurrentTime() const;
+  [[nodiscard]] std::string getState() const;
+  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] double getCurrentTime() const;
 
  protected:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;
