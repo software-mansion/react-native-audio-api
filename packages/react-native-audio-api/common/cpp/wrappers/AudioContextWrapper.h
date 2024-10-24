@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "BaseAudioContextWrapper.h"
 #include "AudioContext.h"
+#include "BaseAudioContextWrapper.h"
 
 namespace audioapi {
 
@@ -13,7 +13,7 @@ class AudioContextWrapper : public BaseAudioContextWrapper {
 
   void close();
 
-private:
-    std::shared_ptr<AudioContext> getAudioContextFromBaseAudioContext();
+ private:
+  std::shared_ptr<AudioContext> getAudioContextFromBaseAudioContext();
 };
 } // namespace audioapi

@@ -8,7 +8,8 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context) : AudioNode(context) {
+BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
+    : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
       context, 350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
   detuneParam_ =

@@ -3,8 +3,8 @@
 #include <jsi/jsi.h>
 #include <memory>
 
-#include "BaseAudioContextHostObject.h"
 #include "AudioContextWrapper.h"
+#include "BaseAudioContextHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -29,6 +29,7 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   }
 
  private:
-  std::shared_ptr<AudioContextWrapper> getAudioContextWrapperFromBaseAudioContextWrapper();
+  std::shared_ptr<AudioContextWrapper>
+  getAudioContextWrapperFromBaseAudioContextWrapper();
 };
 } // namespace audioapi

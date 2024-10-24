@@ -9,8 +9,8 @@ AudioContextHostObject::AudioContextHostObject(
 
 std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
-    std::vector<jsi::PropNameID> propertyNames =
-            BaseAudioContextHostObject::getPropertyNames(runtime);
+  std::vector<jsi::PropNameID> propertyNames =
+      BaseAudioContextHostObject::getPropertyNames(runtime);
   propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "close"));
   return propertyNames;
 }
@@ -19,8 +19,6 @@ jsi::Value AudioContextHostObject::get(
     jsi::Runtime &runtime,
     const jsi::PropNameID &propNameId) {
   auto propName = propNameId.utf8(runtime);
-
-
 
   if (propName == "close") {
     return jsi::Function::createFromHostFunction(
@@ -49,7 +47,8 @@ void AudioContextHostObject::set(
   return BaseAudioContextHostObject::set(runtime, propNameId, value);
 }
 
-std::shared_ptr<AudioContextWrapper> AudioContextHostObject::getAudioContextWrapperFromBaseAudioContextWrapper() {
+std::shared_ptr<AudioContextWrapper>
+AudioContextHostObject::getAudioContextWrapperFromBaseAudioContextWrapper() {
   return std::static_pointer_cast<AudioContextWrapper>(wrapper_);
 }
 } // namespace audioapi
