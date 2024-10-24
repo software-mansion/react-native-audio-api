@@ -1,4 +1,4 @@
-import type { BaseAudioContext } from '../types';
+import type { BaseAudioContext } from '../core/types';
 
 type AudioAPIInstaller = {
   createAudioContext: () => BaseAudioContext;

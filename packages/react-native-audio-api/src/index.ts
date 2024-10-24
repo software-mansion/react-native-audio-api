@@ -1,79 +1,19 @@
-import type {
-  BaseAudioContext,
-  AudioDestinationNode,
-  GainNode,
-  StereoPannerNode,
-  OscillatorNode,
-  BiquadFilterNode,
-  AudioBufferSourceNode,
-  AudioBuffer,
-  WaveType,
-} from './types';
 import { installModule } from './utils/install';
 
 if (global.__AudioAPIInstaller == null) {
   installModule();
 }
 
-export class AudioContext implements BaseAudioContext {
-  readonly destination: AudioDestinationNode;
-  readonly sampleRate: number;
-  private readonly __AudioContext: BaseAudioContext;
-
-  constructor() {
-    this.__AudioContext = global.__AudioAPIInstaller.createAudioContext();
-
-    this.destination = this.__AudioContext.destination;
-    this.sampleRate = this.__AudioContext.sampleRate;
-  }
-
-  public get currentTime() {
-    return this.__AudioContext.currentTime;
-  }
-
-  public get state() {
-    return this.__AudioContext.state;
-  }
-
-  createOscillator(): OscillatorNode {
-    return this.__AudioContext.createOscillator();
-  }
-
-  createGain(): GainNode {
-    return this.__AudioContext.createGain();
-  }
-
-  createStereoPanner(): StereoPannerNode {
-    return this.__AudioContext.createStereoPanner();
-  }
-
-  createBiquadFilter(): BiquadFilterNode {
-    return this.__AudioContext.createBiquadFilter();
-  }
-
-  createBufferSource(): AudioBufferSourceNode {
-    return this.__AudioContext.createBufferSource();
-  }
-
-  createBuffer(
-    numOfChannels: number,
-    length: number,
-    sampleRate: number
-  ): AudioBuffer {
-    return this.__AudioContext.createBuffer(numOfChannels, length, sampleRate);
-  }
-
-  close(): void {
-    this.__AudioContext.close();
-  }
-}
-
-export type {
-  GainNode,
-  StereoPannerNode,
-  OscillatorNode,
-  BiquadFilterNode,
-  AudioBufferSourceNode,
-  AudioBuffer,
-  WaveType,
-};
+export { default as AudioBuffer } from './core/AudioBuffer';
+export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
+export { default as AudioContext } from './core/AudioContext';
+export { default as AudioDestinationNode } from './core/AudioDestinationNode';
+export { default as AudioNode } from './core/AudioNode';
+export { default as AudioParam } from './core/AudioParam';
+export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
+export { default as BaseAudioContext } from './core/BaseAudioContext';
+export { default as BiquadFilterNode } from './core/BiquadFilterNode';
+export { default as GainNode } from './core/GainNode';
+export { default as OscillatorNode } from './core/OscillatorNode';
+export { default as StereoPannerNode } from './core/StereoPannerNode';
+export { WaveType } from './core/types';
