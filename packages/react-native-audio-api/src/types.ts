@@ -90,14 +90,13 @@ export interface AudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
   getChannelData(channel: number): number[];
-  setChannelData(channel: number, data: number[]): void;
   copyFromChannel(
-    destination: Float32Array,
+    destination: number[],
     channelNumber: number,
     startInChannel: number
   ): void;
   copyToChannel(
-    source: Float32Array,
+    source: number[],
     channelNumber: number,
     startInChannel: number
   ): void;

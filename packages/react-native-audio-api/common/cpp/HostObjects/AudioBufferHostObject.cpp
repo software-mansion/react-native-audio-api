@@ -17,7 +17,6 @@ std::vector<jsi::PropNameID> AudioBufferHostObject::getPropertyNames(
   propertyNames.push_back(
       jsi::PropNameID::forAscii(runtime, "numberOfChannels"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "getChannelData"));
-  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "setChannelData"));
   propertyNames.push_back(
       jsi::PropNameID::forAscii(runtime, "copyFromChannel"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "copyToChannel"));
@@ -64,31 +63,6 @@ jsi::Value AudioBufferHostObject::get(
           }
 
           return array;
-        });
-  }
-
-  if (propName == "setChannelData") {
-    return jsi::Function::createFromHostFunction(
-        runtime,
-        propNameId,
-        2,
-        [this](
-            jsi::Runtime &rt,
-            const jsi::Value &thisVal,
-            const jsi::Value *args,
-            size_t count) -> jsi::Value {
-          int channel = static_cast<int>(args[0].getNumber());
-          auto array = args[1].getObject(rt).asArray(rt);
-          auto *channelData = new float[wrapper_->getLength()];
-
-          for (int i = 0; i < wrapper_->getLength(); i++) {
-            channelData[i] =
-                static_cast<float>(array.getValueAtIndex(rt, i).getNumber());
-          }
-
-          wrapper_->setChannelData(channel, channelData, wrapper_->getLength());
-
-          return jsi::Value::undefined();
         });
   }
 

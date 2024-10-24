@@ -26,11 +26,6 @@ float *AudioBufferWrapper::getChannelData(int channel) const {
   return audioBuffer_->getChannelData(channel);
 }
 
-void AudioBufferWrapper::setChannelData(int channel, float *data, int length)
-    const {
-  audioBuffer_->setChannelData(channel, data, length);
-}
-
 void AudioBufferWrapper::copyFromChannel(
     float *destination,
     int destinationLength,

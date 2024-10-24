@@ -16,7 +16,6 @@ class AudioBufferWrapper {
   double getDuration() const;
   int getSampleRate() const;
   float *getChannelData(int channel) const;
-  void setChannelData(int channel, float *data, int length) const;
   void copyFromChannel(
       float *destination,
       int destinationLength,

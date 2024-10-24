@@ -46,18 +46,6 @@ float *AudioBuffer::getChannelData(int channel) const {
   return channels_[channel];
 }
 
-void AudioBuffer::setChannelData(int channel, const float *data, int length) {
-  if (channel < 0 || channel >= numberOfChannels_) {
-    throw std::invalid_argument("Invalid channel number");
-  }
-
-  if (length != length_) {
-    throw std::invalid_argument("Invalid data length");
-  }
-
-  std::copy(data, data + length, channels_[channel]);
-}
-
 std::shared_ptr<AudioBuffer> AudioBuffer::mix(int outputNumberOfChannels) {
   if (outputNumberOfChannels != 1 && outputNumberOfChannels != 2) {
     throw std::invalid_argument("Invalid number of channels");
@@ -72,8 +60,8 @@ std::shared_ptr<AudioBuffer> AudioBuffer::mix(int outputNumberOfChannels) {
 
   switch (this->numberOfChannels_) {
     case 1:
-      mixedBuffer->setChannelData(0, this->channels_[0], length_);
-      mixedBuffer->setChannelData(1, this->channels_[0], length_);
+      mixedBuffer->copyToChannel(this->channels_[0], length_, 0, 0);
+      mixedBuffer->copyToChannel(this->channels_[0], length_, 1, 0);
       break;
     case 2:
       for (int i = 0; i < length_; i++) {
