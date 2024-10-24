@@ -10,7 +10,7 @@ namespace audioapi {
 
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferSourceNode(AudioContext *context);
+  explicit AudioBufferSourceNode(BaseAudioContext *context);
 
   bool getLoop() const;
   std::shared_ptr<AudioBuffer> getBuffer() const;

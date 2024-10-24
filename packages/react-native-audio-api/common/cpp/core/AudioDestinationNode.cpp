@@ -1,9 +1,9 @@
 #include "AudioDestinationNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(AudioContext *context)
+AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
     : AudioNode(context) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;

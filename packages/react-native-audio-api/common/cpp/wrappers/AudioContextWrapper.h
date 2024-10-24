@@ -1,40 +1,19 @@
 #pragma once
 
 #include <memory>
-#include <string>
-#include <utility>
 
-#include "AudioBufferSourceNodeWrapper.h"
-#include "AudioBufferWrapper.h"
+#include "BaseAudioContextWrapper.h"
 #include "AudioContext.h"
-#include "AudioDestinationNodeWrapper.h"
-#include "BiquadFilterNodeWrapper.h"
-#include "GainNodeWrapper.h"
-#include "OscillatorNodeWrapper.h"
-#include "StereoPannerNodeWrapper.h"
 
 namespace audioapi {
 
-class AudioContextWrapper {
+class AudioContextWrapper : public BaseAudioContextWrapper {
  public:
-  explicit AudioContextWrapper(
-      const std::shared_ptr<AudioContext> &audiocontext);
+  explicit AudioContextWrapper(const std::shared_ptr<AudioContext> &context);
 
-  std::shared_ptr<AudioDestinationNodeWrapper> getDestination() const;
-  std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
-  std::shared_ptr<GainNodeWrapper> createGain() const;
-  std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner() const;
-  std::shared_ptr<BiquadFilterNodeWrapper> createBiquadFilter() const;
-  std::shared_ptr<AudioBufferSourceNodeWrapper> createBufferSource() const;
-  std::shared_ptr<AudioBufferWrapper>
-  createBuffer(int numberOfChannels, int length, int sampleRate) const;
-  std::string getState() const;
-  int getSampleRate() const;
-  double getCurrentTime() const;
-  void close() const;
+  void close();
 
- private:
-  std::shared_ptr<AudioDestinationNodeWrapper> destination_;
-  std::shared_ptr<AudioContext> audioContext_;
+private:
+    std::shared_ptr<AudioContext> getAudioContextFromBaseAudioContext();
 };
 } // namespace audioapi

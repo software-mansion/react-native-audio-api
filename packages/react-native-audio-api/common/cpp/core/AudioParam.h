@@ -8,12 +8,12 @@
 
 namespace audioapi {
 
-class AudioContext;
+class BaseAudioContext;
 
 class AudioParam {
  public:
   explicit AudioParam(
-      AudioContext *context,
+      BaseAudioContext *context,
       float defaultValue,
       float minValue,
       float maxValue);
@@ -33,7 +33,7 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-  AudioContext *context_;
+  BaseAudioContext *context_;
   std::set<ParamChange> changesQueue_;
 
   double startTime_;

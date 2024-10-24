@@ -1,9 +1,9 @@
 #include "OscillatorNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(AudioContext *context)
+OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);

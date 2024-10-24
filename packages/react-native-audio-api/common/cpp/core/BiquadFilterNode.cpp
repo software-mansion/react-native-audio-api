@@ -1,5 +1,5 @@
 #include "BiquadFilterNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
@@ -8,7 +8,7 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(AudioContext *context) : AudioNode(context) {
+BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context) : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
       context, 350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
   detuneParam_ =

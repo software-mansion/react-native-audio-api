@@ -13,7 +13,7 @@ namespace audioapi {
 
 class BiquadFilterNode : public AudioNode {
  public:
-  explicit BiquadFilterNode(AudioContext *context);
+  explicit BiquadFilterNode(BaseAudioContext *context);
 
   std::string getType() const;
   void setType(const std::string &type);
