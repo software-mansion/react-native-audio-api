@@ -85,4 +85,43 @@ std::shared_ptr<AudioBuffer> AudioBuffer::mix(int outputNumberOfChannels) {
 
   return mixedBuffer;
 }
+
+void AudioBuffer::copyFromChannel(
+    float *destination,
+    int destinationLength,
+    int channelNumber,
+    int startInChannel) const {
+  if (channelNumber < 0 || channelNumber >= numberOfChannels_) {
+    throw std::invalid_argument("Invalid channel number");
+  }
+
+  if (startInChannel < 0 || startInChannel >= length_) {
+    throw std::invalid_argument("Invalid start in channel");
+  }
+
+  std::copy(
+      channels_[channelNumber] + startInChannel,
+      channels_[channelNumber] + startInChannel +
+          std::min(destinationLength, length_ - startInChannel),
+      destination);
+}
+
+void AudioBuffer::copyToChannel(
+    const float *source,
+    int sourceLength,
+    int channelNumber,
+    int startInChannel) {
+  if (channelNumber < 0 || channelNumber >= numberOfChannels_) {
+    throw std::invalid_argument("Invalid channel number");
+  }
+
+  if (startInChannel < 0 || startInChannel >= length_) {
+    throw std::invalid_argument("Invalid start in channel");
+  }
+
+  std::copy(
+      source,
+      source + std::min(sourceLength, length_ - startInChannel),
+      channels_[channelNumber] + startInChannel);
+}
 } // namespace audioapi

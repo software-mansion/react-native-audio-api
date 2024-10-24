@@ -30,4 +30,22 @@ void AudioBufferWrapper::setChannelData(int channel, float *data, int length)
     const {
   audioBuffer_->setChannelData(channel, data, length);
 }
+
+void AudioBufferWrapper::copyFromChannel(
+    float *destination,
+    int destinationLength,
+    int channelNumber,
+    int startInChannel) const {
+  audioBuffer_->copyFromChannel(
+      destination, destinationLength, channelNumber, startInChannel);
+}
+
+void AudioBufferWrapper::copyToChannel(
+    float *source,
+    int sourceLength,
+    int channelNumber,
+    int startInChannel) const {
+  audioBuffer_->copyToChannel(
+      source, sourceLength, channelNumber, startInChannel);
+}
 } // namespace audioapi

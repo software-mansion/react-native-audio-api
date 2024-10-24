@@ -18,6 +18,9 @@ std::vector<jsi::PropNameID> AudioBufferHostObject::getPropertyNames(
       jsi::PropNameID::forAscii(runtime, "numberOfChannels"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "getChannelData"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "setChannelData"));
+  propertyNames.push_back(
+      jsi::PropNameID::forAscii(runtime, "copyFromChannel"));
+  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "copyToChannel"));
   return propertyNames;
 }
 
@@ -84,6 +87,68 @@ jsi::Value AudioBufferHostObject::get(
           }
 
           wrapper_->setChannelData(channel, channelData, wrapper_->getLength());
+
+          return jsi::Value::undefined();
+        });
+  }
+
+  if (propName == "copyFromChannel") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        3,
+        [this](
+            jsi::Runtime &rt,
+            const jsi::Value &thisVal,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto destination = args[0].getObject(rt).asArray(rt);
+          auto destinationLength = static_cast<int>(
+              destination.getProperty(rt, "length").asNumber());
+          auto channelNumber = static_cast<int>(args[1].getNumber());
+          auto startInChannel = static_cast<int>(args[2].getNumber());
+
+          auto *destinationData = new float[destinationLength];
+
+          wrapper_->copyFromChannel(
+              destinationData,
+              destinationLength,
+              channelNumber,
+              startInChannel);
+
+          for (int i = 0; i < destinationLength; i++) {
+            destination.setValueAtIndex(rt, i, jsi::Value(destinationData[i]));
+          }
+
+          return jsi::Value::undefined();
+        });
+  }
+
+  if (propName == "copyToChannel") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        3,
+        [this](
+            jsi::Runtime &rt,
+            const jsi::Value &thisVal,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto source = args[0].getObject(rt).asArray(rt);
+          auto sourceLength =
+              static_cast<int>(source.getProperty(rt, "length").asNumber());
+          auto channelNumber = static_cast<int>(args[1].getNumber());
+          auto startInChannel = static_cast<int>(args[2].getNumber());
+
+          auto *sourceData = new float[sourceLength];
+
+          for (int i = 0; i < sourceLength; i++) {
+            sourceData[i] =
+                static_cast<float>(source.getValueAtIndex(rt, i).getNumber());
+          }
+
+          wrapper_->copyToChannel(
+              sourceData, sourceLength, channelNumber, startInChannel);
 
           return jsi::Value::undefined();
         });
