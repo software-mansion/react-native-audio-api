@@ -7,13 +7,19 @@ Some of the noticeable implementation details that are still in progress or not 
 - Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
 - Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## ✅ Completed (**5** out of 33)
+## ✅ Completed (**6** out of 33)
 
 <details>
- <summary><b>AudioScheduledSourceNode</b></summary>
+  <summary><b>AudioBuffer</b></summary>
 </details>
 <details>
  <summary><b>AudioDestinationNode</b></summary>
+</details>
+<details>
+ <summary><b>AudioNode</b></summary>
+</details>
+<details>
+ <summary><b>AudioScheduledSourceNode</b></summary>
 </details>
 <details>
  <summary><b>GainNode</b></summary>
@@ -21,11 +27,8 @@ Some of the noticeable implementation details that are still in progress or not 
 <details>
  <summary><b>StereoPannerNode</b></summary>
 </details>
-<details>
- <summary><b>AudioNode</b></summary>
-</details>
 
-## 🚧 In Progress (**7** out of 33)
+## 🚧 In Progress (**6** out of 33)
 
 <details>
   <summary><b>AudioContext</b></summary>
@@ -44,27 +47,6 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔘 resume                       | ❌    |
 | 🔘 setSinkId                    | ❌    |
 | 🔘 suspend                      | ❌    |
-
-</div>
-
-</details>
-
-<details>
-  <summary><b>AudioBuffer</b></summary>
-
-<div style="padding: 16px; padding-left: 42px;">
-
-| Property 🔹/ Method 🔘 | state |
-| ---------------------- | ----- |
-| 🔹 sampleRate          | ✅    |
-| 🔹 length              | ✅    |
-| 🔹 duration            | ✅    |
-| 🔹 numberOfChannels    | ✅    |
-| 🔘 getChannelData      | ✅    |
-| 🔘 getChannelData      | ✅    |
-| 🔘 setChannelData      | ✅    |
-| 🔘 copyFromChannel     | ❌    |
-| 🔘 copyToChannel       | ❌    |
 
 </div>
 
