@@ -1,7 +1,12 @@
-import { NativeModules, Platform } from 'react-native';
+import { TurboModuleRegistry, TurboModule, Platform } from 'react-native';
+
+interface AudioAPIModuleSpec extends TurboModule {
+  install(): boolean;
+}
 
 export function installModule() {
-  const AudioAPIModule = NativeModules.AudioAPIModule;
+  const AudioAPIModule =
+    TurboModuleRegistry.getEnforcing<AudioAPIModuleSpec>('AudioAPIModule');
 
   if (AudioAPIModule == null) {
     throw new Error(buildErrorMessage());
@@ -22,7 +27,6 @@ function buildErrorMessage(): string {
   `;
 
   message += verifyAppleOS();
-  message += verifyExpo();
 
   message += '\n* Make sure you rebuilt the app.';
 
@@ -35,21 +39,6 @@ function verifyAppleOS(): string {
   }
 
   return '';
-}
-
-function verifyExpo(): string {
-  const ExpoConstants =
-    NativeModules.NativeUnimoduleProxy?.modulesConstants?.ExponentConstants;
-
-  if (!ExpoConstants) {
-    return '';
-  }
-
-  if (ExpoConstants.appOwnership === 'expo') {
-    return "\n* 'react-native-audio-api' is not supported in Expo Go! Use EAS (`expo prebuild`) or eject to a bare workflow instead.";
-  }
-
-  return "\n* Make sure you ran 'expo prebuild'.";
 }
 
 function verifyOnDevice(Module: any) {
