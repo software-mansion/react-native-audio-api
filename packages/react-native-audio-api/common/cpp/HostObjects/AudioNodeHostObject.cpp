@@ -21,7 +21,6 @@ std::vector<jsi::PropNameID> AudioNodeHostObject::getPropertyNames(
       jsi::PropNameID::forAscii(runtime, "channelCountMode"));
   propertyNames.push_back(
       jsi::PropNameID::forAscii(runtime, "channelInterpretation"));
-  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "context"));
   return propertyNames;
 }
 
@@ -86,11 +85,6 @@ jsi::Value AudioNodeHostObject::get(
   if (propName == "channelInterpretation") {
     return jsi::String::createFromUtf8(
         runtime, wrapper_->getChannelInterpretation());
-  }
-
-  if (propName == "context") {
-    // TODO fix this
-    return jsi::Value::undefined();
   }
 
   throw std::runtime_error("Not yet implemented!");
