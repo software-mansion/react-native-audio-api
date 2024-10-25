@@ -25,11 +25,24 @@ bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
 
   for (auto &node : inputNodes_) {
     if (node->processAudio(mixingBuffer.get(), numFrames)) {
+      normalize(mixingBuffer.get(), numFrames);
       VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
     }
   }
 
   return true;
+}
+
+void AudioDestinationNode::normalize(float *audioData, int32_t numFrames) {
+  auto maxValue = std::max(
+      1.0f, VectorMath::maximumMagnitude(audioData, numFrames * channelCount_));
+
+  if (maxValue == 1.0f) {
+    return;
+  }
+
+  VectorMath::multiplyByScalar(
+      audioData, 1.0f / maxValue, audioData, numFrames * channelCount_);
 }
 
 } // namespace audioapi

@@ -20,5 +20,7 @@ class AudioDestinationNode : public AudioNode {
 
  private:
   std::unique_ptr<float[]> mixingBuffer;
+
+  void normalize(float *audioData, int32_t numFrames);
 };
 } // namespace audioapi
