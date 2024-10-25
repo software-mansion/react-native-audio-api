@@ -7,11 +7,11 @@ export default class AudioScheduledSourceNode extends AudioNode {
     super(context, node);
   }
 
-  public start(time: number): void {
-    (this.node as IAudioScheduledSourceNode).start(time);
+  public start(when: number = 0): void {
+    (this.node as IAudioScheduledSourceNode).start(when);
   }
 
-  public stop(time: number): void {
-    (this.node as IAudioScheduledSourceNode).stop(time);
+  public stop(when: number = 0): void {
+    (this.node as IAudioScheduledSourceNode).stop(when);
   }
 }

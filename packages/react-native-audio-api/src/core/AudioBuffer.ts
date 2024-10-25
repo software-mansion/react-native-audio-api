@@ -23,7 +23,7 @@ export default class AudioBuffer {
   public copyFromChannel(
     destination: number[],
     channelNumber: number,
-    startInChannel: number
+    startInChannel: number = 0
   ): void {
     this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
@@ -31,7 +31,7 @@ export default class AudioBuffer {
   public copyToChannel(
     source: number[],
     channelNumber: number,
-    startInChannel: number
+    startInChannel: number = 0
   ): void {
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
