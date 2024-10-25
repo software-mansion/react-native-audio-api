@@ -5,6 +5,7 @@ export default class AudioBuffer {
   readonly duration: number;
   readonly sampleRate: number;
   readonly numberOfChannels: number;
+  /** @internal */
   public readonly buffer: IAudioBuffer;
 
   constructor(buffer: IAudioBuffer) {
