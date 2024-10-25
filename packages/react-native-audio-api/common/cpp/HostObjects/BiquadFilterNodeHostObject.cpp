@@ -30,7 +30,8 @@ std::vector<jsi::PropNameID> BiquadFilterNodeHostObject::getPropertyNames(
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "Q"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "gain"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "type"));
-  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "getFrequencyResponse"));
+  propertyNames.push_back(
+      jsi::PropNameID::forAscii(runtime, "getFrequencyResponse"));
   return propertyNames;
 }
 
@@ -61,42 +62,47 @@ jsi::Value BiquadFilterNodeHostObject::get(
     return jsi::String::createFromUtf8(runtime, waveType);
   }
 
-    if (propName == "getFrequencyResponse") {
-        return jsi::Function::createFromHostFunction(
-            runtime,
-            propNameId,
-            3,
-            [this](
-                    jsi::Runtime &rt,
-                    const jsi::Value &thisVal,
-                    const jsi::Value *args,
-                    size_t count) -> jsi::Value {
-                auto frequencyArray = args[0].getObject(rt).asArray(rt);
-                auto magResponseOut = args[1].getObject(rt).asArray(rt);
-                auto phaseResponseOut = args[2].getObject(rt).asArray(rt);
+  if (propName == "getFrequencyResponse") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        3,
+        [this](
+            jsi::Runtime &rt,
+            const jsi::Value &thisVal,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto frequencyArray = args[0].getObject(rt).asArray(rt);
+          auto magResponseOut = args[1].getObject(rt).asArray(rt);
+          auto phaseResponseOut = args[2].getObject(rt).asArray(rt);
 
-                std::vector<float> frequencyArrayVector(frequencyArray.length(rt));
-                for (size_t i = 0; i < frequencyArray.length(rt); i++) {
-                    frequencyArrayVector[i] = static_cast<float>(frequencyArray.getValueAtIndex(rt, i).getNumber());
-                }
+          std::vector<float> frequencyArrayVector(frequencyArray.length(rt));
+          for (size_t i = 0; i < frequencyArray.length(rt); i++) {
+            frequencyArrayVector[i] = static_cast<float>(
+                frequencyArray.getValueAtIndex(rt, i).getNumber());
+          }
 
-                std::vector<float> magResponseOutVector(magResponseOut.length(rt));
-                std::vector<float> phaseResponseOutVector(phaseResponseOut.length(rt));
+          std::vector<float> magResponseOutVector(magResponseOut.length(rt));
+          std::vector<float> phaseResponseOutVector(
+              phaseResponseOut.length(rt));
 
-                auto wrapper = getBiquadFilterNodeWrapperFromAudioNodeWrapper();
-                wrapper->getFrequencyResponse(frequencyArrayVector, magResponseOutVector, phaseResponseOutVector);
+          auto wrapper = getBiquadFilterNodeWrapperFromAudioNodeWrapper();
+          wrapper->getFrequencyResponse(
+              frequencyArrayVector,
+              magResponseOutVector,
+              phaseResponseOutVector);
 
-                for (size_t i = 0; i < magResponseOutVector.size(); i++) {
-                    magResponseOut.setValueAtIndex(rt, i, magResponseOutVector[i]);
-                }
+          for (size_t i = 0; i < magResponseOutVector.size(); i++) {
+            magResponseOut.setValueAtIndex(rt, i, magResponseOutVector[i]);
+          }
 
-                for (size_t i = 0; i < phaseResponseOutVector.size(); i++) {
-                    phaseResponseOut.setValueAtIndex(rt, i, phaseResponseOutVector[i]);
-                }
+          for (size_t i = 0; i < phaseResponseOutVector.size(); i++) {
+            phaseResponseOut.setValueAtIndex(rt, i, phaseResponseOutVector[i]);
+          }
 
-                return jsi::Value::undefined();
-            });
-    }
+          return jsi::Value::undefined();
+        });
+  }
 
   return AudioNodeHostObject::get(runtime, propNameId);
 }

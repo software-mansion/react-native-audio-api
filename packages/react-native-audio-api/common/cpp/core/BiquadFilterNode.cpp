@@ -46,39 +46,40 @@ std::shared_ptr<AudioParam> BiquadFilterNode::getGainParam() const {
 // https://www.dsprelated.com/freebooks/filters/Frequency_Response_Analysis.html
 // https://www.dsprelated.com/freebooks/filters/Transfer_Function_Analysis.html
 //
-// frequency response -  H(z) = (b0 + b1*z^(-1) + b2*z^(-2))/(1 + a1*z^(-1) + a2*z^(-2))
-// = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2)
-// phase response - angle of the frequency response
+// frequency response -  H(z) = (b0 + b1*z^(-1) + b2*z^(-2))/(1 + a1*z^(-1) +
+// a2*z^(-2)) = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2) phase response -
+// angle of the frequency response
 
 void BiquadFilterNode::getFrequencyResponse(
     const std::vector<float> &frequencyArray,
     std::vector<float> &magResponseOutput,
     std::vector<float> &phaseResponseOutput) {
-    applyFilter();
+  applyFilter();
 
-    auto frequencyArraySize = frequencyArray.size();
-    auto magResponseOutputSize = magResponseOutput.size();
-    auto phaseResponseOutputSize = phaseResponseOutput.size();
+  auto frequencyArraySize = frequencyArray.size();
+  auto magResponseOutputSize = magResponseOutput.size();
+  auto phaseResponseOutputSize = phaseResponseOutput.size();
 
-    if (magResponseOutputSize != frequencyArraySize ||
-        phaseResponseOutputSize != frequencyArraySize) {
-      throw std::invalid_argument("Output arrays must have the same size");
-    }
+  if (magResponseOutputSize != frequencyArraySize ||
+      phaseResponseOutputSize != frequencyArraySize) {
+    throw std::invalid_argument("Output arrays must have the same size");
+  }
 
-    float b0 = b0_;
-    float b1 = b1_;
-    float b2 = b2_;
-    float a1 = a1_;
-    float a2 = a2_;
+  float b0 = b0_;
+  float b1 = b1_;
+  float b2 = b2_;
+  float a1 = a1_;
+  float a2 = a2_;
 
-    for (size_t i = 0; i < frequencyArraySize; i++)
-    {
-        auto omega = static_cast<float>(M_PI) * frequencyArray[i] / NYQUIST_FREQUENCY;
-        auto z = std::complex<float>(cos(omega), sin(omega));
-        auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
-        magResponseOutput[i] = static_cast<float>(abs(response));
-        phaseResponseOutput[i] = static_cast<float>(atan2(imag(response), real(response)));
-    }
+  for (size_t i = 0; i < frequencyArraySize; i++) {
+    auto omega =
+        static_cast<float>(M_PI) * frequencyArray[i] / NYQUIST_FREQUENCY;
+    auto z = std::complex<float>(cos(omega), sin(omega));
+    auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
+    magResponseOutput[i] = static_cast<float>(abs(response));
+    phaseResponseOutput[i] =
+        static_cast<float>(atan2(imag(response), real(response)));
+  }
 }
 
 float BiquadFilterNode::clamp(float value, float min, float max) {
@@ -144,13 +145,13 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
   Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
-    float theta = M_PI * frequency;
-    float alpha = std::sin(theta) / (2 * g);
-    float cosw = std::cos(theta);
-    float beta = (1 - cosw) / 2;
+  float theta = M_PI * frequency;
+  float alpha = std::sin(theta) / (2 * g);
+  float cosw = std::cos(theta);
+  float beta = (1 - cosw) / 2;
 
-    setNormalizedCoefficients(
-            beta, -2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
+  setNormalizedCoefficients(
+      beta, -2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
 }
 
 void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {

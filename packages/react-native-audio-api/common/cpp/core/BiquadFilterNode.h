@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <complex>
 
 #include "AudioNode.h"
 #include "AudioParam.h"
@@ -23,9 +23,10 @@ class BiquadFilterNode : public AudioNode {
   std::shared_ptr<AudioParam> getDetuneParam() const;
   std::shared_ptr<AudioParam> getQParam() const;
   std::shared_ptr<AudioParam> getGainParam() const;
-  void getFrequencyResponse(const std::vector<float> &frequencyArray,
-                            std::vector<float> &magResponseOutput,
-                            std::vector<float> &phaseResponseOutput);
+  void getFrequencyResponse(
+      const std::vector<float> &frequencyArray,
+      std::vector<float> &magResponseOutput,
+      std::vector<float> &phaseResponseOutput);
 
  protected:
   bool processAudio(float *audioData, int32_t numFrames) override;

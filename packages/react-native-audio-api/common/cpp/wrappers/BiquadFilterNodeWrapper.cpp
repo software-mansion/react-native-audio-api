@@ -54,7 +54,7 @@ void BiquadFilterNodeWrapper::getFrequencyResponse(
     std::vector<float> &magResponseOutput,
     std::vector<float> &phaseResponseOutput) {
   auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
-  biquadFilterNode_->getFrequencyResponse(frequencyArray, magResponseOutput,
-                                          phaseResponseOutput);
+  biquadFilterNode_->getFrequencyResponse(
+      frequencyArray, magResponseOutput, phaseResponseOutput);
 }
 } // namespace audioapi
