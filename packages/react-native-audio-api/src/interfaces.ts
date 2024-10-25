@@ -78,7 +78,16 @@ export interface IAudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
   getChannelData(channel: number): number[];
-  setChannelData(channel: number, data: number[]): void;
+  copyFromChannel(
+    destination: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void;
+  copyToChannel(
+    source: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void;
 }
 
 export interface IAudioParam {

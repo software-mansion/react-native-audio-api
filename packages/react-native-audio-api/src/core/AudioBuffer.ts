@@ -20,7 +20,19 @@ export default class AudioBuffer {
     return this.buffer.getChannelData(channel);
   }
 
-  public setChannelData(channel: number, data: number[]): void {
-    this.buffer.setChannelData(channel, data);
+  public copyFromChannel(
+    destination: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void {
+    this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
+  }
+
+  public copyToChannel(
+    source: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void {
+    this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 }
