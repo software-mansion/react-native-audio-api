@@ -7,7 +7,7 @@ Some of the noticeable implementation details that are still in progress or not 
 - Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
 - Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## ✅ Completed (**6** out of 33)
+## ✅ Completed (**7** out of 33)
 
 <details>
   <summary><b>AudioBuffer</b></summary>
@@ -22,13 +22,16 @@ Some of the noticeable implementation details that are still in progress or not 
  <summary><b>AudioScheduledSourceNode</b></summary>
 </details>
 <details>
+  <summary><b>BiquadFilterNode</b></summary>
+</details>
+<details>
  <summary><b>GainNode</b></summary>
 </details>
 <details>
  <summary><b>StereoPannerNode</b></summary>
 </details>
 
-## 🚧 In Progress (**6** out of 33)
+## 🚧 In Progress (**5** out of 33)
 
 <details>
   <summary><b>AudioContext</b></summary>
@@ -140,24 +143,6 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔹 detune              | ✅    |
 | 🔹 type                | ✅    |
 | 🔘 setPeriodicWave     | ❌    |
-
-</div>
-
-</details>
-
-<details>
-  <summary><b>BiquadFilterNode</b></summary>
-
-<div style="padding: 16px; padding-left: 42px;">
-
-| Property 🔹/ Method 🔘  | state |
-| ----------------------- | ----- |
-| 🔹 frequency            | ✅    |
-| 🔹 detune               | ✅    |
-| 🔹 Q                    | ✅    |
-| 🔹 gain                 | ✅    |
-| 🔹 type                 | ✅    |
-| 🔘 getFrequencyResponse | ❌    |
 
 </div>
 
