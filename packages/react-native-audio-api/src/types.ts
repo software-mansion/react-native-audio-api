@@ -82,7 +82,7 @@ export interface BiquadFilterNode extends AudioNode {
   type: FilterType;
 }
 
-export type ContextState = 'running' | 'closed';
+export type ContextState = 'running' | 'closed' | 'suspended';
 
 export interface AudioBuffer {
   readonly length: number;
@@ -90,7 +90,16 @@ export interface AudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
   getChannelData(channel: number): number[];
-  setChannelData(channel: number, data: number[]): void;
+  copyFromChannel(
+    destination: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void;
+  copyToChannel(
+    source: number[],
+    channelNumber: number,
+    startInChannel: number
+  ): void;
 }
 
 export interface AudioBufferSourceNode extends AudioScheduledSourceNode {
