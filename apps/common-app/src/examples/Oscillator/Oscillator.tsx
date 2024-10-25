@@ -3,10 +3,10 @@ import { useRef, useState, useEffect, FC } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import {
   AudioContext,
-  WaveType,
-  type GainNode,
-  type OscillatorNode,
-  type StereoPannerNode,
+  GainNode,
+  OscillatorNode,
+  StereoPannerNode,
+  type WaveType,
 } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';

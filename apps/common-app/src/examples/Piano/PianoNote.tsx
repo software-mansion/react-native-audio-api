@@ -1,8 +1,4 @@
-import type {
-  GainNode,
-  AudioContext,
-  OscillatorNode,
-} from 'react-native-audio-api';
+import { GainNode, AudioContext, OscillatorNode } from 'react-native-audio-api';
 
 import { Key } from './utils';
 
