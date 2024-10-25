@@ -80,6 +80,11 @@ export interface BiquadFilterNode extends AudioNode {
   Q: AudioParam;
   gain: AudioParam;
   type: FilterType;
+  getFrequencyResponse(
+    frequencyArray: number[],
+    magResponseOut: number[],
+    phaseResponseOut: number[]
+  ): void;
 }
 
 export type ContextState = 'running' | 'closed' | 'suspended';

@@ -48,4 +48,13 @@ void BiquadFilterNodeWrapper::setType(const std::string &filterType) {
   auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
   biquadFilterNode_->setType(filterType);
 }
+
+void BiquadFilterNodeWrapper::getFrequencyResponse(
+    const std::vector<float> &frequencyArray,
+    std::vector<float> &magResponseOutput,
+    std::vector<float> &phaseResponseOutput) {
+  auto biquadFilterNode_ = getBiquadFilterNodeFromAudioNode();
+  biquadFilterNode_->getFrequencyResponse(frequencyArray, magResponseOutput,
+                                          phaseResponseOutput);
+}
 } // namespace audioapi

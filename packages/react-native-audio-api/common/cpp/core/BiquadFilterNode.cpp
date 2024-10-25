@@ -3,8 +3,6 @@
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
-// https://github.com/LabSound/LabSound/blob/main/src/internal/src/Biquad.cpp -
-// implementation of filters on which I based mine
 
 namespace audioapi {
 
@@ -42,6 +40,45 @@ std::shared_ptr<AudioParam> BiquadFilterNode::getQParam() const {
 
 std::shared_ptr<AudioParam> BiquadFilterNode::getGainParam() const {
   return gainParam_;
+}
+
+// Compute Z-transform of the filter
+// https://www.dsprelated.com/freebooks/filters/Frequency_Response_Analysis.html
+// https://www.dsprelated.com/freebooks/filters/Transfer_Function_Analysis.html
+//
+// frequency response -  H(z) = (b0 + b1*z^(-1) + b2*z^(-2))/(1 + a1*z^(-1) + a2*z^(-2))
+// = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2)
+// phase response - angle of the frequency response
+
+void BiquadFilterNode::getFrequencyResponse(
+    const std::vector<float> &frequencyArray,
+    std::vector<float> &magResponseOutput,
+    std::vector<float> &phaseResponseOutput) {
+    applyFilter();
+
+    auto frequencyArraySize = frequencyArray.size();
+    auto magResponseOutputSize = magResponseOutput.size();
+    auto phaseResponseOutputSize = phaseResponseOutput.size();
+
+    if (magResponseOutputSize != frequencyArraySize ||
+        phaseResponseOutputSize != frequencyArraySize) {
+      throw std::invalid_argument("Output arrays must have the same size");
+    }
+
+    float b0 = b0_;
+    float b1 = b1_;
+    float b2 = b2_;
+    float a1 = a1_;
+    float a2 = a2_;
+
+    for (size_t i = 0; i < frequencyArraySize; i++)
+    {
+        auto omega = static_cast<float>(M_PI) * frequencyArray[i] / NYQUIST_FREQUENCY;
+        auto z = std::complex<float>(cos(omega), sin(omega));
+        auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
+        magResponseOutput[i] = static_cast<float>(abs(response));
+        phaseResponseOutput[i] = static_cast<float>(atan2(imag(response), real(response)));
+    }
 }
 
 float BiquadFilterNode::clamp(float value, float min, float max) {
@@ -83,16 +120,14 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
 
   Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
-  float d = std::sqrt((4 - std::sqrt(16 - 16 / (g * g))) / 2);
 
   float theta = M_PI * frequency;
-  float sn = 0.5f * d * std::sin(theta);
-  float beta = 0.5f * (1 - sn) / (1 + sn);
-  float gamma = (0.5f + beta) * std::cos(theta);
-  float alpha = 0.25f * (0.5f + beta - gamma);
+  float alpha = std::sin(theta) / (2 * g);
+  float cosw = std::cos(theta);
+  float beta = (1 - cosw) / 2;
 
   setNormalizedCoefficients(
-      2 * alpha, 4 * alpha, 2 * alpha, 1.0f, -2 * gamma, 2 * beta);
+      beta, 2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
 }
 
 void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
@@ -108,16 +143,14 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
 
   Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
-  float d = std::sqrt((4 - std::sqrt(16 - 16 / (g * g))) / 2);
 
-  float theta = M_PI * frequency;
-  float sn = 0.5f * d * std::sin(theta);
-  float beta = 0.5f * (1 - sn) / (1 + sn);
-  float gamma = (0.5f + beta) * std::cos(theta);
-  float alpha = 0.25f * (0.5f + beta - gamma);
+    float theta = M_PI * frequency;
+    float alpha = std::sin(theta) / (2 * g);
+    float cosw = std::cos(theta);
+    float beta = (1 - cosw) / 2;
 
-  setNormalizedCoefficients(
-      2 * alpha, -4 * alpha, 2 * alpha, 1.0f, -2 * gamma, 2 * beta);
+    setNormalizedCoefficients(
+            beta, -2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
 }
 
 void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
