@@ -1,5 +1,6 @@
 import React from 'react';
 import type { FC } from 'react';
+import Animated from 'react-native-reanimated';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FlatList, StyleSheet, Text, Pressable } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -10,6 +11,8 @@ import { Examples, MainStackProps } from './examples';
 import { layout, colors } from './styles';
 
 const Stack = createStackNavigator();
+
+Animated.addWhitelistedNativeProps({ text: true });
 
 const HomeScreen: FC = () => {
   const navigation = useNavigation<MainStackProps>();
@@ -47,7 +50,7 @@ const App: FC = () => {
             headerStyle: {
               backgroundColor: colors.main,
             },
-            headerTintColor: colors.white,
+            headerTintColor: '#fff',
           }}
         >
           <Stack.Screen
@@ -76,9 +79,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
+    color: colors.white,
   },
   subtitle: {
     opacity: 0.6,
+    color: colors.white,
   },
   button: {
     paddingVertical: layout.spacing * 2,
