@@ -6562,18 +6562,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "common-app@workspace:apps/common-app"
   dependencies:
-    "@babel/core": "npm:^7.20.0"
+    "@babel/core": "npm:^7.25.2"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
-    react: "npm:18.2.0"
+    react: "npm:18.3.1"
     react-dom: "npm:18.2.0"
-    react-native: "npm:0.74.3"
+    react-native: "npm:0.76.0"
     react-native-audio-api: "workspace:*"
-    react-native-gesture-handler: "npm:^2.19.0"
-    react-native-reanimated: "npm:^3.15.2"
-    react-native-safe-area-context: "npm:^4.11.0"
-    react-native-screens: "npm:3.31.1"
+    react-native-gesture-handler: "npm:^2.20.2"
+    react-native-reanimated: "npm:^3.16.1"
+    react-native-safe-area-context: "npm:^4.12.0"
+    react-native-screens: "npm:^3.35.0"
   peerDependencies:
     "@react-navigation/native": "*"
     "@react-navigation/native-stack": "*"
@@ -13309,21 +13309,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-gesture-handler@npm:^2.19.0":
-  version: 2.19.0
-  resolution: "react-native-gesture-handler@npm:2.19.0"
-  dependencies:
-    "@egjs/hammerjs": "npm:^2.0.17"
-    hoist-non-react-statics: "npm:^3.3.0"
-    invariant: "npm:^2.2.4"
-    prop-types: "npm:^15.7.2"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/25c237976b4f41b592e1216d4bd36c1a87233ce15fc18bf0576a2b97138e2064e1f7d013fede6b2a9629b801b2c0df497b0fe44ddf588bcb90c259ed251eca55
-  languageName: node
-  linkType: hard
-
 "react-native-gesture-handler@npm:^2.20.2":
   version: 2.20.2
   resolution: "react-native-gesture-handler@npm:2.20.2"
@@ -13336,29 +13321,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/64ab125c539ca8c275f5d305f5e11d366e6098d9e24e3cab25cbfd46a8d618fc3925ea86219972ccc63364e578384bb0120a72562312e596894a04ee0518a363
-  languageName: node
-  linkType: hard
-
-"react-native-reanimated@npm:^3.15.2":
-  version: 3.15.2
-  resolution: "react-native-reanimated@npm:3.15.2"
-  dependencies:
-    "@babel/plugin-transform-arrow-functions": "npm:^7.0.0-0"
-    "@babel/plugin-transform-class-properties": "npm:^7.0.0-0"
-    "@babel/plugin-transform-classes": "npm:^7.0.0-0"
-    "@babel/plugin-transform-nullish-coalescing-operator": "npm:^7.0.0-0"
-    "@babel/plugin-transform-optional-chaining": "npm:^7.0.0-0"
-    "@babel/plugin-transform-shorthand-properties": "npm:^7.0.0-0"
-    "@babel/plugin-transform-template-literals": "npm:^7.0.0-0"
-    "@babel/plugin-transform-unicode-regex": "npm:^7.0.0-0"
-    "@babel/preset-typescript": "npm:^7.16.7"
-    convert-source-map: "npm:^2.0.0"
-    invariant: "npm:^2.2.4"
-  peerDependencies:
-    "@babel/core": ^7.0.0-0
-    react: "*"
-    react-native: "*"
-  checksum: 10/4fc0f36dd86a4a0a99b5659b408c4c2379c0e0c595172605284d0fe2dfd3af7a7d2bd6ac01a160f8c6526c9e9bcdbc1635c464bd67eb357fb7cd159fbbce3d8e
   languageName: node
   linkType: hard
 
@@ -13385,16 +13347,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:^4.11.0":
-  version: 4.11.0
-  resolution: "react-native-safe-area-context@npm:4.11.0"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/f2e616ad3087ebf1ad34f90f4eadc2d6865d3d56bba83bcfb9d04020b4344d892e347b7f55dcd996c4d2edf21b589a5ce710a52e62a7bd86597ed34d130599b2
-  languageName: node
-  linkType: hard
-
 "react-native-safe-area-context@npm:^4.12.0":
   version: 4.12.0
   resolution: "react-native-safe-area-context@npm:4.12.0"
@@ -13402,19 +13354,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/1db86f38c20c8b22ea274ea895b3cedbb1f8d8260d7f726ab4ee315f5e1e611ba3dde89c43dcb3ccccf97dfc3e7d8b11b79ffe4a6369697b6fed3bd80eaaf7c5
-  languageName: node
-  linkType: hard
-
-"react-native-screens@npm:3.31.1":
-  version: 3.31.1
-  resolution: "react-native-screens@npm:3.31.1"
-  dependencies:
-    react-freeze: "npm:^1.0.0"
-    warn-once: "npm:^0.1.0"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/54a44fc5a34848195a8e004b9ee2269e8a3560c5fa7922d80eaa1fc6283990d6ef77b3d3ec6004d7df2ad95279d486faf25bb68a82a0e958493891adb7dbac9c
   languageName: node
   linkType: hard
 
