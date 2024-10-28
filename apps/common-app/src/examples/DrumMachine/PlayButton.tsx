@@ -27,8 +27,7 @@ interface PlayButtonInnerProps {
 }
 
 const timingOptions = {
-  duration: 10,
-  // easing: Easing.out(Easing.cubic),
+  duration: 25,
 };
 
 const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {

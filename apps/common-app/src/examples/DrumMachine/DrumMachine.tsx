@@ -1,5 +1,6 @@
 import { Canvas } from '@shopify/react-native-skia';
 import React, { useState, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
@@ -11,6 +12,7 @@ import { size, initialBpm } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
 import useGestures from './useGestures';
+import BGGradient from './BGGradient';
 import PlayButton from './PlayButton';
 import usePlayer from './usePlayer';
 import presets from './presets';
@@ -95,7 +97,8 @@ const DrumMachine: React.FC = () => {
   const gesture = useGestures({ canvasRect, onPatternChange });
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
+      <BGGradient />
       <View style={styles.uiContainer}>
         <Select
           value={preset}
@@ -126,7 +129,10 @@ const DrumMachine: React.FC = () => {
               <PatternShape key={pattern.instrumentName} pattern={pattern} />
             ))}
             {player.isPlaying && (
-              <NotesHighlight progressSV={player.progressSV} />
+              <NotesHighlight
+                progressSV={player.progressSV}
+                playingNotes={player.playingNotes}
+              />
             )}
           </Canvas>
           <PlayButton
@@ -138,7 +144,7 @@ const DrumMachine: React.FC = () => {
         </View>
       </GestureDetector>
       <View style={styles.uiContainer} />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -148,6 +154,7 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
     flex: 1,
+    position: 'relative',
   },
   uiContainer: {
     padding: 24,

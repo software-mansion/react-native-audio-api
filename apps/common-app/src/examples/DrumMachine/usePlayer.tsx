@@ -96,7 +96,7 @@ export default function usePlayer(options: PlayerOptions) {
 
       progressSV.value = (timeDiff % totalLoopTime) / totalLoopTime;
 
-      if (currentTime - (nextNoteTime - timePerNote) > 0.15) {
+      if (currentTime - (nextNoteTime - timePerNote) > 0.05) {
         playingNotes.value = Array(r(patternsRef).length).fill(false);
       }
       if (currentTime + averageFrameTime >= nextNoteTime) {
