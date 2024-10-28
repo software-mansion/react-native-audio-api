@@ -2,8 +2,9 @@ import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
 import { Line, Circle, Paint, vec } from '@shopify/react-native-skia';
 
-import { getAngle, getPointCX, getPointCY } from './utils';
+import { colors } from '../../styles';
 import { numBeats, cPoint, maxSize, buttonRadius } from './constants';
+import { getAngle, getPointCX, getPointCY } from './utils';
 import type { Instrument } from './types';
 import instruments from './instruments';
 
@@ -21,7 +22,7 @@ const Grid: React.FC = () => {
         p1={vec(cPoint.x, cPoint.y)}
         p2={vec(x, y)}
         strokeWidth={StyleSheet.hairlineWidth}
-        color="#999"
+        color={colors.border}
       />
     );
   };
@@ -51,8 +52,8 @@ const Grid: React.FC = () => {
         r={instrument.radius}
       >
         <Paint
-          color="#999"
           style="stroke"
+          color={colors.border}
           strokeWidth={StyleSheet.hairlineWidth}
         />
       </Circle>

@@ -12,6 +12,8 @@ import { layout, colors } from './styles';
 
 const Stack = createStackNavigator();
 
+// Our slider component uses the text prop to display shared value
+// We need it whitelisted in order to have it "animated".
 Animated.addWhitelistedNativeProps({ text: true });
 
 const HomeScreen: FC = () => {
@@ -50,7 +52,7 @@ const App: FC = () => {
             headerStyle: {
               backgroundColor: colors.main,
             },
-            headerTintColor: '#fff',
+            headerTintColor: colors.white,
           }}
         >
           <Stack.Screen

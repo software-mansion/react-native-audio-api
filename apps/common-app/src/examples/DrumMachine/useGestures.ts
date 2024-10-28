@@ -14,15 +14,18 @@ import { useMemo } from 'react';
 
 interface GestureParams {
   canvasRect: XYWHRect;
+  touchRadius?: number;
   onPatternChange: (pattern: number, stepIdx: number) => void;
 }
 
 const initialHovers = Array(Instruments.length * numBeats).fill(false);
 
-const touchRadius = buttonRadius * 2;
-
 export default function useGestures(params: GestureParams) {
-  const { canvasRect, onPatternChange } = params;
+  const {
+    canvasRect,
+    onPatternChange,
+    touchRadius = buttonRadius * 2,
+  } = params;
   const hovers = useSharedValue(initialHovers);
 
   const touchés = useMemo(() => {

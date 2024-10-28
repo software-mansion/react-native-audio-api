@@ -4,8 +4,8 @@ import { Icon } from '@swmansion/icons';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 
-import { colors } from '../styles';
 import withSeparators from '../utils/withSeparators';
+import { colors } from '../styles';
 import Spacer from './Spacer';
 
 interface SelectProps<T extends string> {
@@ -78,7 +78,7 @@ export default Select;
 const styles = StyleSheet.create({
   selectBox: {
     borderWidth: 1,
-    borderColor: '#999',
+    borderColor: colors.border,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   modalBg: {
-    backgroundColor: '#00000040',
+    backgroundColor: colors.modalBackdrop,
     position: 'absolute',
     top: 0,
     left: 0,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 2,
-    backgroundColor: '#222',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: colors.separator,
     marginHorizontal: 12,
     marginVertical: 6,
   },
