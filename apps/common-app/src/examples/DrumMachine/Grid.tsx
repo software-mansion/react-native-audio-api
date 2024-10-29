@@ -36,8 +36,8 @@ const Grid: React.FC = () => {
       <Circle
         cx={x}
         cy={y}
-        color="#999"
         r={buttonRadius}
+        color={colors.border}
         key={`${instrument.name}-${index}`}
       />
     );

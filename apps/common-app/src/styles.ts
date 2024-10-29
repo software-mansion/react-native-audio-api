@@ -17,6 +17,8 @@ export const colors = {
   gray: '#d7d7d7',
 
   background: '#222222',
+  backgroundLight: '#333333',
+
   separator: '#333333',
   modalBackdrop: '#00000040',
   border: '#999999',

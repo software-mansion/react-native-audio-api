@@ -2,13 +2,20 @@ import React from 'react';
 import type { FC } from 'react';
 import Animated from 'react-native-reanimated';
 import { createStackNavigator } from '@react-navigation/stack';
-import { FlatList, StyleSheet, Text, Pressable } from 'react-native';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  Pressable,
+  ListRenderItem,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 
 import Container from './components/Container';
-import { Examples, MainStackProps } from './examples';
+import { Example, Examples, MainStackProps } from './examples';
 import { layout, colors } from './styles';
+import { Spacer } from './components';
 
 const Stack = createStackNavigator();
 
@@ -16,28 +23,33 @@ const Stack = createStackNavigator();
 // We need it whitelisted in order to have it "animated".
 Animated.addWhitelistedNativeProps({ text: true });
 
+const ItemSeparatorComponent = () => <Spacer.Vertical size={16} />;
+
 const HomeScreen: FC = () => {
   const navigation = useNavigation<MainStackProps>();
 
+  const renderItem: ListRenderItem<Example> = ({ item }) => (
+    <Pressable
+      onPress={() => navigation.navigate(item.key)}
+      key={item.key}
+      style={({ pressed }) => [
+        styles.button,
+        { borderStyle: pressed ? 'solid' : 'dashed' },
+      ]}
+    >
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.subtitle}>{item.subtitle}</Text>
+    </Pressable>
+  );
+
   return (
-    <Container centered={false}>
+    <Container>
       <FlatList
-        contentContainerStyle={styles.scrollView}
         data={Examples}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => navigation.navigate(item.key)}
-            key={item.key}
-            style={({ pressed }) => [
-              styles.button,
-              { borderStyle: pressed ? 'solid' : 'dashed' },
-            ]}
-          >
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.subtitle}>{item.subtitle}</Text>
-          </Pressable>
-        )}
+        renderItem={renderItem}
         keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.scrollView}
+        ItemSeparatorComponent={ItemSeparatorComponent}
       />
     </Container>
   );
@@ -49,8 +61,10 @@ const App: FC = () => {
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
+            headerShown: true,
+            headerTransparent: true,
             headerStyle: {
-              backgroundColor: colors.main,
+              backgroundColor: 'transparent',
             },
             headerTintColor: colors.white,
           }}
@@ -88,12 +102,11 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   button: {
-    paddingVertical: layout.spacing * 2,
-    paddingHorizontal: layout.spacing * 2,
-    marginBottom: layout.spacing,
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: layout.radius,
+    paddingVertical: layout.spacing * 2,
+    paddingHorizontal: layout.spacing * 2,
   },
   scrollView: {
     padding: layout.spacing * 2,

@@ -1,10 +1,9 @@
 import { Canvas } from '@shopify/react-native-skia';
 import React, { useState, useCallback } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
-import { Select, Slider, Spacer } from '../../components';
+import { Select, Slider, Spacer, Container } from '../../components';
 import { colors } from '../../styles';
 
 import { Pattern, type XYWHRect } from './types';
@@ -12,7 +11,6 @@ import { size, initialBpm } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
 import useGestures from './useGestures';
-import BGGradient from './BGGradient';
 import PlayButton from './PlayButton';
 import usePlayer from './usePlayer';
 import presets from './presets';
@@ -97,9 +95,8 @@ const DrumMachine: React.FC = () => {
   const gesture = useGestures({ canvasRect, onPatternChange });
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <BGGradient />
-      <View style={styles.uiContainer}>
+    <Container>
+      <View>
         <Select
           value={preset}
           onChange={onSetPreset}
@@ -115,7 +112,7 @@ const DrumMachine: React.FC = () => {
           onValueChange={setBpm}
         />
       </View>
-      <Spacer.Vertical size={30} />
+      <Spacer.Vertical size={54} />
       <GestureDetector gesture={gesture}>
         <View style={styles.container}>
           <Canvas
@@ -143,8 +140,7 @@ const DrumMachine: React.FC = () => {
           />
         </View>
       </GestureDetector>
-      <View style={styles.uiContainer} />
-    </SafeAreaView>
+    </Container>
   );
 };
 
@@ -155,9 +151,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     flex: 1,
     position: 'relative',
-  },
-  uiContainer: {
-    padding: 24,
   },
   container: {
     flex: 1,
