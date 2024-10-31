@@ -1,29 +1,42 @@
-/* eslint-disable react-native/no-inline-styles */
-import type { PropsWithChildren, FC } from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import React, { PropsWithChildren } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
+
+import BGGradient from './BGGradient';
+import { colors } from '../styles';
 
 type ContainerProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   centered?: boolean;
 }>;
 
-const Container: FC<ContainerProps> = (props) => {
+const headerPadding = 120; // eyeballed
+
+const Container: React.FC<ContainerProps> = (props) => {
   const { children, style, centered } = props;
+
   return (
     <SafeAreaView
-      style={[
-        {
-          flex: 1,
-          padding: 8,
-        },
-        centered && { justifyContent: 'center', alignItems: 'center' },
-        style,
-      ]}
+      edges={['bottom', 'left', 'right']}
+      style={[styles.basic, centered && styles.centered, style]}
     >
+      <BGGradient />
       {children}
     </SafeAreaView>
   );
 };
 
 export default Container;
+
+const styles = StyleSheet.create({
+  basic: {
+    flex: 1,
+    padding: 24,
+    paddingTop: headerPadding,
+    backgroundColor: colors.background,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

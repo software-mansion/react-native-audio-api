@@ -16,7 +16,16 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getDuration() const;
   [[nodiscard]] float *getChannelData(int channel) const;
-  void setChannelData(int channel, const float *data, int length);
+  void copyFromChannel(
+      float *destination,
+      int destinationLength,
+      int channelNumber,
+      int startInChannel) const;
+  void copyToChannel(
+      const float *source,
+      int sourceLength,
+      int channelNumber,
+      int startInChannel);
 
  private:
   friend class AudioBufferSourceNode;

@@ -12,6 +12,7 @@ class Scheduler {
   public bpm: number;
   public beatsPerBar: number;
   public audioContext: AudioContext;
+  public noteDensity: number;
   public steps: Sounds;
   public playSound: (name: SoundName, time: number) => void;
 
@@ -20,19 +21,22 @@ class Scheduler {
     beatsPerBar: number,
     audioContext: AudioContext,
     steps: Sounds,
+    noteDensity: number,
     playSound: (name: SoundName, time: number) => void
   ) {
     this.bpm = bpm;
     this.beatsPerBar = beatsPerBar;
     this.audioContext = audioContext;
     this.steps = steps;
+    this.noteDensity = noteDensity;
     this.playSound = playSound;
   }
 
   private nextNote() {
-    const secondsPerBeat = 60.0 / (this.bpm * 2);
+    const secondsPerBeat = 60.0 / (this.bpm * this.noteDensity);
     this.nextNoteTime += secondsPerBeat;
     this.currentBeat += 1;
+
     if (this.currentBeat === this.beatsPerBar) {
       this.currentBeat = 0;
     }
@@ -57,6 +61,7 @@ class Scheduler {
     this.currentBeat = 0;
     this.nextNoteTime =
       this.audioContext.currentTime + SCHEDULE_INTERVAL_MS / 1000;
+
     this.interval = setInterval(
       () => this.schedule(this.audioContext),
       SCHEDULE_INTERVAL_MS

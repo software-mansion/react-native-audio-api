@@ -25,25 +25,25 @@ export interface Example {
 export const Examples: Example[] = [
   {
     key: 'DrumMachine',
-    title: 'Drum Machine 🥁',
+    title: 'Drum Machine',
     subtitle: 'Create drum patterns',
     screen: DrumMachine,
   },
   {
     key: 'Piano',
-    title: 'Simple Piano 🎹',
+    title: 'Simple Piano',
     subtitle: 'Play some notes',
     screen: Piano,
   },
   {
     key: 'Metronome',
-    title: 'Metronome 🎸',
+    title: 'Metronome',
     subtitle: 'Keep time with the beat',
     screen: Metronome,
   },
   {
     key: 'Oscillator',
-    title: 'Oscillator 🔉',
+    title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
   },
