@@ -14,10 +14,10 @@ class BiquadFilterNodeWrapper : public AudioNodeWrapper {
   explicit BiquadFilterNodeWrapper(
       const std::shared_ptr<BiquadFilterNode> &biquadFilterNode);
 
-  std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
-  std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
-  std::shared_ptr<AudioParamWrapper> getQParam() const;
-  std::shared_ptr<AudioParamWrapper> getGainParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getQParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getGainParam() const;
   std::string getType();
   void setType(const std::string &filterType);
 

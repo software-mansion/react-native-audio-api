@@ -1,10 +1,10 @@
 #include "AudioParam.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
 AudioParam::AudioParam(
-    AudioContext *context,
+    BaseAudioContext *context,
     float defaultValue,
     float minValue,
     float maxValue)

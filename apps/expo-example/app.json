@@ -12,6 +12,18 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "../../node_modules/@swmansion/icons/fonts/broken/swm-icons-broken.ttf",
+            "../../node_modules/@swmansion/icons/fonts/outline/swm-icons-outline.ttf",
+            "../../node_modules/@swmansion/icons/fonts/curved/swm-icons-curved.ttf"
+          ]
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.swmansion.audioapi.example"

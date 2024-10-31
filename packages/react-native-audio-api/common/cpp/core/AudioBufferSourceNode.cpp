@@ -1,9 +1,9 @@
 #include "AudioBufferSourceNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode(AudioContext *context)
+AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::nullopt;

@@ -13,7 +13,7 @@ namespace audioapi {
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
-  explicit AudioScheduledSourceNode(AudioContext *context);
+  explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
   void start(double time);
   void stop(double time);

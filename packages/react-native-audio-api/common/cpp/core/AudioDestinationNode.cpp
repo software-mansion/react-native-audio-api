@@ -1,9 +1,9 @@
 #include "AudioDestinationNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(AudioContext *context)
+AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
     : AudioNode(context) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
@@ -24,8 +24,7 @@ bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
   memset(audioData, 0.0f, sizeof(float) * numSamples);
 
   for (auto &node : inputNodes_) {
-    if (node->processAudio(mixingBuffer.get(), numFrames)) {
-      normalize(mixingBuffer.get(), numFrames);
+    if (node && node->processAudio(mixingBuffer.get(), numFrames)) {
       VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
     }
   }

@@ -1,150 +1,168 @@
-import { Text, View } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
-import { useState, useRef, useEffect, FC } from 'react';
+import { Canvas } from '@shopify/react-native-skia';
+import React, { useState, useCallback } from 'react';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
-import { Container, Steps, Spacer, Slider, Button } from '../../components';
-import { Sounds, SoundName } from '../../types';
-import { Kick, Clap, HiHat, Scheduler } from '../SharedUtils';
+import { Select, Slider, Spacer, Container } from '../../components';
+import { colors } from '../../styles';
 
-const initialBpm = 120;
+import { Pattern, type XYWHRect } from './types';
+import { size, initialBpm } from './constants';
+import NotesHighlight from './NotesHighlight';
+import PatternShape from './PatternShape';
+import useGestures from './useGestures';
+import PlayButton from './PlayButton';
+import usePlayer from './usePlayer';
+import presets from './presets';
+import Grid from './Grid';
 
-const STEPS: Sounds = [
-  { name: 'kick', steps: new Array(8).fill(false) },
-  { name: 'clap', steps: new Array(8).fill(false) },
-  { name: 'hi-hat', steps: new Array(8).fill(false) },
-];
+const defaultPreset = 'Empty';
 
-const DrumMachine: FC = () => {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const schedulerRef = useRef<null | Scheduler>(null);
-  const kickRef = useRef<Kick | null>(null);
-  const hiHatRef = useRef<HiHat | null>(null);
-  const clapRef = useRef<Clap | null>(null);
-
-  const [sounds, setSounds] = useState<Sounds>(STEPS);
-  const [isPlaying, setIsPlaying] = useState(false);
+const DrumMachine: React.FC = () => {
+  const [preset, setPreset] = useState<string>(defaultPreset);
   const [bpm, setBpm] = useState<number>(initialBpm);
 
-  const handleStepClick = (name: SoundName, idx: number) => {
-    setSounds((prevSounds) => {
-      const newSounds = [...prevSounds];
-      const steps = newSounds.find((sound) => sound.name === name)?.steps;
-      if (steps) {
-        steps[idx] = !steps[idx];
+  const [patterns, setPatterns] = useState<Pattern[]>([
+    ...presets[defaultPreset].pattern,
+  ]);
+
+  const player = usePlayer({
+    bpm,
+    patterns,
+    notesPerBeat: 2,
+  });
+
+  const [canvasRect, setCanvasRect] = useState<XYWHRect>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const onPatternChange = useCallback(
+    (patternIdx: number, stepIdx: number) => {
+      if (preset !== 'Custom') {
+        setPreset('Custom');
       }
-      if (schedulerRef.current) {
-        schedulerRef.current.steps = newSounds;
+
+      setPatterns((prevPatterns) => {
+        const newPatterns = [...prevPatterns].map((pattern, idx) => {
+          if (idx !== patternIdx) {
+            return { ...pattern, steps: [...pattern.steps] };
+          }
+
+          const newPattern = { ...pattern, steps: [...pattern.steps] };
+          newPattern.steps[stepIdx] = !newPattern.steps[stepIdx];
+
+          return newPattern;
+        });
+
+        return newPatterns;
+      });
+    },
+    [preset]
+  );
+
+  const onSetPreset = useCallback(
+    (newPreset: string) => {
+      setPreset(newPreset);
+
+      if (newPreset !== 'Custom') {
+        setBpm(presets[newPreset].bpm);
+        setPatterns([...presets[newPreset].pattern]);
       }
-      return newSounds;
-    });
-  };
+    },
+    [setPreset]
+  );
 
-  const handleBpmChange = (newBpm: number) => {
-    handlePause();
-    setBpm(newBpm);
-    if (schedulerRef.current) {
-      schedulerRef.current.bpm = newBpm;
-    }
-  };
-
-  const handlePause = () => {
-    setIsPlaying(false);
-    schedulerRef.current?.stop();
-  };
-
-  const handlePlayPause = () => {
-    if (!audioContextRef.current || !schedulerRef.current) {
-      return;
-    }
-
-    if (!isPlaying) {
-      setIsPlaying(true);
-      schedulerRef.current.start();
+  const onPlayPress = useCallback(() => {
+    if (player.isPlaying) {
+      player.stop();
     } else {
-      setIsPlaying(false);
-      schedulerRef.current.stop();
+      player.play();
     }
-  };
+  }, [player]);
 
-  const playSound = (name: SoundName, time: number) => {
-    if (!audioContextRef.current || !schedulerRef.current) {
-      return;
-    }
-
-    if (!kickRef.current) {
-      kickRef.current = new Kick(audioContextRef.current);
-    }
-
-    if (!hiHatRef.current) {
-      hiHatRef.current = new HiHat(audioContextRef.current);
-    }
-
-    if (!clapRef.current) {
-      clapRef.current = new Clap(audioContextRef.current);
-    }
-
-    switch (name) {
-      case 'kick':
-        kickRef.current.play(time);
-        break;
-      case 'hi-hat':
-        hiHatRef.current.play(time);
-        break;
-      case 'clap':
-        clapRef.current.play(time);
-        break;
-      default:
-        break;
-    }
-  };
-
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    if (!schedulerRef.current) {
-      const scheduler = new Scheduler(
-        initialBpm,
-        8,
-        audioContextRef.current,
-        STEPS,
-        playSound
-      );
-      schedulerRef.current = scheduler;
-    }
-
-    return () => {
-      schedulerRef.current?.stop();
-      audioContextRef.current?.close();
-    };
+  const onCanvasLayout = useCallback((event: LayoutChangeEvent) => {
+    setCanvasRect({
+      x: event.nativeEvent.layout.x,
+      y: event.nativeEvent.layout.y,
+      width: event.nativeEvent.layout.width,
+      height: event.nativeEvent.layout.height,
+    });
   }, []);
 
+  const gesture = useGestures({ canvasRect, onPatternChange });
+
   return (
-    <Container centered>
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
-      <Spacer.Vertical size={20} />
-      <Text>bpm: {bpm}</Text>
-      <Slider
-        value={bpm}
-        onValueChange={handleBpmChange}
-        minimumValue={30}
-        maximumValue={240}
-        step={1}
-      />
-      <Spacer.Vertical size={20} />
+    <Container>
       <View>
-        {sounds.map(({ name, steps }) => (
-          <Steps
-            key={name}
-            name={name as SoundName}
-            steps={steps}
-            handleStepClick={handleStepClick}
-          />
-        ))}
+        <Select
+          value={preset}
+          onChange={onSetPreset}
+          options={Object.keys(presets)}
+        />
+        <Spacer.Vertical size={24} />
+        <Slider
+          label="BPM"
+          step={1}
+          min={24}
+          max={320}
+          value={bpm}
+          onValueChange={setBpm}
+        />
       </View>
+      <Spacer.Vertical size={54} />
+      <GestureDetector gesture={gesture}>
+        <View style={styles.container}>
+          <Canvas
+            // @ts-ignore ???
+            width={size}
+            height={size}
+            onLayout={onCanvasLayout}
+          >
+            <Grid />
+            {patterns.map((pattern) => (
+              <PatternShape key={pattern.instrumentName} pattern={pattern} />
+            ))}
+            {player.isPlaying && (
+              <NotesHighlight
+                progressSV={player.progressSV}
+                playingNotes={player.playingNotes}
+              />
+            )}
+          </Canvas>
+          <PlayButton
+            onPress={onPlayPress}
+            canvasRect={canvasRect}
+            isPlaying={player.isPlaying}
+            playingNotes={player.playingNotes}
+          />
+        </View>
+      </GestureDetector>
     </Container>
   );
 };
 
 export default DrumMachine;
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.background,
+    flex: 1,
+    position: 'relative',
+  },
+  container: {
+    flex: 1,
+    position: 'relative',
+    alignItems: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: 16,
+    color: colors.white,
+  },
+});

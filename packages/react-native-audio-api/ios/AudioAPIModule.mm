@@ -14,19 +14,23 @@ RCT_EXPORT_MODULE(AudioAPIModule)
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   NSLog(@"Installing JSI bindings for react-native-audio-api...");
-  RCTBridge *bridge = [RCTBridge currentBridge];
-  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)bridge;
+  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)[RCTBridge currentBridge];
+
   if (cxxBridge == nil) {
+    NSLog(@"Error during getting bridge!");
     return @false;
   }
 
   using namespace facebook;
 
-  auto jsiRuntime = (jsi::Runtime *)cxxBridge.runtime;
-  if (jsiRuntime == nil) {
+  auto jsRuntime = (jsi::Runtime *)cxxBridge.runtime;
+
+  if (jsRuntime == nil) {
+    NSLog(@"Error during getting jsRuntime!");
     return @false;
   }
-  auto &runtime = *jsiRuntime;
+
+  auto &runtime = *jsRuntime;
 
   auto wrapper = std::make_shared<audioapi::AudioAPIInstallerWrapper>();
   auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(wrapper);

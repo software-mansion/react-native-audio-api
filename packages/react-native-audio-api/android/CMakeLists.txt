@@ -52,10 +52,9 @@ find_package(fbjni REQUIRED CONFIG)
 find_package (oboe REQUIRED CONFIG)
 
 set(LINK_LIBRARIES
+  ReactAndroid::reactnative
   ReactAndroid::jsi
-  ReactAndroid::reactnativejni
   fbjni::fbjni
-  ReactAndroid::folly_runtime
   android
   log
   oboe::oboe

@@ -11,11 +11,11 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
   explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
 
-  int getNumberOfChannels() const;
-  int getLength() const;
-  int getSampleRate() const;
-  double getDuration() const;
-  float *getChannelData(int channel) const;
+  [[nodiscard]] int getNumberOfChannels() const;
+  [[nodiscard]] int getLength() const;
+  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] double getDuration() const;
+  [[nodiscard]] float *getChannelData(int channel) const;
   void copyFromChannel(
       float *destination,
       int destinationLength,

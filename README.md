@@ -1,10 +1,8 @@
 <img src="./docs/assets/react-native-audio-api-gh-cover.png?v0.0.1" alt="React Native Audio API" width="100%">
 
-### ⚠️ Pre-Alpha
+### ⚠️ Early version warning!
 
-This library is at a very early stage of development. There are known performance issues and the library is not yet suitable for real production applications. We will be publishing the first alpha version of the library in the upcoming days, stay tuned! 🎶
-
-If you have questions about the library, our progress, plans or just want to say "hi!" you can reach us in our <a href="https://discord.swmansion.com" target="_blank" rel="noopener noreferrer">discord server</a>
+This library is at a very early stage of development. There are known performance issues and the library might not yet suitable for real production applications.
 
 ### React Native Audio API
 
