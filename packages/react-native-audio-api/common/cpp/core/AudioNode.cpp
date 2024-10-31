@@ -1,9 +1,9 @@
 #include "AudioNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-AudioNode::AudioNode(AudioContext *context) : context_(context) {}
+AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {}
 
 AudioNode::~AudioNode() {
   cleanup();

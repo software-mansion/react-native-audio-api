@@ -8,22 +8,22 @@
 
 namespace audioapi {
 
-class AudioContext;
+class BaseAudioContext;
 
 class AudioParam {
  public:
   explicit AudioParam(
-      AudioContext *context,
+      BaseAudioContext *context,
       float defaultValue,
       float minValue,
       float maxValue);
 
-  float getValue() const;
+  [[nodiscard]] float getValue() const;
   float getValueAtTime(double time);
   void setValue(float value);
-  float getDefaultValue() const;
-  float getMinValue() const;
-  float getMaxValue() const;
+  [[nodiscard]] float getDefaultValue() const;
+  [[nodiscard]] float getMinValue() const;
+  [[nodiscard]] float getMaxValue() const;
   void setValueAtTime(float value, double startTime);
   void linearRampToValueAtTime(float value, double endTime);
   void exponentialRampToValueAtTime(float value, double endTime);
@@ -33,7 +33,7 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-  AudioContext *context_;
+  BaseAudioContext *context_;
   std::set<ParamChange> changesQueue_;
 
   double startTime_;

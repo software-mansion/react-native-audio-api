@@ -1,9 +1,9 @@
 #include "GainNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-GainNode::GainNode(AudioContext *context) : AudioNode(context) {
+GainNode::GainNode(BaseAudioContext *context) : AudioNode(context) {
   gainParam_ = std::make_shared<AudioParam>(context, 1.0, -MAX_GAIN, MAX_GAIN);
 }
 

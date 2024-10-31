@@ -2,22 +2,15 @@
 
 #include <jsi/jsi.h>
 #include <memory>
-#include <utility>
 #include <vector>
 
-#include "AudioBufferHostObject.h"
-#include "AudioBufferSourceNodeHostObject.h"
 #include "AudioContextWrapper.h"
-#include "AudioDestinationNodeHostObject.h"
-#include "BiquadFilterNodeHostObject.h"
-#include "GainNodeHostObject.h"
-#include "OscillatorNodeHostObject.h"
-#include "StereoPannerNodeHostObject.h"
+#include "BaseAudioContextHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
 
-class AudioContextHostObject : public jsi::HostObject {
+class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
       const std::shared_ptr<AudioContextWrapper> &wrapper);
@@ -37,7 +30,7 @@ class AudioContextHostObject : public jsi::HostObject {
   }
 
  private:
-  std::shared_ptr<AudioContextWrapper> wrapper_;
-  std::shared_ptr<AudioDestinationNodeHostObject> destination_;
+  std::shared_ptr<AudioContextWrapper>
+  getAudioContextWrapperFromBaseAudioContextWrapper();
 };
 } // namespace audioapi

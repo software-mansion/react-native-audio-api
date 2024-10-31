@@ -14,8 +14,8 @@ class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
   explicit OscillatorNodeWrapper(
       const std::shared_ptr<OscillatorNode> &oscillatorNode);
 
-  std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
-  std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getFrequencyParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
   std::string getType();
   void setType(const std::string &type);
 

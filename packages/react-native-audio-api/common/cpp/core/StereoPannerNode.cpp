@@ -1,11 +1,12 @@
 #include "StereoPannerNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode(AudioContext *context) : AudioNode(context) {
+StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
+    : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   panParam_ = std::make_shared<AudioParam>(context, 0.0, -MAX_PAN, MAX_PAN);
 }

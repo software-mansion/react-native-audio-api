@@ -1,10 +1,10 @@
-import type { BaseAudioContext } from '../types';
+import type { IAudioContext } from '../interfaces';
 
 type AudioAPIInstaller = {
-  createAudioContext: () => BaseAudioContext;
+  createAudioContext: () => IAudioContext;
 };
 
 declare global {
   function nativeCallSyncHook(): unknown;
-  var __AudioAPIInstaller: AudioAPI;
+  var __AudioAPIInstaller: AudioAPIInstaller;
 }

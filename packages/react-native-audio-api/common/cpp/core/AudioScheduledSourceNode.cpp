@@ -1,9 +1,9 @@
 #include "AudioScheduledSourceNode.h"
-#include "AudioContext.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(AudioContext *context)
+AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
     : AudioNode(context), isPlaying_(false) {
   numberOfInputs_ = 0;
 }

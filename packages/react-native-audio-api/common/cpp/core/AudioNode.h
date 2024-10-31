@@ -9,11 +9,11 @@
 
 namespace audioapi {
 
-class AudioContext;
+class BaseAudioContext;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(AudioContext *context);
+  explicit AudioNode(BaseAudioContext *context);
   virtual ~AudioNode();
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
@@ -56,7 +56,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   }
 
  protected:
-  AudioContext *context_;
+  BaseAudioContext *context_;
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = CHANNEL_COUNT;

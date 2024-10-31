@@ -15,14 +15,14 @@ namespace audioapi {
 
 class BiquadFilterNode : public AudioNode {
  public:
-  explicit BiquadFilterNode(AudioContext *context);
+  explicit BiquadFilterNode(BaseAudioContext *context);
 
-  std::string getType() const;
+  [[nodiscard]] std::string getType() const;
   void setType(const std::string &type);
-  std::shared_ptr<AudioParam> getFrequencyParam() const;
-  std::shared_ptr<AudioParam> getDetuneParam() const;
-  std::shared_ptr<AudioParam> getQParam() const;
-  std::shared_ptr<AudioParam> getGainParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getQParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
   void getFrequencyResponse(
       const std::vector<float> &frequencyArray,
       std::vector<float> &magResponseOutput,

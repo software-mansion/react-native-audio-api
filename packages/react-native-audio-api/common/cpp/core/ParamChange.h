@@ -15,12 +15,12 @@ class ParamChange {
       std::function<float(double, double, float, float, double)>
           calculateValue);
 
-  double getEndTime() const;
-  double getStartTime() const;
-  float getEndValue() const;
-  float getStartValue() const;
-  std::function<float(double, double, float, float, double)> getCalculateValue()
-      const;
+  [[nodiscard]] double getEndTime() const;
+  [[nodiscard]] double getStartTime() const;
+  [[nodiscard]] float getEndValue() const;
+  [[nodiscard]] float getStartValue() const;
+  [[nodiscard]] std::function<float(double, double, float, float, double)>
+  getCalculateValue() const;
   bool operator<(const ParamChange &other) const;
 
  private:

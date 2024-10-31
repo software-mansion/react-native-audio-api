@@ -6,6 +6,8 @@
     "@react-navigation/native": "*",
     "@react-navigation/native-stack": "*",
     "@react-navigation/stack": "*",
+    "@shopify/react-native-skia": "*",
+    "@swmansion/icons": "*",
     "react": "*",
     "react-dom": "*",
     "react-native": "*",
