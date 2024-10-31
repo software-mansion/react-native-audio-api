@@ -4,8 +4,8 @@
 #import <React/RCTUtils.h>
 #import <jsi/jsi.h>
 
-#import "../common/cpp/AudioAPIInstaller/AudioAPIInstallerHostObject.h"
-#import "../common/cpp/AudioAPIInstaller/AudioAPIInstallerWrapper.h"
+#import "AudioAPIInstallerWrapper.h"
+#import "AudioAPIInstallerHostObject.h"
 
 @implementation AudioAPIModule
 
@@ -14,8 +14,7 @@ RCT_EXPORT_MODULE(AudioAPIModule)
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   NSLog(@"Installing JSI bindings for react-native-audio-api...");
-  RCTBridge *bridge = [RCTBridge currentBridge];
-  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)bridge;
+  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)self.bridge;
   if (cxxBridge == nil) {
     return @false;
   }
