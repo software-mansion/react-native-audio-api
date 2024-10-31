@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, FC } from 'react';
-import { Text } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
+import React, { useState, useEffect, useRef, FC } from 'react';
 
 import { Container, Slider, Spacer, Button } from '../../components';
 import { Scheduler, MetronomeSound } from '../SharedUtils';
@@ -111,6 +110,7 @@ const Metronome: FC = () => {
         INITIAL_BEATS_PER_BAR,
         audioContextRef.current,
         STEPS,
+        1,
         playSound
       );
     }
@@ -124,21 +124,24 @@ const Metronome: FC = () => {
     <Container centered>
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
       <Spacer.Vertical size={20} />
-      <Text>BPM: {bpm}</Text>
       <Slider
+        step={1}
+        min={30}
+        max={240}
         value={bpm}
+        label="BPM"
+        minLabelWidth={50}
         onValueChange={handleBpmChange}
-        minimumValue={30}
-        maximumValue={240}
-        step={1}
       />
-      <Text>Beats per bar: {beatsPerBar}</Text>
+      <Spacer.Vertical size={20} />
       <Slider
-        value={beatsPerBar}
-        onValueChange={handleBeatsPerBarChange}
-        minimumValue={1}
-        maximumValue={8}
+        min={1}
+        max={8}
         step={1}
+        value={beatsPerBar}
+        label="Beats"
+        onValueChange={handleBeatsPerBarChange}
+        minLabelWidth={50}
       />
     </Container>
   );

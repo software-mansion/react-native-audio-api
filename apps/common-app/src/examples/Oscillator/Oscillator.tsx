@@ -18,6 +18,8 @@ const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
 const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 
+const labelWidth = 80;
+
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gain, setGain] = useState(INITIAL_GAIN);
@@ -115,40 +117,47 @@ const Oscillator: FC = () => {
   return (
     <Container centered>
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
-      <Spacer.Vertical size={20} />
-      <Text>Gain: {gain.toFixed(2)}</Text>
+      <Spacer.Vertical size={49} />
       <Slider
+        label="Gain"
         value={gain}
         onValueChange={handleGainChange}
-        minimumValue={0.0}
-        maximumValue={1.0}
+        min={0.0}
+        max={1.0}
         step={0.01}
-      />
-      <Text>Pan: {pan.toFixed(1)}</Text>
-      <Slider
-        value={pan}
-        onValueChange={handlePanChange}
-        minimumValue={-1}
-        maximumValue={1}
-        step={0.1}
-      />
-      <Text>Frequency: {frequency.toFixed(0)}</Text>
-      <Slider
-        value={frequency}
-        onValueChange={handleFrequencyChange}
-        minimumValue={120}
-        maximumValue={1200}
-        step={10}
-      />
-      <Text>Detune: {detune.toFixed(0)}</Text>
-      <Slider
-        value={detune}
-        onValueChange={handleDetuneChange}
-        minimumValue={0}
-        maximumValue={100}
-        step={1}
+        minLabelWidth={labelWidth}
       />
       <Spacer.Vertical size={20} />
+      <Slider
+        label="Pan"
+        value={pan}
+        onValueChange={handlePanChange}
+        min={-1}
+        max={1}
+        step={0.1}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={20} />
+      <Slider
+        label="Frequency"
+        value={frequency}
+        onValueChange={handleFrequencyChange}
+        min={120}
+        max={1200}
+        step={10}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={20} />
+      <Slider
+        label="Detune"
+        value={detune}
+        onValueChange={handleDetuneChange}
+        min={0}
+        step={1}
+        max={100}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={40} />
       <View style={styles.oscillatorTypeContainer}>
         {OSCILLATOR_TYPES.map((type: WaveType) => (
           <Pressable
@@ -197,10 +206,10 @@ const styles = StyleSheet.create({
     borderColor: colors.main,
   },
   inactiveOscillatorButton: {
-    borderColor: colors.black,
+    borderColor: colors.border,
   },
   oscillatorButtonText: {
-    color: colors.black,
+    color: colors.white,
     textTransform: 'capitalize',
   },
   activeOscillatorButtonText: {

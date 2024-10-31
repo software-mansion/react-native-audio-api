@@ -12,7 +12,7 @@ class Kick implements SoundEngine {
     this.audioContext = audioContext;
     this.tone = 164;
     this.decay = 0.2;
-    this.volume = 1;
+    this.volume = 0.95;
   }
 
   play(time: number) {
@@ -26,7 +26,6 @@ class Kick implements SoundEngine {
     gain.gain.setValueAtTime(0, time);
     gain.gain.setValueAtTime(this.volume, time + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.001, time + this.decay);
-    gain.gain.setValueAtTime(0, time + this.decay + 0.001);
 
     oscillator.connect(gain);
     gain.connect(this.audioContext.destination);
