@@ -51,17 +51,6 @@ find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 find_package (oboe REQUIRED CONFIG)
 
-# set(LINK_LIBRARIES
-#   ReactAndroid::reactnative
-#   ReactAndroid::jsi
-#   fbjni::fbjni
-#   android
-#   log
-#   oboe::oboe
-# )
-
-# target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})
-
 set(LINK_LIBRARIES
   ReactAndroid::jsi
   fbjni::fbjni
