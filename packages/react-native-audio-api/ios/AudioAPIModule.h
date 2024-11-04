@@ -12,9 +12,10 @@
 
 @interface AudioAPIModule : RCTEventEmitter
 #ifdef RCT_NEW_ARCH_ENABLED
-                            <RCTInitializing,
+                            <RCTInitializing
 #if REACT_NATIVE_MINOR_VERSION >= 74
-                             RCTRuntimeExecutorModule,
+                             ,
+                             RCTRuntimeExecutorModule
 #endif // REACT_NATIVE_MINOR_VERSION >= 74
 #else
                             <RCTBridgeModule
