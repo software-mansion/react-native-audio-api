@@ -52,6 +52,14 @@ export default class BaseAudioContext {
     length: number,
     sampleRate: number
   ): AudioBuffer {
+    if (numOfChannels !== 1 && numOfChannels !== 2) {
+      throw new Error(
+        'The number of channels provided (' +
+          numOfChannels +
+          ') is outside the range [1, 32]'
+      );
+    }
+
     return new AudioBuffer(
       this.context.createBuffer(numOfChannels, length, sampleRate)
     );
