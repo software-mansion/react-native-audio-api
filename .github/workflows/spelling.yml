@@ -97,7 +97,7 @@ jobs:
         suppress_push_for_open_pull_request: ${{ github.actor != 'dependabot[bot]' && 1 }}
         checkout: true
         check_file_names: 0
-        spell_check_this: react-native-audio-api@pre-release
+        spell_check_this: react-native-audio-api@main
         post_comment: 0
         use_magic_file: 1
         report-timing: 1
@@ -141,7 +141,7 @@ jobs:
       uses: check-spelling/check-spelling@main
       with:
         checkout: true
-        spell_check_this: check-spelling/spell-check-this@prerelease
+        spell_check_this: react-native-audio-api@main
         task: ${{ needs.spelling.outputs.followup }}
 
   comment-pr:
@@ -158,7 +158,7 @@ jobs:
       uses: check-spelling/check-spelling@main
       with:
         checkout: true
-        spell_check_this: check-spelling/spell-check-this@prerelease
+        spell_check_this: react-native-audio-api@main
         task: ${{ needs.spelling.outputs.followup }}
         experimental_apply_changes_via_bot: 1
 
