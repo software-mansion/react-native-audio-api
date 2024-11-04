@@ -67,6 +67,8 @@ const App: FC = () => {
               backgroundColor: 'transparent',
             },
             headerTintColor: colors.white,
+            headerBackTitle: ' ',
+            headerBackAccessibilityLabel: 'Go back',
           }}
         >
           <Stack.Screen

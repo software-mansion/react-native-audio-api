@@ -1,12 +1,14 @@
 import { Canvas } from '@shopify/react-native-skia';
 import React, { useState, useCallback } from 'react';
+import { AudioContext } from 'react-native-audio-api';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
-import { Select, Slider, Spacer, Container } from '../../components';
 import { colors } from '../../styles';
+import { Select, Slider, Spacer, Container } from '../../components';
+import { Kick, Clap, HiHat } from '../SharedUtils';
 
-import { Pattern, type XYWHRect } from './types';
+import { InstrumentName, Pattern, type XYWHRect } from './types';
 import { size, initialBpm } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
@@ -17,6 +19,28 @@ import presets from './presets';
 import Grid from './Grid';
 
 const defaultPreset = 'Empty';
+
+function setupPlayer(audioCtx: AudioContext) {
+  const kick = new Kick(audioCtx);
+  const clap = new Clap(audioCtx);
+  const hiHat = new HiHat(audioCtx);
+
+  const playNote = (name: InstrumentName, time: number) => {
+    switch (name) {
+      case 'kick':
+        kick.play(time);
+        break;
+      case 'clap':
+        clap.play(time);
+        break;
+      case 'hi-hat':
+        hiHat.play(time);
+        break;
+    }
+  };
+
+  return { playNote };
+}
 
 const DrumMachine: React.FC = () => {
   const [preset, setPreset] = useState<string>(defaultPreset);
@@ -30,6 +54,7 @@ const DrumMachine: React.FC = () => {
     bpm,
     patterns,
     notesPerBeat: 2,
+    setup: setupPlayer,
   });
 
   const [canvasRect, setCanvasRect] = useState<XYWHRect>({

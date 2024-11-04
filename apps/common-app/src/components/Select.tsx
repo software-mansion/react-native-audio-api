@@ -56,7 +56,7 @@ function Select<T extends string>(props: SelectProps<T>) {
         </View>
       </Pressable>
       <Modal visible={isModalOpen} animationType="fade" transparent>
-        <View style={styles.modalBg} />
+        <View style={styles.modalBackdrop} />
         <Pressable
           style={styles.modalSpacer}
           onPress={() => {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 12,
   },
-  modalBg: {
+  modalBackdrop: {
     backgroundColor: colors.modalBackdrop,
     position: 'absolute',
     top: 0,
@@ -103,10 +103,17 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 2,
-    backgroundColor: colors.background,
+    backgroundColor: `${colors.background}ee`,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
+  },
+  modalCanvas: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   optionRow: {
     flexDirection: 'row',
