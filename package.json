@@ -66,5 +66,8 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "useTabs": false
+  },
+  "dependencies": {
+    "eslint-plugin-ft-flow": "^3.0.11"
   }
 }
