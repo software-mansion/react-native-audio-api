@@ -3,13 +3,19 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
 import type { InstrumentName, Pattern } from './types';
-import { Kick, HiHat, Clap } from '../SharedUtils';
 import { numBeats } from './constants';
+
+type PlayNoteMethod = (name: InstrumentName, time: number) => void;
+
+interface SetupResponse {
+  playNote: PlayNoteMethod;
+}
 
 interface PlayerOptions {
   bpm: number;
   patterns: Pattern[];
   notesPerBeat: number;
+  setup: (AudioContext: AudioContext) => SetupResponse;
 }
 
 function r<T>(ref: React.MutableRefObject<T>) {
@@ -17,7 +23,7 @@ function r<T>(ref: React.MutableRefObject<T>) {
 }
 
 export default function usePlayer(options: PlayerOptions) {
-  const { bpm, patterns, notesPerBeat } = options;
+  const { bpm, patterns, notesPerBeat, setup } = options;
 
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -28,6 +34,7 @@ export default function usePlayer(options: PlayerOptions) {
 
   const progressSV = useSharedValue(0);
   const currentBeat = useSharedValue(0);
+
   const playingNotes = useSharedValue<boolean[]>(
     Array(patterns.length).fill(false)
   );
@@ -42,9 +49,7 @@ export default function usePlayer(options: PlayerOptions) {
   useLayoutEffect(() => {
     const audioContext = new AudioContext();
 
-    const kick = new Kick(audioContext);
-    const clap = new Clap(audioContext);
-    const hiHat = new HiHat(audioContext);
+    const { playNote } = setup(audioContext);
 
     let frameCount = 0;
     let nextNoteTime = 0;
@@ -53,29 +58,13 @@ export default function usePlayer(options: PlayerOptions) {
     let startTime = 0;
     let currentTime = 0;
 
-    function playTheNote(name: InstrumentName) {
-      switch (name) {
-        case 'kick':
-          kick.play(audioContext.currentTime);
-          break;
-        case 'clap':
-          clap.play(audioContext.currentTime);
-          break;
-        case 'hi-hat':
-          hiHat.play(audioContext.currentTime);
-          break;
-        default:
-          break;
-      }
-    }
-
     function advancePattern() {
       const plays = Array(r(patternsRef).length).fill(false);
 
       for (let i = 0; i < r(patternsRef).length; i += 1) {
         if (r(patternsRef)[i].steps[currentBeat.value]) {
           plays[i] = true;
-          playTheNote(r(patternsRef)[i].instrumentName);
+          playNote(r(patternsRef)[i].instrumentName, audioContext.currentTime);
         }
       }
 
@@ -137,7 +126,7 @@ export default function usePlayer(options: PlayerOptions) {
     };
     // \/ Shared values are not necessary in deps array
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying]);
+  }, [isPlaying, setup]);
 
   const play = useCallback(() => {
     setIsPlaying(true);
