@@ -1,4 +1,5 @@
 import { IAudioBuffer } from '../interfaces';
+import { IndexSizeError } from '../errors';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -17,6 +18,11 @@ export default class AudioBuffer {
   }
 
   public getChannelData(channel: number): number[] {
+    if (channel < 0 || channel >= this.numberOfChannels) {
+      throw new IndexSizeError(
+        `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
+      );
+    }
     return this.buffer.getChannelData(channel);
   }
 
@@ -25,6 +31,18 @@ export default class AudioBuffer {
     channelNumber: number,
     startInChannel: number = 0
   ): void {
+    if (channelNumber < 0 || channelNumber >= this.numberOfChannels) {
+      throw new IndexSizeError(
+        `The channel number provided (${channelNumber}) is outside the range [0, ${this.numberOfChannels - 1}]`
+      );
+    }
+
+    if (startInChannel < 0 || startInChannel >= this.length) {
+      throw new IndexSizeError(
+        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
+      );
+    }
+
     this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
 
@@ -33,6 +51,18 @@ export default class AudioBuffer {
     channelNumber: number,
     startInChannel: number = 0
   ): void {
+    if (channelNumber < 0 || channelNumber >= this.numberOfChannels) {
+      throw new IndexSizeError(
+        `The channel number provided (${channelNumber}) is outside the range [0, ${this.numberOfChannels - 1}]`
+      );
+    }
+
+    if (startInChannel < 0 || startInChannel >= this.length) {
+      throw new IndexSizeError(
+        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
+      );
+    }
+
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 }
