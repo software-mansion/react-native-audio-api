@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9.0)
 project(react-native-audio-api)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Detect the operating system
 if(APPLE)
@@ -51,8 +51,18 @@ find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 find_package (oboe REQUIRED CONFIG)
 
+# set(LINK_LIBRARIES
+#   ReactAndroid::reactnative
+#   ReactAndroid::jsi
+#   fbjni::fbjni
+#   android
+#   log
+#   oboe::oboe
+# )
+
+# target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})
+
 set(LINK_LIBRARIES
-  ReactAndroid::reactnative
   ReactAndroid::jsi
   fbjni::fbjni
   android
@@ -60,4 +70,17 @@ set(LINK_LIBRARIES
   oboe::oboe
 )
 
-target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})
+if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
+  set(RN_VERSION_LINK_LIBRARIES
+    ReactAndroid::reactnative
+  )
+else()
+  set(RN_VERSION_LINK_LIBRARIES
+    ReactAndroid::folly_runtime
+    ReactAndroid::glog
+    ReactAndroid::reactnativejni
+  )
+endif()
+
+target_link_libraries(react-native-audio-api ${LINK_LIBRARIES} ${RN_VERSION_LINK_LIBRARIES})
+
