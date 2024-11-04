@@ -68,7 +68,7 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 }
 
 export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
-  buffer: IAudioBuffer;
+  buffer: IAudioBuffer | null;
   loop: boolean;
 }
 

@@ -30,6 +30,10 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer->mix(channelCount_);
 }
 
+void AudioBufferSourceNode::resetBuffer() {
+    buffer_ = std::nullopt;
+}
+
 bool AudioBufferSourceNode::processAudio(float *audioData, int32_t numFrames) {
   if (!isPlaying_ || !buffer_.has_value()) {
     return false;

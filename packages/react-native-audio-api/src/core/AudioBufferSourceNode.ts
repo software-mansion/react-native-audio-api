@@ -8,11 +8,20 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
     super(context, node);
   }
 
-  public get buffer(): AudioBuffer {
-    return new AudioBuffer((this.node as IAudioBufferSourceNode).buffer);
+  public get buffer(): AudioBuffer | null {
+    const buffer = (this.node as IAudioBufferSourceNode).buffer;
+    if (!buffer) {
+      return null;
+    }
+    return new AudioBuffer(buffer);
   }
 
-  public set buffer(buffer: AudioBuffer) {
+  public set buffer(buffer: AudioBuffer | null) {
+    if (!buffer) {
+      (this.node as IAudioBufferSourceNode).buffer = null;
+      return;
+    }
+
     (this.node as IAudioBufferSourceNode).buffer = buffer.buffer;
   }
 

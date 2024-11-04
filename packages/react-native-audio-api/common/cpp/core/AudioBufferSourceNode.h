@@ -16,6 +16,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
   void setLoop(bool loop);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void resetBuffer();
   [[nodiscard]] bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
