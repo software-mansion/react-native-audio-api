@@ -1,6 +1,7 @@
 import { IAudioNode } from '../interfaces';
 import { ChannelCountMode, ChannelInterpretation } from './types';
 import BaseAudioContext from './BaseAudioContext';
+import { InvalidAccessError } from '../errors';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;
@@ -22,6 +23,12 @@ export default class AudioNode {
   }
 
   public connect(node: AudioNode): void {
+    if (this.context !== node.context) {
+      throw new InvalidAccessError(
+        'The AudioNodes are from different BaseAudioContexts'
+      );
+    }
+
     this.node.connect(node.node);
   }
 
