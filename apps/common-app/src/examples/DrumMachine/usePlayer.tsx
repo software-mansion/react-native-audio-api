@@ -2,8 +2,8 @@ import { AudioContext } from 'react-native-audio-api';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
-import type { InstrumentName, Pattern } from './types';
-import { numBeats } from './constants';
+import type { InstrumentName, Pattern, PlayingInstruments } from './types';
+import { numBeats, instruments } from './constants';
 
 type PlayNoteMethod = (name: InstrumentName, time: number) => void;
 
@@ -16,6 +16,16 @@ interface PlayerOptions {
   patterns: Pattern[];
   notesPerBeat: number;
   setup: (AudioContext: AudioContext) => SetupResponse;
+}
+
+function getPlayingInstruments(
+  iName?: InstrumentName,
+  iValue: boolean = false
+) {
+  return instruments.reduce((acc, name) => {
+    acc[name] = iName === name ? iValue : false;
+    return acc;
+  }, {} as PlayingInstruments);
 }
 
 function r<T>(ref: React.MutableRefObject<T>) {
@@ -35,8 +45,8 @@ export default function usePlayer(options: PlayerOptions) {
   const progressSV = useSharedValue(0);
   const currentBeat = useSharedValue(0);
 
-  const playingNotes = useSharedValue<boolean[]>(
-    Array(patterns.length).fill(false)
+  const playingInstruments = useSharedValue<PlayingInstruments>(
+    getPlayingInstruments()
   );
 
   useLayoutEffect(() => {
@@ -59,16 +69,17 @@ export default function usePlayer(options: PlayerOptions) {
     let currentTime = 0;
 
     function advancePattern() {
-      const plays = Array(r(patternsRef).length).fill(false);
-
       for (let i = 0; i < r(patternsRef).length; i += 1) {
         if (r(patternsRef)[i].steps[currentBeat.value]) {
-          plays[i] = true;
+          playingInstruments.value = getPlayingInstruments(
+            r(patternsRef)[i].instrumentName,
+            true
+          );
+
           playNote(r(patternsRef)[i].instrumentName, audioContext.currentTime);
         }
       }
 
-      playingNotes.value = plays;
       currentBeat.value = (currentBeat.value + 1) % numBeats;
     }
 
@@ -86,8 +97,9 @@ export default function usePlayer(options: PlayerOptions) {
       progressSV.value = (timeDiff % totalLoopTime) / totalLoopTime;
 
       if (currentTime - (nextNoteTime - timePerNote) > 0.05) {
-        playingNotes.value = Array(r(patternsRef).length).fill(false);
+        playingInstruments.value = getPlayingInstruments();
       }
+
       if (currentTime + averageFrameTime >= nextNoteTime) {
         advancePattern();
         nextNoteTime += timePerNote;
@@ -105,7 +117,7 @@ export default function usePlayer(options: PlayerOptions) {
 
         progressSV.value = 0;
         currentBeat.value = 0;
-        playingNotes.value = Array(patterns.length).fill(false);
+        playingInstruments.value = getPlayingInstruments();
         startTime = audioContext.currentTime;
         currentTime = audioContext.currentTime;
         nextNoteTime = audioContext.currentTime;
@@ -118,7 +130,7 @@ export default function usePlayer(options: PlayerOptions) {
 
       progressSV.value = 0;
       currentBeat.value = 0;
-      playingNotes.value = Array(patterns.length).fill(false);
+      playingInstruments.value = getPlayingInstruments();
     }
 
     return () => {
@@ -137,7 +149,7 @@ export default function usePlayer(options: PlayerOptions) {
   }, []);
 
   return {
-    playingNotes,
+    playingInstruments,
     progressSV,
     isPlaying,
     play,

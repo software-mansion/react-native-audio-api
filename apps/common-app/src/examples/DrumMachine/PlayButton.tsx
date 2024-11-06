@@ -9,7 +9,7 @@ import { Icon } from '@swmansion/icons';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { colors } from '../../styles';
-import type { XYWHRect } from './types';
+import type { PlayingInstruments, XYWHRect } from './types';
 import { size } from './constants';
 
 interface PlayButtonProps {
@@ -17,13 +17,13 @@ interface PlayButtonProps {
   onPress: () => void;
 
   canvasRect: XYWHRect;
-  playingNotes: SharedValue<boolean[]>;
+  playingInstruments: SharedValue<PlayingInstruments>;
 }
 
 interface PlayButtonInnerProps {
   pressed: boolean;
   isPlaying?: boolean;
-  playingNotes: SharedValue<boolean[]>;
+  playingInstruments: SharedValue<PlayingInstruments>;
 }
 
 const timingOptions = {
@@ -31,10 +31,10 @@ const timingOptions = {
 };
 
 const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
-  const { pressed, isPlaying, playingNotes } = props;
+  const { pressed, isPlaying, playingInstruments } = props;
 
   const containerStyle = useAnimatedStyle(() => {
-    const shouldPlay = playingNotes.value[2];
+    const shouldPlay = playingInstruments.value.kick;
 
     return {
       transform: [
@@ -58,7 +58,7 @@ const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
 };
 
 const PlayButton: React.FC<PlayButtonProps> = (props) => {
-  const { canvasRect, onPress, isPlaying, playingNotes } = props;
+  const { canvasRect, onPress, isPlaying, playingInstruments } = props;
 
   return (
     <Pressable
@@ -75,7 +75,7 @@ const PlayButton: React.FC<PlayButtonProps> = (props) => {
         <PlayButtonInner
           pressed={pressed}
           isPlaying={isPlaying}
-          playingNotes={playingNotes}
+          playingInstruments={playingInstruments}
         />
       )}
     </Pressable>
