@@ -42,7 +42,7 @@ class AudioParam {
   float endValue_;
   std::function<float(double, double, float, float, double)> calculateValue_;
 
-  void checkValue(float value) const;
+  float checkValue(float value) const;
   double getStartTime();
   float getStartValue();
 };

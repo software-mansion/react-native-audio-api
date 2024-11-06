@@ -1,4 +1,5 @@
 import { IAudioParam } from '../interfaces';
+import { RangeError } from '../errors';
 
 export default class AudioParam {
   readonly defaultValue: number;
@@ -23,14 +24,32 @@ export default class AudioParam {
   }
 
   public setValueAtTime(value: number, startTime: number): void {
+    if (startTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${startTime}`
+      );
+    }
+
     this.audioParam.setValueAtTime(value, startTime);
   }
 
   public linearRampToValueAtTime(value: number, endTime: number): void {
+    if (endTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${endTime}`
+      );
+    }
+
     this.audioParam.linearRampToValueAtTime(value, endTime);
   }
 
   public exponentialRampToValueAtTime(value: number, endTime: number): void {
+    if (endTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${endTime}`
+      );
+    }
+
     this.audioParam.exponentialRampToValueAtTime(value, endTime);
   }
 }

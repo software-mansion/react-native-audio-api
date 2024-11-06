@@ -40,8 +40,7 @@ float AudioParam::getMaxValue() const {
 }
 
 void AudioParam::setValue(float value) {
-  checkValue(value);
-  value_ = value;
+  value_ = checkValue(value);
 }
 
 float AudioParam::getValueAtTime(double time) {
@@ -66,7 +65,7 @@ float AudioParam::getValueAtTime(double time) {
 }
 
 void AudioParam::setValueAtTime(float value, double time) {
-  checkValue(value);
+  value = checkValue(value);
   auto calculateValue = [](double, double, float, float endValue, double) {
     return endValue;
   };
@@ -76,7 +75,7 @@ void AudioParam::setValueAtTime(float value, double time) {
 }
 
 void AudioParam::linearRampToValueAtTime(float value, double time) {
-  checkValue(value);
+  value = checkValue(value);
   auto calculateValue = [](double startTime,
                            double endTime,
                            float startValue,
@@ -94,7 +93,7 @@ void AudioParam::linearRampToValueAtTime(float value, double time) {
 }
 
 void AudioParam::exponentialRampToValueAtTime(float value, double time) {
-  checkValue(value);
+  value = checkValue(value);
   auto calculateValue = [](double startTime,
                            double endTime,
                            float startValue,
@@ -111,10 +110,8 @@ void AudioParam::exponentialRampToValueAtTime(float value, double time) {
   changesQueue_.emplace(paramChange);
 }
 
-void AudioParam::checkValue(float value) const {
-  if (value < minValue_ || value > maxValue_) {
-    throw std::invalid_argument("Value out of range");
-  }
+float AudioParam::checkValue(float value) const {
+  return std::clamp(value, minValue_, maxValue_);
 }
 
 double AudioParam::getStartTime() {
