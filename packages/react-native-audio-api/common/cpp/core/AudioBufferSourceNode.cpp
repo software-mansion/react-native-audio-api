@@ -23,12 +23,12 @@ void AudioBufferSourceNode::setLoop(bool loop) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
-    if (!buffer) {
-        buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-        return;
-    }
+  if (!buffer) {
+    buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
+    return;
+  }
 
-    buffer_ = buffer->mix(channelCount_);
+  buffer_ = buffer->mix(channelCount_);
 }
 
 bool AudioBufferSourceNode::processAudio(float *audioData, int32_t numFrames) {
