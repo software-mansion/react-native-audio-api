@@ -108,20 +108,10 @@ jobs:
         extra_dictionary_limit: 20
         extra_dictionaries:
           cspell:software-terms/dict/softwareTerms.txt
-          cspell:bash/bash-words.txt
-          cspell:companies/companies.txt
-          cspell:cpp/cpp.txt
-          cspell:css/css.txt
-          cspell:en_GB/src/wordsEnGb.txt
-          cspell:filetypes/filetypes.txt
-          cspell:fonts/fonts.txt
-          cspell:fullstack/fullstack.txt
-          cspell:html/html.txt
-          cspell:java/java.txt
-          cspell:latex/latex.txt
-          cspell:node/node.txt
-          cspell:npm/npm.txt
-          cspell:python/python.txt
+          cspell:typescript/dict/typescript.txt
+          cspell:cpp/src/stdlib-cpp.txt
+          cspell:java/src/java.txt
+          cspell:cpp/src/stdlib-c.txt
 
   comment-push:
     name: Report (Push)
