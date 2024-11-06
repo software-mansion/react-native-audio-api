@@ -153,7 +153,7 @@ const DrumMachine: React.FC = () => {
             {player.isPlaying && (
               <NotesHighlight
                 progressSV={player.progressSV}
-                playingNotes={player.playingNotes}
+                playingInstruments={player.playingInstruments}
               />
             )}
           </Canvas>
@@ -161,7 +161,7 @@ const DrumMachine: React.FC = () => {
             onPress={onPlayPress}
             canvasRect={canvasRect}
             isPlaying={player.isPlaying}
-            playingNotes={player.playingNotes}
+            playingInstruments={player.playingInstruments}
           />
         </View>
       </GestureDetector>

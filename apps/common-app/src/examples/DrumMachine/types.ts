@@ -35,3 +35,5 @@ export interface XYPoint {
   x: number;
   y: number;
 }
+
+export type PlayingInstruments = Record<InstrumentName, boolean>;

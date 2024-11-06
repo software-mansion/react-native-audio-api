@@ -2,25 +2,24 @@ import React, { memo } from 'react';
 import { Circle, Paint } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
+import { Instrument, PlayingInstruments } from './types';
 import { cPoint, buttonRadius } from './constants';
 import { getPointCX, getPointCY } from './utils';
 import instruments from './instruments';
-import { Instrument } from './types';
 
 interface NotesHighlightProps {
   progressSV: SharedValue<number>;
-  playingNotes: SharedValue<boolean[]>;
+  playingInstruments: SharedValue<PlayingInstruments>;
 }
 
 interface NoteHighlightProps {
-  index: number;
   instrument: Instrument;
   progressSV: SharedValue<number>;
-  playingNotes: SharedValue<boolean[]>;
+  playingInstruments: SharedValue<PlayingInstruments>;
 }
 
 const NoteHighlight: React.FC<NoteHighlightProps> = (props) => {
-  const { instrument, progressSV, playingNotes } = props;
+  const { instrument, progressSV, playingInstruments } = props;
 
   const angle = useDerivedValue(
     () => progressSV.value * Math.PI * 2 - Math.PI / 2
@@ -34,11 +33,13 @@ const NoteHighlight: React.FC<NoteHighlightProps> = (props) => {
   );
 
   const r = useDerivedValue(() =>
-    playingNotes.value[props.index] ? buttonRadius * 1.5 : buttonRadius
+    playingInstruments.value[instrument.name]
+      ? buttonRadius * 1.5
+      : buttonRadius
   );
 
   const color = useDerivedValue(() =>
-    playingNotes.value[props.index]
+    playingInstruments.value[instrument.name]
       ? `${instrument.color}55`
       : `${instrument.color}00`
   );
@@ -53,13 +54,8 @@ const NoteHighlight: React.FC<NoteHighlightProps> = (props) => {
 
 const NotesHighlight: React.FC<NotesHighlightProps> = (props) => (
   <>
-    {instruments.map((instrument, index) => (
-      <NoteHighlight
-        index={index}
-        key={instrument.name}
-        instrument={instrument}
-        {...props}
-      />
+    {instruments.map((instrument) => (
+      <NoteHighlight key={instrument.name} instrument={instrument} {...props} />
     ))}
   </>
 );

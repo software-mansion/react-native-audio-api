@@ -33,7 +33,7 @@ class Clap implements SoundEngine {
       output[i] = Math.random() * 2 - 1;
     }
 
-    buffer.copyToChannel(output, 0);
+    buffer.copyToChannel(output, 0, 0);
 
     return buffer;
   }
