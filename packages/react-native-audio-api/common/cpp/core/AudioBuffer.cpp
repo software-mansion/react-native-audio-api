@@ -39,10 +39,6 @@ float *AudioBuffer::getChannelData(int channel) const {
 }
 
 std::shared_ptr<AudioBuffer> AudioBuffer::mix(int outputNumberOfChannels) {
-  if (outputNumberOfChannels != 1 && outputNumberOfChannels != 2) {
-    throw std::invalid_argument("Invalid number of channels");
-  }
-
   if (outputNumberOfChannels == numberOfChannels_) {
     return shared_from_this();
   }

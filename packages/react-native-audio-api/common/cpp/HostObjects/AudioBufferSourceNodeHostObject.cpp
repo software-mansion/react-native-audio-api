@@ -34,14 +34,15 @@ jsi::Value AudioBufferSourceNodeHostObject::get(
   }
 
   if (propName == "buffer") {
-      try {
-            auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
-            auto buffer = wrapper->getBuffer();
-            auto bufferHostObject = AudioBufferHostObject::createFromWrapper(buffer);
-            return jsi::Object::createFromHostObject(runtime, bufferHostObject);
-        } catch (const std::runtime_error &e) {
-            return jsi::Value::null();
-      }
+    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto buffer = wrapper->getBuffer();
+
+    if (!buffer) {
+        return jsi::Value::null();
+    }
+
+    auto bufferHostObject = AudioBufferHostObject::createFromWrapper(buffer);
+    return jsi::Object::createFromHostObject(runtime, bufferHostObject);
   }
 
   return AudioScheduledSourceNodeHostObject::get(runtime, propNameId);
@@ -61,10 +62,12 @@ void AudioBufferSourceNodeHostObject::set(
 
   if (propName == "buffer") {
       auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+
       if (value.isNull()) {
-          wrapper->resetBuffer();
+          wrapper->setBuffer(std::shared_ptr<AudioBufferWrapper>(nullptr));
           return;
       }
+
     auto bufferHostObject =
         value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
     wrapper->setBuffer(bufferHostObject->wrapper_);

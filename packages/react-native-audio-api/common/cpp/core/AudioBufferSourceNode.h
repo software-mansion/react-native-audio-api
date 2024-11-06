@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
 #include "AudioBuffer.h"
 #include "AudioScheduledSourceNode.h"
@@ -16,12 +15,11 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
   void setLoop(bool loop);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
-  void resetBuffer();
   [[nodiscard]] bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   bool loop_;
-  std::optional<std::shared_ptr<AudioBuffer>> buffer_;
+  std::shared_ptr<AudioBuffer> buffer_;
   int bufferIndex_;
 };
 } // namespace audioapi

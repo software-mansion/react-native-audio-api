@@ -22,23 +22,24 @@ void AudioBufferSourceNodeWrapper::setLoop(bool loop) {
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioBufferSourceNodeWrapper::getBuffer() {
-    try {
-        auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-        auto buffer = audioBufferSourceNode->getBuffer();
-        return std::make_shared<AudioBufferWrapper>(buffer);
-    } catch (const std::runtime_error &e) {
-        throw std::runtime_error("Buffer is not set");
+    auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+    auto buffer = audioBufferSourceNode->getBuffer();
+
+    if (!buffer) {
+        return {nullptr};
     }
+
+    return std::make_shared<AudioBufferWrapper>(buffer);
 }
 
 void AudioBufferSourceNodeWrapper::setBuffer(
     const std::shared_ptr<AudioBufferWrapper> &buffer) {
   auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-  audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
-}
+  if (!buffer) {
+    audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
+    return;
+  }
 
-void AudioBufferSourceNodeWrapper::resetBuffer() {
-    auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-    audioBufferSourceNode->resetBuffer();
+  audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
 }
 } // namespace audioapi
