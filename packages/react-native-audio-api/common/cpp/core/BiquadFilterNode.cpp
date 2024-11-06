@@ -61,11 +61,6 @@ void BiquadFilterNode::getFrequencyResponse(
   auto magResponseOutputSize = magResponseOutput.size();
   auto phaseResponseOutputSize = phaseResponseOutput.size();
 
-  if (magResponseOutputSize != frequencyArraySize ||
-      phaseResponseOutputSize != frequencyArraySize) {
-    throw std::invalid_argument("Output arrays must have the same size");
-  }
-
   float b0 = b0_;
   float b1 = b1_;
   float b2 = b2_;

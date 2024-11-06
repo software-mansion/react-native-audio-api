@@ -1,3 +1,4 @@
+import { InvalidAccessError } from '../errors';
 import { IBiquadFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
@@ -24,5 +25,25 @@ export default class BiquadFilterNode extends AudioNode {
 
   public set type(value: FilterType) {
     (this.node as IBiquadFilterNode).type = value;
+  }
+
+  public getFrequencyResponse(
+    frequencyArray: number[],
+    magResponseOutput: number[],
+    phaseResponseOutput: number[]
+  ) {
+    if (
+      frequencyArray.length !== magResponseOutput.length ||
+      frequencyArray.length !== phaseResponseOutput.length
+    ) {
+      throw new InvalidAccessError(
+        `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
+      );
+    }
+    (this.node as IBiquadFilterNode).getFrequencyResponse(
+      frequencyArray,
+      magResponseOutput,
+      phaseResponseOutput
+    );
   }
 }
