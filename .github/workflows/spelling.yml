@@ -115,6 +115,7 @@ jobs:
           cspell:html/dict/html.txt
           cspell:npm/dict/npm.txt
           cspell:css/dict/css.txt
+          cspell:golang/dict/go.txt
 
   comment-push:
     name: Report (Push)
