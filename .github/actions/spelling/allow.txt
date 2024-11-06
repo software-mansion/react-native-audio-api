@@ -80,7 +80,7 @@ vsub
 vsubq
 nullptr
 objc
-load
+loadu
 NSURL
 setzero
 soloader
