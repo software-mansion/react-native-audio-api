@@ -112,6 +112,9 @@ jobs:
           cspell:cpp/src/stdlib-cpp.txt
           cspell:java/src/java.txt
           cspell:cpp/src/stdlib-c.txt
+          cspell:html/dict/html.txt
+          cspell:npm/dict/npm.txt
+          cspell:css/dict/css.txt
 
   comment-push:
     name: Report (Push)

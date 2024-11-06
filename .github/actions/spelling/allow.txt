@@ -6,6 +6,7 @@ apps
 facebook
 img
 Website
+mozilla
 
 audioapi
 fabricexample
