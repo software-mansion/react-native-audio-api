@@ -178,7 +178,7 @@ Some of the noticeable implementation details that are still in progress or not 
  <summary><b>PeriodicWave</b></summary>
 </details>
 <details>
- <summary><b>IRRFilterNode</b></summary>
+ <summary><b>IIRFilterNode</b></summary>
 </details>
 <details>
  <summary><b>MediaStreamAudioDestinationNode</b></summary>

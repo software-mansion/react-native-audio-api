@@ -18,7 +18,7 @@ const Grid: React.FC = () => {
 
     return (
       <Line
-        key={`ine-${index}`}
+        key={`line-${index}`}
         p1={vec(cPoint.x, cPoint.y)}
         p2={vec(x, y)}
         strokeWidth={StyleSheet.hairlineWidth}
