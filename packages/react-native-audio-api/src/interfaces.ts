@@ -1,7 +1,7 @@
 import {
   ContextState,
-  FilterType,
-  WaveType,
+  BiquadFilterType,
+  OscillatorType,
   ChannelCountMode,
   ChannelInterpretation,
 } from './core/types';
@@ -51,7 +51,7 @@ export interface IBiquadFilterNode extends IAudioNode {
   readonly detune: AudioParam;
   readonly Q: AudioParam;
   readonly gain: AudioParam;
-  type: FilterType;
+  type: BiquadFilterType;
   getFrequencyResponse(
     frequencyArray: number[],
     magResponseOutput: number[],
@@ -69,7 +69,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
   readonly frequency: IAudioParam;
   readonly detune: IAudioParam;
-  type: WaveType;
+  type: OscillatorType;
 }
 
 export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {

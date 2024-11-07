@@ -21,6 +21,8 @@ export default class AudioScheduledSourceNode extends AudioNode {
       throw new InvalidStateError('Cannot call start more than once');
     }
 
+    this.hasBeenStarted = true;
+
     (this.node as IAudioScheduledSourceNode).start(when);
   }
 

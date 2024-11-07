@@ -6,6 +6,7 @@
 
 #include "AudioParam.h"
 #include "AudioScheduledSourceNode.h"
+#include "OscillatorType.h"
 
 namespace audioapi {
 
@@ -22,7 +23,6 @@ class OscillatorNode : public AudioScheduledSourceNode {
   bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
-  enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE, CUSTOM };
 
   static float sineWave(double wavePhase) {
     return static_cast<float>(std::sin(wavePhase));
@@ -48,65 +48,61 @@ class OscillatorNode : public AudioScheduledSourceNode {
         1.0);
   }
 
-  static float getWaveValue(double wavePhase, WaveType type) {
-    switch (type) {
-      case WaveType::SINE:
-        return sineWave(wavePhase);
-      case WaveType::SQUARE:
-        return squareWave(wavePhase);
-      case WaveType::SAWTOOTH:
-        return sawtoothWave(wavePhase);
-      case WaveType::TRIANGLE:
-        return triangleWave(wavePhase);
-      default:
-        throw std::invalid_argument("Unknown wave type");
-    }
-  }
-
-  static WaveType fromString(const std::string &type) {
-    std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
-
-    if (lowerType == "sine")
-      return WaveType::SINE;
-    if (lowerType == "square")
-      return WaveType::SQUARE;
-    if (lowerType == "sawtooth")
-      return WaveType::SAWTOOTH;
-    if (lowerType == "triangle")
-      return WaveType::TRIANGLE;
-    if (lowerType == "custom")
-      return WaveType::CUSTOM;
-
-    throw std::invalid_argument("Unknown wave type: " + type);
-  }
-
-  static std::string toString(WaveType type) {
-    switch (type) {
-      case WaveType::SINE:
-        return "sine";
-      case WaveType::SQUARE:
-        return "square";
-      case WaveType::SAWTOOTH:
-        return "sawtooth";
-      case WaveType::TRIANGLE:
-        return "triangle";
-      case WaveType::CUSTOM:
-        return "custom";
-      default:
-        throw std::invalid_argument("Unknown wave type");
-    }
-  }
-
-  static float getWaveBufferElement(double wavePhase, WaveType waveType) {
-    return getWaveValue(wavePhase, waveType);
+  static float getWaveBufferElement(double wavePhase,OscillatorType type) {
+      switch (type) {
+          case OscillatorType::SINE:
+              return sineWave(wavePhase);
+          case OscillatorType::SQUARE:
+              return squareWave(wavePhase);
+          case OscillatorType::SAWTOOTH:
+              return sawtoothWave(wavePhase);
+          case OscillatorType::TRIANGLE:
+              return triangleWave(wavePhase);
+          default:
+              throw std::invalid_argument("Unknown wave type");
+      }
   }
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
   std::shared_ptr<AudioParam> detuneParam_;
-  WaveType type_ = WaveType::SINE;
+  OscillatorType type_ = OscillatorType::SINE;
   float phase_ = 0.0;
+
+    static OscillatorType fromString(const std::string &type) {
+        std::string lowerType = type;
+        std::transform(
+                lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+
+        if (lowerType == "sine")
+            return OscillatorType::SINE;
+        if (lowerType == "square")
+            return OscillatorType::SQUARE;
+        if (lowerType == "sawtooth")
+            return OscillatorType::SAWTOOTH;
+        if (lowerType == "triangle")
+            return OscillatorType::TRIANGLE;
+        if (lowerType == "custom")
+            return OscillatorType::CUSTOM;
+
+        throw std::invalid_argument("Unknown oscillator type: " + type);
+    }
+
+    static std::string toString(OscillatorType type) {
+        switch (type) {
+            case OscillatorType::SINE:
+                return "sine";
+            case OscillatorType::SQUARE:
+                return "square";
+            case OscillatorType::SAWTOOTH:
+                return "sawtooth";
+            case OscillatorType::TRIANGLE:
+                return "triangle";
+            case OscillatorType::CUSTOM:
+                return "custom";
+            default:
+                throw std::invalid_argument("Unknown oscillator type");
+        }
+    }
 };
 } // namespace audioapi

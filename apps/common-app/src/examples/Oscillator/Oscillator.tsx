@@ -6,7 +6,7 @@ import {
   GainNode,
   OscillatorNode,
   StereoPannerNode,
-  type WaveType,
+  type OscillatorType,
 } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
@@ -26,7 +26,7 @@ const Oscillator: FC = () => {
   const [frequency, setFrequency] = useState(INITIAL_FREQUENCY);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
   const [pan, setPan] = useState(INITIAL_PAN);
-  const [oscillatorType, setOscillatorType] = useState<WaveType>('sine');
+  const [oscillatorType, setOscillatorType] = useState<OscillatorType>('sine');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -97,7 +97,7 @@ const Oscillator: FC = () => {
     setIsPlaying((prev) => !prev);
   };
 
-  const handleOscillatorTypeChange = (type: WaveType) => {
+  const handleOscillatorTypeChange = (type: OscillatorType) => {
     setOscillatorType(type);
     if (oscillatorRef.current) {
       oscillatorRef.current.type = type;
@@ -159,7 +159,7 @@ const Oscillator: FC = () => {
       />
       <Spacer.Vertical size={40} />
       <View style={styles.oscillatorTypeContainer}>
-        {OSCILLATOR_TYPES.map((type: WaveType) => (
+        {OSCILLATOR_TYPES.map((type: OscillatorType) => (
           <Pressable
             key={type}
             style={({ pressed }) => [

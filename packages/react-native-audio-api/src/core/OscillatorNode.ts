@@ -1,5 +1,5 @@
 import { IOscillatorNode } from '../interfaces';
-import { WaveType } from './types';
+import { OscillatorType } from './types';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
@@ -15,11 +15,11 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
     this.type = node.type;
   }
 
-  public get type(): WaveType {
+  public get type(): OscillatorType {
     return (this.node as IOscillatorNode).type;
   }
 
-  public set type(value: WaveType) {
+  public set type(value: OscillatorType) {
     (this.node as IOscillatorNode).type = value;
   }
 }

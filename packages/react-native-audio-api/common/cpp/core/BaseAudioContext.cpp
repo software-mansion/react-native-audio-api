@@ -70,7 +70,7 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
 }
 
 std::function<void(float *, int)> BaseAudioContext::renderAudio() {
-  if (state_ == State::CLOSED) {
+  if (state_ == ContextState::CLOSED) {
     return [](float *, int) {};
   }
 

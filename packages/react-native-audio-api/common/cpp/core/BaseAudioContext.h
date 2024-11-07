@@ -15,6 +15,7 @@
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "ContextState.h"
 
 #ifdef ANDROID
 #include "AudioPlayer.h"
@@ -42,31 +43,29 @@ class BaseAudioContext {
   std::function<void(float *, int)> renderAudio();
 
  protected:
-  enum class State { SUSPENDED, RUNNING, CLOSED };
-
-  static std::string toString(State state) {
-    switch (state) {
-      case State::SUSPENDED:
-        return "suspended";
-      case State::RUNNING:
-        return "running";
-      case State::CLOSED:
-        return "closed";
-      default:
-        throw std::invalid_argument("Unknown context state");
-    }
-  }
-
- protected:
   std::shared_ptr<AudioDestinationNode> destination_;
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
-  State state_ = State::RUNNING;
+  ContextState state_ = ContextState::RUNNING;
   int sampleRate_;
   double contextStartTime_;
+
+private:
+    static std::string toString(ContextState state) {
+        switch (state) {
+            case ContextState::SUSPENDED:
+                return "suspended";
+            case ContextState::RUNNING:
+                return "running";
+            case ContextState::CLOSED:
+                return "closed";
+            default:
+                throw std::invalid_argument("Unknown context state");
+        }
+    }
 };
 
 } // namespace audioapi

@@ -32,6 +32,7 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/HostObjects/*.h"
   "../common/cpp/utils/*.cpp"
   "../common/cpp/utils/*.h"
+  "../common/cpp/types/*.h"
 )
 
 add_library(react-native-audio-api SHARED ${SOURCE_FILES})
@@ -50,17 +51,6 @@ target_include_directories(
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 find_package (oboe REQUIRED CONFIG)
-
-# set(LINK_LIBRARIES
-#   ReactAndroid::reactnative
-#   ReactAndroid::jsi
-#   fbjni::fbjni
-#   android
-#   log
-#   oboe::oboe
-# )
-
-# target_link_libraries(react-native-audio-api ${LINK_LIBRARIES})
 
 set(LINK_LIBRARIES
   ReactAndroid::jsi
