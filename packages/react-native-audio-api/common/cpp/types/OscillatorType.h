@@ -1,17 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
-#include <algorithm>
 
 namespace audioapi {
 
-    enum class OscillatorType {
-        SINE,
-        SQUARE,
-        SAWTOOTH,
-        TRIANGLE,
-        CUSTOM
-    };
+enum class OscillatorType { SINE, SQUARE, SAWTOOTH, TRIANGLE, CUSTOM };
 
 } // namespace audioapi

@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "Constants.h"
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
+#include "Constants.h"
 
 // channelCount always equal to 2
 
@@ -41,29 +41,29 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
  private:
-    static std::string toString(ChannelCountMode mode) {
-        switch (mode) {
-            case ChannelCountMode::MAX:
-                return "max";
-            case ChannelCountMode::CLAMPED_MAX:
-                return "clamped-max";
-            case ChannelCountMode::EXPLICIT:
-                return "explicit";
-            default:
-                throw std::invalid_argument("Unknown channel count mode");
-        }
+  static std::string toString(ChannelCountMode mode) {
+    switch (mode) {
+      case ChannelCountMode::MAX:
+        return "max";
+      case ChannelCountMode::CLAMPED_MAX:
+        return "clamped-max";
+      case ChannelCountMode::EXPLICIT:
+        return "explicit";
+      default:
+        throw std::invalid_argument("Unknown channel count mode");
     }
+  }
 
-    static std::string toString(ChannelInterpretation interpretation) {
-        switch (interpretation) {
-            case ChannelInterpretation::SPEAKERS:
-                return "speakers";
-            case ChannelInterpretation::DISCRETE:
-                return "discrete";
-            default:
-                throw std::invalid_argument("Unknown channel interpretation");
-        }
+  static std::string toString(ChannelInterpretation interpretation) {
+    switch (interpretation) {
+      case ChannelInterpretation::SPEAKERS:
+        return "speakers";
+      case ChannelInterpretation::DISCRETE:
+        return "discrete";
+      default:
+        throw std::invalid_argument("Unknown channel interpretation");
     }
+  }
 
   void cleanup();
 };

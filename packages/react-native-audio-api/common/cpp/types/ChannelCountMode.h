@@ -5,6 +5,6 @@
 
 namespace audioapi {
 
-    enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
+enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
 
 }

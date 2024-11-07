@@ -28,47 +28,51 @@
 
 #include "PeriodicWave.h"
 
-// The number of bands per octave. Each octave will have this many entries in the wave tables.
+// The number of bands per octave. Each octave will have this many entries in
+// the wave tables.
 constexpr unsigned NumberOfOctaveBands = 3;
 
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
 
 namespace audioapi {
-    PeriodicWave::PeriodicWave(int sampleRate): sampleRate_(sampleRate) {
-        numberOfRanges_ = lround(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
-        auto nyquistFrequency = sampleRate_ / 2;
-        lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) / static_cast<float>(getMaxNumberOfPartials());
-        rateScale_ = static_cast<float>(getPeriodicWaveSize()) / static_cast<float>(sampleRate_);
-        waveTable_ = new float[getPeriodicWaveSize()];
-    }
-
-    PeriodicWave::PeriodicWave(int sampleRate, audioapi::OscillatorType type): PeriodicWave(sampleRate) {
-        //get waveTable for type
-    }
-
-    PeriodicWave::PeriodicWave(int sampleRate, float *real, float *imaginary): PeriodicWave(sampleRate) {
-        //get waveTable for real and imaginary
-    }
-
-    int PeriodicWave::getPeriodicWaveSize() const {
-        if(sampleRate_ <= 24000) {
-            return 2048;
-        }
-
-        if(sampleRate_ <= 88200) {
-            return 4096;
-        }
-
-        return 16384;
-    }
-
-    void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
-        auto n = getPeriodicWaveSize();
-
-        
-    }
-
-    int PeriodicWave::getMaxNumberOfPartials() const {
-        return getPeriodicWaveSize() / 2;
-    }
+PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
+  numberOfRanges_ = lround(
+      NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
+  auto nyquistFrequency = sampleRate_ / 2;
+  lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) /
+      static_cast<float>(getMaxNumberOfPartials());
+  rateScale_ = static_cast<float>(getPeriodicWaveSize()) /
+      static_cast<float>(sampleRate_);
+  waveTable_ = new float[getPeriodicWaveSize()];
 }
+
+PeriodicWave::PeriodicWave(int sampleRate, audioapi::OscillatorType type)
+    : PeriodicWave(sampleRate) {
+  // get waveTable for type
+}
+
+PeriodicWave::PeriodicWave(int sampleRate, float *real, float *imaginary)
+    : PeriodicWave(sampleRate) {
+  // get waveTable for real and imaginary
+}
+
+int PeriodicWave::getPeriodicWaveSize() const {
+  if (sampleRate_ <= 24000) {
+    return 2048;
+  }
+
+  if (sampleRate_ <= 88200) {
+    return 4096;
+  }
+
+  return 16384;
+}
+
+void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
+  auto n = getPeriodicWaveSize();
+}
+
+int PeriodicWave::getMaxNumberOfPartials() const {
+  return getPeriodicWaveSize() / 2;
+}
+} // namespace audioapi

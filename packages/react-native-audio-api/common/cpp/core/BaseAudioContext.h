@@ -12,10 +12,10 @@
 #include "AudioScheduledSourceNode.h"
 #include "BiquadFilterNode.h"
 #include "Constants.h"
+#include "ContextState.h"
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "ContextState.h"
 
 #ifdef ANDROID
 #include "AudioPlayer.h"
@@ -53,19 +53,19 @@ class BaseAudioContext {
   int sampleRate_;
   double contextStartTime_;
 
-private:
-    static std::string toString(ContextState state) {
-        switch (state) {
-            case ContextState::SUSPENDED:
-                return "suspended";
-            case ContextState::RUNNING:
-                return "running";
-            case ContextState::CLOSED:
-                return "closed";
-            default:
-                throw std::invalid_argument("Unknown context state");
-        }
+ private:
+  static std::string toString(ContextState state) {
+    switch (state) {
+      case ContextState::SUSPENDED:
+        return "suspended";
+      case ContextState::RUNNING:
+        return "running";
+      case ContextState::CLOSED:
+        return "closed";
+      default:
+        throw std::invalid_argument("Unknown context state");
     }
+  }
 };
 
 } // namespace audioapi

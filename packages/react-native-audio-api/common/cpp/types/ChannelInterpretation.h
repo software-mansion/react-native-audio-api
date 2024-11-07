@@ -5,6 +5,6 @@
 
 namespace audioapi {
 
-    enum class ChannelInterpretation { SPEAKERS, DISCRETE };
+enum class ChannelInterpretation { SPEAKERS, DISCRETE };
 
 }

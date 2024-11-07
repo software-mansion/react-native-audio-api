@@ -5,6 +5,6 @@
 
 namespace audioapi {
 
-    enum class ContextState { SUSPENDED, RUNNING, CLOSED };
+enum class ContextState { SUSPENDED, RUNNING, CLOSED };
 
 }

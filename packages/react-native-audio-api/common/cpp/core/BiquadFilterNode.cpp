@@ -340,7 +340,7 @@ void BiquadFilterNode::applyFilter() {
       setNotchCoefficients(
           normalizedFrequency, QParam_->getValueAtTime(currentTime));
       break;
-      case BiquadFilterType::ALLPASS:
+    case BiquadFilterType::ALLPASS:
       setAllpassCoefficients(
           normalizedFrequency, QParam_->getValueAtTime(currentTime));
       break;
