@@ -77,7 +77,7 @@ void add(
       numberOfElementsToProcess);
 }
 
-void substract(
+void subtract(
     const float *inputVector1,
     const float *inputVector2,
     float *outputVector,
@@ -363,7 +363,7 @@ void add(
   }
 }
 
-void substract(
+void subtract(
     const float *inputVector1,
     const float *inputVector2,
     float *outputVector,

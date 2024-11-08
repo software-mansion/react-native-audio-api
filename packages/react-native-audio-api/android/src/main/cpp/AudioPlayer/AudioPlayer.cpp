@@ -2,9 +2,11 @@
 #include "AudioContext.h"
 
 namespace audioapi {
+
 AudioPlayer::AudioPlayer(const std::function<void(float *, int)> &renderAudio)
     : renderAudio_(renderAudio) {
   AudioStreamBuilder builder;
+
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
@@ -17,6 +19,10 @@ AudioPlayer::AudioPlayer(const std::function<void(float *, int)> &renderAudio)
 
 int AudioPlayer::getSampleRate() const {
   return mStream_->getSampleRate();
+}
+
+int AudioPlayer::getBufferSizeInFrames() const {
+  return mStream_->getBufferSizeInFrames();
 }
 
 void AudioPlayer::start() {
@@ -42,4 +48,5 @@ DataCallbackResult AudioPlayer::onAudioReady(
 
   return DataCallbackResult::Continue;
 }
+
 } // namespace audioapi

@@ -11,27 +11,27 @@ AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
 }
 
 void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
-  processAudio(audioData, numFrames);
+  // processAudio(audioData, numFrames);
 }
 
-bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
-  int numSamples = numFrames * CHANNEL_COUNT;
+// bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
+//   int numSamples = numFrames * CHANNEL_COUNT;
 
-  if (mixingBuffer == nullptr) {
-    mixingBuffer = std::make_unique<float[]>(numSamples);
-  }
+//   if (mixingBuffer == nullptr) {
+//     mixingBuffer = std::make_unique<float[]>(numSamples);
+//   }
 
-  memset(audioData, 0.0f, sizeof(float) * numSamples);
+//   memset(audioData, 0.0f, sizeof(float) * numSamples);
 
-  for (auto &node : inputNodes_) {
-    if (node && node->processAudio(mixingBuffer.get(), numFrames)) {
-      normalize(mixingBuffer.get(), numFrames);
-      VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
-    }
-  }
+//   for (auto &node : inputNodes_) {
+//     if (node && node->processAudio(mixingBuffer.get(), numFrames)) {
+//       normalize(mixingBuffer.get(), numFrames);
+//       VectorMath::add(audioData, mixingBuffer.get(), audioData, numSamples);
+//     }
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 void AudioDestinationNode::normalize(float *audioData, int32_t numFrames) {
   auto maxValue = std::max(

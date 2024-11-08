@@ -21,6 +21,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
       throw new InvalidStateError('Cannot call start more than once');
     }
 
+    this.hasBeenStarted = true;
     (this.node as IAudioScheduledSourceNode).start(when);
   }
 
@@ -37,6 +38,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
       );
     }
 
+    // TODO: should we reset hasBeenStarted here? :thunk:
     (this.node as IAudioScheduledSourceNode).stop(when);
   }
 }

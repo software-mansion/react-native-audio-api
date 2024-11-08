@@ -3,7 +3,9 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {}
+AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
+  buffer_ = std::make_unique<AudioNodeBuffer>(context_, channelCount_);
+}
 
 AudioNode::~AudioNode() {
   cleanup();
@@ -54,15 +56,15 @@ void AudioNode::cleanup() {
   inputNodes_.clear();
 }
 
-bool AudioNode::processAudio(float *audioData, int32_t numFrames) {
-  bool isPlaying = false;
-  for (auto &node : inputNodes_) {
-    if (node->processAudio(audioData, numFrames)) {
-      isPlaying = true;
-    }
-  }
+// bool AudioNode::processAudio(float *audioData, int32_t numFrames) {
+//   bool isPlaying = false;
+//   for (auto &node : inputNodes_) {
+//     if (node->processAudio(audioData, numFrames)) {
+//       isPlaying = true;
+//     }
+//   }
 
-  return isPlaying;
-}
+//   return isPlaying;
+// }
 
 } // namespace audioapi

@@ -19,7 +19,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
   void setType(const std::string &type);
 
  protected:
-  bool processAudio(float *audioData, int32_t numFrames) override;
+  // bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE, CUSTOM };

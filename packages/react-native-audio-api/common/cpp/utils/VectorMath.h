@@ -47,7 +47,7 @@ void add(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess);
-void substract(
+void subtract(
     const float *inputVector1,
     const float *inputVector2,
     float *outputVector,

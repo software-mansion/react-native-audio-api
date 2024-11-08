@@ -29,7 +29,7 @@ class BiquadFilterNode : public AudioNode {
       std::vector<float> &phaseResponseOutput);
 
  protected:
-  bool processAudio(float *audioData, int32_t numFrames) override;
+  // bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   enum class FilterType {

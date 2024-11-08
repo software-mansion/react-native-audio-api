@@ -15,36 +15,36 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
-  // assumed channelCount = 2
-  if (!AudioNode::processAudio(audioData, numFrames)) {
-    return false;
-  }
+// bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
+//   // assumed channelCount = 2
+//   if (!AudioNode::processAudio(audioData, numFrames)) {
+//     return false;
+//   }
 
-  auto time = context_->getCurrentTime();
-  auto deltaTime = 1.0 / context_->getSampleRate();
+//   auto time = context_->getCurrentTime();
+//   auto deltaTime = 1.0 / context_->getSampleRate();
 
-  for (int i = 0; i < numFrames; i++) {
-    auto pan = panParam_->getValueAtTime(time);
-    auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
+//   for (int i = 0; i < numFrames; i++) {
+//     auto pan = panParam_->getValueAtTime(time);
+//     auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
-    auto gainL = static_cast<float>(cos(x));
-    auto gainR = static_cast<float>(sin(x));
+//     auto gainL = static_cast<float>(cos(x));
+//     auto gainR = static_cast<float>(sin(x));
 
-    auto inputL = audioData[i * 2];
-    auto inputR = audioData[i * 2 + 1];
+//     auto inputL = audioData[i * 2];
+//     auto inputR = audioData[i * 2 + 1];
 
-    if (pan <= 0) {
-      audioData[i * 2] = inputL + inputR * gainL;
-      audioData[i * 2 + 1] = inputR * gainR;
-    } else {
-      audioData[i * 2] = inputL * gainL;
-      audioData[i * 2 + 1] = inputR + inputL * gainR;
-    }
+//     if (pan <= 0) {
+//       audioData[i * 2] = inputL + inputR * gainL;
+//       audioData[i * 2 + 1] = inputR * gainR;
+//     } else {
+//       audioData[i * 2] = inputL * gainL;
+//       audioData[i * 2 + 1] = inputR + inputL * gainR;
+//     }
 
-    time += deltaTime;
-  }
+//     time += deltaTime;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 } // namespace audioapi

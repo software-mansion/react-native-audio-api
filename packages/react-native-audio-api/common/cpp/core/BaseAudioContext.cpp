@@ -29,6 +29,10 @@ int BaseAudioContext::getSampleRate() const {
   return sampleRate_;
 }
 
+int BaseAudioContext::getBufferSizeInFrames() const {
+  return bufferSizeInFrames_;
+}
+
 double BaseAudioContext::getCurrentTime() const {
   auto now = std::chrono::high_resolution_clock ::now();
   auto currentTime =

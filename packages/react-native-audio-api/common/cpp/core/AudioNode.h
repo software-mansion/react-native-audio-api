@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "Constants.h"
+#include "AudioNodeBuffer.h"
 
 // channelCount always equal to 2
 
@@ -24,7 +25,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
   // Change public to protected
-  virtual bool processAudio(float *audioData, int32_t numFrames);
+  // virtual bool processAudio(float *audioData, int32_t numFrames);
 
  protected:
   enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
@@ -57,9 +58,12 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  protected:
   BaseAudioContext *context_;
+  std::unique_ptr<AudioNodeBuffer> buffer_;
+
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = CHANNEL_COUNT;
+
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
       ChannelInterpretation::SPEAKERS;

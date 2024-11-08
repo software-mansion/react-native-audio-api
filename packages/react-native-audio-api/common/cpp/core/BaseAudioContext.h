@@ -30,6 +30,7 @@ class BaseAudioContext {
   std::string getState();
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
+  [[nodiscard]] int getBufferSizeInFrames() const;
 
   std::shared_ptr<AudioDestinationNode> getDestination();
   std::shared_ptr<OscillatorNode> createOscillator();
@@ -66,6 +67,7 @@ class BaseAudioContext {
 #endif
   State state_ = State::RUNNING;
   int sampleRate_;
+  int bufferSizeInFrames_;
   double contextStartTime_;
 };
 

@@ -17,11 +17,6 @@ IOSAudioPlayer::~IOSAudioPlayer()
   [audioPlayer_ cleanup];
 }
 
-int IOSAudioPlayer::getSampleRate() const
-{
-  return [audioPlayer_ getSampleRate];
-}
-
 void IOSAudioPlayer::start()
 {
   return [audioPlayer_ start];
@@ -30,5 +25,15 @@ void IOSAudioPlayer::start()
 void IOSAudioPlayer::stop()
 {
   return [audioPlayer_ stop];
+}
+
+int IOSAudioPlayer::getSampleRate() const
+{
+  return [audioPlayer_ getSampleRate];
+}
+
+int IOSAudioPlayer::getBufferSizeInFrames() const
+{
+  return [audioPlayer_ getBufferSizeInFrames];
 }
 } // namespace audioapi

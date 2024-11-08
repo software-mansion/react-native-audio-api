@@ -16,7 +16,7 @@ class AudioDestinationNode : public AudioNode {
   void renderAudio(float *audioData, int32_t numFrames);
 
  protected:
-  bool processAudio(float *audioData, int32_t numFrames) override;
+  // bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
   std::unique_ptr<float[]> mixingBuffer;

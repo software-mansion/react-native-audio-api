@@ -14,6 +14,7 @@ class AudioPlayer : public AudioStreamDataCallback {
   explicit AudioPlayer(const std::function<void(float *, int)> &renderAudio);
 
   int getSampleRate() const;
+  int getBufferSizeInFrames() const;
   void start();
   void stop();
 
