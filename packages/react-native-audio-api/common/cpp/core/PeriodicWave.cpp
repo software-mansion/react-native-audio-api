@@ -69,7 +69,71 @@ int PeriodicWave::getPeriodicWaveSize() const {
 }
 
 void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
-  auto n = getPeriodicWaveSize();
+  auto fftSize = getPeriodicWaveSize();
+  /*
+   * For real-valued time-domain signals, the FFT outputs a Hermitian symmetric sequence
+   * (where the positive frequencies are the complex conjugate of the negative ones).
+   * This symmetry implies that real signals have mirrored frequency components.
+   * In such scenarios, all 'real' frequency information is contained in the first half of the transform,
+   * and altering parts such as real and imag can finely shape which harmonic content is retained or discarded.
+  */
+  auto halfSize = fftSize / 2;
+
+  auto *real = new float[halfSize];
+  auto *imaginary = new float[halfSize];
+
+  // Reset Direct Current (DC) component. First element of frequency domain representation - c0.
+  // https://math24.net/complex-form-fourier-series.html
+  real[0] = 0.0f;
+  imaginary[0] = 0.0f;
+
+  if (type == OscillatorType::SAWTOOTH) {
+      real[0] = 1.0f;
+  }
+
+  for(int i = 1; i < halfSize; i++) {
+      // All waveforms are odd functions with a positive slope at time 0.
+      // Hence the coefficients for cos() are always 0.
+
+      // Formulas for Fourier coefficients:
+      // https://mathworld.wolfram.com/FourierSeries.html
+
+      // Coefficient for sin()
+      float b;
+
+      auto piFactor = static_cast<float>(1.0f / (i * M_PI));
+
+      switch(type) {
+          case OscillatorType::SINE:
+              b = (i == 1) ? 1.0f : 0.0f;
+                break;
+
+          case OscillatorType::SQUARE:
+              // https://mathworld.wolfram.com/FourierSeriesSquareWave.html
+              b = (i % 2 == 1) ? 4 * piFactor : 0.0f;
+              break;
+          case OscillatorType::SAWTOOTH:
+              // https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html
+              b = - piFactor;
+              break;
+          case OscillatorType::TRIANGLE:
+              // https://mathworld.wolfram.com/FourierSeriesTriangleWave.html
+              if (i % 2 == 1) {
+                  b = 8.0f * piFactor * piFactor * (i % 4 == 1 ? 1.0f : -1.0f);
+              } else {
+                  b = 0.0f;
+              }
+              break;
+          case OscillatorType::CUSTOM:
+             throw std::invalid_argument("Custom waveforms are not supported.");
+      }
+
+        real[i] = 0.0f;
+        imaginary[i] = b;
+  }
+
+  // call creating waveTable from real and imaginary
+  // createBandLimitedTables(real, imaginary, halfSize);
 }
 
 int PeriodicWave::getMaxNumberOfPartials() const {

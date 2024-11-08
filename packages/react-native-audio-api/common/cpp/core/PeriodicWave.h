@@ -39,12 +39,12 @@ class PeriodicWave {
   explicit PeriodicWave(int sampleRate, OscillatorType type);
   explicit PeriodicWave(int sampleRate, float *real, float *imaginary);
 
-  int getPeriodicWaveSize() const;
+  [[nodiscard]] int getPeriodicWaveSize() const;
 
  private:
   explicit PeriodicWave(int sampleRate);
 
-  int getMaxNumberOfPartials() const;
+  [[nodiscard]] int getMaxNumberOfPartials() const;
 
   void generateBasicWaveForm(OscillatorType type);
 
