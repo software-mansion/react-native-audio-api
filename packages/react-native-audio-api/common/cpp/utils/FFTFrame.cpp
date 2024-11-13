@@ -20,8 +20,8 @@ namespace audioapi {
 
         // Scale the FFT data, beacuse of
         // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892
-        VectorMath::multiplyByScalar(realData_, 0.5f, realData_, halfSize);
-        VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, halfSize);
+        VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
+        VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ /2);
     }
 
     void FFTFrame::inverse(float *data) {

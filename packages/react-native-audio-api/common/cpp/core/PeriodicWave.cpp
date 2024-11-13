@@ -54,9 +54,9 @@ PeriodicWave::PeriodicWave(int sampleRate, audioapi::OscillatorType type)
     this->generateBasicWaveForm(type);
 }
 
-PeriodicWave::PeriodicWave(int sampleRate, float *real, float *imaginary)
+PeriodicWave::PeriodicWave(int sampleRate, float *real, float *imaginary, int size)
     : PeriodicWave(sampleRate) {
-  // get waveTable for real and imaginary
+    createBandLimitedTables(real, imaginary, size);
 }
 
 int PeriodicWave::getPeriodicWaveSize() const {
@@ -69,6 +69,29 @@ int PeriodicWave::getPeriodicWaveSize() const {
   }
 
   return 16384;
+}
+
+void PeriodicWave::getWaveDataForFundamentalFrequency(float fundamentalFrequency, float *&lowerWaveData, float *&higherWaveData,float &interpolationFactor) {
+    // negative frequencies are allowed and will be treated as positive.
+    fundamentalFrequency = std::fabs(fundamentalFrequency);
+
+    // calculating lower and higher range index for the given fundamental frequency.
+    float ratio = fundamentalFrequency > 0 ? fundamentalFrequency / lowestFundamentalFrequency_ : 0.5f;
+    float centsAboveLowestFrequency = log2f(ratio) * 1200;
+
+    float pitchRange = 1 + centsAboveLowestFrequency / CentsPerRange;
+
+    pitchRange = std::clamp(pitchRange, 0.0f, static_cast<float>(numberOfRanges_ - 1));
+
+    int lowerRangeIndex = static_cast<int>(pitchRange);
+    int higherRangeIndex = lowerRangeIndex < numberOfRanges_ - 1 ? lowerRangeIndex + 1 : lowerRangeIndex;
+
+    // get the wave data for the lower and higher range index.
+    lowerWaveData = bandLimitedTables_[lowerRangeIndex];
+    higherWaveData = bandLimitedTables_[higherRangeIndex];
+
+    // calculate the interpolation factor between the lower and higher range data.
+    interpolationFactor = pitchRange - static_cast<float>(lowerRangeIndex);
 }
 
 int PeriodicWave::getMaxNumberOfPartials() const {

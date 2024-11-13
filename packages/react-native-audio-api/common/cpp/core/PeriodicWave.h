@@ -39,9 +39,11 @@ namespace audioapi {
 class PeriodicWave {
  public:
   explicit PeriodicWave(int sampleRate, OscillatorType type);
-  explicit PeriodicWave(int sampleRate, float *real, float *imaginary);
+  explicit PeriodicWave(int sampleRate, float *real, float *imaginary, int size);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
+
+  void getWaveDataForFundamentalFrequency(float fundamentalFrequency, float* &lowerWaveData, float* &higherWaveData, float& interpolationFactor);
 
  private:
   explicit PeriodicWave(int sampleRate);

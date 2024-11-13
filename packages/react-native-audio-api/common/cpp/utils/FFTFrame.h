@@ -33,15 +33,16 @@
 #endif
 
 #include <cmath>
+#include "VectorMath.h"
 
 namespace audioapi {
 
 class FFTFrame {
 
 public:
-    FFTFrame(int size);
-    FFTFrame(const FFTFrame& frame);
-    ~FFTFrame();
+    explicit FFTFrame(int size);
+//    FFTFrame(const FFTFrame& frame);
+//    ~FFTFrame();
 
     float *getRealData() const { return realData_; }
     float *getImaginaryData() const { return imaginaryData_; }
