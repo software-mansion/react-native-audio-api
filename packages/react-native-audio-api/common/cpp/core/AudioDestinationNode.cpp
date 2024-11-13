@@ -1,5 +1,6 @@
 #include "AudioDestinationNode.h"
 #include "BaseAudioContext.h"
+#include "VectorMath.h"
 
 namespace audioapi {
 

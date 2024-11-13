@@ -13,12 +13,18 @@ class AudioChannel {
     [[nodiscard]] int getSampleRate() const;
 
     void zero();
+    void copy(const AudioChannel &source);
+
+    float& operator[](int index);
+    const float& operator[](int index) const;
+
+
+    float getMaxAbsValue() const;
+
+    void normalize();
     void scale(float scale);
+    void sum(const AudioChannel &source);
 
-    void sumFrom(const AudioChannel &source);
-    void copyFrom(const AudioChannel &source);
-
-    float maxAbsValue() const;
 
   private:
 

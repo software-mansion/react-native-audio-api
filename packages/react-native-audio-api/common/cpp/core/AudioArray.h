@@ -19,6 +19,12 @@ class AudioArray {
     void resize(int size);
     void copy(const AudioArray &source);
 
+    float getMaxAbsValue() const;
+
+    void normalize();
+    void scale(float value);
+    void sum(const AudioArray &source);
+
   private:
     float *data_;
     int size_;

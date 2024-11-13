@@ -5,7 +5,6 @@
 
 #include "AudioNode.h"
 #include "AudioParam.h"
-#include "VectorMath.h"
 
 namespace audioapi {
 

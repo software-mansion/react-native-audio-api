@@ -1,4 +1,5 @@
 #include "AudioArray.h"
+#include "VectorMath.h"
 
 namespace audioapi {
 
@@ -47,4 +48,27 @@ void AudioArray::copy(const AudioArray &source) {
   memcpy(data_, source.data_, size_ * sizeof(float));
 }
 
-}
+float AudioArray::getMaxAbsValue() const {
+  return VectorMath::maximumMagnitude(data_, size_);
+};
+
+void AudioArray::normalize() {
+  float maxAbsValue = getMaxAbsValue();
+
+  if (maxAbsValue == 0.0f || maxAbsValue == 1.0f) {
+    return;
+  }
+
+  VectorMath::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
+};
+
+void AudioArray::scale(float value) {
+  VectorMath::multiplyByScalar(data_, value, data_, size_);
+};
+
+void AudioArray::sum(const AudioArray &source) {
+  VectorMath::add(data_, source.data_, data_, size_);
+};
+
+} // namespace audioapi
+
