@@ -33,6 +33,8 @@ Our current coverage of Web Audio API specification can be found here: [Web Audi
 
 ## Examples
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/c6APIJIhKBI?si=GCVpEeiwyI9R6bnH" title="YouTube video player" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 The source code for the example application is under the [`/apps/common-app`](./apps/common-app/) directory. If you want to play with the API but don't feel like trying it on a real app, you can run the example project. Check [Example README](./apps/common-example/README.md) for installation instructions.
 
 ## Your feedback
