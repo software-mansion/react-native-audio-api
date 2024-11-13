@@ -39,16 +39,19 @@ PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
   numberOfRanges_ = lround(
       NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
   auto nyquistFrequency = sampleRate_ / 2;
+
   lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) /
       static_cast<float>(getMaxNumberOfPartials());
+
   rateScale_ = static_cast<float>(getPeriodicWaveSize()) /
       static_cast<float>(sampleRate_);
-  waveTable_ = new float[getPeriodicWaveSize()];
+
+  bandLimitedTables_ = new float *[numberOfRanges_];
 }
 
 PeriodicWave::PeriodicWave(int sampleRate, audioapi::OscillatorType type)
     : PeriodicWave(sampleRate) {
-  // get waveTable for type
+    this->generateBasicWaveForm(type);
 }
 
 PeriodicWave::PeriodicWave(int sampleRate, float *real, float *imaginary)
@@ -68,6 +71,26 @@ int PeriodicWave::getPeriodicWaveSize() const {
   return 16384;
 }
 
+int PeriodicWave::getMaxNumberOfPartials() const {
+    return getPeriodicWaveSize() / 2;
+}
+
+int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
+    // Number of cents below nyquist where we cull partials.
+    auto centsToCull = static_cast<float>(rangeIndex) * CentsPerRange;
+
+    // A value from 0 -> 1 representing what fraction of the partials to keep.
+    auto cullingScale = std::powf(2, -centsToCull / 1200);
+
+    // The very top range will have all the partials culled.
+    int numberOfPartials = floor(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
+
+    return numberOfPartials;
+}
+
+// This function generates real and imaginary parts of the waveTable,
+// real and imaginary arrays represent the coefficients of the harmonic components in the frequency domain,
+// specifically as part of a complex representation used by Fourier Transform methods to describe signals.
 void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   auto fftSize = getPeriodicWaveSize();
   /*
@@ -87,10 +110,6 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   real[0] = 0.0f;
   imaginary[0] = 0.0f;
 
-  if (type == OscillatorType::SAWTOOTH) {
-      real[0] = 1.0f;
-  }
-
   for(int i = 1; i < halfSize; i++) {
       // All waveforms are odd functions with a positive slope at time 0.
       // Hence the coefficients for cos() are always 0.
@@ -106,15 +125,17 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
       switch(type) {
           case OscillatorType::SINE:
               b = (i == 1) ? 1.0f : 0.0f;
-                break;
-
+              break;
           case OscillatorType::SQUARE:
               // https://mathworld.wolfram.com/FourierSeriesSquareWave.html
               b = (i % 2 == 1) ? 4 * piFactor : 0.0f;
               break;
           case OscillatorType::SAWTOOTH:
-              // https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html
-              b = - piFactor;
+              // https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html - our function differs from this one,
+              // but coefficients calculation looks similar.
+              // our function - f(x) = 2(x / (2 * pi) - floor(x / (2 * pi) + 0.5)));
+              // https://www.wolframalpha.com/input?i=2%28x+%2F+%282+*+pi%29+-+floor%28x+%2F+%282+*+pi%29+%2B+0.5%29%29%29%3B
+              b = 2 * piFactor * (i % 2 == 1 ? 1.0f : -1.0f);
               break;
           case OscillatorType::TRIANGLE:
               // https://mathworld.wolfram.com/FourierSeriesTriangleWave.html
@@ -132,11 +153,43 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
         imaginary[i] = b;
   }
 
-  // call creating waveTable from real and imaginary
-  // createBandLimitedTables(real, imaginary, halfSize);
+  createBandLimitedTables(real, imaginary, halfSize);
 }
 
-int PeriodicWave::getMaxNumberOfPartials() const {
-  return getPeriodicWaveSize() / 2;
+void PeriodicWave::createBandLimitedTables(const float *realData, const float *imaginaryData, int size) {
+    auto fftSize = getPeriodicWaveSize();
+    auto halfSize = fftSize / 2;
+
+    size = std::min(size, halfSize);
+
+    for(int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
+        FFTFrame fftFrame(fftSize);
+
+        auto *realFFTFrameData = fftFrame.getRealData();
+        auto *imaginaryFFTFrameData = fftFrame.getImaginaryData();
+
+        // copy real and imaginary data to the FFT frame and scale it
+        VectorMath::multiplyByScalar(realData, static_cast<float>(fftSize), realFFTFrameData, size);
+        VectorMath::multiplyByScalar(imaginaryData, -static_cast<float>(fftSize), imaginaryFFTFrameData, size);
+
+        // Find the starting bin where we should start culling.
+        // We need to clear out the highest frequencies to band-limit the waveform.
+        auto numberOfPartials = getNumberOfPartialsPerRange(rangeIndex);
+
+        // Clamp the size to the number of partials.
+        auto clampedSize = std::min(size, numberOfPartials);
+        if(clampedSize < halfSize) {
+            // Zero out the higher frequencies for certain range.
+            std::fill(realFFTFrameData + clampedSize, realFFTFrameData + halfSize, 0.0f);
+            std::fill(imaginaryFFTFrameData + clampedSize, imaginaryFFTFrameData + halfSize, 0.0f);
+        }
+
+        // Zero out the nquist and DC components.
+        realFFTFrameData[0] = 0.0f;
+        imaginaryFFTFrameData[0] = 0.0f;
+
+        bandLimitedTables_[rangeIndex] = new float[fftSize];
+        fftFrame.inverse(bandLimitedTables_[rangeIndex]);
+    }
 }
 } // namespace audioapi

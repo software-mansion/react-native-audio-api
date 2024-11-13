@@ -32,6 +32,8 @@
 #include <memory>
 
 #include "OscillatorType.h"
+#include "FFTFrame.h"
+#include "VectorMath.h"
 
 namespace audioapi {
 class PeriodicWave {
@@ -46,7 +48,11 @@ class PeriodicWave {
 
   [[nodiscard]] int getMaxNumberOfPartials() const;
 
+  [[nodiscard]] int getNumberOfPartialsPerRange(int rangeIndex) const;
+
   void generateBasicWaveForm(OscillatorType type);
+
+  void createBandLimitedTables(const float *real, const float *imaginary, int size);
 
   // determines the time resolution of the waveform.
   int sampleRate_;
@@ -59,7 +65,6 @@ class PeriodicWave {
   // rate.
   float rateScale_;
 
-  float *waveTable_;
-  // float **bandLimitedTables_;
+  float **bandLimitedTables_;
 };
 } // namespace audioapi
