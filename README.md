@@ -33,13 +33,13 @@ Our current coverage of Web Audio API specification can be found here: [Web Audi
 
 ## Examples
 
-<center>
+<div align="center">
 
 <a href="https://www.youtube.com/watch?v=npALr9IIDkI" target="_blank" rel="noopener noreferrer">
   <img src="./docs/assets/rnaa-example-01-thumbnail.png" width="640" />
 </a>
 
-</center>
+</div>
 
 The source code for the example application is under the [`/apps/common-app`](./apps/common-app/) directory. If you want to play with the API but don't feel like trying it on a real app, you can run the example project. Check [Example README](./apps/common-example/README.md) for installation instructions.
 
