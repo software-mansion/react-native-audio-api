@@ -61,9 +61,9 @@ PeriodicWave::PeriodicWave(
     int sampleRate,
     float *real,
     float *imaginary,
-    int size)
+    int length)
     : PeriodicWave(sampleRate) {
-  createBandLimitedTables(real, imaginary, size);
+  createBandLimitedTables(real, imaginary, length);
 }
 
 int PeriodicWave::getPeriodicWaveSize() const {

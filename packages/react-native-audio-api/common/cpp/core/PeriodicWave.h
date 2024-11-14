@@ -43,7 +43,7 @@ class PeriodicWave {
       int sampleRate,
       float *real,
       float *imaginary,
-      int size);
+      int length);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getRateScale() const;
