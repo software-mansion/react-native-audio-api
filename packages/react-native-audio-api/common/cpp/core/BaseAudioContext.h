@@ -16,6 +16,8 @@
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "PeriodicWave.h"
+#include "OscillatorType.h"
 
 #ifdef ANDROID
 #include "AudioPlayer.h"
@@ -40,7 +42,9 @@ class BaseAudioContext {
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
+
   std::function<void(float *, int)> renderAudio();
+  std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
 
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
@@ -54,6 +58,11 @@ class BaseAudioContext {
   double contextStartTime_;
 
  private:
+    std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
+    std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
+    std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
+    std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
+
   static std::string toString(ContextState state) {
     switch (state) {
       case ContextState::SUSPENDED:

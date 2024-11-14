@@ -10,8 +10,7 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   detuneParam_ =
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
   type_ = OscillatorType::SINE;
-  periodicWave_ =
-      std::make_shared<PeriodicWave>(context_->getSampleRate(), type_);
+  periodicWave_ = context_->getBasicWaveForm(type_);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -28,8 +27,7 @@ std::string OscillatorNode::getType() {
 
 void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
-  periodicWave_ =
-      std::make_shared<PeriodicWave>(context_->getSampleRate(), type_);
+  periodicWave_ = context_->getBasicWaveForm(type_);
 }
 
 bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
@@ -58,6 +56,8 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
       if (phase_ >= static_cast<float>(periodicWave_->getPeriodicWaveSize())) {
         phase_ -= static_cast<float>(periodicWave_->getPeriodicWaveSize());
       }
+
+        time += deltaTime;
     }
 
     return true;
