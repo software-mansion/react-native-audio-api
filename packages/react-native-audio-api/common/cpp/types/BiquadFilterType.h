@@ -16,5 +16,4 @@ enum class BiquadFilterType {
   NOTCH,
   ALLPASS
 };
-
-}
+} // namespace audioapi

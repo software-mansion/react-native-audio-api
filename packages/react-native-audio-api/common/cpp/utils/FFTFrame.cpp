@@ -26,7 +26,7 @@ void FFTFrame::forward(float *data) {
 
 void FFTFrame::inverse(float *data) {
   vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_INVERSE);
-  vDSP_ztoc(&frame_, 1, (DSPComplex *)data, 2, size_ / 2);
+  vDSP_ztoc(&frame_, 1, reinterpret_cast<DSPComplex *>data, 2, size_ / 2);
 
   // Scale the FFT data, beacuse of
   // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892

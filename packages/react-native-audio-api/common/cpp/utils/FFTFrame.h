@@ -33,6 +33,8 @@
 #endif
 
 #include <cmath>
+#include <utility>
+
 #include "VectorMath.h"
 
 namespace audioapi {

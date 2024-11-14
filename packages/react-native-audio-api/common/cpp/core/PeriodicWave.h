@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <memory>
+#include <algorithm>
 
 #include "FFTFrame.h"
 #include "OscillatorType.h"
