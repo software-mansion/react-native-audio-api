@@ -69,6 +69,15 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
+std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
+    float *real,
+    float *imag,
+    bool disableNormalization,
+    int length) {
+  // add normalization
+  return std::make_shared<PeriodicWave>(sampleRate_, real, imag, length);
+}
+
 std::function<void(float *, int)> BaseAudioContext::renderAudio() {
   if (state_ == ContextState::CLOSED) {
     return [](float *, int) {};
@@ -102,9 +111,10 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(
         cachedTriangleWave_ = std::make_shared<PeriodicWave>(sampleRate_, type);
       }
       return cachedTriangleWave_;
-      case OscillatorType::CUSTOM:
-          throw std::invalid_argument("You can't get a custom wave form. You need to create it.");
-          break;
+    case OscillatorType::CUSTOM:
+      throw std::invalid_argument(
+          "You can't get a custom wave form. You need to create it.");
+      break;
   }
 }
 } // namespace audioapi

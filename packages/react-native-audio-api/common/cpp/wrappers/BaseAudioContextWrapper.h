@@ -11,6 +11,7 @@
 #include "BiquadFilterNodeWrapper.h"
 #include "GainNodeWrapper.h"
 #include "OscillatorNodeWrapper.h"
+#include "PeriodicWaveWrapper.h"
 #include "StereoPannerNodeWrapper.h"
 
 namespace audioapi {
@@ -22,6 +23,9 @@ class BaseAudioContextWrapper {
 
   [[nodiscard]] std::shared_ptr<AudioDestinationNodeWrapper> getDestination()
       const;
+  [[nodiscard]] std::string getState() const;
+  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::shared_ptr<OscillatorNodeWrapper> createOscillator() const;
   [[nodiscard]] std::shared_ptr<GainNodeWrapper> createGain() const;
   [[nodiscard]] std::shared_ptr<StereoPannerNodeWrapper> createStereoPanner()
@@ -32,9 +36,11 @@ class BaseAudioContextWrapper {
   createBufferSource() const;
   [[nodiscard]] std::shared_ptr<AudioBufferWrapper>
   createBuffer(int numberOfChannels, int length, int sampleRate) const;
-  [[nodiscard]] std::string getState() const;
-  [[nodiscard]] int getSampleRate() const;
-  [[nodiscard]] double getCurrentTime() const;
+  [[nodiscard]] std::shared_ptr<PeriodicWaveWrapper> createPeriodicWave(
+      float *real,
+      float *imag,
+      bool disableNormalization,
+      int length);
 
  protected:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;
