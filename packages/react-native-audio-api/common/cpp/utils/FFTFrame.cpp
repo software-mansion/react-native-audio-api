@@ -13,14 +13,6 @@ namespace audioapi {
         #endif
     }
 
-    void FFTFrame::forward(float *data) {
-
-    }
-
-    void FFTFrame::inverse(float *data) {
-
-    }
-
 #if defined(HAVE_ACCELERATE)
     void FFTFrame::forward(float *data) {
         vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &frame_, 1, size_ / 2);
@@ -40,5 +32,13 @@ namespace audioapi {
         // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892
         VectorMath::multiplyByScalar(data, 1.0f / static_cast<float>(size_), data, size_);
     }
+#else
+  void FFTFrame::forward(float *data) {
+
+  }
+
+   void FFTFrame::inverse(float *data) {
+
+   }
 #endif
 } // namespace audioapi

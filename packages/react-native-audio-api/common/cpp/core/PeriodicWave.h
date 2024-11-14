@@ -42,6 +42,7 @@ class PeriodicWave {
   explicit PeriodicWave(int sampleRate, float *real, float *imaginary, int size);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
+  [[nodiscard]] float getRateScale() const;
 
   float getWaveTableElement(float fundamentalFrequency, float bufferIndex, float phaseIncrement);
 

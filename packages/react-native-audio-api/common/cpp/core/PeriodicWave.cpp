@@ -74,6 +74,10 @@ int PeriodicWave::getPeriodicWaveSize() const {
   return 16384;
 }
 
+float PeriodicWave::getRateScale() const {
+    return rateScale_;
+}
+
 float PeriodicWave::getWaveTableElement(float fundamentalFrequency, float bufferIndex, float phaseIncrement) {
     float *lowerWaveData = nullptr;
     float *higherWaveData = nullptr;
