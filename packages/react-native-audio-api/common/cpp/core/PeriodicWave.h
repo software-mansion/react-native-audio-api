@@ -43,7 +43,7 @@ class PeriodicWave {
 
   [[nodiscard]] int getPeriodicWaveSize() const;
 
-  void getWaveDataForFundamentalFrequency(float fundamentalFrequency, float* &lowerWaveData, float* &higherWaveData, float& interpolationFactor);
+  float getWaveTableElement(float fundamentalFrequency, float bufferIndex, float phaseIncrement);
 
  private:
   explicit PeriodicWave(int sampleRate);
@@ -56,6 +56,10 @@ class PeriodicWave {
 
   void createBandLimitedTables(const float *real, const float *imaginary, int size);
 
+  float getWaveDataForFundamentalFrequency(float fundamentalFrequency, float* &lowerWaveData, float* &higherWaveData);
+
+  float doInterpolation(float bufferIndex, float phaseIncrement, float waveTableInterpolationFactor, const float* lowerWaveData, const float* higherWaveData) const;
+
   // determines the time resolution of the waveform.
   int sampleRate_;
   // determines number of frequency segments (or bands) the signal is divided.
@@ -66,7 +70,7 @@ class PeriodicWave {
   // scaling factor used to adjust size of period of waveform to the sample
   // rate.
   float rateScale_;
-
+  // array of band-limited waveforms.
   float **bandLimitedTables_;
 };
 } // namespace audioapi

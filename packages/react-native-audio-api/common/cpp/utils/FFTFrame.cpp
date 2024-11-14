@@ -13,6 +13,14 @@ namespace audioapi {
         #endif
     }
 
+    void FFTFrame::forward(float *data) {
+
+    }
+
+    void FFTFrame::inverse(float *data) {
+
+    }
+
 #if defined(HAVE_ACCELERATE)
     void FFTFrame::forward(float *data) {
         vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &frame_, 1, size_ / 2);

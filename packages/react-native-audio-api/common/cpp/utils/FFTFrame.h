@@ -44,8 +44,8 @@ public:
 //    FFTFrame(const FFTFrame& frame);
 //    ~FFTFrame();
 
-    float *getRealData() const { return realData_; }
-    float *getImaginaryData() const { return imaginaryData_; }
+    [[nodiscard]] float *getRealData() const { return realData_; }
+    [[nodiscard]] float *getImaginaryData() const { return imaginaryData_; }
 
     void forward(float *data);
     void inverse(float *data);

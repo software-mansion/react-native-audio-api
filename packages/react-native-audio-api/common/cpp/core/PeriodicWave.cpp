@@ -34,6 +34,9 @@ constexpr unsigned NumberOfOctaveBands = 3;
 
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
 
+constexpr float interpolate2Point = 0.3;
+constexpr float interpolate3Point = 0.16;
+
 namespace audioapi {
 PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
   numberOfRanges_ = lround(
@@ -71,27 +74,13 @@ int PeriodicWave::getPeriodicWaveSize() const {
   return 16384;
 }
 
-void PeriodicWave::getWaveDataForFundamentalFrequency(float fundamentalFrequency, float *&lowerWaveData, float *&higherWaveData,float &interpolationFactor) {
-    // negative frequencies are allowed and will be treated as positive.
-    fundamentalFrequency = std::fabs(fundamentalFrequency);
+float PeriodicWave::getWaveTableElement(float fundamentalFrequency, float bufferIndex, float phaseIncrement) {
+    float *lowerWaveData = nullptr;
+    float *higherWaveData = nullptr;
 
-    // calculating lower and higher range index for the given fundamental frequency.
-    float ratio = fundamentalFrequency > 0 ? fundamentalFrequency / lowestFundamentalFrequency_ : 0.5f;
-    float centsAboveLowestFrequency = log2f(ratio) * 1200;
+    auto interpolationFactor = getWaveDataForFundamentalFrequency(fundamentalFrequency, lowerWaveData, higherWaveData);
 
-    float pitchRange = 1 + centsAboveLowestFrequency / CentsPerRange;
-
-    pitchRange = std::clamp(pitchRange, 0.0f, static_cast<float>(numberOfRanges_ - 1));
-
-    int lowerRangeIndex = static_cast<int>(pitchRange);
-    int higherRangeIndex = lowerRangeIndex < numberOfRanges_ - 1 ? lowerRangeIndex + 1 : lowerRangeIndex;
-
-    // get the wave data for the lower and higher range index.
-    lowerWaveData = bandLimitedTables_[lowerRangeIndex];
-    higherWaveData = bandLimitedTables_[higherRangeIndex];
-
-    // calculate the interpolation factor between the lower and higher range data.
-    interpolationFactor = pitchRange - static_cast<float>(lowerRangeIndex);
+    return doInterpolation(bufferIndex, phaseIncrement, interpolationFactor, lowerWaveData, higherWaveData);
 }
 
 int PeriodicWave::getMaxNumberOfPartials() const {
@@ -121,7 +110,7 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
    * (where the positive frequencies are the complex conjugate of the negative ones).
    * This symmetry implies that real signals have mirrored frequency components.
    * In such scenarios, all 'real' frequency information is contained in the first half of the transform,
-   * and altering parts such as real and imag can finely shape which harmonic content is retained or discarded.
+   * and altering parts such as real and imaginary can finely shape which harmonic content is retained or discarded.
   */
   auto halfSize = fftSize / 2;
 
@@ -214,5 +203,105 @@ void PeriodicWave::createBandLimitedTables(const float *realData, const float *i
         bandLimitedTables_[rangeIndex] = new float[fftSize];
         fftFrame.inverse(bandLimitedTables_[rangeIndex]);
     }
+}
+
+float PeriodicWave::getWaveDataForFundamentalFrequency(float fundamentalFrequency, float *&lowerWaveData, float *&higherWaveData) {
+    // negative frequencies are allowed and will be treated as positive.
+    fundamentalFrequency = std::fabs(fundamentalFrequency);
+
+    // calculating lower and higher range index for the given fundamental frequency.
+    float ratio = fundamentalFrequency > 0 ? fundamentalFrequency / lowestFundamentalFrequency_ : 0.5f;
+    float centsAboveLowestFrequency = log2f(ratio) * 1200;
+
+    float pitchRange = 1 + centsAboveLowestFrequency / CentsPerRange;
+
+    pitchRange = std::clamp(pitchRange, 0.0f, static_cast<float>(numberOfRanges_ - 1));
+
+    int lowerRangeIndex = static_cast<int>(pitchRange);
+    int higherRangeIndex = lowerRangeIndex < numberOfRanges_ - 1 ? lowerRangeIndex + 1 : lowerRangeIndex;
+
+    // get the wave data for the lower and higher range index.
+    lowerWaveData = bandLimitedTables_[lowerRangeIndex];
+    higherWaveData = bandLimitedTables_[higherRangeIndex];
+
+    // calculate the interpolation factor between the lower and higher range data.
+    return pitchRange - static_cast<float>(lowerRangeIndex);
+}
+
+float PeriodicWave::doInterpolation(float bufferIndex, float phaseIncrement, float waveTableInterpolationFactor,
+                                    const float *lowerWaveData, const float *higherWaveData) const {
+    float lowerWaveDataSample = 0;
+    float higherWaveDataSample = 0;
+
+    // Consider a typical sample rate of 44100 Hz and max periodic wave
+    // size of 4096. The relationship between |phaseIncrement| and the frequency
+    // of the oscillator is |phaseIncrement| = freq * 4096/44100. Or freq =
+    // |phaseIncrement|*44100/4096 = 10.8*|phaseIncrement|.
+    //
+    // For the |phaseIncrement| thresholds below, this means that we use linear
+    // interpolation for all freq >= 3.2 Hz, 3-point Lagrange
+    // for freq >= 1.7 Hz and 5-point Lagrange for every thing else.
+    //
+    // We use Lagrange interpolation because it's relatively simple to
+    // implement and fairly inexpensive, and the interpolator always
+    // passes through known points.
+    // https://dlmf.nist.gov/3.3#ii
+
+    int index = static_cast<int>(bufferIndex);
+    auto factor = bufferIndex - static_cast<float>(index);
+
+    if (phaseIncrement >= interpolate2Point) {
+        int indices[2];
+
+        for (int i = 0; i < 2; i++) {
+            indices[i] = (index + i) % getPeriodicWaveSize();
+        }
+
+        auto lowerWaveDataSample1 = lowerWaveData[indices[0]];
+        auto lowerWaveDataSample2 = lowerWaveData[indices[1]];
+        auto higherWaveDataSample1 = higherWaveData[indices[0]];
+        auto higherWaveDataSample2 = higherWaveData[indices[1]];
+
+        lowerWaveDataSample = (1 - factor) * lowerWaveDataSample1 + factor * lowerWaveDataSample2;
+        higherWaveDataSample = (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
+    } else if (phaseIncrement >= interpolate3Point) {
+        int indices[3];
+
+        for (int i = 0; i < 3; i++) {
+            indices[i] = (index + i - 1 + getPeriodicWaveSize()) % getPeriodicWaveSize();
+        }
+
+        float A[3];
+
+        A[0] = factor * (factor - 1) / 2;
+        A[1] = 1 - factor * factor;
+        A[2] = factor * (factor + 1) / 2;
+
+        for (int i = 0; i < 3; i++) {
+            lowerWaveDataSample += lowerWaveData[indices[i]] * A[i];
+            higherWaveDataSample += higherWaveData[indices[i]] * A[i];
+        }
+    } else {
+        int indices[5];
+
+        for (int i = 0; i < 5; i++) {
+            indices[i] = (index + i - 2 + getPeriodicWaveSize()) % getPeriodicWaveSize();
+        }
+
+        float A[5];
+
+        A[0] = factor * (factor * factor - 1) * (factor - 2) / 24;
+        A[1] = - factor * (factor - 1) * (factor * factor - 4) / 6;
+        A[2] = (factor * factor - 1) * (factor * factor - 4) / 4;
+        A[3] = - factor * (factor + 1) * (factor * factor - 4) / 6;
+        A[4] = factor * (factor * factor - 1) * (factor + 2) / 24;
+
+        for (int i = 0; i < 5; i++) {
+            lowerWaveDataSample += lowerWaveData[indices[i]] * A[i];
+            higherWaveDataSample += higherWaveData[indices[i]] * A[i];
+        }
+    }
+
+    return (1 - waveTableInterpolationFactor) * higherWaveDataSample + waveTableInterpolationFactor * lowerWaveDataSample;
 }
 } // namespace audioapi
