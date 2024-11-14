@@ -14,4 +14,13 @@ export type BiquadFilterType =
 
 export type ContextState = 'running' | 'closed';
 
-export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type OscillatorType =
+  | 'sine'
+  | 'square'
+  | 'sawtooth'
+  | 'triangle'
+  | 'custom';
+
+export interface PeriodicWaveConstraints {
+  disableNormalization: boolean;
+}

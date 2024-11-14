@@ -1,5 +1,5 @@
 import { IBaseAudioContext } from '../interfaces';
-import { ContextState } from './types';
+import { ContextState, PeriodicWaveConstraints } from './types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
 import GainNode from './GainNode';
@@ -74,5 +74,21 @@ export default class BaseAudioContext {
     return new AudioBuffer(
       this.context.createBuffer(numOfChannels, length, sampleRate)
     );
+  }
+
+  createPeriodicWave(
+    real: number[],
+    imag: number[],
+    constraints?: PeriodicWaveConstraints
+  ): PeriodicWave {
+    if (real.length !== imag.length) {
+      throw new RangeError(
+        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays are different`
+      );
+    }
+
+    const disableNormalization = constraints?.disableNormalization ?? false;
+
+    return this.context.createPeriodicWave(real, imag, disableNormalization);
   }
 }
