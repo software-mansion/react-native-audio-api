@@ -31,20 +31,27 @@
 #include <cmath>
 #include <memory>
 
-#include "OscillatorType.h"
 #include "FFTFrame.h"
+#include "OscillatorType.h"
 #include "VectorMath.h"
 
 namespace audioapi {
 class PeriodicWave {
  public:
   explicit PeriodicWave(int sampleRate, OscillatorType type);
-  explicit PeriodicWave(int sampleRate, float *real, float *imaginary, int size);
+  explicit PeriodicWave(
+      int sampleRate,
+      float *real,
+      float *imaginary,
+      int size);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getRateScale() const;
 
-  float getWaveTableElement(float fundamentalFrequency, float bufferIndex, float phaseIncrement);
+  float getWaveTableElement(
+      float fundamentalFrequency,
+      float bufferIndex,
+      float phaseIncrement);
 
  private:
   explicit PeriodicWave(int sampleRate);
@@ -55,11 +62,20 @@ class PeriodicWave {
 
   void generateBasicWaveForm(OscillatorType type);
 
-  void createBandLimitedTables(const float *real, const float *imaginary, int size);
+  void
+  createBandLimitedTables(const float *real, const float *imaginary, int size);
 
-  float getWaveDataForFundamentalFrequency(float fundamentalFrequency, float* &lowerWaveData, float* &higherWaveData);
+  float getWaveDataForFundamentalFrequency(
+      float fundamentalFrequency,
+      float *&lowerWaveData,
+      float *&higherWaveData);
 
-  float doInterpolation(float bufferIndex, float phaseIncrement, float waveTableInterpolationFactor, const float* lowerWaveData, const float* higherWaveData) const;
+  float doInterpolation(
+      float bufferIndex,
+      float phaseIncrement,
+      float waveTableInterpolationFactor,
+      const float *lowerWaveData,
+      const float *higherWaveData) const;
 
   // determines the time resolution of the waveform.
   int sampleRate_;

@@ -9,6 +9,9 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
   detuneParam_ =
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
+  type_ = OscillatorType::SINE;
+  periodicWave_ =
+      std::make_shared<PeriodicWave>(context_->getSampleRate(), type_);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -25,6 +28,8 @@ std::string OscillatorNode::getType() {
 
 void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
+  periodicWave_ =
+      std::make_shared<PeriodicWave>(context_->getSampleRate(), type_);
 }
 
 bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
@@ -39,24 +44,19 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
           std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
       auto detunedFrequency =
           round(frequencyParam_->getValueAtTime(time) * detuneRatio);
-      auto phaseIncrement = static_cast<float>(
-          2 * M_PI * detunedFrequency / context_->getSampleRate());
+      auto phaseIncrement = detunedFrequency * periodicWave_->getRateScale();
 
-      float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+      float sample = periodicWave_->getWaveTableElement(
+          detunedFrequency, phase_, phaseIncrement);
 
       for (int j = 0; j < channelCount_; j++) {
-        audioData[i * channelCount_ + j] = value;
+        audioData[i * channelCount_ + j] = sample;
       }
 
       phase_ += phaseIncrement;
-      time += deltaTime;
 
-      if (phase_ >= 2 * M_PI) {
-        phase_ -= 2 * M_PI;
-      }
-
-      if (phase_ < 0) {
-        phase_ += 2 * M_PI;
+      if (phase_ >= static_cast<float>(periodicWave_->getPeriodicWaveSize())) {
+        phase_ -= static_cast<float>(periodicWave_->getPeriodicWaveSize());
       }
     }
 

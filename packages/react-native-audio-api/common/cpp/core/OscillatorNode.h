@@ -7,6 +7,7 @@
 #include "AudioParam.h"
 #include "AudioScheduledSourceNode.h"
 #include "OscillatorType.h"
+#include "PeriodicWave.h"
 
 namespace audioapi {
 
@@ -23,50 +24,11 @@ class OscillatorNode : public AudioScheduledSourceNode {
   bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
-  static float sineWave(double wavePhase) {
-    return static_cast<float>(std::sin(wavePhase));
-  }
-
-  static float squareWave(double wavePhase) {
-    return static_cast<float>(std::sin(wavePhase) >= 0 ? 1.0 : -1.0);
-  }
-
-  static float sawtoothWave(double wavePhase) {
-    return static_cast<float>(
-        2.0 *
-        (wavePhase / (2 * M_PI) - std::floor(wavePhase / (2 * M_PI) + 0.5)));
-  }
-
-  static float triangleWave(double wavePhase) {
-    return static_cast<float>(
-        2.0 *
-            std::abs(
-                2.0 *
-                (wavePhase / (2 * M_PI) -
-                 std::floor(wavePhase / (2 * M_PI) + 0.5))) -
-        1.0);
-  }
-
-  static float getWaveBufferElement(double wavePhase, OscillatorType type) {
-    switch (type) {
-      case OscillatorType::SINE:
-        return sineWave(wavePhase);
-      case OscillatorType::SQUARE:
-        return squareWave(wavePhase);
-      case OscillatorType::SAWTOOTH:
-        return sawtoothWave(wavePhase);
-      case OscillatorType::TRIANGLE:
-        return triangleWave(wavePhase);
-      default:
-        throw std::invalid_argument("Unknown wave type");
-    }
-  }
-
- private:
   std::shared_ptr<AudioParam> frequencyParam_;
   std::shared_ptr<AudioParam> detuneParam_;
-  OscillatorType type_ = OscillatorType::SINE;
+  OscillatorType type_;
   float phase_ = 0.0;
+  std::shared_ptr<PeriodicWave> periodicWave_;
 
   static OscillatorType fromString(const std::string &type) {
     std::string lowerType = type;

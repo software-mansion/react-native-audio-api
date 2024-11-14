@@ -38,27 +38,30 @@
 namespace audioapi {
 
 class FFTFrame {
+ public:
+  explicit FFTFrame(int size);
+  //    FFTFrame(const FFTFrame& frame);
+  //    ~FFTFrame();
 
-public:
-    explicit FFTFrame(int size);
-//    FFTFrame(const FFTFrame& frame);
-//    ~FFTFrame();
+  [[nodiscard]] float *getRealData() const {
+    return realData_;
+  }
+  [[nodiscard]] float *getImaginaryData() const {
+    return imaginaryData_;
+  }
 
-    [[nodiscard]] float *getRealData() const { return realData_; }
-    [[nodiscard]] float *getImaginaryData() const { return imaginaryData_; }
+  void forward(float *data);
+  void inverse(float *data);
 
-    void forward(float *data);
-    void inverse(float *data);
-
-private:
-    int size_;
-    int log2Size_;
-    float *realData_;
-    float *imaginaryData_;
+ private:
+  int size_;
+  int log2Size_;
+  float *realData_;
+  float *imaginaryData_;
 
 #if defined(HAVE_ACCELERATE)
-    FFTSetup fftSetup_;
-    DSPSplitComplex frame_;
+  FFTSetup fftSetup_;
+  DSPSplitComplex frame_;
 #endif
 };
 
