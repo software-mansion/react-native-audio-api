@@ -7,6 +7,7 @@
 #include "AudioParamHostObject.h"
 #include "AudioScheduledSourceNodeHostObject.h"
 #include "OscillatorNodeWrapper.h"
+#include "PeriodicWaveHostObject.h"
 
 namespace audioapi {
 using namespace facebook;

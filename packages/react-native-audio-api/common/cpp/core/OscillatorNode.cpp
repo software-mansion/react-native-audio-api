@@ -30,6 +30,12 @@ void OscillatorNode::setType(const std::string &type) {
   periodicWave_ = context_->getBasicWaveForm(type_);
 }
 
+void OscillatorNode::setPeriodicWave(
+    const std::shared_ptr<PeriodicWave> &periodicWave) {
+  periodicWave_ = periodicWave;
+  type_ = OscillatorType::CUSTOM;
+}
+
 bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
   if (!isPlaying_) {
     return false;
@@ -57,7 +63,7 @@ bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
         phase_ -= static_cast<float>(periodicWave_->getPeriodicWaveSize());
       }
 
-        time += deltaTime;
+      time += deltaTime;
     }
 
     return true;

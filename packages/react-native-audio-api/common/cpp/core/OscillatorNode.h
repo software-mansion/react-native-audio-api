@@ -19,6 +19,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::string getType();
   void setType(const std::string &type);
+  void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:
   bool processAudio(float *audioData, int32_t numFrames) override;
