@@ -10,6 +10,7 @@ class AudioArray {
     ~AudioArray();
 
     [[nodiscard]] int getSize() const;
+    float* getData() const;
 
 
     float& operator[](int index);
@@ -17,13 +18,14 @@ class AudioArray {
 
     void zero();
     void resize(int size);
-    void copy(const AudioArray &source);
+    void copy(const AudioArray* source);
 
     float getMaxAbsValue() const;
 
     void normalize();
     void scale(float value);
-    void sum(const AudioArray &source);
+    void sum(const AudioArray* source);
+
 
   private:
     float *data_;

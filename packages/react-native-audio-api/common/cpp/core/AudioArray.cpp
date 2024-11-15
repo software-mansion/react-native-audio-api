@@ -15,6 +15,10 @@ int AudioArray::getSize() const {
   return size_;
 }
 
+float* AudioArray::getData() const {
+  return data_;
+}
+
 float& AudioArray::operator[](int index) {
   return data_[index];
 }
@@ -40,12 +44,12 @@ void AudioArray::resize(int size) {
   zero();
 }
 
-void AudioArray::copy(const AudioArray &source) {
-  if (size_ != source.size_) {
-    resize(source.size_);
+void AudioArray::copy(const AudioArray* source) {
+  if (size_ != source->getSize()) {
+    resize(source->getSize());
   }
 
-  memcpy(data_, source.data_, size_ * sizeof(float));
+  memcpy(data_, source->getData(), size_ * sizeof(float));
 }
 
 float AudioArray::getMaxAbsValue() const {
@@ -66,8 +70,8 @@ void AudioArray::scale(float value) {
   VectorMath::multiplyByScalar(data_, value, data_, size_);
 };
 
-void AudioArray::sum(const AudioArray &source) {
-  VectorMath::add(data_, source.data_, data_, size_);
+void AudioArray::sum(const AudioArray* source) {
+  VectorMath::add(data_, source->getData(), data_, size_);
 };
 
 } // namespace audioapi

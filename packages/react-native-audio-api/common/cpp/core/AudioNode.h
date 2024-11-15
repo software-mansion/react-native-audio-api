@@ -4,13 +4,13 @@
 #include <string>
 #include <vector>
 #include "Constants.h"
-#include "AudioNodeBuffer.h"
 
 // channelCount always equal to 2
 
 namespace audioapi {
 
 class BaseAudioContext;
+class AudioBus;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
@@ -58,7 +58,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  protected:
   BaseAudioContext *context_;
-  std::unique_ptr<AudioNodeBuffer> buffer_;
+  std::unique_ptr<AudioBus> buffer_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
