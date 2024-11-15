@@ -53,10 +53,8 @@ class PeriodicWave {
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
 
-  float getSample(
-      float fundamentalFrequency,
-      float bufferIndex,
-      float phaseIncrement);
+  float
+  getSample(float fundamentalFrequency, float phase, float phaseIncrement);
 
  private:
   explicit PeriodicWave(int sampleRate, bool disableNormalization);

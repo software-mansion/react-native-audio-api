@@ -82,7 +82,7 @@ float PeriodicWave::getScale() const {
 
 float PeriodicWave::getSample(
     float fundamentalFrequency,
-    float bufferIndex,
+    float phase,
     float phaseIncrement) {
   float *lowerWaveData = nullptr;
   float *higherWaveData = nullptr;
@@ -91,7 +91,7 @@ float PeriodicWave::getSample(
       fundamentalFrequency, lowerWaveData, higherWaveData);
 
   return doInterpolation(
-      bufferIndex,
+      phase,
       phaseIncrement,
       interpolationFactor,
       lowerWaveData,
@@ -285,7 +285,7 @@ float PeriodicWave::getWaveDataForFundamentalFrequency(
 }
 
 float PeriodicWave::doInterpolation(
-    float bufferIndex,
+    float phase,
     float phaseIncrement,
     float waveTableInterpolationFactor,
     const float *lowerWaveData,
@@ -296,8 +296,8 @@ float PeriodicWave::doInterpolation(
   // We use linear, 3-point Lagrange, or 5-point Lagrange interpolation based on
   // the value of phase increment. https://dlmf.nist.gov/3.3#ii
 
-  int index = static_cast<int>(bufferIndex);
-  auto factor = bufferIndex - static_cast<float>(index);
+  int index = static_cast<int>(phase);
+  auto factor = phase - static_cast<float>(index);
 
   if (phaseIncrement >= interpolate2Point) { // linear interpolation
     int indices[2];
