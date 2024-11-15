@@ -7,7 +7,6 @@ AudioBuffer::AudioBuffer(int numberOfChannels, int length, int sampleRate)
       length_(length),
       sampleRate_(sampleRate),
       duration_(static_cast<double>(length) / sampleRate) {
-
 }
 
 } // namespace audioapi

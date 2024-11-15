@@ -32,7 +32,6 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
       int startInChannel);
 
  private:
-
   int numberOfChannels_;
   int length_;
   int sampleRate_;

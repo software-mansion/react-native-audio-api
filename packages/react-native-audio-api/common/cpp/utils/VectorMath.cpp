@@ -115,8 +115,7 @@ float maximumMagnitude(
   return maximumValue;
 }
 
-void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess)
-{
+void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess) {
     vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
@@ -610,8 +609,7 @@ float maximumMagnitude(
   return max;
 }
 
-void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess)
-{
+void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess) {
     size_t n = numberOfElementsToProcess;
 
 #if HAVE_X86_SSE2

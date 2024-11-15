@@ -5,11 +5,11 @@ namespace audioapi {
 
 AudioArray::AudioArray(int size) : size_(size) {
   resize(size);
-};
+}
 
 AudioArray::~AudioArray() {
   delete[] data_;
-};
+}
 
 int AudioArray::getSize() const {
   return size_;
@@ -54,7 +54,7 @@ void AudioArray::copy(const AudioArray* source) {
 
 float AudioArray::getMaxAbsValue() const {
   return VectorMath::maximumMagnitude(data_, size_);
-};
+}
 
 void AudioArray::normalize() {
   float maxAbsValue = getMaxAbsValue();
@@ -64,15 +64,15 @@ void AudioArray::normalize() {
   }
 
   VectorMath::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
-};
+}
 
 void AudioArray::scale(float value) {
   VectorMath::multiplyByScalar(data_, value, data_, size_);
-};
+}
 
 void AudioArray::sum(const AudioArray* source) {
   VectorMath::add(data_, source->getData(), data_, size_);
-};
+}
 
 } // namespace audioapi
 

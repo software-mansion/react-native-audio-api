@@ -1,3 +1,4 @@
+#include <algorithm>
 
 #include "AudioBus.h"
 #include "Constants.h"
@@ -22,7 +23,7 @@ AudioBus::AudioBus(BaseAudioContext *context)
 
 
   createChannels();
-};
+}
 
 AudioBus::AudioBus(BaseAudioContext *context, int numberOfChannels)
     : context_(context), numberOfChannels_(numberOfChannels) {
@@ -30,19 +31,18 @@ AudioBus::AudioBus(BaseAudioContext *context, int numberOfChannels)
   size_ = context_->getBufferSizeInFrames();
 
   createChannels();
-};
+}
 
 AudioBus::AudioBus(BaseAudioContext *context, int numberOfChannels, int size)
     : context_(context), numberOfChannels_(numberOfChannels), size_(size) {
   sampleRate_ = context_->getSampleRate();
 
   createChannels();
-};
-
+}
 
 AudioBus::~AudioBus() {
   channels_.clear();
-};
+}
 
 /**
  * Public interfaces - getters
@@ -50,19 +50,19 @@ AudioBus::~AudioBus() {
 
 int AudioBus::getNumberOfChannels() const {
   return numberOfChannels_;
-};
+}
 
 int AudioBus::getSampleRate() const {
   return sampleRate_;
-};
+}
 
 int AudioBus::getSize() const {
   return size_;
-};
+}
 
 AudioArray* AudioBus::getChannel(int index) const {
   return channels_[index].get();
-};
+}
 
 AudioArray* AudioBus::getChannelByType(int channelType) const {
   switch (getNumberOfChannels()) {
@@ -111,7 +111,7 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
     default:
       return 0;
   }
-};
+}
 
 /**
  * Public interfaces - audio processing and setters
@@ -121,7 +121,7 @@ void AudioBus::zero() {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
     it->get()->zero();
   }
-};
+}
 
 void AudioBus::normalize() {
   float maxAbsValue = this->maxAbsValue();
@@ -132,13 +132,13 @@ void AudioBus::normalize() {
 
   float scale = 1.0f / maxAbsValue;
   this->scale(scale);
-};
+}
 
 void AudioBus::scale(float value) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
     it->get()->scale(value);
   }
-};
+}
 
 float AudioBus::maxAbsValue() const {
   float maxAbsValue = 0.0f;
@@ -149,7 +149,7 @@ float AudioBus::maxAbsValue() const {
   }
 
   return maxAbsValue;
-};
+}
 
 void AudioBus::copy(const AudioBus &source) {
   if (&source == this) {
@@ -159,7 +159,7 @@ void AudioBus::copy(const AudioBus &source) {
   // zero + sum is equivalent to copy, but takes care of up/down-mixing.
   zero();
   sum(source);
-};
+}
 
 void AudioBus::sum(const AudioBus &source) {
   if (&source == this) {
@@ -186,7 +186,7 @@ void AudioBus::sum(const AudioBus &source) {
   for (int i = 0; i < numberOfChannels_; i++) {
     channels_[i]->sum(source.getChannel(i));
   }
-};
+}
 
 /**
  * Internal tooling - channel initialization
@@ -195,7 +195,7 @@ void AudioBus::sum(const AudioBus &source) {
 void AudioBus::createChannels() {
   // TODO: verify if its correct way of memory allocation
   channels_ = std::vector<std::unique_ptr<AudioArray>>(numberOfChannels_, std::make_unique<AudioArray>(size_));
-};
+}
 
 /**
  * Internal tooling - channel summing
@@ -209,7 +209,7 @@ void AudioBus::discreteSum(const AudioBus &source) {
   for (int i = 0; i < numberOfChannels; i++) {
     getChannel(i)->sum(source.getChannel(i));
   }
-};
+}
 
 void AudioBus::sumByUpMixing(const AudioBus &source) {
   int numberOfSourceChannels = source.getNumberOfChannels();
@@ -234,7 +234,6 @@ void AudioBus::sumByUpMixing(const AudioBus &source) {
 
   // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
   if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
-
     getChannelByType(ChannelLeft)->sum(source.getChannelByType(ChannelLeft));
     getChannelByType(ChannelRight)->sum(source.getChannelByType(ChannelRight));
     return;
@@ -250,7 +249,7 @@ void AudioBus::sumByUpMixing(const AudioBus &source) {
   }
 
   discreteSum(source);
-};
+}
 
 void AudioBus::sumByDownMixing(const AudioBus &source) {
   int numberOfSourceChannels = source.getNumberOfChannels();
@@ -336,6 +335,6 @@ void AudioBus::sumByDownMixing(const AudioBus &source) {
   }
 
   discreteSum(source);
-};
+}
 
 } // namespace audioapi
