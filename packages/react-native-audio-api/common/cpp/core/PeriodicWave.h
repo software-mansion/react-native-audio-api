@@ -28,9 +28,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
-#include <algorithm>
 
 #include "FFTFrame.h"
 #include "OscillatorType.h"
@@ -47,9 +47,9 @@ class PeriodicWave {
       int length);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
-  [[nodiscard]] float getRateScale() const;
+  [[nodiscard]] float getScale() const;
 
-  float getWaveTableElement(
+  float getSample(
       float fundamentalFrequency,
       float bufferIndex,
       float phaseIncrement);
@@ -57,20 +57,41 @@ class PeriodicWave {
  private:
   explicit PeriodicWave(int sampleRate);
 
+  // Partial is any frequency component of a sound.
+  // Both harmonics(fundamentalFrequency * k)  and overtones are partials.
   [[nodiscard]] int getMaxNumberOfPartials() const;
 
+  // Returns the number of partials to keep for a given range.
+  // Controlling the number of partials in each range allows for a more
+  // efficient representation of the waveform and prevents aliasing.
   [[nodiscard]] int getNumberOfPartialsPerRange(int rangeIndex) const;
 
+  // This function generates real and imaginary parts of the waveTable,
+  // real and imaginary arrays represent the coefficients of the harmonic
+  // components in the frequency domain, specifically as part of a complex
+  // representation used by Fourier Transform methods to describe signals.
   void generateBasicWaveForm(OscillatorType type);
 
+  // This function creates band-limited tables for the given real and
+  // imaginary data. The tables are created for each range of the partials.
+  // The higher frequencies are culled to band-limit the waveform.
+  // For each range, the inverse FFT is performed to get the time domain
+  // representation of the band-limited waveform.
   void
   createBandLimitedTables(const float *real, const float *imaginary, int size);
 
+  // This function returns the interpolation factor between the lower and higher
+  // range data and sets the lower and higher wave data for the given
+  // fundamental frequency.
   float getWaveDataForFundamentalFrequency(
       float fundamentalFrequency,
       float *&lowerWaveData,
       float *&higherWaveData);
 
+  // This function performs interpolation between the lower and higher range
+  // data based on the interpolation factor and current buffer index. Type of
+  // interpolation is determined by the phase increment. Returns the
+  // interpolated sample.
   float doInterpolation(
       float bufferIndex,
       float phaseIncrement,
@@ -87,7 +108,7 @@ class PeriodicWave {
   float lowestFundamentalFrequency_;
   // scaling factor used to adjust size of period of waveform to the sample
   // rate.
-  float rateScale_;
+  float scale_;
   // array of band-limited waveforms.
   float **bandLimitedTables_;
 };

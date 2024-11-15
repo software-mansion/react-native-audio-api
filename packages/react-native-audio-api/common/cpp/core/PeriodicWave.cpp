@@ -28,12 +28,8 @@
 
 #include "PeriodicWave.h"
 
-// The number of bands per octave. Each octave will have this many entries in
-// the wave tables.
 constexpr unsigned NumberOfOctaveBands = 3;
-
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
-
 constexpr float interpolate2Point = 0.3;
 constexpr float interpolate3Point = 0.16;
 
@@ -42,13 +38,10 @@ PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
   numberOfRanges_ = lround(
       NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
   auto nyquistFrequency = sampleRate_ / 2;
-
   lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) /
       static_cast<float>(getMaxNumberOfPartials());
-
-  rateScale_ = static_cast<float>(getPeriodicWaveSize()) /
+  scale_ = static_cast<float>(getPeriodicWaveSize()) /
       static_cast<float>(sampleRate_);
-
   bandLimitedTables_ = new float *[numberOfRanges_];
 }
 
@@ -78,11 +71,11 @@ int PeriodicWave::getPeriodicWaveSize() const {
   return 16384;
 }
 
-float PeriodicWave::getRateScale() const {
-  return rateScale_;
+float PeriodicWave::getScale() const {
+  return scale_;
 }
 
-float PeriodicWave::getWaveTableElement(
+float PeriodicWave::getSample(
     float fundamentalFrequency,
     float bufferIndex,
     float phaseIncrement) {
@@ -118,10 +111,6 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
   return numberOfPartials;
 }
 
-// This function generates real and imaginary parts of the waveTable,
-// real and imaginary arrays represent the coefficients of the harmonic
-// components in the frequency domain, specifically as part of a complex
-// representation used by Fourier Transform methods to describe signals.
 void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   auto fftSize = getPeriodicWaveSize();
   /*
@@ -161,20 +150,20 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
         break;
       case OscillatorType::SQUARE:
         // https://mathworld.wolfram.com/FourierSeriesSquareWave.html
-        b = (i % 2 == 1) ? 4 * piFactor : 0.0f;
+        b = ((i & 1) == 1) ? 4 * piFactor : 0.0f;
         break;
       case OscillatorType::SAWTOOTH:
         // https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html - our
-        // function differs from this one, but coefficients calculation looks
+        // Function differs from this one, but coefficients calculation looks
         // similar. our function - f(x) = 2(x / (2 * pi) - floor(x / (2 * pi) +
         // 0.5)));
         // https://www.wolframalpha.com/input?i=2%28x+%2F+%282+*+pi%29+-+floor%28x+%2F+%282+*+pi%29+%2B+0.5%29%29%29%3B
-        b = 2 * piFactor * (i % 2 == 1 ? 1.0f : -1.0f);
+        b = 2 * piFactor * ((i & 1) == 1 ? 1.0f : -1.0f);
         break;
       case OscillatorType::TRIANGLE:
         // https://mathworld.wolfram.com/FourierSeriesTriangleWave.html
-        if (i % 2 == 1) {
-          b = 8.0f * piFactor * piFactor * (i % 4 == 1 ? 1.0f : -1.0f);
+        if ((i & 1) == 1) {
+          b = 8.0f * piFactor * piFactor * ((i & 3) == 1 ? 1.0f : -1.0f);
         } else {
           b = 0.0f;
         }
@@ -214,7 +203,7 @@ void PeriodicWave::createBandLimitedTables(
         imaginaryFFTFrameData,
         size);
 
-    // Find the starting bin where we should start culling.
+    // Find the starting partial where we should start culling.
     // We need to clear out the highest frequencies to band-limit the waveform.
     auto numberOfPartials = getNumberOfPartialsPerRange(rangeIndex);
 
@@ -235,6 +224,9 @@ void PeriodicWave::createBandLimitedTables(
     imaginaryFFTFrameData[0] = 0.0f;
 
     bandLimitedTables_[rangeIndex] = new float[fftSize];
+
+    // Perform the inverse FFT to get the time domain representation of the
+    // band-limited waveform.
     fftFrame.inverse(bandLimitedTables_[rangeIndex]);
 
     VectorMath::multiplyByScalar(
@@ -286,28 +278,19 @@ float PeriodicWave::doInterpolation(
   float lowerWaveDataSample = 0;
   float higherWaveDataSample = 0;
 
-  // Consider a typical sample rate of 44100 Hz and max periodic wave
-  // size of 4096. The relationship between |phaseIncrement| and the frequency
-  // of the oscillator is |phaseIncrement| = freq * 4096/44100. Or freq =
-  // |phaseIncrement|*44100/4096 = 10.8*|phaseIncrement|.
-  //
-  // For the |phaseIncrement| thresholds below, this means that we use linear
-  // interpolation for all freq >= 3.2 Hz, 3-point Lagrange
-  // for freq >= 1.7 Hz and 5-point Lagrange for every thing else.
-  //
-  // We use Lagrange interpolation because it's relatively simple to
-  // implement and fairly inexpensive, and the interpolator always
-  // passes through known points.
-  // https://dlmf.nist.gov/3.3#ii
+  // We use linear, 3-point Lagrange, or 5-point Lagrange interpolation based on
+  // the value of phase increment. https://dlmf.nist.gov/3.3#ii
 
   int index = static_cast<int>(bufferIndex);
   auto factor = bufferIndex - static_cast<float>(index);
 
-  if (phaseIncrement >= interpolate2Point) {
+  if (phaseIncrement >= interpolate2Point) { // linear interpolation
     int indices[2];
 
     for (int i = 0; i < 2; i++) {
-      indices[i] = (index + i) % getPeriodicWaveSize();
+      indices[i] = (index + i) &
+          (getPeriodicWaveSize() -
+           1); // more efficient alternative to % getPeriodicWaveSize()
     }
 
     auto lowerWaveDataSample1 = lowerWaveData[indices[0]];
@@ -319,12 +302,12 @@ float PeriodicWave::doInterpolation(
         (1 - factor) * lowerWaveDataSample1 + factor * lowerWaveDataSample2;
     higherWaveDataSample =
         (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
-  } else if (phaseIncrement >= interpolate3Point) {
+  } else if (phaseIncrement >= interpolate3Point) { // 3-point Lagrange
+                                                    // interpolation
     int indices[3];
 
     for (int i = 0; i < 3; i++) {
-      indices[i] =
-          (index + i - 1 + getPeriodicWaveSize()) % getPeriodicWaveSize();
+      indices[i] = (index + i - 1) & (getPeriodicWaveSize() - 1);
     }
 
     float A[3];
@@ -337,12 +320,11 @@ float PeriodicWave::doInterpolation(
       lowerWaveDataSample += lowerWaveData[indices[i]] * A[i];
       higherWaveDataSample += higherWaveData[indices[i]] * A[i];
     }
-  } else {
+  } else { // 5-point Lagrange interpolation
     int indices[5];
 
     for (int i = 0; i < 5; i++) {
-      indices[i] =
-          (index + i - 2 + getPeriodicWaveSize()) % getPeriodicWaveSize();
+      indices[i] = (index + i - 2) & (getPeriodicWaveSize() - 1);
     }
 
     float A[5];

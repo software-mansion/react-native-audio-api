@@ -39,34 +39,34 @@ void OscillatorNode::setPeriodicWave(
 bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
   if (!isPlaying_) {
     return false;
-  } else {
-    auto time = context_->getCurrentTime();
-    auto deltaTime = 1.0 / context_->getSampleRate();
+  }
 
-    for (int i = 0; i < numFrames; ++i) {
-      auto detuneRatio =
-          std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
-      auto detunedFrequency =
-          round(frequencyParam_->getValueAtTime(time) * detuneRatio);
-      auto phaseIncrement = detunedFrequency * periodicWave_->getRateScale();
+  auto time = context_->getCurrentTime();
+  auto deltaTime = 1.0 / context_->getSampleRate();
 
-      float sample = periodicWave_->getWaveTableElement(
-          detunedFrequency, phase_, phaseIncrement);
+  for (int i = 0; i < numFrames; ++i) {
+    auto detuneRatio =
+        std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+    auto detunedFrequency =
+        round(frequencyParam_->getValueAtTime(time) * detuneRatio);
+    auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
 
-      for (int j = 0; j < channelCount_; j++) {
-        audioData[i * channelCount_ + j] = sample;
-      }
+    float sample =
+        periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
 
-      phase_ += phaseIncrement;
-
-      if (phase_ >= static_cast<float>(periodicWave_->getPeriodicWaveSize())) {
-        phase_ -= static_cast<float>(periodicWave_->getPeriodicWaveSize());
-      }
-
-      time += deltaTime;
+    for (int j = 0; j < channelCount_; j++) {
+      audioData[i * channelCount_ + j] = sample;
     }
 
-    return true;
+    phase_ += phaseIncrement;
+    phase_ -=
+        floor(
+            phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
+        static_cast<float>(periodicWave_->getPeriodicWaveSize());
+
+    time += deltaTime;
   }
+
+  return true;
 }
 } // namespace audioapi
