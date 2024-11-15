@@ -7,10 +7,14 @@
 
 // Implementation of channel summing/mixing is based on the WebKit approach, source:
 // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/AudioBus.cpp
+
 const float SQRT_HALF = sqrtf(0.5f);
 
 namespace audioapi {
 
+/**
+ * Public interfaces - memory management
+ */
 AudioBus::AudioBus(BaseAudioContext *context)
     : context_(context), numberOfChannels_(CHANNEL_COUNT) {
   sampleRate_ = context_->getSampleRate();
@@ -40,9 +44,9 @@ AudioBus::~AudioBus() {
   channels_.clear();
 };
 
-void AudioBus::createChannels() {
-  channels_ = std::vector<std::unique_ptr<AudioArray>>(numberOfChannels_, std::make_unique<AudioArray>(size_));
-};
+/**
+ * Public interfaces - getters
+ */
 
 int AudioBus::getNumberOfChannels() const {
   return numberOfChannels_;
@@ -109,6 +113,10 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
   }
 };
 
+/**
+ * Public interfaces - audio processing and setters
+ */
+
 void AudioBus::zero() {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
     it->get()->zero();
@@ -148,6 +156,7 @@ void AudioBus::copy(const AudioBus &source) {
     return;
   }
 
+  // zero + sum is equivalent to copy, but takes care of up/down-mixing.
   zero();
   sum(source);
 };
@@ -161,20 +170,36 @@ void AudioBus::sum(const AudioBus &source) {
   int numberOfChannels = getNumberOfChannels();
 
   // TODO: consider adding ability to enforce discrete summing (if/when it will be useful).
+  // Source channel count is smaller than current bus, we need to up-mix.
   if (numberOfSourceChannels < numberOfChannels) {
-    sumByDownMixing(source);
-    return;
-  }
-
-  if (numberOfSourceChannels > numberOfChannels) {
     sumByUpMixing(source);
     return;
   }
 
+  // Source channel count is larger than current bus, we need to down-mix.
+  if (numberOfSourceChannels > numberOfChannels) {
+    sumByDownMixing(source);
+    return;
+  }
+
+  // Source and destination channel counts are the same. Just sum the channels.
   for (int i = 0; i < numberOfChannels_; i++) {
     channels_[i]->sum(source.getChannel(i));
   }
 };
+
+/**
+ * Internal tooling - channel initialization
+ */
+
+void AudioBus::createChannels() {
+  // TODO: verify if its correct way of memory allocation
+  channels_ = std::vector<std::unique_ptr<AudioArray>>(numberOfChannels_, std::make_unique<AudioArray>(size_));
+};
+
+/**
+ * Internal tooling - channel summing
+ */
 
 void AudioBus::discreteSum(const AudioBus &source) {
   int numberOfChannels = std::min(getNumberOfChannels(), source.getNumberOfChannels());
