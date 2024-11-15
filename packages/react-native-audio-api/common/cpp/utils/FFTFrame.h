@@ -42,8 +42,6 @@ namespace audioapi {
 class FFTFrame {
  public:
   explicit FFTFrame(int size);
-  //    FFTFrame(const FFTFrame& frame);
-  //    ~FFTFrame();
 
   [[nodiscard]] float *getRealData() const {
     return realData_;
