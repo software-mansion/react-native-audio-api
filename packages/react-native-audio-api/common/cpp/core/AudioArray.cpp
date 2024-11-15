@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "AudioArray.h"
 #include "VectorMath.h"
 
