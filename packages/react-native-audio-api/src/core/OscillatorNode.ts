@@ -24,7 +24,7 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
   public set type(value: OscillatorType) {
     if (value === 'custom') {
       throw new InvalidStateError(
-        "The type can't be set to custom. You need to call setPeriodicWave() instead in order to define a custom waveform."
+        "'type' cannot be set directly to 'custom'.  Use setPeriodicWave() to create a custom Oscillator type."
       );
     }
 

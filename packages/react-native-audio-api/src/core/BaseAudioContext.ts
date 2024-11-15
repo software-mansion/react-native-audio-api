@@ -7,7 +7,8 @@ import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
-import { RangeError } from '../errors';
+import PeriodicWave from './PeriodicWave';
+import { InvalidAccessError } from '../errors';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -82,13 +83,15 @@ export default class BaseAudioContext {
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
     if (real.length !== imag.length) {
-      throw new RangeError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays are different`
+      throw new InvalidAccessError(
+        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
       );
     }
 
     const disableNormalization = constraints?.disableNormalization ?? false;
 
-    return this.context.createPeriodicWave(real, imag, disableNormalization);
+    return new PeriodicWave(
+      this.context.createPeriodicWave(real, imag, disableNormalization)
+    );
   }
 }
