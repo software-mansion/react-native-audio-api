@@ -34,7 +34,8 @@ constexpr float interpolate2Point = 0.3;
 constexpr float interpolate3Point = 0.16;
 
 namespace audioapi {
-PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
+PeriodicWave::PeriodicWave(int sampleRate, bool disableNormalization)
+    : sampleRate_(sampleRate), disableNormalization_(disableNormalization) {
   numberOfRanges_ = lround(
       NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
   auto nyquistFrequency = sampleRate_ / 2;
@@ -45,8 +46,11 @@ PeriodicWave::PeriodicWave(int sampleRate) : sampleRate_(sampleRate) {
   bandLimitedTables_ = new float *[numberOfRanges_];
 }
 
-PeriodicWave::PeriodicWave(int sampleRate, audioapi::OscillatorType type)
-    : PeriodicWave(sampleRate) {
+PeriodicWave::PeriodicWave(
+    int sampleRate,
+    audioapi::OscillatorType type,
+    bool disableNormalization)
+    : PeriodicWave(sampleRate, disableNormalization) {
   this->generateBasicWaveForm(type);
 }
 
@@ -54,8 +58,9 @@ PeriodicWave::PeriodicWave(
     int sampleRate,
     float *real,
     float *imaginary,
-    int length)
-    : PeriodicWave(sampleRate) {
+    int length,
+    bool disableNormalization)
+    : PeriodicWave(sampleRate, disableNormalization) {
   createBandLimitedTables(real, imaginary, length);
 }
 
@@ -183,6 +188,8 @@ void PeriodicWave::createBandLimitedTables(
     const float *realData,
     const float *imaginaryData,
     int size) {
+  float normalizationFactor = 0.5f;
+
   auto fftSize = getPeriodicWaveSize();
   auto halfSize = fftSize / 2;
 
@@ -229,9 +236,17 @@ void PeriodicWave::createBandLimitedTables(
     // band-limited waveform.
     fftFrame.inverse(bandLimitedTables_[rangeIndex]);
 
+    if (!disableNormalization_ && rangeIndex == 0) {
+      float maxValue =
+          VectorMath::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
+      if (maxValue != 0) {
+        normalizationFactor = 1.0f / maxValue;
+      }
+    }
+
     VectorMath::multiplyByScalar(
         bandLimitedTables_[rangeIndex],
-        0.5f,
+        normalizationFactor,
         bandLimitedTables_[rangeIndex],
         fftSize);
   }

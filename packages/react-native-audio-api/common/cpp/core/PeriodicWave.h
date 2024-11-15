@@ -39,12 +39,16 @@
 namespace audioapi {
 class PeriodicWave {
  public:
-  explicit PeriodicWave(int sampleRate, OscillatorType type);
+  explicit PeriodicWave(
+      int sampleRate,
+      OscillatorType type,
+      bool disableNormalization);
   explicit PeriodicWave(
       int sampleRate,
       float *real,
       float *imaginary,
-      int length);
+      int length,
+      bool disableNormalization);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
@@ -55,7 +59,7 @@ class PeriodicWave {
       float phaseIncrement);
 
  private:
-  explicit PeriodicWave(int sampleRate);
+  explicit PeriodicWave(int sampleRate, bool disableNormalization);
 
   // Partial is any frequency component of a sound.
   // Both harmonics(fundamentalFrequency * k)  and overtones are partials.
@@ -111,5 +115,7 @@ class PeriodicWave {
   float scale_;
   // array of band-limited waveforms.
   float **bandLimitedTables_;
+  // if true, the waveTable is not normalized.
+  bool disableNormalization_;
 };
 } // namespace audioapi

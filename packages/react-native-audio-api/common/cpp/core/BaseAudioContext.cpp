@@ -75,7 +75,8 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     bool disableNormalization,
     int length) {
   // add normalization
-  return std::make_shared<PeriodicWave>(sampleRate_, real, imag, length);
+  return std::make_shared<PeriodicWave>(
+      sampleRate_, real, imag, length, disableNormalization);
 }
 
 std::function<void(float *, int)> BaseAudioContext::renderAudio() {
@@ -93,22 +94,26 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
-        cachedSineWave_ = std::make_shared<PeriodicWave>(sampleRate_, type);
+        cachedSineWave_ =
+            std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSineWave_;
     case OscillatorType::SQUARE:
       if (cachedSquareWave_ == nullptr) {
-        cachedSquareWave_ = std::make_shared<PeriodicWave>(sampleRate_, type);
+        cachedSquareWave_ =
+            std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSquareWave_;
     case OscillatorType::SAWTOOTH:
       if (cachedSawtoothWave_ == nullptr) {
-        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(sampleRate_, type);
+        cachedSawtoothWave_ =
+            std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSawtoothWave_;
     case OscillatorType::TRIANGLE:
       if (cachedTriangleWave_ == nullptr) {
-        cachedTriangleWave_ = std::make_shared<PeriodicWave>(sampleRate_, type);
+        cachedTriangleWave_ =
+            std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:
