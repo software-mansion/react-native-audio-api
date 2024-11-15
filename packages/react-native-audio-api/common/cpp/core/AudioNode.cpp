@@ -26,16 +26,16 @@ int AudioNode::getChannelCount() const {
 
 std::string AudioNode::getChannelCountMode() const {
   return AudioNode::toString(channelCountMode_);
-};
+}
 
 std::string AudioNode::getChannelInterpretation() const {
   return AudioNode::toString(channelInterpretation_);
-};
+}
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
   outputNodes_.push_back(node);
   node->inputNodes_.push_back(shared_from_this());
-};
+}
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   outputNodes_.erase(
@@ -48,7 +48,7 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
             node->inputNodes_.begin(), node->inputNodes_.end(), sharedThis),
         node->inputNodes_.end());
   }
-};
+}
 
 
 std::string AudioNode::toString(ChannelCountMode mode) {
@@ -88,7 +88,7 @@ bool AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   // }
 
   // return isPlaying;
-};
+}
 
 void AudioNode::cleanup() {
   outputNodes_.clear();
