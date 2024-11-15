@@ -1,25 +1,33 @@
 #pragma once
 
-#include <algorithm>
-#include <memory>
 #include <vector>
+#include <memory>
+#include <algorithm>
 
 #include "AudioNode.h"
 
 namespace audioapi {
 
+class AudioBus;
+class BaseAudioContext;
+
 class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(BaseAudioContext *context);
 
-  void renderAudio(float *audioData, int32_t numFrames);
+  void renderAudio(AudioBus* audioData, int32_t numFrames);
+
+  unsigned getCurrentSampleFrame() const;
+  double getCurrentTime() const;
 
  protected:
-  // bool processAudio(float *audioData, int32_t numFrames) override;
 
  private:
-  std::unique_ptr<float[]> mixingBuffer;
+  unsigned currentSampleFrame_;
 
-  void normalize(float *audioData, int32_t numFrames);
+  // DestinationNode is triggered by AudioContext using renderAudio
+  // processNode function is not necessary and is never called.
+  void processNode(int) final { };
 };
+
 } // namespace audioapi

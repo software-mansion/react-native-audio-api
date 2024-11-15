@@ -5,25 +5,35 @@
 namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
-    : AudioNode(context) {
+    : AudioNode(context), currentSampleFrame_(0) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
 }
 
-void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
-  // processAudio(audioData, numFrames);
+unsigned AudioDestinationNode::getCurrentSampleFrame() const {
+  return currentSampleFrame_;
+}
+
+double AudioDestinationNode::getCurrentTime() const {
+  return currentSampleFrame_ / context_->getSampleRate();
+}
+
+void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
+  // int32_t numSamples = numFrames * CHANNEL_COUNT;
+
+  // memset(destinationBuffer, 0.0f, sizeof(float) * numSamples);
+
+  // if (!numFrames) {
+  //   return;
+  // }
+
+  // processAudio(numFrames);
+
+  // currentSampleFrame_ += numFrames;
 }
 
 // bool AudioDestinationNode::processAudio(float *audioData, int32_t numFrames) {
-//   int numSamples = numFrames * CHANNEL_COUNT;
-
-//   if (mixingBuffer == nullptr) {
-//     mixingBuffer = std::make_unique<float[]>(numSamples);
-//   }
-
-//   memset(audioData, 0.0f, sizeof(float) * numSamples);
-
 //   for (auto &node : inputNodes_) {
 //     if (node && node->processAudio(mixingBuffer.get(), numFrames)) {
 //       normalize(mixingBuffer.get(), numFrames);
@@ -33,17 +43,5 @@ void AudioDestinationNode::renderAudio(float *audioData, int32_t numFrames) {
 
 //   return true;
 // }
-
-void AudioDestinationNode::normalize(float *audioData, int32_t numFrames) {
-  auto maxValue = std::max(
-      1.0f, VectorMath::maximumMagnitude(audioData, numFrames * channelCount_));
-
-  if (maxValue == 1.0f) {
-    return;
-  }
-
-  VectorMath::multiplyByScalar(
-      audioData, 1.0f / maxValue, audioData, numFrames * channelCount_);
-}
 
 } // namespace audioapi

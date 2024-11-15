@@ -8,10 +8,11 @@ namespace audioapi {
 using namespace oboe;
 
 class AudioContext;
+class AudioBus;
 
 class AudioPlayer : public AudioStreamDataCallback {
  public:
-  explicit AudioPlayer(const std::function<void(float *, int)> &renderAudio);
+  explicit AudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio);
 
   int getSampleRate() const;
   int getBufferSizeInFrames() const;
@@ -24,8 +25,9 @@ class AudioPlayer : public AudioStreamDataCallback {
       int32_t numFrames) override;
 
  private:
-  std::function<void(float *, int)> renderAudio_;
+  std::function<void(AudioBus*, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
+  std::unique_ptr<AudioBus> mBus_;
 };
 
 } // namespace audioapi

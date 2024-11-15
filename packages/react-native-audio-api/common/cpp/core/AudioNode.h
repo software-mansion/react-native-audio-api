@@ -28,7 +28,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelCountMode mode);
   static std::string toString(ChannelInterpretation interpretation);
 
- protected:
   BaseAudioContext *context_;
   std::unique_ptr<AudioBus> audioBus_;
 
@@ -43,10 +42,12 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
-  bool processAudio(AudioBus *outputBus, int framesToProcess);
+  void processAudio(int framesToProcess);
 
  private:
   void cleanup();
+
+  virtual void processNode(int framesToProcess) = 0;
 };
 
 } // namespace audioapi

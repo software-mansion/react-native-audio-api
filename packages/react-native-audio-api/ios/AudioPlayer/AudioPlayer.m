@@ -12,8 +12,6 @@
     self.audioSession = AVAudioSession.sharedInstance;
     NSError *error = nil;
 
-    NSLog(@"buffer time: %f %f", self.audioSession.IOBufferDuration, self.audioSession.IOBufferDuration * self.audioSession.sampleRate);
-
     // TODO:
     // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
     // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
@@ -44,8 +42,6 @@
                                                                                     frameCount:frameCount
                                                                                     outputData:outputData];
                                                 }];
-
-    self.buffer = malloc([self getBufferSizeInFrames] * 2 * sizeof(float));
   }
 
   return self;
@@ -96,8 +92,6 @@
   self.audioEngine = nil;
   self.audioSession = nil;
   self.renderAudio = nil;
-
-  free(_buffer);
 }
 
 - (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
@@ -109,19 +103,7 @@
     return noErr; // Ensure we have stereo output
   }
 
-  memset(self.buffer, 0, frameCount * 2 * sizeof(float));
-
-  float *leftBuffer = (float *)outputData->mBuffers[0].mData;
-  float *rightBuffer = (float *)outputData->mBuffers[1].mData;
-
-  // self.renderAudio(self.buffer, frameCount);
-
-  for (int frame = 0; frame < frameCount; frame += 1) {
-    leftBuffer[frame] = 0;
-    rightBuffer[frame] = 0;
-    // leftBuffer[frame] = self.buffer[frame * 2];
-    // rightBuffer[frame] = self.buffer[frame * 2 + 1];
-  }
+  self.renderAudio(outputData, frameCount);
 
   return noErr;
 }

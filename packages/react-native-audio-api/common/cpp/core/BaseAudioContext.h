@@ -6,23 +6,21 @@
 #include <utility>
 #include <vector>
 
-#include "AudioBuffer.h"
-#include "AudioBufferSourceNode.h"
-#include "AudioDestinationNode.h"
-#include "AudioScheduledSourceNode.h"
-#include "BiquadFilterNode.h"
-#include "Constants.h"
-#include "GainNode.h"
-#include "OscillatorNode.h"
-#include "StereoPannerNode.h"
+namespace audioapi {
+
+class AudioDestinationNode;
+class OscillatorNode;
+class GainNode;
+class StereoPannerNode;
+class BiquadFilterNode;
+class AudioBufferSourceNode;
+class AudioBuffer;
 
 #ifdef ANDROID
-#include "AudioPlayer.h"
+class AudioPlayer;
 #else
-#include "IOSAudioPlayer.h"
+class IOSAudioPlayer;
 #endif
-
-namespace audioapi {
 
 class BaseAudioContext {
  public:
@@ -40,35 +38,22 @@ class BaseAudioContext {
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, int length, int sampleRate);
-  std::function<void(float *, int)> renderAudio();
+  std::function<void(AudioBus*, int)> renderAudio();
 
  protected:
   enum class State { SUSPENDED, RUNNING, CLOSED };
-
-  static std::string toString(State state) {
-    switch (state) {
-      case State::SUSPENDED:
-        return "suspended";
-      case State::RUNNING:
-        return "running";
-      case State::CLOSED:
-        return "closed";
-      default:
-        throw std::invalid_argument("Unknown context state");
-    }
-  }
-
- protected:
+  static std::string toString(State state);
   std::shared_ptr<AudioDestinationNode> destination_;
+
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
+
   State state_ = State::RUNNING;
   int sampleRate_;
   int bufferSizeInFrames_;
-  double contextStartTime_;
 };
 
 } // namespace audioapi

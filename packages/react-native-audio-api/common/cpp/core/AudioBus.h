@@ -21,9 +21,9 @@ class AudioBus {
     ChannelSurroundRight = 5,
   };
 
-  explicit AudioBus(BaseAudioContext *context);
-  explicit AudioBus(BaseAudioContext *context, int numberOfChannels);
-  explicit AudioBus(BaseAudioContext *context, int numberOfChannels, int size);
+  explicit AudioBus(int sampleRate, int size);
+  explicit AudioBus(int sampleRate, int size, int numberOfChannels);
+
   ~AudioBus();
 
   [[nodiscard]] int getNumberOfChannels() const;
@@ -41,9 +41,7 @@ class AudioBus {
   void sum(const AudioBus &source);
 
  private:
-  BaseAudioContext *context_;
   std::vector<std::unique_ptr<AudioArray>> channels_;
-
 
   int numberOfChannels_;
   int sampleRate_;

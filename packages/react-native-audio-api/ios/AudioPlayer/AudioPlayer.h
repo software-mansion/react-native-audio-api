@@ -3,7 +3,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (^RenderAudioBlock)(float *audioData, int numFrames);
+typedef void (^RenderAudioBlock)(AudioBufferList* outputBuffer, int numFrames);
 
 @interface AudioPlayer : NSObject
 
@@ -12,7 +12,6 @@ typedef void (^RenderAudioBlock)(float *audioData, int numFrames);
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, copy) RenderAudioBlock renderAudio;
-@property (nonatomic, assign) float *buffer;
 
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio;
 

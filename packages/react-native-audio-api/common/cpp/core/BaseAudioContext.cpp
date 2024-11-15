@@ -1,4 +1,18 @@
+#ifdef ANDROID
+#include "AudioPlayer.h"
+#else
+#include "IOSAudioPlayer.h"
+#endif
+
 #include "BaseAudioContext.h"
+
+#include "GainNode.h"
+#include "AudioBuffer.h"
+#include "OscillatorNode.h"
+#include "StereoPannerNode.h"
+#include "BiquadFilterNode.h"
+#include "AudioDestinationNode.h"
+#include "AudioBufferSourceNode.h"
 
 namespace audioapi {
 
@@ -11,12 +25,6 @@ BaseAudioContext::BaseAudioContext() {
   destination_ = std::make_shared<AudioDestinationNode>(this);
 
   sampleRate_ = audioPlayer_->getSampleRate();
-
-  auto now = std::chrono::high_resolution_clock ::now();
-  contextStartTime_ =
-      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                              now.time_since_epoch())
-                              .count());
 
   audioPlayer_->start();
 }
@@ -34,12 +42,7 @@ int BaseAudioContext::getBufferSizeInFrames() const {
 }
 
 double BaseAudioContext::getCurrentTime() const {
-  auto now = std::chrono::high_resolution_clock ::now();
-  auto currentTime =
-      static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                              now.time_since_epoch())
-                              .count());
-  return (currentTime - contextStartTime_) / 1e9;
+  return destination_->getCurrentTime();
 }
 
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
@@ -73,13 +76,26 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
-std::function<void(float *, int)> BaseAudioContext::renderAudio() {
+std::function<void(AudioBus*, int)> BaseAudioContext::renderAudio() {
   if (state_ == State::CLOSED) {
-    return [](float *, int) {};
+    return [](AudioBus*, int) {};
   }
 
-  return [this](float *data, int frames) {
+  return [this](AudioBus* data, int frames) {
     destination_->renderAudio(data, frames);
   };
+}
+
+std::string BaseAudioContext::toString(State state) {
+  switch (state) {
+    case State::SUSPENDED:
+      return "suspended";
+    case State::RUNNING:
+      return "running";
+    case State::CLOSED:
+      return "closed";
+    default:
+      throw std::invalid_argument("Unknown context state");
+  }
 }
 } // namespace audioapi

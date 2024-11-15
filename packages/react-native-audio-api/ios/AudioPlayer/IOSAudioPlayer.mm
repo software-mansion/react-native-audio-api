@@ -1,11 +1,24 @@
+#import <AVFoundation/AVFoundation.h>
+
+#include <AudioBus.h>
+#include <Constants.h>
+#include <AudioArray.h>
 #include <IOSAudioPlayer.h>
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(float *, int)> &renderAudio) : renderAudio_(renderAudio)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio) : renderAudio_(renderAudio)
 {
-  RenderAudioBlock renderAudioBlock = ^(float *audioData, int numFrames) {
-    renderAudio_(audioData, numFrames);
+  audioBus_ = new AudioBus(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+
+  RenderAudioBlock renderAudioBlock = ^(AudioBufferList* outputData, int numFrames) {
+    renderAudio_(audioBus_, numFrames);
+    
+    for (int i = 0; i < outputData->mNumberBuffers; i += 1) {
+      float *outputBuffer = (float *)outputData->mBuffers[i].mData;
+      
+      memcpy(outputBuffer, audioBus_->getChannel(i)->getData(), sizeof(float) * numFrames);
+    }
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
@@ -15,6 +28,7 @@ IOSAudioPlayer::~IOSAudioPlayer()
 {
   stop();
   [audioPlayer_ cleanup];
+  delete audioBus_;
 }
 
 void IOSAudioPlayer::start()
@@ -36,4 +50,5 @@ int IOSAudioPlayer::getBufferSizeInFrames() const
 {
   return [audioPlayer_ getBufferSizeInFrames];
 }
+
 } // namespace audioapi

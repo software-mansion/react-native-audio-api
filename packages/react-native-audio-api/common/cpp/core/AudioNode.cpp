@@ -5,7 +5,7 @@
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ = std::make_unique<AudioBus>(context_, channelCount_);
+  audioBus_ = std::make_unique<AudioBus>(context->getSampleRate(), context->getBufferSizeInFrames(), channelCount_);
 }
 
 AudioNode::~AudioNode() {
@@ -75,7 +75,8 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
   }
 }
 
-bool AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
+void AudioNode::processAudio(int framesToProcess) {
+
   // bool isPlaying = false;
   // for (auto &node : inputNodes_) {
   //   if (node->processAudio(buffer_.get(), framesToProcess)) {
@@ -86,8 +87,6 @@ bool AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   // if (isPlaying) {
   //   outputBus->copyFrom(*buffer_.get(), 0, 0, framesToProcess);
   // }
-
-  // return isPlaying;
 }
 
 void AudioNode::cleanup() {

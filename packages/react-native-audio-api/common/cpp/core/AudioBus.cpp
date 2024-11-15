@@ -16,27 +16,13 @@ namespace audioapi {
 /**
  * Public interfaces - memory management
  */
-AudioBus::AudioBus(BaseAudioContext *context)
-    : context_(context), numberOfChannels_(CHANNEL_COUNT) {
-  sampleRate_ = context_->getSampleRate();
-  size_ = context_->getBufferSizeInFrames();
-
-
+AudioBus::AudioBus(int sampleRate, int size)
+    : sampleRate_(sampleRate), size_(size), numberOfChannels_(CHANNEL_COUNT) {
   createChannels();
 }
 
-AudioBus::AudioBus(BaseAudioContext *context, int numberOfChannels)
-    : context_(context), numberOfChannels_(numberOfChannels) {
-  sampleRate_ = context_->getSampleRate();
-  size_ = context_->getBufferSizeInFrames();
-
-  createChannels();
-}
-
-AudioBus::AudioBus(BaseAudioContext *context, int numberOfChannels, int size)
-    : context_(context), numberOfChannels_(numberOfChannels), size_(size) {
-  sampleRate_ = context_->getSampleRate();
-
+AudioBus::AudioBus(int sampleRate, int size, int numberOfChannels)
+    : sampleRate_(sampleRate), size_(size), numberOfChannels_(numberOfChannels) {
   createChannels();
 }
 
