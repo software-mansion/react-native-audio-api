@@ -1,3 +1,5 @@
+#include "AudioBus.h"
+#include "AudioArray.h"
 #include "BiquadFilterNode.h"
 #include "BaseAudioContext.h"
 
@@ -92,12 +94,12 @@ void BiquadFilterNode::setNormalizedCoefficients(
     float a0,
     float a1,
     float a2) {
-  auto a0Inversed = 1.0f / a0;
-  b0_ = b0 * a0Inversed;
-  b1_ = b1 * a0Inversed;
-  b2_ = b2 * a0Inversed;
-  a1_ = a1 * a0Inversed;
-  a2_ = a2 * a0Inversed;
+  auto a0Inverted = 1.0f / a0;
+  b0_ = b0 * a0Inverted;
+  b1_ = b1 * a0Inverted;
+  b2_ = b2 * a0Inverted;
+  a1_ = a1 * a0Inverted;
+  a2_ = a2 * a0Inverted;
 }
 
 void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
@@ -116,11 +118,11 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
 
   float theta = M_PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
-  float cosw = std::cos(theta);
-  float beta = (1 - cosw) / 2;
+  float cosW = std::cos(theta);
+  float beta = (1 - cosW) / 2;
 
   setNormalizedCoefficients(
-      beta, 2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
+      beta, 2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
@@ -139,11 +141,11 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
 
   float theta = M_PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
-  float cosw = std::cos(theta);
-  float beta = (1 - cosw) / 2;
+  float cosW = std::cos(theta);
+  float beta = (1 - cosW) / 2;
 
   setNormalizedCoefficients(
-      beta, -2 * beta, beta, 1 + alpha, -2 * cosw, 1 - alpha);
+      beta, -2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
@@ -351,40 +353,37 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-// bool BiquadFilterNode::processAudio(float *audioData, int32_t numFrames) {
-//   if (!AudioNode::processAudio(audioData, numFrames)) {
-//     return false;
-//   }
+void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess) {
+  resetCoefficients();
+  applyFilter();
 
-//   resetCoefficients();
-//   applyFilter();
+  for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
+    AudioArray* inputChannel = processingBus->getChannel(i);
 
-//   float x1 = x1_;
-//   float x2 = x2_;
-//   float y1 = y1_;
-//   float y2 = y2_;
+    // Reset the coefficients for each channel
+    float x1 = x1_;
+    float x2 = x2_;
+    float y1 = y1_;
+    float y2 = y2_;
 
-//   float b0 = b0_;
-//   float b1 = b1_;
-//   float b2 = b2_;
-//   float a1 = a1_;
-//   float a2 = a2_;
+    float b0 = b0_;
+    float b1 = b1_;
+    float b2 = b2_;
+    float a1 = a1_;
+    float a2 = a2_;
 
-//   for (int i = 0; i < numFrames; i++) {
-//     auto input = audioData[i * channelCount_];
-//     auto output =
-//         static_cast<float>(b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2);
+    for (int f = 0; i < framesToProcess; f += 1) {
+      float input = (*inputChannel)[f];
+      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
-//     for (int j = 0; j < channelCount_; j++) {
-//       audioData[i * channelCount_ + j] = output;
-//     }
+      (*inputChannel)[f] = output;
 
-//     x2 = x1;
-//     x1 = input;
-//     y2 = y1;
-//     y1 = output;
-//   }
+      x2 = x1;
+      x1 = input;
+      y2 = y1;
+      y1 = output;
+    }
+  }
+}
 
-//   return true;
-// }
 } // namespace audioapi

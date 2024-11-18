@@ -41,6 +41,10 @@ int BaseAudioContext::getBufferSizeInFrames() const {
   return bufferSizeInFrames_;
 }
 
+std::size_t BaseAudioContext::getCurrentSampleFrame() const {
+  return destination_->getCurrentSampleFrame();
+}
+
 double BaseAudioContext::getCurrentTime() const {
   return destination_->getCurrentTime();
 }

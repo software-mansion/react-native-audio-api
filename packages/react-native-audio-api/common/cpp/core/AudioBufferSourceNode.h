@@ -7,6 +7,8 @@
 
 namespace audioapi {
 
+class AudioBus;
+
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferSourceNode(BaseAudioContext *context);
@@ -15,11 +17,14 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
   void setLoop(bool loop);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
-  // [[nodiscard]] bool processAudio(float *audioData, int32_t numFrames) override;
+
+ protected:
+  void processNode(AudioBus* processingBus, int framesToProcess) override;
 
  private:
   bool loop_;
   std::shared_ptr<AudioBuffer> buffer_;
-  int bufferIndex_;
+  std::size_t bufferIndex_;
 };
+
 } // namespace audioapi

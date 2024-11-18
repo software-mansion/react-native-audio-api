@@ -9,6 +9,8 @@
 
 namespace audioapi {
 
+class AudioBus;
+
 class OscillatorNode : public AudioScheduledSourceNode {
  public:
   explicit OscillatorNode(BaseAudioContext *context);
@@ -19,7 +21,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
   void setType(const std::string &type);
 
  protected:
-  // bool processAudio(float *audioData, int32_t numFrames) override;
+  void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
   enum class WaveType { SINE, SQUARE, SAWTOOTH, TRIANGLE, CUSTOM };

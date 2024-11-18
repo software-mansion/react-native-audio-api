@@ -75,18 +75,62 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
   }
 }
 
-void AudioNode::processAudio(int framesToProcess) {
+AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
+  std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
-  // bool isPlaying = false;
-  // for (auto &node : inputNodes_) {
-  //   if (node->processAudio(buffer_.get(), framesToProcess)) {
-  //     isPlaying = true;
-  //   }
-  // }
+  // check if the node has already been processed for this rendering quantum
+  bool isAlreadyProcessed = currentSampleFrame == lastRenderedFrame_;
 
-  // if (isPlaying) {
-  //   outputBus->copyFrom(*buffer_.get(), 0, 0, framesToProcess);
-  // }
+  // Node can't use output bus if:
+  // - outputBus is not provided, which means that next node is doing a multi-node summing.
+  // - it has more than one input, which means that it has to sum all inputs using internal bus.
+  // - it has more than one output, so each output node can get the processed data without re-calculating the node.
+  bool canUseOutputBus = outputBus != 0 && inputNodes_.size() == 1 && outputNodes_.size() == 1;
+
+  if (isAlreadyProcessed) {
+    // If it was already processed in the rendering quantum,return it.
+    return audioBus_.get();
+  }
+
+  // Update the last rendered frame before processing node and its inputs.
+  lastRenderedFrame_ = currentSampleFrame;
+
+  AudioBus* processingBus = canUseOutputBus ? outputBus : audioBus_.get();
+
+  if (!canUseOutputBus) {
+    // Clear the bus before summing all connected nodes.
+    processingBus->zero();
+  }
+
+  if (inputNodes_.empty()) {
+    // If there are no connected inputs, process the node just to advance the audio params.
+    // The node will output silence anyway.
+    processNode(processingBus, framesToProcess);
+    return processingBus;
+  }
+
+  // Process first connected node, it can be directly connected to the processingBus,
+  // resulting in one less summing operation in most cases.
+  AudioBus* firstNodeResultBus = inputNodes_.front()->processAudio(processingBus, framesToProcess);
+
+  if (firstNodeResultBus != processingBus) {
+    processingBus->sum(*firstNodeResultBus);
+  }
+
+  if (inputNodes_.size() > 1) {
+    // If there are more connected nodes, sum them together.
+    for (auto it = inputNodes_.begin() + 1; it != inputNodes_.end(); it += 1) {
+      // Enforce the summing to be done using the internal bus.
+      AudioBus* inputBus = it->get()->processAudio(0, framesToProcess);
+
+      processingBus->sum(*inputBus);
+    }
+  }
+
+  // Finally, process the node itself.
+  processNode(processingBus, framesToProcess);
+
+  return processingBus;
 }
 
 void AudioNode::cleanup() {

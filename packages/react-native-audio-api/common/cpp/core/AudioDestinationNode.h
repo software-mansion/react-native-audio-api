@@ -17,17 +17,16 @@ class AudioDestinationNode : public AudioNode {
 
   void renderAudio(AudioBus* audioData, int32_t numFrames);
 
-  unsigned getCurrentSampleFrame() const;
+  std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
 
  protected:
-
- private:
-  unsigned currentSampleFrame_;
-
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  void processNode(int) final { };
+  void processNode(AudioBus*, int) final { };
+
+ private:
+  std::size_t currentSampleFrame_;
 };
 
 } // namespace audioapi

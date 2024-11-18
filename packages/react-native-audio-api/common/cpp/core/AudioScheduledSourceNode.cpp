@@ -1,5 +1,5 @@
-#include "AudioScheduledSourceNode.h"
 #include "BaseAudioContext.h"
+#include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 
@@ -9,31 +9,17 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 }
 
 void AudioScheduledSourceNode::start(double time) {
-  waitAndExecute(time, [this](double time) { startPlayback(); });
+  nextChangeTime_ = time;
 }
 
 void AudioScheduledSourceNode::stop(double time) {
-  waitAndExecute(time, [this](double time) { stopPlayback(); });
+  nextChangeTime_ = time;
 }
 
-void AudioScheduledSourceNode::startPlayback() {
-  isPlaying_ = true;
-}
-
-void AudioScheduledSourceNode::stopPlayback() {
-  isPlaying_ = false;
-}
-
-void AudioScheduledSourceNode::waitAndExecute(
-    double time,
-    const std::function<void(double)> &fun) {
-  std::thread([this, time, fun]() {
-    while (context_->getCurrentTime() < time) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-
-    fun(time);
-  }).detach();
+void AudioScheduledSourceNode::handlePlayback(double time, int framesToProcess) {
+  if (nextChangeTime_ <= time + (framesToProcess / context_->getSampleRate())) {
+    isPlaying_ = !isPlaying_;
+  }
 }
 
 } // namespace audioapi

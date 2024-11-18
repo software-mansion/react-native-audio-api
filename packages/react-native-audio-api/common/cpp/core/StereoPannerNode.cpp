@@ -1,4 +1,6 @@
+#include "AudioBus.h"
 #include "Constants.h"
+#include "AudioArray.h"
 #include "StereoPannerNode.h"
 #include "BaseAudioContext.h"
 
@@ -16,36 +18,38 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-// bool StereoPannerNode::processAudio(float *audioData, int32_t numFrames) {
-//   // assumed channelCount = 2
-//   if (!AudioNode::processAudio(audioData, numFrames)) {
-//     return false;
-//   }
+void StereoPannerNode::processNode(AudioBus* processingBus, int framesToProcess) {
+  // TODO: Currently assumed channelCount is 2
+  // it should:
+  //  - support mono-channel buses
+  //  - throw errors when trying to setup stereo panner with more than 2 channels
 
-//   auto time = context_->getCurrentTime();
-//   auto deltaTime = 1.0 / context_->getSampleRate();
+  double time = context_->getCurrentTime();
+  double deltaTime = 1.0 / context_->getSampleRate();
 
-//   for (int i = 0; i < numFrames; i++) {
-//     auto pan = panParam_->getValueAtTime(time);
-//     auto x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
+  AudioArray* left = processingBus->getChannelByType(AudioBus::ChannelLeft);
+  AudioArray* right = processingBus->getChannelByType(AudioBus::ChannelRight);
 
-//     auto gainL = static_cast<float>(cos(x));
-//     auto gainR = static_cast<float>(sin(x));
+  for (int i = 0; i < framesToProcess; i += 1) {
+    float pan = panParam_->getValueAtTime(time);
+    float x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
 
-//     auto inputL = audioData[i * 2];
-//     auto inputR = audioData[i * 2 + 1];
+    float gainL = static_cast<float>(cos(x));
+    float gainR = static_cast<float>(sin(x));
 
-//     if (pan <= 0) {
-//       audioData[i * 2] = inputL + inputR * gainL;
-//       audioData[i * 2 + 1] = inputR * gainR;
-//     } else {
-//       audioData[i * 2] = inputL * gainL;
-//       audioData[i * 2 + 1] = inputR + inputL * gainR;
-//     }
+    float inputL = (*left)[i];
+    float inputR = (*right)[i];
 
-//     time += deltaTime;
-//   }
+    if (pan <= 0) {
+      (*left)[i] = inputL + inputR * gainL;
+      (*right)[i] = inputR * gainR;
+    } else {
+      (*left)[i] = inputL * gainL;
+      (*right)[i] = inputR + inputL * gainR;
+    }
 
-//   return true;
-// }
+    time += deltaTime;
+  }
+
+}
 } // namespace audioapi

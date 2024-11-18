@@ -28,7 +28,11 @@ IOSAudioPlayer::~IOSAudioPlayer()
 {
   stop();
   [audioPlayer_ cleanup];
-  delete audioBus_;
+  
+  if (audioBus_) {
+    delete audioBus_;
+    audioBus_ = 0;
+  }
 }
 
 void IOSAudioPlayer::start()

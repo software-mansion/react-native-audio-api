@@ -29,6 +29,7 @@ class BaseAudioContext {
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] int getBufferSizeInFrames() const;
+  [[nodiscard]] std::size_t getCurrentSampleFrame() const;
 
   std::shared_ptr<AudioDestinationNode> getDestination();
   std::shared_ptr<OscillatorNode> createOscillator();

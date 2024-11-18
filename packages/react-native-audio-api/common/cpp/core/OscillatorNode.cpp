@@ -1,3 +1,5 @@
+#include "AudioBus.h"
+#include "AudioArray.h"
 #include "OscillatorNode.h"
 #include "BaseAudioContext.h"
 
@@ -27,40 +29,43 @@ void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
 }
 
-// bool OscillatorNode::processAudio(float *audioData, int32_t numFrames) {
-//   if (!isPlaying_) {
-//     return false;
-//   } else {
-//     auto time = context_->getCurrentTime();
-//     auto deltaTime = 1.0 / context_->getSampleRate();
+void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
+  double time = context_->getCurrentTime();
+  handlePlayback(time, framesToProcess);
 
-//     for (int i = 0; i < numFrames; ++i) {
-//       auto detuneRatio =
-//           std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
-//       auto detunedFrequency =
-//           round(frequencyParam_->getValueAtTime(time) * detuneRatio);
-//       auto phaseIncrement = static_cast<float>(
-//           2 * M_PI * detunedFrequency / context_->getSampleRate());
+  if (!isPlaying_) {
+    processingBus->zero();
+    return;
+  }
 
-//       float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+  double deltaTime = 1.0 / context_->getSampleRate();
 
-//       for (int j = 0; j < channelCount_; j++) {
-//         audioData[i * channelCount_ + j] = value;
-//       }
+  for (int i = 0; i < framesToProcess; i += 1) {
+    auto detuneRatio =
+        std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+    auto detunedFrequency =
+        round(frequencyParam_->getValueAtTime(time) * detuneRatio);
+    auto phaseIncrement = static_cast<float>(
+        2 * M_PI * detunedFrequency / context_->getSampleRate());
 
-//       phase_ += phaseIncrement;
-//       time += deltaTime;
+    float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
-//       if (phase_ >= 2 * M_PI) {
-//         phase_ -= 2 * M_PI;
-//       }
+    for (int j = 0; j < channelCount_; j += 1) {
+      // Call the [] operator directly for better readability ;)
+      processingBus->getChannel(j)->operator[](i) = value;
+    }
 
-//       if (phase_ < 0) {
-//         phase_ += 2 * M_PI;
-//       }
-//     }
+    phase_ += phaseIncrement;
+    time += deltaTime;
 
-//     return true;
-//   }
-// }
+    if (phase_ >= 2 * M_PI) {
+      phase_ -= 2 * M_PI;
+    }
+
+    if (phase_ < 0) {
+      phase_ += 2 * M_PI;
+    }
+  }
+}
+
 } // namespace audioapi
