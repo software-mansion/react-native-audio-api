@@ -9,6 +9,7 @@ on:
 
 jobs:
   lint:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,6 +25,7 @@ jobs:
         run: yarn typecheck
 
   build-library:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
