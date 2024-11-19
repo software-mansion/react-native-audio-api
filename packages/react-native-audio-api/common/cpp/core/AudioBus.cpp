@@ -189,6 +189,14 @@ void AudioBus::copy(const AudioBus &source, int sourceStart, int destinationStar
     return;
   }
 
+  if (source.getNumberOfChannels() == getNumberOfChannels()) {
+    for (int i = 0; i < getNumberOfChannels(); i += 1) {
+      getChannel(i)->copy(source.getChannel(i), sourceStart, destinationStart, length);
+    }
+
+    return;
+  }
+
   // zero + sum is equivalent to copy, but takes care of up/down-mixing.
   zero(destinationStart, length);
   sum(source, sourceStart, destinationStart, length);

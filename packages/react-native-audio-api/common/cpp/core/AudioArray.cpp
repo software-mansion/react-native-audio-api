@@ -61,7 +61,7 @@ float AudioArray::getMaxAbsValue() const {
 }
 
 void AudioArray::zero() {
-  memset(data_, 0, size_ * sizeof(float));
+  zero(0, size_);
 }
 
 void AudioArray::zero(int start, int length) {
@@ -69,11 +69,11 @@ void AudioArray::zero(int start, int length) {
 }
 
 void AudioArray::sum(const AudioArray* source) {
-  VectorMath::add(data_, source->getData(), data_, size_);
+  sum(source, 0, 0, size_);
 }
 
 void AudioArray::sum(const AudioArray* source, int start, int length) {
-  VectorMath::add(data_ + start, source->getData() + start, data_ + start, length);
+  sum(source, start, start, length);
 }
 
 void AudioArray::sum(const AudioArray* source, int sourceStart, int destinationStart, int length) {
@@ -81,11 +81,11 @@ void AudioArray::sum(const AudioArray* source, int sourceStart, int destinationS
 }
 
 void AudioArray::copy(const AudioArray* source) {
-  memcpy(data_, source->getData(), size_ * sizeof(float));
+  copy(source, 0, size_);
 }
 
 void AudioArray::copy(const AudioArray* source, int start, int length) {
-  memcpy(data_ + start, source->getData() + start, length * sizeof(float));
+  copy(source, start, start, length);
 }
 
 void AudioArray::copy(const AudioArray* source, int sourceStart, int destinationStart, int length) {

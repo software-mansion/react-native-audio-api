@@ -24,7 +24,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
  private:
   bool loop_;
   std::shared_ptr<AudioBuffer> buffer_;
-  std::size_t bufferIndex_;
+  int bufferIndex_;
 };
 
 } // namespace audioapi
