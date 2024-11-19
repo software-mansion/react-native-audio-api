@@ -17,15 +17,21 @@ class AudioArray {
   float& operator[](int index);
   const float& operator[](int index) const;
 
-  void zero();
+  void normalize();
   void resize(int size);
-  void copy(const AudioArray* source);
-
+  void scale(float value);
   float getMaxAbsValue() const;
 
-  void normalize();
-  void scale(float value);
+  void zero();
+  void zero(int start, int length);
+
   void sum(const AudioArray* source);
+  void sum(const AudioArray* source, int start, int length);
+  void sum(const AudioArray* source, int sourceStart, int destinationStart, int length);
+
+  void copy(const AudioArray* source);
+  void copy(const AudioArray* source, int start, int length);
+  void copy(const AudioArray* source, int sourceStart, int destinationStart, int length);
 
 
  private:

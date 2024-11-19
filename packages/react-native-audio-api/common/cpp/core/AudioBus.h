@@ -32,13 +32,20 @@ class AudioBus {
   AudioArray* getChannel(int index) const;
   AudioArray* getChannelByType(int channelType) const;
 
-  void zero();
   void normalize();
   void scale(float value);
   float maxAbsValue() const;
 
-  void copy(const AudioBus &source);
+  void zero();
+  void zero(int start, int length);
+
   void sum(const AudioBus &source);
+  void sum(const AudioBus &source, int start, int length);
+  void sum(const AudioBus &source, int sourceStart, int destinationStart, int length);
+
+  void copy(const AudioBus &source);
+  void copy(const AudioBus &source, int start, int length);
+  void copy(const AudioBus &source, int sourceStart, int destinationStart, int length);
 
  private:
   std::vector<std::unique_ptr<AudioArray>> channels_;
@@ -48,9 +55,9 @@ class AudioBus {
   int size_;
 
   void createChannels();
-  void discreteSum(const AudioBus &source);
-  void sumByUpMixing(const AudioBus &source);
-  void sumByDownMixing(const AudioBus &source);
+  void discreteSum(const AudioBus &source, int sourceStart, int destinationStart, int length);
+  void sumByUpMixing(const AudioBus &source, int sourceStart, int destinationStart, int length);
+  void sumByDownMixing(const AudioBus &source, int sourceStart, int destinationStart, int length);
 };
 
 } // namespace audioapi
