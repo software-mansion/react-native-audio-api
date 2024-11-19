@@ -38,7 +38,6 @@ void AudioBufferSourceNode::setBuffer(
 // otherwise it will use the summing function taking care of up/down mixing.
 void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToProcess) {
   double time = context_->getCurrentTime();
-  handlePlayback(time, framesToProcess);
 
   // No audio data to fill, zero the output and return.
   if (!isPlaying_ || !buffer_ || buffer_->getLength() == 0) {
@@ -48,7 +47,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
 
   // Easiest case, the buffer is the same length as the number of frames to process, just copy the data.
   if (framesToProcess == buffer_->getLength()) {
-    processingBus->copy(*buffer_->bus_.get());
+    processingBus->copy(buffer_->bus_.get());
 
     if (!loop_) {
       isPlaying_ = false;
@@ -62,7 +61,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   if (framesToProcess < buffer_->getLength()) {
     int framesToCopy = std::min(framesToProcess, buffer_->getLength() - bufferIndex_);
 
-    processingBus->copy(*buffer_->bus_.get(), bufferIndex_, framesToCopy);
+    processingBus->copy(buffer_->bus_.get(), bufferIndex_, framesToCopy);
 
     if (loop_) {
       bufferIndex_ = (bufferIndex_ + framesToCopy) % buffer_->getLength();
@@ -80,7 +79,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   // processing bus is longer than the source buffer
   if (!loop_) {
     // If we don't loop the buffer, copy it once and zero the remaining processing bus frames.
-    processingBus->copy(*buffer_->bus_.get());
+    processingBus->copy(buffer_->bus_.get());
     processingBus->zero(buffer_->getLength(), framesToProcess - buffer_->getLength());
     isPlaying_ = false;
     return;
@@ -96,20 +95,20 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   // Do we have some frames left in the buffer from the previous render quantum,
   // if yes copy them over and reset the buffer position.
   if (bufferIndex_ > 0) {
-    processingBus->copy(*buffer_->bus_.get(), 0, bufferIndex_);
+    processingBus->copy(buffer_->bus_.get(), 0, bufferIndex_);
     processingBusPosition += bufferIndex_;
     bufferIndex_ = 0;
   }
 
   // Copy the entire buffer n times to the processing bus.
   while (processingBusPosition + bufferSize <= framesToProcess) {
-    processingBus->copy(*buffer_->bus_.get());
+    processingBus->copy(buffer_->bus_.get());
     processingBusPosition += bufferSize;
   }
 
   // Fill in the remaining frames from the processing buffer and update buffer index for next render quantum.
   if (remainingFrames > 0) {
-    processingBus->copy(*buffer_->bus_.get(), 0, processingBusPosition, remainingFrames);
+    processingBus->copy(buffer_->bus_.get(), 0, processingBusPosition, remainingFrames);
     bufferIndex_ = remainingFrames;
   }
 }

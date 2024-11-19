@@ -42,16 +42,15 @@ const Oscillator: FC = () => {
     oscillatorRef.current.frequency.value = frequency;
     oscillatorRef.current.detune.value = detune;
     oscillatorRef.current.type = oscillatorType;
+    oscillatorRef.current.connect(audioContextRef.current.destination);
 
-    gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain.value = gain;
-
-    panRef.current = audioContextRef.current.createStereoPanner();
-    panRef.current.pan.value = pan;
-
-    oscillatorRef.current.connect(gainRef.current);
-    gainRef.current.connect(panRef.current);
-    panRef.current.connect(audioContextRef.current.destination);
+    // gainRef.current = audioContextRef.current.createGain();
+    // gainRef.current.gain.value = gain;
+    // panRef.current = audioContextRef.current.createStereoPanner();
+    // panRef.current.pan.value = pan;
+    // oscillatorRef.current.connect(gainRef.current);
+    // gainRef.current.connect(panRef.current);
+    // panRef.current.connect(audioContextRef.current.destination);
   };
 
   const handleGainChange = (newValue: number) => {

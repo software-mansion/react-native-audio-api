@@ -30,7 +30,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelInterpretation interpretation);
 
   BaseAudioContext *context_;
-  std::unique_ptr<AudioBus> audioBus_;
+  std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;

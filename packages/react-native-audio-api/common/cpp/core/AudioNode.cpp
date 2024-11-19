@@ -5,10 +5,12 @@
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ = std::make_unique<AudioBus>(context->getSampleRate(), context->getBufferSizeInFrames(), channelCount_);
+  printf("AudioNode::AudioNode %d %d\n", context->getSampleRate(), context->getBufferSizeInFrames());
+  audioBus_ = std::make_shared<AudioBus>(context->getSampleRate(), context->getBufferSizeInFrames(), channelCount_);
 }
 
 AudioNode::~AudioNode() {
+  printf("AudioNode::~AudioNode\n");
   cleanup();
 }
 
@@ -85,7 +87,7 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   // - outputBus is not provided, which means that next node is doing a multi-node summing.
   // - it has more than one input, which means that it has to sum all inputs using internal bus.
   // - it has more than one output, so each output node can get the processed data without re-calculating the node.
-  bool canUseOutputBus = outputBus != 0 && inputNodes_.size() == 1 && outputNodes_.size() == 1;
+  bool canUseOutputBus = outputBus != 0 && inputNodes_.size() < 2 && outputNodes_.size() < 2;
 
   if (isAlreadyProcessed) {
     // If it was already processed in the rendering quantum,return it.
@@ -109,21 +111,15 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
     return processingBus;
   }
 
-  // Process first connected node, it can be directly connected to the processingBus,
-  // resulting in one less summing operation in most cases.
-  AudioBus* firstNodeResultBus = inputNodes_.front()->processAudio(processingBus, framesToProcess);
-
-  if (firstNodeResultBus != processingBus) {
-    processingBus->sum(*firstNodeResultBus);
-  }
-
-  if (inputNodes_.size() > 1) {
-    // If there are more connected nodes, sum them together.
-    for (auto it = inputNodes_.begin() + 1; it != inputNodes_.end(); it += 1) {
+  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); it += 1) {
+    // Process first connected node, it can be directly connected to the processingBus,
+    // resulting in one less summing operation.q
+    if (it == inputNodes_.begin()) {
+      it->get()->processAudio(processingBus, framesToProcess);
+    } else {
       // Enforce the summing to be done using the internal bus.
       AudioBus* inputBus = it->get()->processAudio(0, framesToProcess);
-
-      processingBus->sum(*inputBus);
+      processingBus->sum(inputBus);
     }
   }
 

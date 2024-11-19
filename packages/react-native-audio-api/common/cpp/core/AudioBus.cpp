@@ -47,7 +47,7 @@ int AudioBus::getSize() const {
 }
 
 AudioArray* AudioBus::getChannel(int index) const {
-  return (AudioArray*)&channels_[index];
+  return channels_[index].get();
 }
 
 AudioArray* AudioBus::getChannelByType(int channelType) const {
@@ -109,7 +109,7 @@ void AudioBus::zero() {
 
 void AudioBus::zero(int start, int length) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    it->zero(start, length);
+    it->get()->zero(start, length);
   }
 }
 
@@ -126,35 +126,35 @@ void AudioBus::normalize() {
 
 void AudioBus::scale(float value) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    it->scale(value);
+    it->get()->scale(value);
   }
 }
 
 float AudioBus::maxAbsValue() const {
-  float maxAbsValue = 0.0f;
+  float maxAbsValue = 1.0f;
 
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    float channelMaxAbsValue = it->getMaxAbsValue();
+    float channelMaxAbsValue = it->get()->getMaxAbsValue();
     maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
   }
 
   return maxAbsValue;
 }
 
-void AudioBus::sum(const AudioBus &source) {
+void AudioBus::sum(const AudioBus *source) {
   sum(source, 0, 0, getSize());
 }
 
-void AudioBus::sum(const AudioBus &source, int start, int length) {
+void AudioBus::sum(const AudioBus *source, int start, int length) {
   sum(source, start, start, length);
 }
 
-void AudioBus::sum(const AudioBus &source, int sourceStart, int destinationStart, int length) {
-  if (&source == this) {
+void AudioBus::sum(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+  if (source == this) {
     return;
   }
 
-  int numberOfSourceChannels = source.getNumberOfChannels();
+  int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
   // TODO: consider adding ability to enforce discrete summing (if/when it will be useful).
@@ -172,30 +172,30 @@ void AudioBus::sum(const AudioBus &source, int sourceStart, int destinationStart
 
   // Source and destination channel counts are the same. Just sum the channels.
   for (int i = 0; i < numberOfChannels_; i += 1) {
-    channels_[i].sum(source.getChannel(i), sourceStart, destinationStart, length);
+    getChannel(i)->sum(source->getChannel(i), sourceStart, destinationStart, length);
   }
 }
 
-void AudioBus::copy(const AudioBus &source) {
+void AudioBus::copy(const AudioBus *source) {
   copy(source, 0, 0, getSize());
 }
 
-void AudioBus::copy(const AudioBus &source, int start, int length) {
+void AudioBus::copy(const AudioBus *source, int start, int length) {
   copy(source, start, start, length);
 }
 
-void AudioBus::copy(const AudioBus &source, int sourceStart, int destinationStart, int length) {
-  if (&source == this) {
+void AudioBus::copy(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+  if (source == this) {
     return;
   }
 
-  if (source.getNumberOfChannels() == getNumberOfChannels()) {
-    for (int i = 0; i < getNumberOfChannels(); i += 1) {
-      getChannel(i)->copy(source.getChannel(i), sourceStart, destinationStart, length);
-    }
+  // if (source->getNumberOfChannels() == getNumberOfChannels()) {
+  //   for (int i = 0; i < getNumberOfChannels(); i += 1) {
+  //     getChannel(i)->copy(source->getChannel(i), sourceStart, destinationStart, length);
+  //   }
 
-    return;
-  }
+  //   return;
+  // }
 
   // zero + sum is equivalent to copy, but takes care of up/down-mixing.
   zero(destinationStart, length);
@@ -207,31 +207,34 @@ void AudioBus::copy(const AudioBus &source, int sourceStart, int destinationStar
  */
 
 void AudioBus::createChannels() {
-  // TODO: verify if its correct way of memory allocation
-  channels_ = std::vector<AudioArray>(numberOfChannels_, AudioArray(size_));
+  channels_ = std::vector<std::shared_ptr<AudioArray>>(numberOfChannels_);
+
+  for (int i = 0; i < numberOfChannels_; i += 1) {
+    channels_[i] = std::make_shared<AudioArray>(size_);
+  }
 }
 
 /**
  * Internal tooling - channel summing
  */
 
-void AudioBus::discreteSum(const AudioBus &source, int sourceStart, int destinationStart, int length) {
-  int numberOfChannels = std::min(getNumberOfChannels(), source.getNumberOfChannels());
+void AudioBus::discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+  int numberOfChannels = std::min(getNumberOfChannels(), source->getNumberOfChannels());
 
   // In case of source > destination, we "down-mix" and drop the extra channels.
   // In case of source < destination, we "up-mix" as many channels as we have, leaving the remaining channels untouched.
   for (int i = 0; i < numberOfChannels; i++) {
-    getChannel(i)->sum(source.getChannel(i), sourceStart, destinationStart, length);
+    getChannel(i)->sum(source->getChannel(i), sourceStart, destinationStart, length);
   }
 }
 
-void AudioBus::sumByUpMixing(const AudioBus &source, int sourceStart, int destinationStart, int length) {
-  int numberOfSourceChannels = source.getNumberOfChannels();
+void AudioBus::sumByUpMixing(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+  int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
   // Mono to stereo (1 -> 2, 4)
   if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
-    AudioArray* sourceChannel = source.getChannelByType(ChannelMono);
+    AudioArray* sourceChannel = source->getChannelByType(ChannelMono);
 
     getChannelByType(ChannelLeft)->sum(sourceChannel, sourceStart, destinationStart, length);
     getChannelByType(ChannelRight)->sum(sourceChannel, sourceStart, destinationStart, length);
@@ -240,7 +243,7 @@ void AudioBus::sumByUpMixing(const AudioBus &source, int sourceStart, int destin
 
   // Mono to 5.1 (1 -> 6)
   if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
-    AudioArray* sourceChannel = source.getChannel(0);
+    AudioArray* sourceChannel = source->getChannel(0);
 
     getChannelByType(ChannelCenter)->sum(sourceChannel, sourceStart, destinationStart, length);
     return;
@@ -248,31 +251,31 @@ void AudioBus::sumByUpMixing(const AudioBus &source, int sourceStart, int destin
 
   // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
   if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
-    getChannelByType(ChannelLeft)->sum(source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)->sum(source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
+    getChannelByType(ChannelLeft)->sum(source->getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
+    getChannelByType(ChannelRight)->sum(source->getChannelByType(ChannelRight), sourceStart, destinationStart, length);
     return;
   }
 
   // Stereo 4 to 5.1 (4 -> 6)
   if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
-    getChannelByType(ChannelLeft)->sum(source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)->sum(source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    getChannelByType(ChannelSurroundLeft)->sum(source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelSurroundRight)->sum(source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
+    getChannelByType(ChannelLeft)->sum(source->getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
+    getChannelByType(ChannelRight)->sum(source->getChannelByType(ChannelRight), sourceStart, destinationStart, length);
+    getChannelByType(ChannelSurroundLeft)->sum(source->getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
+    getChannelByType(ChannelSurroundRight)->sum(source->getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
     return;
   }
 
   discreteSum(source, sourceStart, destinationStart, length);
 }
 
-void AudioBus::sumByDownMixing(const AudioBus &source, int sourceStart, int destinationStart, int length) {
-  int numberOfSourceChannels = source.getNumberOfChannels();
+void AudioBus::sumByDownMixing(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+  int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
   // Stereo to mono (2 -> 1): output += 0.5 * (input.left + input.right).
   if (numberOfSourceChannels == 2 && numberOfChannels == 1) {
-    float* sourceLeft = source.getChannelByType(ChannelLeft)->getData();
-    float* sourceRight = source.getChannelByType(ChannelRight)->getData();
+    float* sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float* sourceRight = source->getChannelByType(ChannelRight)->getData();
 
     float* destinationData = getChannelByType(ChannelMono)->getData();
 
@@ -283,10 +286,10 @@ void AudioBus::sumByDownMixing(const AudioBus &source, int sourceStart, int dest
 
   // Stereo 4 to mono: output += 0.25 * (input.left + input.right + input.surroundLeft + input.surroundRight)
   if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
-    float* sourceLeft = source.getChannelByType(ChannelLeft)->getData();
-    float* sourceRight = source.getChannelByType(ChannelRight)->getData();
-    float* sourceSurroundLeft = source.getChannelByType(ChannelSurroundLeft)->getData();
-    float* sourceSurroundRight = source.getChannelByType(ChannelSurroundRight)->getData();
+    float* sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float* sourceRight = source->getChannelByType(ChannelRight)->getData();
+    float* sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float* sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float* destinationData = getChannelByType(ChannelMono)->getData();
 
@@ -301,11 +304,11 @@ void AudioBus::sumByDownMixing(const AudioBus &source, int sourceStart, int dest
   // output.left += input.left + sqrt(1/2) * (input.center + input.surroundLeft)
   // output.right += input.right + sqrt(1/2) * (input.center + input.surroundRight)
   if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
-    float* sourceLeft = source.getChannelByType(ChannelLeft)->getData();
-    float* sourceRight = source.getChannelByType(ChannelRight)->getData();
-    float* sourceCenter = source.getChannelByType(ChannelCenter)->getData();
-    float* sourceSurroundLeft = source.getChannelByType(ChannelSurroundLeft)->getData();
-    float* sourceSurroundRight = source.getChannelByType(ChannelSurroundRight)->getData();
+    float* sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float* sourceRight = source->getChannelByType(ChannelRight)->getData();
+    float* sourceCenter = source->getChannelByType(ChannelCenter)->getData();
+    float* sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float* sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float* destinationLeft = getChannelByType(ChannelLeft)->getData();
     float* destinationRight = getChannelByType(ChannelRight)->getData();
@@ -326,11 +329,11 @@ void AudioBus::sumByDownMixing(const AudioBus &source, int sourceStart, int dest
   // output.surroundLeft += input.surroundLeft
   // output.surroundRight += input.surroundRight
   if (numberOfSourceChannels == 6 && numberOfChannels == 4) {
-    float* sourceLeft = source.getChannelByType(ChannelLeft)->getData();
-    float* sourceRight = source.getChannelByType(ChannelRight)->getData();
-    float* sourceCenter = source.getChannelByType(ChannelCenter)->getData();
-    float* sourceSurroundLeft = source.getChannelByType(ChannelSurroundLeft)->getData();
-    float* sourceSurroundRight = source.getChannelByType(ChannelSurroundRight)->getData();
+    float* sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float* sourceRight = source->getChannelByType(ChannelRight)->getData();
+    float* sourceCenter = source->getChannelByType(ChannelCenter)->getData();
+    float* sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float* sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float* destinationLeft = getChannelByType(ChannelLeft)->getData();
     float* destinationRight = getChannelByType(ChannelRight)->getData();

@@ -32,7 +32,7 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
       int startInChannel);
 
  private:
-  std::unique_ptr<AudioBus> bus_;
+  std::shared_ptr<AudioBus> bus_;
 
   friend class AudioBufferSourceNode;
 };

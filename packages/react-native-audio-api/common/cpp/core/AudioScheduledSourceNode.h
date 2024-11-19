@@ -1,6 +1,11 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <thread>
 
 #include "AudioNode.h"
 
@@ -15,9 +20,11 @@ class AudioScheduledSourceNode : public AudioNode {
 
  protected:
   std::atomic<bool> isPlaying_;
-  std::atomic<double> nextChangeTime_ { -1.0 };
 
-  void handlePlayback(double time, int framesToProcess);
+ private:
+  void startPlayback();
+  void stopPlayback();
+  void waitAndExecute(double time, const std::function<void(double)> &fun);
 };
 
 } // namespace audioapi

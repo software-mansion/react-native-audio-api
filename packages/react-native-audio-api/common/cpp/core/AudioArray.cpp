@@ -6,7 +6,8 @@
 namespace audioapi {
 
 AudioArray::AudioArray(int size) : size_(size), data_(0) {
-  data_ = new float[size];
+  printf("AudioArray::AudioArray(%d)\n", size);
+  resize(size);
 }
 
 AudioArray::~AudioArray() {
@@ -48,7 +49,7 @@ void AudioArray::resize(int size) {
       data_ = new float[size];
     }
 
-    zero();
+    zero(0, size);
     return;
   }
 
@@ -56,7 +57,7 @@ void AudioArray::resize(int size) {
   size_ = size;
   data_ = new float[size_];
 
-  zero();
+  zero(0, size_);
 }
 
 void AudioArray::scale(float value) {

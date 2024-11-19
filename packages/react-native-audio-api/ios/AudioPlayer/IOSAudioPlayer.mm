@@ -21,14 +21,13 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus*, int)> &render
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
   audioBus_ = new AudioBus(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
-  NSLog(@"info: %d %d", getSampleRate(), getBufferSizeInFrames());
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
   stop();
   [audioPlayer_ cleanup];
-  
+
   if (audioBus_) {
     delete audioBus_;
     audioBus_ = 0;

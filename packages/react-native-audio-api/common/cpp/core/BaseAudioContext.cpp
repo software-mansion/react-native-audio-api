@@ -24,10 +24,11 @@ BaseAudioContext::BaseAudioContext() {
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
 #endif
-  destination_ = std::make_shared<AudioDestinationNode>(this);
 
   sampleRate_ = audioPlayer_->getSampleRate();
+  bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
 
+  destination_ = std::make_shared<AudioDestinationNode>(this);
   audioPlayer_->start();
 }
 

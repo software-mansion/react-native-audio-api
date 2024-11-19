@@ -7,6 +7,7 @@ namespace audioapi {
 
 OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
+  printf("OscillatorNode::OscillatorNode\n");
   frequencyParam_ = std::make_shared<AudioParam>(
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
   detuneParam_ =
@@ -31,7 +32,6 @@ void OscillatorNode::setType(const std::string &type) {
 
 void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
   double time = context_->getCurrentTime();
-  handlePlayback(time, framesToProcess);
 
   if (!isPlaying_) {
     processingBus->zero();
@@ -51,8 +51,7 @@ void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
     float value = OscillatorNode::getWaveBufferElement(phase_, type_);
 
     for (int j = 0; j < channelCount_; j += 1) {
-      // Call the [] operator directly for better readability ;)
-      processingBus->getChannel(j)->operator[](i) = value;
+      (*processingBus->getChannel(j))[i] = value;
     }
 
     phase_ += phaseIncrement;

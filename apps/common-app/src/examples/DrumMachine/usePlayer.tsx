@@ -134,6 +134,7 @@ export default function usePlayer(options: PlayerOptions) {
     }
 
     return () => {
+      console.log('Closing audio context');
       audioContext.close();
     };
     // \/ Shared values are not necessary in deps array

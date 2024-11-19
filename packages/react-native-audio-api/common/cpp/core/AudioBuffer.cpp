@@ -5,8 +5,7 @@
 namespace audioapi {
 
 AudioBuffer::AudioBuffer(int numberOfChannels, int length, int sampleRate) {
-  bus_ = std::make_unique<AudioBus>(sampleRate, length, numberOfChannels);
-  bus_->zero();
+  bus_ = std::make_shared<AudioBus>(sampleRate, length, numberOfChannels);
 }
 
 int AudioBuffer::getLength() const {

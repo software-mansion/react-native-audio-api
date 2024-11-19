@@ -18,7 +18,7 @@ AudioPlayer::AudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio)
       ->setDataCallback(this)
       ->openStream(mStream_);
 
-  mBus_ = std::make_unique<AudioBus>(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+  mBus_ = std::make_shared<AudioBus>(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
 }
 
 int AudioPlayer::getSampleRate() const {
