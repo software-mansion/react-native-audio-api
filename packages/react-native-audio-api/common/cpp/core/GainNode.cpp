@@ -21,6 +21,8 @@ void GainNode::processNode(AudioBus *processingBus, int framesToProcess) {
     for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
       (*processingBus->getChannel(j))[i] *= gainParam_->getValueAtTime(time);
     }
+
+    time += deltaTime;
   }
 }
 

@@ -8,13 +8,14 @@
 
 namespace audioapi {
 
-class AudioDestinationNode;
-class OscillatorNode;
+class AudioBus;
 class GainNode;
+class AudioBuffer;
+class OscillatorNode;
 class StereoPannerNode;
 class BiquadFilterNode;
+class AudioDestinationNode;
 class AudioBufferSourceNode;
-class AudioBuffer;
 
 #ifdef ANDROID
 class AudioPlayer;
@@ -37,9 +38,8 @@ class BaseAudioContext {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  static std::shared_ptr<AudioBuffer>
-  createBuffer(int numberOfChannels, int length, int sampleRate);
-  std::function<void(AudioBus*, int)> renderAudio();
+  static std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
+  std::function<void(AudioBus *, int)> renderAudio();
 
  protected:
   enum class State { SUSPENDED, RUNNING, CLOSED };

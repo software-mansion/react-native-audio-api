@@ -47,7 +47,7 @@ int AudioBus::getSize() const {
 }
 
 AudioArray* AudioBus::getChannel(int index) const {
-  return channels_[index].get();
+  return (AudioArray*)&channels_[index];
 }
 
 AudioArray* AudioBus::getChannelByType(int channelType) const {
@@ -109,7 +109,7 @@ void AudioBus::zero() {
 
 void AudioBus::zero(int start, int length) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    it->get()->zero(start, length);
+    it->zero(start, length);
   }
 }
 
@@ -126,7 +126,7 @@ void AudioBus::normalize() {
 
 void AudioBus::scale(float value) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    it->get()->scale(value);
+    it->scale(value);
   }
 }
 
@@ -134,7 +134,7 @@ float AudioBus::maxAbsValue() const {
   float maxAbsValue = 0.0f;
 
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
-    float channelMaxAbsValue = it->get()->getMaxAbsValue();
+    float channelMaxAbsValue = it->getMaxAbsValue();
     maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
   }
 
@@ -171,8 +171,8 @@ void AudioBus::sum(const AudioBus &source, int sourceStart, int destinationStart
   }
 
   // Source and destination channel counts are the same. Just sum the channels.
-  for (int i = 0; i < numberOfChannels_; i++) {
-    channels_[i]->sum(source.getChannel(i), sourceStart, destinationStart, length);
+  for (int i = 0; i < numberOfChannels_; i += 1) {
+    channels_[i].sum(source.getChannel(i), sourceStart, destinationStart, length);
   }
 }
 
@@ -208,7 +208,7 @@ void AudioBus::copy(const AudioBus &source, int sourceStart, int destinationStar
 
 void AudioBus::createChannels() {
   // TODO: verify if its correct way of memory allocation
-  channels_ = std::vector<std::unique_ptr<AudioArray>>(numberOfChannels_, std::make_unique<AudioArray>(size_));
+  channels_ = std::vector<AudioArray>(numberOfChannels_, AudioArray(size_));
 }
 
 /**

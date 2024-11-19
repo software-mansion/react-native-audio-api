@@ -7,6 +7,8 @@
 #include "BaseAudioContext.h"
 
 #include "GainNode.h"
+#include "AudioBus.h"
+#include "AudioArray.h"
 #include "AudioBuffer.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"

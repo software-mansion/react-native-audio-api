@@ -5,12 +5,15 @@
 
 namespace audioapi {
 
-AudioArray::AudioArray(int size) : size_(size) {
-  resize(size);
+AudioArray::AudioArray(int size) : size_(size), data_(0) {
+  data_ = new float[size];
 }
 
 AudioArray::~AudioArray() {
-  delete[] data_;
+  if (data_) {
+    delete[] data_;
+    data_ = 0;
+  }
 }
 
 int AudioArray::getSize() const {
@@ -41,6 +44,10 @@ void AudioArray::normalize() {
 
 void AudioArray::resize(int size) {
   if (size == size_) {
+    if (!data_) {
+      data_ = new float[size];
+    }
+
     zero();
     return;
   }

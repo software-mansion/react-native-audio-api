@@ -1,4 +1,11 @@
+#ifdef ANDROID
+#include "AudioPlayer.h"
+#else
+#include "IOSAudioPlayer.h"
+#endif
+
 #include "AudioContext.h"
+
 
 namespace audioapi {
 

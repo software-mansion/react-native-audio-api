@@ -7,21 +7,21 @@
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio) : renderAudio_(renderAudio)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio) : renderAudio_(renderAudio), audioBus_(0)
 {
-  audioBus_ = new AudioBus(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
-
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList* outputData, int numFrames) {
     renderAudio_(audioBus_, numFrames);
-    
+
     for (int i = 0; i < outputData->mNumberBuffers; i += 1) {
       float *outputBuffer = (float *)outputData->mBuffers[i].mData;
-      
+
       memcpy(outputBuffer, audioBus_->getChannel(i)->getData(), sizeof(float) * numFrames);
     }
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
+  audioBus_ = new AudioBus(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+  NSLog(@"info: %d %d", getSampleRate(), getBufferSizeInFrames());
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

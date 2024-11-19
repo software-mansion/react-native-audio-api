@@ -48,7 +48,7 @@ class AudioBus {
   void copy(const AudioBus &source, int sourceStart, int destinationStart, int length);
 
  private:
-  std::vector<std::unique_ptr<AudioArray>> channels_;
+  std::vector<AudioArray> channels_;
 
   int numberOfChannels_;
   int sampleRate_;
