@@ -6,7 +6,6 @@
 namespace audioapi {
 
 AudioArray::AudioArray(int size) : size_(size), data_(0) {
-  printf("AudioArray::AudioArray(%d)\n", size);
   resize(size);
 }
 

@@ -5,7 +5,6 @@ namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
     : AudioNode(context), isPlaying_(false) {
-  printf("AudioScheduledSourceNode::AudioScheduledSourceNode\n");
   numberOfInputs_ = 0;
 }
 

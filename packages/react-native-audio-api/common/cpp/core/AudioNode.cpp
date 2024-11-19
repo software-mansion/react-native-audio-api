@@ -5,12 +5,10 @@
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  printf("AudioNode::AudioNode %d %d\n", context->getSampleRate(), context->getBufferSizeInFrames());
   audioBus_ = std::make_shared<AudioBus>(context->getSampleRate(), context->getBufferSizeInFrames(), channelCount_);
 }
 
 AudioNode::~AudioNode() {
-  printf("AudioNode::~AudioNode\n");
   cleanup();
 }
 

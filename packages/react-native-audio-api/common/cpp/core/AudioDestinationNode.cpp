@@ -8,7 +8,6 @@ namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
     : AudioNode(context), currentSampleFrame_(0) {
-  printf("AudioDestinationNode::AudioDestinationNode\n");
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;

@@ -88,6 +88,7 @@ const Oscillator: FC = () => {
   const handlePlayPause = () => {
     if (isPlaying) {
       oscillatorRef.current?.stop(0);
+      oscillatorRef.current = null;
     } else {
       setup();
       oscillatorRef.current?.start(0);

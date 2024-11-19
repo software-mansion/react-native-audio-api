@@ -7,7 +7,6 @@ namespace audioapi {
 
 OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
-  printf("OscillatorNode::OscillatorNode\n");
   frequencyParam_ = std::make_shared<AudioParam>(
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
   detuneParam_ =
