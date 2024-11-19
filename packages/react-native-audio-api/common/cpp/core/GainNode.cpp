@@ -1,4 +1,6 @@
 #include "GainNode.h"
+#include "AudioBus.h"
+#include "AudioArray.h"
 #include "BaseAudioContext.h"
 
 namespace audioapi {
@@ -11,22 +13,15 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
+void GainNode::processNode(AudioBus *processingBus, int framesToProcess) {
+  double time = context_->getCurrentTime();
+  double deltaTime = 1.0 / context_->getSampleRate();
 
-// TODO TOMORROW: YOU FORGOT TO IMPLEMENT THIS FUNCTION MORON!
-// bool GainNode::processAudio(float *audioData, int32_t numFrames) {
-//   if (!AudioNode::processAudio(audioData, numFrames)) {
-//     return false;
-//   }
-
-//   auto time = context_->getCurrentTime();
-//   auto deltaTime = 1.0 / context_->getSampleRate();
-
-//   for (int i = 0; i < numFrames * channelCount_; i++) {
-//     audioData[i] *= gainParam_->getValueAtTime(time);
-//     time += deltaTime;
-//   }
-
-//   return true;
-// }
+  for (int i = 0; i < framesToProcess; i += 1) {
+    for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
+      (*processingBus->getChannel(j))[i] *= gainParam_->getValueAtTime(time);
+    }
+  }
+}
 
 } // namespace audioapi

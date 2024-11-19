@@ -7,6 +7,8 @@
 
 namespace audioapi {
 
+class AudioBus;
+
 class GainNode : public AudioNode {
  public:
   explicit GainNode(BaseAudioContext *context);
@@ -14,7 +16,7 @@ class GainNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-  // bool processAudio(float *audioData, int32_t numFrames) override;
+  void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> gainParam_;
