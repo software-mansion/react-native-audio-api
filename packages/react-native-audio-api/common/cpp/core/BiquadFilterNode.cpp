@@ -19,6 +19,8 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
   gainParam_ = std::make_shared<AudioParam>(
       context, 0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
   type_ = FilterType::LOWPASS;
+  debugName_ = "BiquadFilterNode";
+  isInitialized_ = true;
 }
 
 std::string BiquadFilterNode::getType() const {
@@ -354,35 +356,34 @@ void BiquadFilterNode::applyFilter() {
 }
 
 void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess) {
+  printf("BiquadFilterNode::processNode\n");
   resetCoefficients();
   applyFilter();
 
+  float x1 = x1_;
+  float x2 = x2_;
+  float y1 = y1_;
+  float y2 = y2_;
+
+  float b0 = b0_;
+  float b1 = b1_;
+  float b2 = b2_;
+  float a1 = a1_;
+  float a2 = a2_;
+
   for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-    AudioArray* inputChannel = processingBus->getChannel(i);
+    float input = (*processingBus->getChannel(0))[i];
+    float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
-    // Reset the coefficients for each channel
-    float x1 = x1_;
-    float x2 = x2_;
-    float y1 = y1_;
-    float y2 = y2_;
-
-    float b0 = b0_;
-    float b1 = b1_;
-    float b2 = b2_;
-    float a1 = a1_;
-    float a2 = a2_;
-
-    for (int f = 0; i < framesToProcess; f += 1) {
-      float input = (*inputChannel)[f];
-      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
-
-      (*inputChannel)[f] = output;
-
-      x2 = x1;
-      x1 = input;
-      y2 = y1;
-      y1 = output;
+    for (int j = 0; j < channelCount_; j += 1) {
+      (*processingBus->getChannel(j))[i] = output;
     }
+
+
+    x2 = x1;
+    x1 = input;
+    y2 = y1;
+    y1 = output;
   }
 }
 

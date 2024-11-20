@@ -35,6 +35,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = CHANNEL_COUNT;
+  std::string debugName_;
+  bool isInitialized_ = false;
 
   std::size_t lastRenderedFrame_ { SIZE_MAX };
 

@@ -11,6 +11,8 @@ AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
+  debugName_ = "AudioDestinationNode";
+  isInitialized_ = true;
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
@@ -22,6 +24,10 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
+  if (!isInitialized_) {
+    return;
+  }
+
   destinationBus->zero();
 
   if (!numFrames) {
@@ -30,7 +36,7 @@ void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFram
 
   AudioBus* processedBus = processAudio(destinationBus, numFrames);
 
-  if (processedBus != destinationBus) {
+  if (processedBus && processedBus != destinationBus) {
     destinationBus->copy(processedBus);
   }
 

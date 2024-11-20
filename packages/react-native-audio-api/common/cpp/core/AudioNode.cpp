@@ -9,6 +9,7 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
+  isInitialized_ = false;
   cleanup();
 }
 
@@ -76,6 +77,11 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
 }
 
 AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
+  debugName_;
+  if (!isInitialized_) {
+    return outputBus;
+  }
+
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
   // check if the node has already been processed for this rendering quantum
@@ -114,10 +120,12 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
     // resulting in one less summing operation.q
     if (it == inputNodes_.begin()) {
       it->get()->processAudio(processingBus, framesToProcess);
-    } else {
+    } else if (it->get()) {
       // Enforce the summing to be done using the internal bus.
       AudioBus* inputBus = it->get()->processAudio(0, framesToProcess);
-      processingBus->sum(inputBus);
+      if (inputBus) {
+        processingBus->sum(inputBus);
+      }
     }
   }
 

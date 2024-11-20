@@ -11,6 +11,8 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
       context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
   detuneParam_ =
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
+  debugName_ = "OscillatorNode";
+  isInitialized_ = true;
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {

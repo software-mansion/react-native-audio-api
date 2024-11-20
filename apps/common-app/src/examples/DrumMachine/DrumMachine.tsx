@@ -22,7 +22,7 @@ const defaultPreset = 'Empty';
 
 function setupPlayer(audioCtx: AudioContext) {
   const kick = new Kick(audioCtx);
-  const clap = new Clap(audioCtx);
+  // const clap = new Clap(audioCtx);
   const hiHat = new HiHat(audioCtx);
 
   const playNote = (name: InstrumentName, time: number) => {
@@ -31,7 +31,7 @@ function setupPlayer(audioCtx: AudioContext) {
         kick.play(time);
         break;
       case 'clap':
-        clap.play(time);
+        // clap.play(time);
         break;
       case 'hi-hat':
         hiHat.play(time);
