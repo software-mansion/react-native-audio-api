@@ -54,7 +54,15 @@
 
 - (int)getBufferSizeInFrames
 {
-  return (int)(self.audioSession.IOBufferDuration * self.audioSession.sampleRate);
+  // Note: might be important in the future.
+  // For some reason audioSession.IOBufferDuration is always 0.01, which for sample rate of 48k
+  // gives exactly 480 frames, while at the same time frameCount requested by AVAudioSourceEngine
+  // might vary f.e. between 555-560.
+  // preferredIOBufferDuration seems to be double the value (resulting in 960 frames),
+  // which is safer to base our internal AudioBus sizes.
+  // Buut no documentation => no guarantee :)
+  // If something is crackling when it should play silence, start here 📻
+  return (int)(self.audioSession.preferredIOBufferDuration * self.audioSession.sampleRate);
 }
 
 - (void)start

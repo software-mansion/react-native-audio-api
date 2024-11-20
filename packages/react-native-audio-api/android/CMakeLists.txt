@@ -4,11 +4,6 @@ project(react-native-audio-api)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 20)
 
-# Detect the operating system
-if(APPLE)
-    set(HAVE_ACCELERATE TRUE)
-endif()
-
 # Detect the processor and SIMD support
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     set(HAVE_ARM_NEON_INTRINSICS TRUE)
