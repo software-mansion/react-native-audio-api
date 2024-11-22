@@ -13,6 +13,7 @@
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
 #include "BiquadFilterNode.h"
+#include "AudioNodeManager.h"
 #include "AudioDestinationNode.h"
 #include "AudioBufferSourceNode.h"
 
@@ -28,8 +29,9 @@ BaseAudioContext::BaseAudioContext() {
   sampleRate_ = audioPlayer_->getSampleRate();
   bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
 
-  destination_ = std::make_shared<AudioDestinationNode>(this);
   audioPlayer_->start();
+  nodeManager_ = std::make_shared<AudioNodeManager>();
+  destination_ = std::make_shared<AudioDestinationNode>(this);
 }
 
 std::string BaseAudioContext::getState() {
@@ -91,6 +93,10 @@ std::function<void(AudioBus*, int)> BaseAudioContext::renderAudio() {
   return [this](AudioBus* data, int frames) {
     destination_->renderAudio(data, frames);
   };
+}
+
+AudioNodeManager* BaseAudioContext::getNodeManager() {
+  return nodeManager_.get();
 }
 
 std::string BaseAudioContext::toString(State state) {

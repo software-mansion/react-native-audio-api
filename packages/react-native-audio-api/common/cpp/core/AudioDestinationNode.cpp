@@ -40,7 +40,8 @@ void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFram
     destinationBus->copy(processedBus);
   }
 
-  destinationBus->normalize();
+  // destinationBus->normalize();
+  destinationBus->zero();
 
   currentSampleFrame_ += numFrames;
 }

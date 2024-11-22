@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "AudioNode.h"
 #include "Constants.h"
 
 namespace audioapi {
@@ -22,7 +23,11 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
+  bool isInitialized() const;
+
  protected:
+  friend class AudioNodeManager;
+
   enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
   enum class ChannelInterpretation { SPEAKERS, DISCRETE };
 
@@ -47,10 +52,12 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
-
   void cleanup();
   AudioBus* processAudio(AudioBus* outputBus, int framesToProcess);
   virtual void processNode(AudioBus* processingBus, int framesToProcess) = 0;
+
+  void connectNode(std::shared_ptr<AudioNode> &node);
+  void disconnectNode(std::shared_ptr<AudioNode> &node);
 };
 
 } // namespace audioapi

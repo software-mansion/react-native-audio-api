@@ -1,5 +1,6 @@
 #include "AudioBus.h"
 #include "AudioNode.h"
+#include "AudioNodeManager.h"
 #include "BaseAudioContext.h"
 
 namespace audioapi {
@@ -34,11 +35,19 @@ std::string AudioNode::getChannelInterpretation() const {
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
+  context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+}
+
+void AudioNode::connectNode(std::shared_ptr<AudioNode> &node) {
   outputNodes_.push_back(node);
   node->inputNodes_.push_back(shared_from_this());
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+  context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+}
+
+void AudioNode::disconnectNode(std::shared_ptr<AudioNode> &node) {
   outputNodes_.erase(
       std::remove(outputNodes_.begin(), outputNodes_.end(), node),
       outputNodes_.end());
@@ -49,6 +58,10 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
             node->inputNodes_.begin(), node->inputNodes_.end(), sharedThis),
         node->inputNodes_.end());
   }
+}
+
+bool AudioNode::isInitialized() const {
+  return isInitialized_;
 }
 
 
@@ -77,7 +90,6 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
 }
 
 AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
-  debugName_;
   if (!isInitialized_) {
     return outputBus;
   }
@@ -115,12 +127,12 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
     return processingBus;
   }
 
-  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); it += 1) {
+  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
     // Process first connected node, it can be directly connected to the processingBus,
-    // resulting in one less summing operation.q
+    // resulting in one less summing operation.
     if (it == inputNodes_.begin()) {
       it->get()->processAudio(processingBus, framesToProcess);
-    } else if (it->get()) {
+    } else {
       // Enforce the summing to be done using the internal bus.
       AudioBus* inputBus = it->get()->processAudio(0, framesToProcess);
       if (inputBus) {

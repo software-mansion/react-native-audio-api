@@ -356,7 +356,6 @@ void BiquadFilterNode::applyFilter() {
 }
 
 void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess) {
-  printf("BiquadFilterNode::processNode\n");
   resetCoefficients();
   applyFilter();
 
@@ -371,7 +370,7 @@ void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess)
   float a1 = a1_;
   float a2 = a2_;
 
-  for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
+  for (int i = 0; i < framesToProcess; i += 1) {
     float input = (*processingBus->getChannel(0))[i];
     float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 

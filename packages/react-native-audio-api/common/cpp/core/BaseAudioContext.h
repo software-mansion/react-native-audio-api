@@ -16,6 +16,7 @@ class StereoPannerNode;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
+class AudioNodeManager;
 
 #ifdef ANDROID
 class AudioPlayer;
@@ -41,6 +42,8 @@ class BaseAudioContext {
   static std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
   std::function<void(AudioBus *, int)> renderAudio();
 
+  AudioNodeManager* getNodeManager();
+
  protected:
   enum class State { SUSPENDED, RUNNING, CLOSED };
   static std::string toString(State state);
@@ -55,6 +58,7 @@ class BaseAudioContext {
   State state_ = State::RUNNING;
   int sampleRate_;
   int bufferSizeInFrames_;
+  std::shared_ptr<AudioNodeManager> nodeManager_;
 };
 
 } // namespace audioapi
