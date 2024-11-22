@@ -19,8 +19,6 @@ endif()
 include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
-set(KFR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main/lib/cmake/kfr")
-
 file(GLOB_RECURSE SOURCE_FILES
   "src/main/cpp/*.cpp"
   "src/main/cpp/*.h"
@@ -36,6 +34,8 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/utils/*.h"
   "../common/cpp/types/*.h"
 )
+
+add_subdirectory(kfr)
 
 add_library(react-native-audio-api SHARED ${SOURCE_FILES})
 
@@ -53,7 +53,6 @@ target_include_directories(
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 find_package(oboe REQUIRED CONFIG)
-find_package(KFR REQUIRED)
 
 set(LINK_LIBRARIES
   ReactAndroid::jsi
@@ -61,9 +60,10 @@ set(LINK_LIBRARIES
   android
   log
   oboe::oboe
-  KFR::kfr
-  KFR::kfr_dsp
-  KFR::kfr_dft
+  kfr
+  kfr_dsp
+  kfr_dft
+  kfr_io
 )
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)

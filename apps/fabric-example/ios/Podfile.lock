@@ -1308,7 +1308,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-skia (1.5.1):
+  - react-native-skia (1.5.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1619,7 +1619,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNGestureHandler (2.20.2):
+  - RNGestureHandler (2.21.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2030,7 +2030,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: b0b4ace5b62b269f3838df26ba2d8b4f39f90783
   React-microtasksnativemodule: 0b7db04c18f6bb01ef5b1f9007c3229abecc35dd
   react-native-safe-area-context: 2500e4fe998caad50ad3bc51ec23ef951308569e
-  react-native-skia: 7346a82f02bd8c318611ea22b78ae9ebfba97bb4
+  react-native-skia: b5216ffad62ec47294094cb25630332bb8f96493
   React-nativeconfig: 72c10ff34863148ef90df9c9c8eacba99d2faaaa
   React-NativeModulesApple: 5ec49182fa000b2215ee1bed03e2867f8323ccf5
   React-perflogger: 073c7a8a436b3fe724f1df34e9d1f3db1d25fe74
@@ -2059,7 +2059,7 @@ SPEC CHECKSUMS:
   ReactCodegen: dbfef1fef26f42c900bb1884fa149d49d501d64d
   ReactCommon: 429ca28cd813c31359c73ffac6dc24f93347d522
   RNAudioAPI: a4068f739b4e80e636ac6110d70858ea89ac4835
-  RNGestureHandler: fc5ce5bf284640d3af6431c3a5c3bc121e98d045
+  RNGestureHandler: a3822e519fd1e9885b92d8c9bd82a7a0be305fe3
   RNReanimated: 77242c6d67416988a2fd9f5cf574bb3e60016362
   RNScreens: e389d6a6a66a4f0d3662924ecae803073ccce8ec
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
