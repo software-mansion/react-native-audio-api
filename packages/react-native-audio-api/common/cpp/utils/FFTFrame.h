@@ -32,9 +32,9 @@
 #include <Accelerate/Accelerate.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
-#include <algorithm>
 
 #include "VectorMath.h"
 
@@ -52,7 +52,6 @@ class FFTFrame {
     return imaginaryData_;
   }
 
-  void forward(float *data);
   void inverse(float *data);
 
  private:
@@ -62,8 +61,8 @@ class FFTFrame {
   float *imaginaryData_;
 
 #if defined(HAVE_ACCELERATE)
-  FFTSetup fftSetup_;
-  DSPSplitComplex frame_;
+//  FFTSetup fftSetup_;
+//  DSPSplitComplex frame_;
 #endif
 };
 

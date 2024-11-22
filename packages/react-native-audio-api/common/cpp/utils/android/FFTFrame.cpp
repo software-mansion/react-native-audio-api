@@ -1,10 +1,11 @@
 #if defined(ANDROID)
 #include "FFTFrame.h"
 #include <kfr/dft.hpp>
-#include <kfr/io.hpp>
 #include <kfr/dsp.hpp>
+#include <kfr/io.hpp>
 
 namespace audioapi {
+
 FFTFrame::FFTFrame(int size) {
   size_ = size;
   log2Size_ = static_cast<int>(log2(size));
@@ -13,29 +14,26 @@ FFTFrame::FFTFrame(int size) {
 }
 
 FFTFrame::~FFTFrame() {
-    delete[] realData_;
-    delete[] imaginaryData_;
-}
-
-void FFTFrame::forward(float *data) {
-
+  delete[] realData_;
+  delete[] imaginaryData_;
 }
 
 void FFTFrame::inverse(float *data) {
-    kfr::dft_plan_real<float> plan(4096);
-    kfr::univector<kfr::complex<float>, 4096> in;
-    kfr::univector<float, 4096> out;
+  using namespace kfr;
 
-    for(int i = 0; i < 4096; i++) {
-        in[i] = kfr::complex<float>(realData_[i], imaginaryData_[i]);
-    }
+  univector<complex<float>> freq(size_ / 2);
+  univector<float> time(size_);
 
-    kfr::univector<kfr::u8> temp(plan.temp_size);
-    plan.execute(out, in, temp);
+  freq[0] = {0.0f, 0.0f};
+  for (int i = 1; i < size_ / 2; i++) {
+    freq[i] = {realData_[i], imaginaryData_[i]};
+  }
 
-    for(int i = 0; i < 4096; i++) {
-        data[i] = out[i]/ static_cast<float>(size_);
-    }
+  time = irealdft(freq) / (size_);
+
+  for (int i = 0; i < size_; i++) {
+    data[i] = time[i];
+  }
 }
 } // namespace audioapi
 #endif
