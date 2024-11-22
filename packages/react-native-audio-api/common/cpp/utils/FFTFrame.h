@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <utility>
+#include <algorithm>
 
 #include "VectorMath.h"
 
@@ -42,6 +43,7 @@ namespace audioapi {
 class FFTFrame {
  public:
   explicit FFTFrame(int size);
+  ~FFTFrame();
 
   [[nodiscard]] float *getRealData() const {
     return realData_;
