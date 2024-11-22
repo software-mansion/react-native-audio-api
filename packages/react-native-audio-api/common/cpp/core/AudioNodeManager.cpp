@@ -28,12 +28,18 @@ void AudioNodeManager::preProcessGraph() {
     if (!Locker::tryLock(getGraphLock())) {
     return;
   }
+
+  settlePendingConnections();
+  settlePendingDeletions();
 }
 
 void AudioNodeManager::postProcessGraph() {
   if (!Locker::tryLock(getGraphLock())) {
     return;
   }
+
+  settlePendingConnections();
+  settlePendingDeletions();
 }
 
 std::mutex& AudioNodeManager::getGraphLock() {

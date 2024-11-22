@@ -1,6 +1,7 @@
 #include "AudioBus.h"
 #include "AudioNode.h"
 #include "VectorMath.h"
+#include "AudioNodeManager.h"
 #include "BaseAudioContext.h"
 #include "AudioDestinationNode.h"
 
@@ -28,6 +29,8 @@ void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFram
     return;
   }
 
+  context_->getNodeManager()->preProcessGraph();
+
   destinationBus->zero();
 
   if (!numFrames) {
@@ -40,8 +43,9 @@ void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFram
     destinationBus->copy(processedBus);
   }
 
-  // destinationBus->normalize();
-  destinationBus->zero();
+  destinationBus->normalize();
+
+  context_->getNodeManager()->postProcessGraph();
 
   currentSampleFrame_ += numFrames;
 }
