@@ -1,0 +1,3 @@
+[submodule "packages/react-native-audio-api/android/kfr"]
+	path = packages/react-native-audio-api/android/kfr
+	url = https://github.com/kfrlib/kfr.git
