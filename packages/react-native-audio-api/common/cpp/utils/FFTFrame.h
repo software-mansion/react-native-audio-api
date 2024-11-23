@@ -28,10 +28,6 @@
 
 #pragma once
 
-#if defined(HAVE_ACCELERATE)
-#include <Accelerate/Accelerate.h>
-#endif
-
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -42,8 +38,11 @@ namespace audioapi {
 
 class FFTFrame {
  public:
-  explicit FFTFrame(int size);
-  ~FFTFrame();
+  explicit FFTFrame(int size): size_(size), log2Size_(static_cast<int>(log2(size))), realData_(new float[size]), imaginaryData_(new float[size]) {}
+  ~FFTFrame() {
+    delete[] realData_;
+    delete[] imaginaryData_;
+  }
 
   [[nodiscard]] float *getRealData() const {
     return realData_;
@@ -59,11 +58,6 @@ class FFTFrame {
   int log2Size_;
   float *realData_;
   float *imaginaryData_;
-
-#if defined(HAVE_ACCELERATE)
-//  FFTSetup fftSetup_;
-//  DSPSplitComplex frame_;
-#endif
 };
 
 } // namespace audioapi

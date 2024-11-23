@@ -5,34 +5,22 @@
 #include <kfr/io.hpp>
 
 namespace audioapi {
+using namespace kfr;
 
-FFTFrame::FFTFrame(int size) {
-  size_ = size;
-  log2Size_ = static_cast<int>(log2(size));
-  realData_ = new float[size];
-  imaginaryData_ = new float[size];
-}
+void FFTFrame::inverse(float *timeDomainData) {
 
-FFTFrame::~FFTFrame() {
-  delete[] realData_;
-  delete[] imaginaryData_;
-}
+  univector<complex<float>> freqDomainData(size_ / 2);
+  univector<float> timeData(size_);
 
-void FFTFrame::inverse(float *data) {
-  using namespace kfr;
-
-  univector<complex<float>> freq(size_ / 2);
-  univector<float> time(size_);
-
-  freq[0] = {0.0f, 0.0f};
+    freqDomainData[0] = {0.0f, 0.0f};
   for (int i = 1; i < size_ / 2; i++) {
-    freq[i] = {realData_[i], imaginaryData_[i]};
+      freqDomainData[i] = {realData_[i], imaginaryData_[i]};
   }
 
-  time = irealdft(freq) / (size_);
+  timeData = irealdft(freqDomainData) / (size_);
 
   for (int i = 0; i < size_; i++) {
-    data[i] = time[i];
+      timeDomainData[i] = timeData[i];
   }
 }
 } // namespace audioapi
