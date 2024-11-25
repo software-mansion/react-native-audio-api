@@ -35,7 +35,7 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/types/*.h"
 )
 
-add_subdirectory(kfr)
+add_subdirectory(../external/kfr ${CMAKE_CURRENT_BINARY_DIR}/kfr-build)
 
 add_library(react-native-audio-api SHARED ${SOURCE_FILES})
 
