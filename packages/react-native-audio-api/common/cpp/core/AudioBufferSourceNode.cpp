@@ -9,7 +9,6 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  isInitialized_ = true;
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -60,18 +59,21 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   // The buffer is longer than the number of frames to process.
   // We have to keep track of where we are in the buffer.
   if (framesToProcess < buffer_->getLength()) {
-    int framesToCopy = std::min(framesToProcess, buffer_->getLength() - bufferIndex_);
+    int processingBufferPosition = 0;
+    int framesToCopy = 0;
 
-    processingBus->copy(buffer_->bus_.get(), bufferIndex_, framesToCopy);
+    while (processingBufferPosition < framesToProcess)
+    {
+      framesToCopy = std::min(framesToProcess, buffer_->getLength() - bufferIndex_);
 
-    if (loop_) {
+      processingBus->copy(buffer_->bus_.get(), processingBufferPosition, bufferIndex_, framesToCopy);
+      processingBufferPosition += framesToCopy;
       bufferIndex_ = (bufferIndex_ + framesToCopy) % buffer_->getLength();
-      return;
-    }
 
-    if (bufferIndex_ + framesToCopy == buffer_->getLength() - 1) {
-      playbackState_ = PlaybackState::FINISHED;
-      bufferIndex_ = 0;
+      if (!loop_ && processingBufferPosition >= framesToCopy) {
+        playbackState_ = PlaybackState::FINISHED;
+        bufferIndex_ = 0;
+      }
     }
 
     return;

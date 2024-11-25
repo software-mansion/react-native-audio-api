@@ -12,7 +12,6 @@ AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
-  isInitialized_ = true;
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
@@ -24,12 +23,6 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
-  printf("connected nodes: %d\n", inputNodes_.size());
-
-  if (!isInitialized_) {
-    return;
-  }
-
   context_->getNodeManager()->preProcessGraph();
 
   destinationBus->zero();

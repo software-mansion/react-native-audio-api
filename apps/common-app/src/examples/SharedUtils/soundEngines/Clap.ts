@@ -20,7 +20,7 @@ class Clap implements SoundEngine {
   }
 
   createNoiseBuffer() {
-    const bufferSize = this.audioContext.sampleRate / 10;
+    const bufferSize = this.audioContext.sampleRate / 5;
     const buffer = this.audioContext.createBuffer(
       1,
       bufferSize,

@@ -25,8 +25,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
-  bool isInitialized() const;
-
   bool isEnabled() const;
   void enable();
   void disable();
@@ -44,8 +42,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   int numberOfOutputs_ = 1;
   int numberOfEnabledInputNodes_ = 0;
 
-
-  bool isInitialized_ = false;
   bool isEnabled_ = true;
 
   std::size_t lastRenderedFrame_ { SIZE_MAX };

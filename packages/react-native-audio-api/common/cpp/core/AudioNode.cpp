@@ -12,7 +12,6 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
-  isInitialized_ = false;
   cleanup();
 }
 
@@ -60,10 +59,6 @@ void AudioNode::disconnectNode(std::shared_ptr<AudioNode> &node) {
   }
 }
 
-bool AudioNode::isInitialized() const {
-  return isInitialized_;
-}
-
 bool AudioNode::isEnabled() const {
   return isEnabled_;
 }
@@ -109,10 +104,6 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
 }
 
 AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
-  if (!isInitialized_) {
-    return outputBus;
-  }
-
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
   // check if the node has already been processed for this rendering quantum
