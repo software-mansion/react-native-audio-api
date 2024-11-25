@@ -8,7 +8,6 @@ namespace audioapi {
 using namespace kfr;
 
 void FFTFrame::inverse(float *timeDomainData) {
-
   univector<complex<float>> freqDomainData(size_ / 2);
   univector<float> timeData(size_);
 
