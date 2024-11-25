@@ -1,26 +1,22 @@
 #if defined(ANDROID)
 #include "FFTFrame.h"
-#include <kfr/dft.hpp>
-#include <kfr/dsp.hpp>
-#include <kfr/io.hpp>
+#include <fftw3.h>
 
 namespace audioapi {
-using namespace kfr;
-
 void FFTFrame::inverse(float *timeDomainData) {
-  univector<complex<float>> freqDomainData(size_ / 2);
-  univector<float> timeData(size_);
+    fftwf_complex *freqDomainData = fftwf_alloc_complex(size_ / 2);
+    for(int i = 0; i < size_ / 2; i++) {
+        freqDomainData[i][0] = realData_[i];
+        freqDomainData[i][1] = imaginaryData_[i];
+    }
 
-    freqDomainData[0] = {0.0f, 0.0f};
-  for (int i = 1; i < size_ / 2; i++) {
-      freqDomainData[i] = {realData_[i], imaginaryData_[i]};
-  }
+    auto plan = fftwf_plan_dft_c2r_1d(size_, freqDomainData, timeDomainData, FFTW_ESTIMATE);
+    fftwf_execute(plan);
+    fftwf_destroy_plan(plan);
+    fftwf_free(freqDomainData);
 
-  timeData = irealdft(freqDomainData) / (size_);
-
-  for (int i = 0; i < size_; i++) {
-      timeDomainData[i] = timeData[i];
-  }
+    VectorMath::multiplyByScalar(
+            timeDomainData, 1.0f / static_cast<float>(size_), timeDomainData, size_);
 }
 } // namespace audioapi
 #endif
