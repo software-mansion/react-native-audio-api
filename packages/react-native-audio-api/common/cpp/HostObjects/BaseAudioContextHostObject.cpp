@@ -28,6 +28,8 @@ std::vector<jsi::PropNameID> BaseAudioContextHostObject::getPropertyNames(
   propertyNames.push_back(
       jsi::PropNameID::forUtf8(runtime, "createBufferSource"));
   propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBuffer"));
+  propertyNames.push_back(
+      jsi::PropNameID::forUtf8(runtime, "createPeriodicWave"));
   return propertyNames;
 }
 
@@ -158,6 +160,43 @@ jsi::Value BaseAudioContextHostObject::get(
           auto bufferHostObject =
               AudioBufferHostObject::createFromWrapper(buffer);
           return jsi::Object::createFromHostObject(runtime, bufferHostObject);
+        });
+  }
+
+  if (propName == "createPeriodicWave") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        3,
+        [this](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *arguments,
+            size_t count) -> jsi::Value {
+          auto real = arguments[0].getObject(runtime).getArray(runtime);
+          auto imag = arguments[1].getObject(runtime).getArray(runtime);
+          auto disableNormalization = arguments[2].getBool();
+          auto length =
+              static_cast<int>(real.getProperty(runtime, "length").asNumber());
+
+          auto *realData = new float[length];
+          auto *imagData = new float[length];
+
+          for (size_t i = 0; i < real.length(runtime); i++) {
+            realData[i] = static_cast<float>(
+                real.getValueAtIndex(runtime, i).getNumber());
+          }
+          for (size_t i = 0; i < imag.length(runtime); i++) {
+            realData[i] = static_cast<float>(
+                imag.getValueAtIndex(runtime, i).getNumber());
+          }
+
+          auto periodicWave = wrapper_->createPeriodicWave(
+              realData, imagData, disableNormalization, length);
+          auto periodicWaveHostObject =
+              PeriodicWaveHostObject::createFromWrapper(periodicWave);
+          return jsi::Object::createFromHostObject(
+              runtime, periodicWaveHostObject);
         });
   }
 

@@ -3,13 +3,15 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "AudioNode.h"
+
 #include "Constants.h"
+#include "ChannelCountMode.h"
+#include "ChannelInterpretation.h"
 
 namespace audioapi {
 
-class BaseAudioContext;
 class AudioBus;
+class BaseAudioContext;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
@@ -31,12 +33,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  protected:
   friend class AudioNodeManager;
-
-  enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
-  enum class ChannelInterpretation { SPEAKERS, DISCRETE };
-
-  static std::string toString(ChannelCountMode mode);
-  static std::string toString(ChannelInterpretation interpretation);
+  friend class AudioDestinationNode;
 
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;
@@ -56,6 +53,10 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
+
+ private:
+  static std::string toString(ChannelCountMode mode);
+  static std::string toString(ChannelInterpretation interpretation);
 
   void cleanup();
   AudioBus* processAudio(AudioBus* outputBus, int framesToProcess);

@@ -6,6 +6,7 @@
 #include "AudioParamWrapper.h"
 #include "AudioScheduledSourceNodeWrapper.h"
 #include "OscillatorNode.h"
+#include "PeriodicWaveWrapper.h"
 
 namespace audioapi {
 
@@ -18,6 +19,8 @@ class OscillatorNodeWrapper : public AudioScheduledSourceNodeWrapper {
   [[nodiscard]] std::shared_ptr<AudioParamWrapper> getDetuneParam() const;
   std::string getType();
   void setType(const std::string &type);
+  void setPeriodicWave(
+      const std::shared_ptr<PeriodicWaveWrapper> &periodicWave);
 
  private:
   std::shared_ptr<AudioParamWrapper> frequencyParam_;

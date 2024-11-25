@@ -14,6 +14,18 @@ BaseAudioContextWrapper::getDestination() const {
   return destination_;
 }
 
+std::string BaseAudioContextWrapper::getState() const {
+  return context_->getState();
+}
+
+int BaseAudioContextWrapper::getSampleRate() const {
+  return context_->getSampleRate();
+}
+
+double BaseAudioContextWrapper::getCurrentTime() const {
+  return context_->getCurrentTime();
+}
+
 std::shared_ptr<OscillatorNodeWrapper>
 BaseAudioContextWrapper::createOscillator() const {
   auto oscillator = context_->createOscillator();
@@ -51,15 +63,14 @@ std::shared_ptr<AudioBufferWrapper> BaseAudioContextWrapper::createBuffer(
   return std::make_shared<AudioBufferWrapper>(buffer);
 }
 
-std::string BaseAudioContextWrapper::getState() const {
-  return context_->getState();
-}
-
-int BaseAudioContextWrapper::getSampleRate() const {
-  return context_->getSampleRate();
-}
-
-double BaseAudioContextWrapper::getCurrentTime() const {
-  return context_->getCurrentTime();
+std::shared_ptr<PeriodicWaveWrapper>
+BaseAudioContextWrapper::createPeriodicWave(
+    float *real,
+    float *imag,
+    bool disableNormalization,
+    int length) {
+  auto periodicWave =
+      context_->createPeriodicWave(real, imag, disableNormalization, length);
+  return std::make_shared<PeriodicWaveWrapper>(periodicWave);
 }
 } // namespace audioapi

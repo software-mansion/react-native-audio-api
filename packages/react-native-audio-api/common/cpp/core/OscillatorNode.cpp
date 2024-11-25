@@ -12,6 +12,8 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   detuneParam_ =
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
   isInitialized_ = true;
+  type_ = OscillatorType::SINE;
+  periodicWave_ = context_->getBasicWaveForm(type_);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -28,42 +30,45 @@ std::string OscillatorNode::getType() {
 
 void OscillatorNode::setType(const std::string &type) {
   type_ = OscillatorNode::fromString(type);
+  periodicWave_ = context_->getBasicWaveForm(type_);
+}
+
+void OscillatorNode::setPeriodicWave(
+    const std::shared_ptr<PeriodicWave> &periodicWave) {
+  periodicWave_ = periodicWave;
+  type_ = OscillatorType::CUSTOM;
 }
 
 void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
-  double time = context_->getCurrentTime();
-
   if (!isPlaying_) {
     processingBus->zero();
     return;
   }
 
+  double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
   for (int i = 0; i < framesToProcess; i += 1) {
     auto detuneRatio =
-        std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+      std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
     auto detunedFrequency =
         round(frequencyParam_->getValueAtTime(time) * detuneRatio);
-    auto phaseIncrement = static_cast<float>(
-        2 * M_PI * detunedFrequency / context_->getSampleRate());
+    auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
 
-    float value = OscillatorNode::getWaveBufferElement(phase_, type_);
+    float sample =
+        periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
 
-    for (int j = 0; j < channelCount_; j += 1) {
-      (*processingBus->getChannel(j))[i] = value;
+    for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
+      (*processingBus->getChannel(j))[i] = sample;
     }
 
     phase_ += phaseIncrement;
+    phase_ -=
+        floor(
+            phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
+        static_cast<float>(periodicWave_->getPeriodicWaveSize());
+
     time += deltaTime;
-
-    if (phase_ >= 2 * M_PI) {
-      phase_ -= 2 * M_PI;
-    }
-
-    if (phase_ < 0) {
-      phase_ += 2 * M_PI;
-    }
   }
 }
 

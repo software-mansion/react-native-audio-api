@@ -35,4 +35,10 @@ void OscillatorNodeWrapper::setType(const std::string &type) {
   auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
   oscillatorNode_->setType(type);
 }
+
+void OscillatorNodeWrapper::setPeriodicWave(
+    const std::shared_ptr<PeriodicWaveWrapper> &periodicWave) {
+  auto oscillatorNode_ = getOscillatorNodeFromAudioNode();
+  oscillatorNode_->setPeriodicWave(periodicWave->periodicWave_);
+}
 } // namespace audioapi

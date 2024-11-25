@@ -2,7 +2,7 @@ export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
 export type ChannelInterpretation = 'speakers' | 'discrete';
 
-export type FilterType =
+export type BiquadFilterType =
   | 'lowpass'
   | 'highpass'
   | 'bandpass'
@@ -14,4 +14,13 @@ export type FilterType =
 
 export type ContextState = 'running' | 'closed';
 
-export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type OscillatorType =
+  | 'sine'
+  | 'square'
+  | 'sawtooth'
+  | 'triangle'
+  | 'custom';
+
+export interface PeriodicWaveConstraints {
+  disableNormalization: boolean;
+}

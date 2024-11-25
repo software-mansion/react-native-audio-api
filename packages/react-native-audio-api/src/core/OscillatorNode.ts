@@ -1,8 +1,10 @@
 import { IOscillatorNode } from '../interfaces';
-import { WaveType } from './types';
+import { OscillatorType } from './types';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
+import PeriodicWave from './PeriodicWave';
+import { InvalidStateError } from '../errors';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;
@@ -15,11 +17,21 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
     this.type = node.type;
   }
 
-  public get type(): WaveType {
+  public get type(): OscillatorType {
     return (this.node as IOscillatorNode).type;
   }
 
-  public set type(value: WaveType) {
+  public set type(value: OscillatorType) {
+    if (value === 'custom') {
+      throw new InvalidStateError(
+        "'type' cannot be set directly to 'custom'.  Use setPeriodicWave() to create a custom Oscillator type."
+      );
+    }
+
     (this.node as IOscillatorNode).type = value;
+  }
+
+  public setPeriodicWave(wave: PeriodicWave): void {
+    (this.node as IOscillatorNode).setPeriodicWave(wave.periodicWave);
   }
 }

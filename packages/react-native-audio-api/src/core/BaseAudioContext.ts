@@ -1,5 +1,5 @@
 import { IBaseAudioContext } from '../interfaces';
-import { ContextState } from './types';
+import { ContextState, PeriodicWaveConstraints } from './types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
 import GainNode from './GainNode';
@@ -7,7 +7,8 @@ import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
-import { RangeError } from '../errors';
+import PeriodicWave from './PeriodicWave';
+import { InvalidAccessError } from '../errors';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -73,6 +74,24 @@ export default class BaseAudioContext {
 
     return new AudioBuffer(
       this.context.createBuffer(numOfChannels, length, sampleRate)
+    );
+  }
+
+  createPeriodicWave(
+    real: number[],
+    imag: number[],
+    constraints?: PeriodicWaveConstraints
+  ): PeriodicWave {
+    if (real.length !== imag.length) {
+      throw new InvalidAccessError(
+        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
+      );
+    }
+
+    const disableNormalization = constraints?.disableNormalization ?? false;
+
+    return new PeriodicWave(
+      this.context.createPeriodicWave(real, imag, disableNormalization)
     );
   }
 }

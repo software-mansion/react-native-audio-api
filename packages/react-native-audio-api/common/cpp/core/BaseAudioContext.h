@@ -17,6 +17,7 @@ class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioNodeManager;
+class PeriodicWave;
 
 #ifdef ANDROID
 class AudioPlayer;
@@ -40,6 +41,13 @@ class BaseAudioContext {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
+  std::shared_ptr<PeriodicWave> createPeriodicWave(
+      float *real,
+      float *imag,
+      bool disableNormalization,
+      int length);
+  std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
+
   std::function<void(AudioBus *, int)> renderAudio();
 
   AudioNodeManager* getNodeManager();
@@ -59,6 +67,12 @@ class BaseAudioContext {
   int sampleRate_;
   int bufferSizeInFrames_;
   std::shared_ptr<AudioNodeManager> nodeManager_;
+
+ private:
+  std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
+  std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
+  std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
+  std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 };
 
 } // namespace audioapi

@@ -12,7 +12,7 @@ namespace audioapi {
 AudioContext::AudioContext() : BaseAudioContext() {}
 
 void AudioContext::close() {
-  state_ = State::CLOSED;
+  state_ = ContextState::CLOSED;
 
   if (audioPlayer_) {
     audioPlayer_->stop();

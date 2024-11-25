@@ -1,7 +1,7 @@
 import {
   ContextState,
-  FilterType,
-  WaveType,
+  BiquadFilterType,
+  OscillatorType,
   ChannelCountMode,
   ChannelInterpretation,
 } from './core/types';
@@ -11,6 +11,7 @@ export interface IBaseAudioContext {
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
+
   createOscillator(): IOscillatorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
@@ -21,6 +22,11 @@ export interface IBaseAudioContext {
     length: number,
     sampleRate: number
   ) => IAudioBuffer;
+  createPeriodicWave: (
+    real: number[],
+    imag: number[],
+    disableNormalization: boolean
+  ) => IPeriodicWave;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -34,6 +40,7 @@ export interface IAudioNode {
   readonly channelCount: number;
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
+
   connect: (node: IAudioNode) => void;
   disconnect: (node: IAudioNode) => void;
 }
@@ -51,7 +58,8 @@ export interface IBiquadFilterNode extends IAudioNode {
   readonly detune: AudioParam;
   readonly Q: AudioParam;
   readonly gain: AudioParam;
-  type: FilterType;
+  type: BiquadFilterType;
+
   getFrequencyResponse(
     frequencyArray: number[],
     magResponseOutput: number[],
@@ -69,7 +77,9 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
   readonly frequency: IAudioParam;
   readonly detune: IAudioParam;
-  type: WaveType;
+  type: OscillatorType;
+
+  setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
 export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
@@ -82,6 +92,7 @@ export interface IAudioBuffer {
   readonly duration: number;
   readonly sampleRate: number;
   readonly numberOfChannels: number;
+
   getChannelData(channel: number): number[];
   copyFromChannel(
     destination: number[],
@@ -100,7 +111,10 @@ export interface IAudioParam {
   defaultValue: number;
   minValue: number;
   maxValue: number;
+
   setValueAtTime: (value: number, startTime: number) => void;
   linearRampToValueAtTime: (value: number, endTime: number) => void;
   exponentialRampToValueAtTime: (value: number, endTime: number) => void;
 }
+
+export interface IPeriodicWave {}

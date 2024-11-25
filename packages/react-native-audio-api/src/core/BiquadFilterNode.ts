@@ -3,7 +3,7 @@ import { IBiquadFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
-import { FilterType } from './types';
+import { BiquadFilterType } from './types';
 
 export default class BiquadFilterNode extends AudioNode {
   readonly frequency: AudioParam;
@@ -19,11 +19,11 @@ export default class BiquadFilterNode extends AudioNode {
     this.gain = new AudioParam(biquadFilter.gain);
   }
 
-  public get type(): FilterType {
+  public get type(): BiquadFilterType {
     return (this.node as IBiquadFilterNode).type;
   }
 
-  public set type(value: FilterType) {
+  public set type(value: BiquadFilterType) {
     (this.node as IBiquadFilterNode).type = value;
   }
 

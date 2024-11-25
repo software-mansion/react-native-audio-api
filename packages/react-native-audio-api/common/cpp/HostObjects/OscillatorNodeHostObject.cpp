@@ -24,6 +24,8 @@ std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "frequency"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "detune"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "type"));
+  propertyNames.push_back(
+      jsi::PropNameID::forAscii(runtime, "setPeriodicWave"));
   return propertyNames;
 }
 
@@ -44,6 +46,25 @@ jsi::Value OscillatorNodeHostObject::get(
     auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
     auto waveType = wrapper->getType();
     return jsi::String::createFromUtf8(runtime, waveType);
+  }
+
+  if (propName == "setPeriodicWave") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        1,
+        [this](
+            jsi::Runtime &rt,
+            const jsi::Value &thisVal,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
+          auto periodicWaveHostObject =
+              args[0].getObject(rt).asHostObject<PeriodicWaveHostObject>(rt);
+
+          wrapper->setPeriodicWave(periodicWaveHostObject->wrapper_);
+          return jsi::Value::undefined();
+        });
   }
 
   return AudioScheduledSourceNodeHostObject::get(runtime, propNameId);

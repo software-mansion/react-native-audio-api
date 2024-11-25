@@ -12,6 +12,7 @@
 #include "BiquadFilterNodeHostObject.h"
 #include "GainNodeHostObject.h"
 #include "OscillatorNodeHostObject.h"
+#include "PeriodicWaveHostObject.h"
 #include "StereoPannerNodeHostObject.h"
 
 namespace audioapi {

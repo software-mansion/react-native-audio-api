@@ -1,7 +1,9 @@
+#include <memory>
+
 #include "AudioBus.h"
 #include "AudioNode.h"
-#include "AudioNodeManager.h"
 #include "BaseAudioContext.h"
+#include "AudioNodeManager.h"
 
 namespace audioapi {
 

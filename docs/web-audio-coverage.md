@@ -7,7 +7,7 @@ Some of the noticeable implementation details that are still in progress or not 
 - Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
 - Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## ✅ Completed (**7** out of 33)
+## ✅ Completed (**9** out of 33)
 
 <details>
   <summary><b>AudioBuffer</b></summary>
@@ -28,10 +28,16 @@ Some of the noticeable implementation details that are still in progress or not 
  <summary><b>GainNode</b></summary>
 </details>
 <details>
+ <summary><b>OscillatorNode</b></summary>
+</details>
+<details>
+ <summary><b>PeriodicWave</b></summary>
+</details>
+<details>
  <summary><b>StereoPannerNode</b></summary>
 </details>
 
-## 🚧 In Progress (**5** out of 33)
+## 🚧 In Progress (**4** out of 33)
 
 <details>
   <summary><b>AudioContext</b></summary>
@@ -123,7 +129,7 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔘 createIIRFilter          | ❌    |
 | 🔘 createOscillator         | ✅    |
 | 🔘 createPanner             | ❌    |
-| 🔘 createPeriodicWave       | ❌    |
+| 🔘 createPeriodicWave       | ✅    |
 | 🔘 createStereoPanner       | ✅    |
 | 🔘 createWaveShaper         | ❌    |
 | 🔘 decodeAudioData          | ❌    |
@@ -132,23 +138,7 @@ Some of the noticeable implementation details that are still in progress or not 
 
 </details>
 
-<details>
-  <summary><b>OscillatorNode</b></summary>
-
-<div style="padding: 16px; padding-left: 42px;">
-
-| Property 🔹/ Method 🔘 | state |
-| ---------------------- | ----- |
-| 🔹 frequency           | ✅    |
-| 🔹 detune              | ✅    |
-| 🔹 type                | ✅    |
-| 🔘 setPeriodicWave     | ❌    |
-
-</div>
-
-</details>
-
-## ❌ Not yet available (**21** out of 33)
+## ❌ Not yet available (**20** out of 33)
 
 <details>
  <summary><b>AudioParamMap</b></summary>
@@ -173,9 +163,6 @@ Some of the noticeable implementation details that are still in progress or not 
 </details>
 <details>
  <summary><b>WaveShaperNode</b></summary>
-</details>
-<details>
- <summary><b>PeriodicWave</b></summary>
 </details>
 <details>
  <summary><b>IIRFilterNode</b></summary>
