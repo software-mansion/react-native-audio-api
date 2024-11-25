@@ -26,9 +26,10 @@ class HiHat implements SoundEngine {
       const oscillator = this.audioContext.createOscillator();
       oscillator.type = 'square';
       oscillator.frequency.value = this.tone * ratio;
+
       const bandpassFilter = this.audioContext.createBiquadFilter();
       const highpassFilter = this.audioContext.createBiquadFilter();
-      const gain = this.audioContext.createGain();
+      // const gain = this.audioContext.createGain();
 
       bandpassFilter.type = 'bandpass';
       bandpassFilter.frequency.value = this.bandpassFilterFrequency;
@@ -36,16 +37,18 @@ class HiHat implements SoundEngine {
       highpassFilter.type = 'highpass';
       highpassFilter.frequency.value = this.highpassFilterFrequency;
 
-      gain.gain.setValueAtTime(0.0001, time);
-      gain.gain.exponentialRampToValueAtTime(this.volume, time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(this.volume * 0.33, time + 0.03);
-      gain.gain.exponentialRampToValueAtTime(this.volume * 0.0001, time + 0.3);
-      gain.gain.setValueAtTime(0, time + 0.3 + 0.001);
+      // gain.gain.setValueAtTime(0.0001, time);
+      // gain.gain.exponentialRampToValueAtTime(this.volume, time + 0.02);
+      // gain.gain.exponentialRampToValueAtTime(this.volume * 0.33, time + 0.03);
+      // gain.gain.exponentialRampToValueAtTime(this.volume * 0.0001, time + 0.3);
+      // gain.gain.setValueAtTime(0, time + 0.3 + 0.001);
 
       oscillator.connect(bandpassFilter);
-      bandpassFilter.connect(highpassFilter);
-      highpassFilter.connect(gain);
-      gain.connect(this.audioContext.destination!);
+      // bandpassFilter.connect(highpassFilter);
+      // highpassFilter.connect(gain);
+      // gain.connect(this.audioContext.destination!);
+
+      bandpassFilter.connect(this.audioContext.destination);
       oscillator.start(time);
       oscillator.stop(time + this.decay);
     });

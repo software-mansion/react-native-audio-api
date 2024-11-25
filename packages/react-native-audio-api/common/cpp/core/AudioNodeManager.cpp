@@ -35,8 +35,9 @@ void AudioNodeManager::preProcessGraph() {
     return;
   }
 
-  settlePendingConnections();
   settlePendingDeletions();
+  settlePendingConnections();
+  removeFinishedSourceNodes();
 }
 
 void AudioNodeManager::postProcessGraph() {
@@ -44,8 +45,9 @@ void AudioNodeManager::postProcessGraph() {
     return;
   }
 
-  settlePendingConnections();
   settlePendingDeletions();
+  settlePendingConnections();
+  removeFinishedSourceNodes();
 }
 
 std::mutex& AudioNodeManager::getGraphLock() {
@@ -70,6 +72,23 @@ void AudioNodeManager::settlePendingConnections() {
 
 void AudioNodeManager::settlePendingDeletions() {
   audioNodesToDelete_.clear();
+}
+
+void AudioNodeManager::removeFinishedSourceNodes() {
+  for (auto it = sourceNodes_.begin(); it != sourceNodes_.end();) {
+    auto currentNode = it->get();
+    // Release the source node if use count is equal to 1 (this vector)
+    if (!currentNode->isEnabled() && it->use_count() == 1) {
+
+      for (auto& outputNode : currentNode->outputNodes_) {
+        currentNode->disconnectNode(outputNode);
+      }
+
+      it = sourceNodes_.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 } // namespace audioapi

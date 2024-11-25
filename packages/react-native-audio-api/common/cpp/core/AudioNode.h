@@ -38,10 +38,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;
 
+  int channelCount_ = CHANNEL_COUNT;
+
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int channelCount_ = CHANNEL_COUNT;
-  int numberOfConnections_ = 0;
+  int numberOfEnabledInputNodes_ = 0;
+
+
   bool isInitialized_ = false;
   bool isEnabled_ = true;
 
@@ -51,7 +54,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   ChannelInterpretation channelInterpretation_ =
       ChannelInterpretation::SPEAKERS;
 
-  std::vector<std::shared_ptr<AudioNode>> inputNodes_ = {};
+  std::vector<AudioNode*> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
  private:
@@ -64,6 +67,11 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   void connectNode(std::shared_ptr<AudioNode> &node);
   void disconnectNode(std::shared_ptr<AudioNode> &node);
+
+  void onInputEnabled();
+  void onInputDisabled();
+  void onInputConnected(AudioNode *node);
+  void onInputDisconnected(AudioNode *node);
 };
 
 } // namespace audioapi
@@ -90,9 +98,9 @@ We use shared pointers in audio node manager to keep track of all source nodes
 when audio source node finished playing it:
   - disables itself and tells all output nodes that it has been disabled
   - each node up to destination, checks their input nodes and if was its only active input node, it disables itself.
-  - source node tells audio node manager to dereference it (only if it is the last reference to the source node)
-  - audio manager in pre-process or post-process will remove the reference
-  - deletion of the node will dereference all connected nodes, resulting in destroy'ing them if they are not referenced from JS side
-
+  - source node tells audio node manager to dereference it (only if it is the last reference to the source node).
+  - audio manager in pre-process or post-process will remove the reference.
+  - audio manager in pre-process or post-process will also have to check for source nodes with only one reference and delete them if already stopped.
+  - deletion of the node will dereference all connected nodes, resulting in destroy'ing them if they are not referenced from JS side.
 
 */

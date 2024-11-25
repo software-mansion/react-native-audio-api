@@ -5,11 +5,14 @@
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
-    : AudioNode(context), isPlaying_(false) {
+    : AudioNode(context), playbackState_(PlaybackState::UNSCHEDULED) {
   numberOfInputs_ = 0;
 }
 
 void AudioScheduledSourceNode::start(double time) {
+  context_->getNodeManager()->addSourceNode(shared_from_this());
+
+  playbackState_ = PlaybackState::SCHEDULED;
   waitAndExecute(time, [this](double time) { startPlayback(); });
 }
 
@@ -17,12 +20,21 @@ void AudioScheduledSourceNode::stop(double time) {
   waitAndExecute(time, [this](double time) { stopPlayback(); });
 }
 
+bool AudioScheduledSourceNode::isPlaying() {
+  return playbackState_ == PlaybackState::PLAYING;
+}
+
+bool AudioScheduledSourceNode::isFinished() {
+  return playbackState_ == PlaybackState::FINISHED;
+}
+
 void AudioScheduledSourceNode::startPlayback() {
-  isPlaying_ = true;
+  playbackState_ = PlaybackState::PLAYING;
 }
 
 void AudioScheduledSourceNode::stopPlayback() {
-  isPlaying_ = false;
+  playbackState_ = PlaybackState::FINISHED;
+  disable();
 }
 
 void AudioScheduledSourceNode::waitAndExecute(

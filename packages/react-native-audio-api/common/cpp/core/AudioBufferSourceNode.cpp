@@ -41,7 +41,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   double time = context_->getCurrentTime();
 
   // No audio data to fill, zero the output and return.
-  if (!isPlaying_ || !buffer_ || buffer_->getLength() == 0) {
+  if (!isPlaying() || !buffer_ || buffer_->getLength() == 0) {
     processingBus->zero();
     return;
   }
@@ -51,7 +51,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     processingBus->copy(buffer_->bus_.get());
 
     if (!loop_) {
-      isPlaying_ = false;
+      playbackState_ = PlaybackState::FINISHED;
     }
 
     return;
@@ -70,7 +70,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     }
 
     if (bufferIndex_ + framesToCopy == buffer_->getLength() - 1) {
-      isPlaying_ = false;
+      playbackState_ = PlaybackState::FINISHED;
       bufferIndex_ = 0;
     }
 
@@ -82,7 +82,8 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     // If we don't loop the buffer, copy it once and zero the remaining processing bus frames.
     processingBus->copy(buffer_->bus_.get());
     processingBus->zero(buffer_->getLength(), framesToProcess - buffer_->getLength());
-    isPlaying_ = false;
+    playbackState_ = PlaybackState::FINISHED;
+
     return;
   }
 

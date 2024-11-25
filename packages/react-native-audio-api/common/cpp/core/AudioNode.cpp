@@ -42,9 +42,8 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
 
 void AudioNode::connectNode(std::shared_ptr<AudioNode> &node) {
   outputNodes_.push_back(node);
-  node->inputNodes_.push_back(shared_from_this());
-  numberOfConnections_ += 1;
-  node->numberOfConnections_ += 1;
+
+  node->onInputConnected(this);
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
@@ -52,18 +51,13 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNode::disconnectNode(std::shared_ptr<AudioNode> &node) {
-  outputNodes_.erase(
-      std::remove(outputNodes_.begin(), outputNodes_.end(), node),
-      outputNodes_.end());
+  node->onInputDisconnected(this);
 
-  if (auto sharedThis = shared_from_this()) {
-    node->inputNodes_.erase(
-        std::remove(
-            node->inputNodes_.begin(), node->inputNodes_.end(), sharedThis),
-        node->inputNodes_.end());
+  auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
+
+  if (position != outputNodes_.end()) {
+    outputNodes_.erase(position);
   }
-  numberOfConnections_ -= 1;
-  node->numberOfConnections_ -= 1;
 }
 
 bool AudioNode::isInitialized() const {
@@ -76,10 +70,18 @@ bool AudioNode::isEnabled() const {
 
 void AudioNode::enable() {
   isEnabled_ = true;
+
+  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    it->get()->onInputEnabled();
+  }
 }
 
 void AudioNode::disable() {
   isEnabled_ = false;
+
+  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    it->get()->onInputDisabled();
+  }
 }
 
 std::string AudioNode::toString(ChannelCountMode mode) {
@@ -123,7 +125,7 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   bool canUseOutputBus = outputBus != 0 && inputNodes_.size() < 2 && outputNodes_.size() < 2;
 
   if (isAlreadyProcessed) {
-    // If it was already processed in the rendering quantum,return it.
+    // If it was already processed in the rendering quantum, return it.
     return audioBus_.get();
   }
 
@@ -152,10 +154,14 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
     // Process first connected node, it can be directly connected to the processingBus,
     // resulting in one less summing operation.
     if (it == inputNodes_.begin()) {
-      it->get()->processAudio(processingBus, framesToProcess);
+      AudioBus* inputBus = (*it)->processAudio(processingBus, framesToProcess);
+
+      if (inputBus != processingBus) {
+        processingBus->sum(inputBus);
+      }
     } else {
       // Enforce the summing to be done using the internal bus.
-      AudioBus* inputBus = it->get()->processAudio(0, framesToProcess);
+      AudioBus* inputBus = (*it)->processAudio(0, framesToProcess);
       if (inputBus) {
         processingBus->sum(inputBus);
       }
@@ -171,6 +177,52 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
 void AudioNode::cleanup() {
   outputNodes_.clear();
   inputNodes_.clear();
+}
+
+void AudioNode::onInputEnabled() {
+  numberOfEnabledInputNodes_ += 1;
+
+  if (!isEnabled()) {
+    enable();
+  }
+}
+
+void AudioNode::onInputDisabled() {
+  numberOfEnabledInputNodes_ -= 1;
+
+  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
+    disable();
+  }
+}
+
+void AudioNode::onInputConnected(AudioNode *node) {
+  inputNodes_.push_back(node);
+
+  if (node->isEnabled()) {
+    onInputEnabled();
+  }
+}
+
+void AudioNode::onInputDisconnected(AudioNode *node) {
+  auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
+
+  if (position == inputNodes_.end()) {
+    return;
+  }
+
+  inputNodes_.erase(position);
+
+  if (inputNodes_.size() > 0 || outputNodes_.size() == 0) {
+    return;
+  }
+
+  if (isEnabled()) {
+    node->onInputDisabled();
+  }
+
+  for (auto outputNode : outputNodes_) {
+    disconnectNode(outputNode);
+  }
 }
 
 } // namespace audioapi

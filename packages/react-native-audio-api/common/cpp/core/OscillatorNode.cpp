@@ -40,7 +40,7 @@ void OscillatorNode::setPeriodicWave(
 }
 
 void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
-  if (!isPlaying_) {
+  if (!isPlaying()) {
     processingBus->zero();
     return;
   }

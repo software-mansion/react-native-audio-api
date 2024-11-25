@@ -27,12 +27,13 @@ class AudioNodeManager {
   private:
     std::mutex graphLock_;
 
-    std::vector<std::tuple<std::shared_ptr<AudioNode>, std::shared_ptr<AudioNode>, ConnectionType>> audioNodesToConnect_;
-    std::vector<std::shared_ptr<AudioNode>> audioNodesToDelete_;
     std::vector<std::shared_ptr<AudioNode>> sourceNodes_;
+    std::vector<std::shared_ptr<AudioNode>> audioNodesToDelete_;
+    std::vector<std::tuple<std::shared_ptr<AudioNode>, std::shared_ptr<AudioNode>, ConnectionType>> audioNodesToConnect_;
 
-    void settlePendingConnections();
     void settlePendingDeletions();
+    void settlePendingConnections();
+    void removeFinishedSourceNodes();
 };
 
 } // namespace audioapi

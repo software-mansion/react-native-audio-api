@@ -355,30 +355,29 @@ void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess)
   resetCoefficients();
   applyFilter();
 
-  float x1 = x1_;
-  float x2 = x2_;
-  float y1 = y1_;
-  float y2 = y2_;
+  for (int c = 0; c < framesToProcess; c += 1) {
+    float x1 = x1_;
+    float x2 = x2_;
+    float y1 = y1_;
+    float y2 = y2_;
 
-  float b0 = b0_;
-  float b1 = b1_;
-  float b2 = b2_;
-  float a1 = a1_;
-  float a2 = a2_;
+    float b0 = b0_;
+    float b1 = b1_;
+    float b2 = b2_;
+    float a1 = a1_;
+    float a2 = a2_;
 
-  for (int i = 0; i < framesToProcess; i += 1) {
-    float input = (*processingBus->getChannel(0))[i];
-    float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    for (int i = 0; i < framesToProcess; i += 1) {
+      float input = (*processingBus->getChannel(0))[i];
+      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
-    for (int j = 0; j < channelCount_; j += 1) {
-      (*processingBus->getChannel(j))[i] = output;
+      (*processingBus->getChannel(c))[i] = output;
+
+      x2 = x1;
+      x1 = input;
+      y2 = y1;
+      y1 = output;
     }
-
-
-    x2 = x1;
-    x1 = input;
-    y2 = y1;
-    y1 = output;
   }
 }
 

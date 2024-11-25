@@ -1,23 +1,26 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
+#include <utility>
+#include <functional>
+
+#include "ContextState.h"
+#include "OscillatorType.h"
 
 namespace audioapi {
 
 class AudioBus;
 class GainNode;
 class AudioBuffer;
+class PeriodicWave;
 class OscillatorNode;
 class StereoPannerNode;
+class AudioNodeManager;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
-class AudioNodeManager;
-class PeriodicWave;
 
 #ifdef ANDROID
 class AudioPlayer;
@@ -53,8 +56,7 @@ class BaseAudioContext {
   AudioNodeManager* getNodeManager();
 
  protected:
-  enum class State { SUSPENDED, RUNNING, CLOSED };
-  static std::string toString(State state);
+  static std::string toString(ContextState state);
   std::shared_ptr<AudioDestinationNode> destination_;
 
 #ifdef ANDROID
@@ -63,9 +65,9 @@ class BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
 
-  State state_ = State::RUNNING;
   int sampleRate_;
   int bufferSizeInFrames_;
+  ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
  private:

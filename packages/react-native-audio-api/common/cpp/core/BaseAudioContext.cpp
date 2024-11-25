@@ -10,6 +10,7 @@
 #include "AudioBus.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
+#include "ContextState.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
 #include "BiquadFilterNode.h"
@@ -85,12 +86,6 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
-std::function<void(AudioBus*, int)> BaseAudioContext::renderAudio() {
-  if (state_ == State::CLOSED) {
-    return [](AudioBus*, int) {};
-  }
-}
-
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     float *real,
     float *imag,
@@ -101,9 +96,9 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
-std::function<void(float *, int)> BaseAudioContext::renderAudio() {
+std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
   if (state_ == ContextState::CLOSED) {
-    return [](float *, int) {};
+    return [](AudioBus *, int) {};
   }
 
   return [this](AudioBus* data, int frames) {
@@ -115,13 +110,13 @@ AudioNodeManager* BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
 }
 
-std::string BaseAudioContext::toString(State state) {
+std::string BaseAudioContext::toString(ContextState state) {
   switch (state) {
-    case State::SUSPENDED:
+    case ContextState::SUSPENDED:
       return "suspended";
-    case State::RUNNING:
+    case ContextState::RUNNING:
       return "running";
-    case State::CLOSED:
+    case ContextState::CLOSED:
       return "closed";
     default:
       throw std::invalid_argument("Unknown context state");

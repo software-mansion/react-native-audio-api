@@ -24,6 +24,8 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
+  printf("connected nodes: %d\n", inputNodes_.size());
+
   if (!isInitialized_) {
     return;
   }
