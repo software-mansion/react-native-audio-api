@@ -7,7 +7,6 @@ namespace audioapi {
 
 GainNode::GainNode(BaseAudioContext *context) : AudioNode(context) {
   gainParam_ = std::make_shared<AudioParam>(context, 1.0, -MAX_GAIN, MAX_GAIN);
-  debugName_ = "GainNode";
   isInitialized_ = true;
 }
 

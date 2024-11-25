@@ -1,4 +1,5 @@
 #include "BaseAudioContext.h"
+#include "AudioNodeManager.h"
 #include "AudioScheduledSourceNode.h"
 
 namespace audioapi {

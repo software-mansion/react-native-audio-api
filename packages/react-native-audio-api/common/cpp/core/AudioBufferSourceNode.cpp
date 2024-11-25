@@ -9,7 +9,6 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  debugName_ = "AudioBufferSourceNode";
   isInitialized_ = true;
 }
 

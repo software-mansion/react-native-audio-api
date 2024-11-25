@@ -41,6 +41,8 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
 void AudioNode::connectNode(std::shared_ptr<AudioNode> &node) {
   outputNodes_.push_back(node);
   node->inputNodes_.push_back(shared_from_this());
+  numberOfConnections_ += 1;
+  node->numberOfConnections_ += 1;
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
@@ -58,12 +60,25 @@ void AudioNode::disconnectNode(std::shared_ptr<AudioNode> &node) {
             node->inputNodes_.begin(), node->inputNodes_.end(), sharedThis),
         node->inputNodes_.end());
   }
+  numberOfConnections_ -= 1;
+  node->numberOfConnections_ -= 1;
 }
 
 bool AudioNode::isInitialized() const {
   return isInitialized_;
 }
 
+bool AudioNode::isEnabled() const {
+  return isEnabled_;
+}
+
+void AudioNode::enable() {
+  isEnabled_ = true;
+}
+
+void AudioNode::disable() {
+  isEnabled_ = false;
+}
 
 std::string AudioNode::toString(ChannelCountMode mode) {
   switch (mode) {
@@ -128,6 +143,10 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   }
 
   for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
+    if (!(*it)->isEnabled()) {
+      continue;
+    }
+
     // Process first connected node, it can be directly connected to the processingBus,
     // resulting in one less summing operation.
     if (it == inputNodes_.begin()) {

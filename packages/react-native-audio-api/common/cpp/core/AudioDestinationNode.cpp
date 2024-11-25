@@ -12,7 +12,6 @@ AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
   numberOfOutputs_ = 0;
   numberOfInputs_ = INT_MAX;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
-  debugName_ = "AudioDestinationNode";
   isInitialized_ = true;
 }
 

@@ -12,16 +12,22 @@ AudioNodeManager::~AudioNodeManager() {
   audioNodesToDelete_.clear();
 }
 
-void AudioNodeManager::addPendingConnection(std::shared_ptr<AudioNode> from, std::shared_ptr<AudioNode> to, ConnectionType type) {
+void AudioNodeManager::addPendingConnection(const std::shared_ptr<AudioNode> &from, const std::shared_ptr<AudioNode> &to, ConnectionType type) {
   Locker lock(getGraphLock());
 
   audioNodesToConnect_.push_back(std::make_tuple(from, to, type));
 }
 
-void AudioNodeManager::setNodeToDelete(std::shared_ptr<AudioNode> node) {
+void AudioNodeManager::setNodeToDelete(const std::shared_ptr<AudioNode> &node) {
   Locker lock(getGraphLock());
 
   audioNodesToDelete_.push_back(node);
+}
+
+void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioNode> &node) {
+  Locker lock(getGraphLock());
+
+  sourceNodes_.push_back(node);
 }
 
 void AudioNodeManager::preProcessGraph() {

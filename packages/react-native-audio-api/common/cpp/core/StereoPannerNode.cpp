@@ -12,7 +12,6 @@ StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
     : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   panParam_ = std::make_shared<AudioParam>(context, 0.0, -MAX_PAN, MAX_PAN);
-  debugName_ = "StereoPannerNode";
   isInitialized_ = true;
 }
 
