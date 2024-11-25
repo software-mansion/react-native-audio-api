@@ -2,6 +2,7 @@ require "json"
 
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
+cxx_language_standard = 'c++20'
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -21,6 +22,17 @@ Pod::Spec.new do |s|
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) HAVE_ACCELERATE=1'
   }
 
+  s.subspec 'KFR' do |kfr|
+    kfr.source_files       = "external/kfr/src/**/*.{cpp}"
+    kfr.public_header_files = "external/kfr/include/kfr/**/*.{h,hpp}"
+    kfr.xcconfig = {
+      'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/external/kfr/include"',
+      'CLANG_CXX_LANGUAGE_STANDARD' => cxx_language_standard,
+      'CLANG_CXX_LIBRARY' => 'libc++',
+      'GCC_NO_COMMON_BLOCKS' => 'YES'
+    }
+  end
+
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   if respond_to?(:install_modules_dependencies, true)
@@ -34,7 +46,7 @@ Pod::Spec.new do |s|
       s.pod_target_xcconfig    = {
           "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
           "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-          "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
+          "CLANG_CXX_LANGUAGE_STANDARD" => cxx_language_standard
       }
       s.dependency "React-Codegen"
       s.dependency "RCT-Folly"
