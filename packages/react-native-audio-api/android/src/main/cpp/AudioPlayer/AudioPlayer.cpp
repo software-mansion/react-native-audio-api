@@ -1,6 +1,8 @@
-#include "AudioPlayer.h"
 
 #include "AudioBus.h"
+#include "Constants.h"
+#include "AudioArray.h"
+#include "AudioPlayer.h"
 #include "AudioContext.h"
 
 namespace audioapi {
@@ -49,12 +51,12 @@ DataCallbackResult AudioPlayer::onAudioReady(
     int32_t numFrames) {
   auto buffer = static_cast<float *>(audioData);
 
-  renderAudio_(mBus_, numFrames);
+  renderAudio_(mBus_.get(), numFrames);
 
   // TODO: optimize this with SIMD?
   for (int32_t i = 0; i < numFrames; i += 1) {
     for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
-      buffer[i * CHANNEL_COUNT + channel] = mBus_->getChannel(channel)->get()[i];
+      buffer[i * CHANNEL_COUNT + channel] = mBus_->getChannel(channel)->getData()[i];
     }
   }
 

@@ -38,8 +38,6 @@ void AudioBufferSourceNode::setBuffer(
 // Note: AudioBus copy method will use memcpy if the source buffer and system processing bus have same channel count,
 // otherwise it will use the summing function taking care of up/down mixing.
 void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToProcess) {
-  double time = context_->getCurrentTime();
-
   // No audio data to fill, zero the output and return.
   if (!isPlaying() || !buffer_ || buffer_->getLength() == 0) {
     processingBus->zero();
