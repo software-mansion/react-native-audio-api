@@ -8,10 +8,6 @@
 #import <React/RCTBridgeModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
-#ifndef HAVE_ACCELERATE
-#define HAVE_ACCELERATE
-#endif
-
 #import <React/RCTEventEmitter.h>
 
 @interface AudioAPIModule : RCTEventEmitter
