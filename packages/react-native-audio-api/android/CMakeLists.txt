@@ -35,8 +35,6 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/types/*.h"
 )
 
-# add_subdirectory(../external/kfr ${CMAKE_CURRENT_BINARY_DIR}/kfr-build)
-
 add_library(react-native-audio-api SHARED ${SOURCE_FILES})
 
 file(GLOB DIRS CONFIGURE_DEPENDS "src/main/cpp/**" "../common/cpp/**")
@@ -64,10 +62,6 @@ set(LINK_LIBRARIES
   log
   oboe::oboe
   ${fftw3}
-  # kfr
-  # kfr_dsp
-  # kfr_dft
-  # kfr_io
 )
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
