@@ -9,19 +9,13 @@ AudioNodeManager::AudioNodeManager() {}
 
 AudioNodeManager::~AudioNodeManager() {
   audioNodesToConnect_.clear();
-  audioNodesToDelete_.clear();
+  sourceNodes_.clear();
 }
 
 void AudioNodeManager::addPendingConnection(const std::shared_ptr<AudioNode> &from, const std::shared_ptr<AudioNode> &to, ConnectionType type) {
   Locker lock(getGraphLock());
 
   audioNodesToConnect_.push_back(std::make_tuple(from, to, type));
-}
-
-void AudioNodeManager::setNodeToDelete(const std::shared_ptr<AudioNode> &node) {
-  Locker lock(getGraphLock());
-
-  audioNodesToDelete_.push_back(node);
 }
 
 void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioNode> &node) {
@@ -35,17 +29,6 @@ void AudioNodeManager::preProcessGraph() {
     return;
   }
 
-  settlePendingDeletions();
-  settlePendingConnections();
-  removeFinishedSourceNodes();
-}
-
-void AudioNodeManager::postProcessGraph() {
-  if (!Locker::tryLock(getGraphLock())) {
-    return;
-  }
-
-  settlePendingDeletions();
   settlePendingConnections();
   removeFinishedSourceNodes();
 }
@@ -70,16 +53,11 @@ void AudioNodeManager::settlePendingConnections() {
   audioNodesToConnect_.clear();
 }
 
-void AudioNodeManager::settlePendingDeletions() {
-  audioNodesToDelete_.clear();
-}
-
 void AudioNodeManager::removeFinishedSourceNodes() {
   for (auto it = sourceNodes_.begin(); it != sourceNodes_.end();) {
     auto currentNode = it->get();
     // Release the source node if use count is equal to 1 (this vector)
     if (!currentNode->isEnabled() && it->use_count() == 1) {
-
       for (auto& outputNode : currentNode->outputNodes_) {
         currentNode->disconnectNode(outputNode);
       }

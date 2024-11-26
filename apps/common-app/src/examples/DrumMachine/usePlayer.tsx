@@ -133,10 +133,9 @@ export default function usePlayer(options: PlayerOptions) {
       playingInstruments.value = getPlayingInstruments();
     }
 
-    // return () => {
-    //   console.log('Closing audio context');
-    //   audioContext.close();
-    // };
+    return () => {
+      audioContext.close();
+    };
     // \/ Shared values are not necessary in deps array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, setup]);

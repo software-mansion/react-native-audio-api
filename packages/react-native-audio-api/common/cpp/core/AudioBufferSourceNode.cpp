@@ -9,6 +9,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
+  isInitialized_ = true;
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -51,6 +52,7 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
 
     if (!loop_) {
       playbackState_ = PlaybackState::FINISHED;
+      disable();
     }
 
     return;
@@ -59,20 +61,31 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
   // The buffer is longer than the number of frames to process.
   // We have to keep track of where we are in the buffer.
   if (framesToProcess < buffer_->getLength()) {
-    int processingBufferPosition = 0;
+    int outputBusIndex = 0;
     int framesToCopy = 0;
 
-    while (processingBufferPosition < framesToProcess)
-    {
-      framesToCopy = std::min(framesToProcess, buffer_->getLength() - bufferIndex_);
+    while (framesToProcess - outputBusIndex > 0) {
+      framesToCopy = std::min(framesToProcess - outputBusIndex, buffer_->getLength() - bufferIndex_);
 
-      processingBus->copy(buffer_->bus_.get(), processingBufferPosition, bufferIndex_, framesToCopy);
-      processingBufferPosition += framesToCopy;
-      bufferIndex_ = (bufferIndex_ + framesToCopy) % buffer_->getLength();
+      processingBus->copy(buffer_->bus_.get(), bufferIndex_, outputBusIndex, framesToCopy);
 
-      if (!loop_ && processingBufferPosition >= framesToCopy) {
-        playbackState_ = PlaybackState::FINISHED;
-        bufferIndex_ = 0;
+      bufferIndex_ += framesToCopy;
+      outputBusIndex += framesToCopy;
+
+      if (bufferIndex_ < buffer_->getLength()) {
+        continue;
+      }
+
+
+      bufferIndex_ %= buffer_->getLength();
+
+      if (!loop_) {
+      playbackState_ = PlaybackState::FINISHED;
+      disable();
+
+        if (framesToProcess - outputBusIndex > 0) {
+          processingBus->zero(outputBusIndex, framesToProcess - outputBusIndex);
+        }
       }
     }
 
@@ -84,7 +97,9 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     // If we don't loop the buffer, copy it once and zero the remaining processing bus frames.
     processingBus->copy(buffer_->bus_.get());
     processingBus->zero(buffer_->getLength(), framesToProcess - buffer_->getLength());
+
     playbackState_ = PlaybackState::FINISHED;
+    disable();
 
     return;
   }

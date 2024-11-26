@@ -19,6 +19,7 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
   gainParam_ = std::make_shared<AudioParam>(
       context, 0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
   type_ = BiquadFilterType::LOWPASS;
+  isInitialized_ = true;
 }
 
 std::string BiquadFilterNode::getType() {

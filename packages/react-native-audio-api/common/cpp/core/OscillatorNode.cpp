@@ -13,6 +13,7 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
       std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
+  isInitialized_ = true;
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {

@@ -12,6 +12,7 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
+  isInitialized_ = false;
   cleanup();
 }
 
@@ -39,9 +40,8 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
   context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
 }
 
-void AudioNode::connectNode(std::shared_ptr<AudioNode> &node) {
+void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
   outputNodes_.push_back(node);
-
   node->onInputConnected(this);
 }
 
@@ -49,7 +49,7 @@ void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
 }
 
-void AudioNode::disconnectNode(std::shared_ptr<AudioNode> &node) {
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
   node->onInputDisconnected(this);
 
   auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
@@ -104,6 +104,10 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
 }
 
 AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
+  if (!isInitialized_) {
+    return outputBus;
+  }
+
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
   // check if the node has already been processed for this rendering quantum
@@ -197,13 +201,12 @@ void AudioNode::onInputConnected(AudioNode *node) {
 void AudioNode::onInputDisconnected(AudioNode *node) {
   auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
 
-  if (position == inputNodes_.end()) {
-    return;
+  if (position != inputNodes_.end()) {
+    inputNodes_.erase(position);
   }
 
-  inputNodes_.erase(position);
 
-  if (inputNodes_.size() > 0 || outputNodes_.size() == 0) {
+  if (inputNodes_.size() > 0) {
     return;
   }
 
