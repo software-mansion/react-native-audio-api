@@ -38,7 +38,6 @@ export default class AudioScheduledSourceNode extends AudioNode {
       );
     }
 
-    // TODO: should we reset hasBeenStarted here? :thunk:
     (this.node as IAudioScheduledSourceNode).stop(when);
   }
 }
