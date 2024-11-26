@@ -13,7 +13,7 @@ namespace audioapi {
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
- enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, FINISHED };
+  enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, FINISHED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
   void start(double time);
@@ -24,7 +24,6 @@ class AudioScheduledSourceNode : public AudioNode {
 
  protected:
   std::atomic<PlaybackState> playbackState_;
-
 
  private:
   void startPlayback();

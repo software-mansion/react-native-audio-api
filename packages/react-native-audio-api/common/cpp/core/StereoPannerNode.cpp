@@ -51,6 +51,6 @@ void StereoPannerNode::processNode(AudioBus* processingBus, int framesToProcess)
 
     time += deltaTime;
   }
-
 }
+
 } // namespace audioapi

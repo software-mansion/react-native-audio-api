@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "AudioBus.h"
 #include "AudioArray.h"
 #include "BaseAudioContext.h"
