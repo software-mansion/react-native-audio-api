@@ -125,7 +125,7 @@ void AudioBus::normalize() {
 }
 
 void AudioBus::scale(float value) {
-  for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
+  for (auto it = channels_.begin(); it != channels_.end(); ++it) {
     it->get()->scale(value);
   }
 }
