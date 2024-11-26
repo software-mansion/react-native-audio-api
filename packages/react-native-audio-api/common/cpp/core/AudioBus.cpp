@@ -133,7 +133,7 @@ void AudioBus::scale(float value) {
 float AudioBus::maxAbsValue() const {
   float maxAbsValue = 1.0f;
 
-  for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
+  for (auto it = channels_.begin(); it != channels_.end(); ++it) {
     float channelMaxAbsValue = it->get()->getMaxAbsValue();
     maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
   }
