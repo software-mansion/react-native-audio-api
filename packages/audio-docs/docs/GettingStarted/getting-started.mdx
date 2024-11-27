@@ -1,0 +1,81 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Getting started
+
+## What is React Native Audio API?
+
+`react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
+allowing developers to generate and modify audio in exact same way it is possible in browsers.
+
+## Installation
+
+Install `react-native-audio-api` package from npm:
+
+<Tabs groupId="package-managers">
+  <TabItem value="expo" label="EXPO" default>
+
+    npx expo install react-native-audio-api
+
+  </TabItem>
+  <TabItem value="npm" label="NPM">
+
+    npm install react-native-audio-api
+
+  </TabItem>
+  <TabItem value="yarn" label="YARN">
+
+    yarn add react-native-audio-api
+
+  </TabItem>
+</Tabs>
+
+### Clear Metro bundler cache (recommended)
+
+<Tabs groupId="package-managers">
+  <TabItem value="expo" label="EXPO" default>
+
+    npx expo start -c
+
+  </TabItem>
+  <TabItem value="npm" label="NPM">
+
+    npm start -- --reset-cache
+
+  </TabItem>
+  <TabItem value="yarn" label="YARN">
+
+    yarn start --reset-cache
+
+  </TabItem>
+</Tabs>
+
+### Expo development build
+
+When using an [Expo development build](https://docs.expo.dev/develop/development-builds/introduction/), run prebuild to update the native code in the `ios` and `android` directories.
+
+```bash
+npx expo prebuild
+```
+
+### Platform specific setup
+
+#### iOS
+
+While developing for iOS, make sure to install [pods](https://cocoapods.org/) first before running the app:
+
+```bash
+cd ios && pod install && cd ..
+```
+
+#### Android
+
+No additional steps are necessary.
+
+#### Web
+
+No additional steps are necessary.

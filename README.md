@@ -51,7 +51,7 @@ react-native-audio-api library is licensed under [The MIT License](./LICENSE). S
 
 This project has been built and is maintained thanks to the support from [Software Mansion](https://swmansion.com)
 
-[![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-reanimated-github 'Software Mansion')](https://swmansion.com)
+[![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-audio-api-github 'Software Mansion')](https://swmansion.com)
 
 ## Community Discord
 

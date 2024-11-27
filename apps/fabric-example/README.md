@@ -1,4 +1,4 @@
-# React Native Reanimated example app with Fabric
+# React Native Audio API example app with Fabric
 
 ## Installing & running application
 
