@@ -1619,6 +1619,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNFS (2.20.0):
+    - React-Core
   - RNGestureHandler (2.21.1):
     - DoubleConversion
     - glog
@@ -1843,6 +1845,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNAudioAPI (from `../node_modules/react-native-audio-api`)
+  - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -1984,6 +1987,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNAudioAPI:
     :path: "../node_modules/react-native-audio-api"
+  RNFS:
+    :path: "../node_modules/react-native-fs"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNReanimated:
@@ -2059,6 +2064,7 @@ SPEC CHECKSUMS:
   ReactCodegen: dbfef1fef26f42c900bb1884fa149d49d501d64d
   ReactCommon: 429ca28cd813c31359c73ffac6dc24f93347d522
   RNAudioAPI: adb400fcab1b85cafaff4e0880be5d4616fd4727
+  RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNGestureHandler: a3822e519fd1e9885b92d8c9bd82a7a0be305fe3
   RNReanimated: 77242c6d67416988a2fd9f5cf574bb3e60016362
   RNScreens: e389d6a6a66a4f0d3662924ecae803073ccce8ec

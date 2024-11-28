@@ -19,7 +19,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
  protected:
-  void processNode(AudioBus* processingBus, int framesToProcess) override;
+  void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
   bool loop_;

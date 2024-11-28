@@ -1,6 +1,6 @@
-#include "AudioBus.h"
-#include "AudioArray.h"
 #include "AudioBuffer.h"
+#include "AudioArray.h"
+#include "AudioBus.h"
 
 namespace audioapi {
 
@@ -24,7 +24,7 @@ double AudioBuffer::getDuration() const {
   return static_cast<double>(getLength()) / getSampleRate();
 }
 
-float* AudioBuffer::getChannelData(int channel) const {
+float *AudioBuffer::getChannelData(int channel) const {
   return bus_->getChannel(channel)->getData();
 }
 
@@ -34,10 +34,10 @@ void AudioBuffer::copyFromChannel(
     int channelNumber,
     int startInChannel) const {
   memcpy(
-    destination,
-    bus_->getChannel(channelNumber)->getData() + startInChannel,
-    std::min(destinationLength, getLength() - startInChannel) * sizeof(float)
-  );
+      destination,
+      bus_->getChannel(channelNumber)->getData() + startInChannel,
+      std::min(destinationLength, getLength() - startInChannel) *
+          sizeof(float));
 }
 
 void AudioBuffer::copyToChannel(
@@ -46,10 +46,9 @@ void AudioBuffer::copyToChannel(
     int channelNumber,
     int startInChannel) {
   memcpy(
-    bus_->getChannel(channelNumber)->getData() + startInChannel,
-    source,
-    std::min(sourceLength, getLength() - startInChannel) * sizeof(float)
-  );
+      bus_->getChannel(channelNumber)->getData() + startInChannel,
+      source,
+      std::min(sourceLength, getLength() - startInChannel) * sizeof(float));
 }
 
 } // namespace audioapi

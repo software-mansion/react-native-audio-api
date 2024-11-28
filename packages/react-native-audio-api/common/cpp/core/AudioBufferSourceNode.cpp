@@ -1,9 +1,9 @@
 #include <algorithm>
 
-#include "AudioBus.h"
 #include "AudioArray.h"
-#include "BaseAudioContext.h"
 #include "AudioBufferSourceNode.h"
+#include "AudioBus.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
@@ -28,7 +28,6 @@ void AudioBufferSourceNode::setLoop(bool loop) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
-
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     return;
@@ -37,16 +36,20 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer;
 }
 
-// Note: AudioBus copy method will use memcpy if the source buffer and system processing bus have same channel count,
-// otherwise it will use the summing function taking care of up/down mixing.
-void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToProcess) {
+// Note: AudioBus copy method will use memcpy if the source buffer and system
+// processing bus have same channel count, otherwise it will use the summing
+// function taking care of up/down mixing.
+void AudioBufferSourceNode::processNode(
+    AudioBus *processingBus,
+    int framesToProcess) {
   // No audio data to fill, zero the output and return.
   if (!isPlaying() || !buffer_ || buffer_->getLength() == 0) {
     processingBus->zero();
     return;
   }
 
-  // Easiest case, the buffer is the same length as the number of frames to process, just copy the data.
+  // Easiest case, the buffer is the same length as the number of frames to
+  // process, just copy the data.
   if (framesToProcess == buffer_->getLength()) {
     processingBus->copy(buffer_->bus_.get());
 
@@ -65,9 +68,12 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     int framesToCopy = 0;
 
     while (framesToProcess - outputBusIndex > 0) {
-      framesToCopy = std::min(framesToProcess - outputBusIndex, buffer_->getLength() - bufferIndex_);
+      framesToCopy = std::min(
+          framesToProcess - outputBusIndex,
+          buffer_->getLength() - bufferIndex_);
 
-      processingBus->copy(buffer_->bus_.get(), bufferIndex_, outputBusIndex, framesToCopy);
+      processingBus->copy(
+          buffer_->bus_.get(), bufferIndex_, outputBusIndex, framesToCopy);
 
       bufferIndex_ += framesToCopy;
       outputBusIndex += framesToCopy;
@@ -76,12 +82,11 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
         continue;
       }
 
-
       bufferIndex_ %= buffer_->getLength();
 
       if (!loop_) {
-      playbackState_ = PlaybackState::FINISHED;
-      disable();
+        playbackState_ = PlaybackState::FINISHED;
+        disable();
 
         if (framesToProcess - outputBusIndex > 0) {
           processingBus->zero(outputBusIndex, framesToProcess - outputBusIndex);
@@ -94,9 +99,11 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
 
   // processing bus is longer than the source buffer
   if (!loop_) {
-    // If we don't loop the buffer, copy it once and zero the remaining processing bus frames.
+    // If we don't loop the buffer, copy it once and zero the remaining
+    // processing bus frames.
     processingBus->copy(buffer_->bus_.get());
-    processingBus->zero(buffer_->getLength(), framesToProcess - buffer_->getLength());
+    processingBus->zero(
+        buffer_->getLength(), framesToProcess - buffer_->getLength());
 
     playbackState_ = PlaybackState::FINISHED;
     disable();
@@ -104,9 +111,10 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     return;
   }
 
-  // If we loop the buffer, we need to loop the buffer framesToProcess / bufferSize times
-  // There might also be a remainder of frames to copy after the loop,
-  // which will also carry over some buffer frames to the next render quantum.
+  // If we loop the buffer, we need to loop the buffer framesToProcess /
+  // bufferSize times There might also be a remainder of frames to copy after
+  // the loop, which will also carry over some buffer frames to the next render
+  // quantum.
   int processingBusPosition = 0;
   int bufferSize = buffer_->getLength();
   int remainingFrames = framesToProcess - framesToProcess / bufferSize;
@@ -125,9 +133,11 @@ void AudioBufferSourceNode::processNode(AudioBus* processingBus, int framesToPro
     processingBusPosition += bufferSize;
   }
 
-  // Fill in the remaining frames from the processing buffer and update buffer index for next render quantum.
+  // Fill in the remaining frames from the processing buffer and update buffer
+  // index for next render quantum.
   if (remainingFrames > 0) {
-    processingBus->copy(buffer_->bus_.get(), 0, processingBusPosition, remainingFrames);
+    processingBus->copy(
+        buffer_->bus_.get(), 0, processingBusPosition, remainingFrames);
     bufferIndex_ = remainingFrames;
   }
 }

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
 namespace audioapi {
 
@@ -29,8 +29,8 @@ class AudioBus {
   [[nodiscard]] int getNumberOfChannels() const;
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] int getSize() const;
-  AudioArray* getChannel(int index) const;
-  AudioArray* getChannelByType(int channelType) const;
+  AudioArray *getChannel(int index) const;
+  AudioArray *getChannelByType(int channelType) const;
 
   void normalize();
   void scale(float value);
@@ -41,11 +41,19 @@ class AudioBus {
 
   void sum(const AudioBus *source);
   void sum(const AudioBus *source, int start, int length);
-  void sum(const AudioBus *source, int sourceStart, int destinationStart, int length);
+  void sum(
+      const AudioBus *source,
+      int sourceStart,
+      int destinationStart,
+      int length);
 
   void copy(const AudioBus *source);
   void copy(const AudioBus *source, int start, int length);
-  void copy(const AudioBus *source, int sourceStart, int destinationStart, int length);
+  void copy(
+      const AudioBus *source,
+      int sourceStart,
+      int destinationStart,
+      int length);
 
  private:
   std::vector<std::shared_ptr<AudioArray>> channels_;
@@ -55,9 +63,21 @@ class AudioBus {
   int size_;
 
   void createChannels();
-  void discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length) const;
-  void sumByUpMixing(const AudioBus *source, int sourceStart, int destinationStart, int length);
-  void sumByDownMixing(const AudioBus *source, int sourceStart, int destinationStart, int length);
+  void discreteSum(
+      const AudioBus *source,
+      int sourceStart,
+      int destinationStart,
+      int length) const;
+  void sumByUpMixing(
+      const AudioBus *source,
+      int sourceStart,
+      int destinationStart,
+      int length);
+  void sumByDownMixing(
+      const AudioBus *source,
+      int sourceStart,
+      int destinationStart,
+      int length);
 };
 
 } // namespace audioapi

@@ -1,7 +1,7 @@
 
-#include "Locker.h"
-#include "AudioNode.h"
 #include "AudioNodeManager.h"
+#include "AudioNode.h"
+#include "Locker.h"
 
 namespace audioapi {
 
@@ -12,7 +12,10 @@ AudioNodeManager::~AudioNodeManager() {
   sourceNodes_.clear();
 }
 
-void AudioNodeManager::addPendingConnection(const std::shared_ptr<AudioNode> &from, const std::shared_ptr<AudioNode> &to, ConnectionType type) {
+void AudioNodeManager::addPendingConnection(
+    const std::shared_ptr<AudioNode> &from,
+    const std::shared_ptr<AudioNode> &to,
+    ConnectionType type) {
   Locker lock(getGraphLock());
 
   audioNodesToConnect_.push_back(std::make_tuple(from, to, type));
@@ -25,7 +28,7 @@ void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNodeManager::preProcessGraph() {
-    if (!Locker::tryLock(getGraphLock())) {
+  if (!Locker::tryLock(getGraphLock())) {
     return;
   }
 
@@ -33,12 +36,12 @@ void AudioNodeManager::preProcessGraph() {
   removeFinishedSourceNodes();
 }
 
-std::mutex& AudioNodeManager::getGraphLock() {
+std::mutex &AudioNodeManager::getGraphLock() {
   return graphLock_;
 }
 
 void AudioNodeManager::settlePendingConnections() {
-  for (auto& connection : audioNodesToConnect_) {
+  for (auto &connection : audioNodesToConnect_) {
     std::shared_ptr<AudioNode> from = std::get<0>(connection);
     std::shared_ptr<AudioNode> to = std::get<1>(connection);
     ConnectionType type = std::get<2>(connection);
@@ -58,7 +61,7 @@ void AudioNodeManager::removeFinishedSourceNodes() {
     auto currentNode = it->get();
     // Release the source node if use count is equal to 1 (this vector)
     if (!currentNode->isEnabled() && it->use_count() == 1) {
-      for (auto& outputNode : currentNode->outputNodes_) {
+      for (auto &outputNode : currentNode->outputNodes_) {
         currentNode->disconnectNode(outputNode);
       }
 

@@ -1,13 +1,14 @@
 
-#include "AudioBus.h"
-#include "Constants.h"
-#include "AudioArray.h"
 #include "AudioPlayer.h"
+#include "AudioArray.h"
+#include "AudioBus.h"
 #include "AudioContext.h"
+#include "Constants.h"
 
 namespace audioapi {
 
-AudioPlayer::AudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio)
+AudioPlayer::AudioPlayer(
+    const std::function<void(AudioBus *, int)> &renderAudio)
     : renderAudio_(renderAudio) {
   AudioStreamBuilder builder;
 
@@ -20,7 +21,8 @@ AudioPlayer::AudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio)
       ->setDataCallback(this)
       ->openStream(mStream_);
 
-  mBus_ = std::make_shared<AudioBus>(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+  mBus_ = std::make_shared<AudioBus>(
+      getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
 }
 
 int AudioPlayer::getSampleRate() const {
@@ -56,7 +58,8 @@ DataCallbackResult AudioPlayer::onAudioReady(
   // TODO: optimize this with SIMD?
   for (int32_t i = 0; i < numFrames; i += 1) {
     for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
-      buffer[i * CHANNEL_COUNT + channel] = mBus_->getChannel(channel)->getData()[i];
+      buffer[i * CHANNEL_COUNT + channel] =
+          mBus_->getChannel(channel)->getData()[i];
     }
   }
 

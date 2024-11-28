@@ -5,9 +5,9 @@
 #include <string>
 
 #include "AudioParam.h"
-#include "PeriodicWave.h"
-#include "OscillatorType.h"
 #include "AudioScheduledSourceNode.h"
+#include "OscillatorType.h"
+#include "PeriodicWave.h"
 
 namespace audioapi {
 

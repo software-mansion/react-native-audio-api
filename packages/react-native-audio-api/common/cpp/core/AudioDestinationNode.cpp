@@ -1,9 +1,9 @@
+#include "AudioDestinationNode.h"
 #include "AudioBus.h"
 #include "AudioNode.h"
-#include "VectorMath.h"
 #include "AudioNodeManager.h"
 #include "BaseAudioContext.h"
-#include "AudioDestinationNode.h"
+#include "VectorMath.h"
 
 namespace audioapi {
 
@@ -23,7 +23,9 @@ double AudioDestinationNode::getCurrentTime() const {
   return static_cast<double>(currentSampleFrame_) / context_->getSampleRate();
 }
 
-void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
+void AudioDestinationNode::renderAudio(
+    AudioBus *destinationBus,
+    int32_t numFrames) {
   context_->getNodeManager()->preProcessGraph();
   destinationBus->zero();
 
@@ -31,7 +33,7 @@ void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFram
     return;
   }
 
-  AudioBus* processedBus = processAudio(destinationBus, numFrames);
+  AudioBus *processedBus = processAudio(destinationBus, numFrames);
 
   if (processedBus && processedBus != destinationBus) {
     destinationBus->copy(processedBus);

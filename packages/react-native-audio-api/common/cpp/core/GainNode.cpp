@@ -1,6 +1,6 @@
 #include "GainNode.h"
-#include "AudioBus.h"
 #include "AudioArray.h"
+#include "AudioBus.h"
 #include "BaseAudioContext.h"
 
 namespace audioapi {

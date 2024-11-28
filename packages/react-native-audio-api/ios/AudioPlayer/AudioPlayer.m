@@ -70,7 +70,6 @@
   [self.audioEngine attachNode:self.sourceNode];
   [self.audioEngine connect:self.sourceNode to:self.audioEngine.mainMixerNode format:self.format];
 
-
   if (!self.audioEngine.isRunning) {
     NSError *error = nil;
     if (![self.audioEngine startAndReturnError:&error]) {

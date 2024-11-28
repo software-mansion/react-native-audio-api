@@ -6,17 +6,17 @@
 
 #include "BaseAudioContext.h"
 
-#include "GainNode.h"
-#include "AudioBus.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
+#include "AudioBufferSourceNode.h"
+#include "AudioBus.h"
+#include "AudioDestinationNode.h"
+#include "AudioNodeManager.h"
+#include "BiquadFilterNode.h"
 #include "ContextState.h"
+#include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "BiquadFilterNode.h"
-#include "AudioNodeManager.h"
-#include "AudioDestinationNode.h"
-#include "AudioBufferSourceNode.h"
 
 namespace audioapi {
 
@@ -95,26 +95,29 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(const uint8_t *audioData, size_t size) {
-    ma_decoder decoder;
-    auto config = ma_decoder_config_init(ma_format_f32, 1, sampleRate_);
-    if(ma_decoder_init_memory(audioData, size, &config, &decoder) != MA_SUCCESS) {
-        throw std::runtime_error("Failed to initialize decoder");
-    }
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
+    const uint8_t *audioData,
+    size_t size) {
+  ma_decoder decoder;
+  auto config = ma_decoder_config_init(ma_format_f32, 1, sampleRate_);
+  if (ma_decoder_init_memory(audioData, size, &config, &decoder) !=
+      MA_SUCCESS) {
+    throw std::runtime_error("Failed to initialize decoder");
+  }
 
-    ma_uint64 framesToRead = ma_decoder_get_length_in_pcm_frames(&decoder,
-                                                                            reinterpret_cast<ma_uint64 *>(size));
-    ma_uint64 framesRead;
+  ma_uint64 framesToRead = ma_decoder_get_length_in_pcm_frames(
+      &decoder, reinterpret_cast<ma_uint64 *>(size));
+  ma_uint64 framesRead;
 
+  auto buffer = std::make_shared<AudioBuffer>(
+      1, static_cast<int>(framesToRead), sampleRate_);
+  auto data = buffer->getChannelData(0);
 
-    auto buffer = std::make_shared<AudioBuffer>(1, static_cast<int>(framesToRead), sampleRate_);
-    auto data = buffer->getChannelData(0);
+  ma_decoder_read_pcm_frames(&decoder, data, framesToRead, &framesRead);
 
-    ma_decoder_read_pcm_frames(&decoder, data, framesToRead, &framesRead);
+  ma_decoder_uninit(&decoder);
 
-    ma_decoder_uninit(&decoder);
-
-    return buffer;
+  return buffer;
 }
 
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
@@ -122,12 +125,12 @@ std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
     return [](AudioBus *, int) {};
   }
 
-  return [this](AudioBus* data, int frames) {
+  return [this](AudioBus *data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }
 
-AudioNodeManager* BaseAudioContext::getNodeManager() {
+AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
 }
 
@@ -144,7 +147,8 @@ std::string BaseAudioContext::toString(ContextState state) {
   }
 }
 
-std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
+std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(
+    OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
@@ -171,7 +175,8 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType 
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:
-      throw std::invalid_argument("You can't get a custom wave form. You need to create it.");
+      throw std::invalid_argument(
+          "You can't get a custom wave form. You need to create it.");
       break;
   }
 }

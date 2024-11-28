@@ -20,15 +20,15 @@ int AudioArray::getSize() const {
   return size_;
 }
 
-float* AudioArray::getData() const {
+float *AudioArray::getData() const {
   return data_;
 }
 
-float& AudioArray::operator[](int index) {
+float &AudioArray::operator[](int index) {
   return data_[index];
 }
 
-const float& AudioArray::operator[](int index) const {
+const float &AudioArray::operator[](int index) const {
   return data_[index];
 }
 
@@ -75,29 +75,43 @@ void AudioArray::zero(int start, int length) {
   memset(data_ + start, 0, length * sizeof(float));
 }
 
-void AudioArray::sum(const AudioArray* source) {
+void AudioArray::sum(const AudioArray *source) {
   sum(source, 0, 0, size_);
 }
 
-void AudioArray::sum(const AudioArray* source, int start, int length) {
+void AudioArray::sum(const AudioArray *source, int start, int length) {
   sum(source, start, start, length);
 }
 
-void AudioArray::sum(const AudioArray* source, int sourceStart, int destinationStart, int length) {
-  VectorMath::add(data_ + destinationStart, source->getData() + sourceStart, data_ + destinationStart, length);
+void AudioArray::sum(
+    const AudioArray *source,
+    int sourceStart,
+    int destinationStart,
+    int length) {
+  VectorMath::add(
+      data_ + destinationStart,
+      source->getData() + sourceStart,
+      data_ + destinationStart,
+      length);
 }
 
-void AudioArray::copy(const AudioArray* source) {
+void AudioArray::copy(const AudioArray *source) {
   copy(source, 0, size_);
 }
 
-void AudioArray::copy(const AudioArray* source, int start, int length) {
+void AudioArray::copy(const AudioArray *source, int start, int length) {
   copy(source, start, start, length);
 }
 
-void AudioArray::copy(const AudioArray* source, int sourceStart, int destinationStart, int length) {
-  memcpy(data_ + destinationStart, source->getData() + sourceStart, length * sizeof(float));
+void AudioArray::copy(
+    const AudioArray *source,
+    int sourceStart,
+    int destinationStart,
+    int length) {
+  memcpy(
+      data_ + destinationStart,
+      source->getData() + sourceStart,
+      length * sizeof(float));
 }
 
 } // namespace audioapi
-

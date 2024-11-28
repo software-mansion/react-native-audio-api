@@ -1,10 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 #include <utility>
-#include <functional>
+#include <vector>
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -46,17 +46,20 @@ class BaseAudioContext {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  static std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
+  static std::shared_ptr<AudioBuffer>
+  createBuffer(int numberOfChannels, int length, int sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       float *real,
       float *imag,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AudioBuffer> decodeAudioData(const uint8_t *audioData, size_t size);
+  std::shared_ptr<AudioBuffer> decodeAudioData(
+      const uint8_t *audioData,
+      size_t size);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  AudioNodeManager* getNodeManager();
-    std::function<void(AudioBus *, int)> renderAudio();
+  AudioNodeManager *getNodeManager();
+  std::function<void(AudioBus *, int)> renderAudio();
 
  protected:
   static std::string toString(ContextState state);

@@ -1,15 +1,16 @@
 #import <AVFoundation/AVFoundation.h>
 
+#include <AudioArray.h>
 #include <AudioBus.h>
 #include <Constants.h>
-#include <AudioArray.h>
 #include <IOSAudioPlayer.h>
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio) : renderAudio_(renderAudio), audioBus_(0)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio)
+    : renderAudio_(renderAudio), audioBus_(0)
 {
-  RenderAudioBlock renderAudioBlock = ^(AudioBufferList* outputData, int numFrames) {
+  RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     renderAudio_(audioBus_, numFrames);
 
     for (int i = 0; i < outputData->mNumberBuffers; i += 1) {
