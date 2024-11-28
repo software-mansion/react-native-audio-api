@@ -4,12 +4,14 @@ import Piano from './Piano';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
+import AudioFile from './AudioFile';
 
 type NavigationParamList = {
   Oscillator: undefined;
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
+  AudioFile: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -46,5 +48,11 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
+  },
+  {
+    key: 'AudioFile',
+    title: 'Audio File',
+    subtitle: 'Play an audio file',
+    screen: AudioFile,
   },
 ] as const;
