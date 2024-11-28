@@ -198,6 +198,35 @@ jsi::Value BaseAudioContextHostObject::get(
           return jsi::Object::createFromHostObject(
               runtime, periodicWaveHostObject);
         });
+
+      if (propName == "decodeAudioData") {
+          return jsi::Function::createFromHostFunction(
+                  runtime,
+                  propNameId,
+                  1,
+                  [this](
+                          jsi::Runtime &runtime,
+                          const jsi::Value &thisValue,
+                          const jsi::Value *arguments,
+                          size_t count) -> jsi::Value {
+                      auto data = arguments[0].getObject(runtime).getArray(runtime);
+                      auto length =
+                              static_cast<int>(data.getProperty(runtime, "length").asNumber());
+
+                      auto audioData = new uint8_t[length];
+
+                      for (size_t i = 0; i < length; i++) {
+                          audioData[i] = static_cast<uint8_t>(
+                                  data.getValueAtIndex(runtime, i).getNumber());
+                      }
+
+                      auto buffer = wrapper_->decodeAudioData(audioData, length);
+                      auto audioBufferHostObject =
+                              AudioBufferHostObject::createFromWrapper(buffer);
+                      return jsi::Object::createFromHostObject(
+                              runtime, audioBufferHostObject);
+                  });
+      }
   }
 
   throw std::runtime_error("Not yet implemented!");

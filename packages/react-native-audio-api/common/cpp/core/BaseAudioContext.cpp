@@ -95,6 +95,28 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(const uint8_t *audioData, size_t size) {
+    ma_decoder decoder;
+    auto config = ma_decoder_config_init(ma_format_f32, 1, sampleRate_);
+    if(ma_decoder_init_memory(audioData, size, &config, &decoder) != MA_SUCCESS) {
+        throw std::runtime_error("Failed to initialize decoder");
+    }
+
+    ma_uint64 framesToRead = ma_decoder_get_length_in_pcm_frames(&decoder,
+                                                                            reinterpret_cast<ma_uint64 *>(size));
+    ma_uint64 framesRead;
+
+
+    auto buffer = std::make_shared<AudioBuffer>(1, static_cast<int>(framesToRead), sampleRate_);
+    auto data = buffer->getChannelData(0);
+
+    ma_decoder_read_pcm_frames(&decoder, data, framesToRead, &framesRead);
+
+    ma_decoder_uninit(&decoder);
+
+    return buffer;
+}
+
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
   if (state_ == ContextState::CLOSED) {
     return [](AudioBus *, int) {};

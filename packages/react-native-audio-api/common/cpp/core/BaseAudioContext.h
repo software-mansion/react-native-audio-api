@@ -6,6 +6,9 @@
 #include <utility>
 #include <functional>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 #include "ContextState.h"
 #include "OscillatorType.h"
 
@@ -49,11 +52,11 @@ class BaseAudioContext {
       float *imag,
       bool disableNormalization,
       int length);
+  std::shared_ptr<AudioBuffer> decodeAudioData(const uint8_t *audioData, size_t size);
+
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-
-  std::function<void(AudioBus *, int)> renderAudio();
-
   AudioNodeManager* getNodeManager();
+    std::function<void(AudioBus *, int)> renderAudio();
 
  protected:
   static std::string toString(ContextState state);
