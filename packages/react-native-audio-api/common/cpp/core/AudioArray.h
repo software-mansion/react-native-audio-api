@@ -11,7 +11,7 @@ class AudioArray {
   ~AudioArray();
 
   [[nodiscard]] int getSize() const;
-  float* getData() const;
+  [[nodiscard]] float* getData() const;
 
 
   float& operator[](int index);
@@ -20,7 +20,7 @@ class AudioArray {
   void normalize();
   void resize(int size);
   void scale(float value);
-  float getMaxAbsValue() const;
+  [[nodiscard]] float getMaxAbsValue() const;
 
   void zero();
   void zero(int start, int length);

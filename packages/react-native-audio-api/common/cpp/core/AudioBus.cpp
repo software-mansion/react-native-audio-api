@@ -17,12 +17,12 @@ namespace audioapi {
  * Public interfaces - memory management
  */
 AudioBus::AudioBus(int sampleRate, int size)
-    : sampleRate_(sampleRate), size_(size), numberOfChannels_(CHANNEL_COUNT) {
+    : numberOfChannels_(CHANNEL_COUNT), sampleRate_(sampleRate), size_(size) {
   createChannels();
 }
 
 AudioBus::AudioBus(int sampleRate, int size, int numberOfChannels)
-    : sampleRate_(sampleRate), size_(size), numberOfChannels_(numberOfChannels) {
+    : numberOfChannels_(numberOfChannels), sampleRate_(sampleRate), size_(size) {
   createChannels();
 }
 
@@ -56,13 +56,13 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
       if (channelType == ChannelMono || channelType == ChannelLeft) {
         return getChannel(0);
       }
-      return 0;
+      return nullptr;
 
     case 2: // stereo
       switch (channelType) {
         case ChannelLeft: return getChannel(0);
         case ChannelRight: return getChannel(1);
-        default: return 0;
+        default: return nullptr;
       }
 
     case 4: // quad
@@ -71,7 +71,7 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
         case ChannelRight: return getChannel(1);
         case ChannelSurroundLeft: return getChannel(2);
         case ChannelSurroundRight: return getChannel(3);
-        default: return 0;
+        default: return nullptr;
       }
 
     case 5: // 5.0
@@ -81,7 +81,7 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
         case ChannelCenter: return getChannel(2);
         case ChannelSurroundLeft: return getChannel(3);
         case ChannelSurroundRight: return getChannel(4);
-        default: return 0;
+        default: return nullptr;
       }
 
     case 6: // 5.1
@@ -92,10 +92,10 @@ AudioArray* AudioBus::getChannelByType(int channelType) const {
         case ChannelLFE: return getChannel(3);
         case ChannelSurroundLeft: return getChannel(4);
         case ChannelSurroundRight: return getChannel(5);
-        default: return 0;
+        default: return nullptr;
       }
     default:
-      return 0;
+      return nullptr;
   }
 }
 
@@ -125,16 +125,16 @@ void AudioBus::normalize() {
 }
 
 void AudioBus::scale(float value) {
-  for (auto it = channels_.begin(); it != channels_.end(); ++it) {
-    it->get()->scale(value);
+  for (auto & channel : channels_) {
+    channel->scale(value);
   }
 }
 
 float AudioBus::maxAbsValue() const {
   float maxAbsValue = 1.0f;
 
-  for (auto it = channels_.begin(); it != channels_.end(); ++it) {
-    float channelMaxAbsValue = it->get()->getMaxAbsValue();
+  for (const auto & channel : channels_) {
+    float channelMaxAbsValue = channel->getMaxAbsValue();
     maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
   }
 
@@ -218,7 +218,7 @@ void AudioBus::createChannels() {
  * Internal tooling - channel summing
  */
 
-void AudioBus::discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length) {
+void AudioBus::discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length) const {
   int numberOfChannels = std::min(getNumberOfChannels(), source->getNumberOfChannels());
 
   // In case of source > destination, we "down-mix" and drop the extra channels.

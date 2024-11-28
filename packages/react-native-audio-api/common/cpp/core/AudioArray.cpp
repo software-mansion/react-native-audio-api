@@ -5,14 +5,14 @@
 
 namespace audioapi {
 
-AudioArray::AudioArray(int size) : size_(size), data_(0) {
+AudioArray::AudioArray(int size) : data_(nullptr), size_(size) {
   resize(size);
 }
 
 AudioArray::~AudioArray() {
   if (data_) {
     delete[] data_;
-    data_ = 0;
+    data_ = nullptr;
   }
 }
 

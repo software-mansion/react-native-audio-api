@@ -55,7 +55,7 @@ class AudioBus {
   int size_;
 
   void createChannels();
-  void discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length);
+  void discreteSum(const AudioBus *source, int sourceStart, int destinationStart, int length) const;
   void sumByUpMixing(const AudioBus *source, int sourceStart, int destinationStart, int length);
   void sumByDownMixing(const AudioBus *source, int sourceStart, int destinationStart, int length);
 };
