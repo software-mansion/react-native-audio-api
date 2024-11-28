@@ -4400,6 +4400,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base-64@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "base-64@npm:0.1.0"
+  checksum: 10/5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
+  languageName: node
+  linkType: hard
+
 "base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
@@ -4883,6 +4890,7 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-native: "npm:0.76.0"
     react-native-audio-api: "workspace:*"
+    react-native-fs: "npm:^2.20.0"
     react-native-gesture-handler: "npm:^2.20.2"
     react-native-reanimated: "npm:^3.16.1"
     react-native-safe-area-context: "npm:^4.12.0"
@@ -4897,6 +4905,7 @@ __metadata:
     react-dom: "*"
     react-native: "*"
     react-native-audio-api: "*"
+    react-native-fs: "*"
     react-native-gesture-handler: "*"
     react-native-reanimated: "*"
     react-native-safe-area-context: "*"
@@ -6150,6 +6159,7 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-native: "npm:0.76.0"
     react-native-audio-api: "workspace:*"
+    react-native-fs: "npm:^2.20.0"
     react-native-gesture-handler: "npm:^2.20.2"
     react-native-reanimated: "npm:^3.16.1"
     react-native-safe-area-context: "npm:^4.12.0"
@@ -10219,6 +10229,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-fs@npm:^2.20.0":
+  version: 2.20.0
+  resolution: "react-native-fs@npm:2.20.0"
+  dependencies:
+    base-64: "npm:^0.1.0"
+    utf8: "npm:^3.0.0"
+  peerDependencies:
+    react-native: "*"
+    react-native-windows: "*"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: 10/372e59f55d5e544e87093d832896fa3d56ba9802ca140c17b4b8903afe047714e022d3b1a2ddf18d744cb7f4f973593c8083641db9ae0768688b1390078d67a2
+  languageName: node
+  linkType: hard
+
 "react-native-gesture-handler@npm:^2.20.2":
   version: 2.21.1
   resolution: "react-native-gesture-handler@npm:2.21.1"
@@ -12132,6 +12158,13 @@ __metadata:
   peerDependencies:
     react: ">=16.8"
   checksum: 10/5db2dc0d414508c768ba4d1a337bd73dd0fb2a77eccc9dd7051517b28cd71c849c5e9230b5c97fc76a3811c1500f210cb4e4ebb95fe20347e5f910509a8e533c
+  languageName: node
+  linkType: hard
+
+"utf8@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "utf8@npm:3.0.0"
+  checksum: 10/31d19c4faacbb65b09ebc1c21c32b20bdb0919c6f6773cee5001b99bb83f8e503e7233c08fc71ebb34f7cfebd95cec3243b81d90176097aa2f286cccb4ce866e
   languageName: node
   linkType: hard
 
