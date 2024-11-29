@@ -1,6 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import Piano from './Piano';
+import OpenAI from './OpenAI';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
@@ -10,6 +11,7 @@ type NavigationParamList = {
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
+  OpenAI: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -46,5 +48,11 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
+  },
+  {
+    key: 'OpenAI',
+    title: 'OpenAI',
+    subtitle: 'Test OpenAI',
+    screen: OpenAI,
   },
 ] as const;

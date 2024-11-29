@@ -83,3 +83,6 @@ react-native-audio-api*.tgz
 # Android
 .kotlin
 
+
+# Envs
+.env
