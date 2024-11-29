@@ -24,12 +24,12 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
-  context_->getNodeManager()->preProcessGraph();
-  destinationBus->zero();
-
-  if (!numFrames) {
+  if (!numFrames || !destinationBus || !isInitialized_) {
     return;
   }
+
+  context_->getNodeManager()->preProcessGraph();
+  destinationBus->zero();
 
   AudioBus* processedBus = processAudio(destinationBus, numFrames);
 

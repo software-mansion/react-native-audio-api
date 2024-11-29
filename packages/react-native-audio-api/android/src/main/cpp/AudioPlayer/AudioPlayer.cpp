@@ -21,6 +21,7 @@ AudioPlayer::AudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio)
       ->openStream(mStream_);
 
   mBus_ = std::make_shared<AudioBus>(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+  isInitialized_ = true;
 }
 
 int AudioPlayer::getSampleRate() const {
@@ -38,6 +39,8 @@ void AudioPlayer::start() {
 }
 
 void AudioPlayer::stop() {
+  isInitialized_ = false;
+
   if (mStream_) {
     mStream_->requestStop();
     mStream_->close();
@@ -49,8 +52,11 @@ DataCallbackResult AudioPlayer::onAudioReady(
     AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
-  auto buffer = static_cast<float *>(audioData);
+  if (!isInitialized_) {
+    return DataCallbackResult::Continue;
+  }
 
+  auto buffer = static_cast<float *>(audioData);
   renderAudio_(mBus_.get(), numFrames);
 
   // TODO: optimize this with SIMD?

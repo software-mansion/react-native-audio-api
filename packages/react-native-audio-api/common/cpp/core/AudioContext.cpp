@@ -9,16 +9,13 @@
 
 namespace audioapi {
 
-AudioContext::AudioContext() : BaseAudioContext() {}
+AudioContext::AudioContext() : BaseAudioContext() {
+  audioPlayer_->start();
+}
 
 void AudioContext::close() {
   state_ = ContextState::CLOSED;
-
-  if (audioPlayer_) {
-    audioPlayer_->stop();
-  }
-
-  audioPlayer_.reset();
-  destination_.reset();
+  audioPlayer_->stop();
 }
+
 } // namespace audioapi
