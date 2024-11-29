@@ -8,6 +8,10 @@ AudioBuffer::AudioBuffer(int numberOfChannels, int length, int sampleRate) {
   bus_ = std::make_shared<AudioBus>(sampleRate, length, numberOfChannels);
 }
 
+AudioBuffer::AudioBuffer(AudioBus *bus) {
+  bus_ = std::shared_ptr<AudioBus>(bus);
+}
+
 int AudioBuffer::getLength() const {
   return bus_->getSize();
 }

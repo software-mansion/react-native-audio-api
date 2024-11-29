@@ -2,6 +2,7 @@
 #include "AudioPlayer.h"
 #else
 #include "IOSAudioPlayer.h"
+#include "IOSAudioDecoder.h"
 #endif
 
 #include "BaseAudioContext.h"
@@ -25,6 +26,7 @@ BaseAudioContext::BaseAudioContext() {
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
+    audioDecoder_ = std::make_shared<IOSAudioDecoder>(audioPlayer_->getSampleRate());
 #endif
 
   sampleRate_ = audioPlayer_->getSampleRate();
@@ -95,30 +97,16 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
-    const uint8_t *audioData,
-    size_t size) {
-  ma_decoder decoder;
-  auto config = ma_decoder_config_init(ma_format_f32, 1, sampleRate_);
-  if (ma_decoder_init_memory(audioData, size, &config, &decoder) !=
-      MA_SUCCESS) {
-    throw std::runtime_error("Failed to initialize decoder");
-  }
-
-  ma_uint64 framesToRead = ma_decoder_get_length_in_pcm_frames(
-      &decoder, reinterpret_cast<ma_uint64 *>(size));
-  ma_uint64 framesRead;
-
-  auto buffer = std::make_shared<AudioBuffer>(
-      1, static_cast<int>(framesToRead), sampleRate_);
-  auto data = buffer->getChannelData(0);
-
-  ma_decoder_read_pcm_frames(&decoder, data, framesToRead, &framesRead);
-
-  ma_decoder_uninit(&decoder);
-
-  return buffer;
+#ifdef ANDROID
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(std::string source) {
+  return {nullptr};
 }
+#else
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(std::string source) {
+    auto audioBus = audioDecoder_->decodeWithFilePath(source);
+    return std::make_shared<AudioBuffer>(audioBus);
+}
+#endif
 
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
   if (state_ == ContextState::CLOSED) {

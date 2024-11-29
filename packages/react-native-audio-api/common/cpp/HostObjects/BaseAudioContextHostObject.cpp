@@ -30,6 +30,7 @@ std::vector<jsi::PropNameID> BaseAudioContextHostObject::getPropertyNames(
   propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBuffer"));
   propertyNames.push_back(
       jsi::PropNameID::forUtf8(runtime, "createPeriodicWave"));
+  propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "decodeAudioDataSource"));
   return propertyNames;
 }
 
@@ -164,42 +165,44 @@ jsi::Value BaseAudioContextHostObject::get(
   }
 
   if (propName == "createPeriodicWave") {
-    return jsi::Function::createFromHostFunction(
-        runtime,
-        propNameId,
-        3,
-        [this](
-            jsi::Runtime &runtime,
-            const jsi::Value &thisValue,
-            const jsi::Value *arguments,
-            size_t count) -> jsi::Value {
-          auto real = arguments[0].getObject(runtime).getArray(runtime);
-          auto imag = arguments[1].getObject(runtime).getArray(runtime);
-          auto disableNormalization = arguments[2].getBool();
-          auto length =
-              static_cast<int>(real.getProperty(runtime, "length").asNumber());
+      return jsi::Function::createFromHostFunction(
+              runtime,
+              propNameId,
+              3,
+              [this](
+                      jsi::Runtime &runtime,
+                      const jsi::Value &thisValue,
+                      const jsi::Value *arguments,
+                      size_t count) -> jsi::Value {
+                  auto real = arguments[0].getObject(runtime).getArray(runtime);
+                  auto imag = arguments[1].getObject(runtime).getArray(runtime);
+                  auto disableNormalization = arguments[2].getBool();
+                  auto length =
+                          static_cast<int>(real.getProperty(runtime, "length").asNumber());
 
-          auto *realData = new float[length];
-          auto *imagData = new float[length];
+                  auto *realData = new float[length];
+                  auto *imagData = new float[length];
 
-          for (size_t i = 0; i < real.length(runtime); i++) {
-            realData[i] = static_cast<float>(
-                real.getValueAtIndex(runtime, i).getNumber());
-          }
-          for (size_t i = 0; i < imag.length(runtime); i++) {
-            realData[i] = static_cast<float>(
-                imag.getValueAtIndex(runtime, i).getNumber());
-          }
+                  for (size_t i = 0; i < real.length(runtime); i++) {
+                      realData[i] = static_cast<float>(
+                              real.getValueAtIndex(runtime, i).getNumber());
+                  }
+                  for (size_t i = 0; i < imag.length(runtime); i++) {
+                      realData[i] = static_cast<float>(
+                              imag.getValueAtIndex(runtime, i).getNumber());
+                  }
 
-          auto periodicWave = wrapper_->createPeriodicWave(
-              realData, imagData, disableNormalization, length);
-          auto periodicWaveHostObject =
-              PeriodicWaveHostObject::createFromWrapper(periodicWave);
-          return jsi::Object::createFromHostObject(
-              runtime, periodicWaveHostObject);
-        });
+                  auto periodicWave = wrapper_->createPeriodicWave(
+                          realData, imagData, disableNormalization, length);
+                  auto periodicWaveHostObject =
+                          PeriodicWaveHostObject::createFromWrapper(periodicWave);
+                  return jsi::Object::createFromHostObject(
+                          runtime, periodicWaveHostObject);
+              });
+  }
 
-    if (propName == "decodeAudioData") {
+
+    if (propName == "decodeAudioDataSource") {
       return jsi::Function::createFromHostFunction(
           runtime,
           propNameId,
@@ -209,25 +212,14 @@ jsi::Value BaseAudioContextHostObject::get(
               const jsi::Value &thisValue,
               const jsi::Value *arguments,
               size_t count) -> jsi::Value {
-            auto data = arguments[0].getObject(runtime).getArray(runtime);
-            auto length = static_cast<int>(
-                data.getProperty(runtime, "length").asNumber());
-
-            auto audioData = new uint8_t[length];
-
-            for (size_t i = 0; i < length; i++) {
-              audioData[i] = static_cast<uint8_t>(
-                  data.getValueAtIndex(runtime, i).getNumber());
-            }
-
-            auto buffer = wrapper_->decodeAudioData(audioData, length);
+            std::string source = arguments[0].getString(runtime).utf8(runtime);
+            auto buffer = wrapper_->decodeAudioDataSource(source);
             auto audioBufferHostObject =
                 AudioBufferHostObject::createFromWrapper(buffer);
             return jsi::Object::createFromHostObject(
                 runtime, audioBufferHostObject);
           });
     }
-  }
 
   throw std::runtime_error("Not yet implemented!");
 }

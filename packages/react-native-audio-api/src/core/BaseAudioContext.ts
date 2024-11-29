@@ -94,4 +94,8 @@ export default class BaseAudioContext {
       this.context.createPeriodicWave(real, imag, disableNormalization)
     );
   }
+
+  decodeAudioDataSource(source: string): AudioBuffer {
+    return new AudioBuffer(this.context.decodeAudioDataSource(source));
+  }
 }

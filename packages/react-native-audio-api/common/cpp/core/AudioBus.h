@@ -29,12 +29,12 @@ class AudioBus {
   [[nodiscard]] int getNumberOfChannels() const;
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] int getSize() const;
-  AudioArray *getChannel(int index) const;
-  AudioArray *getChannelByType(int channelType) const;
+  [[nodiscard]] AudioArray *getChannel(int index) const;
+  [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
   void normalize();
   void scale(float value);
-  float maxAbsValue() const;
+  [[nodiscard]] float maxAbsValue() const;
 
   void zero();
   void zero(int start, int length);
