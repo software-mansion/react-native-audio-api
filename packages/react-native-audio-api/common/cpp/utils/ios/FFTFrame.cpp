@@ -11,7 +11,12 @@ void FFTFrame::inverse(float *timeDomainData) {
   freqDomainData.imagp = imaginaryData_;
 
   vDSP_fft_zrip(fftSetup_, &freqDomainData, 1, log2Size_, FFT_INVERSE);
-  vDSP_ztoc(&freqDomainData, 1, reinterpret_cast<DSPComplex *>(timeDomainData), 2, size_ / 2);
+  vDSP_ztoc(
+      &freqDomainData,
+      1,
+      reinterpret_cast<DSPComplex *>(timeDomainData),
+      2,
+      size_ / 2);
 
   // Scale the FFT data, beacuse of
   // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892

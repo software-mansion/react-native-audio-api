@@ -38,7 +38,11 @@ namespace audioapi {
 
 class FFTFrame {
  public:
-  explicit FFTFrame(int size): size_(size), log2Size_(static_cast<int>(log2(size))), realData_(new float[size]), imaginaryData_(new float[size]) {}
+  explicit FFTFrame(int size)
+      : size_(size),
+        log2Size_(static_cast<int>(log2(size))),
+        realData_(new float[size]),
+        imaginaryData_(new float[size]) {}
   ~FFTFrame() {
     delete[] realData_;
     delete[] imaginaryData_;

@@ -13,9 +13,8 @@
 
 - (const AudioBufferList *)decodeWithFilePath:(NSString *)path;
 
-- (void)convertFromFormat:(AVAudioFormat*)format;
+- (void)convertFromFormat:(AVAudioFormat *)format;
 
 - (void)cleanup;
 
 @end
-
