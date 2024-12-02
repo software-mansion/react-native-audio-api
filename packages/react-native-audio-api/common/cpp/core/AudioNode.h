@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "Constants.h"
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
+#include "Constants.h"
 
 namespace audioapi {
 
@@ -45,13 +45,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   bool isInitialized_ = false;
   bool isEnabled_ = true;
 
-  std::size_t lastRenderedFrame_ { SIZE_MAX };
+  std::size_t lastRenderedFrame_{SIZE_MAX};
 
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
       ChannelInterpretation::SPEAKERS;
 
-  std::vector<AudioNode*> inputNodes_ = {};
+  std::vector<AudioNode *> inputNodes_ = {};
   std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
  private:
@@ -59,8 +59,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelInterpretation interpretation);
 
   void cleanup();
-  AudioBus* processAudio(AudioBus* outputBus, int framesToProcess);
-  virtual void processNode(AudioBus* processingBus, int framesToProcess) = 0;
+  AudioBus *processAudio(AudioBus *outputBus, int framesToProcess);
+  virtual void processNode(AudioBus *processingBus, int framesToProcess) = 0;
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
   void disconnectNode(const std::shared_ptr<AudioNode> &node);

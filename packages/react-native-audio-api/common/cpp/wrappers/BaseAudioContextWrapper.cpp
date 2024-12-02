@@ -73,4 +73,10 @@ BaseAudioContextWrapper::createPeriodicWave(
       context_->createPeriodicWave(real, imag, disableNormalization, length);
   return std::make_shared<PeriodicWaveWrapper>(periodicWave);
 }
+
+std::shared_ptr<AudioBufferWrapper>
+BaseAudioContextWrapper::decodeAudioDataSource(const std::string &source) {
+  return std::make_shared<AudioBufferWrapper>(
+      context_->decodeAudioDataSource(source));
+}
 } // namespace audioapi

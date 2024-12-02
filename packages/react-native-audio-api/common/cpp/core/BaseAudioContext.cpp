@@ -1,22 +1,23 @@
 #ifdef ANDROID
 #include "AudioPlayer.h"
 #else
+#include "IOSAudioDecoder.h"
 #include "IOSAudioPlayer.h"
 #endif
 
 #include "BaseAudioContext.h"
 
-#include "GainNode.h"
-#include "AudioBus.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
+#include "AudioBufferSourceNode.h"
+#include "AudioBus.h"
+#include "AudioDestinationNode.h"
+#include "AudioNodeManager.h"
+#include "BiquadFilterNode.h"
 #include "ContextState.h"
+#include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
-#include "BiquadFilterNode.h"
-#include "AudioNodeManager.h"
-#include "AudioDestinationNode.h"
-#include "AudioBufferSourceNode.h"
 
 namespace audioapi {
 
@@ -25,6 +26,8 @@ BaseAudioContext::BaseAudioContext() {
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
+  audioDecoder_ =
+      std::make_shared<IOSAudioDecoder>(audioPlayer_->getSampleRate());
 #endif
 
   sampleRate_ = audioPlayer_->getSampleRate();
@@ -103,17 +106,30 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
+#ifdef ANDROID
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
+    const std::string &source) {
+  return {nullptr};
+}
+#else
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
+    const std::string &source) {
+  auto audioBus = audioDecoder_->decodeWithFilePath(source);
+  return std::make_shared<AudioBuffer>(audioBus);
+}
+#endif
+
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
   if (isClosed()) {
     return [](AudioBus *, int) {};
   }
 
-  return [this](AudioBus* data, int frames) {
+  return [this](AudioBus *data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }
 
-AudioNodeManager* BaseAudioContext::getNodeManager() {
+AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
 }
 
@@ -138,7 +154,8 @@ std::string BaseAudioContext::toString(ContextState state) {
   }
 }
 
-std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
+std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(
+    OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
@@ -165,7 +182,8 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType 
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:
-      throw std::invalid_argument("You can't get a custom wave form. You need to create it.");
+      throw std::invalid_argument(
+          "You can't get a custom wave form. You need to create it.");
       break;
   }
 }

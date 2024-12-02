@@ -115,8 +115,20 @@ float maximumMagnitude(
   return maximumValue;
 }
 
-void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess) {
-    vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
+void multiplyByScalarThenAddToOutput(
+    const float *inputVector,
+    float scalar,
+    float *outputVector,
+    size_t numberOfElementsToProcess) {
+  vDSP_vsma(
+      inputVector,
+      1,
+      &scalar,
+      outputVector,
+      1,
+      outputVector,
+      1,
+      numberOfElementsToProcess);
 }
 
 #else
@@ -609,69 +621,73 @@ float maximumMagnitude(
   return max;
 }
 
-void multiplyByScalarThenAddToOutput(const float* inputVector, float scalar, float* outputVector, size_t numberOfElementsToProcess) {
-    size_t n = numberOfElementsToProcess;
+void multiplyByScalarThenAddToOutput(
+    const float *inputVector,
+    float scalar,
+    float *outputVector,
+    size_t numberOfElementsToProcess) {
+  size_t n = numberOfElementsToProcess;
 
 #if HAVE_X86_SSE2
-    // If the inputVector address is not 16-byte aligned, the first several frames (at most three) should be processed separately.
-    while (!is16ByteAligned(inputVector) && n) {
-        *outputVector += scalar * *inputVector;
-        inputVector++;
-        outputVector++;
-        n--;
-    }
+  // If the inputVector address is not 16-byte aligned, the first several frames
+  // (at most three) should be processed separately.
+  while (!is16ByteAligned(inputVector) && n) {
+    *outputVector += scalar * *inputVector;
+    inputVector++;
+    outputVector++;
+    n--;
+  }
 
-    // Now the inputVector is aligned, use SSE.
-    size_t tailFrames = n % 4;
-    const float* endP = outputVector + n - tailFrames;
+  // Now the inputVector is aligned, use SSE.
+  size_t tailFrames = n % 4;
+  const float *endP = outputVector + n - tailFrames;
 
-    __m128 pSource;
-    __m128 dest;
-    __m128 temp;
-    __m128 mScale = _mm_set_ps1(scalar);
+  __m128 pSource;
+  __m128 dest;
+  __m128 temp;
+  __m128 mScale = _mm_set_ps1(scalar);
 
-    bool destAligned = is16ByteAligned(outputVector);
+  bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT_ADD(loadInstr, storeInstr)       \
-    while (outputVector < endP)                    \
-    {                                              \
-        pSource = _mm_load_ps(inputVector);        \
-        temp = _mm_mul_ps(pSource, mScale);        \
-        dest = _mm_##loadInstr##_ps(outputVector); \
-        dest = _mm_add_ps(dest, temp);             \
-        _mm_##storeInstr##_ps(outputVector, dest); \
-        inputVector += 4;                          \
-        outputVector += 4;                         \
-    }
+#define SSE2_MULT_ADD(loadInstr, storeInstr)   \
+  while (outputVector < endP) {                \
+    pSource = _mm_load_ps(inputVector);        \
+    temp = _mm_mul_ps(pSource, mScale);        \
+    dest = _mm_##loadInstr##_ps(outputVector); \
+    dest = _mm_add_ps(dest, temp);             \
+    _mm_##storeInstr##_ps(outputVector, dest); \
+    inputVector += 4;                          \
+    outputVector += 4;                         \
+  }
 
-    if (destAligned)
-        SSE2_MULT_ADD(load, store)
-    else
-        SSE2_MULT_ADD(loadu, storeu)
+  if (destAligned)
+    SSE2_MULT_ADD(load, store)
+  else
+    SSE2_MULT_ADD(loadu, storeu)
 
-    n = tailFrames;
+  n = tailFrames;
 #elif HAVE_ARM_NEON_INTRINSICS
-    size_t tailFrames = n % 4;
-    const float* endP = outputVector + n - tailFrames;
+  size_t tailFrames = n % 4;
+  const float *endP = outputVector + n - tailFrames;
 
-    float32x4_t k = vdupq_n_f32(scalar);
-    while (outputVector < endP) {
-        float32x4_t source = vld1q_f32(inputVector);
-        float32x4_t dest = vld1q_f32(outputVector);
+  float32x4_t k = vdupq_n_f32(scalar);
+  while (outputVector < endP) {
+    float32x4_t source = vld1q_f32(inputVector);
+    float32x4_t dest = vld1q_f32(outputVector);
 
-        dest = vmlaq_f32(dest, source, k);
-        vst1q_f32(outputVector, dest);
+    dest = vmlaq_f32(dest, source, k);
+    vst1q_f32(outputVector, dest);
 
-        inputVector += 4;
-        outputVector += 4;
-    }
-    n = tailFrames;
+    inputVector += 4;
+    outputVector += 4;
+  }
+  n = tailFrames;
 #endif
-    while (n--) {
-        *outputVector += *inputVector * scalar;
-        ++inputVector;
-        ++outputVector;
-    }
+  while (n--) {
+    *outputVector += *inputVector * scalar;
+    ++inputVector;
+    ++outputVector;
+  }
 }
 
 #endif

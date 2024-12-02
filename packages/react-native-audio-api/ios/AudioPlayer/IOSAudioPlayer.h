@@ -15,12 +15,13 @@ class AudioBus;
 
 class IOSAudioPlayer {
  protected:
-  AudioBus* audioBus_;
-  AudioPlayer* audioPlayer_;
-  std::function<void(AudioBus*, int)> renderAudio_;
+  AudioBus *audioBus_;
+  AudioPlayer *audioPlayer_;
+  std::function<void(AudioBus *, int)> renderAudio_;
 
  public:
-  explicit IOSAudioPlayer(const std::function<void(AudioBus*, int)> &renderAudio);
+  explicit IOSAudioPlayer(
+      const std::function<void(AudioBus *, int)> &renderAudio);
   ~IOSAudioPlayer();
 
   int getSampleRate() const;
@@ -28,6 +29,5 @@ class IOSAudioPlayer {
 
   void start();
   void stop();
-
 };
 } // namespace audioapi

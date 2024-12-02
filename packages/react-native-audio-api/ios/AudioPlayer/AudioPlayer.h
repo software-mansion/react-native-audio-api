@@ -3,7 +3,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (^RenderAudioBlock)(AudioBufferList* outputBuffer, int numFrames);
+typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 @interface AudioPlayer : NSObject
 

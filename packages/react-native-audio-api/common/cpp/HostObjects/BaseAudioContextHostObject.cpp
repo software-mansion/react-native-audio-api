@@ -30,6 +30,8 @@ std::vector<jsi::PropNameID> BaseAudioContextHostObject::getPropertyNames(
   propertyNames.push_back(jsi::PropNameID::forUtf8(runtime, "createBuffer"));
   propertyNames.push_back(
       jsi::PropNameID::forUtf8(runtime, "createPeriodicWave"));
+  propertyNames.push_back(
+      jsi::PropNameID::forUtf8(runtime, "decodeAudioDataSource"));
   return propertyNames;
 }
 
@@ -197,6 +199,25 @@ jsi::Value BaseAudioContextHostObject::get(
               PeriodicWaveHostObject::createFromWrapper(periodicWave);
           return jsi::Object::createFromHostObject(
               runtime, periodicWaveHostObject);
+        });
+  }
+
+  if (propName == "decodeAudioDataSource") {
+    return jsi::Function::createFromHostFunction(
+        runtime,
+        propNameId,
+        1,
+        [this](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *arguments,
+            size_t count) -> jsi::Value {
+          std::string source = arguments[0].getString(runtime).utf8(runtime);
+          auto buffer = wrapper_->decodeAudioDataSource(source);
+          auto audioBufferHostObject =
+              AudioBufferHostObject::createFromWrapper(buffer);
+          return jsi::Object::createFromHostObject(
+              runtime, audioBufferHostObject);
         });
   }
 

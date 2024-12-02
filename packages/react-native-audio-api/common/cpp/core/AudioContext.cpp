@@ -6,7 +6,6 @@
 
 #include "AudioContext.h"
 
-
 namespace audioapi {
 
 AudioContext::AudioContext() : BaseAudioContext() {

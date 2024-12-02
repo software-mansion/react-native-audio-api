@@ -2,13 +2,16 @@
 
 #include "AudioBus.h"
 #include "AudioNode.h"
-#include "BaseAudioContext.h"
 #include "AudioNodeManager.h"
+#include "BaseAudioContext.h"
 
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ = std::make_shared<AudioBus>(context->getSampleRate(), context->getBufferSizeInFrames(), channelCount_);
+  audioBus_ = std::make_shared<AudioBus>(
+      context->getSampleRate(),
+      context->getBufferSizeInFrames(),
+      channelCount_);
 }
 
 AudioNode::~AudioNode() {
@@ -37,7 +40,8 @@ std::string AudioNode::getChannelInterpretation() const {
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+  context_->getNodeManager()->addPendingConnection(
+      shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
 }
 
 void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
@@ -46,7 +50,8 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingConnection(shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+  context_->getNodeManager()->addPendingConnection(
+      shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
 }
 
 void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
@@ -103,7 +108,7 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
   }
 }
 
-AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
+AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   if (!isInitialized_) {
     return outputBus;
   }
@@ -114,10 +119,14 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   bool isAlreadyProcessed = currentSampleFrame == lastRenderedFrame_;
 
   // Node can't use output bus if:
-  // - outputBus is not provided, which means that next node is doing a multi-node summing.
-  // - it has more than one input, which means that it has to sum all inputs using internal bus.
-  // - it has more than one output, so each output node can get the processed data without re-calculating the node.
-  bool canUseOutputBus = outputBus != 0 && inputNodes_.size() < 2 && outputNodes_.size() < 2;
+  // - outputBus is not provided, which means that next node is doing a
+  // multi-node summing.
+  // - it has more than one input, which means that it has to sum all inputs
+  // using internal bus.
+  // - it has more than one output, so each output node can get the processed
+  // data without re-calculating the node.
+  bool canUseOutputBus =
+      outputBus != 0 && inputNodes_.size() < 2 && outputNodes_.size() < 2;
 
   if (isAlreadyProcessed) {
     // If it was already processed in the rendering quantum, return it.
@@ -127,7 +136,7 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   // Update the last rendered frame before processing node and its inputs.
   lastRenderedFrame_ = currentSampleFrame;
 
-  AudioBus* processingBus = canUseOutputBus ? outputBus : audioBus_.get();
+  AudioBus *processingBus = canUseOutputBus ? outputBus : audioBus_.get();
 
   if (!canUseOutputBus) {
     // Clear the bus before summing all connected nodes.
@@ -135,8 +144,8 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
   }
 
   if (inputNodes_.empty()) {
-    // If there are no connected inputs, process the node just to advance the audio params.
-    // The node will output silence anyway.
+    // If there are no connected inputs, process the node just to advance the
+    // audio params. The node will output silence anyway.
     processNode(processingBus, framesToProcess);
     return processingBus;
   }
@@ -146,17 +155,17 @@ AudioBus* AudioNode::processAudio(AudioBus* outputBus, int framesToProcess) {
       continue;
     }
 
-    // Process first connected node, it can be directly connected to the processingBus,
-    // resulting in one less summing operation.
+    // Process first connected node, it can be directly connected to the
+    // processingBus, resulting in one less summing operation.
     if (it == inputNodes_.begin()) {
-      AudioBus* inputBus = (*it)->processAudio(processingBus, framesToProcess);
+      AudioBus *inputBus = (*it)->processAudio(processingBus, framesToProcess);
 
       if (inputBus != processingBus) {
         processingBus->sum(inputBus);
       }
     } else {
       // Enforce the summing to be done using the internal bus.
-      AudioBus* inputBus = (*it)->processAudio(0, framesToProcess);
+      AudioBus *inputBus = (*it)->processAudio(0, framesToProcess);
       if (inputBus) {
         processingBus->sum(inputBus);
       }
@@ -204,7 +213,6 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
   if (position != inputNodes_.end()) {
     inputNodes_.erase(position);
   }
-
 
   if (inputNodes_.size() > 0) {
     return;

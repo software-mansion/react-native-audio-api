@@ -41,6 +41,7 @@ class BaseAudioContextWrapper {
       float *imag,
       bool disableNormalization,
       int length);
+  std::shared_ptr<AudioBufferWrapper> decodeAudioDataSource(const std::string &source);
 
  protected:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;

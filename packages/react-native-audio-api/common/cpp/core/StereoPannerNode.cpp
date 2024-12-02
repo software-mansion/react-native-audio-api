@@ -1,8 +1,8 @@
-#include "AudioBus.h"
-#include "Constants.h"
-#include "AudioArray.h"
 #include "StereoPannerNode.h"
+#include "AudioArray.h"
+#include "AudioBus.h"
 #include "BaseAudioContext.h"
+#include "Constants.h"
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
 
@@ -19,17 +19,20 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-void StereoPannerNode::processNode(AudioBus* processingBus, int framesToProcess) {
+void StereoPannerNode::processNode(
+    AudioBus *processingBus,
+    int framesToProcess) {
   // TODO: Currently assumed channelCount is 2
   // it should:
   //  - support mono-channel buses
-  //  - throw errors when trying to setup stereo panner with more than 2 channels
+  //  - throw errors when trying to setup stereo panner with more than 2
+  //  channels
 
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
-  AudioArray* left = processingBus->getChannelByType(AudioBus::ChannelLeft);
-  AudioArray* right = processingBus->getChannelByType(AudioBus::ChannelRight);
+  AudioArray *left = processingBus->getChannelByType(AudioBus::ChannelLeft);
+  AudioArray *right = processingBus->getChannelByType(AudioBus::ChannelRight);
 
   for (int i = 0; i < framesToProcess; i += 1) {
     float pan = panParam_->getValueAtTime(time);

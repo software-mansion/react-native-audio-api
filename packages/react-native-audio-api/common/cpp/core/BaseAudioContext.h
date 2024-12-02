@@ -1,10 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 #include <utility>
-#include <functional>
+#include <vector>
 
 #include "ContextState.h"
 #include "OscillatorType.h"
@@ -26,6 +26,7 @@ class AudioBufferSourceNode;
 class AudioPlayer;
 #else
 class IOSAudioPlayer;
+class IOSAudioDecoder;
 #endif
 
 class BaseAudioContext {
@@ -44,19 +45,21 @@ class BaseAudioContext {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
-  static std::shared_ptr<AudioBuffer> createBuffer(int numberOfChannels, int length, int sampleRate);
+  static std::shared_ptr<AudioBuffer>
+  createBuffer(int numberOfChannels, int length, int sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       float *real,
       float *imag,
       bool disableNormalization,
       int length);
-  std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
+  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &source);
 
+  std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   std::function<void(AudioBus *, int)> renderAudio();
 
-  AudioNodeManager* getNodeManager();
-  bool isRunning() const;
-  bool isClosed() const;
+  AudioNodeManager *getNodeManager();
+  [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isClosed() const;
 
  protected:
   static std::string toString(ContextState state);
@@ -66,6 +69,7 @@ class BaseAudioContext {
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
+  std::shared_ptr<IOSAudioDecoder> audioDecoder_;
 #endif
 
   int sampleRate_;

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-#include <memory>
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 #include "AudioNode.h"
 
@@ -15,7 +15,7 @@ class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(BaseAudioContext *context);
 
-  void renderAudio(AudioBus* audioData, int32_t numFrames);
+  void renderAudio(AudioBus *audioData, int32_t numFrames);
 
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
@@ -23,7 +23,7 @@ class AudioDestinationNode : public AudioNode {
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  void processNode(AudioBus*, int) final { };
+  void processNode(AudioBus *, int) final{};
 
  private:
   std::size_t currentSampleFrame_;

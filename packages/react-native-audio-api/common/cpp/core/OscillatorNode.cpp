@@ -1,6 +1,6 @@
-#include "AudioBus.h"
-#include "AudioArray.h"
 #include "OscillatorNode.h"
+#include "AudioArray.h"
+#include "AudioBus.h"
 #include "BaseAudioContext.h"
 
 namespace audioapi {
@@ -39,7 +39,7 @@ void OscillatorNode::setPeriodicWave(
   type_ = OscillatorType::CUSTOM;
 }
 
-void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
+void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
   if (!isPlaying()) {
     processingBus->zero();
     return;
@@ -50,7 +50,7 @@ void OscillatorNode::processNode(AudioBus* processingBus, int framesToProcess) {
 
   for (int i = 0; i < framesToProcess; i += 1) {
     auto detuneRatio =
-      std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+        std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
     auto detunedFrequency =
         round(frequencyParam_->getValueAtTime(time) * detuneRatio);
     auto phaseIncrement = detunedFrequency * periodicWave_->getScale();

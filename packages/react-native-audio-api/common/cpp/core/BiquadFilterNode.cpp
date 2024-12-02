@@ -1,6 +1,6 @@
-#include "AudioBus.h"
-#include "AudioArray.h"
 #include "BiquadFilterNode.h"
+#include "AudioArray.h"
+#include "AudioBus.h"
 #include "BaseAudioContext.h"
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
@@ -352,7 +352,9 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-void BiquadFilterNode::processNode(AudioBus* processingBus, int framesToProcess) {
+void BiquadFilterNode::processNode(
+    AudioBus *processingBus,
+    int framesToProcess) {
   resetCoefficients();
   applyFilter();
 

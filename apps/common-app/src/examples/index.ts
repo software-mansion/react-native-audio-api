@@ -5,6 +5,7 @@ import OpenAI from './OpenAI';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
+import AudioFile from './AudioFile';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -12,6 +13,7 @@ type NavigationParamList = {
   DrumMachine: undefined;
   Piano: undefined;
   OpenAI: undefined;
+  AudioFile: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -54,5 +56,11 @@ export const Examples: Example[] = [
     title: 'OpenAI',
     subtitle: 'Test OpenAI',
     screen: OpenAI,
+  },
+  {
+    key: 'AudioFile',
+    title: 'Audio File',
+    subtitle: 'Play an audio file',
+    screen: AudioFile,
   },
 ] as const;
