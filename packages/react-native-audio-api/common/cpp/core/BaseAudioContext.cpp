@@ -108,12 +108,12 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 
 #ifdef ANDROID
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    std::string source) {
+    const std::string &source) {
   return {nullptr};
 }
 #else
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    std::string source) {
+    const std::string &source) {
   auto audioBus = audioDecoder_->decodeWithFilePath(source);
   return std::make_shared<AudioBuffer>(audioBus);
 }

@@ -52,7 +52,7 @@ class BaseAudioContext {
       float *imag,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AudioBuffer> decodeAudioDataSource(std::string source);
+  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &source);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   std::function<void(AudioBus *, int)> renderAudio();
