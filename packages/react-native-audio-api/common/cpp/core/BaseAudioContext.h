@@ -57,7 +57,7 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   std::function<void(AudioBus *, int)> renderAudio();
 
-  AudioNodeManager* getNodeManager();
+  AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
 

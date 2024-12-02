@@ -37,6 +37,9 @@ const AudioFile: FC = () => {
       audioContextRef.current.decodeAudioDataSource(
         '/Users/maciejmakowski/projects/react-native-audio-api/apps/common-app/src/examples/AudioFile/runaway_kanye_west.mp3'
       )
+      // audioContextRef.current.decodeAudioDataSource(
+      //   'https://audio-ssl.itunes.apple.com/apple-assets-us-std-000001/AudioPreview18/v4/9c/db/54/9cdb54b3-5c52-3063-b1ad-abe42955edb5/mzaf_520282131402737225.plus.aac.p.m4a'
+      // )
     );
   };
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #ifdef __OBJC__ // when compiled as Objective-C++
 #import <AudioDecoder.h>
 #else // when compiled as C++
@@ -13,13 +15,12 @@ class AudioBus;
 class IOSAudioDecoder {
  protected:
   AudioDecoder *audioDecoder_;
-  ;
   int sampleRate_;
 
  public:
   IOSAudioDecoder(int sampleRate);
   ~IOSAudioDecoder();
 
-  AudioBus *decodeWithFilePath(std::string path);
+  AudioBus *decodeWithFilePath(const std::string &path);
 };
 } // namespace audioapi

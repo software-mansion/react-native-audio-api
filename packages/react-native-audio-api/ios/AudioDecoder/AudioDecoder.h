@@ -11,9 +11,7 @@
 
 - (instancetype)initWithSampleRate:(int)sampleRate;
 
-- (const AudioBufferList *)decodeWithFilePath:(NSString *)path;
-
-- (void)convertFromFormat:(AVAudioFormat *)format;
+- (const AudioBufferList *)decode:(NSString *)pathOrURL;
 
 - (void)cleanup;
 

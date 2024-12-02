@@ -21,7 +21,8 @@ AudioPlayer::AudioPlayer(
       ->setDataCallback(this)
       ->openStream(mStream_);
 
-  mBus_ = std::make_shared<AudioBus>(getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+  mBus_ = std::make_shared<AudioBus>(
+      getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
   isInitialized_ = true;
 }
 
