@@ -6,10 +6,6 @@
 {
   if (self = [super init]) {
     self.sampleRate = sampleRate;
-    self.format = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                                   sampleRate:self.sampleRate
-                                                     channels:2
-                                                  interleaved:NO];
   }
   return self;
 }
@@ -20,13 +16,15 @@
   NSURL *url = [NSURL URLWithString:pathOrURL];
 
   if (url && url.scheme) {
-    return [self decodeWithURL:url];
+    self.buffer = [self decodeWithURL:url];
   } else {
-    return [self decodeWithFilePath:pathOrURL];
+    self.buffer = [self decodeWithFilePath:pathOrURL];
   }
+
+  return self.buffer.audioBufferList;
 }
 
-- (const AudioBufferList *)decodeWithFilePath:(NSString *)path
+- (AVAudioPCMBuffer *)decodeWithFilePath:(NSString *)path
 {
   NSError *error = nil;
   NSURL *fileURL = [NSURL fileURLWithPath:path];
@@ -36,23 +34,28 @@
     NSLog(@"Error occurred while opening the audio file: %@", [error localizedDescription]);
     return nil;
   }
-  self.buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile processingFormat]
-                                              frameCapacity:[audioFile length]];
+  AVAudioPCMBuffer *buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile processingFormat]
+                                                           frameCapacity:[audioFile length]];
 
-  [audioFile readIntoBuffer:self.buffer error:&error];
+  AVAudioFormat *format = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                                           sampleRate:self.sampleRate
+                                                             channels:buffer.audioBufferList->mNumberBuffers
+                                                          interleaved:NO];
+
+  [audioFile readIntoBuffer:buffer error:&error];
   if (error) {
     NSLog(@"Error occurred while reading the audio file: %@", [error localizedDescription]);
     return nil;
   }
 
   if (self.sampleRate != audioFile.processingFormat.sampleRate) {
-    [self convertFromFormat:self.buffer.format];
+    return [self convertBuffer:buffer ToFormat:format];
   }
 
-  return self.buffer.audioBufferList;
+  return buffer;
 }
 
-- (const AudioBufferList *)decodeWithURL:(NSURL *)url
+- (AVAudioPCMBuffer *)decodeWithURL:(NSURL *)url
 {
   __block NSURL *tempFileURL = nil;
 
@@ -127,20 +130,19 @@
   [downloadTask resume];
 }
 
-- (void)convertFromFormat:(AVAudioFormat *)format
+- (AVAudioPCMBuffer *)convertBuffer:(AVAudioPCMBuffer *)buffer ToFormat:(AVAudioFormat *)format
 {
   NSError *error = nil;
-  AVAudioConverter *converter = [[AVAudioConverter alloc] initFromFormat:format toFormat:self.format];
+  AVAudioConverter *converter = [[AVAudioConverter alloc] initFromFormat:buffer.format toFormat:format];
   AVAudioPCMBuffer *convertedBuffer =
-      [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.format
-                                    frameCapacity:(AVAudioFrameCount)self.buffer.frameCapacity];
+      [[AVAudioPCMBuffer alloc] initWithPCMFormat:format frameCapacity:(AVAudioFrameCount)buffer.frameCapacity];
 
   AVAudioConverterInputBlock inputBlock =
       ^AVAudioBuffer *(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
   {
-    if (self.buffer.frameLength > 0) {
+    if (buffer.frameLength > 0) {
       *outStatus = AVAudioConverterInputStatus_HaveData;
-      return self.buffer;
+      return buffer;
     } else {
       *outStatus = AVAudioConverterInputStatus_NoDataNow;
       return nil;
@@ -151,16 +153,15 @@
 
   if (error) {
     NSLog(@"Error occurred while converting the audio file: %@", [error localizedDescription]);
-    return;
+    return nil;
   }
 
-  self.buffer = convertedBuffer;
+  return convertedBuffer;
 }
 
 - (void)cleanup
 {
   self.buffer = nil;
-  self.format = nil;
 }
 
 @end

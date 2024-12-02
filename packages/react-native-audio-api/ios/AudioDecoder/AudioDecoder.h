@@ -6,7 +6,6 @@
 @interface AudioDecoder : NSObject
 
 @property (nonatomic, strong) AVAudioPCMBuffer *buffer;
-@property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, assign) int sampleRate;
 
 - (instancetype)initWithSampleRate:(int)sampleRate;

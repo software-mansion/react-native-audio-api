@@ -28,11 +28,6 @@ export interface PeriodicWaveConstraints {
 /**
  * A type that defines the source of the audio which can be expressed in several forms:
  * 1. A string path, which could be an HTTPS URL or a local file path.
- * 2. An object specifying more detailed information about the source, including URI and HTTP headers.
+ * 2. A string, which is a result of resolving an asset source.
  */
-export type AudioSource =
-  | string
-  | {
-      uri?: string;
-      headers?: Record<string, string>;
-    };
+export type AudioSource = string;

@@ -1,14 +1,13 @@
 import { AudioSource } from '../core/types';
+// not sure if it works
+// @ts-ignore
+import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
 
 export function resolveAudioSource(
   source: AudioSource | string | number
 ): AudioSource {
-  if (typeof source === 'string') {
-    return { uri: source };
-  }
   if (typeof source === 'number') {
-    // TODO: Add support for reading from the asset bundle
-    return 'todo';
+    return resolveAssetSource(source);
   }
 
   return source;
