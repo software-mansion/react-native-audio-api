@@ -1,4 +1,5 @@
 #ifdef ANDROID
+#include "AudioDecoder.h"
 #include "AudioPlayer.h"
 #else
 #include "IOSAudioDecoder.h"
@@ -109,12 +110,13 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 #ifdef ANDROID
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &source) {
-  return {nullptr};
+  auto audioBus = audioDecoder_->decode(source);
+  return std::make_shared<AudioBuffer>(audioBus);
 }
 #else
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &source) {
-  auto audioBus = audioDecoder_->decodeWithFilePath(source);
+  auto audioBus = audioDecoder_->decode(source);
   return std::make_shared<AudioBuffer>(audioBus);
 }
 #endif

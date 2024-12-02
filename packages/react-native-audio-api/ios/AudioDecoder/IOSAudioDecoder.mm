@@ -17,7 +17,7 @@ IOSAudioDecoder::~IOSAudioDecoder()
   audioDecoder_ = nullptr;
 }
 
-AudioBus *IOSAudioDecoder::decodeWithFilePath(const std::string &path)
+AudioBus *IOSAudioDecoder::decode(const std::string &path)
 {
   auto bufferList = [audioDecoder_ decode:[NSString stringWithUTF8String:path.c_str()]];
   AudioBus *audioBus;

@@ -21,6 +21,6 @@ class IOSAudioDecoder {
   IOSAudioDecoder(int sampleRate);
   ~IOSAudioDecoder();
 
-  AudioBus *decodeWithFilePath(const std::string &path);
+  AudioBus *decode(const std::string &path);
 };
 } // namespace audioapi

@@ -41,10 +41,11 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactCommon/jsi"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/jni"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/third-party/folly"
-  "${CMAKE_CURRENT_SOURCE_DIR}/libs/include/fftw3"
+  "${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
 )
 
-set(fftw3 ${CMAKE_CURRENT_SOURCE_DIR}/libs/fftw3/${ANDROID_ABI}/libfftw3.a)
+set(fftw3 ${CMAKE_CURRENT_SOURCE_DIR}/libs/${ANDROID_ABI}/libfftw3.a)
+set(libsndfile ${CMAKE_CURRENT_SOURCE_DIR}/libs/${ANDROID_ABI}/libsndfile.a)
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -57,6 +58,7 @@ set(LINK_LIBRARIES
   log
   oboe::oboe
   ${fftw3}
+  ${libsndfile}
 )
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)

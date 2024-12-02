@@ -24,6 +24,7 @@ class AudioBufferSourceNode;
 
 #ifdef ANDROID
 class AudioPlayer;
+class AudioDecoder;
 #else
 class IOSAudioPlayer;
 class IOSAudioDecoder;
@@ -67,6 +68,7 @@ class BaseAudioContext {
 
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
+  std::shared_ptr<AudioDecoder> audioDecoder_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
   std::shared_ptr<IOSAudioDecoder> audioDecoder_;
