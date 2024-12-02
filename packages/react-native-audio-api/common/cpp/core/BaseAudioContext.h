@@ -55,12 +55,11 @@ class BaseAudioContext {
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(std::string source);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  AudioNodeManager *getNodeManager();
   std::function<void(AudioBus *, int)> renderAudio();
 
   AudioNodeManager* getNodeManager();
-  bool isRunning() const;
-  bool isClosed() const;
+  [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isClosed() const;
 
  protected:
   static std::string toString(ContextState state);
