@@ -23,17 +23,15 @@ double AudioDestinationNode::getCurrentTime() const {
   return static_cast<double>(currentSampleFrame_) / context_->getSampleRate();
 }
 
-void AudioDestinationNode::renderAudio(
-    AudioBus *destinationBus,
-    int32_t numFrames) {
-  context_->getNodeManager()->preProcessGraph();
-  destinationBus->zero();
-
-  if (!numFrames) {
+void AudioDestinationNode::renderAudio(AudioBus *destinationBus, int32_t numFrames) {
+  if (!numFrames || !destinationBus || !isInitialized_) {
     return;
   }
 
-  AudioBus *processedBus = processAudio(destinationBus, numFrames);
+  context_->getNodeManager()->preProcessGraph();
+  destinationBus->zero();
+
+  AudioBus* processedBus = processAudio(destinationBus, numFrames);
 
   if (processedBus && processedBus != destinationBus) {
     destinationBus->copy(processedBus);

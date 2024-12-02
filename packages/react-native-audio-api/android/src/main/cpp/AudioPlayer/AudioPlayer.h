@@ -28,6 +28,7 @@ class AudioPlayer : public AudioStreamDataCallback {
   std::function<void(AudioBus *, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<AudioBus> mBus_;
+  bool isInitialized_ = false;
 };
 
 } // namespace audioapi

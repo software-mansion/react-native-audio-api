@@ -32,6 +32,7 @@ class IOSAudioDecoder;
 class BaseAudioContext {
  public:
   BaseAudioContext();
+  ~BaseAudioContext();
   std::string getState();
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
@@ -56,6 +57,10 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   AudioNodeManager *getNodeManager();
   std::function<void(AudioBus *, int)> renderAudio();
+
+  AudioNodeManager* getNodeManager();
+  bool isRunning() const;
+  bool isClosed() const;
 
  protected:
   static std::string toString(ContextState state);

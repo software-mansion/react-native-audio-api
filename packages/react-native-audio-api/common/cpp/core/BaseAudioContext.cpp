@@ -33,9 +33,17 @@ BaseAudioContext::BaseAudioContext() {
   sampleRate_ = audioPlayer_->getSampleRate();
   bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
 
-  audioPlayer_->start();
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
+}
+
+BaseAudioContext::~BaseAudioContext() {
+  if (isRunning()) {
+    return;
+  }
+
+  state_ = ContextState::CLOSED;
+  audioPlayer_->stop();
 }
 
 std::string BaseAudioContext::getState() {
@@ -112,7 +120,7 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
 #endif
 
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
-  if (state_ == ContextState::CLOSED) {
+  if (isClosed()) {
     return [](AudioBus *, int) {};
   }
 
@@ -123,6 +131,14 @@ std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
+}
+
+bool BaseAudioContext::isRunning() const {
+  return state_ == ContextState::RUNNING;
+}
+
+bool BaseAudioContext::isClosed() const {
+  return state_ == ContextState::CLOSED;
 }
 
 std::string BaseAudioContext::toString(ContextState state) {
