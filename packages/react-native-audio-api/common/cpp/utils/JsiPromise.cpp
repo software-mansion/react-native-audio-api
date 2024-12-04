@@ -37,6 +37,7 @@ jsi::Value PromiseVendor::createPromise(std::function<void(std::shared_ptr<Promi
         resolve->call(runtime, *valueShared);
       });
     };
+
     auto rejectWrapper = [reject, &runtime, callInvoker](const std::string& errorMessage) -> void {
       auto error = jsi::JSError(runtime, errorMessage);
       auto errorShared = std::make_shared<jsi::JSError>(error);
@@ -55,4 +56,4 @@ jsi::Value PromiseVendor::createPromise(std::function<void(std::shared_ptr<Promi
   return promiseCtor.callAsConstructor(runtime, runPromise);
 }
 
-}
+} // namespace JsiPromise
