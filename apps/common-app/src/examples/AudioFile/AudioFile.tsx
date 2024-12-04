@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useState, useRef, useEffect, FC } from 'react';
 import { Container, Button } from '../../components';
 
 import {
+  AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
-  AudioBuffer,
 } from 'react-native-audio-api';
+import { ActivityIndicator } from 'react-native';
+
+const assetUrl =
+  'https://audio-ssl.itunes.apple.com/apple-assets-us-std-000001/AudioPreview18/v4/9c/db/54/9cdb54b3-5c52-3063-b1ad-abe42955edb5/mzaf_520282131402737225.plus.aac.p.m4a';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -22,28 +26,28 @@ const AudioFile: FC = () => {
 
     audioBufferSourceNodeRef.current =
       audioContextRef.current.createBufferSource();
-    audioBufferSourceNodeRef.current.buffer;
+
     audioBufferSourceNodeRef.current.connect(
       audioContextRef.current.destination
     );
   };
 
-  const fetchAudioBuffer = async () => {
+  const fetchAudioBuffer = useCallback(async () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
 
-    setAudioBuffer(
-      // audioContextRef.current.decodeAudioDataSource(
-      //   '/Users/maciejmakowski/projects/react-native-audio-api/apps/common-app/src/examples/AudioFile/runaway_kanye_west.mp3'
-      // )
-      audioContextRef.current.decodeAudioDataSource(
-        'https://audio-ssl.itunes.apple.com/apple-assets-us-std-000001/AudioPreview18/v4/9c/db/54/9cdb54b3-5c52-3063-b1ad-abe42955edb5/mzaf_520282131402737225.plus.aac.p.m4a'
-      )
-    );
-  };
+    const buffer =
+      await audioContextRef.current.decodeAudioDataSource(assetUrl);
+
+    setAudioBuffer(buffer);
+  }, []);
 
   const handlePress = () => {
+    if (!audioBuffer) {
+      return;
+    }
+
     if (isPlaying) {
       audioBufferSourceNodeRef.current?.stop();
     } else {
@@ -65,11 +69,12 @@ const AudioFile: FC = () => {
     return () => {
       audioContextRef.current?.close();
     };
-  }, []);
+  }, [fetchAudioBuffer]);
 
   return (
     <Container centered>
       <Button title={isPlaying ? 'Stop' : 'Play'} onPress={handlePress} />
+      {!audioBuffer && <ActivityIndicator color="#FFFFFF" />}
     </Container>
   );
 };

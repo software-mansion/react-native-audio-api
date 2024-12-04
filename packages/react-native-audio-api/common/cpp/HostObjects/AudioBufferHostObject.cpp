@@ -128,6 +128,12 @@ jsi::Value AudioBufferHostObject::get(
         });
   }
 
+  // `decodeAudioData` is a method that returns a promise to AudioBufferHostObject
+  // It seems that async/await checks for the presence of `then` method on the object
+  if (propName == "then") {
+    return jsi::Value::undefined();
+  }
+
   throw std::runtime_error("Not yet implemented!");
 }
 
