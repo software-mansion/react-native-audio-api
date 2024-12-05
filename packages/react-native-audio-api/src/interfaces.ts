@@ -27,7 +27,7 @@ export interface IBaseAudioContext {
     imag: number[],
     disableNormalization: boolean
   ) => IPeriodicWave;
-  decodeAudioDataSource: (source: string) => IAudioBuffer;
+  decodeAudioDataSource: (source: string) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioContext extends IBaseAudioContext {

@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "JsiPromise.h"
 #include "AudioBufferHostObject.h"
 #include "AudioBufferSourceNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
@@ -21,7 +22,7 @@ using namespace facebook;
 class BaseAudioContextHostObject : public jsi::HostObject {
  public:
   explicit BaseAudioContextHostObject(
-      const std::shared_ptr<BaseAudioContextWrapper> &wrapper);
+      const std::shared_ptr<BaseAudioContextWrapper> &wrapper, std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -35,5 +36,6 @@ class BaseAudioContextHostObject : public jsi::HostObject {
  protected:
   std::shared_ptr<BaseAudioContextWrapper> wrapper_;
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
+  std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor_;
 };
 } // namespace audioapi

@@ -1,6 +1,8 @@
 #import "AudioAPIModule.h"
 
+#import <ReactCommon/RCTTurboModule.h>
 #import <React/RCTBridge+Private.h>
+#import <React/RCTBridge.h>
 #import <React/RCTUtils.h>
 #import <jsi/jsi.h>
 
@@ -33,7 +35,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   auto &runtime = *jsRuntime;
 
   auto wrapper = std::make_shared<audioapi::AudioAPIInstallerWrapper>();
-  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(wrapper);
+  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(wrapper, jsRuntime, cxxBridge.jsCallInvoker);
   auto object = jsi::Object::createFromHostObject(runtime, hostObject);
   runtime.global().setProperty(runtime, "__AudioAPIInstaller", std::move(object));
 

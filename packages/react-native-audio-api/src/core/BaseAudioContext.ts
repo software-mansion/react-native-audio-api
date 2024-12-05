@@ -96,9 +96,13 @@ export default class BaseAudioContext {
     );
   }
 
-  decodeAudioDataSource(source: AudioSource | number): AudioBuffer {
-    return new AudioBuffer(
-      this.context.decodeAudioDataSource(resolveAudioSource(source))
+  async decodeAudioDataSource(
+    source: AudioSource | number
+  ): Promise<AudioBuffer> {
+    const buffer = await this.context.decodeAudioDataSource(
+      resolveAudioSource(source)
     );
+
+    return new AudioBuffer(buffer);
   }
 }
