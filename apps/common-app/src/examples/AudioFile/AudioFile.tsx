@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
-import { Container, Button } from '../../components';
+import { Container, Button, Spacer } from '../../components';
 import * as DocumentPicker from 'expo-document-picker';
+import { View, StyleSheet } from 'react-native';
 
 import {
   AudioBuffer,
@@ -19,7 +20,7 @@ const AudioFile: FC = () => {
   const audioBufferSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const pickFile = async () => {
+  const handleSetAudioSourceFromFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'audio/*',
@@ -32,6 +33,11 @@ const AudioFile: FC = () => {
     } catch (error) {
       console.error('Error picking file:', error);
     }
+  };
+
+  const handleSetAudioSourceFromUrl = async () => {
+    setAudioBuffer(null);
+    await fetchAudioBuffer(sampleUrl);
   };
 
   const setup = () => {
@@ -90,9 +96,28 @@ const AudioFile: FC = () => {
     <Container centered>
       <Button title={isPlaying ? 'Stop' : 'Play'} onPress={handlePress} />
       {!audioBuffer && <ActivityIndicator color="#FFFFFF" />}
-      <Button title="Pick from files" onPress={pickFile} />
+      <Spacer.Vertical size={20} />
+      <View style={styles.container}>
+        <Button
+          title="Set audio source from file"
+          onPress={handleSetAudioSourceFromFile}
+        />
+        <Spacer.Horizontal size={10} />
+        <Button
+          title="Set audio source from url"
+          onPress={handleSetAudioSourceFromUrl}
+        />
+      </View>
     </Container>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default AudioFile;
