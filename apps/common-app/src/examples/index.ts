@@ -1,7 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import Piano from './Piano';
-import OpenAI from './OpenAI';
+import TextToSpeech from './TextToSpeech';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
@@ -12,7 +12,7 @@ type NavigationParamList = {
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
-  OpenAI: undefined;
+  TextToSpeech: undefined;
   AudioFile: undefined;
 };
 
@@ -40,6 +40,12 @@ export const Examples: Example[] = [
     screen: Piano,
   },
   {
+    key: 'TextToSpeech',
+    title: 'Text to Speech',
+    subtitle: 'type some text and hear it spoken',
+    screen: TextToSpeech,
+  },
+  {
     key: 'Metronome',
     title: 'Metronome',
     subtitle: 'Keep time with the beat',
@@ -50,12 +56,6 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
-  },
-  {
-    key: 'OpenAI',
-    title: 'OpenAI',
-    subtitle: 'Test OpenAI',
-    screen: OpenAI,
   },
   {
     key: 'AudioFile',

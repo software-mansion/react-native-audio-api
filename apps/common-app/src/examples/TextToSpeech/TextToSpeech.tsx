@@ -22,16 +22,27 @@ async function getOpenAIResponse(input: string, voice: string = 'alloy') {
   }).then((response) => response.arrayBuffer());
 }
 
+const openAISampleRate = 24000;
+const maxInputValue = 32768.0;
+
+// TODO: this should ideally be done using native code through .decodeAudioData
 function goofyResample(
   audioContext: AudioContext,
   input: Int16Array
 ): AudioBuffer {
-  const outputBuffer = audioContext.createBuffer(2, input.length * 2, 48000);
+  const scale = audioContext.sampleRate / openAISampleRate;
+
+  const outputBuffer = audioContext.createBuffer(
+    2,
+    input.length * scale,
+    audioContext.sampleRate
+  );
+
   const processingChannel: Array<number> = [];
   const upSampleChannel: Array<number> = [];
 
   for (let i = 0; i < input.length; i += 1) {
-    processingChannel[i] = input[i] / 32768.0;
+    processingChannel[i] = input[i] / maxInputValue;
   }
 
   for (let i = 0; i < input.length; i += 1) {
@@ -49,11 +60,11 @@ function goofyResample(
   return outputBuffer;
 }
 
-const OpenAI: FC = () => {
+const TextToSpeech: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [textToRead, setTextToRead] = useState('');
 
-  const onTestOpenAI = async () => {
+  const onReadText = async () => {
     if (isLoading) {
       return;
     }
@@ -87,14 +98,14 @@ const OpenAI: FC = () => {
         multiline
       />
       <Spacer.Vertical size={24} />
-      <Button onPress={onTestOpenAI} title="Test OpenAI" />
+      <Button onPress={onReadText} title="Read Text" />
       <Spacer.Vertical size={24} />
       {isLoading && <ActivityIndicator />}
     </Container>
   );
 };
 
-export default OpenAI;
+export default TextToSpeech;
 
 const styles = StyleSheet.create({
   container: {
