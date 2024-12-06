@@ -18,7 +18,7 @@ namespace audioapi {
 AudioDecoder::AudioDecoder(int sampleRate) : sampleRate_(sampleRate) {}
 
 AudioBus *AudioDecoder::decode(const std::string &pathOrURL) {
-  return decodeWithFilePath("/Files/runaway_kanye_west.mp3");
+  return decodeWithFilePath(pathOrURL);
 }
 
 AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
