@@ -6,7 +6,9 @@ import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 
 @OptIn(FrameworkAPI::class)
-class AudioAPIInstaller(reactContext: ReactApplicationContext) {
+class AudioAPIInstaller(
+  reactContext: ReactApplicationContext,
+) {
   private val mHybridData: HybridData?
 
   companion object {
@@ -16,11 +18,14 @@ class AudioAPIInstaller(reactContext: ReactApplicationContext) {
   }
 
   init {
-    val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl;
+    val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
     mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
   }
 
-  external fun initHybrid(jsContext: Long, callInvoker: CallInvokerHolderImpl): HybridData?
+  external fun initHybrid(
+    jsContext: Long,
+    callInvoker: CallInvokerHolderImpl,
+  ): HybridData?
 
   external fun install()
 }

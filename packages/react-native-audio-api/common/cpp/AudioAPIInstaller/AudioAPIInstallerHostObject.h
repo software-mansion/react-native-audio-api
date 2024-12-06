@@ -25,8 +25,10 @@ class AudioAPIInstallerHostObject : public jsi::HostObject {
 #ifdef ANDROID
   static void createAndInstallFromWrapper(
       const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper,
-      jsi::Runtime *rnRuntime, const std::shared_ptr<react::CallInvoker> &jsInvoker) {
-    auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(wrapper, rnRuntime, jsInvoker);
+      jsi::Runtime *rnRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsInvoker) {
+    auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(
+        wrapper, rnRuntime, jsInvoker);
     auto object = jsi::Object::createFromHostObject(*rnRuntime, hostObject);
     rnRuntime->global().setProperty(
         *rnRuntime, "__AudioAPIInstaller", std::move(object));
