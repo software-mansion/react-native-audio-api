@@ -10,11 +10,12 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-vector-icons/common": "^11.0.0",
+    "@react-native-vector-icons/icomoon": "^0.0.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "@react-navigation/stack": "^6.4.1",
     "@shopify/react-native-skia": "^1.5.1",
-    "@swmansion/icons": "^0.0.1",
     "common-app": "workspace:*",
     "react": "18.3.1",
     "react-dom": "18.2.0",
@@ -51,5 +52,8 @@
   },
   "installConfig": {
     "hoistingLimits": "dependencies"
+  },
+  "reactNativeVectorIcons": {
+    "fontDir": "./assets/fonts"
   }
 }

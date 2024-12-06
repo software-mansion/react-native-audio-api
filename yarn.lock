@@ -2658,6 +2658,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/cli-tools@npm:^15.1.2":
+  version: 15.1.2
+  resolution: "@react-native-community/cli-tools@npm:15.1.2"
+  dependencies:
+    appdirsjs: "npm:^1.2.4"
+    chalk: "npm:^4.1.2"
+    execa: "npm:^5.0.0"
+    find-up: "npm:^5.0.0"
+    mime: "npm:^2.4.1"
+    open: "npm:^6.2.0"
+    ora: "npm:^5.4.1"
+    prompts: "npm:^2.4.2"
+    semver: "npm:^7.5.2"
+    shell-quote: "npm:^1.7.3"
+    sudo-prompt: "npm:^9.0.0"
+  checksum: 10/1bdd2ee133e84ff945090a2bbea1aa9ff4203cdd9d80e13294fc64e37bbc2975966b7274102a898f3a43574c1685e0d52a6407c05b56b3d4666838b094846592
+  languageName: node
+  linkType: hard
+
 "@react-native-community/cli-types@npm:13.6.9":
   version: 13.6.9
   resolution: "@react-native-community/cli-types@npm:13.6.9"
@@ -2726,6 +2745,34 @@ __metadata:
   bin:
     rnc-cli: build/bin.js
   checksum: 10/217b8fcec27db229a72e5419d190091568088208abf4e25844f5960643d9d3b73513bcbd22398a2fca1093c46c5b6ebb29f3fba901053df8a84bf418b079fca3
+  languageName: node
+  linkType: hard
+
+"@react-native-vector-icons/common@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "@react-native-vector-icons/common@npm:11.0.0"
+  dependencies:
+    "@react-native-community/cli-tools": "npm:^15.1.2"
+    picocolors: "npm:^1.1.1"
+    plist: "npm:^3.1.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  bin:
+    rnvi-update-plist: lib/commonjs/scripts/updatePlist.js
+  checksum: 10/1c49ebb47c47707ac1bb055d8c503981b6c937d3b681da3de30b8c1be5904355ca360fed488d90acb76ae5ce17c814a7ed8065bffcfd7aff2169bf3d114cca2d
+  languageName: node
+  linkType: hard
+
+"@react-native-vector-icons/icomoon@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "@react-native-vector-icons/icomoon@npm:0.0.1"
+  dependencies:
+    "@react-native-vector-icons/common": "npm:^11.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/54f99571654b6edf0c84c9287e51f298484148f8cc4bd85631bfe469e6b2c2c3359870ebb5799c42f86aa0423ed738062ac102682179731d7c105c220bcc46d7
   languageName: node
   linkType: hard
 
@@ -3355,13 +3402,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@swmansion/icons@npm:0.0.1, @swmansion/icons@npm:^0.0.1":
-  version: 0.0.1
-  resolution: "@swmansion/icons@npm:0.0.1"
-  checksum: 10/a6169987882a6ce0fc8b69a317a74734cb7ed42c950227249a785bdd10553b181f6ae50e60dd42a116e5753ab2e5fb5f34cc937f020d2f11b1ed72a231dc94e2
-  languageName: node
-  linkType: hard
-
 "@tsconfig/node10@npm:^1.0.7":
   version: 1.0.11
   resolution: "@tsconfig/node10@npm:1.0.11"
@@ -3859,6 +3899,13 @@ __metadata:
   version: 0.1.21
   resolution: "@webgpu/types@npm:0.1.21"
   checksum: 10/73fc5f2bebb1abf084b146c26c237c6450747b8119cdf3733643ff90968f6e7790d0ae0ad6aa6dc7b0783a502571d348a76d22c8e8466b3b7f7c9ee956da7e5b
+  languageName: node
+  linkType: hard
+
+"@xmldom/xmldom@npm:^0.8.8":
+  version: 0.8.10
+  resolution: "@xmldom/xmldom@npm:0.8.10"
+  checksum: 10/62400bc5e0e75b90650e33a5ceeb8d94829dd11f9b260962b71a784cd014ddccec3e603fe788af9c1e839fa4648d8c521ebd80d8b752878d3a40edabc9ce7ccf
   languageName: node
   linkType: hard
 
@@ -4874,11 +4921,12 @@ __metadata:
   resolution: "common-app@workspace:apps/common-app"
   dependencies:
     "@babel/core": "npm:^7.25.2"
+    "@react-native-vector-icons/common": "npm:^11.0.0"
+    "@react-native-vector-icons/icomoon": "npm:^0.0.1"
     "@react-navigation/native": "npm:^6.1.18"
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
     "@shopify/react-native-skia": "npm:^1.5.1"
-    "@swmansion/icons": "npm:0.0.1"
     react: "npm:18.3.1"
     react-dom: "npm:18.2.0"
     react-native: "npm:0.76.0"
@@ -4888,11 +4936,12 @@ __metadata:
     react-native-safe-area-context: "npm:^4.12.0"
     react-native-screens: "npm:^3.35.0"
   peerDependencies:
+    "@react-native-vector-icons/common": "*"
+    "@react-native-vector-icons/icomoon": "*"
     "@react-navigation/native": "*"
     "@react-navigation/native-stack": "*"
     "@react-navigation/stack": "*"
     "@shopify/react-native-skia": "*"
-    "@swmansion/icons": "*"
     react: "*"
     react-dom: "*"
     react-native: "*"
@@ -6137,6 +6186,8 @@ __metadata:
     "@react-native-community/cli": "npm:15.0.0-alpha.2"
     "@react-native-community/cli-platform-android": "npm:15.0.0-alpha.2"
     "@react-native-community/cli-platform-ios": "npm:15.0.0-alpha.2"
+    "@react-native-vector-icons/common": "npm:^11.0.0"
+    "@react-native-vector-icons/icomoon": "npm:^0.0.1"
     "@react-native/babel-preset": "npm:0.76.0"
     "@react-native/eslint-config": "npm:0.76.0"
     "@react-native/metro-config": "npm:0.76.0"
@@ -6145,7 +6196,6 @@ __metadata:
     "@react-navigation/native-stack": "npm:^6.11.0"
     "@react-navigation/stack": "npm:^6.4.1"
     "@shopify/react-native-skia": "npm:^1.5.1"
-    "@swmansion/icons": "npm:^0.0.1"
     "@types/react": "npm:^18.2.6"
     "@types/react-test-renderer": "npm:^18.0.0"
     babel-jest: "npm:^29.6.3"
@@ -9856,7 +9906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picocolors@npm:^1.0.0, picocolors@npm:^1.1.0":
+"picocolors@npm:^1.0.0, picocolors@npm:^1.1.0, picocolors@npm:^1.1.1":
   version: 1.1.1
   resolution: "picocolors@npm:1.1.1"
   checksum: 10/e1cf46bf84886c79055fdfa9dcb3e4711ad259949e3565154b004b260cd356c5d54b31a1437ce9782624bf766272fe6b0154f5f0c744fb7af5d454d2b60db045
@@ -9899,6 +9949,17 @@ __metadata:
   dependencies:
     find-up: "npm:^4.0.0"
   checksum: 10/9863e3f35132bf99ae1636d31ff1e1e3501251d480336edb1c211133c8d58906bed80f154a1d723652df1fda91e01c7442c2eeaf9dc83157c7ae89087e43c8d6
+  languageName: node
+  linkType: hard
+
+"plist@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "plist@npm:3.1.0"
+  dependencies:
+    "@xmldom/xmldom": "npm:^0.8.8"
+    base64-js: "npm:^1.5.1"
+    xmlbuilder: "npm:^15.1.1"
+  checksum: 10/f513beecc01a021b4913d4e5816894580b284335ae437e7ed2d5e78f8b6f0d2e0f874ec57bab9c9d424cc49e77b8347efa75abcfa8ac138dbfb63a045e1ce559
   languageName: node
   linkType: hard
 
@@ -12435,6 +12496,13 @@ __metadata:
     utf-8-validate:
       optional: true
   checksum: 10/9c796b84ba80ffc2c2adcdfc9c8e9a219ba99caa435c9a8d45f9ac593bba325563b3f83edc5eb067cc6d21b9a6bf2c930adf76dd40af5f58a5ca6859e81858f0
+  languageName: node
+  linkType: hard
+
+"xmlbuilder@npm:^15.1.1":
+  version: 15.1.1
+  resolution: "xmlbuilder@npm:15.1.1"
+  checksum: 10/e6f4bab2504afdd5f80491bda948894d2146756532521dbe7db33ae0931cd3000e3b4da19b3f5b3f51bedbd9ee06582144d28136d68bd1df96579ecf4d4404a2
   languageName: node
   linkType: hard
 
