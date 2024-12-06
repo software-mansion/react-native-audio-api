@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-
 #include "AudioAPIInstallerWrapper.h"
 #include "AudioContextHostObject.h"
 #include "JsiPromise.h"
@@ -19,7 +18,9 @@ class AudioAPIInstallerWrapper;
 class AudioAPIInstallerHostObject : public jsi::HostObject {
  public:
   explicit AudioAPIInstallerHostObject(
-      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper, jsi::Runtime* runtime, const std::shared_ptr<react::CallInvoker> &jsInvoker);
+      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper,
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &jsInvoker);
 
 #ifdef ANDROID
   static void createAndInstallFromWrapper(

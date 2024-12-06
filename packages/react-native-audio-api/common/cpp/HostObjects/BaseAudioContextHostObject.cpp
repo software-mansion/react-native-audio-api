@@ -6,7 +6,8 @@ namespace audioapi {
 using namespace facebook;
 
 BaseAudioContextHostObject::BaseAudioContextHostObject(
-    const std::shared_ptr<BaseAudioContextWrapper> &wrapper, std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor)
+    const std::shared_ptr<BaseAudioContextWrapper> &wrapper,
+    std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor)
     : wrapper_(wrapper), promiseVendor_(promiseVendor) {
   auto destinationNodeWrapper = wrapper_->getDestination();
   destination_ =
@@ -205,25 +206,34 @@ jsi::Value BaseAudioContextHostObject::get(
   }
 
   if (propName == "decodeAudioDataSource") {
-    auto decode = [this](jsi::Runtime& runtime,
-                         const jsi::Value&,
-                         const jsi::Value* arguments,
-                         size_t count) -> jsi::Value {
+    auto decode = [this](
+                      jsi::Runtime &runtime,
+                      const jsi::Value &,
+                      const jsi::Value *arguments,
+                      size_t count) -> jsi::Value {
       auto sourcePath = arguments[0].getString(runtime).utf8(runtime);
 
-      auto promise = promiseVendor_->createPromise([this, &runtime, sourcePath](std::shared_ptr<JsiPromise::Promise> promise) {
-        std::thread([this, &runtime, sourcePath, promise = std::move(promise)]() {
-          auto results = wrapper_->decodeAudioDataSource(sourcePath);
-          auto audioBufferHostObject = AudioBufferHostObject::createFromWrapper(results);
+      auto promise = promiseVendor_->createPromise(
+          [this, &runtime, sourcePath](
+              std::shared_ptr<JsiPromise::Promise> promise) {
+            std::thread([this,
+                         &runtime,
+                         sourcePath,
+                         promise = std::move(promise)]() {
+              auto results = wrapper_->decodeAudioDataSource(sourcePath);
+              auto audioBufferHostObject =
+                  AudioBufferHostObject::createFromWrapper(results);
 
-          promise->resolve(jsi::Object::createFromHostObject(runtime, audioBufferHostObject));
-        }).detach();
-      });
+              promise->resolve(jsi::Object::createFromHostObject(
+                  runtime, audioBufferHostObject));
+            }).detach();
+          });
 
       return promise;
     };
 
-    return jsi::Function::createFromHostFunction(runtime, propNameId, 1, decode);
+    return jsi::Function::createFromHostFunction(
+        runtime, propNameId, 1, decode);
   }
 
   throw std::runtime_error("Not yet implemented!");
