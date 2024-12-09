@@ -1,11 +1,6 @@
 #pragma once
 
-#include <memory>
 #include <string>
-#include <vector>
-// #include <curl/curl.h>
-#include <sndfile.h>
-#include <filesystem>
 
 namespace audioapi {
 
@@ -16,12 +11,11 @@ class AudioDecoder {
   explicit AudioDecoder(int sampleRate);
 
   AudioBus *decode(const std::string &pathOrURL);
-  //float *convertBuffer(const float *buffer);
 
  private:
   int sampleRate_;
 
-  AudioBus *decodeWithFilePath(const std::string &path) const;
+  [[nodiscard]] AudioBus *decodeWithFilePath(const std::string &path) const;
   //        AudioBus *decodeWithURL(const std::string& url);
 
   //        void downloadFileFromURL(const std::string& url, const std::string&

@@ -85,7 +85,7 @@ const AudioFile: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
-    fetchAudioBuffer(sampleUrl);
+    //fetchAudioBuffer(sampleUrl);
 
     return () => {
       audioContextRef.current?.close();
