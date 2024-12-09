@@ -180,8 +180,6 @@ dependencies {
   implementation "com.facebook.react:react-native:+"
   implementation 'androidx.core:core-ktx:1.13.1'
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2"
   implementation 'com.google.oboe:oboe:1.9.0'
 }
 

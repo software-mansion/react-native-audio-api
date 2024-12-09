@@ -16,13 +16,13 @@ class AudioDecoder {
   explicit AudioDecoder(int sampleRate);
 
   AudioBus *decode(const std::string &pathOrURL);
+  //float *convertBuffer(const float *buffer);
 
  private:
   int sampleRate_;
 
   AudioBus *decodeWithFilePath(const std::string &path) const;
   //        AudioBus *decodeWithURL(const std::string& url);
-  //        AudioBus *convertBuffer();
 
   //        void downloadFileFromURL(const std::string& url, const std::string&
   //        tempFilePath); static size_t WriteCallback(void* contents, size_t
