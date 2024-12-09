@@ -42,7 +42,7 @@ class BaseAudioContextWrapper {
       bool disableNormalization,
       int length);
   std::shared_ptr<AudioBufferWrapper> decodeAudioDataSource(
-      const std::string &source);
+      const std::string &path);
 
  protected:
   std::shared_ptr<AudioDestinationNodeWrapper> destination_;

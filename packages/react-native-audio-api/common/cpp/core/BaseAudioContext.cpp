@@ -110,14 +110,14 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 
 #ifdef ANDROID
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    const std::string &source) {
-  auto audioBus = audioDecoder_->decode(source);
+    const std::string &path) {
+  auto audioBus = audioDecoder_->decodeWithFilePath(path);
   return std::make_shared<AudioBuffer>(audioBus);
 }
 #else
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    const std::string &source) {
-  auto audioBus = audioDecoder_->decode(source);
+    const std::string &path) {
+  auto audioBus = audioDecoder_->decodeWithFilePath(path);
   return std::make_shared<AudioBuffer>(audioBus);
 }
 #endif

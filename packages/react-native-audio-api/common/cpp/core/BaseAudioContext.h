@@ -34,13 +34,14 @@ class BaseAudioContext {
  public:
   BaseAudioContext();
   ~BaseAudioContext();
+
   std::string getState();
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] int getBufferSizeInFrames() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-
   std::shared_ptr<AudioDestinationNode> getDestination();
+
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
@@ -53,11 +54,10 @@ class BaseAudioContext {
       float *imag,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &source);
 
+  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   std::function<void(AudioBus *, int)> renderAudio();
-
   AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
