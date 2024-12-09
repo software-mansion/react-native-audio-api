@@ -25,6 +25,7 @@ namespace audioapi {
 BaseAudioContext::BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
+  audioDecoder_ = std::make_shared<AudioDecoder>(audioPlayer_->getSampleRate());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
   audioDecoder_ =

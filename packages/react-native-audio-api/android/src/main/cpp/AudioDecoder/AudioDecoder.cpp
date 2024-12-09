@@ -24,17 +24,17 @@ AudioBus *AudioDecoder::decode(const std::string &pathOrURL) {
 AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
   SF_INFO sfInfo;
   SNDFILE *sndFile = sf_open(path.c_str(), SFM_READ, &sfInfo);
+
   if (!sndFile) {
     LOGE("Error opening audio file: %s", sf_strerror(sndFile));
-    return nullptr;
+    return new AudioBus(1, 1, 1);
   }
 
   auto *buffer = new float[sfInfo.frames * sfInfo.channels];
-  sf_readf_float(sndFile, buffer, sfInfo.frames);
-  sf_close(sndFile);
+  sf_readf_float(sndFile, buffer, sfInfo.frames * sfInfo.channels);
 
   if (sfInfo.samplerate != sampleRate_) {
-    // todo
+      LOGE("%s: sample rate mismatch: %d != %d", path.c_str(), sfInfo.samplerate, sampleRate_);
   }
 
   auto *audioBus = new AudioBus(
@@ -48,6 +48,7 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
     }
   }
 
+  sf_close(sndFile);
   delete[] buffer;
 
   return audioBus;
