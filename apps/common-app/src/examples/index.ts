@@ -1,6 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import Piano from './Piano';
+import TextToSpeech from './TextToSpeech';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
@@ -11,6 +12,7 @@ type NavigationParamList = {
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
+  TextToSpeech: undefined;
   AudioFile: undefined;
 };
 
@@ -36,6 +38,12 @@ export const Examples: Example[] = [
     title: 'Simple Piano',
     subtitle: 'Play some notes',
     screen: Piano,
+  },
+  {
+    key: 'TextToSpeech',
+    title: 'Text to Speech',
+    subtitle: 'type some text and hear it spoken',
+    screen: TextToSpeech,
   },
   {
     key: 'Metronome',

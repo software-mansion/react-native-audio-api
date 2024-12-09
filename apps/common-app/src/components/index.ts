@@ -1,3 +1,4 @@
+export { default as Icon } from './Icon';
 export { default as Step } from './Step';
 export { default as Steps } from './Steps';
 export { default as Button } from './Button';

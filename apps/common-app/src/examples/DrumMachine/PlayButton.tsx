@@ -4,10 +4,9 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import React, { memo } from 'react';
-// @ts-expect-error
-import { Icon } from '@swmansion/icons';
 import { Pressable, StyleSheet } from 'react-native';
 
+import { Icon } from '../../components';
 import { colors } from '../../styles';
 import type { PlayingInstruments, XYWHRect } from './types';
 import { size } from './constants';
@@ -48,8 +47,7 @@ const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
   return (
     <Animated.View style={[styles.playButtonInner, containerStyle]}>
       <Icon
-        size={48}
-        type="broken"
+        size={40}
         color={colors.white}
         name={isPlaying ? 'pause' : 'play'}
       />

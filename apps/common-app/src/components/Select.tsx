@@ -1,12 +1,11 @@
 import { useState } from 'react';
-// @ts-expect-error
-import { Icon } from '@swmansion/icons';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 
 import withSeparators from '../utils/withSeparators';
 import { colors } from '../styles';
 import Spacer from './Spacer';
+import Icon from './Icon';
 
 interface SelectProps<T extends string> {
   value: T;
@@ -47,12 +46,7 @@ function Select<T extends string>(props: SelectProps<T>) {
       <Pressable onPress={() => setModalOpen(true)}>
         <View style={styles.selectBox}>
           <Text style={styles.selectText}>{value}</Text>
-          <Icon
-            size={34}
-            type="broken"
-            name="list-pointers"
-            color={colors.white}
-          />
+          <Icon size={24} name="menu-hamburger" color={colors.white} />
         </View>
       </Pressable>
       <Modal visible={isModalOpen} animationType="fade" transparent>
