@@ -1,27 +1,35 @@
 import { FC, useEffect, useRef } from 'react';
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, AudioBuffer } from 'react-native-audio-api';
 
 import { Container } from '../../components';
-import { KeyName, keyMap } from './utils';
+import { KeyName, sources, keyMap } from './utils';
 import PianoNote from './PianoNote';
 import Keyboard from './Keyboard';
 
 const Piano: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const notesRef = useRef<null | Record<KeyName, PianoNote>>(null);
+  const bufferListRef = useRef<Partial<Record<KeyName, AudioBuffer>>>({});
 
   const onPressIn = (key: KeyName) => {
-    notesRef.current?.[key].start();
+    notesRef.current?.[key].start(bufferListRef.current);
   };
 
   const onPressOut = (key: KeyName) => {
     notesRef.current?.[key].stop();
   };
 
+  useEffect(() => {}, []);
+
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
+
+    Object.entries(sources).forEach(async ([key, url]) => {
+      bufferListRef.current[key as KeyName] =
+        await audioContextRef.current!.decodeAudioDataSource(url);
+    });
 
     const newNotes: Partial<Record<KeyName, PianoNote>> = {};
 
