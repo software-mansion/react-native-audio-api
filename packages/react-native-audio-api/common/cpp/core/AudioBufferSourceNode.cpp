@@ -18,12 +18,44 @@ bool AudioBufferSourceNode::getLoop() const {
   return loop_;
 }
 
+double AudioBufferSourceNode::getLoopStart() const {
+  return loopStart_;
+}
+
+double AudioBufferSourceNode::getLoopEnd() const {
+  return loopEnd_;
+}
+
+double AudioBufferSourceNode::getDetune() const {
+  return detune_;
+}
+
+double AudioBufferSourceNode::getPlaybackRate() const {
+  return playbackRate_;
+}
+
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
   return buffer_;
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
+}
+
+void AudioBufferSourceNode::setLoopStart(double loopStart) {
+  loopStart_ = loopStart;
+}
+
+void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
+  loopEnd_ = loopEnd;
+}
+
+void AudioBufferSourceNode::setDetune(double detune) {
+  detune_ = detune;
+}
+
+void AudioBufferSourceNode::setPlaybackRate(double playbackRate) {
+  playbackRate_ = playbackRate;
 }
 
 void AudioBufferSourceNode::setBuffer(
