@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 
