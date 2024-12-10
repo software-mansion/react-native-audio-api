@@ -1,14 +1,11 @@
 #include "AudioDecoder.h"
 
 #define MINIAUDIO_IMPLEMENTATION
+#include <android/log.h>
 #include "miniaudio.h"
 
 #include "AudioArray.h"
 #include "AudioBus.h"
-
-#include <android/log.h>
-#define LOG_TAG "AudioDecoder"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 namespace audioapi {
 
@@ -20,7 +17,11 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
       ma_decoder_config_init(ma_format_f32, 2, sampleRate_);
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
-    LOGE("Failed to initialize decoder for file: %s", path.c_str());
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "Failed to initialize decoder for file: %s",
+        path.c_str());
     return new AudioBus(1, 1, 1);
   }
 
@@ -34,7 +35,11 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
   ma_uint64 framesDecoded;
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
   if (framesDecoded == 0) {
-    LOGE("Failed to read any frames from decoder");
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "Failed to decode audio file: %s",
+        path.c_str());
   }
 
   for (int i = 0; i < decoder.outputChannels; ++i) {
