@@ -120,7 +120,7 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
 #endif
 
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
-  if (isClosed()) {
+  if (!isRunning()) {
     return [](AudioBus *, int) {};
   }
 

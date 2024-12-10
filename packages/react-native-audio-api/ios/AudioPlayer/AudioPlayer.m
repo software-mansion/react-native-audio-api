@@ -62,7 +62,8 @@
   // which is safer to base our internal AudioBus sizes.
   // Buut no documentation => no guarantee :)
   // If something is crackling when it should play silence, start here 📻
-  return (int)(self.audioSession.preferredIOBufferDuration * self.audioSession.sampleRate);
+  double maxBufferDuration = fmax(0.02, fmax(self.audioSession.IOBufferDuration, self.audioSession.preferredIOBufferDuration));
+  return (int)(maxBufferDuration * self.audioSession.sampleRate + 1);
 }
 
 - (void)start
