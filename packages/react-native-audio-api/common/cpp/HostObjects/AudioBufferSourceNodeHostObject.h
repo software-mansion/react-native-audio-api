@@ -10,6 +10,8 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioParamHostObject;
+
 class AudioBufferSourceNodeHostObject
     : public AudioScheduledSourceNodeHostObject {
  public:
@@ -31,7 +33,11 @@ class AudioBufferSourceNodeHostObject
   }
 
  private:
+  std::shared_ptr<AudioParamHostObject> detuneParam_;
+  std::shared_ptr<AudioParamHostObject> playbackRateParam_;
+
   std::shared_ptr<AudioBufferSourceNodeWrapper>
   getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
 };
+
 } // namespace audioapi

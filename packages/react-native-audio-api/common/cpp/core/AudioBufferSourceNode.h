@@ -8,6 +8,7 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioParam;
 
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
@@ -17,17 +18,14 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] double getLoopStart() const;
   [[nodiscard]] double getLoopEnd() const;
 
-  [[nodiscard]] double getDetune() const;
-  [[nodiscard]] double getPlaybackRate() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
 
   void setLoop(bool loop);
   void setLoopStart(double loopStart);
   void setLoopEnd(double loopEnd);
-
-  void setDetune(double detune);
-  void setPlaybackRate(double playbackRate);
 
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
@@ -40,9 +38,9 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   double loopEnd_;
   double loopStart_;
 
-  // playback rate aka pitch change properties
-  double detune_;
-  double playbackRate_;
+  // playback rate aka pitch change params
+  std::shared_ptr<AudioParam> detuneParam_;
+  std::shared_ptr<AudioParam> playbackRateParam_;
 
   // internal helpers
   int bufferIndex_;

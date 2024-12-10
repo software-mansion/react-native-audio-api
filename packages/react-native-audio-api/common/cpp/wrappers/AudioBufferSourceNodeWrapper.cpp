@@ -1,10 +1,17 @@
+#include "AudioParamWrapper.h"
 #include "AudioBufferSourceNodeWrapper.h"
 
 namespace audioapi {
 
 AudioBufferSourceNodeWrapper::AudioBufferSourceNodeWrapper(
     const std::shared_ptr<AudioBufferSourceNode> &audioBufferSourceNode)
-    : AudioScheduledSourceNodeWrapper(audioBufferSourceNode) {}
+    : AudioScheduledSourceNodeWrapper(audioBufferSourceNode) {
+      auto detuneParam = audioBufferSourceNode->getDetuneParam();
+      detuneParam_ = std::make_shared<AudioParamWrapper>(detuneParam);
+
+      auto playbackRateParam = audioBufferSourceNode->getPlaybackRateParam();
+      playbackRateParam_ = std::make_shared<AudioParamWrapper>(playbackRateParam);
+}
 
 std::shared_ptr<AudioBufferSourceNode>
 AudioBufferSourceNodeWrapper::getAudioBufferSourceNodeFromAudioNode() {
@@ -16,9 +23,22 @@ bool AudioBufferSourceNodeWrapper::getLoop() {
   return audioBufferSourceNode->getLoop();
 }
 
-void AudioBufferSourceNodeWrapper::setLoop(bool loop) {
+double AudioBufferSourceNodeWrapper::getLoopStart() {
   auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
-  audioBufferSourceNode->setLoop(loop);
+  return audioBufferSourceNode->getLoopStart();
+}
+
+double AudioBufferSourceNodeWrapper::getLoopEnd() {
+  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+  return audioBufferSourceNode->getLoopEnd();
+}
+
+std::shared_ptr<AudioParamWrapper> AudioBufferSourceNodeWrapper::getDetuneParam() {
+  return detuneParam_;
+}
+
+std::shared_ptr<AudioParamWrapper> AudioBufferSourceNodeWrapper::getPlaybackRateParam() {
+  return playbackRateParam_;
 }
 
 std::shared_ptr<AudioBufferWrapper> AudioBufferSourceNodeWrapper::getBuffer() {
@@ -32,6 +52,21 @@ std::shared_ptr<AudioBufferWrapper> AudioBufferSourceNodeWrapper::getBuffer() {
   return std::make_shared<AudioBufferWrapper>(buffer);
 }
 
+void AudioBufferSourceNodeWrapper::setLoop(bool loop) {
+  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+  audioBufferSourceNode->setLoop(loop);
+}
+
+void AudioBufferSourceNodeWrapper::setLoopStart(double loopStart) {
+  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+  audioBufferSourceNode->setLoopStart(loopStart);
+}
+
+void AudioBufferSourceNodeWrapper::setLoopEnd(double loopEnd) {
+  auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
+  audioBufferSourceNode->setLoopEnd(loopEnd);
+}
+
 void AudioBufferSourceNodeWrapper::setBuffer(
     const std::shared_ptr<AudioBufferWrapper> &buffer) {
   auto audioBufferSourceNode = getAudioBufferSourceNodeFromAudioNode();
@@ -42,4 +77,5 @@ void AudioBufferSourceNodeWrapper::setBuffer(
 
   audioBufferSourceNode->setBuffer(buffer->audioBuffer_);
 }
+
 } // namespace audioapi

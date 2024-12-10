@@ -1,11 +1,17 @@
 #include "AudioBufferSourceNodeHostObject.h"
+#include "AudioParamHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
 
 AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
     const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper)
-    : AudioScheduledSourceNodeHostObject(wrapper) {}
+    : AudioScheduledSourceNodeHostObject(wrapper) {
+  auto detuneParam = wrapper->getDetuneParam();
+  detuneParam_ = AudioParamHostObject::createFromWrapper(detuneParam);
+  auto playbackRateParam = wrapper->getPlaybackRateParam();
+  playbackRateParam_ = AudioParamHostObject::createFromWrapper(playbackRateParam);
+}
 
 std::shared_ptr<AudioBufferSourceNodeWrapper> AudioBufferSourceNodeHostObject::
     getAudioBufferSourceNodeWrapperFromAudioNodeWrapper() {
@@ -17,6 +23,10 @@ std::vector<jsi::PropNameID> AudioBufferSourceNodeHostObject::getPropertyNames(
   std::vector<jsi::PropNameID> propertyNames =
       AudioScheduledSourceNodeHostObject::getPropertyNames(runtime);
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "loop"));
+  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "loopStart"));
+  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "loopEnd"));
+  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "detune"));
+  propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "playbackRate"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "buffer"));
   propertyNames.push_back(jsi::PropNameID::forAscii(runtime, "resetBuffer"));
   return propertyNames;
@@ -31,6 +41,26 @@ jsi::Value AudioBufferSourceNodeHostObject::get(
     auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
     auto loop = wrapper->getLoop();
     return {loop};
+  }
+
+  if (propName == "loopStart") {
+    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto loopStart = wrapper->getLoopStart();
+    return {loopStart};
+  }
+
+  if (propName == "loopEnd") {
+    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto loopEnd = wrapper->getLoopEnd();
+    return {loopEnd};
+  }
+
+  if (propName == "detune") {
+    return jsi::Object::createFromHostObject(runtime, detuneParam_);
+  }
+
+  if (propName == "playbackRate") {
+    return jsi::Object::createFromHostObject(runtime, playbackRateParam_);
   }
 
   if (propName == "buffer") {
@@ -57,6 +87,18 @@ void AudioBufferSourceNodeHostObject::set(
   if (propName == "loop") {
     auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
     wrapper->setLoop(value.getBool());
+    return;
+  }
+
+  if (propName == "loopStart") {
+    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    wrapper->setLoopStart(value.getNumber());
+    return;
+  }
+
+  if (propName == "loopEnd") {
+    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    wrapper->setLoopEnd(value.getNumber());
     return;
   }
 

@@ -1242,7 +1242,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context (4.14.0):
+  - react-native-safe-area-context (4.14.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1255,8 +1255,8 @@ PODS:
     - React-featureflags
     - React-graphics
     - React-ImageManager
-    - react-native-safe-area-context/common (= 4.14.0)
-    - react-native-safe-area-context/fabric (= 4.14.0)
+    - react-native-safe-area-context/common (= 4.14.1)
+    - react-native-safe-area-context/fabric (= 4.14.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-rendererdebug
@@ -1265,7 +1265,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/common (4.14.0):
+  - react-native-safe-area-context/common (4.14.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1286,7 +1286,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/fabric (4.14.0):
+  - react-native-safe-area-context/fabric (4.14.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1308,7 +1308,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-skia (1.5.3):
+  - react-native-skia (1.7.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1619,7 +1619,7 @@ PODS:
     - React-logger (= 0.76.0)
     - React-perflogger (= 0.76.0)
     - React-utils (= 0.76.0)
-  - RNAudioAPI (0.2.0):
+  - RNAudioAPI (0.3.0-rc1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1640,7 +1640,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNGestureHandler (2.21.1):
+  - RNGestureHandler (2.21.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1661,7 +1661,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNReanimated (3.16.1):
+  - RNReanimated (3.16.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1681,10 +1681,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated (= 3.16.1)
-    - RNReanimated/worklets (= 3.16.1)
+    - RNReanimated/reanimated (= 3.16.3)
+    - RNReanimated/worklets (= 3.16.3)
     - Yoga
-  - RNReanimated/reanimated (3.16.1):
+  - RNReanimated/reanimated (3.16.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1704,9 +1704,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated/apple (= 3.16.1)
+    - RNReanimated/reanimated/apple (= 3.16.3)
     - Yoga
-  - RNReanimated/reanimated/apple (3.16.1):
+  - RNReanimated/reanimated/apple (3.16.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1727,7 +1727,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNReanimated/worklets (3.16.1):
+  - RNReanimated/worklets (3.16.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2053,8 +2053,8 @@ SPEC CHECKSUMS:
   React-logger: d1a89c7d9b3c847eb63eb85724c54b06cae2c939
   React-Mapbuffer: b0b4ace5b62b269f3838df26ba2d8b4f39f90783
   React-microtasksnativemodule: 0b7db04c18f6bb01ef5b1f9007c3229abecc35dd
-  react-native-safe-area-context: 2500e4fe998caad50ad3bc51ec23ef951308569e
-  react-native-skia: b5216ffad62ec47294094cb25630332bb8f96493
+  react-native-safe-area-context: 782fec0553f14a630a2bac87b116e512a9f35500
+  react-native-skia: bcbabbd748dd4c9ec02f33df07fa49d1d76fc8c0
   react-native-vector-icons: 1c0923f822a6d103e0f3583b533c930803f21f4b
   React-nativeconfig: 72c10ff34863148ef90df9c9c8eacba99d2faaaa
   React-NativeModulesApple: 5ec49182fa000b2215ee1bed03e2867f8323ccf5
@@ -2083,9 +2083,9 @@ SPEC CHECKSUMS:
   React-utils: d9624101245ebaab39c9f1bd786132da0b4f27ff
   ReactCodegen: dbfef1fef26f42c900bb1884fa149d49d501d64d
   ReactCommon: 429ca28cd813c31359c73ffac6dc24f93347d522
-  RNAudioAPI: adb400fcab1b85cafaff4e0880be5d4616fd4727
-  RNGestureHandler: a3822e519fd1e9885b92d8c9bd82a7a0be305fe3
-  RNReanimated: 77242c6d67416988a2fd9f5cf574bb3e60016362
+  RNAudioAPI: 988ab6ec4fc80771859b0dd0dd86ea1571ccde09
+  RNGestureHandler: 0e5ae8d72ef4afb855e98dcdbe60f27d938abe13
+  RNReanimated: 006a5d3961bf09c1e96d62ed436e02b2e43b89bb
   RNScreens: e389d6a6a66a4f0d3662924ecae803073ccce8ec
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 1d66db49f38fd9e576a1d7c3b081e46ab4c28b9e

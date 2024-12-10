@@ -3,7 +3,9 @@
 #include "AudioArray.h"
 #include "AudioBufferSourceNode.h"
 #include "AudioBus.h"
+#include "AudioParam.h"
 #include "BaseAudioContext.h"
+#include "Constants.h"
 
 namespace audioapi {
 
@@ -11,6 +13,15 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
+
+  detuneParam_ = std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
+  playbackRateParam_ = std::make_shared<AudioParam>(
+    context,
+    1.0,
+    MOST_NEGATIVE_SINGLE_FLOAT,
+    MOST_POSITIVE_SINGLE_FLOAT
+  );
+
   isInitialized_ = true;
 }
 
@@ -26,12 +37,12 @@ double AudioBufferSourceNode::getLoopEnd() const {
   return loopEnd_;
 }
 
-double AudioBufferSourceNode::getDetune() const {
-  return detune_;
+std::shared_ptr<AudioParam> AudioBufferSourceNode::getDetuneParam() const {
+  return detuneParam_;
 }
 
-double AudioBufferSourceNode::getPlaybackRate() const {
-  return playbackRate_;
+std::shared_ptr<AudioParam> AudioBufferSourceNode::getPlaybackRateParam() const {
+  return playbackRateParam_;
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
@@ -48,14 +59,6 @@ void AudioBufferSourceNode::setLoopStart(double loopStart) {
 
 void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
   loopEnd_ = loopEnd;
-}
-
-void AudioBufferSourceNode::setDetune(double detune) {
-  detune_ = detune;
-}
-
-void AudioBufferSourceNode::setPlaybackRate(double playbackRate) {
-  playbackRate_ = playbackRate;
 }
 
 void AudioBufferSourceNode::setBuffer(
