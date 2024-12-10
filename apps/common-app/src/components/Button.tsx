@@ -18,7 +18,8 @@ const Button: FC<ButtonProps> = ({
 }) => {
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         {
