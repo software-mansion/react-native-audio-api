@@ -19,16 +19,18 @@ class AudioScheduledSourceNode : public AudioNode {
   void start(double time);
   void stop(double time);
 
-  bool isFinished();
+  bool isUnscheduled();
+  bool isScheduled();
   bool isPlaying();
+  bool isFinished();
 
  protected:
   std::atomic<PlaybackState> playbackState_;
+  void updatePlaybackInfo(AudioBus *processingBus, int framesToProcess, size_t& startOffset, size_t& nonSilentFramesToProcess);
 
  private:
-  void startPlayback();
-  void stopPlayback();
-  void waitAndExecute(double time, const std::function<void(double)> &fun);
+  size_t startFrame_;
+  size_t stopFrame_;
 };
 
 } // namespace audioapi

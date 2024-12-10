@@ -40,15 +40,21 @@ void OscillatorNode::setPeriodicWave(
 }
 
 void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+
+
   if (!isPlaying()) {
     processingBus->zero();
     return;
   }
 
-  double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
+  double time = context_->getCurrentTime() + startOffset * deltaTime;
 
-  for (int i = 0; i < framesToProcess; i += 1) {
+  for (size_t i = startOffset; i < offsetLength; i += 1) {
     auto detuneRatio =
         std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
     auto detunedFrequency =
