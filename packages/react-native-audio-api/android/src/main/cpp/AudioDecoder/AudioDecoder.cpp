@@ -1,8 +1,8 @@
 #include "AudioDecoder.h"
 
 #define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio.h>
 #include <android/log.h>
-#include "miniaudio.h"
 
 #include "AudioArray.h"
 #include "AudioBus.h"
