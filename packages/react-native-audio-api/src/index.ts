@@ -1,8 +1,4 @@
-import {
-  AudioSource,
-  ContextState,
-  PeriodicWaveConstraints,
-} from './core/types';
+import { ContextState, PeriodicWaveConstraints } from './core/types';
 
 export class AudioBuffer {
   readonly length: number;
@@ -391,13 +387,7 @@ export class AudioContext {
     );
   }
 
-  async decodeAudioDataSource(
-    source: AudioSource | number
-  ): Promise<AudioBuffer> {
-    if (typeof source === 'number') {
-      throw new Error('Not yet implemented');
-    }
-
+  async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
     const arrayBuffer = await fetch(source).then((response) =>
       response.arrayBuffer()
     );

@@ -1,5 +1,5 @@
 import { IBaseAudioContext } from '../interfaces';
-import { ContextState, PeriodicWaveConstraints, AudioSource } from './types';
+import { ContextState, PeriodicWaveConstraints } from './types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
 import GainNode from './GainNode';
@@ -9,7 +9,6 @@ import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import { InvalidAccessError } from '../errors';
-import { resolveAudioSource } from '../utils/resolveAudioSource';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -96,12 +95,8 @@ export default class BaseAudioContext {
     );
   }
 
-  async decodeAudioDataSource(
-    source: AudioSource | number
-  ): Promise<AudioBuffer> {
-    const buffer = await this.context.decodeAudioDataSource(
-      resolveAudioSource(source)
-    );
+  async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
+    const buffer = await this.context.decodeAudioDataSource(sourcePath);
 
     return new AudioBuffer(buffer);
   }

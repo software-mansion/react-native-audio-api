@@ -19,7 +19,7 @@ IOSAudioDecoder::~IOSAudioDecoder()
 
 AudioBus *IOSAudioDecoder::decodeWithFilePath(const std::string &path)
 {
-  auto bufferList = [audioDecoder_ decode:[NSString stringWithUTF8String:path.c_str()]];
+  auto bufferList = [audioDecoder_ decodeWithFile:[NSString stringWithUTF8String:path.c_str()]];
   AudioBus *audioBus;
   if (bufferList) {
     auto numberOfChannels = bufferList->mNumberBuffers;
@@ -36,5 +36,11 @@ AudioBus *IOSAudioDecoder::decodeWithFilePath(const std::string &path)
   }
 
   return audioBus;
+}
+
+AudioBus *IOSAudioDecoder::decodeWithArrayBuffer()
+{
+  // TODO: implement his
+  return new AudioBus(sampleRate_, 1, 1);
 }
 } // namespace audioapi

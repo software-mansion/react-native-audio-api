@@ -22,5 +22,7 @@ class IOSAudioDecoder {
   ~IOSAudioDecoder();
 
   AudioBus *decodeWithFilePath(const std::string &path);
+  // TODO: implement this
+  AudioBus *decodeWithArrayBuffer();
 };
 } // namespace audioapi
