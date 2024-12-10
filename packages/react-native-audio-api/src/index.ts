@@ -150,8 +150,14 @@ export class AudioScheduledSourceNode extends AudioNode {
 }
 
 export class AudioBufferSourceNode extends AudioScheduledSourceNode {
+  readonly playbackRate: AudioParam;
+  readonly detune: AudioParam;
+
   constructor(context: AudioContext, node: globalThis.AudioBufferSourceNode) {
     super(context, node);
+
+    this.detune = new AudioParam(node.detune);
+    this.playbackRate = new AudioParam(node.playbackRate);
   }
 
   public get buffer(): AudioBuffer | null {
@@ -179,6 +185,22 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loop(value: boolean) {
     (this.node as globalThis.AudioBufferSourceNode).loop = value;
+  }
+
+  public get loopStart(): number {
+    return (this.node as globalThis.AudioBufferSourceNode).loopStart;
+  }
+
+  public set loopStart(value: number) {
+    (this.node as globalThis.AudioBufferSourceNode).loopStart = value;
+  }
+
+  public get loopEnd(): number {
+    return (this.node as globalThis.AudioBufferSourceNode).loopEnd;
+  }
+
+  public set loopEnd(value: number) {
+    (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
   }
 }
 
