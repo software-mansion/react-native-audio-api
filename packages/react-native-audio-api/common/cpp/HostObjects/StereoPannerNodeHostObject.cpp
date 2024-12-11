@@ -4,10 +4,10 @@ namespace audioapi {
 using namespace facebook;
 
 StereoPannerNodeHostObject::StereoPannerNodeHostObject(
-    const std::shared_ptr<StereoPannerNodeWrapper> &wrapper)
-    : AudioNodeHostObject(wrapper) {
-  auto panParam = wrapper->getPanParam();
-  panParam_ = AudioParamHostObject::createFromWrapper(panParam);
+    const std::shared_ptr<StereoPannerNode> &node)
+    : AudioNodeHostObject(node) {
+  auto panParam = node->getPanParam();
+  panParam_ = std::make_shared<AudioParamHostObject>(panParam);
 }
 
 std::vector<jsi::PropNameID> StereoPannerNodeHostObject::getPropertyNames(

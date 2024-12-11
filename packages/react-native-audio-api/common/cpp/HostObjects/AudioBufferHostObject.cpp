@@ -4,8 +4,8 @@ namespace audioapi {
 using namespace facebook;
 
 AudioBufferHostObject::AudioBufferHostObject(
-    const std::shared_ptr<AudioBufferWrapper> &wrapper)
-    : wrapper_(wrapper) {}
+    const std::shared_ptr<AudioBuffer> &audioBuffer)
+    : audioBuffer_(audioBuffer) {}
 
 std::vector<jsi::PropNameID> AudioBufferHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
@@ -29,19 +29,19 @@ jsi::Value AudioBufferHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "sampleRate") {
-    return {wrapper_->getSampleRate()};
+    return {audioBuffer_->getSampleRate()};
   }
 
   if (propName == "length") {
-    return {wrapper_->getLength()};
+    return {audioBuffer_->getLength()};
   }
 
   if (propName == "duration") {
-    return {wrapper_->getDuration()};
+    return {audioBuffer_->getDuration()};
   }
 
   if (propName == "numberOfChannels") {
-    return {wrapper_->getNumberOfChannels()};
+    return {audioBuffer_->getNumberOfChannels()};
   }
 
   if (propName == "getChannelData") {
@@ -55,10 +55,10 @@ jsi::Value AudioBufferHostObject::get(
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           int channel = static_cast<int>(args[0].getNumber());
-          float *channelData = wrapper_->getChannelData(channel);
+          float *channelData = audioBuffer_->getChannelData(channel);
 
-          auto array = jsi::Array(rt, wrapper_->getLength());
-          for (int i = 0; i < wrapper_->getLength(); i++) {
+          auto array = jsi::Array(rt, audioBuffer_->getLength());
+          for (int i = 0; i < audioBuffer_->getLength(); i++) {
             array.setValueAtIndex(rt, i, jsi::Value(channelData[i]));
           }
 
@@ -84,7 +84,7 @@ jsi::Value AudioBufferHostObject::get(
 
           auto *destinationData = new float[destinationLength];
 
-          wrapper_->copyFromChannel(
+          audioBuffer_->copyFromChannel(
               destinationData,
               destinationLength,
               channelNumber,
@@ -121,7 +121,7 @@ jsi::Value AudioBufferHostObject::get(
                 static_cast<float>(source.getValueAtIndex(rt, i).getNumber());
           }
 
-          wrapper_->copyToChannel(
+          audioBuffer_->copyToChannel(
               sourceData, sourceLength, channelNumber, startInChannel);
 
           return jsi::Value::undefined();

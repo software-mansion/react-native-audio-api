@@ -4,8 +4,8 @@ namespace audioapi {
 using namespace facebook;
 
 AudioParamHostObject::AudioParamHostObject(
-    const std::shared_ptr<AudioParamWrapper> &wrapper)
-    : wrapper_(wrapper) {}
+    const std::shared_ptr<AudioParam> &param)
+    : param_(param) {}
 
 std::vector<jsi::PropNameID> AudioParamHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
@@ -28,19 +28,19 @@ jsi::Value AudioParamHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "value") {
-    return {wrapper_->getValue()};
+    return {param_->getValue()};
   }
 
   if (propName == "defaultValue") {
-    return {wrapper_->getDefaultValue()};
+    return {param_->getDefaultValue()};
   }
 
   if (propName == "minValue") {
-    return {wrapper_->getMinValue()};
+    return {param_->getMinValue()};
   }
 
   if (propName == "maxValue") {
-    return {wrapper_->getMaxValue()};
+    return {param_->getMaxValue()};
   }
 
   if (propName == "setValueAtTime") {
@@ -53,9 +53,9 @@ jsi::Value AudioParamHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          double value = args[0].getNumber();
+            auto value = static_cast<float>(args[0].getNumber());
           double startTime = args[1].getNumber();
-          wrapper_->setValueAtTime(value, startTime);
+          param_->setValueAtTime(value, startTime);
           return jsi::Value::undefined();
         });
   }
@@ -70,9 +70,9 @@ jsi::Value AudioParamHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          double value = args[0].getNumber();
+            auto value = static_cast<float>(args[0].getNumber());
           double endTime = args[1].getNumber();
-          wrapper_->linearRampToValueAtTime(value, endTime);
+          param_->linearRampToValueAtTime(value, endTime);
           return jsi::Value::undefined();
         });
   }
@@ -87,9 +87,9 @@ jsi::Value AudioParamHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          double value = args[0].getNumber();
+          auto value = static_cast<float>(args[0].getNumber());
           double endTime = args[1].getNumber();
-          wrapper_->exponentialRampToValueAtTime(value, endTime);
+          param_->exponentialRampToValueAtTime(value, endTime);
           return jsi::Value::undefined();
         });
   }
@@ -104,8 +104,8 @@ void AudioParamHostObject::set(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "value") {
-    double paramValue = value.getNumber();
-    wrapper_->setValue(paramValue);
+    auto paramValue = static_cast<float>(value.getNumber());
+    param_->setValue(paramValue);
     return;
   }
 

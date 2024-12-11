@@ -4,10 +4,10 @@ namespace audioapi {
 using namespace facebook;
 
 GainNodeHostObject::GainNodeHostObject(
-    const std::shared_ptr<GainNodeWrapper> &wrapper)
-    : AudioNodeHostObject(wrapper) {
-  auto gainParamWrapper = wrapper->getGainParam();
-  gainParam_ = AudioParamHostObject::createFromWrapper(gainParamWrapper);
+    const std::shared_ptr<GainNode> &node)
+    : AudioNodeHostObject(node) {
+  auto gainParamWrapper = node->getGainParam();
+  gainParam_ = std::make_shared<AudioParamHostObject>(gainParamWrapper);
 }
 
 std::vector<jsi::PropNameID> GainNodeHostObject::getPropertyNames(

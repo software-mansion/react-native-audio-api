@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "AudioNodeHostObject.h"
-#include "AudioScheduledSourceNodeWrapper.h"
+#include "AudioScheduledSourceNode.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -12,8 +12,8 @@ using namespace facebook;
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
-      const std::shared_ptr<AudioScheduledSourceNodeWrapper> &wrapper)
-      : AudioNodeHostObject(wrapper) {}
+      const std::shared_ptr<AudioScheduledSourceNode> &node)
+      : AudioNodeHostObject(node) {}
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -25,7 +25,7 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
  private:
-  std::shared_ptr<AudioScheduledSourceNodeWrapper>
-  getAudioScheduledSourceNodeWrapperFromAudioNodeWrapper();
+  std::shared_ptr<AudioScheduledSourceNode>
+  getAudioScheduledSourceNodeFromAudioNode();
 };
 } // namespace audioapi

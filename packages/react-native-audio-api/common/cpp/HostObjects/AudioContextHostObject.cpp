@@ -4,9 +4,9 @@ namespace audioapi {
 using namespace facebook;
 
 AudioContextHostObject::AudioContextHostObject(
-    const std::shared_ptr<AudioContextWrapper> &wrapper,
-    std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor)
-    : BaseAudioContextHostObject(wrapper, promiseVendor) {}
+    const std::shared_ptr<AudioContext> &audioContext,
+    const std::shared_ptr<JsiPromise::PromiseVendor>& promiseVendor)
+    : BaseAudioContextHostObject(audioContext, promiseVendor) {}
 
 std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(
     jsi::Runtime &runtime) {
@@ -31,7 +31,7 @@ jsi::Value AudioContextHostObject::get(
             const jsi::Value &thisValue,
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
-          getAudioContextWrapperFromBaseAudioContextWrapper()->close();
+          getAudioContextFromBaseAudioContext()->close();
           return jsi::Value::undefined();
         });
   }
@@ -48,8 +48,8 @@ void AudioContextHostObject::set(
   return BaseAudioContextHostObject::set(runtime, propNameId, value);
 }
 
-std::shared_ptr<AudioContextWrapper>
-AudioContextHostObject::getAudioContextWrapperFromBaseAudioContextWrapper() {
-  return std::static_pointer_cast<AudioContextWrapper>(wrapper_);
+std::shared_ptr<AudioContext>
+AudioContextHostObject::getAudioContextFromBaseAudioContext() {
+  return std::static_pointer_cast<AudioContext>(context_);
 }
 } // namespace audioapi

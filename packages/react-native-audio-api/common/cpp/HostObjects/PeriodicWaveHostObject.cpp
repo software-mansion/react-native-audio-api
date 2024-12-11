@@ -4,8 +4,8 @@ namespace audioapi {
 using namespace facebook;
 
 PeriodicWaveHostObject::PeriodicWaveHostObject(
-    const std::shared_ptr<PeriodicWaveWrapper> &wrapper)
-    : wrapper_(wrapper) {}
+    const std::shared_ptr<PeriodicWave> &periodicWave)
+    : periodicWave_(periodicWave) {}
 
 std::vector<jsi::PropNameID> PeriodicWaveHostObject::getPropertyNames(
     jsi::Runtime &runtime) {

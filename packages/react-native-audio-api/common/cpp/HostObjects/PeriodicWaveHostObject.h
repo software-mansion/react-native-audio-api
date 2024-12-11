@@ -4,17 +4,17 @@
 #include <memory>
 #include <vector>
 
-#include "PeriodicWaveWrapper.h"
+#include "PeriodicWave.h"
 
 namespace audioapi {
 using namespace facebook;
 
 class PeriodicWaveHostObject : public jsi::HostObject {
  public:
-  std::shared_ptr<PeriodicWaveWrapper> wrapper_;
+  std::shared_ptr<PeriodicWave> periodicWave_;
 
   explicit PeriodicWaveHostObject(
-      const std::shared_ptr<PeriodicWaveWrapper> &wrapper);
+      const std::shared_ptr<PeriodicWave> &periodicWave);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -24,10 +24,5 @@ class PeriodicWaveHostObject : public jsi::HostObject {
       const jsi::Value &value) override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
-
-  static std::shared_ptr<PeriodicWaveHostObject> createFromWrapper(
-      const std::shared_ptr<PeriodicWaveWrapper> &wrapper) {
-    return std::make_shared<PeriodicWaveHostObject>(wrapper);
-  }
 };
 } // namespace audioapi

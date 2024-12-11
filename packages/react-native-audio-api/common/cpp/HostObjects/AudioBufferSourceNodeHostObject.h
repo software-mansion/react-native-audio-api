@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "AudioBufferHostObject.h"
-#include "AudioBufferSourceNodeWrapper.h"
+#include "AudioBufferSourceNode.h"
 #include "AudioScheduledSourceNodeHostObject.h"
 
 namespace audioapi {
@@ -14,7 +14,7 @@ class AudioBufferSourceNodeHostObject
     : public AudioScheduledSourceNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper);
+      const std::shared_ptr<AudioBufferSourceNode> &node);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -25,13 +25,8 @@ class AudioBufferSourceNodeHostObject
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
-  static std::shared_ptr<AudioBufferSourceNodeHostObject> createFromWrapper(
-      const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper) {
-    return std::make_shared<AudioBufferSourceNodeHostObject>(wrapper);
-  }
-
  private:
-  std::shared_ptr<AudioBufferSourceNodeWrapper>
-  getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+  std::shared_ptr<AudioBufferSourceNode>
+  getAudioBufferSourceNodeFromAudioNode();
 };
 } // namespace audioapi

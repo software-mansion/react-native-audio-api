@@ -3,22 +3,18 @@
 namespace audioapi {
 using namespace facebook;
 
-std::shared_ptr<BiquadFilterNodeWrapper>
-BiquadFilterNodeHostObject::getBiquadFilterNodeWrapperFromAudioNodeWrapper() {
-  return std::static_pointer_cast<BiquadFilterNodeWrapper>(wrapper_);
+std::shared_ptr<BiquadFilterNode>
+BiquadFilterNodeHostObject::getBiquadFilterNodeFromAudioNode() {
+  return std::static_pointer_cast<BiquadFilterNode>(node_);
 }
 
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
-    const std::shared_ptr<BiquadFilterNodeWrapper> &wrapper)
-    : AudioNodeHostObject(wrapper) {
-  auto frequencyParam = wrapper->getFrequencyParam();
-  frequencyParam_ = AudioParamHostObject::createFromWrapper(frequencyParam);
-  auto detuneParam = wrapper->getDetuneParam();
-  detuneParam_ = AudioParamHostObject::createFromWrapper(detuneParam);
-  auto QParam = wrapper->getQParam();
-  QParam_ = AudioParamHostObject::createFromWrapper(QParam);
-  auto gainParam = wrapper->getGainParam();
-  gainParam_ = AudioParamHostObject::createFromWrapper(gainParam);
+    const std::shared_ptr<BiquadFilterNode> &node)
+    : AudioNodeHostObject(node) {
+  frequencyParam_ = std::make_shared<AudioParamHostObject>(node->getFrequencyParam());
+  detuneParam_ = std::make_shared<AudioParamHostObject>(node->getDetuneParam());
+  QParam_ = std::make_shared<AudioParamHostObject>(node->getQParam());
+  gainParam_ = std::make_shared<AudioParamHostObject>(node->getGainParam());
 }
 
 std::vector<jsi::PropNameID> BiquadFilterNodeHostObject::getPropertyNames(
@@ -57,8 +53,8 @@ jsi::Value BiquadFilterNodeHostObject::get(
   }
 
   if (propName == "type") {
-    auto wrapper = getBiquadFilterNodeWrapperFromAudioNodeWrapper();
-    auto waveType = wrapper->getType();
+    auto node = getBiquadFilterNodeFromAudioNode();
+    auto waveType = node->getType();
     return jsi::String::createFromUtf8(runtime, waveType);
   }
 
@@ -86,8 +82,8 @@ jsi::Value BiquadFilterNodeHostObject::get(
           std::vector<float> phaseResponseOutVector(
               phaseResponseOut.length(rt));
 
-          auto wrapper = getBiquadFilterNodeWrapperFromAudioNodeWrapper();
-          wrapper->getFrequencyResponse(
+          auto node = getBiquadFilterNodeFromAudioNode();
+          node->getFrequencyResponse(
               frequencyArrayVector,
               magResponseOutVector,
               phaseResponseOutVector);
@@ -115,8 +111,8 @@ void BiquadFilterNodeHostObject::set(
 
   if (propName == "type") {
     std::string filterType = value.getString(runtime).utf8(runtime);
-    auto wrapper = getBiquadFilterNodeWrapperFromAudioNodeWrapper();
-    wrapper->setType(filterType);
+    auto node = getBiquadFilterNodeFromAudioNode();
+    node->setType(filterType);
     return;
   }
 

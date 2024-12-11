@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "AudioDestinationNodeWrapper.h"
+#include "AudioDestinationNode.h"
 #include "AudioNodeHostObject.h"
 
 namespace audioapi {
@@ -12,7 +12,7 @@ using namespace facebook;
 class AudioDestinationNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioDestinationNodeHostObject(
-      const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper);
+      const std::shared_ptr<AudioDestinationNode> &node);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -22,10 +22,5 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
       const jsi::Value &value) override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
-
-  static std::shared_ptr<AudioDestinationNodeHostObject> createFromWrapper(
-      const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper) {
-    return std::make_shared<AudioDestinationNodeHostObject>(wrapper);
-  }
 };
 } // namespace audioapi

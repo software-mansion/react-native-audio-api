@@ -4,12 +4,12 @@ namespace audioapi {
 using namespace facebook;
 
 AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
-    const std::shared_ptr<AudioBufferSourceNodeWrapper> &wrapper)
-    : AudioScheduledSourceNodeHostObject(wrapper) {}
+    const std::shared_ptr<AudioBufferSourceNode> &node)
+    : AudioScheduledSourceNodeHostObject(node) {}
 
-std::shared_ptr<AudioBufferSourceNodeWrapper> AudioBufferSourceNodeHostObject::
-    getAudioBufferSourceNodeWrapperFromAudioNodeWrapper() {
-  return std::static_pointer_cast<AudioBufferSourceNodeWrapper>(wrapper_);
+std::shared_ptr<AudioBufferSourceNode> AudioBufferSourceNodeHostObject::
+    getAudioBufferSourceNodeFromAudioNode() {
+  return std::static_pointer_cast<AudioBufferSourceNode>(node_);
 }
 
 std::vector<jsi::PropNameID> AudioBufferSourceNodeHostObject::getPropertyNames(
@@ -28,20 +28,20 @@ jsi::Value AudioBufferSourceNodeHostObject::get(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "loop") {
-    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto wrapper = getAudioBufferSourceNodeFromAudioNode();
     auto loop = wrapper->getLoop();
     return {loop};
   }
 
   if (propName == "buffer") {
-    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto wrapper = getAudioBufferSourceNodeFromAudioNode();
     auto buffer = wrapper->getBuffer();
 
     if (!buffer) {
       return jsi::Value::null();
     }
 
-    auto bufferHostObject = AudioBufferHostObject::createFromWrapper(buffer);
+    auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
     return jsi::Object::createFromHostObject(runtime, bufferHostObject);
   }
 
@@ -55,22 +55,22 @@ void AudioBufferSourceNodeHostObject::set(
   auto propName = propNameId.utf8(runtime);
 
   if (propName == "loop") {
-    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto wrapper = getAudioBufferSourceNodeFromAudioNode();
     wrapper->setLoop(value.getBool());
     return;
   }
 
   if (propName == "buffer") {
-    auto wrapper = getAudioBufferSourceNodeWrapperFromAudioNodeWrapper();
+    auto bufferSource = getAudioBufferSourceNodeFromAudioNode();
 
     if (value.isNull()) {
-      wrapper->setBuffer(std::shared_ptr<AudioBufferWrapper>(nullptr));
+      bufferSource->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
       return;
     }
 
     auto bufferHostObject =
         value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    wrapper->setBuffer(bufferHostObject->wrapper_);
+    bufferSource->setBuffer(bufferHostObject->audioBuffer_);
     return;
   }
 

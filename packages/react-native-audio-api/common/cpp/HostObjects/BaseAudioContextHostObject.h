@@ -8,7 +8,7 @@
 #include "AudioBufferHostObject.h"
 #include "AudioBufferSourceNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
-#include "BaseAudioContextWrapper.h"
+#include "BaseAudioContext.h"
 #include "BiquadFilterNodeHostObject.h"
 #include "GainNodeHostObject.h"
 #include "JsiPromise.h"
@@ -22,8 +22,8 @@ using namespace facebook;
 class BaseAudioContextHostObject : public jsi::HostObject {
  public:
   explicit BaseAudioContextHostObject(
-      const std::shared_ptr<BaseAudioContextWrapper> &wrapper,
-      std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor);
+      const std::shared_ptr<BaseAudioContext> &context,
+      const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -35,7 +35,7 @@ class BaseAudioContextHostObject : public jsi::HostObject {
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
  protected:
-  std::shared_ptr<BaseAudioContextWrapper> wrapper_;
+  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
   std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor_;
 };

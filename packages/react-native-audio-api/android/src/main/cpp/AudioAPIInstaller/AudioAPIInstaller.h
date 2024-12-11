@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "AudioAPIInstallerHostObject.h"
-#include "AudioAPIInstallerWrapper.h"
 #include "AudioContext.h"
 
 namespace audioapi {
@@ -38,7 +37,6 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
     });
   }
 
-  std::shared_ptr<AudioContext> createAudioContext();
   void install();
 
  private:

@@ -21,8 +21,6 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/*.h"
   "../common/cpp/core/*.cpp"
   "../common/cpp/core/*.h"
-  "../common/cpp/wrappers/*.cpp"
-  "../common/cpp/wrappers/*.h"
   "../common/cpp/HostObjects/*.cpp"
   "../common/cpp/HostObjects/*.h"
   "../common/cpp/utils/*.cpp"

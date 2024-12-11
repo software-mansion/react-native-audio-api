@@ -3,18 +3,18 @@
 namespace audioapi {
 using namespace facebook;
 
-std::shared_ptr<OscillatorNodeWrapper>
-OscillatorNodeHostObject::getOscillatorNodeWrapperFromAudioNodeWrapper() {
-  return std::static_pointer_cast<OscillatorNodeWrapper>(wrapper_);
+std::shared_ptr<OscillatorNode>
+OscillatorNodeHostObject::getOscillatorNodeFromAudioNode() {
+  return std::static_pointer_cast<OscillatorNode>(node_);
 }
 
 OscillatorNodeHostObject::OscillatorNodeHostObject(
-    const std::shared_ptr<OscillatorNodeWrapper> &wrapper)
-    : AudioScheduledSourceNodeHostObject(wrapper) {
-  auto frequencyParam = wrapper->getFrequencyParam();
-  frequencyParam_ = AudioParamHostObject::createFromWrapper(frequencyParam);
-  auto detuneParam = wrapper->getDetuneParam();
-  detuneParam_ = AudioParamHostObject::createFromWrapper(detuneParam);
+    const std::shared_ptr<OscillatorNode> &node)
+    : AudioScheduledSourceNodeHostObject(node) {
+  auto frequencyParam = node->getFrequencyParam();
+  frequencyParam_ = std::make_shared<AudioParamHostObject>(frequencyParam);
+  auto detuneParam = node->getDetuneParam();
+  detuneParam_ = std::make_shared<AudioParamHostObject>(detuneParam);
 }
 
 std::vector<jsi::PropNameID> OscillatorNodeHostObject::getPropertyNames(
@@ -43,8 +43,8 @@ jsi::Value OscillatorNodeHostObject::get(
   }
 
   if (propName == "type") {
-    auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
-    auto waveType = wrapper->getType();
+    auto node = getOscillatorNodeFromAudioNode();
+    auto waveType = node->getType();
     return jsi::String::createFromUtf8(runtime, waveType);
   }
 
@@ -58,11 +58,11 @@ jsi::Value OscillatorNodeHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
+          auto node = getOscillatorNodeFromAudioNode();
           auto periodicWaveHostObject =
               args[0].getObject(rt).asHostObject<PeriodicWaveHostObject>(rt);
 
-          wrapper->setPeriodicWave(periodicWaveHostObject->wrapper_);
+          node->setPeriodicWave(periodicWaveHostObject->periodicWave_);
           return jsi::Value::undefined();
         });
   }
@@ -78,8 +78,8 @@ void OscillatorNodeHostObject::set(
 
   if (propName == "type") {
     std::string waveType = value.getString(runtime).utf8(runtime);
-    auto wrapper = getOscillatorNodeWrapperFromAudioNodeWrapper();
-    wrapper->setType(waveType);
+    auto node = getOscillatorNodeFromAudioNode();
+    node->setType(waveType);
     return;
   }
 

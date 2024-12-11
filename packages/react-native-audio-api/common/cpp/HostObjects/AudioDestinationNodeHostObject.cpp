@@ -4,8 +4,8 @@ namespace audioapi {
 using namespace facebook;
 
 AudioDestinationNodeHostObject::AudioDestinationNodeHostObject(
-    const std::shared_ptr<AudioDestinationNodeWrapper> &wrapper)
-    : AudioNodeHostObject(wrapper) {}
+    const std::shared_ptr<AudioDestinationNode> &node)
+    : AudioNodeHostObject(node) {}
 
 std::vector<jsi::PropNameID> AudioDestinationNodeHostObject::getPropertyNames(
     jsi::Runtime &runtime) {

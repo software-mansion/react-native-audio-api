@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "AudioContextWrapper.h"
+#include "AudioContext.h"
 #include "BaseAudioContextHostObject.h"
 #include "JsiPromise.h"
 
@@ -14,8 +14,8 @@ using namespace facebook;
 class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
-      const std::shared_ptr<AudioContextWrapper> &wrapper,
-      std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor);
+      const std::shared_ptr<AudioContext> &audioContext,
+      const std::shared_ptr<JsiPromise::PromiseVendor>& promiseVendor);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -26,14 +26,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
-  static std::shared_ptr<AudioContextHostObject> createFromWrapper(
-      const std::shared_ptr<AudioContextWrapper> &wrapper,
-      std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor) {
-    return std::make_shared<AudioContextHostObject>(wrapper, promiseVendor);
-  }
-
  private:
-  std::shared_ptr<AudioContextWrapper>
-  getAudioContextWrapperFromBaseAudioContextWrapper();
+  std::shared_ptr<AudioContext>
+  getAudioContextFromBaseAudioContext();
 };
 } // namespace audioapi
