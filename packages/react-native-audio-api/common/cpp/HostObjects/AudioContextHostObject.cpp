@@ -5,7 +5,7 @@ using namespace facebook;
 
 AudioContextHostObject::AudioContextHostObject(
     const std::shared_ptr<AudioContext> &audioContext,
-    const std::shared_ptr<JsiPromise::PromiseVendor>& promiseVendor)
+    const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor)
     : BaseAudioContextHostObject(audioContext, promiseVendor) {}
 
 std::vector<jsi::PropNameID> AudioContextHostObject::getPropertyNames(

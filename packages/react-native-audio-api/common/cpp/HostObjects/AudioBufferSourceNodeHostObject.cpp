@@ -7,8 +7,8 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
     const std::shared_ptr<AudioBufferSourceNode> &node)
     : AudioScheduledSourceNodeHostObject(node) {}
 
-std::shared_ptr<AudioBufferSourceNode> AudioBufferSourceNodeHostObject::
-    getAudioBufferSourceNodeFromAudioNode() {
+std::shared_ptr<AudioBufferSourceNode>
+AudioBufferSourceNodeHostObject::getAudioBufferSourceNodeFromAudioNode() {
   return std::static_pointer_cast<AudioBufferSourceNode>(node_);
 }
 

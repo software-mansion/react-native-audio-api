@@ -15,7 +15,7 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
       const std::shared_ptr<AudioContext> &audioContext,
-      const std::shared_ptr<JsiPromise::PromiseVendor>& promiseVendor);
+      const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 
@@ -27,7 +27,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
  private:
-  std::shared_ptr<AudioContext>
-  getAudioContextFromBaseAudioContext();
+  std::shared_ptr<AudioContext> getAudioContextFromBaseAudioContext();
 };
 } // namespace audioapi

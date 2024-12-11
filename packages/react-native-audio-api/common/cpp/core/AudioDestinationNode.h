@@ -23,7 +23,7 @@ class AudioDestinationNode : public AudioNode {
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  void processNode(AudioBus *, int) final{};
+  void processNode(AudioBus *, int) final {};
 
  private:
   std::size_t currentSampleFrame_;

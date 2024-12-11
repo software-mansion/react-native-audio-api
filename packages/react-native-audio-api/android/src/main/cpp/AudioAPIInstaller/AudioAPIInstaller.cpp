@@ -13,7 +13,8 @@ AudioAPIInstaller::AudioAPIInstaller(
       jsCallInvoker_(jsCallInvoker) {}
 
 void AudioAPIInstaller::install() {
-  auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(rnRuntime_, jsCallInvoker_);
+  auto hostObject =
+      std::make_shared<AudioAPIInstallerHostObject>(rnRuntime_, jsCallInvoker_);
   hostObject->install();
 }
 } // namespace audioapi

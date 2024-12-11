@@ -31,7 +31,6 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
   std::shared_ptr<AudioParamHostObject> QParam_;
   std::shared_ptr<AudioParamHostObject> gainParam_;
 
-  std::shared_ptr<BiquadFilterNode>
-  getBiquadFilterNodeFromAudioNode();
+  std::shared_ptr<BiquadFilterNode> getBiquadFilterNodeFromAudioNode();
 };
 } // namespace audioapi

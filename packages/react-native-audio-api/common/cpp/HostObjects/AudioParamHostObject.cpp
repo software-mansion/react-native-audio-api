@@ -53,7 +53,7 @@ jsi::Value AudioParamHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-            auto value = static_cast<float>(args[0].getNumber());
+          auto value = static_cast<float>(args[0].getNumber());
           double startTime = args[1].getNumber();
           param_->setValueAtTime(value, startTime);
           return jsi::Value::undefined();
@@ -70,7 +70,7 @@ jsi::Value AudioParamHostObject::get(
             const jsi::Value &thisVal,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-            auto value = static_cast<float>(args[0].getNumber());
+          auto value = static_cast<float>(args[0].getNumber());
           double endTime = args[1].getNumber();
           param_->linearRampToValueAtTime(value, endTime);
           return jsi::Value::undefined();

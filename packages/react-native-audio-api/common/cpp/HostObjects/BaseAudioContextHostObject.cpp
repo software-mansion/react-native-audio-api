@@ -9,7 +9,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor)
     : context_(context), promiseVendor_(promiseVendor) {
-  destination_ = std::make_shared<AudioDestinationNodeHostObject>(context->getDestination());
+  destination_ = std::make_shared<AudioDestinationNodeHostObject>(
+      context->getDestination());
 }
 
 std::vector<jsi::PropNameID> BaseAudioContextHostObject::getPropertyNames(
@@ -68,7 +69,8 @@ jsi::Value BaseAudioContextHostObject::get(
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
           auto oscillator = context_->createOscillator();
-          auto oscillatorHostObject = std::make_shared<OscillatorNodeHostObject>(oscillator);
+          auto oscillatorHostObject =
+              std::make_shared<OscillatorNodeHostObject>(oscillator);
           return jsi::Object::createFromHostObject(
               runtime, oscillatorHostObject);
         });
@@ -101,7 +103,8 @@ jsi::Value BaseAudioContextHostObject::get(
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
           auto stereoPanner = context_->createStereoPanner();
-          auto stereoPannerHostObject = std::make_shared<StereoPannerNodeHostObject>(stereoPanner);
+          auto stereoPannerHostObject =
+              std::make_shared<StereoPannerNodeHostObject>(stereoPanner);
           return jsi::Object::createFromHostObject(
               runtime, stereoPannerHostObject);
         });
@@ -118,7 +121,8 @@ jsi::Value BaseAudioContextHostObject::get(
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
           auto biquadFilter = context_->createBiquadFilter();
-          auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
+          auto biquadFilterHostObject =
+              std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
           return jsi::Object::createFromHostObject(
               runtime, biquadFilterHostObject);
         });
@@ -135,7 +139,8 @@ jsi::Value BaseAudioContextHostObject::get(
             const jsi::Value *arguments,
             size_t count) -> jsi::Value {
           auto bufferSource = context_->createBufferSource();
-          auto bufferSourceHostObject = std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
+          auto bufferSourceHostObject =
+              std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
           return jsi::Object::createFromHostObject(
               runtime, bufferSourceHostObject);
         });
@@ -155,8 +160,9 @@ jsi::Value BaseAudioContextHostObject::get(
           auto length = static_cast<int>(arguments[1].getNumber());
           auto sampleRate = static_cast<int>(arguments[2].getNumber());
           auto buffer =
-                  context_->createBuffer(numberOfChannels, length, sampleRate);
-          auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
+              context_->createBuffer(numberOfChannels, length, sampleRate);
+          auto bufferHostObject =
+              std::make_shared<AudioBufferHostObject>(buffer);
           return jsi::Object::createFromHostObject(runtime, bufferHostObject);
         });
   }
@@ -191,7 +197,8 @@ jsi::Value BaseAudioContextHostObject::get(
 
           auto periodicWave = context_->createPeriodicWave(
               realData, imagData, disableNormalization, length);
-          auto periodicWaveHostObject = std::make_shared<PeriodicWaveHostObject>(periodicWave);
+          auto periodicWaveHostObject =
+              std::make_shared<PeriodicWaveHostObject>(periodicWave);
           return jsi::Object::createFromHostObject(
               runtime, periodicWaveHostObject);
         });
@@ -213,7 +220,8 @@ jsi::Value BaseAudioContextHostObject::get(
                          sourcePath,
                          promise = std::move(promise)]() {
               auto results = context_->decodeAudioDataSource(sourcePath);
-              auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+              auto audioBufferHostObject =
+                  std::make_shared<AudioBufferHostObject>(results);
 
               promise->resolve(jsi::Object::createFromHostObject(
                   runtime, audioBufferHostObject));

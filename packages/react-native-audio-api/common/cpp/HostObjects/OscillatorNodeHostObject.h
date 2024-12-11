@@ -30,7 +30,6 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;
 
-  std::shared_ptr<OscillatorNode>
-  getOscillatorNodeFromAudioNode();
+  std::shared_ptr<OscillatorNode> getOscillatorNodeFromAudioNode();
 };
 } // namespace audioapi

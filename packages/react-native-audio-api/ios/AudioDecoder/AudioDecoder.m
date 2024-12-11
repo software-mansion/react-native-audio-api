@@ -51,16 +51,15 @@
       [[AVAudioPCMBuffer alloc] initWithPCMFormat:format frameCapacity:(AVAudioFrameCount)buffer.frameCapacity];
 
   AVAudioConverterInputBlock inputBlock =
-      ^AVAudioBuffer *(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-  {
-    if (buffer.frameLength > 0) {
-      *outStatus = AVAudioConverterInputStatus_HaveData;
-      return buffer;
-    } else {
-      *outStatus = AVAudioConverterInputStatus_NoDataNow;
-      return nil;
-    }
-  };
+      ^AVAudioBuffer *(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus) {
+        if (buffer.frameLength > 0) {
+          *outStatus = AVAudioConverterInputStatus_HaveData;
+          return buffer;
+        } else {
+          *outStatus = AVAudioConverterInputStatus_NoDataNow;
+          return nil;
+        }
+      };
 
   [converter convertToBuffer:convertedBuffer error:&error withInputFromBlock:inputBlock];
 

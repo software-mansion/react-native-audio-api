@@ -11,8 +11,7 @@ using namespace facebook;
 
 class AudioNodeHostObject : public jsi::HostObject {
  public:
-  explicit AudioNodeHostObject(
-      const std::shared_ptr<AudioNode> &node);
+  explicit AudioNodeHostObject(const std::shared_ptr<AudioNode> &node);
 
   jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
 

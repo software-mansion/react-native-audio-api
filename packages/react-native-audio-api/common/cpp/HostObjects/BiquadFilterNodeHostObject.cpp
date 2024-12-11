@@ -11,7 +11,8 @@ BiquadFilterNodeHostObject::getBiquadFilterNodeFromAudioNode() {
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
     const std::shared_ptr<BiquadFilterNode> &node)
     : AudioNodeHostObject(node) {
-  frequencyParam_ = std::make_shared<AudioParamHostObject>(node->getFrequencyParam());
+  frequencyParam_ =
+      std::make_shared<AudioParamHostObject>(node->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamHostObject>(node->getDetuneParam());
   QParam_ = std::make_shared<AudioParamHostObject>(node->getQParam());
   gainParam_ = std::make_shared<AudioParamHostObject>(node->getGainParam());

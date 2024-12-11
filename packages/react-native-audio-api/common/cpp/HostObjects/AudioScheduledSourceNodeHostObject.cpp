@@ -4,8 +4,7 @@ namespace audioapi {
 using namespace facebook;
 
 std::shared_ptr<AudioScheduledSourceNode>
-AudioScheduledSourceNodeHostObject::
-    getAudioScheduledSourceNodeFromAudioNode() {
+AudioScheduledSourceNodeHostObject::getAudioScheduledSourceNodeFromAudioNode() {
   return std::static_pointer_cast<AudioScheduledSourceNode>(node_);
 }
 
@@ -34,8 +33,7 @@ jsi::Value AudioScheduledSourceNodeHostObject::get(
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           auto time = args[0].getNumber();
-          auto node =
-              getAudioScheduledSourceNodeFromAudioNode();
+          auto node = getAudioScheduledSourceNodeFromAudioNode();
           node->start(time);
           return jsi::Value::undefined();
         });
@@ -52,8 +50,7 @@ jsi::Value AudioScheduledSourceNodeHostObject::get(
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           auto time = args[0].getNumber();
-          auto node =
-              getAudioScheduledSourceNodeFromAudioNode();
+          auto node = getAudioScheduledSourceNodeFromAudioNode();
           node->stop(time);
           return jsi::Value::undefined();
         });
