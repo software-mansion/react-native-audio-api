@@ -90,11 +90,6 @@ void AudioBufferSourceNode::processNode(AudioBus *processingBus, int framesToPro
     return;
   }
 
-  // // Wrap to the start of the loop if necessary
-  // if (loop_ && vReadIndex_ >= vFrameEnd) {
-  //   vReadIndex_ = vFrameStart + std::fmod(vReadIndex_ - vFrameStart, vFrameDelta);
-  // }
-
   if (std::fabs(playbackRate) == 1.0) {
     processWithoutInterpolation(processingBus, startOffset, offsetLength, playbackRate);
   } else {
@@ -122,6 +117,10 @@ void AudioBufferSourceNode::processWithoutInterpolation(
   size_t frameDelta = frameEnd - frameStart;
 
   size_t framesLeft = offsetLength;
+
+  if (loop_ && readIndex >= frameEnd) {
+    readIndex = frameStart + (readIndex - frameStart) % frameDelta;
+  }
 
   while (framesLeft > 0) {
     size_t framesToEnd = frameEnd - readIndex;
@@ -177,6 +176,11 @@ void AudioBufferSourceNode::processWithInterpolation(
   size_t frameEnd = static_cast<size_t>(vFrameEnd);
 
   size_t framesLeft = offsetLength;
+
+  // Wrap to the start of the loop if necessary
+  if (loop_ && vReadIndex_ >= vFrameEnd) {
+    vReadIndex_ = vFrameStart + std::fmod(vReadIndex_ - vFrameStart, vFrameDelta);
+  }
 
   while (framesLeft > 0) {
     size_t readIndex = static_cast<size_t>(vReadIndex_);
