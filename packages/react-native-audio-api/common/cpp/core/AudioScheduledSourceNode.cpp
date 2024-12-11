@@ -8,18 +8,19 @@
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
-    : AudioNode(context), playbackState_(PlaybackState::UNSCHEDULED), startFrame_(-1), stopFrame_(-1) {
+    : AudioNode(context), playbackState_(PlaybackState::UNSCHEDULED), startTime_(-1.0), stopTime_(-1) {
   numberOfInputs_ = 0;
 }
 
 void AudioScheduledSourceNode::start(double time) {
   playbackState_ = PlaybackState::SCHEDULED;
-  startFrame_ = AudioUtils::timeToSampleFrame(time, context_->getSampleRate());
+  startTime_ = time;
+
   context_->getNodeManager()->addSourceNode(shared_from_this());
 }
 
 void AudioScheduledSourceNode::stop(double time) {
-  stopFrame_ = AudioUtils::timeToSampleFrame(time, context_->getSampleRate());
+  stopTime_ = time;
 }
 
 bool AudioScheduledSourceNode::isUnscheduled() {
@@ -40,10 +41,13 @@ bool AudioScheduledSourceNode::isFinished() {
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(AudioBus *processingBus, int framesToProcess, size_t& startOffset, size_t& nonSilentFramesToProcess) {
+  int sampleRate = context_->getSampleRate();
+
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;
-  size_t startFrame = std::max(startFrame_, firstFrame);
-  size_t stopFrame = stopFrame_;
+
+  size_t startFrame = std::max(AudioUtils::timeToSampleFrame(startTime_, sampleRate), firstFrame);
+  size_t stopFrame = AudioUtils::timeToSampleFrame(stopTime_, sampleRate);
 
   if (isUnscheduled() || isFinished()) {
     startOffset = 0;

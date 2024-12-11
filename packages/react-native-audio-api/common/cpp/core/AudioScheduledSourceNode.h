@@ -29,8 +29,8 @@ class AudioScheduledSourceNode : public AudioNode {
   void updatePlaybackInfo(AudioBus *processingBus, int framesToProcess, size_t& startOffset, size_t& nonSilentFramesToProcess);
 
  private:
-  size_t startFrame_;
-  size_t stopFrame_;
+  double startTime_;
+  double stopTime_;
 };
 
 } // namespace audioapi

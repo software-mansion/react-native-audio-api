@@ -4,13 +4,14 @@
 #include "AudioBufferSourceNode.h"
 #include "AudioBus.h"
 #include "AudioParam.h"
+#include "AudioUtils.h"
 #include "BaseAudioContext.h"
 #include "Constants.h"
 
 namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
-    : AudioScheduledSourceNode(context), loop_(false), bufferIndex_(0) {
+    : AudioScheduledSourceNode(context), loop_(false), vReadIndex_(0.0), loopStart_(0), loopEnd_(0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
@@ -65,116 +66,179 @@ void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
+    alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
     return;
   }
 
   buffer_ = buffer;
+  alignedBus_ = std::make_shared<AudioBus>(context_->getSampleRate(), buffer_->getLength());
+
+  alignedBus_->zero();
+  alignedBus_->sum(buffer_->bus_.get());
 }
 
-// Note: AudioBus copy method will use memcpy if the source buffer and system
-// processing bus have same channel count, otherwise it will use the summing
-// function taking care of up/down mixing.
-void AudioBufferSourceNode::processNode(
-    AudioBus *processingBus,
-    int framesToProcess) {
+void AudioBufferSourceNode::processNode(AudioBus *processingBus, int framesToProcess) {
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  float playbackRate = getPlaybackRateValue(startOffset);
+
   // No audio data to fill, zero the output and return.
-  if (!isPlaying() || !buffer_ || buffer_->getLength() == 0) {
+  if (!isPlaying() || !alignedBus_ || alignedBus_->getSize() == 0 || !playbackRate) {
     processingBus->zero();
     return;
   }
 
-  // Easiest case, the buffer is the same length as the number of frames to
-  // process, just copy the data.
-  if (framesToProcess == buffer_->getLength()) {
-    processingBus->copy(buffer_->bus_.get());
+  // // Wrap to the start of the loop if necessary
+  // if (loop_ && vReadIndex_ >= vFrameEnd) {
+  //   vReadIndex_ = vFrameStart + std::fmod(vReadIndex_ - vFrameStart, vFrameDelta);
+  // }
 
-    if (!loop_) {
-      playbackState_ = PlaybackState::FINISHED;
-      disable();
-    }
-
-    return;
+  if (std::fabs(playbackRate) == 1.0) {
+    processWithoutInterpolation(processingBus, startOffset, offsetLength, playbackRate);
+  } else {
+    processWithInterpolation(processingBus, startOffset, offsetLength, playbackRate);
   }
+}
 
-  // The buffer is longer than the number of frames to process.
-  // We have to keep track of where we are in the buffer.
-  if (framesToProcess < buffer_->getLength()) {
-    int outputBusIndex = 0;
-    int framesToCopy = 0;
+/**
+ * Helper functions
+ */
 
-    while (framesToProcess - outputBusIndex > 0) {
-      framesToCopy = std::min(
-          framesToProcess - outputBusIndex,
-          buffer_->getLength() - bufferIndex_);
+void AudioBufferSourceNode::processWithoutInterpolation(
+  AudioBus *processingBus,
+  size_t startOffset,
+  size_t offsetLength,
+  float playbackRate
+) {
+  size_t direction = playbackRate < 0 ? -1 : 1;
 
-      processingBus->copy(
-          buffer_->bus_.get(), bufferIndex_, outputBusIndex, framesToCopy);
+  size_t readIndex = static_cast<size_t>(vReadIndex_);
+  size_t writeIndex = startOffset;
 
-      bufferIndex_ += framesToCopy;
-      outputBusIndex += framesToCopy;
+  size_t frameStart = static_cast<size_t>(getVirtualStartFrame());
+  size_t frameEnd = static_cast<size_t>(getVirtualEndFrame());
+  size_t frameDelta = frameEnd - frameStart;
 
-      if (bufferIndex_ < buffer_->getLength()) {
-        continue;
-      }
+  size_t framesLeft = offsetLength;
 
-      bufferIndex_ %= buffer_->getLength();
+  while (framesLeft > 0) {
+    size_t framesToEnd = frameEnd - readIndex;
+    size_t framesToCopy = std::min(framesToEnd, framesLeft);
+    framesToCopy = std::max(framesToCopy, 0ul);
 
-      if (!loop_) {
-        playbackState_ = PlaybackState::FINISHED;
-        disable();
-
-        if (framesToProcess - outputBusIndex > 0) {
-          processingBus->zero(outputBusIndex, framesToProcess - outputBusIndex);
+    // Direction is forward, we can normally copy the data
+    if (direction == 1) {
+      processingBus->copy(alignedBus_.get(), readIndex, writeIndex, framesToCopy);
+    } else {
+      for (int i = 0; i < framesToCopy; i += 1) {
+        for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
+          (*processingBus->getChannel(j))[writeIndex + i] = (*alignedBus_->getChannel(j))[readIndex - i];
         }
       }
     }
 
-    return;
+    writeIndex += framesToCopy;
+    readIndex += framesToCopy * direction;
+    framesLeft -= framesToCopy;
+
+    if (readIndex >= frameEnd || readIndex < frameStart) {
+      readIndex += direction * frameDelta;
+
+      if (!loop_) {
+        processingBus->zero(writeIndex, framesLeft);
+        playbackState_ = PlaybackState::FINISHED;
+        disable();
+        break;
+      }
+    }
   }
 
-  // processing bus is longer than the source buffer
-  if (!loop_) {
-    // If we don't loop the buffer, copy it once and zero the remaining
-    // processing bus frames.
-    processingBus->copy(buffer_->bus_.get());
-    processingBus->zero(
-        buffer_->getLength(), framesToProcess - buffer_->getLength());
+  // update reading index for next render quantum
+  vReadIndex_ = readIndex;
+}
 
-    playbackState_ = PlaybackState::FINISHED;
-    disable();
+void AudioBufferSourceNode::processWithInterpolation(
+  AudioBus *processingBus,
+  size_t startOffset,
+  size_t offsetLength,
+  float playbackRate
+) {
+  size_t direction = playbackRate < 0 ? -1 : 1;
 
-    return;
+  size_t writeIndex = startOffset;
+
+  double vFrameStart = getVirtualStartFrame();
+  double vFrameEnd = getVirtualEndFrame();
+  double vFrameDelta = vFrameEnd - vFrameStart;
+
+  size_t frameStart = static_cast<size_t>(vFrameStart);
+  size_t frameEnd = static_cast<size_t>(vFrameEnd);
+
+  size_t framesLeft = offsetLength;
+
+  while (framesLeft > 0) {
+    size_t readIndex = static_cast<size_t>(vReadIndex_);
+    size_t nextReadIndex = readIndex + 1;
+    float factor = vReadIndex_ - readIndex;
+
+    if (nextReadIndex >= frameEnd) {
+      nextReadIndex = loop_ ? frameStart : readIndex;
+    }
+
+    for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
+      float* destination = processingBus->getChannel(i)->getData();
+      const float* source = alignedBus_->getChannel(i)->getData();
+
+      destination[writeIndex] = AudioUtils::linearInterpolate(
+        source,
+        readIndex,
+        nextReadIndex,
+        factor
+      );
+    }
+
+    writeIndex += 1;
+    vReadIndex_ += playbackRate;
+    framesLeft -= 1;
+
+    if (vReadIndex_ < vFrameStart || vReadIndex_ >= vFrameEnd) {
+      vReadIndex_ += vFrameDelta * direction;
+
+      if (!loop_) {
+        processingBus->zero(writeIndex, framesLeft);
+        playbackState_ = PlaybackState::FINISHED;
+        disable();
+        break;
+      }
+    }
   }
+}
 
-  // If we loop the buffer, we need to loop the buffer framesToProcess /
-  // bufferSize times There might also be a remainder of frames to copy after
-  // the loop, which will also carry over some buffer frames to the next render
-  // quantum.
-  int processingBusPosition = 0;
-  int bufferSize = buffer_->getLength();
-  int remainingFrames = framesToProcess - framesToProcess / bufferSize;
+float AudioBufferSourceNode::getPlaybackRateValue(size_t& startOffset) {
+  double time = context_->getCurrentTime() + startOffset / context_->getSampleRate();
 
-  // Do we have some frames left in the buffer from the previous render quantum,
-  // if yes copy them over and reset the buffer position.
-  if (bufferIndex_ > 0) {
-    processingBus->copy(buffer_->bus_.get(), 0, bufferIndex_);
-    processingBusPosition += bufferIndex_;
-    bufferIndex_ = 0;
-  }
+  return playbackRateParam_->getValueAtTime(time)
+    * std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+}
 
-  // Copy the entire buffer n times to the processing bus.
-  while (processingBusPosition + bufferSize <= framesToProcess) {
-    processingBus->copy(buffer_->bus_.get());
-    processingBusPosition += bufferSize;
-  }
+double AudioBufferSourceNode::getVirtualStartFrame() {
+  double inputBufferLength = alignedBus_->getSize();
+  double loopStartFrame = loopStart_ * context_->getSampleRate();
 
-  // Fill in the remaining frames from the processing buffer and update buffer
-  // index for next render quantum.
-  if (remainingFrames > 0) {
-    processingBus->copy(
-        buffer_->bus_.get(), 0, processingBusPosition, remainingFrames);
-    bufferIndex_ = remainingFrames;
-  }
+  return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_
+    ? loopStartFrame
+    : 0.0;
+}
+
+double AudioBufferSourceNode::getVirtualEndFrame() {
+  double inputBufferLength = alignedBus_->getSize();
+  double loopEndFrame = loopEnd_ * context_->getSampleRate();
+
+  return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_
+    ? std::min(loopEndFrame, inputBufferLength)
+    : inputBufferLength;
 }
 
 } // namespace audioapi
