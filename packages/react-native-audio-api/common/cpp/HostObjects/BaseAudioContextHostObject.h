@@ -6,13 +6,14 @@
 #include <vector>
 
 #include <JsiHostObject.h>
+#include <JsiPromise.h>
+
 #include "AudioBufferHostObject.h"
 #include "AudioBufferSourceNodeHostObject.h"
 #include "AudioDestinationNodeHostObject.h"
 #include "BaseAudioContext.h"
 #include "BiquadFilterNodeHostObject.h"
 #include "GainNodeHostObject.h"
-#include "JsiPromise.h"
 #include "OscillatorNodeHostObject.h"
 #include "PeriodicWaveHostObject.h"
 #include "StereoPannerNodeHostObject.h"
@@ -24,7 +25,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
  public:
   explicit BaseAudioContextHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor)
+      const std::shared_ptr<PromiseVendor> &promiseVendor)
       : context_(context), promiseVendor_(promiseVendor) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
@@ -134,8 +135,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto sourcePath = args[0].getString(runtime).utf8(runtime);
 
     auto promise = promiseVendor_->createPromise(
-        [this, &runtime, sourcePath](
-            std::shared_ptr<JsiPromise::Promise> promise) {
+        [this, &runtime, sourcePath](std::shared_ptr<Promise> promise) {
           std::thread([this,
                        &runtime,
                        sourcePath,
@@ -154,6 +154,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
  protected:
   std::shared_ptr<BaseAudioContext> context_;
-  std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor_;
+  std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 } // namespace audioapi

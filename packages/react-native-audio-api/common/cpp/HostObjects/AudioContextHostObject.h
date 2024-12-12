@@ -14,7 +14,7 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
       const std::shared_ptr<AudioContext> &audioContext,
-      const std::shared_ptr<JsiPromise::PromiseVendor> &promiseVendor)
+      const std::shared_ptr<PromiseVendor> &promiseVendor)
       : BaseAudioContextHostObject(audioContext, promiseVendor) {
     addFunctions(JSI_EXPORT_FUNCTION(AudioContextHostObject, close));
   }

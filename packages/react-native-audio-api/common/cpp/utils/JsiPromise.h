@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 
-namespace JsiPromise {
+namespace audioapi {
 
 using namespace facebook;
 
@@ -45,4 +45,4 @@ class PromiseVendor {
   std::shared_ptr<react::CallInvoker> _callInvoker;
 };
 
-} // namespace JsiPromise
+} // namespace audioapi

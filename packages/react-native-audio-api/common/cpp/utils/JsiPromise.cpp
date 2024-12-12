@@ -4,7 +4,7 @@
 #include <jsi/jsi.h>
 #include <functional>
 
-namespace JsiPromise {
+namespace audioapi {
 
 using namespace facebook;
 
@@ -61,4 +61,4 @@ jsi::Value PromiseVendor::createPromise(
   return promiseCtor.callAsConstructor(runtime, runPromise);
 }
 
-} // namespace JsiPromise
+} // namespace audioapi

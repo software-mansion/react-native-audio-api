@@ -7,8 +7,8 @@
 #include <vector>
 
 #include <JsiHostObject.h>
+#include <JsiPromise.h>
 #include "AudioContextHostObject.h"
-#include "JsiPromise.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -21,8 +21,7 @@ class AudioAPIInstallerHostObject
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &jsInvoker)
       : rnRuntime_(runtime) {
-    promiseVendor_ =
-        std::make_shared<JsiPromise::PromiseVendor>(runtime, jsInvoker);
+    promiseVendor_ = std::make_shared<PromiseVendor>(runtime, jsInvoker);
 
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioAPIInstallerHostObject, createAudioContext));
@@ -43,7 +42,7 @@ class AudioAPIInstallerHostObject
   }
 
  private:
-  std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor_;
+  std::shared_ptr<PromiseVendor> promiseVendor_;
   jsi::Runtime *rnRuntime_;
 };
 } // namespace audioapi
