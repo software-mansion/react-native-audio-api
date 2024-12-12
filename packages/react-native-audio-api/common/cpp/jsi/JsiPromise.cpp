@@ -9,7 +9,7 @@ namespace audioapi {
 using namespace facebook;
 
 jsi::Value PromiseVendor::createPromise(
-    std::function<void(std::shared_ptr<Promise>)> func) {
+    const std::function<void(std::shared_ptr<Promise>)>& func) {
   if (_runtime == nullptr) {
     throw new std::runtime_error("Runtime was null!");
   }

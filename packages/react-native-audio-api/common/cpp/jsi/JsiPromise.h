@@ -17,7 +17,6 @@ class Promise {
       std::function<void(const std::string &)> reject)
       : _resolve(std::move(resolve)), _reject(std::move(reject)) {}
 
-  bool isResolved;
   void resolve(jsi::Value &&value) {
     _resolve(std::forward<jsi::Value>(value));
   }
@@ -38,7 +37,7 @@ class PromiseVendor {
       : _runtime(runtime), _callInvoker(callInvoker) {}
 
  public:
-  jsi::Value createPromise(std::function<void(std::shared_ptr<Promise>)> func);
+  jsi::Value createPromise(const std::function<void(std::shared_ptr<Promise>)>& func);
 
  private:
   jsi::Runtime *_runtime;
