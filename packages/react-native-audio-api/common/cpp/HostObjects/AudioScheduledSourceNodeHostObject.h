@@ -13,19 +13,26 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
       const std::shared_ptr<AudioScheduledSourceNode> &node)
-      : AudioNodeHostObject(node) {}
+      : AudioNodeHostObject(node) {
+    addFunctions(
+        JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
+        JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
+  }
 
-  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+  JSI_HOST_FUNCTION(start) {
+    auto time = args[0].getNumber();
+    auto audioScheduleSourceNode =
+        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+    audioScheduleSourceNode->start(time);
+    return jsi::Value::undefined();
+  }
 
-  void set(
-      jsi::Runtime &runtime,
-      const jsi::PropNameID &name,
-      const jsi::Value &value) override;
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
-
- private:
-  std::shared_ptr<AudioScheduledSourceNode>
-  getAudioScheduledSourceNodeFromAudioNode();
+  JSI_HOST_FUNCTION(stop) {
+    auto time = args[0].getNumber();
+    auto audioScheduleSourceNode =
+        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+    audioScheduleSourceNode->stop(time);
+    return jsi::Value::undefined();
+  }
 };
 } // namespace audioapi

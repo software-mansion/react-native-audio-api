@@ -34,7 +34,7 @@ class PromiseVendor {
  public:
   PromiseVendor(
       jsi::Runtime *runtime,
-      std::shared_ptr<react::CallInvoker> callInvoker)
+      const std::shared_ptr<react::CallInvoker> &callInvoker)
       : _runtime(runtime), _callInvoker(callInvoker) {}
 
  public:

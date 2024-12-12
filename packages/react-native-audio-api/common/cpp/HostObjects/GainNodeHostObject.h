@@ -11,17 +11,17 @@ namespace audioapi {
 using namespace facebook;
 
 class GainNodeHostObject : public AudioNodeHostObject {
- protected:
-  std::shared_ptr<AudioParamHostObject> gainParam_;
-
  public:
-  explicit GainNodeHostObject(const std::shared_ptr<GainNode> &node);
+  explicit GainNodeHostObject(const std::shared_ptr<GainNode> &node)
+      : AudioNodeHostObject(node) {
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(GainNodeHostObject, gain));
+  }
 
-  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
-  void set(
-      jsi::Runtime &runtime,
-      const jsi::PropNameID &name,
-      const jsi::Value &value) override;
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+  JSI_PROPERTY_GETTER(gain) {
+    auto gainNode = std::static_pointer_cast<GainNode>(node_);
+    auto gainParam_ =
+        std::make_shared<AudioParamHostObject>(gainNode->getGainParam());
+    return jsi::Object::createFromHostObject(runtime, gainParam_);
+  }
 };
 } // namespace audioapi
