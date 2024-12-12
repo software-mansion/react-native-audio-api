@@ -69,11 +69,11 @@ Some of the noticeable implementation details that are still in progress or not 
 | Property 🔹/ Method 🔘 | state |
 | ---------------------- | ----- |
 | 🔹 buffer              | ✅    |
-| 🔹 detune              | ❌    |
+| 🔹 detune              | ✅    |
 | 🔹 loop                | ✅    |
-| 🔹 loopStart           | ❌    |
-| 🔹 loopEnd             | ❌    |
-| 🔹 playBackRate        | ❌    |
+| 🔹 loopStart           | ✅    |
+| 🔹 loopEnd             | ✅    |
+| 🔹 playBackRate        | ✅    |
 | 🔘 start(overridden)   | ❌    |
 
 </div>
