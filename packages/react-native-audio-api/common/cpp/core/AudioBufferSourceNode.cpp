@@ -118,7 +118,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 
   size_t framesLeft = offsetLength;
 
-  if (loop_ && readIndex >= frameEnd) {
+  if (loop_ && (readIndex >= frameEnd || readIndex < frameStart)) {
     readIndex = frameStart + (readIndex - frameStart) % frameDelta;
   }
 
@@ -143,7 +143,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     framesLeft -= framesToCopy;
 
     if (readIndex >= frameEnd || readIndex < frameStart) {
-      readIndex += direction * frameDelta;
+      readIndex -= direction * frameDelta;
 
       if (!loop_) {
         processingBus->zero(writeIndex, framesLeft);
@@ -178,7 +178,7 @@ void AudioBufferSourceNode::processWithInterpolation(
   size_t framesLeft = offsetLength;
 
   // Wrap to the start of the loop if necessary
-  if (loop_ && vReadIndex_ >= vFrameEnd) {
+  if (loop_ && (vReadIndex_ >= vFrameEnd || vReadIndex_ < vFrameStart)) {
     vReadIndex_ = vFrameStart + std::fmod(vReadIndex_ - vFrameStart, vFrameDelta);
   }
 
@@ -204,11 +204,11 @@ void AudioBufferSourceNode::processWithInterpolation(
     }
 
     writeIndex += 1;
-    vReadIndex_ += playbackRate;
+    vReadIndex_ += playbackRate * direction;
     framesLeft -= 1;
 
     if (vReadIndex_ < vFrameStart || vReadIndex_ >= vFrameEnd) {
-      vReadIndex_ += vFrameDelta * direction;
+      vReadIndex_ -= direction * vFrameDelta;
 
       if (!loop_) {
         processingBus->zero(writeIndex, framesLeft);
@@ -228,7 +228,6 @@ float AudioBufferSourceNode::getPlaybackRateValue(size_t& startOffset) {
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame() {
-  double inputBufferLength = alignedBus_->getSize();
   double loopStartFrame = loopStart_ * context_->getSampleRate();
 
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_

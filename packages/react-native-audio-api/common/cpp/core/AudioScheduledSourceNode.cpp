@@ -41,13 +41,21 @@ bool AudioScheduledSourceNode::isFinished() {
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(AudioBus *processingBus, int framesToProcess, size_t& startOffset, size_t& nonSilentFramesToProcess) {
+  if (!isInitialized_) {
+    startOffset = 0;
+    nonSilentFramesToProcess = 0;
+    return;
+  }
+
   int sampleRate = context_->getSampleRate();
 
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;
 
   size_t startFrame = std::max(AudioUtils::timeToSampleFrame(startTime_, sampleRate), firstFrame);
-  size_t stopFrame = AudioUtils::timeToSampleFrame(stopTime_, sampleRate);
+  size_t stopFrame = stopTime_ == -1.0
+    ? std::numeric_limits<size_t>::max()
+    : std::max(AudioUtils::timeToSampleFrame(stopTime_, sampleRate), firstFrame);
 
   if (isUnscheduled() || isFinished()) {
     startOffset = 0;
@@ -67,12 +75,12 @@ void AudioScheduledSourceNode::updatePlaybackInfo(AudioBus *processingBus, int f
     // zero first frames before starting frame
     playbackState_ = PlaybackState::PLAYING;
     startOffset = std::max(0ul, std::max(startFrame, firstFrame) - firstFrame);
-    nonSilentFramesToProcess = std::min(lastFrame, stopFrame) - startFrame;
+    nonSilentFramesToProcess = std::min(lastFrame, stopFrame) - startFrame - startOffset;
     processingBus->zero(0, startOffset);
     return;
   }
 
-  // isPlaying() == true
+  // the node is playing
 
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
