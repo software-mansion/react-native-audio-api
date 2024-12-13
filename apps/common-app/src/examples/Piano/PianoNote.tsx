@@ -20,7 +20,7 @@ class PianoNote {
   }
 
   start(bufferList: Record<string, AudioBuffer>) {
-    const { buffer /*, playbackRate */ } = getSource(bufferList, this.key);
+    const { buffer, playbackRate } = getSource(bufferList, this.key);
 
     if (!buffer) {
       return;
@@ -30,6 +30,7 @@ class PianoNote {
 
     this.bufferSource = this.audioContext.createBufferSource();
     this.bufferSource.buffer = buffer;
+    this.bufferSource.playbackRate.value = playbackRate;
 
     this.gain = this.audioContext.createGain();
     this.gain.gain.setValueAtTime(0.001, this.audioContext.currentTime);

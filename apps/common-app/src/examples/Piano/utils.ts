@@ -43,7 +43,7 @@ export const sourcesTeda: Partial<Record<KeyName, string>> = {
   'B4': 'https://michalsek.github.io/audio-samples/piano/12_B4.mp3',
 };
 
-export const sources = sourcesTeda;
+export const sources = sourcesTone;
 
 export const keyMap: KeyMap = {
   'C4': {
