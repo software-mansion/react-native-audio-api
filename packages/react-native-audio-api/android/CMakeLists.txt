@@ -21,12 +21,12 @@ file(GLOB_RECURSE SOURCE_FILES
   "../common/cpp/*.h"
   "../common/cpp/core/*.cpp"
   "../common/cpp/core/*.h"
-  "../common/cpp/wrappers/*.cpp"
-  "../common/cpp/wrappers/*.h"
   "../common/cpp/HostObjects/*.cpp"
   "../common/cpp/HostObjects/*.h"
   "../common/cpp/utils/*.cpp"
   "../common/cpp/utils/*.h"
+  "../common/cpp/jsi/*.h"
+  "../common/cpp/jsi/*.cpp"
   "../common/cpp/types/*.h"
 )
 
@@ -41,10 +41,10 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactCommon/jsi"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/jni"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/third-party/folly"
-  "${CMAKE_CURRENT_SOURCE_DIR}/libs/include/fftw3"
+  "${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
 )
 
-set(fftw3 ${CMAKE_CURRENT_SOURCE_DIR}/libs/fftw3/${ANDROID_ABI}/libfftw3.a)
+set(fftw3 ${CMAKE_CURRENT_SOURCE_DIR}/libs/${ANDROID_ABI}/libfftw3.a)
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)

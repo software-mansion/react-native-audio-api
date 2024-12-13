@@ -1,5 +1,6 @@
 import { FC, useEffect, useRef } from 'react';
 import { AudioContext, AudioBuffer } from 'react-native-audio-api';
+import * as FileSystem from 'expo-file-system';
 
 import { Container } from '../../components';
 import { KeyName, sources, keyMap } from './utils';
@@ -27,8 +28,16 @@ const Piano: FC = () => {
     }
 
     Object.entries(sources).forEach(async ([key, url]) => {
-      bufferListRef.current[key as KeyName] =
-        await audioContextRef.current!.decodeAudioDataSource(url);
+      bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
+        url,
+        FileSystem.documentDirectory + key.replace('#', 's') + '.mp3'
+      )
+        .then(({ uri }) => {
+          return uri.replace('file://', '');
+        })
+        .then((uri) => {
+          return audioContextRef.current!.decodeAudioDataSource(uri);
+        });
     });
 
     const newNotes: Partial<Record<KeyName, PianoNote>> = {};

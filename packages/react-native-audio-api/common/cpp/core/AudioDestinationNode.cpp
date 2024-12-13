@@ -31,6 +31,7 @@ void AudioDestinationNode::renderAudio(
   }
 
   context_->getNodeManager()->preProcessGraph();
+
   destinationBus->zero();
 
   AudioBus *processedBus = processAudio(destinationBus, numFrames);

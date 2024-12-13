@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <thread>
 
@@ -19,16 +21,22 @@ class AudioScheduledSourceNode : public AudioNode {
   void start(double time);
   void stop(double time);
 
-  bool isFinished();
+  bool isUnscheduled();
+  bool isScheduled();
   bool isPlaying();
+  bool isFinished();
 
  protected:
   std::atomic<PlaybackState> playbackState_;
+  void updatePlaybackInfo(
+      AudioBus *processingBus,
+      int framesToProcess,
+      size_t &startOffset,
+      size_t &nonSilentFramesToProcess);
 
  private:
-  void startPlayback();
-  void stopPlayback();
-  void waitAndExecute(double time, const std::function<void(double)> &fun);
+  double startTime_;
+  double stopTime_;
 };
 
 } // namespace audioapi

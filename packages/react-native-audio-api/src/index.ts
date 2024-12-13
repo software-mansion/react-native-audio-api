@@ -1,8 +1,4 @@
-import {
-  AudioSource,
-  ContextState,
-  PeriodicWaveConstraints,
-} from './core/types';
+import { ContextState, PeriodicWaveConstraints } from './core/types';
 
 export class AudioBuffer {
   readonly length: number;
@@ -10,6 +6,7 @@ export class AudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
+  /** @internal */
   public readonly buffer: globalThis.AudioBuffer;
 
   constructor(buffer: globalThis.AudioBuffer) {
@@ -154,8 +151,14 @@ export class AudioScheduledSourceNode extends AudioNode {
 }
 
 export class AudioBufferSourceNode extends AudioScheduledSourceNode {
+  readonly playbackRate: AudioParam;
+  readonly detune: AudioParam;
+
   constructor(context: AudioContext, node: globalThis.AudioBufferSourceNode) {
     super(context, node);
+
+    this.detune = new AudioParam(node.detune);
+    this.playbackRate = new AudioParam(node.playbackRate);
   }
 
   public get buffer(): AudioBuffer | null {
@@ -183,6 +186,22 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loop(value: boolean) {
     (this.node as globalThis.AudioBufferSourceNode).loop = value;
+  }
+
+  public get loopStart(): number {
+    return (this.node as globalThis.AudioBufferSourceNode).loopStart;
+  }
+
+  public set loopStart(value: number) {
+    (this.node as globalThis.AudioBufferSourceNode).loopStart = value;
+  }
+
+  public get loopEnd(): number {
+    return (this.node as globalThis.AudioBufferSourceNode).loopEnd;
+  }
+
+  public set loopEnd(value: number) {
+    (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
   }
 }
 
@@ -275,6 +294,7 @@ export class BiquadFilterNode extends AudioNode {
 }
 
 export class PeriodicWave {
+  /** @internal */
   readonly periodicWave: globalThis.PeriodicWave;
 
   constructor(periodicWave: globalThis.PeriodicWave) {
@@ -391,13 +411,7 @@ export class AudioContext {
     );
   }
 
-  async decodeAudioDataSource(
-    source: AudioSource | number
-  ): Promise<AudioBuffer> {
-    if (typeof source === 'number') {
-      throw new Error('Not yet implemented');
-    }
-
+  async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
     const arrayBuffer = await fetch(source).then((response) =>
       response.arrayBuffer()
     );

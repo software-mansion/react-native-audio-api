@@ -12,9 +12,8 @@ class AudioAPIModule(
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun install(): Boolean {
-    val audioAPIInstaller = AudioAPIInstaller()
-    val jsContext = reactContext.javaScriptContextHolder!!.get()
-    audioAPIInstaller.install(jsContext)
+    val audioAPIInstaller = AudioAPIInstaller(reactContext)
+    audioAPIInstaller.install()
 
     return true
   }

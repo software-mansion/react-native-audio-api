@@ -6,44 +6,43 @@
 #include <utility>
 #include <vector>
 
-
-#include "AudioAPIInstallerWrapper.h"
+#include <JsiHostObject.h>
+#include <JsiPromise.h>
 #include "AudioContextHostObject.h"
-#include "JsiPromise.h"
 
 namespace audioapi {
 using namespace facebook;
 
-class AudioAPIInstallerWrapper;
-
-class AudioAPIInstallerHostObject : public jsi::HostObject {
+class AudioAPIInstallerHostObject
+    : public JsiHostObject,
+      public std::enable_shared_from_this<AudioAPIInstallerHostObject> {
  public:
   explicit AudioAPIInstallerHostObject(
-      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper, jsi::Runtime* runtime, const std::shared_ptr<react::CallInvoker> &jsInvoker);
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &jsInvoker)
+      : rnRuntime_(runtime) {
+    promiseVendor_ = std::make_shared<PromiseVendor>(runtime, jsInvoker);
 
-#ifdef ANDROID
-  static void createAndInstallFromWrapper(
-      const std::shared_ptr<AudioAPIInstallerWrapper> &wrapper,
-      jlong jsContext) {
-    auto runtime = reinterpret_cast<jsi::Runtime *>(jsContext);
-    auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(wrapper);
-    auto object = jsi::Object::createFromHostObject(*runtime, hostObject);
-    runtime->global().setProperty(
-        *runtime, "__AudioAPIInstaller", std::move(object));
+    addFunctions(
+        JSI_EXPORT_FUNCTION(AudioAPIInstallerHostObject, createAudioContext));
   }
-#endif
 
-  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+  void install() {
+    auto object =
+        jsi::Object::createFromHostObject(*rnRuntime_, shared_from_this());
+    rnRuntime_->global().setProperty(
+        *rnRuntime_, "__AudioAPIInstaller", std::move(object));
+  }
 
-  void set(
-      jsi::Runtime &runtime,
-      const jsi::PropNameID &name,
-      const jsi::Value &value) override;
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+  JSI_HOST_FUNCTION(createAudioContext) {
+    auto audioContext = std::make_shared<AudioContext>();
+    auto audioContextHostObject =
+        std::make_shared<AudioContextHostObject>(audioContext, promiseVendor_);
+    return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
+  }
 
  private:
-  std::shared_ptr<AudioAPIInstallerWrapper> wrapper_;
-  std::shared_ptr<JsiPromise::PromiseVendor> promiseVendor_;
+  std::shared_ptr<PromiseVendor> promiseVendor_;
+  jsi::Runtime *rnRuntime_;
 };
 } // namespace audioapi

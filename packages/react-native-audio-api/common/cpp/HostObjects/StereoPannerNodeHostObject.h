@@ -6,7 +6,7 @@
 
 #include "AudioNodeHostObject.h"
 #include "AudioParamHostObject.h"
-#include "StereoPannerNodeWrapper.h"
+#include "StereoPannerNode.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -14,23 +14,16 @@ using namespace facebook;
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:
   explicit StereoPannerNodeHostObject(
-      const std::shared_ptr<StereoPannerNodeWrapper> &wrapper);
-
-  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
-
-  void set(
-      jsi::Runtime &runtime,
-      const jsi::PropNameID &name,
-      const jsi::Value &value) override;
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
-
-  static std::shared_ptr<StereoPannerNodeHostObject> createFromWrapper(
-      const std::shared_ptr<StereoPannerNodeWrapper> &wrapper) {
-    return std::make_shared<StereoPannerNodeHostObject>(wrapper);
+      const std::shared_ptr<StereoPannerNode> &node)
+      : AudioNodeHostObject(node) {
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
   }
 
- private:
-  std::shared_ptr<AudioParamHostObject> panParam_;
+  JSI_PROPERTY_GETTER(pan) {
+    auto stereoPannerNode = std::static_pointer_cast<StereoPannerNode>(node_);
+    auto panParam_ =
+        std::make_shared<AudioParamHostObject>(stereoPannerNode->getPanParam());
+    return jsi::Object::createFromHostObject(runtime, panParam_);
+  }
 };
 } // namespace audioapi

@@ -4,30 +4,96 @@
 #include <memory>
 #include <vector>
 
-#include "AudioBufferWrapper.h"
+#include <JsiHostObject.h>
+#include "AudioBuffer.h"
 
 namespace audioapi {
 using namespace facebook;
 
-class AudioBufferHostObject : public jsi::HostObject {
+class AudioBufferHostObject : public JsiHostObject {
  public:
-  std::shared_ptr<AudioBufferWrapper> wrapper_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
 
   explicit AudioBufferHostObject(
-      const std::shared_ptr<AudioBufferWrapper> &wrapper);
+      const std::shared_ptr<AudioBuffer> &audioBuffer)
+      : audioBuffer_(audioBuffer) {
+    addGetters(
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, duration),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, numberOfChannels));
 
-  jsi::Value get(jsi::Runtime &runtime, const jsi::PropNameID &name) override;
+    addFunctions(
+        JSI_EXPORT_FUNCTION(AudioBufferHostObject, getChannelData),
+        JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyFromChannel),
+        JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
+  }
 
-  void set(
-      jsi::Runtime &runtime,
-      const jsi::PropNameID &name,
-      const jsi::Value &value) override;
+  JSI_PROPERTY_GETTER(sampleRate) {
+    return {audioBuffer_->getSampleRate()};
+  }
 
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
+  JSI_PROPERTY_GETTER(length) {
+    return {audioBuffer_->getLength()};
+  }
 
-  static std::shared_ptr<AudioBufferHostObject> createFromWrapper(
-      const std::shared_ptr<AudioBufferWrapper> &wrapper) {
-    return std::make_shared<AudioBufferHostObject>(wrapper);
+  JSI_PROPERTY_GETTER(duration) {
+    return {audioBuffer_->getDuration()};
+  }
+
+  JSI_PROPERTY_GETTER(numberOfChannels) {
+    return {audioBuffer_->getNumberOfChannels()};
+  }
+
+  JSI_HOST_FUNCTION(getChannelData) {
+    int channel = static_cast<int>(args[0].getNumber());
+    float *channelData = audioBuffer_->getChannelData(channel);
+
+    auto array = jsi::Array(runtime, audioBuffer_->getLength());
+    for (int i = 0; i < audioBuffer_->getLength(); i++) {
+      array.setValueAtIndex(runtime, i, jsi::Value(channelData[i]));
+    }
+
+    return array;
+  }
+
+  JSI_HOST_FUNCTION(copyFromChannel) {
+    auto destination = args[0].getObject(runtime).asArray(runtime);
+    auto destinationLength =
+        static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+    auto channelNumber = static_cast<int>(args[1].getNumber());
+    auto startInChannel = static_cast<int>(args[2].getNumber());
+
+    auto *destinationData = new float[destinationLength];
+
+    audioBuffer_->copyFromChannel(
+        destinationData, destinationLength, channelNumber, startInChannel);
+
+    for (int i = 0; i < destinationLength; i++) {
+      destination.setValueAtIndex(runtime, i, jsi::Value(destinationData[i]));
+    }
+
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(copyToChannel) {
+    auto source = args[0].getObject(runtime).asArray(runtime);
+    auto sourceLength =
+        static_cast<int>(source.getProperty(runtime, "length").asNumber());
+    auto channelNumber = static_cast<int>(args[1].getNumber());
+    auto startInChannel = static_cast<int>(args[2].getNumber());
+
+    auto *sourceData = new float[sourceLength];
+
+    for (int i = 0; i < sourceLength; i++) {
+      sourceData[i] =
+          static_cast<float>(source.getValueAtIndex(runtime, i).getNumber());
+    }
+
+    audioBuffer_->copyToChannel(
+        sourceData, sourceLength, channelNumber, startInChannel);
+
+    return jsi::Value::undefined();
   }
 };
 } // namespace audioapi

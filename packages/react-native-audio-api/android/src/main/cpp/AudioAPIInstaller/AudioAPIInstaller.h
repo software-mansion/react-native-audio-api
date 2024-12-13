@@ -1,20 +1,19 @@
 #pragma once
 
+#include <ReactCommon/CallInvokerHolder.h>
 #include <fbjni/fbjni.h>
-#include <jsi/jsi.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <utility>
 
 #include "AudioAPIInstallerHostObject.h"
-#include "AudioAPIInstallerWrapper.h"
 #include "AudioContext.h"
 
 namespace audioapi {
 
 using namespace facebook;
-using namespace facebook::jni;
+using namespace react;
 
 class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
  public:
@@ -22,8 +21,13 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
       "Lcom/swmansion/audioapi/module/AudioAPIInstaller;";
 
   static jni::local_ref<AudioAPIInstaller::jhybriddata> initHybrid(
-      jni::alias_ref<jhybridobject> jThis) {
-    return makeCxxInstance(jThis);
+      jni::alias_ref<jhybridobject> jThis,
+      jlong jsContext,
+      jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
+          jsCallInvokerHolder) {
+    auto jsCallInvoker = jsCallInvokerHolder->cthis()->getCallInvoker();
+    auto rnRuntime = reinterpret_cast<jsi::Runtime *>(jsContext);
+    return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
   }
 
   static void registerNatives() {
@@ -33,16 +37,19 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
     });
   }
 
-  std::shared_ptr<AudioContext> createAudioContext();
-  void install(jlong jsContext);
+  void install();
 
  private:
   friend HybridBase;
 
-  global_ref<AudioAPIInstaller::javaobject> javaPart_;
+  jni::global_ref<AudioAPIInstaller::javaobject> javaPart_;
+  jsi::Runtime *rnRuntime_;
+  std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
 
   explicit AudioAPIInstaller(
-      jni::alias_ref<AudioAPIInstaller::jhybridobject> &jThis);
+      jni::alias_ref<AudioAPIInstaller::jhybridobject> &jThis,
+      jsi::Runtime *rnRuntime,
+      const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
 };
 
 } // namespace audioapi

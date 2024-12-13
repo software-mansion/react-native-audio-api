@@ -27,7 +27,7 @@ export interface IBaseAudioContext {
     imag: number[],
     disableNormalization: boolean
   ) => IPeriodicWave;
-  decodeAudioDataSource: (source: string) => Promise<IAudioBuffer>;
+  decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -86,6 +86,11 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   buffer: IAudioBuffer | null;
   loop: boolean;
+  loopStart: number;
+  loopEnd: number;
+
+  detune: IAudioParam;
+  playbackRate: IAudioParam;
 }
 
 export interface IAudioBuffer {

@@ -10,7 +10,7 @@
 
 - (instancetype)initWithSampleRate:(int)sampleRate;
 
-- (const AudioBufferList *)decode:(NSString *)pathOrURL;
+- (const AudioBufferList *)decodeWithFile:(NSString *)path;
 
 - (void)cleanup;
 
