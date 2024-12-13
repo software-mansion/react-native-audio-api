@@ -1,0 +1,32 @@
+---
+sidebar_position: 2
+---
+
+# Let's make some noise!
+
+In this section, we will guide you through the basic concepts of Audio API. We're going to use core audio components such as `AudioContext` and `AudioBufferSourceNode` to simply play sound from a file, which will help you develop a basic understanding of the library.
+
+## Using audio context
+
+Let's start by bootstrapping a simple application with a play button and creating our first instance of `AudioContext` object.
+
+```jsx
+import { AudioContext } from 'react-native-audio-api';
+
+export default function App() {
+  const handlePlay = () => {
+    const audioContext = new AudioContext();
+  };
+
+  return (
+    <Pressable onPress={handlePlay}>
+      <Text>Play sound!</text>
+    </Pressable>
+  )
+}
+```
+
+`AudioContext` is object that controls both the creation of the nodes, as well as execution of the audio processing, or decoding. In simple words it is our entry to the audio processing world!
+
+
+##

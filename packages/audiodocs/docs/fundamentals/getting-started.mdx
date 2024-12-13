@@ -1,0 +1,98 @@
+---
+slug: /
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Getting started
+
+The goal of _Fundamentals_ is to guide You through setup proces of Audio API as well as show base concepts standing behind audio programming using web audio framework to give you the confidence to explore more advanced use cases on your own. This section is packed with interactive examples, code snippets and explanations. Are you ready? Let's make some noise!
+
+## What is React Native Audio API?
+
+React Native Audio API is a powerful high-performant and low-level audio library built by [Software Mansion](https://swmansion.com/).
+RN Audio API is fully compatible\* with [Web Audio specification](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), making it easy to write audio-intensive applications for iOS, Android and Web with just one codebase.
+
+## Installation
+
+It takes only a few steps to add audio api to Your project:
+
+### Install the package
+
+Install `react-native-audio-api` package from npm:
+
+<Tabs groupId="package-managers">
+  <TabItem value="expo" label="EXPO" default>
+
+    npx expo install react-native-audio-api
+
+  </TabItem>
+  <TabItem value="npm" label="NPM">
+
+    npm install react-native-audio-api
+
+  </TabItem>
+  <TabItem value="yarn" label="YARN">
+
+    yarn add react-native-audio-api
+
+  </TabItem>
+</Tabs>
+
+### Expo development build
+
+When using an [Expo development build](https://docs.expo.dev/develop/development-builds/introduction/), run prebuild to update the native code in the `ios` and `android` directories.
+
+```bash
+npx expo prebuild
+```
+
+### Platform specific setup
+
+#### Android
+
+No additional steps are necessary.
+
+#### iOS
+
+While developing for iOS, make sure to install [pods](https://cocoapods.org) first before running the app:
+
+```bash
+cd ios && pod install && cd ..
+```
+
+#### Web
+
+No additional steps are necessary.
+
+:::caution
+
+`react-native-audio-api` on web, exposes browser built-in Web Audio API, but for compatibility between platforms, its limits available interfaces to APIs that are implemented on iOS and Android.
+
+:::
+
+### Clear Metro bundler cache (recommended)
+
+<Tabs groupId="package-managers">
+  <TabItem value="expo" label="EXPO" default>
+
+    npx expo start -c
+
+  </TabItem>
+  <TabItem value="npm" label="NPM">
+
+    npm start -- --reset-cache
+
+  </TabItem>
+  <TabItem value="yarn" label="YARN">
+
+    yarn start --reset-cache
+
+  </TabItem>
+</Tabs>
+
+## What's next?
+
+In [the next section](/fundamentals/lets-make-some-noise), we will learn how to prepare audio api and how to play some sound!.
