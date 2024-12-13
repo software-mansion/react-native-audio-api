@@ -13,9 +13,9 @@ namespace audioapi {
 AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context),
       loop_(false),
-      vReadIndex_(0.0),
       loopStart_(0),
-      loopEnd_(0) {
+      loopEnd_(0),
+      vReadIndex_(0.0) {
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
@@ -116,11 +116,11 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     float playbackRate) {
   size_t direction = playbackRate < 0 ? -1 : 1;
 
-  size_t readIndex = static_cast<size_t>(vReadIndex_);
+  auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  size_t frameStart = static_cast<size_t>(getVirtualStartFrame());
-  size_t frameEnd = static_cast<size_t>(getVirtualEndFrame());
+  auto frameStart = static_cast<size_t>(getVirtualStartFrame());
+  auto frameEnd = static_cast<size_t>(getVirtualEndFrame());
   size_t frameDelta = frameEnd - frameStart;
 
   size_t framesLeft = offsetLength;
@@ -132,7 +132,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
   while (framesLeft > 0) {
     size_t framesToEnd = frameEnd - readIndex;
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
-    framesToCopy = std::max(framesToCopy, 0ul);
+    framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
@@ -180,8 +180,8 @@ void AudioBufferSourceNode::processWithInterpolation(
   double vFrameEnd = getVirtualEndFrame();
   double vFrameDelta = vFrameEnd - vFrameStart;
 
-  size_t frameStart = static_cast<size_t>(vFrameStart);
-  size_t frameEnd = static_cast<size_t>(vFrameEnd);
+  auto frameStart = static_cast<size_t>(vFrameStart);
+  auto frameEnd = static_cast<size_t>(vFrameEnd);
 
   size_t framesLeft = offsetLength;
 
@@ -192,7 +192,7 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 
   while (framesLeft > 0) {
-    size_t readIndex = static_cast<size_t>(vReadIndex_);
+    auto readIndex = static_cast<size_t>(vReadIndex_);
     size_t nextReadIndex = readIndex + 1;
     float factor = vReadIndex_ - readIndex;
 
