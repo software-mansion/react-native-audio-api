@@ -6,6 +6,8 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <limits>
+#include <algorithm>
 
 #include "AudioNode.h"
 

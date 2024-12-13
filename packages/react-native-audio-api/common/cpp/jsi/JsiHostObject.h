@@ -2,10 +2,10 @@
 
 #include <jsi/jsi.h>
 #include <memory>
-#include <set>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <string>
 
 #define JSI_HOST_FUNCTION(NAME)  \
   jsi::Value NAME(               \
