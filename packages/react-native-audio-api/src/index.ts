@@ -6,6 +6,7 @@ export class AudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
+  /** @internal */
   public readonly buffer: globalThis.AudioBuffer;
 
   constructor(buffer: globalThis.AudioBuffer) {
