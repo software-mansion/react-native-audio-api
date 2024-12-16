@@ -10,23 +10,69 @@ In this section, we will guide you through the basic concepts of Audio API. We'r
 
 Let's start by bootstrapping a simple application with a play button and creating our first instance of `AudioContext` object.
 
-```jsx
+```jsx {1,5}
+import React from 'react';
+import { View, Button } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
 export default function App() {
-  const handlePlay = () => {
+  const handlePlay = async () => {
     const audioContext = new AudioContext();
   };
 
   return (
-    <Pressable onPress={handlePlay}>
-      <Text>Play sound!</text>
-    </Pressable>
-  )
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button onPress={handlePlay} title="Play sound!" />
+    </View>
+  );
 }
 ```
 
-`AudioContext` is object that controls both the creation of the nodes, as well as execution of the audio processing, or decoding. In simple words it is our entry to the audio processing world!
+`AudioContext` is object that controls both the creation of the nodes, as well as execution of the audio processing, or decoding.
 
+## Loading audio file
 
-##
+Before we will be able to play anything, we need to gain access to some audio data. For the purpose of this guide, we will first download it from remote source using expo [FileSystem](https://docs.expo.dev/versions/latest/sdk/filesystem/) `downloadAsync` API.
+
+```jsx {2,10-13}
+import React from 'react';
+import * as FileSystem from 'expo-file-system';
+import { View, Button } from 'react-native';
+import { AudioContext } from 'react-native-audio-api';
+
+export default function App() {
+  const handlePlay = async () => {
+    const audioContext = new AudioContext();
+
+    const audioBuffer = await FileSystem.downloadAsync(
+      'https://docs.swmansion.com/audio-api/audio/music/example-music-01.mp3',
+      `${FileSystem.documentDirectory}/example-music-01.mp3`
+    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
+  };
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button onPress={handlePlay} title="Play sound!" />
+    </View>
+  );
+}
+```
+
+We have used `decodeAudioDataSource` method of the `AudioContext`, which takes url to local file or bundled audio asset and decodes it to raw audio data, that can be used within our system.
+
+## Play the audio
+
+Last and final step is to create `AudioBufferSourceNode`. It is one of few nodes that are starting points in the audio graph and can "produce" sounds. All of them have `start` and `stop` functions.
+We can assign the `audioBuffer` obtained in previous step to finally play it!
+
+import InteractiveExample from '@site/src/components/InteractiveExample';
+import LetsMakeSomeNoise from '@site/src/examples/LetsMakeSomeNoise/Component';
+import LetsMakeSomeNoiseSrc from '!!raw-loader!@site/src/examples/LetsMakeSomeNoise/Source';
+
+<InteractiveExample src={LetsMakeSomeNoiseSrc} component={LetsMakeSomeNoise} />
+
+:::info
+
+In web environment you can use `decodeAudioDataSource` directly on the asset url, without the need to download it first.
+
+:::

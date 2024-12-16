@@ -20,6 +20,7 @@
     "@commitlint/config-conventional": "^17.0.2",
     "@evilmartians/lefthook": "^1.5.0",
     "@react-native/eslint-config": "^0.73.1",
+    "@types/raf": "^3.4.3",
     "commitlint": "^17.0.2",
     "eslint": "^8.51.0",
     "eslint-config-prettier": "^9.0.0",

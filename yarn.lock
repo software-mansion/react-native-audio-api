@@ -4141,6 +4141,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/raf@npm:^3.4.3":
+  version: 3.4.3
+  resolution: "@types/raf@npm:3.4.3"
+  checksum: 10/70b0d8ce4ed1fdd60abbee8ff2a572bd2947bd764691f98ef948748375f5012db7ee39a037dd063cfbbb52c0b7479bec68111bbb95ce5de023ec581794c9b85f
+  languageName: node
+  linkType: hard
+
 "@types/react-test-renderer@npm:^18.0.0":
   version: 18.3.1
   resolution: "@types/react-test-renderer@npm:18.3.1"
@@ -11903,6 +11910,7 @@ __metadata:
     "@commitlint/config-conventional": "npm:^17.0.2"
     "@evilmartians/lefthook": "npm:^1.5.0"
     "@react-native/eslint-config": "npm:^0.73.1"
+    "@types/raf": "npm:^3.4.3"
     commitlint: "npm:^17.0.2"
     eslint: "npm:^8.51.0"
     eslint-config-prettier: "npm:^9.0.0"

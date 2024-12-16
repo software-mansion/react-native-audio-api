@@ -5,6 +5,8 @@ const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+const webpack = require('webpack');
+
 const config = {
   title: 'React Native Audio API',
   favicon: 'img/favicon.ico',
@@ -64,6 +66,7 @@ const config = {
     // image: 'img/docusaurus-social-card.jpg',
     navbar: {
       hideOnScroll: true,
+      title: 'React Native Audio API',
       // logo: {
       //   // alt: 'react-native-audio-api logo',
       //   src: 'img/logo.svg',
@@ -86,7 +89,6 @@ const config = {
       ],
     },
     footer: {
-      style: 'dark',
       links: [],
       copyright: `All trademarks and copyrights belong to their respective owners.`,
     },
@@ -95,6 +97,52 @@ const config = {
       darkTheme: darkCodeTheme,
     },
   },
+
+  plugins: [
+    ...[
+      process.env.NODE_ENV === 'production' && '@docusaurus/plugin-debug',
+    ].filter(Boolean),
+    async function docusaurusPlugin() {
+      return {
+        name: 'react-native-audio-api/docusaurus-plugin',
+        // @ts-ignore
+        configureWebpack(_config, isServer, _utils) {
+          const processMock = !isServer ? { process: { env: {} } } : {};
+
+          const raf = require('raf');
+          raf.polyfill();
+
+          return {
+            mergeStrategy: {
+              'resolve.extensions': 'prepend',
+            },
+            plugins: [
+              new webpack.DefinePlugin({
+                ...processMock,
+                __DEV__: 'false',
+                setImmediate: () => {},
+              }),
+            ],
+            module: {
+              rules: [
+                {
+                  test: /\.txt/,
+                  type: 'asset/source',
+                },
+                {
+                  test: /\.tsx?$/,
+                },
+              ],
+            },
+            resolve: {
+              alias: { 'react-native$': 'react-native-web' },
+              extensions: ['.web.js', '...'],
+            },
+          };
+        },
+      };
+    },
+  ],
 };
 
 module.exports = config;
