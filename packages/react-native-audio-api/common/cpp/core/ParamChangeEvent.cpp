@@ -55,10 +55,4 @@ void ParamChangeEvent::setEndValue(float endValue) {
   endValue_ = endValue;
 }
 
-bool ParamChangeEvent::operator<(const ParamChangeEvent &other) const {
-  if (startTime_ != other.startTime_)
-    return startTime_ < other.startTime_;
-  return endTime_ < other.endTime_;
-}
-
 } // namespace audioapi

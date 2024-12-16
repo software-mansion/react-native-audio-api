@@ -45,16 +45,14 @@ void AudioParam::setValue(float value) {
 }
 
 float AudioParam::getValueAtTime(double time) {
-  if (endTime_ < time) {
-    if (!eventsQueue_.empty()) {
-      auto event = eventsQueue_.begin();
-      startTime_ = event->getStartTime();
-      endTime_ = event->getEndTime();
-      startValue_ = event->getStartValue();
-      endValue_ = event->getEndValue();
-      calculateValue_ = event->getCalculateValue();
-      eventsQueue_.erase(eventsQueue_.begin());
-    }
+  if (endTime_ < time && !eventsQueue_.empty()) {
+    auto event = eventsQueue_.front();
+    startTime_ = event.getStartTime();
+    endTime_ = event.getEndTime();
+    startValue_ = event.getStartValue();
+    endValue_ = event.getEndValue();
+    calculateValue_ = event.getCalculateValue();
+    eventsQueue_.pop_front();
   }
 
   setValue(calculateValue_(startTime_, endTime_, startValue_, endValue_, time));
@@ -63,8 +61,6 @@ float AudioParam::getValueAtTime(double time) {
 }
 
 void AudioParam::setValueAtTime(float value, double startTime) {
-  // if the start time is less than the end time of last event in the queue,
-  // then there is no need to schedule any events.
   if (startTime <= getQueueEndTime()) {
     return;
   }
@@ -84,16 +80,14 @@ void AudioParam::setValueAtTime(float value, double startTime) {
   auto event = ParamChangeEvent(
       startTime,
       startTime,
-      value,
+      getQueueEndValue(),
       value,
       calculateValue,
-      ParamChangeEventType::START_TIME_EVENT);
+      ParamChangeEventType::SET_VALUE);
   updateQueue(event);
 }
 
 void AudioParam::linearRampToValueAtTime(float value, double endTime) {
-  // if the end time is less than the end time of last event in the queue, then
-  // there is no need to schedule any events.
   if (endTime <= getQueueEndTime()) {
     return;
   }
@@ -122,13 +116,11 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
       getQueueEndValue(),
       value,
       calculateValue,
-      ParamChangeEventType::END_TIME_EVENT);
+      ParamChangeEventType::LINEAR_RAMP);
   updateQueue(event);
 }
 
 void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
-  // if the end time is less than the end time of last event in the queue, then
-  // there is no need to schedule any events.
   if (endTime <= getQueueEndTime()) {
     return;
   }
@@ -158,7 +150,7 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
       getQueueEndValue(),
       value,
       calculateValue,
-      ParamChangeEventType::END_TIME_EVENT);
+      ParamChangeEventType::EXPONENTIAL_RAMP);
   updateQueue(event);
 }
 
@@ -166,8 +158,6 @@ void AudioParam::setTargetAtTime(
     float target,
     double startTime,
     double timeConstant) {
-  // if the start time is less than the end time of last event in the queue,
-  // then there is no need to schedule any events.
   if (startTime <= getQueueEndTime()) {
     return;
   }
@@ -190,7 +180,7 @@ void AudioParam::setTargetAtTime(
       getQueueEndValue(),
       getQueueEndValue(),
       calculateValue,
-      ParamChangeEventType::START_TIME_EVENT);
+      ParamChangeEventType::SET_TARGET);
   updateQueue(event);
 }
 
@@ -199,8 +189,6 @@ void AudioParam::setValueCurveAtTime(
     int length,
     double startTime,
     double duration) {
-  // if the start time is less than the end time of last event in the queue,
-  // then there is no need to schedule any events.
   if (startTime <= getQueueEndTime()) {
     return;
   }
@@ -233,37 +221,30 @@ void AudioParam::setValueCurveAtTime(
       getQueueEndValue(),
       values[length - 1],
       calculateValue,
-      ParamChangeEventType::START_END_TIME_EVENT);
+      ParamChangeEventType::SET_VALUE_CURVE);
   updateQueue(event);
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
-  bool shouldErase;
-
-  for (auto &event : eventsQueue_) {
-    shouldErase = false;
-    if (event.getStartTime() >= cancelTime) {
-      shouldErase = true;
+  auto it = eventsQueue_.rbegin();
+  while (it->getEndTime() >= cancelTime) {
+    if (it->getStartTime() >= cancelTime ||
+        it->getType() == ParamChangeEventType::SET_VALUE_CURVE) {
+      eventsQueue_.pop_back();
     }
 
-    if (event.getType() == ParamChangeEventType::START_END_TIME_EVENT) {
-      if (event.getStartTime() < cancelTime &&
-          event.getEndTime() > cancelTime) {
-        shouldErase = false;
-      }
-    }
-
-    if (shouldErase) {
-      eventsQueue_.erase(event);
-    }
+    it++;
   }
 }
 
 void AudioParam::cancelAndHoldAtTime(double cancelTime) {
-  for (auto &event : eventsQueue_) {
-    if (event.getStartTime() >= cancelTime) {
-      eventsQueue_.erase(event);
+  auto it = eventsQueue_.rbegin();
+  while (it->getEndTime() >= cancelTime) {
+    if (it->getStartTime() >= cancelTime) {
+      eventsQueue_.pop_back();
     }
+
+    it++;
   }
 
   if (eventsQueue_.empty()) {
@@ -273,15 +254,7 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   if (!eventsQueue_.empty()) {
     auto lastEvent = eventsQueue_.rbegin();
     if (lastEvent->getEndTime() > cancelTime) {
-      auto event = new ParamChangeEvent(
-          lastEvent->getStartTime(),
-          cancelTime,
-          lastEvent->getStartValue(),
-          lastEvent->getEndValue(),
-          lastEvent->getCalculateValue(),
-          lastEvent->getType());
-      eventsQueue_.erase(*lastEvent);
-      eventsQueue_.insert(*event);
+      lastEvent->setEndTime(cancelTime);
     }
   }
 }
@@ -291,7 +264,7 @@ double AudioParam::getQueueEndTime() {
     return endTime_;
   }
 
-  return eventsQueue_.rbegin()->getEndTime();
+  return eventsQueue_.back().getEndTime();
 }
 
 float AudioParam::getQueueEndValue() {
@@ -299,38 +272,27 @@ float AudioParam::getQueueEndValue() {
     return this->endValue_;
   }
 
-  return eventsQueue_.rbegin()->getEndValue();
+  return eventsQueue_.back().getEndValue();
 }
 
 void AudioParam::updateQueue(ParamChangeEvent &event) {
-  auto prev = eventsQueue_.rbegin();
+  if (!eventsQueue_.empty()) {
+    auto prev = eventsQueue_.back();
 
-  if (prev == eventsQueue_.rend()) {
-    eventsQueue_.insert(event);
-    return;
+    if (prev.getType() == ParamChangeEventType::SET_TARGET) {
+      prev.setEndTime(event.getStartTime());
+      prev.setEndValue(prev.getCalculateValue()(
+          prev.getStartTime(),
+          prev.getEndTime(),
+          prev.getStartValue(),
+          prev.getEndValue(),
+          event.getStartTime()));
+    }
+
+    event.setStartValue(prev.getEndValue());
   }
 
-  if (prev->getType() == ParamChangeEventType::START_TIME_EVENT) {
-    auto prevCalculateValue = prev->getCalculateValue();
-    auto prevEndValue = prevCalculateValue(
-        prev->getStartTime(),
-        prev->getEndTime(),
-        prev->getStartValue(),
-        prev->getEndValue(),
-        event.getStartTime());
-    auto prevEvent = new ParamChangeEvent(
-        prev->getStartTime(),
-        event.getStartTime(),
-        prev->getStartValue(),
-        prevEndValue,
-        prev->getCalculateValue(),
-        ParamChangeEventType::START_TIME_EVENT);
-    eventsQueue_.erase(*prev);
-    eventsQueue_.insert(*prevEvent);
-  }
-
-  event.setStartValue(prev->getEndValue());
-  eventsQueue_.insert(event);
+  eventsQueue_.push_back(event);
 }
 
 } // namespace audioapi

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <deque>
 #include <memory>
-#include <set>
 #include <vector>
 
 #include "ParamChangeEvent.h"
@@ -45,7 +45,7 @@ class AudioParam {
   float minValue_;
   float maxValue_;
   BaseAudioContext *context_;
-  std::set<ParamChangeEvent> eventsQueue_;
+  std::deque<ParamChangeEvent> eventsQueue_;
 
   double startTime_;
   double endTime_;

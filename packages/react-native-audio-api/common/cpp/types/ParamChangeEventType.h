@@ -3,9 +3,11 @@
 namespace audioapi {
 
 enum class ParamChangeEventType {
-  START_TIME_EVENT,
-  END_TIME_EVENT,
-  START_END_TIME_EVENT,
+  LINEAR_RAMP,
+  EXPONENTIAL_RAMP,
+  SET_VALUE,
+  SET_TARGET,
+  SET_VALUE_CURVE,
 };
 
 } // namespace audioapi

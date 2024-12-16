@@ -28,8 +28,6 @@ class ParamChangeEvent {
   void setStartValue(float startValue);
   void setEndValue(float endValue);
 
-  bool operator<(const ParamChangeEvent &other) const;
-
  private:
   double startTime_;
   double endTime_;
