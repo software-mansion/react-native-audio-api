@@ -23,8 +23,11 @@ class AudioParamHostObject : public JsiHostObject {
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueAtTime),
         JSI_EXPORT_FUNCTION(AudioParamHostObject, linearRampToValueAtTime),
-        JSI_EXPORT_FUNCTION(
-            AudioParamHostObject, exponentialRampToValueAtTime));
+        JSI_EXPORT_FUNCTION(AudioParamHostObject, exponentialRampToValueAtTime),
+        JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
+        JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
+        JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
+        JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
 
     addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
   }
@@ -63,6 +66,40 @@ class AudioParamHostObject : public JsiHostObject {
     auto value = static_cast<float>(args[0].getNumber());
     double endTime = args[1].getNumber();
     param_->exponentialRampToValueAtTime(value, endTime);
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(setTargetAtTime) {
+    auto target = static_cast<float>(args[0].getNumber());
+    double startTime = args[1].getNumber();
+    double timeConstant = args[2].getNumber();
+    param_->setTargetAtTime(target, startTime, timeConstant);
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(setValueCurveAtTime) {
+    auto values = args[0].getObject(runtime).asArray(runtime);
+    auto length = static_cast<int>(values.length(runtime));
+    auto valuesData = new float[length];
+    for (size_t i = 0; i < values.length(runtime); i++) {
+      valuesData[i] =
+          static_cast<float>(values.getValueAtIndex(runtime, i).getNumber());
+    }
+    double startTime = args[1].getNumber();
+    double duration = args[2].getNumber();
+    param_->setValueCurveAtTime(valuesData, length, startTime, duration);
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(cancelScheduledValues) {
+    double cancelTime = args[0].getNumber();
+    param_->cancelScheduledValues(cancelTime);
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(cancelAndHoldAtTime) {
+    double cancelTime = args[0].getNumber();
+    param_->cancelAndHoldAtTime(cancelTime);
     return jsi::Value::undefined();
   }
 

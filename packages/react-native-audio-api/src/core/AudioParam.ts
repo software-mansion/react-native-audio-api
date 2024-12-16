@@ -52,4 +52,52 @@ export default class AudioParam {
 
     this.audioParam.exponentialRampToValueAtTime(value, endTime);
   }
+
+  public setTargetAtTime(
+    target: number,
+    startTime: number,
+    timeConstant: number
+  ): void {
+    if (startTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${startTime}`
+      );
+    }
+
+    this.audioParam.setTargetAtTime(target, startTime, timeConstant);
+  }
+
+  public setValueCurveAtTime(
+    values: number[],
+    startTime: number,
+    duration: number
+  ): void {
+    if (startTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${startTime}`
+      );
+    }
+
+    this.audioParam.setValueCurveAtTime(values, startTime, duration);
+  }
+
+  public cancelScheduledValues(cancelTime: number): void {
+    if (cancelTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${cancelTime}`
+      );
+    }
+
+    this.audioParam.cancelScheduledValues(cancelTime);
+  }
+
+  public cancelAndHoldAtTime(cancelTime: number): void {
+    if (cancelTime < 0) {
+      throw new RangeError(
+        `Time must be a finite non-negative number: ${cancelTime}`
+      );
+    }
+
+    this.audioParam.cancelAndHoldAtTime(cancelTime);
+  }
 }

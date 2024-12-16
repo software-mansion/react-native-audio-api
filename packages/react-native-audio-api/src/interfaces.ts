@@ -121,6 +121,18 @@ export interface IAudioParam {
   setValueAtTime: (value: number, startTime: number) => void;
   linearRampToValueAtTime: (value: number, endTime: number) => void;
   exponentialRampToValueAtTime: (value: number, endTime: number) => void;
+  setTargetAtTime: (
+    target: number,
+    startTime: number,
+    timeConstant: number
+  ) => void;
+  setValueCurveAtTime: (
+    values: number[],
+    startTime: number,
+    duration: number
+  ) => void;
+  cancelScheduledValues: (cancelTime: number) => void;
+  cancelAndHoldAtTime: (cancelTime: number) => void;
 }
 
 export interface IPeriodicWave {}

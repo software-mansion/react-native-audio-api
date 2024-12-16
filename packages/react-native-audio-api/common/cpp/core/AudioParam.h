@@ -4,7 +4,8 @@
 #include <set>
 #include <vector>
 
-#include "ParamChange.h"
+#include "ParamChangeEvent.h"
+#include "ParamChangeEventType.h"
 
 namespace audioapi {
 
@@ -20,13 +21,23 @@ class AudioParam {
 
   [[nodiscard]] float getValue() const;
   float getValueAtTime(double time);
-  void setValue(float value);
   [[nodiscard]] float getDefaultValue() const;
   [[nodiscard]] float getMinValue() const;
   [[nodiscard]] float getMaxValue() const;
+
+  void setValue(float value);
+
   void setValueAtTime(float value, double startTime);
   void linearRampToValueAtTime(float value, double endTime);
   void exponentialRampToValueAtTime(float value, double endTime);
+  void setTargetAtTime(float target, double startTime, double timeConstant);
+  void setValueCurveAtTime(
+      const float *values,
+      int length,
+      double startTime,
+      double duration);
+  void cancelScheduledValues(double cancelTime);
+  void cancelAndHoldAtTime(double cancelTime);
 
  private:
   float value_;
@@ -34,7 +45,7 @@ class AudioParam {
   float minValue_;
   float maxValue_;
   BaseAudioContext *context_;
-  std::set<ParamChange> changesQueue_;
+  std::set<ParamChangeEvent> eventsQueue_;
 
   double startTime_;
   double endTime_;
@@ -42,9 +53,9 @@ class AudioParam {
   float endValue_;
   std::function<float(double, double, float, float, double)> calculateValue_;
 
-  float checkValue(float value) const;
-  double getStartTime();
-  float getStartValue();
+  double getQueueEndTime();
+  float getQueueEndValue();
+  void updateQueue(ParamChangeEvent &event);
 };
 
 } // namespace audioapi

@@ -2,18 +2,19 @@
 
 #include <functional>
 #include <memory>
+#include "ParamChangeEventType.h"
 
 namespace audioapi {
 
-class ParamChange {
+class ParamChangeEvent {
  public:
-  explicit ParamChange(
+  explicit ParamChangeEvent(
       double startTime,
       double endTime,
       float startValue,
       float endValue,
-      std::function<float(double, double, float, float, double)>
-          calculateValue);
+      std::function<float(double, double, float, float, double)> calculateValue,
+      ParamChangeEventType type);
 
   [[nodiscard]] double getEndTime() const;
   [[nodiscard]] double getStartTime() const;
@@ -21,7 +22,13 @@ class ParamChange {
   [[nodiscard]] float getStartValue() const;
   [[nodiscard]] std::function<float(double, double, float, float, double)>
   getCalculateValue() const;
-  bool operator<(const ParamChange &other) const;
+  [[nodiscard]] ParamChangeEventType getType() const;
+
+  void setEndTime(double endTime);
+  void setStartValue(float startValue);
+  void setEndValue(float endValue);
+
+  bool operator<(const ParamChangeEvent &other) const;
 
  private:
   double startTime_;
@@ -29,6 +36,7 @@ class ParamChange {
   float startValue_;
   float endValue_;
   std::function<float(double, double, float, float, double)> calculateValue_;
+  ParamChangeEventType type_;
 };
 
 } // namespace audioapi
