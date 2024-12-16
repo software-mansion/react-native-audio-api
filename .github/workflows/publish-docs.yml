@@ -1,0 +1,41 @@
+name: build audio api docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - packages/audiodocs/**
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: github.repository == 'software-mansion-labs/react-native-audio-api'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Setup Yarn
+        uses: mskelton/setup-yarn@v2
+
+
+      - name: Install dependencies and build the docs
+        run: | 
+          cd packages/audiodocs
+          yarn
+          yarn build
+
+      - name: Upload build files
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to Github Pages
+        uses: actions/deploy-pages@v4
