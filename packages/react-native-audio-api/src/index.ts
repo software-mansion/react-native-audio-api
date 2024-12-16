@@ -244,6 +244,34 @@ export class AudioParam {
   public exponentialRampToValueAtTime(value: number, endTime: number): void {
     this.param.exponentialRampToValueAtTime(value, endTime);
   }
+
+  public setTargetAtTime(
+    target: number,
+    startTime: number,
+    timeConstant: number
+  ): void {
+    this.param.setTargetAtTime(target, startTime, timeConstant);
+  }
+
+  public setValueCurveAtTime(
+    values: number[],
+    startTime: number,
+    duration: number
+  ): void {
+    this.param.setValueCurveAtTime(
+      new Float32Array(values),
+      startTime,
+      duration
+    );
+  }
+
+  public cancelScheduledValues(startTime: number): void {
+    this.param.cancelScheduledValues(startTime);
+  }
+
+  public cancelAndHoldAtTime(cancelTime: number): void {
+    this.param.cancelAndHoldAtTime(cancelTime);
+  }
 }
 
 export class BiquadFilterNode extends AudioNode {
