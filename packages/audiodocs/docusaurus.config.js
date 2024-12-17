@@ -60,6 +60,7 @@ const config = {
   markdown: {
     mermaid: true,
   },
+  themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig: {
     // Replace with your project's social card

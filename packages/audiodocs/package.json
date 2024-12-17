@@ -24,6 +24,7 @@
     "@docusaurus/core": "^2.4.3",
     "@docusaurus/plugin-debug": "^2.4.3",
     "@docusaurus/preset-classic": "^2.4.3",
+    "@docusaurus/theme-mermaid": "^2.4.3",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@mdx-js/react": "^1.6.22",
