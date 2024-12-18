@@ -222,7 +222,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
     node->onInputDisabled();
   }
 
-  for (const auto& outputNode : outputNodes_) {
+  for (const auto &outputNode : outputNodes_) {
     disconnectNode(outputNode);
   }
 }
