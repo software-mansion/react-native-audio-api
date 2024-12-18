@@ -136,3 +136,16 @@ export interface IAudioParam {
 }
 
 export interface IPeriodicWave {}
+
+export interface IAnalyserNode extends IAudioNode {
+  fftSize: number;
+  readonly frequencyBinCount: number;
+  minDecibels: number;
+  maxDecibels: number;
+  smoothingTimeConstant: number;
+
+  getFloatFrequencyData: (array: number[]) => void;
+  getByteFrequencyData: (array: number[]) => void;
+  getFloatTimeDomainData: (array: number[]) => void;
+  getByteTimeDomainData: (array: number[]) => void;
+}

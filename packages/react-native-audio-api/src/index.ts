@@ -110,6 +110,40 @@ export class AudioNode {
   }
 }
 
+export class AnalyserNode extends AudioNode {
+  readonly fftSize: number;
+  readonly frequencyBinCount: number;
+  readonly minDecibels: number;
+  readonly maxDecibels: number;
+  readonly smoothingTimeConstant: number;
+
+  constructor(context: AudioContext, node: globalThis.AnalyserNode) {
+    super(context, node);
+
+    this.fftSize = node.fftSize;
+    this.frequencyBinCount = node.frequencyBinCount;
+    this.minDecibels = node.minDecibels;
+    this.maxDecibels = node.maxDecibels;
+    this.smoothingTimeConstant = node.smoothingTimeConstant;
+  }
+
+  public getByteFrequencyData(array: Uint8Array): void {
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(array);
+  }
+
+  public getByteTimeDomainData(array: Uint8Array): void {
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(array);
+  }
+
+  public getFloatFrequencyData(array: Float32Array): void {
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(array);
+  }
+
+  public getFloatTimeDomainData(array: Float32Array): void {
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(array);
+  }
+}
+
 export class AudioScheduledSourceNode extends AudioNode {
   private hasBeenStarted: boolean = false;
 
