@@ -126,7 +126,7 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   // - it has more than one output, so each output node can get the processed
   // data without re-calculating the node.
   bool canUseOutputBus =
-      outputBus != 0 && inputNodes_.size() < 2 && outputNodes_.size() < 2;
+      outputBus != nullptr && inputNodes_.size() < 2 && outputNodes_.size() < 2;
 
   if (isAlreadyProcessed) {
     // If it was already processed in the rendering quantum, return it.
@@ -214,7 +214,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
     inputNodes_.erase(position);
   }
 
-  if (inputNodes_.size() > 0) {
+  if (!inputNodes_.empty()) {
     return;
   }
 
@@ -222,7 +222,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
     node->onInputDisabled();
   }
 
-  for (auto outputNode : outputNodes_) {
+  for (const auto& outputNode : outputNodes_) {
     disconnectNode(outputNode);
   }
 }
