@@ -2,6 +2,8 @@
 sidebar_position: 3
 ---
 
+import InteractiveExample from '@site/src/components/InteractiveExample';
+
 # Making a piano keyboard
 
 In this section, we will use some of the core audio api interfaces to create a simple piano keyboard. We will learn what is an `AudioParam`, how to use it to change the pitch of the sound.
@@ -71,13 +73,8 @@ Like previously, we will need to preload the audio files in order to be able to 
 First comes the import section and list of the sources we will use, also lets help ourselves with type shorthand for partial record:
 
 ```tsx
-import {
-  GainNode,
-  AudioBuffer,
-  AudioContext,
-  AudioBufferSourceNode,
-} from 'react-native-audio-api';
 import * as FileSystem from 'expo-file-system';
+import { AudioBuffer, AudioContext } from 'react-native-audio-api';
 
 /* ... */
 
@@ -103,7 +100,7 @@ export default function SimplePiano() {
       audioContextRef.current = new AudioContext();
     }
 
-    Object.entries(sourceList).forEach(async ([key, source]) => {
+    Object.entries(sourceList).forEach(async ([key, url]) => {
       bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
         url,
         `${FileSystem.documentDirectory}/${key}.mp3`
@@ -120,8 +117,12 @@ Now it is finally time to play the sounds, but still nothing new here. We will u
 ```tsx
 export default function SimplePiano() {
   const onKeyPressIn = (which: KeyName) => {
-    const audioContext = audioContextRef.current!;
+    const audioContext = audioContextRef.current;
     const buffer = bufferMapRef.current[which];
+
+    if (!audioContext || !buffer) {
+      return;
+    }
 
     const source = new AudioBufferSourceNode(audioContext, {
       buffer,
@@ -132,6 +133,13 @@ export default function SimplePiano() {
   };
 }
 ```
+
+When we put everything all together, we will get something like this:
+
+import ItHangs from '@site/src/examples/SimplePiano/ItHangsComponent';
+import ItHangsSrc from '!!raw-loader!@site/src/examples/SimplePiano/ItHangsSource';
+
+<InteractiveExample component={ItHangs} src={ItHangsSrc} />
 
 Great! But a lot of things are a bit off here:
 
@@ -171,11 +179,19 @@ And finally we can implement the `onKeyPressOut` function
 ```tsx
 const onKeyPressOut = (which: KeyName) => {
   const source = playingNotesRef.current[which];
+
   if (source) {
     source.stop();
   }
 };
 ```
+
+Putting it all together again we get:
+
+import PressOutComponent from '@site/src/examples/SimplePiano/PressOutComponent';
+import PressOutSrc from '!!raw-loader!@site/src/examples/SimplePiano/PressOutSource';
+
+<InteractiveExample component={PressOutComponent} src={PressOutSrc} />
 
 And they stop on release, just as we wanted. But if we hold the keys for a short time, it sounds a bit strange. Also have You noticed that the sound is simply cut off when we release the key? 🤔
 It leave a bit unpleasant feeling, right? So let's try to make it a bit more smooth.
@@ -237,10 +253,14 @@ const onKeyPressIn = (which: KeyName) => {
   const buffer = bufferMapRef.current[which];
   const tNow = audioContext.currentTime;
 
-  const source = aCtx.createBufferSource();
+  if (!audioContext || !buffer) {
+    return;
+  }
+
+  const source = audioContext.createBufferSource();
   source.buffer = buffer;
 
-  const envelope = aCtx.createGain();
+  const envelope = audioContext.createGain();
 
   source.connect(envelope);
   envelope.connect(audioContext.destination);
@@ -258,7 +278,13 @@ and the `onKeyPressOut` function:
 ```tsx
 const onKeyPressOut = (which: KeyName) => {
   const audioContext = audioContextRef.current!;
-  const { source, envelope, startedAt } = playingNotesRef.current[which];
+  const playingNote = playingNotesRef.current[which];
+
+  if (!playingNote || !audioContext) {
+    return;
+  }
+
+  const { source, envelope, startedAt } = playingNote;
 
   const tStop = Math.max(audioContext.currentTime, startedAt + 1);
 
@@ -269,6 +295,13 @@ const onKeyPressOut = (which: KeyName) => {
   playingNotesRef.current[which] = undefined;
 };
 ```
+
+In result we can hear something like this:
+
+import EnvelopesComponent from '@site/src/examples/SimplePiano/EnvelopesComponent';
+import EnvelopesSrc from '!!raw-loader!@site/src/examples/SimplePiano/EnvelopesSource';
+
+<InteractiveExample component={EnvelopesComponent} src={EnvelopesSrc} />
 
 And it finally sounds smooth and nice. But what about decay and sustain phases? Both are done by the audio samples themselves, so we don't need to worry about them. To be honest, same goes for the attack phase, but we have implemented it for the sake of this guide. 🙂 <br /><br />
 So the only missing piece left is doing something about the missing sample files for 'B' and 'D' keys. What we can do about that?
@@ -332,8 +365,6 @@ const onKeyPressIn = (which: KeyName) => {
   const source = aCtx.createBufferSource();
   const envelope = aCtx.createGain();
   source.buffer = buffer;
-
-  // rest of the code remains the same
 };
 ```
 
@@ -341,9 +372,8 @@ const onKeyPressIn = (which: KeyName) => {
 
 As previously, you can see the final results in the live example below with full source code.
 
-import InteractiveExample from '@site/src/components/InteractiveExample';
-import SimplePiano from '@site/src/examples/SimplePiano/Component';
-import SimplePianoSrc from '!!raw-loader!@site/src/examples/SimplePiano/Source';
+import SimplePiano from '@site/src/examples/SimplePiano/FinalComponent';
+import SimplePianoSrc from '!!raw-loader!@site/src/examples/SimplePiano/FinalSource';
 
 <InteractiveExample component={SimplePiano} src={SimplePianoSrc} />
 
