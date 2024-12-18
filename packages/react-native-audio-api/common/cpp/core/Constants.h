@@ -21,4 +21,7 @@ constexpr float MAX_FILTER_FREQUENCY = NYQUIST_FREQUENCY;
 constexpr float MIN_FILTER_FREQUENCY = 0.0;
 static float MAX_FILTER_GAIN = 40 * std::log10(MOST_POSITIVE_SINGLE_FLOAT);
 constexpr float MIN_FILTER_GAIN = -MAX_GAIN;
+
+constexpr int MAX_FFT_SIZE = 32768;
+constexpr int MIN_FFT_SIZE = 32;
 } // namespace audioapi
