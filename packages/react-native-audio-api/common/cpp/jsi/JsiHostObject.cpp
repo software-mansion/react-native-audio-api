@@ -1,34 +1,32 @@
 #include "JsiHostObject.h"
 
 namespace audioapi {
-JsiHostObject::JsiHostObject() {
-  propertyGetters_ = std::make_unique<std::unordered_map<
-      std::string,
-      jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>();
-  propertyFunctions_ = std::make_unique<std::unordered_map<
-      std::string,
-      jsi::Value (JsiHostObject::*)(
-          jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>();
-  propertySetters_ = std::make_unique<std::unordered_map<
-      std::string,
-      void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
-}
+    JsiHostObject::JsiHostObject() {
+        getters_ = std::make_unique<std::unordered_map<
+                std::string,
+                jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>();
+        functions_ = std::make_unique<std::unordered_map<
+                std::string,
+                jsi::Value (JsiHostObject::*)(
+                        jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>();
+        setters_ = std::make_unique<std::unordered_map<
+                std::string,
+                void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
+    }
 
 std::vector<jsi::PropNameID> JsiHostObject::getPropertyNames(jsi::Runtime &rt) {
   std::vector<jsi::PropNameID> propertyNames;
-  propertyNames.reserve(
-      propertyGetters_->size() + propertyFunctions_->size() +
-      propertySetters_->size());
+  propertyNames.reserve(getters_->size() + functions_->size() + setters_->size());
 
-  for (const auto &it : *propertyGetters_) {
+  for (const auto &it : *getters_) {
     propertyNames.push_back(jsi::PropNameID::forUtf8(rt, it.first));
   }
 
-  for (const auto &it : *propertyFunctions_) {
+  for (const auto &it : *functions_) {
     propertyNames.push_back(jsi::PropNameID::forAscii(rt, it.first));
   }
 
-  for (const auto &it : *propertySetters_) {
+  for (const auto &it : *setters_) {
     propertyNames.push_back(jsi::PropNameID::forAscii(rt, it.first));
   }
 
@@ -39,27 +37,35 @@ jsi::Value JsiHostObject::get(
     jsi::Runtime &runtime,
     const jsi::PropNameID &name) {
   auto nameAsString = name.utf8(runtime);
+  auto &hostFunctionCache = hostFunctionCache_.get(runtime);
 
-  auto propertyGetter = propertyGetters_->find(nameAsString);
-  if (propertyGetter != propertyGetters_->end()) {
-    auto dispatcher = [this, &propertyGetter](jsi::Runtime &runtime) {
-      return (this->*(propertyGetter->second))(runtime);
-    };
+  auto cachedFunction = hostFunctionCache.find(nameAsString);
+  if (cachedFunction != hostFunctionCache.end()) {
+    return cachedFunction->second.asFunction(runtime);
+  }
+
+  auto getter = getters_->find(nameAsString);
+  if (getter != getters_->end()) {
+    auto dispatcher = std::bind(getter->second, this, std::placeholders::_1);
 
     return dispatcher(runtime);
   }
 
-  auto propertyFunction = propertyFunctions_->find(nameAsString);
-  if (propertyFunction != propertyFunctions_->end()) {
-    auto dispatcher = [this, &propertyFunction](
-                          jsi::Runtime &runtime,
-                          const jsi::Value &thisVal,
-                          const jsi::Value *args,
-                          size_t count) -> jsi::Value {
-      return (this->*(propertyFunction->second))(runtime, thisVal, args, count);
-    };
+  auto function = functions_->find(nameAsString);
+  if (function != functions_->end()) {
+    auto dispatcher = std::bind(
+        function->second,
+        reinterpret_cast<JsiHostObject *>(this),
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3,
+        std::placeholders::_4);
 
-    return jsi::Function::createFromHostFunction(runtime, name, 0, dispatcher);
+    return hostFunctionCache
+        .emplace(
+            nameAsString,
+            jsi::Function::createFromHostFunction(runtime, name, 0, dispatcher))
+        .first->second.asFunction(runtime);
   }
 
   return jsi::Value::undefined();
@@ -71,13 +77,11 @@ void JsiHostObject::set(
     const jsi::Value &value) {
   auto nameAsString = name.utf8(runtime);
 
-  auto propertySetter = propertySetters_->find(nameAsString);
+  auto setter = setters_->find(nameAsString);
 
-  if (propertySetter != propertySetters_->end()) {
-    auto dispatcher = [this, &propertySetter](
-                          jsi::Runtime &runtime, const jsi::Value &value) {
-      return (this->*(propertySetter->second))(runtime, value);
-    };
+  if (setter != setters_->end()) {
+    auto dispatcher = std::bind(
+        setter->second, this, std::placeholders::_1, std::placeholders::_2);
 
     return dispatcher(runtime, value);
   }

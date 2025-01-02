@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <map>
+
+#include "RuntimeAwareCache.h"
 
 #define JSI_HOST_FUNCTION(NAME)  \
   jsi::Value NAME(               \
@@ -57,24 +60,24 @@ class JsiHostObject : public jsi::HostObject {
 
   template <typename... Args>
   void addGetters(Args... args) {
-    (propertyGetters_->insert(args), ...);
+    (getters_->insert(args), ...);
   }
 
   template <typename... Args>
   void addSetters(Args... args) {
-    (propertySetters_->insert(args), ...);
+    (setters_->insert(args), ...);
   }
 
   template <typename... Args>
   void addFunctions(Args... args) {
-    (propertyFunctions_->insert(args), ...);
+    (functions_->insert(args), ...);
   }
 
  protected:
   std::unique_ptr<std::unordered_map<
       std::string,
       jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>
-      propertyGetters_;
+      getters_;
 
   std::unique_ptr<std::unordered_map<
       std::string,
@@ -83,12 +86,15 @@ class JsiHostObject : public jsi::HostObject {
           const jsi::Value &,
           const jsi::Value *,
           size_t)>>
-      propertyFunctions_;
+      functions_;
 
   std::unique_ptr<std::unordered_map<
       std::string,
       void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>
-      propertySetters_;
+      setters_;
+
+private:
+    RuntimeAwareCache<std::map<std::string, jsi::Function>> hostFunctionCache_;
 };
 
 } // namespace audioapi
