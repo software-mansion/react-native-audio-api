@@ -49,7 +49,7 @@ const config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        googleAnalytics: {
+        gtag: {
           trackingID: 'G-4BDHB978P1',
           anonymizeIP: true,
         },
@@ -60,6 +60,7 @@ const config = {
   markdown: {
     mermaid: true,
   },
+  themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig: {
     // Replace with your project's social card
@@ -67,11 +68,11 @@ const config = {
     navbar: {
       hideOnScroll: true,
       title: 'React Native Audio API',
-      // logo: {
-      //   // alt: 'react-native-audio-api logo',
-      //   src: 'img/logo.svg',
-      //   srcDark: 'img/logo.svg',
-      // },
+      logo: {
+        alt: 'react-native-audio-api logo',
+        src: 'img/logo-hero.svg',
+        srcDark: 'img/logo-hero.svg',
+      },
       items: [
         {
           type: 'docSidebar',

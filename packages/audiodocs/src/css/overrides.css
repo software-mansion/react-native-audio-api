@@ -1,10 +1,25 @@
 :root {
+  --swm-logo-height: 45px;
   --swm-expandable-transition: transform 200ms ease;
 }
 
 .navbar {
   min-width: 360px;
   z-index: 100;
+  background-color: var(--ifm-navbar-background-color);
+}
+
+[class*='navbarHideable'] {
+  background-color: var(--ifm-navbar-background-color) !important;
+}
+
+.navbar__title {
+  display: flex;
+  align-items: center;
+}
+
+.navbar__title img {
+  height: 45px !important;
 }
 
 .footer {
@@ -14,14 +29,6 @@
 .docusaurus-mermaid-container {
   display: flex;
   justify-content: center;
-}
-
-[class*="navbar__logo"] {
-  width: 180px;
-}
-
-.navbar__items :nth-child(2) {
-  margin-left: auto
 }
 
 table {
