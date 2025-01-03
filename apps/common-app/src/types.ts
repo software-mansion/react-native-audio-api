@@ -1,4 +1,9 @@
-export type InstrumentName = 'kick' | 'clap' | 'hi-hat';
+export type InstrumentName =
+  | 'kick'
+  | 'clap'
+  | 'hi-hat'
+  | 'downbeat'
+  | 'regularbeat';
 
 export interface Instrument {
   color: string;

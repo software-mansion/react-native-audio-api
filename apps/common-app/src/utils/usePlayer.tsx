@@ -3,7 +3,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
 import type { InstrumentName, Pattern, PlayingInstruments } from '../types';
-import { numBeats, instruments } from '../examples/DrumMachine/constants';
+import { instruments } from '../examples/DrumMachine/constants';
 
 type PlayNoteMethod = (name: InstrumentName, time: number) => void;
 
@@ -15,6 +15,7 @@ interface PlayerOptions {
   bpm: number;
   patterns: Pattern[];
   notesPerBeat: number;
+  numBeats: number;
   setup: (AudioContext: AudioContext) => SetupResponse;
 }
 
@@ -33,7 +34,7 @@ function r<T>(ref: React.MutableRefObject<T>) {
 }
 
 export default function usePlayer(options: PlayerOptions) {
-  const { bpm, patterns, notesPerBeat, setup } = options;
+  const { bpm, patterns, notesPerBeat, numBeats, setup } = options;
 
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -41,6 +42,7 @@ export default function usePlayer(options: PlayerOptions) {
   const patternsRef = useRef(patterns);
   const isPlayingRef = useRef(isPlaying);
   const notesPerBeatRef = useRef(notesPerBeat);
+  const numBeatsRef = useRef(numBeats);
 
   const progressSV = useSharedValue(0);
   const currentBeat = useSharedValue(0);
@@ -54,7 +56,8 @@ export default function usePlayer(options: PlayerOptions) {
     patternsRef.current = patterns;
     isPlayingRef.current = isPlaying;
     notesPerBeatRef.current = notesPerBeat;
-  }, [bpm, patterns, isPlaying, notesPerBeat]);
+    numBeatsRef.current = numBeats;
+  }, [bpm, patterns, isPlaying, notesPerBeat, numBeats]);
 
   useLayoutEffect(() => {
     const audioContext = new AudioContext();
@@ -80,14 +83,14 @@ export default function usePlayer(options: PlayerOptions) {
         }
       }
 
-      currentBeat.value = (currentBeat.value + 1) % numBeats;
+      currentBeat.value = (currentBeat.value + 1) % r(numBeatsRef);
     }
 
     function playerLoop() {
       frameCount += 1;
 
       const timePerNote = 60.0 / (r(bpmRef) * r(notesPerBeatRef));
-      const totalLoopTime = timePerNote * numBeats;
+      const totalLoopTime = timePerNote * r(numBeatsRef);
 
       currentTime = audioContext.currentTime;
       const timeDiff = currentTime - startTime;
