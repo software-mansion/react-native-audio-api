@@ -107,12 +107,20 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     startOffset = 0;
     nonSilentFramesToProcess = 0;
     playbackState_ = PlaybackState::FINISHED;
+    disable();
     return;
   }
 
   // normal "mid-buffer" playback
   startOffset = 0;
   nonSilentFramesToProcess = framesToProcess;
+}
+
+void AudioScheduledSourceNode::handleStopScheduled() {
+  if (isPlaying() && stopTime_ > 0 && context_->getCurrentTime() >= stopTime_) {
+    playbackState_ = PlaybackState::FINISHED;
+    disable();
+  }
 }
 
 } // namespace audioapi
