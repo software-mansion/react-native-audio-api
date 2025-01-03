@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Circle, Paint } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { Instrument, PlayingInstruments } from './types';
+import { Instrument, PlayingInstruments } from '../../types';
 import { cPoint, buttonRadius } from './constants';
 import { getPointCX, getPointCY } from './utils';
 import instruments from './instruments';

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <jsi/jsi.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <map>
 
 #include "RuntimeAwareCache.h"
 
@@ -93,8 +93,8 @@ class JsiHostObject : public jsi::HostObject {
       void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>
       setters_;
 
-private:
-    RuntimeAwareCache<std::map<std::string, jsi::Function>> hostFunctionCache_;
+ private:
+  RuntimeAwareCache<std::map<std::string, jsi::Function>> hostFunctionCache_;
 };
 
 } // namespace audioapi

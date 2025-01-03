@@ -1,4 +1,4 @@
-import type { Preset } from './types';
+import type { Preset } from '../../types';
 import { numBeats } from './constants';
 
 const Empty: Preset = {

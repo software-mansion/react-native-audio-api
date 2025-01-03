@@ -3,7 +3,7 @@ import { Circle, Paint, Path, vec, Skia } from '@shopify/react-native-skia';
 
 import { getAngle, getPointCX, getPointCY } from './utils';
 import instruments from './instruments';
-import type { Pattern } from './types';
+import type { Pattern } from '../../types';
 import { buttonRadius, cPoint } from './constants';
 
 interface PatternShapeProps {

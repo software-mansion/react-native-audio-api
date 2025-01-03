@@ -8,13 +8,13 @@ import { colors } from '../../styles';
 import { Select, Slider, Spacer, Container } from '../../components';
 import { Kick, Clap, HiHat } from '../SharedUtils';
 
-import { InstrumentName, Pattern, type XYWHRect } from './types';
+import { InstrumentName, Pattern, type XYWHRect } from '../../types';
 import { size, initialBpm } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
 import useGestures from './useGestures';
 import PlayButton from './PlayButton';
-import usePlayer from './usePlayer';
+import usePlayer from '../../utils/usePlayer';
 import presets from './presets';
 import Grid from './Grid';
 

@@ -1,22 +1,23 @@
 #include "JsiHostObject.h"
 
 namespace audioapi {
-    JsiHostObject::JsiHostObject() {
-        getters_ = std::make_unique<std::unordered_map<
-                std::string,
-                jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>();
-        functions_ = std::make_unique<std::unordered_map<
-                std::string,
-                jsi::Value (JsiHostObject::*)(
-                        jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>();
-        setters_ = std::make_unique<std::unordered_map<
-                std::string,
-                void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
-    }
+JsiHostObject::JsiHostObject() {
+  getters_ = std::make_unique<std::unordered_map<
+      std::string,
+      jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>();
+  functions_ = std::make_unique<std::unordered_map<
+      std::string,
+      jsi::Value (JsiHostObject::*)(
+          jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>();
+  setters_ = std::make_unique<std::unordered_map<
+      std::string,
+      void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
+}
 
 std::vector<jsi::PropNameID> JsiHostObject::getPropertyNames(jsi::Runtime &rt) {
   std::vector<jsi::PropNameID> propertyNames;
-  propertyNames.reserve(getters_->size() + functions_->size() + setters_->size());
+  propertyNames.reserve(
+      getters_->size() + functions_->size() + setters_->size());
 
   for (const auto &it : *getters_) {
     propertyNames.push_back(jsi::PropNameID::forUtf8(rt, it.first));

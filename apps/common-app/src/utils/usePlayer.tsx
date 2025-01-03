@@ -2,8 +2,8 @@ import { AudioContext } from 'react-native-audio-api';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
-import type { InstrumentName, Pattern, PlayingInstruments } from './types';
-import { numBeats, instruments } from './constants';
+import type { InstrumentName, Pattern, PlayingInstruments } from '../types';
+import { numBeats, instruments } from '../examples/DrumMachine/constants';
 
 type PlayNoteMethod = (name: InstrumentName, time: number) => void;
 

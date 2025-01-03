@@ -8,7 +8,7 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { Icon } from '../../components';
 import { colors } from '../../styles';
-import type { PlayingInstruments, XYWHRect } from './types';
+import type { PlayingInstruments, XYWHRect } from '../../types';
 import { size } from './constants';
 
 interface PlayButtonProps {
