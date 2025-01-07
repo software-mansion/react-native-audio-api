@@ -36,7 +36,7 @@
     "lint:kotlin": "ktlint 'android/src/main/java/**'",
     "format:android": "find android/src/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:ios": "find ios/ -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" | xargs clang-format -i --Werror",
-    "format:common": "find common/cpp/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
+    "format:common": "find common/cpp/ -path 'common/cpp/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:kotlin": "ktlint -F 'android/src/main/java/**'",
     "build": "bob build",
     "prepack": "cp ../../README.md ./README.md",
