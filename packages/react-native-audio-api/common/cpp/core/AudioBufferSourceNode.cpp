@@ -19,10 +19,9 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
-  detuneParam_ =
-      std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
+  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
-      context, 1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
   isInitialized_ = true;
 }

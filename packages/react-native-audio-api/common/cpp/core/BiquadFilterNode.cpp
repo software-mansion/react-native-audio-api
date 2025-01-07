@@ -11,13 +11,11 @@ namespace audioapi {
 BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
     : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      context, 350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
-  detuneParam_ =
-      std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
-  QParam_ =
-      std::make_shared<AudioParam>(context, 1.0, -MAX_FILTER_Q, MAX_FILTER_Q);
-  gainParam_ = std::make_shared<AudioParam>(
-      context, 0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
+      350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
+  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
+  QParam_ = std::make_shared<AudioParam>(1.0, -MAX_FILTER_Q, MAX_FILTER_Q);
+  gainParam_ =
+      std::make_shared<AudioParam>(0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
   type_ = BiquadFilterType::LOWPASS;
   isInitialized_ = true;
 }

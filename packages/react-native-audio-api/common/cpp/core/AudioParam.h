@@ -9,15 +9,9 @@
 
 namespace audioapi {
 
-class BaseAudioContext;
-
 class AudioParam {
  public:
-  explicit AudioParam(
-      BaseAudioContext *context,
-      float defaultValue,
-      float minValue,
-      float maxValue);
+  explicit AudioParam(float defaultValue, float minValue, float maxValue);
 
   [[nodiscard]] float getValue() const;
   float getValueAtTime(double time);
@@ -44,7 +38,6 @@ class AudioParam {
   float defaultValue_;
   float minValue_;
   float maxValue_;
-  BaseAudioContext *context_;
   std::deque<ParamChangeEvent> eventsQueue_;
 
   double startTime_;

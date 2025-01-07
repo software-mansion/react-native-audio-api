@@ -5,16 +5,11 @@
 
 namespace audioapi {
 
-AudioParam::AudioParam(
-    BaseAudioContext *context,
-    float defaultValue,
-    float minValue,
-    float maxValue)
+AudioParam::AudioParam(float defaultValue, float minValue, float maxValue)
     : value_(defaultValue),
       defaultValue_(defaultValue),
       minValue_(minValue),
-      maxValue_(maxValue),
-      context_(context) {
+      maxValue_(maxValue) {
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
