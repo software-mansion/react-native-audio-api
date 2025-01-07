@@ -1,13 +1,12 @@
 #ifdef ANDROID
-#include "AudioDecoder.h"
 #include "AudioPlayer.h"
 #else
-#include "IOSAudioDecoder.h"
 #include "IOSAudioPlayer.h"
 #endif
 
 #include "BaseAudioContext.h"
 
+#include "AudioDecoder.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
@@ -25,12 +24,11 @@ namespace audioapi {
 BaseAudioContext::BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
-  audioDecoder_ = std::make_shared<AudioDecoder>(audioPlayer_->getSampleRate());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
-  audioDecoder_ =
-      std::make_shared<IOSAudioDecoder>(audioPlayer_->getSampleRate());
 #endif
+
+  audioDecoder_ = std::make_shared<AudioDecoder>(audioPlayer_->getSampleRate());
 
   sampleRate_ = audioPlayer_->getSampleRate();
   bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
@@ -108,19 +106,11 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
       sampleRate_, real, imag, length, disableNormalization);
 }
 
-#ifdef ANDROID
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
   return std::make_shared<AudioBuffer>(audioBus);
 }
-#else
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    const std::string &path) {
-  auto audioBus = audioDecoder_->decodeWithFilePath(path);
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-#endif
 
 std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
   if (!isRunning()) {

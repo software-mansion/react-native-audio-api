@@ -3,13 +3,11 @@
 
 #include <AudioArray.h>
 #include <AudioBus.h>
-#include <IOSAudioDecoder.h>
+#include <AudioDecoder.h>
 
 namespace audioapi {
 
-IOSAudioDecoder::IOSAudioDecoder(int sampleRate) : sampleRate_(sampleRate) {}
-
-AudioBus *IOSAudioDecoder::decodeWithFilePath(const std::string &path) const
+AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 2, sampleRate_);
@@ -43,11 +41,5 @@ AudioBus *IOSAudioDecoder::decodeWithFilePath(const std::string &path) const
   ma_decoder_uninit(&decoder);
 
   return audioBus;
-}
-
-AudioBus *IOSAudioDecoder::decodeWithArrayBuffer() const
-{
-  // TODO: implement his
-  return new AudioBus(sampleRate_, 1, 1);
 }
 } // namespace audioapi
