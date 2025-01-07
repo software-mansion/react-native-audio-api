@@ -6,11 +6,11 @@
 
 #include "BaseAudioContext.h"
 
-#include "AudioDecoder.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
 #include "AudioBus.h"
+#include "AudioDecoder.h"
 #include "AudioDestinationNode.h"
 #include "AudioNodeManager.h"
 #include "BiquadFilterNode.h"
