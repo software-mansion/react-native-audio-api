@@ -5,14 +5,13 @@
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
-    : AudioNode(context) {
-  channelCount_ = 1;
-  fftSize_ = 2048;
-  minDecibels_ = -100;
-  maxDecibels_ = -30;
-  smoothingTimeConstant_ = 0.8;
-  inputBus_ =
-      std::make_unique<AudioBus>(context->getSampleRate(), MAX_FFT_SIZE * 2, 1);
+    : AudioNode(context),
+      fftSize_(DEFAULT_FFT_SIZE),
+      minDecibels_(DEFAULT_MIN_DECIBELS),
+      maxDecibels_(DEFAULT_MAX_DECIBELS),
+      smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
+      vWriteIndex_(0) {
+  inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
 }
 
 int AnalyserNode::getFftSize() const {
@@ -36,6 +35,13 @@ double AnalyserNode::getSmoothingTimeConstant() const {
 }
 
 void AnalyserNode::setFftSize(int fftSize) {
+  int log2size = static_cast<int>(log2(fftSize));
+  bool isPowerOfTwo(1UL << log2size == fftSize);
+
+  if (!isPowerOfTwo || fftSize < MIN_FFT_SIZE || fftSize > MAX_FFT_SIZE) {
+    return;
+  }
+
   fftSize_ = fftSize;
 }
 
@@ -51,25 +57,37 @@ void AnalyserNode::setSmoothingTimeConstant(double smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-float *AnalyserNode::getFloatFrequencyData() {
-  return nullptr;
-}
+void AnalyserNode::getFloatFrequencyData(float *data) {}
 
-uint8_t *AnalyserNode::getByteFrequencyData() {
-  return nullptr;
-}
+void AnalyserNode::getByteFrequencyData(float *data) {}
 
-float *AnalyserNode::getFloatTimeDomainData() {
-  return nullptr;
-}
+void AnalyserNode::getFloatTimeDomainData(float *data) {}
 
-uint8_t *AnalyserNode::getByteTimeDomainData() {
-  return nullptr;
-}
+void AnalyserNode::getByteTimeDomainData(float *data) {}
 
 void AnalyserNode::processNode(
     audioapi::AudioBus *processingBus,
     int framesToProcess) {
-  // m_analyser.writeInput(inputBus, framesToProcess);
+  if (!isInitialized_) {
+    processingBus->zero();
+    return;
+  }
+
+  if (downMixBus_ == nullptr) {
+    downMixBus_ = std::make_unique<AudioBus>(
+        context_->getSampleRate(), processingBus->getSize(), 1);
+  }
+
+  downMixBus_->copy(processingBus);
+
+  memcpy(
+      inputBuffer_->getData() + vWriteIndex_,
+      downMixBus_->getChannel(0)->getData(),
+      framesToProcess * sizeof(float));
+
+  vWriteIndex_ += framesToProcess;
+  if (vWriteIndex_ >= inputBuffer_->getSize()) {
+    vWriteIndex_ = 0;
+  }
 }
 } // namespace audioapi

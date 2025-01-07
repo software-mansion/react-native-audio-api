@@ -7,6 +7,7 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioArray;
 
 class AnalyserNode : public AudioNode {
  public:
@@ -23,10 +24,10 @@ class AnalyserNode : public AudioNode {
   void setMaxDecibels(double maxDecibels);
   void setSmoothingTimeConstant(double smoothingTimeConstant);
 
-  float *getFloatFrequencyData();
-  uint8_t *getByteFrequencyData();
-  float *getFloatTimeDomainData();
-  uint8_t *getByteTimeDomainData();
+  void getFloatFrequencyData(float *data);
+  void getByteFrequencyData(float *data);
+  void getFloatTimeDomainData(float *data);
+  void getByteTimeDomainData(float *data);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;
@@ -37,7 +38,9 @@ class AnalyserNode : public AudioNode {
   double maxDecibels_;
   double smoothingTimeConstant_;
 
-  std::unique_ptr<AudioBus> inputBus_;
+  std::unique_ptr<AudioArray> inputBuffer_;
+  std::unique_ptr<AudioBus> downMixBus_;
+  int vWriteIndex_;
 };
 
 } // namespace audioapi
