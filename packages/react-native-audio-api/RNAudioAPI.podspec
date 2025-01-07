@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
 
   s.source_files = "ios/**/*.{h,m,mm}", "common/cpp/**/*.{hpp,cpp,c,h}"
 
-  s.ios.frameworks = 'Accelerate'
+  s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate'
   s.xcconfig = {
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) HAVE_ACCELERATE=1'
   }

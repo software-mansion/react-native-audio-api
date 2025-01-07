@@ -2,27 +2,20 @@
 
 #include <string>
 
-#ifdef __OBJC__ // when compiled as Objective-C++
-#import <AudioDecoder.h>
-#else // when compiled as C++
-typedef struct objc_object AudioDecoder;
-#endif // __OBJC__
-
 namespace audioapi {
 
 class AudioBus;
 
 class IOSAudioDecoder {
- protected:
-  AudioDecoder *audioDecoder_;
-  int sampleRate_;
-
  public:
-  IOSAudioDecoder(int sampleRate);
-  ~IOSAudioDecoder();
+  explicit IOSAudioDecoder(int sampleRate);
 
-  AudioBus *decodeWithFilePath(const std::string &path);
+  [[nodiscard]] AudioBus *decodeWithFilePath(const std::string &path) const;
   // TODO: implement this
-  AudioBus *decodeWithArrayBuffer();
+  [[nodiscard]] AudioBus *decodeWithArrayBuffer() const;
+
+ private:
+  int sampleRate_;
 };
+
 } // namespace audioapi
