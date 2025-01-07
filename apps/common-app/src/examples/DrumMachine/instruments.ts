@@ -1,5 +1,5 @@
 import { maxSize } from './constants';
-import type { Instrument } from './types';
+import type { Instrument } from '../../types';
 
 export const HiHat: Instrument = {
   name: 'hi-hat',

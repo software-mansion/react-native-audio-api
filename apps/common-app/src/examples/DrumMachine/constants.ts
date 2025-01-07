@@ -1,5 +1,5 @@
 import { Dimensions } from 'react-native';
-import type { InstrumentName, XYPoint } from './types';
+import type { InstrumentName, XYPoint } from '../../types';
 
 export const screenSize = Dimensions.get('screen');
 export const size = Math.min(screenSize.width, screenSize.height);

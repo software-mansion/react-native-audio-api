@@ -5,7 +5,7 @@ import { Line, Circle, Paint, vec } from '@shopify/react-native-skia';
 import { colors } from '../../styles';
 import { numBeats, cPoint, maxSize, buttonRadius } from './constants';
 import { getAngle, getPointCX, getPointCY } from './utils';
-import type { Instrument } from './types';
+import type { Instrument } from '../../types';
 import instruments from './instruments';
 
 const points = Array(numBeats).fill(0);

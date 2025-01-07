@@ -8,7 +8,7 @@ import {
 
 import { getAngle, getPointCX, getPointCY, isPointInCircle } from './utils';
 import { numBeats, buttonRadius, cPoint } from './constants';
-import type { Touché, XYWHRect } from './types';
+import type { Touché, XYWHRect } from '../../types';
 import Instruments from './instruments';
 import { useMemo } from 'react';
 

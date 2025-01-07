@@ -27,12 +27,15 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isFinished();
 
  protected:
-  std::atomic<PlaybackState> playbackState_;
+  PlaybackState playbackState_;
+
   void updatePlaybackInfo(
       AudioBus *processingBus,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess);
+
+  void handleStopScheduled();
 
  private:
   double startTime_;

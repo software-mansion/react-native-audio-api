@@ -1,137 +1,78 @@
 import { AudioContext } from 'react-native-audio-api';
-import React, { useState, useEffect, useRef, FC } from 'react';
+import React, { useState, useCallback, FC } from 'react';
 
 import { Container, Slider, Spacer, Button } from '../../components';
-import { Scheduler, MetronomeSound } from '../SharedUtils';
-import { Sounds, SoundName } from '../../types';
+import MetronomeSound from '../../utils/soundEngines/MetronomeSound';
+import { InstrumentName, Pattern } from '../../types';
+import { patterns, defaultPattern } from './patterns';
+import usePlayer from '../../utils/usePlayer';
 
 const DOWN_BEAT_FREQUENCY = 1000;
 const REGULAR_BEAT_FREQUENCY = 500;
 
-const STEPS: Sounds = [
-  { name: 'downbeat', steps: [true, false, false, false] },
-  { name: 'regularbeat', steps: [false, true, true, true] },
-];
-
 const INITIAL_BPM = 120;
 const INITIAL_BEATS_PER_BAR = 4;
+
+function setupPlayer(audioCtx: AudioContext) {
+  const downbeat = new MetronomeSound(audioCtx, DOWN_BEAT_FREQUENCY);
+  const regularbeat = new MetronomeSound(audioCtx, REGULAR_BEAT_FREQUENCY);
+
+  const playNote = (name: InstrumentName, time: number) => {
+    switch (name) {
+      case 'downbeat':
+        downbeat.play(time);
+        break;
+      case 'regularbeat':
+        regularbeat.play(time);
+        break;
+    }
+  };
+
+  return { playNote };
+}
 
 const Metronome: FC = () => {
   const [bpm, setBpm] = useState(INITIAL_BPM);
   const [beatsPerBar, setBeatsPerBar] = useState(INITIAL_BEATS_PER_BAR);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [pattern, setPattern] = useState<Pattern[]>([
+    ...patterns[defaultPattern],
+  ]);
 
-  const audioContextRef = useRef<null | AudioContext>(null);
-  const downbeatSoundRef = useRef<null | MetronomeSound>(null);
-  const regularbeatSoundRef = useRef<null | MetronomeSound>(null);
-  const schedulerRef = useRef<null | Scheduler>(null);
+  const player = usePlayer({
+    bpm,
+    patterns: pattern,
+    notesPerBeat: 1,
+    numBeats: beatsPerBar,
+    setup: setupPlayer,
+  });
 
-  const handlePause = () => {
-    setIsPlaying(false);
-    schedulerRef.current?.stop();
-  };
-
-  const handlePlayPause = () => {
-    if (!audioContextRef.current || !schedulerRef.current) {
-      return;
-    }
-
-    if (isPlaying) {
-      handlePause();
-      return;
-    }
-
-    setIsPlaying(true);
-    schedulerRef.current.start();
-  };
-
-  const handleBpmChange = (newBpm: number) => {
-    handlePause();
-    setBpm(newBpm);
-    if (schedulerRef.current) {
-      schedulerRef.current.bpm = newBpm;
-    }
-  };
-
-  const handleBeatsPerBarChange = (newBeatsPerBar: number) => {
-    handlePause();
+  const onBeatsPerBarChange = useCallback((newBeatsPerBar: number) => {
     setBeatsPerBar(newBeatsPerBar);
-    if (schedulerRef.current) {
-      schedulerRef.current.beatsPerBar = newBeatsPerBar;
-      const steps = new Array(newBeatsPerBar).fill(false);
-      steps[0] = true;
-
-      schedulerRef.current.steps = [
-        { name: 'downbeat', steps },
-        { name: 'regularbeat', steps: steps.map((value) => !value) },
-      ];
-    }
-  };
-
-  const playSound = (name: SoundName, time: number) => {
-    if (!audioContextRef.current || !schedulerRef.current) {
-      return;
-    }
-
-    if (!downbeatSoundRef.current) {
-      downbeatSoundRef.current = new MetronomeSound(
-        audioContextRef.current,
-        DOWN_BEAT_FREQUENCY
-      );
-    }
-
-    if (!regularbeatSoundRef.current) {
-      regularbeatSoundRef.current = new MetronomeSound(
-        audioContextRef.current,
-        REGULAR_BEAT_FREQUENCY
-      );
-    }
-
-    switch (name) {
-      case 'downbeat':
-        downbeatSoundRef.current.play(time);
-        break;
-      case 'regularbeat':
-        regularbeatSoundRef.current.play(time);
-        break;
-      default:
-        break;
-    }
-  };
-
-  useEffect(() => {
-    if (!audioContextRef.current || !schedulerRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    if (!schedulerRef.current) {
-      schedulerRef.current = new Scheduler(
-        INITIAL_BPM,
-        INITIAL_BEATS_PER_BAR,
-        audioContextRef.current,
-        STEPS,
-        1,
-        playSound
-      );
-    }
-    return () => {
-      schedulerRef.current?.stop();
-      audioContextRef.current?.close();
-    };
+    setPattern([...patterns[newBeatsPerBar]]);
   }, []);
+
+  const onPlayPress = useCallback(() => {
+    if (player.isPlaying) {
+      player.stop();
+    } else {
+      player.play();
+    }
+  }, [player]);
 
   return (
     <Container centered>
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
+      <Button
+        title={player.isPlaying ? 'Stop' : 'Play'}
+        onPress={onPlayPress}
+      />
       <Spacer.Vertical size={20} />
       <Slider
-        step={1}
-        min={30}
-        max={240}
-        value={bpm}
         label="BPM"
-        minLabelWidth={50}
-        onValueChange={handleBpmChange}
+        step={1}
+        min={24}
+        max={320}
+        value={bpm}
+        onValueChange={setBpm}
       />
       <Spacer.Vertical size={20} />
       <Slider
@@ -140,7 +81,7 @@ const Metronome: FC = () => {
         step={1}
         value={beatsPerBar}
         label="Beats"
-        onValueChange={handleBeatsPerBarChange}
+        onValueChange={onBeatsPerBarChange}
         minLabelWidth={50}
       />
     </Container>

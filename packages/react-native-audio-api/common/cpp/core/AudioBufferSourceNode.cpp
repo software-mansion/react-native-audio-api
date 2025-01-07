@@ -103,6 +103,8 @@ void AudioBufferSourceNode::processNode(
     processWithInterpolation(
         processingBus, startOffset, offsetLength, playbackRate);
   }
+
+  handleStopScheduled();
 }
 
 /**

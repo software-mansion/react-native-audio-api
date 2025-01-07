@@ -75,6 +75,8 @@ void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
 
     time += deltaTime;
   }
+
+  handleStopScheduled();
 }
 
 } // namespace audioapi
