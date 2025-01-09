@@ -148,6 +148,7 @@ android {
         "**/libjsi.so",
         "**/libfolly_runtime.so",
         "**/libreactnativejni.so",
+        "**/libreactnative.so",
       ]
     }
   }

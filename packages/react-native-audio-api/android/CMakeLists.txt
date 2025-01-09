@@ -61,6 +61,7 @@ if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
 else()
   set(RN_VERSION_LINK_LIBRARIES
     ReactAndroid::folly_runtime
+    ReactAndroid::react_nativemodule_core
     ReactAndroid::glog
     ReactAndroid::reactnativejni
   )
