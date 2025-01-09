@@ -1,39 +1,26 @@
 #import "AudioAPIModule.h"
 
 #import <React/RCTBridge+Private.h>
-#import <React/RCTBridge.h>
-#import <React/RCTUtils.h>
+#import <React/RCTCallInvoker.h>
 #import <ReactCommon/RCTTurboModule.h>
-#import <jsi/jsi.h>
 
 #import "AudioAPIInstallerHostObject.h"
 
 @implementation AudioAPIModule
 
+@synthesize callInvoker = _callInvoker;
+
 RCT_EXPORT_MODULE(AudioAPIModule)
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
-  NSLog(@"Installing JSI bindings for react-native-audio-api...");
-  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)self.bridge;
+  auto *cxxBridge = reinterpret_cast<RCTCxxBridge *>(self.bridge);
+  auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(cxxBridge.runtime);
+  auto jsCallInvoker = _callInvoker.callInvoker;
 
-  if (cxxBridge == nil) {
-    NSLog(@"Error during getting bridge!");
-    return @false;
-  }
+  assert(jsiRuntime != nullptr);
 
-  using namespace facebook;
-
-  auto jsRuntime = (jsi::Runtime *)cxxBridge.runtime;
-
-  if (jsRuntime == nil) {
-    NSLog(@"Error during getting jsRuntime!");
-    return @false;
-  }
-
-  auto &runtime = *jsRuntime;
-
-  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(jsRuntime, cxxBridge.jsCallInvoker);
+  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(jsiRuntime, jsCallInvoker);
   hostObject->install();
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");

@@ -1,15 +1,23 @@
 require "json"
+require_relative './scripts/audioapi_utils'
 
-package = JSON.parse(File.read(File.join(__dir__, "package.json")))
-folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
+package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
+
+$config = find_config()
+assert_minimal_react_native_version($config)
+$new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+
+folly_flags = "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32 -DREACT_NATIVE_MINOR_VERSION=#{$config[:react_native_minor_version]}"
+fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
+version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
-  s.version      = package["version"]
-  s.summary      = package["description"]
-  s.homepage     = package["homepage"]
-  s.license      = package["license"]
-  s.authors      = package["author"]
+  s.version      = package_json["version"]
+  s.summary      = package_json["description"]
+  s.homepage     = package_json["homepage"]
+  s.license      = package_json["license"]
+  s.authors      = package_json["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion-labs/react-native-audio-api.git", :tag => "#{s.version}" }
@@ -17,30 +25,33 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm}", "common/cpp/**/*.{hpp,cpp,c,h}"
 
   s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate'
+
+  s.pod_target_xcconfig    = {
+    "USE_HEADERMAP" => "YES",
+    "DEFINES_MODULE" => "YES",
+    "HEADER_SEARCH_PATHS" => '"$(PODS_TARGET_SRCROOT)/ReactCommon" "$(PODS_TARGET_SRCROOT)" "$(PODS_ROOT)/RCT-Folly" "$(PODS_ROOT)/boost" "$(PODS_ROOT)/boost-for-react-native" "$(PODS_ROOT)/DoubleConversion" "$(PODS_ROOT)/Headers/Private/React-Core" "$(PODS_ROOT)/Headers/Private/Yoga"',
+    "FRAMEWORK_SEARCH_PATHS" => '"${PODS_CONFIGURATION_BUILD_DIR}/React-hermes"',
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+    "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
+  }
+  s.compiler_flags = "#{folly_flags}"
+
   s.xcconfig = {
-    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) HAVE_ACCELERATE=1'
+    "HEADER_SEARCH_PATHS" => [
+      '"$(PODS_ROOT)/boost"',
+      '"$(PODS_ROOT)/boost-for-react-native"',
+      '"$(PODS_ROOT)/glog"',
+      '"$(PODS_ROOT)/RCT-Folly"',
+      '"$(PODS_ROOT)/Headers/Public/React-hermes"',
+      '"$(PODS_ROOT)/Headers/Public/hermes-engine"',
+      "\"$(PODS_ROOT)/#{$config[:react_native_common_dir]}\"",
+      "\"$(PODS_ROOT)/#{$config[:react_native_audioapi_dir_from_pods_root]}/ios\"",
+      "\"$(PODS_ROOT)/#{$config[:react_native_audioapi_dir_from_pods_root]}/common/cpp\"",
+    ].join(' '),
+    'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
   }
 
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
-  if respond_to?(:install_modules_dependencies, true)
-    install_modules_dependencies(s)
-  else
-    s.dependency "React-Core"
-
-    # Don't install the dependencies when we run `pod install` in the old architecture.
-    if ENV['RCT_NEW_ARCH_ENABLED'] == '1' then
-      s.compiler_flags = folly_compiler_flags + " -DRCT_NEW_ARCH_ENABLED=1"
-      s.pod_target_xcconfig    = {
-          "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
-          "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-          "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
-      }
-      s.dependency "React-Codegen"
-      s.dependency "RCT-Folly"
-      s.dependency "RCTRequired"
-      s.dependency "RCTTypeSafety"
-      s.dependency "ReactCommon/turbomodule/core"
-    end
-  end
+  install_modules_dependencies(s, new_arch_enabled: true)
 end
