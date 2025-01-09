@@ -24,18 +24,9 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
       jni::alias_ref<jhybridobject> jThis,
       jlong jsContext,
       jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
-          jsCallInvokerHolder) {
-    auto jsCallInvoker = jsCallInvokerHolder->cthis()->getCallInvoker();
-    auto rnRuntime = reinterpret_cast<jsi::Runtime *>(jsContext);
-    return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
-  }
+          jsCallInvokerHolder);
 
-  static void registerNatives() {
-    registerHybrid({
-        makeNativeMethod("initHybrid", AudioAPIInstaller::initHybrid),
-        makeNativeMethod("install", AudioAPIInstaller::install),
-    });
-  }
+  static void registerNatives();
 
   void install();
 
@@ -43,7 +34,7 @@ class AudioAPIInstaller : public jni::HybridClass<AudioAPIInstaller> {
   friend HybridBase;
 
   jni::global_ref<AudioAPIInstaller::javaobject> javaPart_;
-  jsi::Runtime *rnRuntime_;
+  jsi::Runtime *jsiRuntime_;
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
 
   explicit AudioAPIInstaller(
