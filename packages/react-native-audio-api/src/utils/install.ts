@@ -6,7 +6,7 @@ interface AudioAPIModuleSpec extends TurboModule {
 
 export function installModule() {
   const AudioAPIModule =
-    TurboModuleRegistry.getEnforcing<AudioAPIModuleSpec>('AudioAPIModule');
+    TurboModuleRegistry.get<AudioAPIModuleSpec>('AudioAPIModule');
 
   if (AudioAPIModule == null) {
     throw new Error(
