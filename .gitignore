@@ -86,3 +86,5 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
+
+compile_commands.json

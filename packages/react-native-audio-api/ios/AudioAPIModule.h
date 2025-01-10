@@ -1,5 +1,5 @@
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <RNAudioAPISpec/RNAudioAPISpec.h>
+#import <rnaudioapi/rnaudioapi.h>
 #import <React/RCTCallInvokerModule.h>
 #else // RCT_NEW_ARCH_ENABLED
 #import <React/RCTBridgeModule.h>

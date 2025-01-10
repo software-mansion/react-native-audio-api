@@ -6,7 +6,8 @@
   "workspaces": {
     "packages": [
       "packages/react-native-audio-api",
-      "apps/*"
+      "apps/common-app",
+      "apps/fabric-example"
     ]
   },
   "scripts": {
@@ -26,8 +27,9 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-react": "^7.34.3",
-    "prettier": "^3.0.3",
-    "typescript": "^5.3.0"
+    "hermes-eslint": "^0.26.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.3.0"
   },
   "commitlint": {
     "extends": [
