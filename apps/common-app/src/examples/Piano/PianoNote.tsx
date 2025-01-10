@@ -13,6 +13,7 @@ class PianoNote {
 
   private gain: GainNode | null = null;
   private bufferSource: AudioBufferSourceNode | null = null;
+  private startedAt: number | null = null;
 
   constructor(audioContext: AudioContext, key: Key) {
     this.audioContext = audioContext;
@@ -33,16 +34,13 @@ class PianoNote {
     this.bufferSource.playbackRate.value = playbackRate;
 
     this.gain = this.audioContext.createGain();
-    this.gain.gain.setValueAtTime(0.001, this.audioContext.currentTime);
-    this.gain.gain.exponentialRampToValueAtTime(
-      1,
-      this.audioContext.currentTime + 0.01
-    );
+    this.gain.gain.setValueAtTime(1, this.audioContext.currentTime);
 
     this.bufferSource.connect(this.gain);
     this.gain.connect(this.audioContext.destination);
 
     this.bufferSource.start(tNow);
+    this.startedAt = tNow;
   }
 
   stop() {
@@ -50,10 +48,13 @@ class PianoNote {
       return;
     }
 
-    const tNow = this.audioContext.currentTime;
+    const tNow = Math.max(
+      this.audioContext.currentTime,
+      (this.startedAt ?? 0) + 5.0
+    );
 
-    this.gain.gain.exponentialRampToValueAtTime(0.0001, tNow);
-    this.gain.gain.setValueAtTime(0, tNow + 0.01);
+    this.gain.gain.exponentialRampToValueAtTime(0.0001, tNow + 0.08);
+    this.gain.gain.setValueAtTime(0, tNow + 0.09);
     this.bufferSource.stop(tNow + 0.1);
 
     this.bufferSource = null;
