@@ -1,5 +1,6 @@
 import com.android.Version
 import org.apache.tools.ant.taskdefs.condition.Os
+import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
 buildscript {
   repositories {
@@ -72,8 +73,6 @@ def toPlatformFileString(String path) {
   return path
 }
 
-def reactNativeRootDir = resolveReactNativeDirectory()
-
 static def supportsNamespace() {
   def parsed = Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
   def major = parsed[0].toInteger()
@@ -82,6 +81,15 @@ static def supportsNamespace() {
   // Namespace support was added in 7.3.0
   return (major == 7 && minor >= 3) || major >= 8
 }
+
+def reactNativeRootDir = resolveReactNativeDirectory()
+
+def reactProperties = new Properties()
+file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
+
+def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
+def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
+def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
 
 android {
   if (supportsNamespace()) {
@@ -107,7 +115,10 @@ android {
         cppFlags "-O2 -frtti -fexceptions -Wall -fstack-protector-all"
         abiFilters (*reactNativeArchitectures())
         arguments "-DANDROID_STL=c++_shared",
-                  "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}"
+                  "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
+                  "-DANDROID_TOOLCHAIN=clang",
+                  "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
+                  "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}"
       }
     }
   }
@@ -158,7 +169,7 @@ android {
       if (isNewArchitectureEnabled()) {
           java.srcDirs += [
             // This is needed to build Kotlin project with NewArch enabled
-            "${project.buildDir}/generated/source/codegen/jni"
+            "${project.buildDir}/generated/source/codegen/java"
           ]
       }
     }
@@ -182,4 +193,17 @@ dependencies {
   implementation 'androidx.core:core-ktx:1.13.1'
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
   implementation 'com.google.oboe:oboe:1.9.0'
+}
+
+def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
+    // If you change the minimal React Native version remember to update Compatibility Table in docs
+    def minimalReactNativeVersion = 75
+    onlyIf { REACT_NATIVE_MINOR_VERSION < minimalReactNativeVersion }
+    doFirst {
+        throw new GradleException("[AudioAPI] Unsupported React Native version. Please use $minimalReactNativeVersion. or newer.")
+    }
+}
+
+tasks.preBuild {
+    dependsOn assertMinimalReactNativeVersion
 }
