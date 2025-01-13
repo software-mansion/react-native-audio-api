@@ -10,7 +10,10 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       plugins: ['tsdoc'],
-      extends: ['plugin:@typescript-eslint/recommended-type-checked'],
+      extends: [
+        'plugin:@typescript-eslint/recommended-type-checked',
+        'plugin:prettier/recommended',
+      ],
       rules: {
         '@typescript-eslint/no-unsafe-call': 'off',
         '@typescript-eslint/no-unsafe-member-access': 'off',
@@ -34,6 +37,18 @@ module.exports = {
         '@typescript-eslint/no-duplicate-type-constituents': 'error',
         '@typescript-eslint/no-shadow': 'error',
         'tsdoc/syntax': 'error',
+        'prettier/prettier': [
+          'error',
+          {
+            plugins: ['prettier-plugin-jsdoc'],
+            bracketSameLine: true,
+            printWidth: 80,
+            singleQuote: true,
+            trailingComma: 'es5',
+            tabWidth: 2,
+            arrowParens: 'always',
+          },
+        ],
       },
     },
     {
@@ -68,14 +83,14 @@ module.exports = {
   },
   rules: {
     'object-shorthand': 'error',
-    curly: ['error', 'all'],
+    'curly': ['error', 'all'],
     'no-case-declarations': 'error',
     'import/no-unresolved': 'error',
     'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
     'react/jsx-uses-vars': 'error',
     'react/jsx-uses-react': 'error',
     'no-use-before-define': 'off',
-    eqeqeq: 'error',
+    'eqeqeq': 'error',
     'no-unreachable': 'error',
     'jest/no-disabled-tests': 'warn',
     'jest/no-focused-tests': 'error',

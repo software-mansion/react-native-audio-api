@@ -10,8 +10,8 @@ import Kick from '../../utils/soundEngines/Kick';
 import Clap from '../../utils/soundEngines/Clap';
 import HiHat from '../../utils/soundEngines/HiHat';
 
-import { InstrumentName, Pattern  } from '../../types';
-import type {XYWHRect} from '../../types';
+import { InstrumentName, Pattern } from '../../types';
+import type { XYWHRect } from '../../types';
 import { size, initialBpm, numBeats } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
