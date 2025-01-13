@@ -1,9 +1,9 @@
 #import "AudioAPIModule.h"
 
 #ifdef RCT_NEW_ARCH_ENABLED
+#import <React/RCTBridge+Private.h>
 #import <React/RCTCallInvoker.h>
 #import <ReactCommon/RCTTurboModule.h>
-#import <React/RCTBridge+Private.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
 #import "AudioAPIInstallerHostObject.h"
@@ -29,7 +29,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   auto *cxxBridge = reinterpret_cast<RCTCxxBridge *>(self.bridge);
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(cxxBridge.runtime);
-  
+
 #if defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = _callInvoker.callInvoker;
 #else // defined(RCT_NEW_ARCH_ENABLED)

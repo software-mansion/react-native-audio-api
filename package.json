@@ -7,8 +7,7 @@
     "packages": [
       "packages/react-native-audio-api",
       "apps/common-app",
-      "apps/fabric-example",
-      "apps/paper-example"
+      "apps/fabric-example"
     ]
   },
   "scripts": {

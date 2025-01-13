@@ -1,6 +1,6 @@
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <rnaudioapi/rnaudioapi.h>
 #import <React/RCTCallInvokerModule.h>
+#import <rnaudioapi/rnaudioapi.h>
 #else // RCT_NEW_ARCH_ENABLED
 #import <React/RCTBridgeModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
@@ -9,8 +9,8 @@
 
 @interface AudioAPIModule : RCTEventEmitter
 #ifdef RCT_NEW_ARCH_ENABLED
-<RCTCallInvokerModule>
+                            <RCTCallInvokerModule>
 #else
-<RCTBridgeModule>
+                            <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
 @end
