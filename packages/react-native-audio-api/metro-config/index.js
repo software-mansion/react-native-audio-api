@@ -11,8 +11,11 @@ const COLLAPSED_STACK_REGEX = new RegExp(
 );
 
 /**
- * @param {import('@react-native/metro-config').MetroConfig} config
- * @returns {import('@react-native/metro-config').MetroConfig}
+ * Wraps and returns a modified Metro configuration to handle stack frames for audio API.
+ * It collapses frames from either the library's directory in development or from `node_modules` when installed.
+ *
+ * @param {import('@react-native/metro-config').MetroConfig} config - The original Metro configuration object to be wrapped.
+ * @returns {import('@react-native/metro-config').MetroConfig} - Modified Metro configuration which customizes stack frame collapsing.
  */
 function wrapWithAudioAPIMetroConfig(config) {
   return {
@@ -33,7 +36,6 @@ function wrapWithAudioAPIMetroConfig(config) {
     },
   };
 }
-
 module.exports = {
   wrapWithAudioAPIMetroConfig,
 };

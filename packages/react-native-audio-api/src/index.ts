@@ -113,13 +113,6 @@ export class AudioNode {
 export class AudioScheduledSourceNode extends AudioNode {
   private hasBeenStarted: boolean = false;
 
-  constructor(
-    context: AudioContext,
-    node: globalThis.AudioScheduledSourceNode
-  ) {
-    super(context, node);
-  }
-
   public start(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
@@ -205,11 +198,7 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
   }
 }
 
-export class AudioDestinationNode extends AudioNode {
-  constructor(context: AudioContext, node: globalThis.AudioDestinationNode) {
-    super(context, node);
-  }
-}
+export class AudioDestinationNode extends AudioNode {}
 
 export class AudioParam {
   readonly defaultValue: number;
@@ -447,8 +436,8 @@ export class AudioContext {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 
-  close(): void {
-    this.context.close();
+  async close(): Promise<void> {
+    await this.context.close();
   }
 }
 

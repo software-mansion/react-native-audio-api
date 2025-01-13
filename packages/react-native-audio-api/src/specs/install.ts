@@ -14,26 +14,19 @@ export function installModule() {
     );
   }
 
-  runInstall(AudioAPIModule);
-  verifyInstallation();
-
-  return AudioAPIModule;
-}
-
-function runInstall(Module: any) {
-  const result = Module.install();
+  const result = AudioAPIModule.install();
 
   if (result !== true) {
     throw new Error(
       `Failed to install react-native-audio-api: The native Audio API Module could not be installed! Looks like something went wrong when installing JSI bindings: ${result}`
     );
   }
-}
 
-function verifyInstallation() {
   if (global.__AudioAPIInstaller == null) {
     throw new Error(
       'Failed to install react-native-audio-api, the native initializer private does not exist. Are you trying to use Audio API from different JS Runtimes?'
     );
   }
+
+  return AudioAPIModule;
 }
