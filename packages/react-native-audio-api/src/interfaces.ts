@@ -27,6 +27,7 @@ export interface IBaseAudioContext {
     imag: number[],
     disableNormalization: boolean
   ) => IPeriodicWave;
+  createAnalyser: () => IAnalyserNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
 }
 

@@ -462,6 +462,10 @@ export class AudioContext {
     );
   }
 
+  createAnalyser(): AnalyserNode {
+    return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
     const arrayBuffer = await fetch(source).then((response) =>
       response.arrayBuffer()

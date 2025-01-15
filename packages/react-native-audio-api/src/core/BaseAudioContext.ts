@@ -8,6 +8,7 @@ import BiquadFilterNode from './BiquadFilterNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
+import AnalyserNode from './AnalyserNode';
 import { InvalidAccessError } from '../errors';
 
 export default class BaseAudioContext {
@@ -93,6 +94,10 @@ export default class BaseAudioContext {
     return new PeriodicWave(
       this.context.createPeriodicWave(real, imag, disableNormalization)
     );
+  }
+
+  createAnalyser(): AnalyserNode {
+    return new AnalyserNode(this, this.context.createAnalyser());
   }
 
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
