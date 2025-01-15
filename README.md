@@ -17,6 +17,19 @@ allowing developers to generate and modify audio in exact same way it is possibl
    yarn add react-native-audio-api
    ```
 
+## Usage with expo
+
+`react-native-audio-api` contains native custom code and isn't part of the Expo Go application. In order to be available in expo managed builds, you have to use Expo development build. Simplest way on starting local expo dev builds, is to use:
+
+  ```bash
+    # Build native iOS project
+    npx expo run:ios
+    # Build native Android project
+    npx expo run:android
+  ```
+
+To learn more about expo development builds, please check out [Development Builds Documentation](https://docs.expo.dev/develop/development-builds/introduction/).
+
 ## Documentation
 
 `react-native-audio-api` tries to strictly follow the Web Audi API specification, which can be found at [https://www.w3.org/TR/webaudio/](https://www.w3.org/TR/webaudio/).
@@ -28,14 +41,6 @@ allowing developers to generate and modify audio in exact same way it is possibl
 Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](./docs/web-audio-coverage.md).
 
 ## Examples
-
-<div align="center">
-
-<a href="https://www.youtube.com/watch?v=npALr9IIDkI" target="_blank" rel="noopener noreferrer">
-  <img src="./docs/assets/rnaa-example-01-thumbnail.png" width="640" />
-</a>
-
-</div>
 
 The source code for the example application is under the [`/apps/common-app`](./apps/common-app/) directory. If you want to play with the API but don't feel like trying it on a real app, you can run the example project. Check [Example README](./apps/fabric-example/README.md) for installation instructions.
 

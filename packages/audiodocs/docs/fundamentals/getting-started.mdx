@@ -41,15 +41,24 @@ Install `react-native-audio-api` package from npm:
   </TabItem>
 </Tabs>
 
-### Expo development build
+### Usage with expo
 
-When using an [Expo development build](https://docs.expo.dev/develop/development-builds/introduction/), run prebuild to update the native code in the `ios` and `android` directories.
+`react-native-audio-api` contains native custom code and isn't part of the Expo Go application. In order to be available in expo managed builds, you have to use Expo development build. Simplest way on starting local expo dev builds, is to use:
 
-```bash
-npx expo prebuild
-```
+<Tabs groupId="expoStart">
+  <TabItem value="ios" label="iOS" default>
 
-### Platform specific setup
+    npx expo run:ios
+
+  </TabItem>
+  <TabItem value="android" label="Android">
+
+    npx expo run:android
+
+  </TabItem>
+</Tabs>
+
+To learn more about expo development builds, please check out [Development Builds Documentation](https://docs.expo.dev/develop/development-builds/introduction/).
 
 #### Android
 
