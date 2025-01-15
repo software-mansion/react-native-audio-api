@@ -8,32 +8,33 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
+class FFTFrame;
 
 class AnalyserNode : public AudioNode {
  public:
   explicit AnalyserNode(BaseAudioContext *context);
 
-  int getFftSize() const;
-  int getFrequencyBinCount() const;
+  size_t getFftSize() const;
+  size_t getFrequencyBinCount() const;
   double getMinDecibels() const;
   double getMaxDecibels() const;
 
   double getSmoothingTimeConstant() const;
-  void setFftSize(int fftSize);
+  void setFftSize(size_t fftSize);
   void setMinDecibels(double minDecibels);
   void setMaxDecibels(double maxDecibels);
   void setSmoothingTimeConstant(double smoothingTimeConstant);
 
-  void getFloatFrequencyData(float *data);
-  void getByteFrequencyData(float *data);
-  void getFloatTimeDomainData(float *data);
-  void getByteTimeDomainData(float *data);
+  void getFloatFrequencyData(float *data, size_t length);
+  void getByteFrequencyData(float *data, size_t length);
+  void getFloatTimeDomainData(float *data, size_t length);
+  void getByteTimeDomainData(float *data, size_t length);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
-  int fftSize_;
+  size_t fftSize_;
   double minDecibels_;
   double maxDecibels_;
   double smoothingTimeConstant_;
@@ -41,6 +42,10 @@ class AnalyserNode : public AudioNode {
   std::unique_ptr<AudioArray> inputBuffer_;
   std::unique_ptr<AudioBus> downMixBus_;
   int vWriteIndex_;
+
+  std::unique_ptr<FFTFrame> fftFrame_;
+  void doFFTAnalysis();
+  bool shouldDoFFTAnalysis_ { true };
 };
 
 } // namespace audioapi

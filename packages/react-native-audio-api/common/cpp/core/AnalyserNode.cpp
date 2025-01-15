@@ -2,6 +2,7 @@
 #include "AudioArray.h"
 #include "AudioBus.h"
 #include "BaseAudioContext.h"
+#include "FFTFrame.h"
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
@@ -12,14 +13,15 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
+  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
   isInitialized_ = true;
 }
 
-int AnalyserNode::getFftSize() const {
+size_t AnalyserNode::getFftSize() const {
   return fftSize_;
 }
 
-int AnalyserNode::getFrequencyBinCount() const {
+size_t AnalyserNode::getFrequencyBinCount() const {
   return fftSize_ / 2;
 }
 
@@ -35,7 +37,7 @@ double AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
-void AnalyserNode::setFftSize(int fftSize) {
+void AnalyserNode::setFftSize(size_t fftSize) {
   int log2size = static_cast<int>(log2(fftSize));
   bool isPowerOfTwo(1UL << log2size == fftSize);
 
@@ -43,7 +45,12 @@ void AnalyserNode::setFftSize(int fftSize) {
     return;
   }
 
+  if (fftSize_ == fftSize) {
+    return;
+  }
+
   fftSize_ = fftSize;
+  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
 }
 
 void AnalyserNode::setMinDecibels(double minDecibels) {
@@ -58,13 +65,38 @@ void AnalyserNode::setSmoothingTimeConstant(double smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::getFloatFrequencyData(float *data) {}
+void AnalyserNode::getFloatFrequencyData(float *data, size_t length) {}
 
-void AnalyserNode::getByteFrequencyData(float *data) {}
+void AnalyserNode::getByteFrequencyData(float *data, size_t length) {}
 
-void AnalyserNode::getFloatTimeDomainData(float *data) {}
+void AnalyserNode::getFloatTimeDomainData(float *data, size_t length) {
+  auto size = std::min(fftSize_, length);
 
-void AnalyserNode::getByteTimeDomainData(float *data) {}
+  for (size_t i = 0; i < size; i++) {
+    data[i] = inputBuffer_->getData()
+                  [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
+                   inputBuffer_->getSize()];
+  }
+}
+
+void AnalyserNode::getByteTimeDomainData(float *data, size_t length) {
+  auto size = std::min(fftSize_, length);
+
+  for (size_t i = 0; i < size; i++) {
+    auto value = inputBuffer_->getData()
+                     [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
+                      inputBuffer_->getSize()];
+
+    double scaledValue = 128 * (value + 1);
+
+    if (scaledValue < 0)
+      scaledValue = 0;
+    if (scaledValue > UCHAR_MAX)
+      scaledValue = UCHAR_MAX;
+
+    data[i] = static_cast<float>(scaledValue);
+  }
+}
 
 void AnalyserNode::processNode(
     audioapi::AudioBus *processingBus,
@@ -90,5 +122,15 @@ void AnalyserNode::processNode(
   if (vWriteIndex_ >= inputBuffer_->getSize()) {
     vWriteIndex_ = 0;
   }
+
+  shouldDoFFTAnalysis_ = true;
+}
+
+void AnalyserNode::doFFTAnalysis() {
+  if (!shouldDoFFTAnalysis_) {
+    return;
+  }
+
+  shouldDoFFTAnalysis_ = false;
 }
 } // namespace audioapi

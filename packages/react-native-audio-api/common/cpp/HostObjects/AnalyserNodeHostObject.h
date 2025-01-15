@@ -41,12 +41,12 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_GETTER(fftSize) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    return {analyserNode->getFftSize()};
+    return {static_cast<int>(analyserNode->getFftSize())};
   }
 
   JSI_PROPERTY_GETTER(frequencyBinCount) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    return {analyserNode->getFrequencyBinCount()};
+    return {static_cast<int>(analyserNode->getFrequencyBinCount())};
   }
 
   JSI_PROPERTY_GETTER(minDecibels) {
@@ -73,16 +73,38 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   }
 
   JSI_HOST_FUNCTION(getFloatTimeDomainData) {
+      auto destination = args[0].getObject(runtime).asArray(runtime);
+      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+      auto data = new float[length];
+
+      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+      analyserNode->getFloatTimeDomainData(data, length);
+
+    for (int i = 0; i < length; i++) {
+        destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
+    }
+
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(getByteTimeDomainData) {
-    return jsi::Value::undefined();
+      auto destination = args[0].getObject(runtime).asArray(runtime);
+      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+      auto data = new float[length];
+
+      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+      analyserNode->getFloatTimeDomainData(data, length);
+
+      for (int i = 0; i < length; i++) {
+          destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
+      }
+
+      return jsi::Value::undefined();
   }
 
   JSI_PROPERTY_SETTER(fftSize) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    auto fftSize = static_cast<int>(value.getNumber());
+    auto fftSize = static_cast<size_t>(value.getNumber());
     analyserNode->setFftSize(fftSize);
   }
 
