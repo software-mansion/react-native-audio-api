@@ -21,13 +21,12 @@ class AudioNodeManager;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
+class AudioDecoder;
 
 #ifdef ANDROID
 class AudioPlayer;
-class AudioDecoder;
 #else
 class IOSAudioPlayer;
-class IOSAudioDecoder;
 #endif
 
 class BaseAudioContext {
@@ -65,13 +64,12 @@ class BaseAudioContext {
  protected:
   static std::string toString(ContextState state);
   std::shared_ptr<AudioDestinationNode> destination_;
+  std::shared_ptr<AudioDecoder> audioDecoder_;
 
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
-  std::shared_ptr<AudioDecoder> audioDecoder_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
-  std::shared_ptr<IOSAudioDecoder> audioDecoder_;
 #endif
 
   int sampleRate_;

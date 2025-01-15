@@ -9,8 +9,6 @@
 
 namespace audioapi {
 
-AudioDecoder::AudioDecoder(int sampleRate) : sampleRate_(sampleRate) {}
-
 AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
   ma_decoder decoder;
   ma_decoder_config config =
@@ -55,10 +53,4 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
 
   return audioBus;
 }
-
-AudioBus *AudioDecoder::decodeWithArrayBuffer() const {
-  // TODO: implement this
-  return new AudioBus(1, 1, 1);
-}
-
 } // namespace audioapi

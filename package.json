@@ -6,7 +6,8 @@
   "workspaces": {
     "packages": [
       "packages/react-native-audio-api",
-      "apps/*"
+      "apps/common-app",
+      "apps/fabric-example"
     ]
   },
   "scripts": {
@@ -19,15 +20,18 @@
   "devDependencies": {
     "@commitlint/config-conventional": "^17.0.2",
     "@evilmartians/lefthook": "^1.5.0",
-    "@react-native/eslint-config": "^0.73.1",
+    "@react-native/eslint-config": "0.76.5",
     "@types/raf": "^3.4.3",
     "commitlint": "^17.0.2",
-    "eslint": "^8.51.0",
+    "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jsdoc": "^50.2.2",
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-react": "^7.34.3",
-    "prettier": "^3.0.3",
-    "typescript": "^5.3.0"
+    "hermes-eslint": "^0.26.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-jsdoc": "^1.3.0",
+    "typescript": "~5.3.0"
   },
   "commitlint": {
     "extends": [

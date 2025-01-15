@@ -1,39 +1,44 @@
 #import "AudioAPIModule.h"
 
+#ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTBridge+Private.h>
-#import <React/RCTBridge.h>
-#import <React/RCTUtils.h>
+#import <React/RCTCallInvoker.h>
 #import <ReactCommon/RCTTurboModule.h>
-#import <jsi/jsi.h>
+#endif // RCT_NEW_ARCH_ENABLED
 
 #import "AudioAPIInstallerHostObject.h"
 
 @implementation AudioAPIModule
 
+#if defined(RCT_NEW_ARCH_ENABLED)
+// nothing
+#else // defined(RCT_NEW_ARCH_ENABLED)
+@interface RCTBridge (RCTTurboModule)
+- (std::shared_ptr<facebook::react::CallInvoker>)jsCallInvoker;
+- (void)_tryAndHandleError:(dispatch_block_t)block;
+@end
+#endif // RCT_NEW_ARCH_ENABLED
+
+#if defined(RCT_NEW_ARCH_ENABLED)
+@synthesize callInvoker = _callInvoker;
+#endif // defined(RCT_NEW_ARCH_ENABLED)
+
 RCT_EXPORT_MODULE(AudioAPIModule)
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
-  NSLog(@"Installing JSI bindings for react-native-audio-api...");
-  RCTCxxBridge *cxxBridge = (RCTCxxBridge *)self.bridge;
+  auto *cxxBridge = reinterpret_cast<RCTCxxBridge *>(self.bridge);
+  auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(cxxBridge.runtime);
 
-  if (cxxBridge == nil) {
-    NSLog(@"Error during getting bridge!");
-    return @false;
-  }
+#if defined(RCT_NEW_ARCH_ENABLED)
+  auto jsCallInvoker = _callInvoker.callInvoker;
+#else // defined(RCT_NEW_ARCH_ENABLED)
+  auto jsCallInvoker = self.bridge.jsCallInvoker;
+#endif // defined(RCT_NEW_ARCH_ENABLED)
 
-  using namespace facebook;
+  assert(jsiRuntime != nullptr);
 
-  auto jsRuntime = (jsi::Runtime *)cxxBridge.runtime;
-
-  if (jsRuntime == nil) {
-    NSLog(@"Error during getting jsRuntime!");
-    return @false;
-  }
-
-  auto &runtime = *jsRuntime;
-
-  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(jsRuntime, cxxBridge.jsCallInvoker);
+  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(jsiRuntime, jsCallInvoker);
   hostObject->install();
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");

@@ -79,7 +79,7 @@ export default function usePlayer(options: PlayerOptions) {
             true
           );
 
-          playNote(r(patternsRef)[i].instrumentName, audioContext.currentTime);
+          playNote(r(patternsRef)[i].instrumentName, nextNoteTime);
         }
       }
 

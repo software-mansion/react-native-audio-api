@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import React, { useState, FC } from 'react';
 import { AudioBuffer, AudioContext } from 'react-native-audio-api';
 import { ActivityIndicator, TextInput, StyleSheet } from 'react-native';
@@ -15,8 +16,8 @@ async function getOpenAIResponse(input: string, voice: string = 'alloy') {
     },
     body: JSON.stringify({
       model: 'tts-1-hd',
-      voice: voice,
-      input: input,
+      voice,
+      input,
       response_format: 'pcm',
     }),
   }).then((response) => response.arrayBuffer());

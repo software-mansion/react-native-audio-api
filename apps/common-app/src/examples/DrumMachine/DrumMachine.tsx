@@ -10,15 +10,15 @@ import Kick from '../../utils/soundEngines/Kick';
 import Clap from '../../utils/soundEngines/Clap';
 import HiHat from '../../utils/soundEngines/HiHat';
 
-import { InstrumentName, Pattern, type XYWHRect } from '../../types';
-import { size, initialBpm } from './constants';
+import { InstrumentName, Pattern } from '../../types';
+import type { XYWHRect } from '../../types';
+import { size, initialBpm, numBeats } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
 import useGestures from './useGestures';
 import PlayButton from './PlayButton';
 import usePlayer from '../../utils/usePlayer';
 import presets from './presets';
-import { numBeats } from './constants';
 import Grid from './Grid';
 
 const defaultPreset = 'Empty';
@@ -148,8 +148,7 @@ const DrumMachine: React.FC = () => {
             // @ts-ignore ???
             width={size}
             height={size}
-            onLayout={onCanvasLayout}
-          >
+            onLayout={onCanvasLayout}>
             <Grid />
             {patterns.map((pattern) => (
               <PatternShape key={pattern.instrumentName} pattern={pattern} />

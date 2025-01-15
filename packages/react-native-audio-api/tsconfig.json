@@ -4,7 +4,6 @@
     "paths": {
       "react-native-audio-api": ["./src"]
     },
-    "stripInternal": true
   },
   "include": ["src"]
 }

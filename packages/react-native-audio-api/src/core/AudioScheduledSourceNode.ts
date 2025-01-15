@@ -1,14 +1,9 @@
 import { IAudioScheduledSourceNode } from '../interfaces';
 import AudioNode from './AudioNode';
-import BaseAudioContext from './BaseAudioContext';
 import { InvalidStateError, RangeError } from '../errors';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   private hasBeenStarted: boolean = false;
-
-  constructor(context: BaseAudioContext, node: IAudioScheduledSourceNode) {
-    super(context, node);
-  }
 
   public start(when: number = 0): void {
     if (when < 0) {

@@ -9,10 +9,8 @@ namespace audioapi {
 constexpr int SAMPLE_RATE = 48000;
 constexpr int CHANNEL_COUNT = 2;
 
-constexpr float MOST_POSITIVE_SINGLE_FLOAT =
-    static_cast<float>(std::numeric_limits<float>::max());
-constexpr float MOST_NEGATIVE_SINGLE_FLOAT =
-    static_cast<float>(std::numeric_limits<float>::lowest());
+constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
+constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());
 
 constexpr float NYQUIST_FREQUENCY = SAMPLE_RATE / 2.0;
 static float MAX_DETUNE = 1200 * std::log2(MOST_POSITIVE_SINGLE_FLOAT);

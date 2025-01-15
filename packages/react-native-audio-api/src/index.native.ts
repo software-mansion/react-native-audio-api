@@ -1,4 +1,4 @@
-import { installModule } from './utils/install';
+import { installModule } from './specs/install';
 
 if (global.__AudioAPIInstaller == null) {
   installModule();

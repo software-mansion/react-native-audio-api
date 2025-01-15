@@ -117,7 +117,7 @@ const SimplePiano: FC = () => {
       return;
     }
 
-    const tNow = Math.max(aCtx.currentTime, startedAt + 1);
+    const tNow = Math.max(aCtx.currentTime, startedAt + 5);
 
     envelope.gain.exponentialRampToValueAtTime(0.0001, tNow + 0.08);
     envelope.gain.setValueAtTime(0, tNow + 0.09);

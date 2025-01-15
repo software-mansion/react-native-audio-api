@@ -87,7 +87,7 @@ const SimplePiano: FC = () => {
 
     const { source, envelope, startedAt } = playingNote;
 
-    const tStop = Math.max(audioContext.currentTime, startedAt + 1);
+    const tStop = Math.max(audioContext.currentTime, startedAt + 5);
 
     envelope.gain.exponentialRampToValueAtTime(0.0001, tStop + 0.08);
     envelope.gain.setValueAtTime(0, tStop + 0.09);

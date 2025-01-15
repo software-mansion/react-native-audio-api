@@ -86,7 +86,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
     nonSilentFramesToProcess =
-        std::min(lastFrame, stopFrame) - startFrame - startOffset;
+        std::min(lastFrame, stopFrame) - startFrame;
     processingBus->zero(0, startOffset);
     return;
   }

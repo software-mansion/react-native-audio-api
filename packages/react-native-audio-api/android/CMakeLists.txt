@@ -14,33 +14,28 @@ endif()
 include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
-file(GLOB_RECURSE SOURCE_FILES
-  "src/main/cpp/*.cpp"
-  "src/main/cpp/*.h"
-  "../common/cpp/*.cpp"
-  "../common/cpp/*.h"
-  "../common/cpp/core/*.cpp"
-  "../common/cpp/core/*.h"
-  "../common/cpp/HostObjects/*.cpp"
-  "../common/cpp/HostObjects/*.h"
-  "../common/cpp/utils/*.cpp"
-  "../common/cpp/utils/*.h"
-  "../common/cpp/jsi/*.h"
-  "../common/cpp/jsi/*.cpp"
-  "../common/cpp/types/*.h"
+file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.cpp")
+file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "../common/cpp/*.cpp")
+
+add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
+
+file(GLOB ANDROID_CPP_DIR CONFIGURE_DEPENDS "src/main/cpp/**")
+file(GLOB COMMON_CPP_DIR CONFIGURE_DEPENDS "../common/cpp/**")
+
+target_include_directories(
+  react-native-audio-api
+  PUBLIC
+  ${ANDROID_CPP_DIR}
+  ${COMMON_CPP_DIR}
 )
-
-add_library(react-native-audio-api SHARED ${SOURCE_FILES})
-
-file(GLOB DIRS CONFIGURE_DEPENDS "src/main/cpp/**" "../common/cpp/**")
 
 target_include_directories(
   react-native-audio-api
   PRIVATE
-  ${DIRS}
-  "${REACT_NATIVE_DIR}/ReactCommon/jsi"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/jni"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/third-party/folly"
+  "${REACT_NATIVE_DIR}/ReactCommon"
+  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+  "${REACT_NATIVE_DIR}/ReactCommon/react/nativemodule/core/ReactCommon"
+  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
   "${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
 )
 
@@ -66,6 +61,7 @@ if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
 else()
   set(RN_VERSION_LINK_LIBRARIES
     ReactAndroid::folly_runtime
+    ReactAndroid::react_nativemodule_core
     ReactAndroid::glog
     ReactAndroid::reactnativejni
   )

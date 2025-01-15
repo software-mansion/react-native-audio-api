@@ -8,9 +8,8 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      context, 444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
-  detuneParam_ =
-      std::make_shared<AudioParam>(context, 0.0, -MAX_DETUNE, MAX_DETUNE);
+      444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
+  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
   isInitialized_ = true;
