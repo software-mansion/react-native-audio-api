@@ -6,6 +6,7 @@
 
 #include "BaseAudioContext.h"
 
+#include "AnalyserNode.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
@@ -104,6 +105,10 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     int length) {
   return std::make_shared<PeriodicWave>(
       sampleRate_, real, imag, length, disableNormalization);
+}
+
+std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
+  return std::make_shared<AnalyserNode>(this);
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

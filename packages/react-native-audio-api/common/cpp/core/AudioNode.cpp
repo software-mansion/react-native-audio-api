@@ -144,8 +144,9 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   }
 
   if (inputNodes_.empty()) {
-    // If there are no connected inputs, process the node just to advance the
-    // audio params. The node will output silence anyway.
+    // If there are no connected inputs, if processing node is the source node,
+    // it will fill processing bus with the audio data, otherwise it will return
+    // silence.
     processNode(processingBus, framesToProcess);
     return processingBus;
   }

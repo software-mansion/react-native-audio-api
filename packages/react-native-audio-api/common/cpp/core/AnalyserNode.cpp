@@ -12,6 +12,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
+  isInitialized_ = true;
 }
 
 int AnalyserNode::getFftSize() const {
