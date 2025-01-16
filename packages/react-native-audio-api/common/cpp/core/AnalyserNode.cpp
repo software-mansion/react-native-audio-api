@@ -113,6 +113,17 @@ void AnalyserNode::processNode(
 
   downMixBus_->copy(processingBus);
 
+  if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
+    auto framesToCopy = inputBuffer_->getSize() - vWriteIndex_;
+    memcpy(
+        inputBuffer_->getData() + vWriteIndex_,
+        downMixBus_->getChannel(0)->getData(),
+        framesToCopy * sizeof(float));
+
+    vWriteIndex_ = 0;
+    framesToProcess -= framesToCopy;
+  }
+
   memcpy(
       inputBuffer_->getData() + vWriteIndex_,
       downMixBus_->getChannel(0)->getData(),
