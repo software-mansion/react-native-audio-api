@@ -91,7 +91,6 @@ const AudioFile: FC = () => {
     <Container centered>
       <Button
         title="Set audio source from file"
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         onPress={handleSetAudioSourceFromFile}
         width={200}
       />
