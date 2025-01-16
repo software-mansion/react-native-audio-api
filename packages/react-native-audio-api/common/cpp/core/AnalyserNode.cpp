@@ -87,14 +87,14 @@ void AnalyserNode::getByteTimeDomainData(float *data, size_t length) {
                      [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
                       inputBuffer_->getSize()];
 
-    double scaledValue = 128 * (value + 1);
+    float scaledValue = 128 * (value + 1);
 
     if (scaledValue < 0)
       scaledValue = 0;
     if (scaledValue > UCHAR_MAX)
       scaledValue = UCHAR_MAX;
 
-    data[i] = static_cast<float>(scaledValue);
+    data[i] = scaledValue;
   }
 }
 

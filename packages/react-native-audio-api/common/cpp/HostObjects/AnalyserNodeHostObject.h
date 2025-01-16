@@ -93,7 +93,7 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
       auto data = new float[length];
 
       auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-      analyserNode->getFloatTimeDomainData(data, length);
+      analyserNode->getByteTimeDomainData(data, length);
 
       for (int i = 0; i < length; i++) {
           destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
