@@ -18,8 +18,7 @@ const Container: React.FC<ContainerProps> = (props) => {
   return (
     <SafeAreaView
       edges={['bottom', 'left', 'right']}
-      style={[styles.basic, centered && styles.centered, style]}
-    >
+      style={[styles.basic, centered && styles.centered, style]}>
       <BGGradient />
       {children}
     </SafeAreaView>

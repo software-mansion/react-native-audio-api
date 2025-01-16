@@ -111,11 +111,11 @@ export class AudioNode {
 }
 
 export class AnalyserNode extends AudioNode {
-  readonly fftSize: number;
+  fftSize: number;
   readonly frequencyBinCount: number;
-  readonly minDecibels: number;
-  readonly maxDecibels: number;
-  readonly smoothingTimeConstant: number;
+  minDecibels: number;
+  maxDecibels: number;
+  smoothingTimeConstant: number;
 
   constructor(context: AudioContext, node: globalThis.AnalyserNode) {
     super(context, node);

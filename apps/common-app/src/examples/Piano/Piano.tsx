@@ -27,6 +27,7 @@ const Piano: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     Object.entries(sources).forEach(async ([key, url]) => {
       bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
         url,

@@ -1,13 +1,12 @@
-import React from 'react';
-import { useRef, useState, useEffect, FC } from 'react';
+import React, { useRef, useState, useEffect, FC } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import {
   AudioContext,
   GainNode,
   OscillatorNode,
   StereoPannerNode,
-  type OscillatorType,
 } from 'react-native-audio-api';
+import type { OscillatorType } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
 import { layout, colors } from '../../styles';
@@ -170,14 +169,12 @@ const Oscillator: FC = () => {
                   ? styles.activeOscillatorButton
                   : styles.inactiveOscillatorButton,
             ]}
-            onPress={() => handleOscillatorTypeChange(type)}
-          >
+            onPress={() => handleOscillatorTypeChange(type)}>
             <Text
               style={[
                 styles.oscillatorButtonText,
                 type === oscillatorType && styles.activeOscillatorButtonText,
-              ]}
-            >
+              ]}>
               {type}
             </Text>
           </Pressable>
