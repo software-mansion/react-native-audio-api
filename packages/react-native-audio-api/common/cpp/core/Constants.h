@@ -23,7 +23,6 @@ static float MAX_FILTER_GAIN = 40 * std::log10(MOST_POSITIVE_SINGLE_FLOAT);
 constexpr float MIN_FILTER_GAIN = -MAX_GAIN;
 
 constexpr int MAX_FFT_SIZE = 32768;
-constexpr int MIN_FFT_SIZE = 32;
 constexpr int DEFAULT_FFT_SIZE = 2048;
 constexpr double DEFAULT_MAX_DECIBELS = -30;
 constexpr double DEFAULT_MIN_DECIBELS = -100;

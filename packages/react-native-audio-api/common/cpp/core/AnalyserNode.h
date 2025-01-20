@@ -26,9 +26,9 @@ class AnalyserNode : public AudioNode {
   void setSmoothingTimeConstant(double smoothingTimeConstant);
 
   void getFloatFrequencyData(float *data, size_t length);
-  void getByteFrequencyData(float *data, size_t length);
+  void getByteFrequencyData(uint8_t *data, size_t length);
   void getFloatTimeDomainData(float *data, size_t length);
-  void getByteTimeDomainData(float *data, size_t length);
+  void getByteTimeDomainData(uint8_t *data, size_t length);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;
@@ -44,8 +44,11 @@ class AnalyserNode : public AudioNode {
   int vWriteIndex_;
 
   std::unique_ptr<FFTFrame> fftFrame_;
-  void doFFTAnalysis();
+  std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_ { true };
+
+    void doFFTAnalysis();
+    static void applyWindow(float *data, size_t length);
 };
 
 } // namespace audioapi
