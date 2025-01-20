@@ -55,7 +55,9 @@ class FFTFrame {
     return imaginaryData_;
   }
 
-  void inverse(float *data);
+  void doFFT(float *data);
+
+  void doInverseFFT(float *data);
 
  private:
   int size_;
