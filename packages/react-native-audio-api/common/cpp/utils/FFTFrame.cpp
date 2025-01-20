@@ -44,15 +44,15 @@ void FFTFrame::doFFT(float *data) {
   VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *timeDomainData) {
+void FFTFrame::doInverseFFT(float *data) {
   vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_INVERSE);
   vDSP_ztoc(
-      &frame_, 1, reinterpret_cast<DSPComplex *>(timeDomainData), 2, size_ / 2);
+      &frame_, 1, reinterpret_cast<DSPComplex *>(data), 2, size_ / 2);
 
   // Scale the FFT data, beacuse of
   // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892
   VectorMath::multiplyByScalar(
-      timeDomainData, 1.0f / static_cast<float>(size_), timeDomainData, size_);
+      data, 1.0f / static_cast<float>(size_), data, size_);
 }
 
 #elif defined(ANDROID)
@@ -74,31 +74,29 @@ FFTFrame::~FFTFrame() {
 void FFTFrame::doFFT(float *data) {
   auto plan = fftwf_plan_dft_r2c_1d(size_, data, frame_, FFTW_ESTIMATE);
   fftwf_execute(plan);
+  fftwf_destroy_plan(plan);
 
   for (int i = 0; i < size_ / 2; ++i) {
     realData_[i] = frame_[i][0];
     imaginaryData_[i] = frame_[i][1];
   }
 
-  fftwf_destroy_plan(plan);
-
   VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
   VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *timeDomainData) {
+void FFTFrame::doInverseFFT(float *data) {
   for (int i = 0; i < size_ / 2; i++) {
     frame_[i][0] = realData_[i];
     frame_[i][1] = imaginaryData_[i];
   }
 
-  auto plan =
-      fftwf_plan_dft_c2r_1d(size_, frame_, timeDomainData, FFTW_ESTIMATE);
+  auto plan = fftwf_plan_dft_c2r_1d(size_, frame_, data, FFTW_ESTIMATE);
   fftwf_execute(plan);
   fftwf_destroy_plan(plan);
 
   VectorMath::multiplyByScalar(
-      timeDomainData, 1.0f / static_cast<float>(size_), timeDomainData, size_);
+      data, 1.0f / static_cast<float>(size_), data, size_);
 }
 
 #endif
