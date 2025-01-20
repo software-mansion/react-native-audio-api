@@ -180,12 +180,12 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(
         inputBuffer_.get(),
         vWriteIndex_ - fftSize_ + inputBuffer_->getSize(),
+        0,
         fftSize_ - vWriteIndex_);
     tempBuffer.copy(
         inputBuffer_.get(), 0, fftSize_ - vWriteIndex_, vWriteIndex_);
-
   } else {
-    tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, fftSize_);
+    tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
   AnalyserNode::applyWindow(tempBuffer.getData(), fftSize_);
