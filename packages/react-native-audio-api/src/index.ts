@@ -127,20 +127,28 @@ export class AnalyserNode extends AudioNode {
     this.smoothingTimeConstant = node.smoothingTimeConstant;
   }
 
-  public getByteFrequencyData(array: Uint8Array): void {
-    (this.node as globalThis.AnalyserNode).getByteFrequencyData(array);
+  public getByteFrequencyData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(
+      new Uint8Array(array)
+    );
   }
 
-  public getByteTimeDomainData(array: Uint8Array): void {
-    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(array);
+  public getByteTimeDomainData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(
+      new Uint8Array(array)
+    );
   }
 
-  public getFloatFrequencyData(array: Float32Array): void {
-    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(array);
+  public getFloatFrequencyData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(
+      new Float32Array(array)
+    );
   }
 
-  public getFloatTimeDomainData(array: Float32Array): void {
-    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(array);
+  public getFloatTimeDomainData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(
+      new Float32Array(array)
+    );
   }
 }
 

@@ -12,10 +12,10 @@ import { ActivityIndicator } from 'react-native';
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioBufferSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const setup = () => {
     if (!audioContextRef.current) {

@@ -20,8 +20,6 @@ const Piano: FC = () => {
     notesRef.current?.[key].stop();
   };
 
-  useEffect(() => {}, []);
-
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
