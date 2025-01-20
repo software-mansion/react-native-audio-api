@@ -7,8 +7,11 @@ Some of the noticeable implementation details that are still in progress or not 
 - Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
 - Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## ✅ Completed (**10** out of 32)
+## ✅ Completed (**11** out of 32)
 
+<details>
+ <summary><b>AnalyserNode</b></summary>
+</details>
 <details>
   <summary><b>AudioBuffer</b></summary>
 </details>
@@ -17,6 +20,9 @@ Some of the noticeable implementation details that are still in progress or not 
 </details>
 <details>
  <summary><b>AudioNode</b></summary>
+</details>
+<details>
+ <summary><b>AudioParam</b></summary>
 </details>
 <details>
  <summary><b>AudioScheduledSourceNode</b></summary>
@@ -35,9 +41,6 @@ Some of the noticeable implementation details that are still in progress or not 
 </details>
 <details>
  <summary><b>StereoPannerNode</b></summary>
-</details>
-<details>
- <summary><b>AudioParam</b></summary>
 </details>
 
 ## 🚧 In Progress (**3** out of 32)
@@ -96,7 +99,7 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔹 listener                 | ❌    |
 | 🔹 sampleRate               | ✅    |
 | 🔹 state                    | ✅    |
-| 🔘 createAnalyser           | ❌    |
+| 🔘 createAnalyser           | ✅    |
 | 🔘 createBiquadFilter       | ✅    |
 | 🔘 createBuffer             | ✅    |
 | 🔘 createBufferSource       | ✅    |
@@ -114,12 +117,13 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔘 createStereoPanner       | ✅    |
 | 🔘 createWaveShaper         | ❌    |
 | 🔘 decodeAudioData          | ❌    |
+| 🔘 decodeAudioDataSource    | ✅    |
 
 </div>
 
 </details>
 
-## ❌ Not yet available (**19** out of 32)
+## ❌ Not yet available (**18** out of 32)
 
 <details>
  <summary><b>AudioParamMap</b></summary>
@@ -150,9 +154,6 @@ Some of the noticeable implementation details that are still in progress or not 
 </details>
 <details>
  <summary><b>MediaStreamAudioDestinationNode</b></summary>
-</details>
-<details>
- <summary><b>AnalyserNode</b></summary>
 </details>
 <details>
  <summary><b>ChannelSplitterNode</b></summary>
