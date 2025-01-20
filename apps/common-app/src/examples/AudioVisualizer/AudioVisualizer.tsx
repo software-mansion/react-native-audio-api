@@ -42,12 +42,11 @@ const AudioVisualizer: React.FC = () => {
 
     const bufferLength = analyserRef.current.frequencyBinCount;
     const dataArray = new Array(bufferLength);
-    // analyserRef.current.getByteTimeDomainData(dataArray);
-
-    setData([1,1,1]);
+    analyserRef.current.getByteTimeDomainData(dataArray);
+    setData(dataArray);
 
     requestAnimationFrame(draw);
-  }
+  };
 
   useEffect(() => {
     if (!audioContextRef.current) {

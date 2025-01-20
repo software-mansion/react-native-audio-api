@@ -12,18 +12,19 @@ namespace audioapi {
 #if defined(HAVE_ACCELERATE)
 
 void FFTFrame::doFFT(float *data) {
-    FFTSetup fftSetup_ = vDSP_create_fftsetup(log2Size_, FFT_RADIX2);
-    DSPSplitComplex freqDomainData;
-    freqDomainData.realp = realData_;
-    freqDomainData.imagp = imaginaryData_;
+  FFTSetup fftSetup_ = vDSP_create_fftsetup(log2Size_, FFT_RADIX2);
+  DSPSplitComplex freqDomainData;
+  freqDomainData.realp = realData_;
+  freqDomainData.imagp = imaginaryData_;
 
-    vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &freqDomainData, 1, size_ / 2);
-    vDSP_fft_zrip(fftSetup_, &freqDomainData, 1, log2Size_, FFT_FORWARD);
+  vDSP_ctoz(
+      reinterpret_cast<DSPComplex *>(data), 2, &freqDomainData, 1, size_ / 2);
+  vDSP_fft_zrip(fftSetup_, &freqDomainData, 1, log2Size_, FFT_FORWARD);
 
-    VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
-    VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
 
-    vDSP_destroy_fftsetup(fftSetup_);
+  vDSP_destroy_fftsetup(fftSetup_);
 }
 
 void FFTFrame::doInverseFFT(float *timeDomainData) {
@@ -51,21 +52,21 @@ void FFTFrame::doInverseFFT(float *timeDomainData) {
 #elif defined(ANDROID)
 
 void FFTFrame::doFFT(float *data) {
-    fftwf_complex *freqDomainData = fftwf_alloc_complex(size_ / 2);
+  fftwf_complex *freqDomainData = fftwf_alloc_complex(size_ / 2);
 
-    auto plan = fftwf_plan_dft_r2c_1d(size_, data, freqDomainData, FFTW_ESTIMATE);
-    fftwf_execute(plan);
+  auto plan = fftwf_plan_dft_r2c_1d(size_, data, freqDomainData, FFTW_ESTIMATE);
+  fftwf_execute(plan);
 
-    for (int i = 0; i < size_ / 2; ++i) {
-        realData_[i] = freqDomainData[i][0];
-        imaginaryData_[i] = freqDomainData[i][1];
-    }
+  for (int i = 0; i < size_ / 2; ++i) {
+    realData_[i] = freqDomainData[i][0];
+    imaginaryData_[i] = freqDomainData[i][1];
+  }
 
-    fftwf_destroy_plan(plan);
-    fftwf_free(freqDomainData);
+  fftwf_destroy_plan(plan);
+  fftwf_free(freqDomainData);
 
-    VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
-    VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
 }
 
 void FFTFrame::doInverseFFT(float *timeDomainData) {

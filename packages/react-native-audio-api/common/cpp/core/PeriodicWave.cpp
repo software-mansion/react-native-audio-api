@@ -234,7 +234,7 @@ void PeriodicWave::createBandLimitedTables(
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fftFrame.inverse(bandLimitedTables_[rangeIndex]);
+    fftFrame.doInverseFFT(bandLimitedTables_[rangeIndex]);
 
     if (!disableNormalization_ && rangeIndex == 0) {
       float maxValue =

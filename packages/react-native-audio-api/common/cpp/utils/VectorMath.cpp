@@ -693,9 +693,12 @@ void multiplyByScalarThenAddToOutput(
 
 #endif
 
-void VectorMath::linearToDecibels(const float *inputVector, float *outputVector, size_t numberOfElementsToProcess) {
-    for (int i = 0; i < numberOfElementsToProcess; i++) {
-        outputVector[i] = AudioUtils::linearToDecibels(inputVector[i]);
-    }
+void VectorMath::linearToDecibels(
+    const float *inputVector,
+    float *outputVector,
+    size_t numberOfElementsToProcess) {
+  for (int i = 0; i < numberOfElementsToProcess; i++) {
+    outputVector[i] = AudioUtils::linearToDecibels(inputVector[i]);
+  }
 }
 } // namespace audioapi::VectorMath
