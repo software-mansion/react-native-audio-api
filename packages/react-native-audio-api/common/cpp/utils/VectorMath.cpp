@@ -24,6 +24,7 @@
  */
 
 #include "VectorMath.h"
+#include "AudioUtils.h"
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -691,4 +692,10 @@ void multiplyByScalarThenAddToOutput(
 }
 
 #endif
+
+void VectorMath::linearToDecibels(const float *inputVector, float *outputVector, size_t numberOfElementsToProcess) {
+    for (int i = 0; i < numberOfElementsToProcess; i++) {
+        outputVector[i] = AudioUtils::linearToDecibels(inputVector[i]);
+    }
+}
 } // namespace audioapi::VectorMath
