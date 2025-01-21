@@ -1,6 +1,18 @@
 import React, { useRef, useState, useEffect, MouseEvent } from 'react';
 import styles from './OscillatorSquare.module.css'
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 interface LFO {
   lfo: OscillatorNode;
   lfoAmplifier: GainNode;
@@ -64,7 +76,7 @@ const OscillatorSquare: React.FC = () => {
     }
 
     const time = aCtx.currentTime;
-    const tone = 64;
+    const tone = 164;
     const decay = 0.2;
     const volume = 5;
 
@@ -72,7 +84,7 @@ const OscillatorSquare: React.FC = () => {
     const gain = aCtx.createGain();
 
     oscillator.frequency.setValueAtTime(0, time);
-    oscillator.frequency.setValueAtTime(tone, time + 0.01);
+    oscillator.frequency.setValueAtTime(tone, time + 0.005);
     oscillator.frequency.exponentialRampToValueAtTime(10, time + decay);
 
     gain.gain.setValueAtTime(0, time);
@@ -104,6 +116,53 @@ const OscillatorSquare: React.FC = () => {
     return noiseBuffer;
   }
 
+  const onStart = (pointer: Point, box: Rect) => {
+    playKick();
+    setIsPlaying(true);
+
+    setX(minMax(((pointer.x - box.x) / squareSize) * 100, 0, 100));
+    setY(minMax(((pointer.y - box.y) / squareSize) * 100, 0, 100));
+  }
+
+  const onMove = (pointer: Point, box: Rect) => {
+    if (!isPlaying) {
+      return;
+    }
+
+    setX(
+      minMax(((Math.min(pointer.x, box.x + box.w) - Math.floor(box.x)) / squareSize) * 100, 0, 100)
+    );
+    setY(
+      minMax(((Math.min(pointer.y, box.y + box.h) - Math.floor(box.y)) / squareSize) * 100, 0, 100)
+    );
+  }
+
+  const onStop = () => {
+    console.log('123');
+    setIsPlaying(false);
+  }
+
+  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+    onStart({ x: e.clientX, y: e.clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  };
+
+  const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+
+    onMove({ x: e.clientX, y: e.clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  };
+
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  }
+
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  }
+
   useEffect(() => {
     if (!mGainRef.current || !mACtxRef.current) {
       return;
@@ -125,14 +184,15 @@ const OscillatorSquare: React.FC = () => {
   useEffect(() => {
     if (lowPassRef.current) {
       lowPassRef.current.frequency.value = 20 + 170.0 * (100 - y);
-      lowPassFreqRef.current = 4000 + 170.0 * (100 - y);
+      lowPassFreqRef.current = 4000 + 200.0 * (100 - y);
     }
   }, [y]);
 
   useEffect(() => {
     if (lfoRef.current) {
-      // lfoRef.current.setFrequency(1 + Math.exp(((100 - x) / 100.0) * 10) / 480);
-      lfoRef.current.setFrequency(1.5 + 10 * (x / 100));
+      // https://www.wolframalpha.com/input?i=2*e%5E%282.35*x%29+-+2%2C+x+%3D+0+to+1
+      lfoRef.current.setFrequency(2 * Math.exp((x / 100.0) * 2.35) - 0.5);
+
       lfoRef.current.setAmplify(
         lowPassFreqRef.current -
         lowPassFreqRef.current * 0.9 * ((100 - x) / 100.0)
@@ -170,7 +230,7 @@ const OscillatorSquare: React.FC = () => {
 
     const sawOscillator = aCtx.createOscillator();
     sawOscillator.type = 'sawtooth';
-    sawOscillator.frequency.value = 65.41;
+    sawOscillator.frequency.value = 130.81;
     sawOscillator.detune.value = 5;
 
     sawOscillator.connect(gain);
@@ -204,47 +264,24 @@ const OscillatorSquare: React.FC = () => {
     sawOscillator.start();
   }, []);
 
-  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    setIsPlaying(true);
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+  useEffect(() => {
+    window.addEventListener('mouseup', onStop);
+    window.addEventListener('touchend', onStop);
 
-    playKick();
-
-    setX(minMax(((e.clientX - boxRect.x) / squareSize) * 100, 0, 100));
-    setY(minMax(((e.clientY - boxRect.y) / squareSize) * 100, 0, 100));
-  };
-
-  const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!isPlaying) {
-      return;
-    }
-
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
-
-    setX(
-      minMax(((e.clientX - Math.floor(boxRect.x)) / squareSize) * 100, 0, 100)
-    );
-    setY(
-      minMax(((e.clientY - Math.floor(boxRect.y)) / squareSize) * 100, 0, 100)
-    );
-  };
-
-  const onMouseUp = (e: MouseEvent<HTMLDivElement>) => {
-    setIsPlaying(false);
-
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
-
-    setX(minMax(((e.clientX - boxRect.x) / squareSize) * 100, 0, 100));
-    setY(minMax(((e.clientY - boxRect.y) / squareSize) * 100, 0, 100));
-  };
+    return () => {
+      window.removeEventListener('mouseup', onStop);
+      window.removeEventListener('touchend', onStop);
+    };
+  }, []);
 
 
   return (
     <div className={styles.oscillatorContainer}>
       <div
-        onMouseUp={onMouseUp}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
         className={styles.oscillatorSquare}
         style={{
           width: squareSize,
