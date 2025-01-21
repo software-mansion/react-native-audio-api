@@ -298,6 +298,7 @@ const OscillatorSquare: React.FC = () => {
           className={styles.oscillatorFill}
           style={{
             transform: `scale(${isPlaying ? 1 : 0})`,
+            opacity: isPlaying ? 1 : 0,
           }}
         />
         <div
