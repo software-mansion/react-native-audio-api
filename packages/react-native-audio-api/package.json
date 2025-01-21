@@ -54,7 +54,9 @@
     "audio",
     "audio api",
     "web audio api",
-    "react"
+    "react",
+    "music",
+    "player"
   ],
   "repository": {
     "type": "git",

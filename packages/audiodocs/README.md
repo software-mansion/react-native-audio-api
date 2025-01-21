@@ -1,7 +1,3 @@
 # React Native Audio API documentation
 
-👉 (here would be link, if I had one)[https://docs.swmansion.com/]
-
-## What's in the docs
-
-TODO:
+The docs are available at (https://software-mansion-labs.github.io/react-native-audio-api/)(https://software-mansion-labs.github.io/react-native-audio-api/)

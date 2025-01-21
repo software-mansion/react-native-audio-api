@@ -3,9 +3,14 @@ slug: /
 sidebar_position: 1
 ---
 
+
 # Introduction
 
 React Native Audio API is an imperative, high-level API for processing and synthesizing audio in React Native Applications. React Native Audio API follows the [Web Audio Specification](https://www.w3.org/TR/webaudio-1.1/) making it easier to write audio-heavy applications for iOS, Android and Web with just one codebase.
+
+import OscillatorSquare from '@site/src/components/LandingPage/OscillatorSquare';
+
+<OscillatorSquare />
 
 
 ## Highlights
@@ -22,18 +27,13 @@ React Native Audio API is an imperative, high-level API for processing and synth
 
 ## Motivation
 
-
-
-- following standard of web audio
-- performance, flexibility and synchronization
-- bringing tools built on top of web audio to react-native world
-
-
-## How it works
-
-**Making the web audio cross-platform**:
+By aligning with the Web Audio specification, we're creating a single API that works seamlessly across native iOS, Android, browsers, and even standalone desktop applications. The React Native ecosystem currently lacks a high-performance API for creating audio, adding effects, or controlling basic parameters like volume for each audio separately - and we're here to bridge that gap!
 
 
 ## Alternatives
 
 ### Expo Audio
+
+[Expo Audio](https://docs.expo.dev/versions/latest/sdk/audio/) might be a better fit for you, if you are looking for simple playback functionality, as its simple and well documented API makes it easy to use.
+
+Although when it comes to synchronization, applying effects or visualization of the audio, currently there are no alternatives to react-native-audio-api (other than writing in native yourself).
