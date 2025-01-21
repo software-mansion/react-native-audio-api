@@ -1,4 +1,3 @@
-
 .oscillatorContainer {
   display: flex;
   flex-direction: column;
@@ -6,16 +5,95 @@
   justify-content: center;
 }
 
-.oscillatorSquare {
-  border: 4px solid var(--swm-border);
+.oscillator {
   position: relative;
+  cursor: pointer;
+  background: transparent;
+  overflow: visible;
 }
 
-.oscillatorSquareInner {
+.oscillatorBorder {
+  transform: scale(0.9);
+  width: 100%;
+  height: 100%;
+  border: 4px solid var(--swm-border);
+}
+
+.oscillatorFill {
   background-color: var(--swm-purple-dark-100);
   position: absolute;
-  top: -4px;
-  left: -4px;
+  top: 0;
+  left: 0;
   transition: all 100ms ease;
   z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.oscillatorPointer {
+  width: 24px;
+  height: 24px;
+  transform: translate(-12px, -12px);
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.oscillatorPointerInnerOut {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  left: -6px;
+  top: -6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  transition: opacity 200ms ease;
+  animation: scaleIn 200ms ease;
+  opacity: 1;
+}
+
+.oscillatorPointerInnerIn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  left: -6px;
+  top: -6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  transition: opacity 200ms ease;
+  animation: scaleOut 200ms ease;
+  opacity: 0;
+}
+
+
+:root[data-theme='dark'] {
+  .oscillatorPointer {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .oscillatorPointerInner {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(4);
+  }
 }

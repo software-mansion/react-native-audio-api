@@ -1,16 +1,9 @@
-import React, { useRef, useState, useEffect, MouseEvent } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import styles from './OscillatorSquare.module.css'
 
 interface Point {
   x: number;
   y: number;
-}
-
-interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
 }
 
 interface LFO {
@@ -21,7 +14,7 @@ interface LFO {
   connect: (node: AudioNode | AudioParam) => void;
 }
 
-const squareSize = 200;
+const squareSize = 220;
 
 function createLFO(aCtx: AudioContext): LFO {
   const lfo = aCtx.createOscillator();
@@ -49,11 +42,12 @@ function createLFO(aCtx: AudioContext): LFO {
   };
 }
 
-function minMax(v: number, min: number = 0, max: number = 100): number {
+function clamp(v: number, min: number = 0, max: number = 100): number {
   return Math.max(Math.min(v, max), min);
 }
 
 const OscillatorSquare: React.FC = () => {
+  const rectRef = useRef<HTMLDivElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [x, setX] = useState(50);
   const [y, setY] = useState(50);
@@ -116,51 +110,55 @@ const OscillatorSquare: React.FC = () => {
     return noiseBuffer;
   }
 
-  const onStart = (pointer: Point, box: Rect) => {
+  const onStart = (pointer: Point) => {
+    const box = rectRef.current?.getBoundingClientRect();
+
     playKick();
     setIsPlaying(true);
 
-    setX(minMax(((pointer.x - box.x) / squareSize) * 100, 0, 100));
-    setY(minMax(((pointer.y - box.y) / squareSize) * 100, 0, 100));
+    setX(clamp(((pointer.x - box.x) / squareSize) * 100, 0, 100));
+    setY(clamp(((pointer.y - box.y) / squareSize) * 100, 0, 100));
+    document.body.style.overflow = 'hidden';
   }
 
-  const onMove = (pointer: Point, box: Rect) => {
+  const onMove = (pointer: Point) => {
     if (!isPlaying) {
       return;
     }
 
+    const box = rectRef.current?.getBoundingClientRect();
+
     setX(
-      minMax(((Math.min(pointer.x, box.x + box.w) - Math.floor(box.x)) / squareSize) * 100, 0, 100)
+      clamp((Math.floor(Math.min(pointer.x, box.x + box.width) - box.x) / squareSize) * 100, 0, 100)
     );
     setY(
-      minMax(((Math.min(pointer.y, box.y + box.h) - Math.floor(box.y)) / squareSize) * 100, 0, 100)
+      clamp((Math.floor(Math.min(pointer.y, box.y + box.height) - box.y) / squareSize) * 100, 0, 100)
     );
   }
 
   const onStop = () => {
-    console.log('123');
     setIsPlaying(false);
+    document.body.style.overflow = 'auto';
   }
 
-  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
-    onStart({ x: e.clientX, y: e.clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+
+    onStart({ x: e.clientX, y: e.clientY });
   };
 
-  const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
+  const onMouseMove = (e: MouseEvent) => {
+    e.preventDefault();
 
-    onMove({ x: e.clientX, y: e.clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+    onMove({ x: e.clientX, y: e.clientY });
   };
 
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
-    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   }
 
-  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    const boxRect = (e.target as HTMLDivElement).getBoundingClientRect();
-    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY }, { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height });
+  const onTouchMove = (e: TouchEvent) => {
+    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   }
 
   useEffect(() => {
@@ -267,22 +265,24 @@ const OscillatorSquare: React.FC = () => {
   useEffect(() => {
     window.addEventListener('mouseup', onStop);
     window.addEventListener('touchend', onStop);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('touchmove', onTouchMove);
 
     return () => {
       window.removeEventListener('mouseup', onStop);
       window.removeEventListener('touchend', onStop);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchmove', onTouchMove);
     };
-  }, []);
-
+  }, [isPlaying]);
 
   return (
     <div className={styles.oscillatorContainer}>
       <div
+        ref={rectRef}
         onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        className={styles.oscillatorSquare}
+        className={styles.oscillator}
         style={{
           width: squareSize,
           height: squareSize,
@@ -293,13 +293,26 @@ const OscillatorSquare: React.FC = () => {
           `,
         }}
       >
-        <div className={styles.oscillatorSquareInner} style={{
-          width: squareSize,
-          height: squareSize,
-          transform: `scale(${isPlaying ? 1.1 : 0})`
-        }} />
+        <div className={styles.oscillatorBorder} />
+        <div
+          className={styles.oscillatorFill}
+          style={{
+            transform: `scale(${isPlaying ? 1 : 0})`,
+          }}
+        />
+        <div
+          className={styles.oscillatorPointer}
+          style={{
+            top: `${(clamp(y / 100 * squareSize, 12, squareSize - 12))}px`,
+            left: `${(clamp(x / 100 * squareSize, 12, squareSize - 12))}px`,
+          }}
+        >
+          <div
+            className={isPlaying ? styles.oscillatorPointerInnerOut : styles.oscillatorPointerInnerIn}
+          />
+        </div>
       </div>
-    </div>
+    </div >
   );
 };
 
