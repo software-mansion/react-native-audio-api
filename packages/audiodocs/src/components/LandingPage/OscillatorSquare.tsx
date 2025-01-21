@@ -287,7 +287,7 @@ const OscillatorSquare: React.FC = () => {
           width: squareSize,
           height: squareSize,
           transform: `
-            perspective(${squareSize}px)
+            perspective(150px)
             rotateX(${(x / 100) * 10 - 5}deg)
             rotateY(${(y / 100) * 10 - 5}deg)
           `,
