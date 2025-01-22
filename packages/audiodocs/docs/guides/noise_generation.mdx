@@ -1,0 +1,28 @@
+---
+sidebar_position: 4
+---
+
+import InteractiveExample from '@site/src/components/InteractiveExample';
+
+# Noise generation
+
+## White noise
+
+import WhiteNoise from '@site/src/examples/NoiseGeneration/WhiteNoiseComponent';
+import WhiteNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/WhiteNoiseSource';
+
+<InteractiveExample component={WhiteNoise} src={WhiteNoiseSrc} />
+
+## Pink noise
+
+import PinkNoise from '@site/src/examples/NoiseGeneration/PinkNoiseComponent';
+import PinkNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/PinkNoiseSource';
+
+<InteractiveExample component={PinkNoise} src={PinkNoiseSrc} />
+
+## Brownian noise
+
+import BrownianNoise from '@site/src/examples/NoiseGeneration/BrownianNoiseComponent';
+import BrownianNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/BrownianNoiseSource';
+
+<InteractiveExample component={BrownianNoise} src={BrownianNoiseSrc} />
