@@ -12,20 +12,21 @@ import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
 import { layout } from '../../styles';
 
-const FFT_SIZE = 256;
-const SMOOTHING_TIME_CONSTANT = 0.8;
+const FFT_SIZE = 512;
+const SMOOTHING_TIME_CONSTANT = 0;
 const MIN_DECIBELS = -140;
 const MAX_DECIBELS = 0;
 
-const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+// const URL =
+//   'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+const URL = 'https://github.com/michalsek/audio-samples/raw/refs/heads/main/songs/Muzak.mp3';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [times, setTimes] = useState<number[]>([]);
-  const [freqs, setFreqs] = useState<number[]>([]);
+  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
+  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -78,7 +79,7 @@ const AudioVisualizer: React.FC = () => {
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = FFT_SIZE;
-      // analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+      analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
       // analyserRef.current.minDecibels = MIN_DECIBELS;
       // analyserRef.current.maxDecibels = MAX_DECIBELS;
 
@@ -106,6 +107,7 @@ const AudioVisualizer: React.FC = () => {
       audioContextRef.current?.close();
     };
   }, []);
+
 
   return (
     <Container>
