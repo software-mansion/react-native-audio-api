@@ -12,7 +12,7 @@ import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
 import { getPointCX, getPointCY } from '../DrumMachine/utils';
 
-const INNER_RADIUS = 120;
+const INNER_RADIUS = 90;
 const OUTER_RADIUS = 150;
 
 export function getAngle(stepIdx: number, maxSteps: number) {
@@ -57,7 +57,7 @@ const TimeChartLine: React.FC<ChartLineProps> = (props) => {
       <Circle
         cx={size.width / 2}
         cy={size.height / 2}
-        r={INNER_RADIUS * 1.1}
+        r={INNER_RADIUS * 1.33}
         paint={circlePaint}
       />
       <Points
