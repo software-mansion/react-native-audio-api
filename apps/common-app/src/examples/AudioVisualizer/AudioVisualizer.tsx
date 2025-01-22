@@ -82,8 +82,6 @@ const AudioVisualizer: React.FC = () => {
       analyserRef.current.minDecibels = MIN_DECIBELS;
       analyserRef.current.maxDecibels = MAX_DECIBELS;
 
-      console.log('analyser');
-
       analyserRef.current.connect(audioContextRef.current.destination);
     }
 
