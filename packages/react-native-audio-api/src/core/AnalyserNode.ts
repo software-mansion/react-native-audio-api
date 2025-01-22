@@ -1,23 +1,11 @@
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
 import AudioNode from './AudioNode';
-import BaseAudioContext from './BaseAudioContext';
 
 export default class AnalyserNode extends AudioNode {
-  readonly frequencyBinCount: number;
   private static allowedFFTSize: number[] = [
     32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
   ];
-
-  constructor(context: BaseAudioContext, analyser: IAnalyserNode) {
-    super(context, analyser);
-
-    this.fftSize = analyser.fftSize;
-    this.frequencyBinCount = analyser.frequencyBinCount;
-    this.minDecibels = analyser.minDecibels;
-    this.maxDecibels = analyser.maxDecibels;
-    this.smoothingTimeConstant = analyser.smoothingTimeConstant;
-  }
 
   public get fftSize(): number {
     return (this.node as IAnalyserNode).fftSize;
@@ -73,6 +61,10 @@ export default class AnalyserNode extends AudioNode {
     }
 
     (this.node as IAnalyserNode).smoothingTimeConstant = value;
+  }
+
+  public get frequencyBinCount(): number {
+    return (this.node as IAnalyserNode).frequencyBinCount;
   }
 
   public getFloatFrequencyData(array: number[]): void {

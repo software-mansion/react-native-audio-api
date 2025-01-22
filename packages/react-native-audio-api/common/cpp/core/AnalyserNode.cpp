@@ -19,7 +19,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
-  magnitudeBuffer_ = std::make_unique<AudioArray>(DEFAULT_FFT_SIZE / 2);
+  magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   isInitialized_ = true;
 }
 
@@ -50,6 +50,7 @@ void AnalyserNode::setFftSize(size_t fftSize) {
 
   fftSize_ = fftSize;
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
+  magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
 }
 
 void AnalyserNode::setMinDecibels(double minDecibels) {

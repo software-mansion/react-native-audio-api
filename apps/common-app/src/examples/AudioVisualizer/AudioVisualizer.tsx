@@ -12,7 +12,7 @@ import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
 import { layout } from '../../styles';
 
-const FFT_SIZE = 2048;
+const FFT_SIZE = 256;
 const SMOOTHING_TIME_CONSTANT = 0.8;
 const MIN_DECIBELS = -140;
 const MAX_DECIBELS = 0;
@@ -81,6 +81,8 @@ const AudioVisualizer: React.FC = () => {
       analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
       analyserRef.current.minDecibels = MIN_DECIBELS;
       analyserRef.current.maxDecibels = MAX_DECIBELS;
+
+      console.log('analyser');
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
