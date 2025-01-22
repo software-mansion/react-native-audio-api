@@ -12,13 +12,13 @@ import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
 import { layout } from '../../styles';
 
-const FFT_SIZE = 2048;
+const FFT_SIZE = 256;
 const SMOOTHING_TIME_CONSTANT = 0.8;
 const MIN_DECIBELS = -140;
 const MAX_DECIBELS = 0;
 
 const URL =
-  'https://maciejmakowski2003.github.io/audio-samples/sounds/chrono.mp3';
+  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -57,7 +57,7 @@ const AudioVisualizer: React.FC = () => {
       return;
     }
 
-    const bufferLength = analyserRef.current.frequencyBinCount;
+    const bufferLength = FFT_SIZE; // analyserRef.current.frequencyBinCount;
 
     const timesArray = new Array(bufferLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
@@ -78,9 +78,9 @@ const AudioVisualizer: React.FC = () => {
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = FFT_SIZE;
-      analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
-      analyserRef.current.minDecibels = MIN_DECIBELS;
-      analyserRef.current.maxDecibels = MAX_DECIBELS;
+      // analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+      // analyserRef.current.minDecibels = MIN_DECIBELS;
+      // analyserRef.current.maxDecibels = MAX_DECIBELS;
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
@@ -109,22 +109,21 @@ const AudioVisualizer: React.FC = () => {
 
   return (
     <Container>
+      <View style={{ flex: 0.2 }} />
       <FreqTimeChart
         timeData={times}
         frequencyData={freqs}
-        frequencyBinCount={
-          analyserRef.current
-            ? analyserRef.current.frequencyBinCount
-            : FFT_SIZE / 2
-        }
+        frequencyBinCount={FFT_SIZE / 2}
       />
-      {isLoading && <ActivityIndicator color="#FFFFFF" />}
-      <View style={styles.button}>
-        <Button
-          onPress={handlePlayPause}
-          title={isPlaying ? 'Pause' : 'Play'}
-          disabled={!audioBufferRef.current}
-        />
+      <View style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        {isLoading && <ActivityIndicator color="#FFFFFF" />}
+        <View style={styles.button}>
+          <Button
+            onPress={handlePlayPause}
+            title={isPlaying ? 'Pause' : 'Play'}
+            disabled={!audioBufferRef.current}
+          />
+        </View>
       </View>
     </Container>
   );

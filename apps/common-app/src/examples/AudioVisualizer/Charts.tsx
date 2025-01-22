@@ -1,8 +1,13 @@
 import React, { useMemo } from 'react';
-import { Points, vec, Rect } from '@shopify/react-native-skia';
+import { Points, vec, Line } from '@shopify/react-native-skia';
 
 import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
+import { getPointCX, getPointCY } from '../DrumMachine/utils';
+
+export function getAngle(stepIdx: number, maxSteps: number) {
+  return (stepIdx / maxSteps) * Math.PI * 2 - Math.PI / 2;
+}
 
 interface ChartLineProps {
   data: number[];
@@ -43,24 +48,32 @@ const FrequencyChartLine: React.FC<ChartLineProps> = (props) => {
     const maxHeight = size.height;
     const maxWidth = size.width;
     const barWidth = maxWidth / frequencyBinCount;
+
     return data.map((value, index) => {
-      const x = index * barWidth;
-      const y = maxHeight - maxHeight * (value / 256);
+      const angle = getAngle(index, frequencyBinCount);
+      const x = getPointCX(angle, 150, maxWidth / 2);
+      const y = getPointCY(angle, 150, maxHeight / 2);
+      // const x =  index / barWidth * 360;
+      // const y = maxHeight - 64 * (value / 256);
+      const x2 = getPointCX(angle, 150 + (Math.max(value, 10) / 256.0) * 30, maxWidth / 2);
+      const y2 = getPointCY(angle, 150 + (Math.max(value, 10) / 256.0) * 30, maxHeight / 2);
+
+
       const hue = (index / frequencyBinCount) * 360;
-      const color = `hsl(${hue}, 100%, 50%)`;
-      return { x, y, height: maxHeight - y, color, width: barWidth };
+      const color = `hsla(${hue}, 100%, 50%, 40%)`;
+      return { color, x, y, x2, y2, barWidth };
     });
   }, [size, data, frequencyBinCount]);
 
   return (
     <>
       {points.map((point, index) => (
-        <Rect
+        <Line
           key={index}
-          x={point.x}
-          y={point.y}
-          width={point.width}
-          height={point.height}
+          p1={vec(point.x, point.y)}
+          p2={vec(point.x2, point.y2)}
+          style="stroke"
+          strokeWidth={point.barWidth}
           color={point.color}
         />
       ))}
