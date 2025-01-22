@@ -17,7 +17,7 @@ export const colors = {
   gray: '#d7d7d7',
 
   background: '#222222',
-  backgeoundDark: '#1f2020',
+  backgroundDark: '#1f2020',
   backgroundLight: '#333333',
 
   separator: '#333333',

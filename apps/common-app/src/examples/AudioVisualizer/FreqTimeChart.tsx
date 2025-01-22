@@ -2,20 +2,26 @@ import React from 'react';
 
 import { withCanvas } from './Canvas';
 import Charts from './Charts';
-import ChartLine from './ChartLine';
 
 interface FreqTimeChartProps {
-  data: number[];
+  timeData: number[];
+  frequencyData: number[];
+  frequencyBinCount: number;
 }
 
 const FreqTimeChart: React.FC<FreqTimeChartProps> = (props) => {
-  const { data } = props;
+  const { timeData, frequencyData, frequencyBinCount } = props;
 
   return (
     <>
-      <Charts.Grid />
-      <Charts.Axes />
-      <ChartLine data={data} />
+      <Charts.TimeChartLine
+        data={timeData}
+        frequencyBinCount={frequencyBinCount}
+      />
+      <Charts.FrequencyChartLine
+        data={frequencyData}
+        frequencyBinCount={frequencyBinCount}
+      />
     </>
   );
 };

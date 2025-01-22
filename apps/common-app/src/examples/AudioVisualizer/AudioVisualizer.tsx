@@ -6,11 +6,15 @@ import {
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
-import Layout from './Layout';
 import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
+
+const FFT_SIZE = 2048;
+const SMOOTHING_TIME_CONSTANT = 0.8;
+const MIN_DECIBELS = -140;
+const MAX_DECIBELS = 0;
 
 const URL =
   'https://maciejmakowski2003.github.io/audio-samples/sounds/chrono.mp3';
@@ -72,10 +76,10 @@ const AudioVisualizer: React.FC = () => {
 
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048;
-      analyserRef.current.smoothingTimeConstant = 0.85;
-      analyserRef.current.minDecibels = -90;
-      analyserRef.current.maxDecibels = -10;
+      analyserRef.current.fftSize = FFT_SIZE;
+      analyserRef.current.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+      analyserRef.current.minDecibels = MIN_DECIBELS;
+      analyserRef.current.maxDecibels = MAX_DECIBELS;
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
@@ -104,25 +108,32 @@ const AudioVisualizer: React.FC = () => {
 
   return (
     <Container>
-      <Layout.Row>
-        <Layout.Box>
-          <FreqTimeChart data={times} />
-        </Layout.Box>
-      </Layout.Row>
-      <Layout.LineHorizontal />
-      <Layout.Row>
-        <Layout.Box>
-          <FreqTimeChart data={freqs} />
-        </Layout.Box>
-      </Layout.Row>
-      {isLoading && <ActivityIndicator color="#FFFFFF" />}
-      <Button
-        onPress={handlePlayPause}
-        title={isPlaying ? 'Pause' : 'Play'}
-        disabled={!audioBufferRef.current}
+      <FreqTimeChart
+        timeData={times}
+        frequencyData={freqs}
+        frequencyBinCount={
+          analyserRef.current
+            ? analyserRef.current.frequencyBinCount
+            : FFT_SIZE / 2
+        }
       />
+      {isLoading && <ActivityIndicator color="#FFFFFF" />}
+      <View style={styles.button}>
+        <Button
+          onPress={handlePlayPause}
+          title={isPlaying ? 'Pause' : 'Play'}
+          disabled={!audioBufferRef.current}
+        />
+      </View>
     </Container>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+});
 
 export default AudioVisualizer;
