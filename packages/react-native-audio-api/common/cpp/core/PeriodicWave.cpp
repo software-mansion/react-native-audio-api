@@ -226,7 +226,7 @@ void PeriodicWave::createBandLimitedTables(
           0.0f);
     }
 
-    // Zero out the nquist and DC components.
+    // Zero out the DC and nquist components.
     realFFTFrameData[0] = 0.0f;
     imaginaryFFTFrameData[0] = 0.0f;
 

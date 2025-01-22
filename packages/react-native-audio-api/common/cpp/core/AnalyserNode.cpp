@@ -136,6 +136,9 @@ void AnalyserNode::processNode(
     return;
   }
 
+  // Analyser should behave like a sniffer node, it should not modify the
+  // processingBus but instead copy the data to its own input buffer.
+
   if (downMixBus_ == nullptr) {
     downMixBus_ = std::make_unique<AudioBus>(
         context_->getSampleRate(), processingBus->getSize(), 1);
@@ -174,8 +177,13 @@ void AnalyserNode::doFFTAnalysis() {
 
   shouldDoFFTAnalysis_ = false;
 
+  // We need to copy the fftSize elements from input buffer to a temporary
+  // buffer to apply the window.
   AudioArray tempBuffer(this->fftSize_);
 
+  // We want to copy last fftSize_ elements added to the input buffer(fftSize_
+  // elements before vWriteIndex_). However inputBuffer_ works like a circular
+  // buffer so we have two cases to consider.
   if (vWriteIndex_ < fftSize_) {
     tempBuffer.copy(
         inputBuffer_.get(),
@@ -190,20 +198,23 @@ void AnalyserNode::doFFTAnalysis() {
 
   AnalyserNode::applyWindow(tempBuffer.getData(), fftSize_);
 
+  // do fft analysis - get frequency domain data
   fftFrame_->doFFT(tempBuffer.getData());
 
   auto *realFFTFrameData = fftFrame_->getRealData();
   auto *imaginaryFFTFrameData = fftFrame_->getImaginaryData();
 
+  // Zero out nquist component
   imaginaryFFTFrameData[0] = 0.0f;
 
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
+  auto magnitudeBufferData = magnitudeBuffer_->getData();
 
   for (size_t i = 0; i < magnitudeBuffer_->getSize(); i++) {
     std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
     auto scalarMagnitude = std::abs(c) * magnitudeScale;
-    magnitudeBuffer_->getData()[i] = static_cast<float>(
-        smoothingTimeConstant_ * magnitudeBuffer_->getData()[i] +
+    magnitudeBufferData[i] = static_cast<float>(
+        smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
   }
 }
