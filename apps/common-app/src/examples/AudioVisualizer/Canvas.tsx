@@ -76,6 +76,5 @@ export default Canvas;
 const styles = StyleSheet.create({
   canvas: {
     flex: 1,
-    // backgroundColor: colors.white,
   },
 });

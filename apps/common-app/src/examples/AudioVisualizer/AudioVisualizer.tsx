@@ -10,6 +10,7 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
+import { layout } from '../../styles';
 
 const FFT_SIZE = 2048;
 const SMOOTHING_TIME_CONSTANT = 0.8;
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
   button: {
     justifyContent: 'center',
     flexDirection: 'row',
+    marginTop: layout.spacing * 2,
   },
 });
 
