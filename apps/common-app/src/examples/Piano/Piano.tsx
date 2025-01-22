@@ -30,13 +30,9 @@ const Piano: FC = () => {
       bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
         url,
         FileSystem.documentDirectory + key.replace('#', 's') + '.mp3'
-      )
-        .then(({ uri }) => {
-          return uri.replace('file://', '');
-        })
-        .then((uri) => {
-          return audioContextRef.current!.decodeAudioDataSource(uri);
-        });
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
     });
 
     const newNotes: Partial<Record<KeyName, PianoNote>> = {};

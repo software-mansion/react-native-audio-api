@@ -42,7 +42,7 @@ const AudioFile: FC = () => {
         setIsPlaying(false);
 
         setIsLoading(true);
-        await fetchAudioBuffer(result.assets[0].uri.replace('file://', ''));
+        await fetchAudioBuffer(result.assets[0].uri);
         setIsLoading(false);
       }
     } catch (error) {

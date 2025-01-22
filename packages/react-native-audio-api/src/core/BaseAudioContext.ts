@@ -101,6 +101,11 @@ export default class BaseAudioContext {
   }
 
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
+    // Remove the file:// prefix if it exists
+    if (sourcePath.startsWith('file://')) {
+      sourcePath = sourcePath.replace('file://', '');
+    }
+
     const buffer = await this.context.decodeAudioDataSource(sourcePath);
 
     return new AudioBuffer(buffer);
