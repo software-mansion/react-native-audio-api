@@ -1,4 +1,6 @@
 export function getAngle(stepIdx: number, maxSteps: number) {
+  'worklet';
+
   return (stepIdx / maxSteps) * Math.PI * 2 - Math.PI / 2;
 }
 

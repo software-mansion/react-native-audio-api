@@ -11,7 +11,6 @@ import {
 import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
 import { getPointCX, getPointCY, getAngle } from '../../utils/skiUtils';
-import { SharedValue } from 'react-native-reanimated';
 
 const INNER_RADIUS = 90;
 const OUTER_RADIUS = 150;
@@ -37,7 +36,7 @@ function weightWithIndex(value: number, index: number, indexMax: number) {
 }
 
 interface ChartProps {
-  data: SharedValue<number[]>;
+  data: number[];
   frequencyBinCount: number;
 }
 
@@ -61,7 +60,7 @@ const TimeChart: React.FC<ChartProps> = (props) => {
     const startWidth = (maxWidth - 2 * INNER_RADIUS) / 2;
     const startHight = maxHeight - (maxHeight - 2 * INNER_RADIUS) / 2;
 
-    return data.value.map((value, index) => {
+    return data.map((value, index) => {
       const x = startWidth + (index * 2 * INNER_RADIUS) / frequencyBinCount;
       const y = startHight - (value / 256) * 2 * INNER_RADIUS;
 
@@ -126,7 +125,7 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
       return { color, x1, y1, x2, y2 };
     }
 
-    data.value.forEach((value, index) => {
+    data.forEach((value, index) => {
       if (index < 32 || index >= frequencyBinCount - 32) {
         return;
       }

@@ -1,12 +1,11 @@
 import React from 'react';
-import { SharedValue } from 'react-native-reanimated';
 
 import { withCanvas } from './Canvas';
 import Charts from './Charts';
 
 interface FreqTimeChartProps {
-  timeData: SharedValue<number[]>;
-  frequencyData: SharedValue<number[]>;
+  timeData: number[];
+  frequencyData: number[];
   frequencyBinCount: number;
 }
 

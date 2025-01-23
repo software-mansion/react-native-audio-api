@@ -7,7 +7,6 @@ import {
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
 
 import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
@@ -22,8 +21,10 @@ const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const times = useSharedValue<number[]>(new Array(FFT_SIZE / 2).fill(127));
-  const freqs = useSharedValue<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [times, setTimes] = useState<number[]>(
+    new Array(FFT_SIZE / 2).fill(127)
+  );
+  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -59,11 +60,11 @@ const AudioVisualizer: React.FC = () => {
 
     const timesArray = new Array(bufferLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
-    times.value = timesArray;
+    setTimes(timesArray);
 
     const freqsArray = new Array(bufferLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
-    freqs.value = freqsArray;
+    setFreqs(freqsArray);
 
     requestAnimationFrame(draw);
   };
