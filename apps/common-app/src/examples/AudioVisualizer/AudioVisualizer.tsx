@@ -12,7 +12,7 @@ import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
 import { layout } from '../../styles';
 
-const FFT_SIZE = 256;
+const FFT_SIZE = 512;
 
 const URL =
   'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
@@ -21,8 +21,11 @@ const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [times, setTimes] = useState<number[]>([]);
-  const [freqs, setFreqs] = useState<number[]>([]);
+  const [times, setTimes] = useState<number[]>(
+    new Array(FFT_SIZE / 2).fill(127)
+  );
+
+  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -75,6 +78,7 @@ const AudioVisualizer: React.FC = () => {
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = FFT_SIZE;
+      analyserRef.current.smoothingTimeConstant = 0.8;
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
@@ -102,7 +106,7 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <Container>
+    <Container disablePadding>
       <View style={{ flex: 0.2 }} />
       <FreqTimeChart
         timeData={times}
@@ -127,6 +131,11 @@ const AudioVisualizer: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   button: {
     justifyContent: 'center',
     flexDirection: 'row',

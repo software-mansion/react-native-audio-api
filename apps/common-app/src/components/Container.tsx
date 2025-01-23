@@ -8,17 +8,18 @@ import { colors } from '../styles';
 type ContainerProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   centered?: boolean;
+  disablePadding?: boolean;
 }>;
 
 const headerPadding = 120; // eyeballed
 
 const Container: React.FC<ContainerProps> = (props) => {
-  const { children, style, centered } = props;
+  const { children, style, centered, disablePadding } = props;
 
   return (
     <SafeAreaView
       edges={['bottom', 'left', 'right']}
-      style={[styles.basic, centered && styles.centered, style]}>
+      style={[styles.basic, centered && styles.centered, !disablePadding && styles.padding, style]}>
       <BGGradient />
       {children}
     </SafeAreaView>
@@ -30,9 +31,11 @@ export default Container;
 const styles = StyleSheet.create({
   basic: {
     flex: 1,
-    padding: 24,
     paddingTop: headerPadding,
     backgroundColor: colors.background,
+  },
+  padding: {
+    padding: 24,
   },
   centered: {
     alignItems: 'center',
