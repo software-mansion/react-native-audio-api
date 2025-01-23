@@ -14,7 +14,7 @@ export default class AnalyserNode extends AudioNode {
   public set fftSize(value: number) {
     if (!AnalyserNode.allowedFFTSize.includes(value)) {
       throw new IndexSizeError(
-        `Provided value (${value}) must be a power of 2 2^5 and 2^15`
+        `Provided value (${value}) must be a power of 2 between 32 and 32768`
       );
     }
 
