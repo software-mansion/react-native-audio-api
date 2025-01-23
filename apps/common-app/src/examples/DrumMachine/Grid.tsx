@@ -49,8 +49,7 @@ const Grid: React.FC = () => {
         cx={cPoint.x}
         cy={cPoint.y}
         color="transparent"
-        r={instrument.radius}
-      >
+        r={instrument.radius}>
         <Paint
           style="stroke"
           color={colors.border}
