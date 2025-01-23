@@ -134,7 +134,7 @@ const FrequencyChartLine: React.FC<ChartLineProps> = (props) => {
       }
 
       const hue = 180 + 20 * (index / frequencyBinCount);
-      const color = `hsla(${hue}, 100%, 50%, 80%)`; // '#E1F3FA';
+      const color = `hsla(${hue}, 100%, 50%, 80%)`;
 
       p.push(getPoint(index, value, color, index));
       p.push(getPoint(2 * frequencyBinCount - 65 - index, value, color, index));
