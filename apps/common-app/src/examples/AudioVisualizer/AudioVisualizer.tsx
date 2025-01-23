@@ -84,13 +84,10 @@ const AudioVisualizer: React.FC = () => {
       audioBufferRef.current = await FileSystem.downloadAsync(
         URL,
         FileSystem.documentDirectory + 'audio.mp3'
-      )
-        .then(({ uri }) => {
-          return uri.replace('file://', '');
-        })
-        .then((uri) => {
-          return audioContextRef.current!.decodeAudioDataSource(uri);
-        });
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
+
       setIsLoading(false);
     };
 
