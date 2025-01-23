@@ -9,7 +9,9 @@ import {
 } from '@shopify/react-native-skia';
 
 import { useCanvas } from './Canvas';
-import { getPointCX, getPointCY } from '../DrumMachine/utils';
+import { colors } from '../../styles';
+import { getPointCX, getPointCY, getAngle } from '../../utils/skiUtils';
+import { SharedValue } from 'react-native-reanimated';
 
 const INNER_RADIUS = 90;
 const OUTER_RADIUS = 150;
@@ -20,10 +22,6 @@ interface Point {
   x2: number;
   y2: number;
   color: string;
-}
-
-export function getAngle(stepIdx: number, maxSteps: number) {
-  return (stepIdx / maxSteps) * Math.PI * 2 - Math.PI / 2;
 }
 
 function sampleExp(value: number) {
@@ -38,19 +36,19 @@ function weightWithIndex(value: number, index: number, indexMax: number) {
   return value;
 }
 
-interface ChartLineProps {
-  data: number[];
+interface ChartProps {
+  data: SharedValue<number[]>;
   frequencyBinCount: number;
 }
 
-const TimeChartLine: React.FC<ChartLineProps> = (props) => {
+const TimeChart: React.FC<ChartProps> = (props) => {
   const { size } = useCanvas();
   const { data, frequencyBinCount } = props;
 
   const circlePaint = useMemo(() => {
     const paint = Skia.Paint();
     paint.setAntiAlias(true);
-    paint.setColor(Skia.Color('#FFD61E'));
+    paint.setColor(Skia.Color(colors.yellow));
     paint.setStyle(PaintStyle.Stroke);
     paint.setStrokeWidth(6);
     return paint;
@@ -63,7 +61,7 @@ const TimeChartLine: React.FC<ChartLineProps> = (props) => {
     const startWidth = (maxWidth - 2 * INNER_RADIUS) / 2;
     const startHight = maxHeight - (maxHeight - 2 * INNER_RADIUS) / 2;
 
-    return data.map((value, index) => {
+    return data.value.map((value, index) => {
       const x = startWidth + (index * 2 * INNER_RADIUS) / frequencyBinCount;
       const y = startHight - (value / 256) * 2 * INNER_RADIUS;
 
@@ -84,7 +82,7 @@ const TimeChartLine: React.FC<ChartLineProps> = (props) => {
   );
 };
 
-const FrequencyChartLine: React.FC<ChartLineProps> = (props) => {
+const FrequencyChart: React.FC<ChartProps> = (props) => {
   const { size } = useCanvas();
   const { data, frequencyBinCount } = props;
 
@@ -128,7 +126,7 @@ const FrequencyChartLine: React.FC<ChartLineProps> = (props) => {
       return { color, x1, y1, x2, y2 };
     }
 
-    data.forEach((value, index) => {
+    data.value.forEach((value, index) => {
       if (index < 32 || index >= frequencyBinCount - 32) {
         return;
       }
@@ -160,6 +158,6 @@ const FrequencyChartLine: React.FC<ChartLineProps> = (props) => {
 };
 
 export default {
-  TimeChartLine,
-  FrequencyChartLine,
+  TimeChart,
+  FrequencyChart,
 };

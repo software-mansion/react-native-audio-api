@@ -134,8 +134,7 @@ const Slider: React.FC<SliderProps> = (props) => {
             style={[
               styles.label,
               !!minLabelWidth && { minWidth: minLabelWidth },
-            ]}
-          >
+            ]}>
             {label}
           </Text>
           <Spacer.Horizontal size={12} />

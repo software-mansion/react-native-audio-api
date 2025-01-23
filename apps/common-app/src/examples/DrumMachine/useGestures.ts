@@ -6,7 +6,12 @@ import {
   TapGestureHandlerEventPayload,
 } from 'react-native-gesture-handler';
 
-import { getAngle, getPointCX, getPointCY, isPointInCircle } from './utils';
+import {
+  getAngle,
+  getPointCX,
+  getPointCY,
+  isPointInCircle,
+} from '../../utils/skiUtils';
 import { numBeats, buttonRadius, cPoint } from './constants';
 import type { Touché, XYWHRect } from '../../types';
 import Instruments from './instruments';
@@ -33,7 +38,7 @@ export default function useGestures(params: GestureParams) {
 
     Instruments.forEach((instrument, index) => {
       for (let i = 0; i < numBeats; i++) {
-        const angle = getAngle(i);
+        const angle = getAngle(i, numBeats);
         const x = getPointCX(angle, instrument.radius, cPoint.x);
         const y = getPointCY(angle, instrument.radius, cPoint.y);
 

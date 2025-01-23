@@ -4,7 +4,7 @@ import { Line, Circle, Paint, vec } from '@shopify/react-native-skia';
 
 import { colors } from '../../styles';
 import { numBeats, cPoint, maxSize, buttonRadius } from './constants';
-import { getAngle, getPointCX, getPointCY } from './utils';
+import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
 import type { Instrument } from '../../types';
 import instruments from './instruments';
 
@@ -12,7 +12,7 @@ const points = Array(numBeats).fill(0);
 
 const Grid: React.FC = () => {
   const renderLine = (index: number) => {
-    const angle = getAngle(index);
+    const angle = getAngle(index, numBeats);
     const x = getPointCX(angle, maxSize / 2, cPoint.x);
     const y = getPointCY(angle, maxSize / 2, cPoint.y);
 
@@ -28,7 +28,7 @@ const Grid: React.FC = () => {
   };
 
   const renderTouchPoint = (instrument: Instrument, index: number) => {
-    const angle = getAngle(index);
+    const angle = getAngle(index, numBeats);
     const x = getPointCX(angle, instrument.radius, cPoint.x);
     const y = getPointCY(angle, instrument.radius, cPoint.y);
 
