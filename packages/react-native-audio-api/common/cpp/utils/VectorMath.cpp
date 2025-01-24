@@ -693,7 +693,7 @@ void multiplyByScalarThenAddToOutput(
 
 #endif
 
-void VectorMath::linearToDecibels(
+void linearToDecibels(
     const float *inputVector,
     float *outputVector,
     size_t numberOfElementsToProcess) {

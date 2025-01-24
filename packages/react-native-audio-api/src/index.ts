@@ -97,16 +97,21 @@ export class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(node: AudioNode): void {
-    if (this.context !== node.context) {
+  public connect(destination: AudioNode): void {
+    if (this.context !== destination.context) {
       throw new Error('The AudioNodes are from different BaseAudioContexts');
     }
 
-    this.node.connect(node.node);
+    this.node.connect(destination.node);
   }
 
-  public disconnect(node: AudioNode): void {
-    this.node.disconnect(node.node);
+  public disconnect(destination?: AudioNode): void {
+    if (destination === undefined) {
+      this.node.disconnect();
+      return;
+    }
+
+    this.node.disconnect(destination.node);
   }
 }
 

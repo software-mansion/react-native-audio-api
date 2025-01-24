@@ -54,6 +54,11 @@ class AudioNodeHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(disconnect) {
+      if(args[0].isUndefined()) {
+          node_->disconnect();
+          return jsi::Value::undefined();
+      }
+
     auto node =
         args[0].getObject(runtime).getHostObject<AudioNodeHostObject>(runtime);
     node_->disconnect(std::shared_ptr<AudioNodeHostObject>(node)->node_);

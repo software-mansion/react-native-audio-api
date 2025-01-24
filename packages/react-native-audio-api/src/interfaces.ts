@@ -44,7 +44,7 @@ export interface IAudioNode {
   readonly channelInterpretation: ChannelInterpretation;
 
   connect: (node: IAudioNode) => void;
-  disconnect: (node: IAudioNode) => void;
+  disconnect: (node?: IAudioNode) => void;
 }
 
 export interface IGainNode extends IAudioNode {

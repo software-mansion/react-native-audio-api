@@ -85,16 +85,27 @@ Other cases are covered by `discrete`
 
 The `connect` method lets you connect one of the node's outputs to a destination.
 
-Arguments:
-- `destination` - The [`AudioNode`](/core/audio-node) to which to connect.
+#### Arguments:
+  - `destination`
 
-Returns `undefined`.
+  The [`AudioNode`](/core/audio-node) to which to connect.
 
-### `disconnect(destination: AudioNode)`
+#### Returns `undefined`.
 
-The `disconnect` method lets you disconnect from one of the node's outputs .
+#### Exceptions:
+  - `InvalidAccessError: Error`
 
-Arguments:
-- `destination` - The [`AudioNode`](/core/audio-node) which to disconnect from.
+  Thrown if the `destination` node is not part of the same audio context as node.
 
-Returns `undefined`.
+### `disconnect(destination?: AudioNode)`
+
+The `disconnect` method lets you disconnect one or more nodes from the node.
+
+#### Arguments:
+  - `destination` <Optional />
+
+  The [`AudioNode`](/core/audio-node) which to disconnect from.
+
+If no arguments provided node disconnects from all outgoing connections.
+
+#### Returns `undefined`.

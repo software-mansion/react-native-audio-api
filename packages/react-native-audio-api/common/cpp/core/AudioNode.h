@@ -23,6 +23,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::string getChannelCountMode() const;
   std::string getChannelInterpretation() const;
   void connect(const std::shared_ptr<AudioNode> &node);
+  void disconnect();
   void disconnect(const std::shared_ptr<AudioNode> &node);
 
   bool isEnabled() const;

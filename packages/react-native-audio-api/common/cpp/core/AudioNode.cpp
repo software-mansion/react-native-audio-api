@@ -49,6 +49,12 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
   node->onInputConnected(this);
 }
 
+void AudioNode::disconnect() {
+  for (auto &outputNode : outputNodes_) {
+    disconnectNode(outputNode);
+  }
+}
+
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   context_->getNodeManager()->addPendingConnection(
       shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);

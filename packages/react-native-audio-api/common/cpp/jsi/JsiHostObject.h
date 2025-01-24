@@ -13,7 +13,7 @@
 #define JSI_HOST_FUNCTION(NAME)  \
   jsi::Value NAME(               \
       jsi::Runtime &runtime,     \
-      const jsi::Value &thisVal, \
+      const jsi::Value &thisValue, \
       const jsi::Value *args,    \
       size_t count)
 
