@@ -1,0 +1,65 @@
+---
+sidebar_position: 1
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# AnalyserNode
+
+`AnalyserNode` interface represents a node providing two core functionalities: extracting time-domain data and frequency-domain data from audio signals.
+It is an [`AudioNode`](/core/audio-node) that passes the audio data unchanged from input to output, but allows you to take passed data and process it.
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+#### Time domain vs Frequency domain
+
+![time-domain-vs-frequency-domain](/img/time_domain_vs_frequency_domain.jpg)
+
+A time-domain graph illustrates how a signal evolves over time, displaying changes in amplitude or intensity as time progresses.
+In contrast, a frequency-domain graph reveals how the signal's energy or power is distributed across different frequency bands, highlighting the presence and strength of various frequency components over a specified range.
+
+## Properties
+
+### `fftSize`
+
+Returns unsigned long value representing size of [Fast Fourier Transform](https://en.wikipedia.org/wiki/Fast_Fourier_transform) used to determine frequency domain.
+
+#### Value
+
+Must be a power of 2 between 32 and 32768.
+
+Default value is 2048.
+
+#### Exceptions
+  - `IndexSizeError: Error`
+  Thrown if the value set is not a power of 2, or is not between 32 and 32768.
+
+### `frequencyBinCount` <ReadOnly />
+
+Returns unsigned long value representing the half of the `fftSize`. In general it is size of returning data.
+
+ADD EXCEPTIONS AND RANGES
+
+### `minDecibels`
+
+Returns double value representing the minimum value for the range of results from `getByteFrequencyData()`.
+
+### `maxDecibels`
+
+Returns double value representing the maximum value for the range of results from `getByteFrequencyData()`.
+
+### `smoothingTimeConstant`
+
+Returns double value representing averaging constant with the last analysis frame.
+In general makes transition between values over time smoother.
+
+## Methods
+
+### `getFloatFrequencyData(array: number[])`
+
+### `getByteFrequencyData(array: number[])`
+
+### `getFloatTimeDomainData(array: number[])`
+
+### `getFloatTimeDomainData(array: number[])`
