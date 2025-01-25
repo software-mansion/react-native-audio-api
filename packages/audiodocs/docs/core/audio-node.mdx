@@ -26,16 +26,16 @@ Returns the associated [`BaseAudioContext`](/core/base-audio-context).
 
 ### `numberOfInputs` <ReadOnly />
 
-Returns the number of input connections for the node. Source nodes are characterized by having a `numberOfInputs` value of 0.
+Returns unsigned int value representing the number of input connections for the node. Source nodes are characterized by having a `numberOfInputs` value of 0.
 
 ### `numberOfOutputs` <ReadOnly />
 
-Returns the number of output connections for the node. Destination nodes are characterized by having a `numberOfOutputs` value of 0.
+Returns unsigned int value representing the number of output connections for the node. Destination nodes are characterized by having a `numberOfOutputs` value of 0.
 
 
 ### `channelCount` <ReadOnly />
 
-Returns the number of channels utilized to decide how many channels are engaged during up-mixing or down-mixing with the node's inputs.
+Returns unsigned int value representing the number of channels utilized to decide how many channels are engaged during up-mixing or down-mixing with the node's inputs.
 
 The application of `channelCount` is contingent upon the channelCountMode setting:
 - If `channelCountMode` is set to max, `channelCount` is ignored.
@@ -82,31 +82,31 @@ Other cases are covered by `discrete`
 
 ## Methods
 
-### `connect(destination: AudioNode)`
+### `connect`
 
 The `connect` method lets you connect one of the node's outputs to a destination.
 
-#### Arguments:
-  - `destination`
+Parameters:
+  - `destination: AudioNode`
 
   The [`AudioNode`](/core/audio-node) to which to connect.
 
-#### Returns `undefined`.
+Returns `undefined`.
 
-#### Exceptions:
+Exceptions:
   - `InvalidAccessError: Error`
 
   Thrown if the `destination` node is not part of the same audio context as node.
 
-### `disconnect(destination?: AudioNode)`
+### `disconnect`
 
 The `disconnect` method lets you disconnect one or more nodes from the node.
 
-#### Arguments:
-  - `destination` <Optional />
+Arguments:
+  - `destination: AudioNode` <Optional />
 
   The [`AudioNode`](/core/audio-node) which to disconnect from.
 
 If no arguments provided node disconnects from all outgoing connections.
 
-#### Returns `undefined`.
+Returns `undefined`.
