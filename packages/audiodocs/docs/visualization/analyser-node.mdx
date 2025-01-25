@@ -25,13 +25,11 @@ In contrast, a frequency-domain graph reveals how the signal's energy or power i
 
 Returns unsigned long value representing size of [Fast Fourier Transform](https://en.wikipedia.org/wiki/Fast_Fourier_transform) used to determine frequency domain.
 
-#### Value
+Value:
+  - Must be a power of 2 between 32 and 32768.
+  - Default value is 2048.
 
-Must be a power of 2 between 32 and 32768.
-
-Default value is 2048.
-
-#### Exceptions
+Exceptions:
   - `IndexSizeError: Error`
   Thrown if the value set is not a power of 2, or is not between 32 and 32768.
 
@@ -39,11 +37,18 @@ Default value is 2048.
 
 Returns unsigned long value representing the half of the `fftSize`. In general it is size of returning data.
 
-ADD EXCEPTIONS AND RANGES
 
 ### `minDecibels`
 
 Returns double value representing the minimum value for the range of results from `getByteFrequencyData()`.
+
+Value:
+
+
+
+Exceptions
+  - `IndexSizeError: Error`
+  Thrown if the value set is not a power of 2, or is not between 32 and 32768.
 
 ### `maxDecibels`
 
