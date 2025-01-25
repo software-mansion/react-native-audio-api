@@ -6,17 +6,23 @@ import Charts from './Charts';
 interface FreqTimeChartProps {
   timeData: number[];
   frequencyData: number[];
+  fftSize: number;
   frequencyBinCount: number;
 }
 
 const FreqTimeChart: React.FC<FreqTimeChartProps> = (props) => {
-  const { timeData, frequencyData, frequencyBinCount } = props;
+  const { timeData, frequencyData, fftSize, frequencyBinCount } = props;
 
   return (
     <>
-      <Charts.TimeChart data={timeData} frequencyBinCount={frequencyBinCount} />
+      <Charts.TimeChart
+        data={timeData}
+        fftSize={fftSize}
+        frequencyBinCount={frequencyBinCount}
+      />
       <Charts.FrequencyChart
         data={frequencyData}
+        fftSize={fftSize}
         frequencyBinCount={frequencyBinCount}
       />
     </>

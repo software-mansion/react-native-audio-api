@@ -21,9 +21,7 @@ const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [times, setTimes] = useState<number[]>(
-    new Array(FFT_SIZE / 2).fill(127)
-  );
+  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
   const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -56,13 +54,14 @@ const AudioVisualizer: React.FC = () => {
       return;
     }
 
-    const bufferLength = analyserRef.current.frequencyBinCount;
+    const timesArrayLength = analyserRef.current.fftSize;
+    const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(bufferLength);
+    const timesArray = new Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
     setTimes(timesArray);
 
-    const freqsArray = new Array(bufferLength);
+    const freqsArray = new Array(frequencyArrayLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
     setFreqs(freqsArray);
 
@@ -107,6 +106,7 @@ const AudioVisualizer: React.FC = () => {
       <FreqTimeChart
         timeData={times}
         frequencyData={freqs}
+        fftSize={analyserRef.current?.fftSize || FFT_SIZE}
         frequencyBinCount={
           analyserRef.current?.frequencyBinCount || FFT_SIZE / 2
         }
