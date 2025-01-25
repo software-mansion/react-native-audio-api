@@ -43,28 +43,89 @@ Returns unsigned long value representing the half of the `fftSize`. In general i
 Returns double value representing the minimum value for the range of results from `getByteFrequencyData()`.
 
 Value:
+  - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
+  - Default value is -100 dB.
+  - When getting data from `getByteFrequencyData()`, any frequency with amplitude lower then `minDecibels` will be returned as 0.
 
-
-
-Exceptions
+Exceptions:
   - `IndexSizeError: Error`
-  Thrown if the value set is not a power of 2, or is not between 32 and 32768.
+  Thrown if the value of `minDecibels` is greater then or equal to `maxDecibels`.
 
 ### `maxDecibels`
 
 Returns double value representing the maximum value for the range of results from `getByteFrequencyData()`.
+
+Value:
+  - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
+  - Default value is -30 dB.
+  - When getting data from `getByteFrequencyData()`, any frequency with amplitude higher then `maxDecibels` will be returned as 255.
+
+Exceptions:
+  - `IndexSizeError: Error`
+  Thrown if the value of `maxDecibels` is less then or equal to `minDecibels`.
 
 ### `smoothingTimeConstant`
 
 Returns double value representing averaging constant with the last analysis frame.
 In general makes transition between values over time smoother.
 
+Value:
+  - From range 0 to 1.
+  - Default value is 0.8.
+  - 0 means no averaging, 1 means "overlap the previous and current buffer quite a lot while computing the value".
+
+Exceptions:
+  - `IndexSizeError: Error`
+  Thrown if the  set value of `smoothingTimeConstant` is not within the range 0-1.
+
 ## Methods
 
-### `getFloatFrequencyData(array: number[])`
+Inherits methods from its parent [`AudioNode`](/core/audio-node).
 
-### `getByteFrequencyData(array: number[])`
+### `getFloatFrequencyData`
 
-### `getFloatTimeDomainData(array: number[])`
+The `getFloatFrequencyData` method copies current frequency data into given array.
+Each value in the array represents the decibel value for a specific frequency.
 
-### `getFloatTimeDomainData(array: number[])`
+Parameters:
+  - `array: number[]`
+
+  The `number[]` to which frequency data will be copied.
+
+Returns `undefined`.
+
+### `getByteFrequencyData`
+
+The `getByteFrequencyData` method copies current frequency data into given array.
+Each value in the array is within the range 0 to 255.
+
+Parameters:
+  - `array: number[]`
+
+  The `number[]` to which frequency data will be copied.
+
+Returns `undefined`.
+
+### `getFloatTimeDomainData`
+
+The `getFloatTimeDomainData` method copies current time-domain data into given array.
+Each value in the array is the magnitude of the signal at a particular time.
+
+Parameters:
+  - `array: number[]`
+
+  The `number[]` to which frequency data will be copied.
+
+Returns `undefined`.
+
+### `getByteTimeDomainData`
+
+The `getByteTimeDomainData` method copies current time-domain data into given array.
+Each value in the array is within the range 0 to 255.
+
+Parameters:
+  - `array: number[]`
+
+  The `number[]` to which time-dominant data will be copied.
+
+Returns `undefined`.
