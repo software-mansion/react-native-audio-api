@@ -1,0 +1,21 @@
+---
+sidebar_position: 1
+---
+
+# ChannelCountMode
+
+`ChannelCountMode` type determines how the number of input channels affects the number of output channels in an audio node.
+
+**Acceptable values:**
+- `max`
+
+  The number of channels is equal to the maximum number of channels of all connections. In this case, `channelCount` is ignored and only up-mixing happens.
+
+ - `clamped-max`
+
+  The number of channels is equal to the maximum number of channels of all connections, clamped to the value of `channelCount`(serves as the maximum permissible value).
+
+- `explicit`
+
+  The number of channels is defined by the value of `channelCount`.
+
