@@ -37,12 +37,13 @@ function weightWithIndex(value: number, index: number, indexMax: number) {
 
 interface ChartProps {
   data: number[];
+  fftSize: number;
   frequencyBinCount: number;
 }
 
 const TimeChart: React.FC<ChartProps> = (props) => {
   const { size } = useCanvas();
-  const { data, frequencyBinCount } = props;
+  const { data, fftSize } = props;
 
   const circlePaint = useMemo(() => {
     const paint = Skia.Paint();
@@ -61,12 +62,12 @@ const TimeChart: React.FC<ChartProps> = (props) => {
     const startHight = maxHeight - (maxHeight - 2 * INNER_RADIUS) / 2;
 
     return data.map((value, index) => {
-      const x = startWidth + (index * 2 * INNER_RADIUS) / frequencyBinCount;
-      const y = startHight - (value / 256) * 2 * INNER_RADIUS;
+      const x = startWidth + (index * 2 * INNER_RADIUS) / fftSize;
+      const y = startHight - (value / 255) * 2 * INNER_RADIUS;
 
       return vec(x, y);
     });
-  }, [size, data, frequencyBinCount]);
+  }, [size, data, fftSize]);
 
   return (
     <>
