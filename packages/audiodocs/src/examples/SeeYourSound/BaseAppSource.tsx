@@ -1,61 +1,11 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useContext,
-  createContext,
-  PropsWithChildren
-} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas } from '@shopify/react-native-skia';
-
-interface Size {
-  width: number;
-  height: number;
-}
-
-interface CanvasContext {
-  initialized: boolean;
-  size: Size;
-}
-
-const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
-  size: { width: 0, height: 0 },
-});
-
-const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-
-  const onCanvasLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-
-    setSize({ width, height });
-  };
-
-  const context = useMemo(
-    () => ({
-      initialized: true,
-      size: { width: size.width, height: size.height },
-    }),
-    [size.width, size.height]
-  );
-
-  return (
-    <SKCanvas style={{flex: 1}} onLayout={onCanvasLayout}>
-      <CanvasContext.Provider value={context}>
-        {children}
-      </CanvasContext.Provider>
-    </SKCanvas>
-  );
-};
+import { ActivityIndicator, View, Button } from 'react-native';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -108,9 +58,6 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View>
-      <View style={{ flex: 0.2 }} />
-      <Canvas></Canvas>
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
@@ -126,7 +73,6 @@ const AudioVisualizer: React.FC = () => {
           />
         </View>
       </View>
-    </View>
   );
 };
 

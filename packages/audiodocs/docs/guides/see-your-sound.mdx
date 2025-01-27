@@ -14,98 +14,81 @@ Our exploration will lead us to create simple audio visualizer app.
 Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application that plays sound from a file.
 Simply copy and paste the provided code into your project to get started.
 
+import BaseApp from '@site/src/examples/SeeYourSound/BaseAppComponent';
+import BaseAppSrc from '!!raw-loader!@site/src/examples/SeeYourSound/BaseAppSource';
+
+<InteractiveExample component={BaseApp} src={BaseAppSrc} />
+
+## Preparing canvas
+
+In order to visualize our data we will use `Canvas` from `react-native-skia`.
+
 ```tsx
-import React, { useState, useEffect, useRef } from 'react';
-import * as FileSystem from 'expo-file-system';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useMemo,
+  createContext,
+  PropsWithChildren
+} from 'react';
 import {
   AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button } from 'react-native';
+import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
+import { Canvas as SKCanvas } from '@shopify/react-native-skia';
 
-const AudioVisualizer: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+interface Size {
+  width: number;
+  height: number;
+}
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
+interface CanvasContext {
+  initialized: boolean;
+  size: Size;
+}
 
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      bufferSourceRef.current?.stop();
-    } else {
-      if (!audioContextRef.current) {
-        return
-      }
+const CanvasContext = createContext<CanvasContext>({
+  initialized: false,
+  size: { width: 0, height: 0 },
+});
 
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
-      bufferSourceRef.current.buffer = audioBufferRef.current;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
+const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
+  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
 
-      bufferSourceRef.current.start();
-    }
+  const onCanvasLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
 
-    setIsPlaying((prev) => !prev);
+    setSize({ width, height });
   };
 
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    const fetchBuffer = async () => {
-      setIsLoading(true);
-      audioBufferRef.current = await FileSystem.downloadAsync(
-        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3',
-        FileSystem.documentDirectory + 'example-see-your-sound.mp3'
-      ).then(({ uri }) => {
-        return audioContextRef.current!.decodeAudioDataSource(uri);
-      });
-
-      setIsLoading(false);
-    };
-
-    fetchBuffer();
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
+  const context = useMemo(
+    () => ({
+      initialized: true,
+      size: { width: size.width, height: size.height },
+    }),
+    [size.width, size.height]
+  );
 
   return (
-      <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
-        {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
-            justifyContent: 'center',
-            flexDirection: 'row',
-            marginTop: 16,
-          }}>
-        <Button
-            onPress={handlePlayPause}
-            title={isPlaying ? 'Pause' : 'Play'}
-            disabled={!audioBufferRef.current}
-          />
-        </View>
-      </View>
+    <SKCanvas style={{flex: 1}} onLayout={onCanvasLayout}>
+      <CanvasContext.Provider value={context}>
+        {children}
+      </CanvasContext.Provider>
+    </SKCanvas>
   );
 };
-
-export default AudioVisualizer;
 ```
 
-## Preparing canvas
+import Canvas from '@site/src/examples/SeeYourSound/CanvasComponent';
+import CanvasSrc from '!!raw-loader!@site/src/examples/SeeYourSound/CanvasSource';
 
-In order to visualize our data we will use `SKCanvas` from `react-native-skia.
+<InteractiveExample component={Canvas} src={CanvasSrc} />
 
-## AAA
-
-import SeeYourSound from '@site/src/examples/SeeYourSound/FinalComponent';
-import SeeYourSoundSrc from '!!raw-loader!@site/src/examples/SeeYourSound/FinalSource';
-
-<InteractiveExample component={SeeYourSound} src={SeeYourSoundSrc} />
+## Create `AnalyserNode` and get frequency and time-domain data
 
 ## What's next?
 

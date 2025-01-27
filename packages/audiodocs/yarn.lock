@@ -2615,7 +2615,7 @@
   resolved "https://registry.yarnpkg.com/@resvg/resvg-wasm/-/resvg-wasm-2.4.0.tgz#e01164b9a267c822e1ff797daa2fb91b663ea6f0"
   integrity sha512-C7c51Nn4yTxXFKvgh2txJFNweaVcfUPQxwEUFw4aWsCmfiBDJsTSwviIF8EcwjQ6k8bPyMWCl1vw4BdxE569Cg==
 
-"@shopify/react-native-skia@*":
+"@shopify/react-native-skia@1.10.2":
   version "1.10.2"
   resolved "https://registry.yarnpkg.com/@shopify/react-native-skia/-/react-native-skia-1.10.2.tgz#ff3e09ba6b65a795a815e72c27a6c919ffd89a52"
   integrity sha512-EP2uqMLEUL9FlqBgKoYTJyqxFsLKJjoXTYQ45/haV0XjM179BY6V4xhoctn/EyuSFFAGuPu6++XXqXqH/D/YEw==

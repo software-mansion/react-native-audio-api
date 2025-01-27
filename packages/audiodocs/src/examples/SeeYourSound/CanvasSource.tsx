@@ -2,12 +2,11 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useMemo,
   useContext,
+  useMemo,
   createContext,
   PropsWithChildren
 } from 'react';
-import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AudioBuffer,
@@ -90,8 +89,8 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!
-        .decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+
       setIsLoading(false);
     };
 
@@ -105,7 +104,8 @@ const AudioVisualizer: React.FC = () => {
   return (
     <View>
       <View style={{ flex: 0.2 }} />
-      {/* <Canvas></Canvas> */}
+      <Canvas>
+      </Canvas>
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}

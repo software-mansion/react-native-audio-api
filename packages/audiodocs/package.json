@@ -30,7 +30,7 @@
     "@mdx-js/react": "^1.6.22",
     "@mui/material": "^5.12.0",
     "@swmansion/t-rex-ui": "^0.0.13",
-    "@shopify/react-native-skia": "*",
+    "@shopify/react-native-skia": "1.10.2",
     "@vercel/og": "^0.6.2",
     "babel-polyfill": "^6.26.0",
     "babel-preset-expo": "^9.2.2",
