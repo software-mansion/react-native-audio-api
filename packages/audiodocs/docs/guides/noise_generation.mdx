@@ -6,7 +6,32 @@ import InteractiveExample from '@site/src/components/InteractiveExample';
 
 # Noise generation
 
+Noise is one of the most basic and common tools in digital audio processing, in this guide, we will go through most common noise types and how to implement them using web audio api.
+
 ## White noise
+
+The most used type of noise. White is a random signal having equal intensity at different frequencies, giving it a constant [power spectral density. (Wikipedia)](https://en.wikipedia.org/wiki/Spectral_density#Power_spectral_density).
+
+To produce white noise, we simply create an `AudioBuffer` containing random samples in range of `[-1; 1]` (in which audio api operates), which can be used by `AudioBufferSourceNode` for playback, further filtering or modification
+
+```tsx
+function createWhiteNoise() {
+  const aCtx = = new AudioContext();
+  const bufferSize = aCtx.sampleRate * 2;
+  const output = new Array<number>(bufferSize);
+
+  for (let i = 0; i < bufferSize; i += 1) {
+    output[i] = Math.random() * 2 - 1;
+  }
+
+  const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
+  noiseBuffer.copyToChannel(output, 0, 0);
+
+  return noiseBuffer;
+}
+```
+
+Usually we want the noise to be able to be played constantly. To achieve this we are generating 2 seconds of the noise sound, which we will later loop using the `AudioBufferSourceNode` properties. In audio processing `sampleRate` means number of samples that will be played during one second, thus we simply multiply this value by `2` to achieve desired length of the buffer.
 
 import WhiteNoise from '@site/src/examples/NoiseGeneration/WhiteNoiseComponent';
 import WhiteNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/WhiteNoiseSource';
@@ -15,6 +40,43 @@ import WhiteNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/White
 
 ## Pink noise
 
+Pink noise, also known as 1/f noise (where "f" stands for frequency), is a type of signal or sound that has equal energy per octave. This means that the power spectral density (PSD) decreases inversely with frequency. In simpler terms, pink noise has more energy at lower frequencies and less energy at higher frequencies, which makes it sound softer and more balanced to the human ear than white noise.
+
+To generate pink noise, we will use the effects of a $\dfrac{-3dB}{octave}$ filter using the [Paul Kellet's refined method](https://www.musicdsp.org/en/latest/Filters/76-pink-noise-filter.html)
+
+```tsx
+const createPinkNoise = () => {
+  const aCtx = new AudioContext();
+
+  const bufferSize = 2 * aCtx.sampleRate;
+  const output = new Array<number>(bufferSize);
+
+  let b0, b1, b2, b3, b4, b5, b6;
+  b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+
+  for (let i = 0; i < bufferSize; i += 1) {
+    const white = Math.random() * 2 - 1;
+
+    b0 = 0.99886 * b0 + white * 0.0555179;
+    b1 = 0.99332 * b1 + white * 0.0750759;
+    b2 = 0.969 * b2 + white * 0.153852;
+    b3 = 0.8665 * b3 + white * 0.3104856;
+    b4 = 0.55 * b4 + white * 0.5329522;
+    b5 = -0.7616 * b5 - white * 0.016898;
+
+    output[i] = 0.11 * (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362);
+    b6 = white * 0.115926;
+  }
+
+  const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
+  noiseBuffer.copyToChannel(output, 0, 0);
+
+  return noiseBuffer;
+}
+```
+
+You can find more information about pink noise generation here: [https://www.firstpr.com.au/dsp/pink-noise/](https://www.firstpr.com.au/dsp/pink-noise/)
+
 import PinkNoise from '@site/src/examples/NoiseGeneration/PinkNoiseComponent';
 import PinkNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/PinkNoiseSource';
 
@@ -22,7 +84,37 @@ import PinkNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/PinkNo
 
 ## Brownian noise
 
+The last noise type I would like to describe is brownian noise (also known as Brown or red noise). Brownian noise is named after the Brownian motion phenomenon, where particles inside a fluid move randomly due to collisions with other particles. It relates to its sonic counterpart in that Brownian noise is characterized by a significant presence of low frequencies, with energy decreasing as the frequency increases. Brownian noise is believed to sound like waterfall.
+
+Brownian noise, similarly to pink one, decreases in power by $\dfrac{12dB}{octave}$ and sounds similar to waterfall. The implementation is taken from article by Zach Denton, [How to Generate Noise with the Web Audio API](https://noisehack.com/generate-noise-web-audio-api/):
+
+```tsx
+  const createBrownianNoise = () => {
+    const aCtx = new AudioContext();
+
+    const bufferSize = 2 * aCtx.sampleRate;
+    const output = new Array<number>(bufferSize);
+    let lastOut = 0.0;
+
+    for (let i = 0; i < bufferSize; i += 1) {
+      const white = Math.random() * 2 - 1;
+      output[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = output[i];
+      output[i] *= 3.5;
+    }
+
+    const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
+    noiseBuffer.copyToChannel(output, 0, 0);
+
+    return noiseBuffer;
+  }
+```
+
 import BrownianNoise from '@site/src/examples/NoiseGeneration/BrownianNoiseComponent';
 import BrownianNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/BrownianNoiseSource';
 
 <InteractiveExample component={BrownianNoise} src={BrownianNoiseSrc} />
+
+## What's next?
+
+[fill after merge :)]
