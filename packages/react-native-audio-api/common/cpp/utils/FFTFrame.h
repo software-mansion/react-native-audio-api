@@ -31,22 +31,24 @@
 #include <algorithm>
 #include <cmath>
 #include <utility>
+#include <unordered_map>
 
 #include "VectorMath.h"
+
+#if defined(HAVE_ACCELERATE)
+#include <Accelerate/Accelerate.h>
+#endif
+
+#if defined(ANDROID)
+#include <fftw3.h>
+#endif
 
 namespace audioapi {
 
 class FFTFrame {
  public:
-  explicit FFTFrame(int size)
-      : size_(size),
-        log2Size_(static_cast<int>(log2(size))),
-        realData_(new float[size]),
-        imaginaryData_(new float[size]) {}
-  ~FFTFrame() {
-    delete[] realData_;
-    delete[] imaginaryData_;
-  }
+  explicit FFTFrame(int size);
+  ~FFTFrame();
 
   [[nodiscard]] float *getRealData() const {
     return realData_;
@@ -55,13 +57,26 @@ class FFTFrame {
     return imaginaryData_;
   }
 
-  void inverse(float *data);
+  void doFFT(float *data);
+
+  void doInverseFFT(float *data);
 
  private:
   int size_;
   int log2Size_;
   float *realData_;
   float *imaginaryData_;
+
+#if defined(HAVE_ACCELERATE)
+    FFTSetup fftSetup_;
+    DSPSplitComplex frame_;
+
+    static FFTSetup getFFTSetupForSize(size_t log2FFTSize);
+#endif
+
+#if defined(ANDROID)
+    fftwf_complex *frame_;
+#endif
 };
 
 } // namespace audioapi

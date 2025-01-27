@@ -4,7 +4,7 @@ import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { Instrument, PlayingInstruments } from '../../types';
 import { cPoint, buttonRadius } from './constants';
-import { getPointCX, getPointCY } from './utils';
+import { getPointCX, getPointCY } from '../../utils/skiUtils';
 import instruments from './instruments';
 
 interface NotesHighlightProps {

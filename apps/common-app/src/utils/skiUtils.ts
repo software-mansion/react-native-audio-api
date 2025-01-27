@@ -1,9 +1,7 @@
-import { numBeats } from './constants';
-
-export function getAngle(stepIdx: number) {
+export function getAngle(stepIdx: number, maxSteps: number) {
   'worklet';
 
-  return (stepIdx / numBeats) * Math.PI * 2 - Math.PI / 2;
+  return (stepIdx / maxSteps) * Math.PI * 2 - Math.PI / 2;
 }
 
 export function getPointCX(angle: number, radius: number, outerCX: number) {

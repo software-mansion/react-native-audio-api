@@ -9,6 +9,7 @@ export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioContext } from './core/AudioContext';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';
 export { default as AudioNode } from './core/AudioNode';
+export { default as AnalyserNode } from './core/AnalyserNode';
 export { default as AudioParam } from './core/AudioParam';
 export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
 export { default as BaseAudioContext } from './core/BaseAudioContext';

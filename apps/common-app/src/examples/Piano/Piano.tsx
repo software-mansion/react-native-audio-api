@@ -20,24 +20,19 @@ const Piano: FC = () => {
     notesRef.current?.[key].stop();
   };
 
-  useEffect(() => {}, []);
-
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     Object.entries(sources).forEach(async ([key, url]) => {
       bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
         url,
         FileSystem.documentDirectory + key.replace('#', 's') + '.mp3'
-      )
-        .then(({ uri }) => {
-          return uri.replace('file://', '');
-        })
-        .then((uri) => {
-          return audioContextRef.current!.decodeAudioDataSource(uri);
-        });
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
     });
 
     const newNotes: Partial<Record<KeyName, PianoNote>> = {};

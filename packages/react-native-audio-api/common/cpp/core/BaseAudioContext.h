@@ -22,6 +22,7 @@ class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
+class AnalyserNode;
 
 #ifdef ANDROID
 class AudioPlayer;
@@ -53,6 +54,7 @@ class BaseAudioContext {
       float *imag,
       bool disableNormalization,
       int length);
+  std::shared_ptr<AnalyserNode> createAnalyser();
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);

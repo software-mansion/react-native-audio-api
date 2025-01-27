@@ -10,46 +10,92 @@
 
 namespace audioapi {
 #if defined(HAVE_ACCELERATE)
+static std::unordered_map<size_t, FFTSetup> fftSetups_;
 
-void FFTFrame::inverse(float *timeDomainData) {
-  FFTSetup fftSetup_ = vDSP_create_fftsetup(log2Size_, FFT_RADIX2);
-  DSPSplitComplex freqDomainData;
-  freqDomainData.realp = realData_;
-  freqDomainData.imagp = imaginaryData_;
+FFTFrame::FFTFrame(int size)
+    : size_(size),
+      log2Size_(static_cast<int>(log2(size))),
+      realData_(new float[size]),
+      imaginaryData_(new float[size]) {
+  fftSetup_ = getFFTSetupForSize(log2Size_);
+  frame_.realp = realData_;
+  frame_.imagp = imaginaryData_;
+}
 
-  vDSP_fft_zrip(fftSetup_, &freqDomainData, 1, log2Size_, FFT_INVERSE);
-  vDSP_ztoc(
-      &freqDomainData,
-      1,
-      reinterpret_cast<DSPComplex *>(timeDomainData),
-      2,
-      size_ / 2);
+FFTFrame::~FFTFrame() {
+  delete[] realData_;
+  delete[] imaginaryData_;
+}
+
+FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
+  if (!fftSetups_.contains(log2FFTSize)) {
+    fftSetups_.emplace(
+        log2FFTSize, vDSP_create_fftsetup(log2FFTSize, FFT_RADIX2));
+  }
+
+  return fftSetups_.at(log2FFTSize);
+}
+
+void FFTFrame::doFFT(float *data) {
+  vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &frame_, 1, size_ / 2);
+  vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_FORWARD);
+
+  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+}
+
+void FFTFrame::doInverseFFT(float *data) {
+  vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_INVERSE);
+  vDSP_ztoc(&frame_, 1, reinterpret_cast<DSPComplex *>(data), 2, size_ / 2);
 
   // Scale the FFT data, beacuse of
   // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/vDSP_Programming_Guide/UsingFourierTransforms/UsingFourierTransforms.html#//apple_ref/doc/uid/TP40005147-CH3-15892
   VectorMath::multiplyByScalar(
-      timeDomainData, 1.0f / static_cast<float>(size_), timeDomainData, size_);
-
-  vDSP_destroy_fftsetup(fftSetup_);
+      data, 1.0f / static_cast<float>(size_), data, size_);
 }
 
 #elif defined(ANDROID)
 
-void FFTFrame::inverse(float *timeDomainData) {
-  fftwf_complex *freqDomainData = fftwf_alloc_complex(size_ / 2);
-  for (int i = 0; i < size_ / 2; i++) {
-    freqDomainData[i][0] = realData_[i];
-    freqDomainData[i][1] = imaginaryData_[i];
-  }
+FFTFrame::FFTFrame(int size)
+    : size_(size),
+      log2Size_(static_cast<int>(log2(size))),
+      realData_(new float[size]),
+      imaginaryData_(new float[size]) {
+  frame_ = fftwf_alloc_complex(size / 2);
+}
 
-  auto plan = fftwf_plan_dft_c2r_1d(
-      size_, freqDomainData, timeDomainData, FFTW_ESTIMATE);
+FFTFrame::~FFTFrame() {
+  delete[] realData_;
+  delete[] imaginaryData_;
+  fftwf_free(frame_);
+}
+
+void FFTFrame::doFFT(float *data) {
+  auto plan = fftwf_plan_dft_r2c_1d(size_, data, frame_, FFTW_ESTIMATE);
   fftwf_execute(plan);
   fftwf_destroy_plan(plan);
-  fftwf_free(freqDomainData);
+
+  for (int i = 0; i < size_ / 2; ++i) {
+    realData_[i] = frame_[i][0];
+    imaginaryData_[i] = frame_[i][1];
+  }
+
+  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+}
+
+void FFTFrame::doInverseFFT(float *data) {
+  for (int i = 0; i < size_ / 2; i++) {
+    frame_[i][0] = realData_[i];
+    frame_[i][1] = imaginaryData_[i];
+  }
+
+  auto plan = fftwf_plan_dft_c2r_1d(size_, frame_, data, FFTW_ESTIMATE);
+  fftwf_execute(plan);
+  fftwf_destroy_plan(plan);
 
   VectorMath::multiplyByScalar(
-      timeDomainData, 1.0f / static_cast<float>(size_), timeDomainData, size_);
+      data, 1.0f / static_cast<float>(size_), data, size_);
 }
 
 #endif

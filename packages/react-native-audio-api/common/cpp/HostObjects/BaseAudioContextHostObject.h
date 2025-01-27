@@ -17,6 +17,7 @@
 #include "OscillatorNodeHostObject.h"
 #include "PeriodicWaveHostObject.h"
 #include "StereoPannerNodeHostObject.h"
+#include "AnalyserNodeHostObject.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -41,6 +42,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
   }
 
@@ -129,6 +131,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto periodicWaveHostObject =
         std::make_shared<PeriodicWaveHostObject>(periodicWave);
     return jsi::Object::createFromHostObject(runtime, periodicWaveHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createAnalyser) {
+    auto analyser = context_->createAnalyser();
+    auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
+    return jsi::Object::createFromHostObject(runtime, analyserHostObject);
   }
 
   JSI_HOST_FUNCTION(decodeAudioDataSource) {

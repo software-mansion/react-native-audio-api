@@ -6,6 +6,7 @@ import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
 import AudioFile from './AudioFile';
+import AudioVisualizer from './AudioVisualizer';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -14,6 +15,7 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  AudioVisualizer: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -62,5 +64,11 @@ export const Examples: Example[] = [
     title: 'Audio File',
     subtitle: 'Play an audio file',
     screen: AudioFile,
+  },
+  {
+    key: 'AudioVisualizer',
+    title: 'Audio Visualizer',
+    subtitle: 'Visualize audio data',
+    screen: AudioVisualizer,
   },
 ] as const;

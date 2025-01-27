@@ -110,6 +110,48 @@ export class AudioNode {
   }
 }
 
+export class AnalyserNode extends AudioNode {
+  fftSize: number;
+  readonly frequencyBinCount: number;
+  minDecibels: number;
+  maxDecibels: number;
+  smoothingTimeConstant: number;
+
+  constructor(context: AudioContext, node: globalThis.AnalyserNode) {
+    super(context, node);
+
+    this.fftSize = node.fftSize;
+    this.frequencyBinCount = node.frequencyBinCount;
+    this.minDecibels = node.minDecibels;
+    this.maxDecibels = node.maxDecibels;
+    this.smoothingTimeConstant = node.smoothingTimeConstant;
+  }
+
+  public getByteFrequencyData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(
+      new Uint8Array(array)
+    );
+  }
+
+  public getByteTimeDomainData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(
+      new Uint8Array(array)
+    );
+  }
+
+  public getFloatFrequencyData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(
+      new Float32Array(array)
+    );
+  }
+
+  public getFloatTimeDomainData(array: number[]): void {
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(
+      new Float32Array(array)
+    );
+  }
+}
+
 export class AudioScheduledSourceNode extends AudioNode {
   private hasBeenStarted: boolean = false;
 
@@ -426,6 +468,10 @@ export class AudioContext {
     return new PeriodicWave(
       this.context.createPeriodicWave(real, imag, constraints)
     );
+  }
+
+  createAnalyser(): AnalyserNode {
+    return new AnalyserNode(this, this.context.createAnalyser());
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

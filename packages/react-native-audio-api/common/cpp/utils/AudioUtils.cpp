@@ -23,4 +23,11 @@ float linearInterpolate(
       factor * (source[secondIndex] - source[firstIndex]);
 }
 
+float linearToDecibels(float value) {
+  return 20 * log10f(value);
+}
+
+float decibelsToLinear(float value) {
+  return powf(10, value / 20);
+}
 } // namespace audioapi::AudioUtils
