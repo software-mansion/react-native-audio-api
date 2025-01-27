@@ -6,7 +6,7 @@ import {
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import FreqTimeChart from './FreqTimeChart';
 import { Container, Button } from '../../components';
@@ -114,7 +114,12 @@ const AudioVisualizer: React.FC = () => {
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={styles.button}>
+        <View
+          style={{
+            justifyContent: 'center',
+            flexDirection: 'row',
+            marginTop: layout.spacing * 2,
+          }}>
           <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
@@ -125,18 +130,5 @@ const AudioVisualizer: React.FC = () => {
     </Container>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  button: {
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginTop: layout.spacing * 2,
-  },
-});
 
 export default AudioVisualizer;
