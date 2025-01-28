@@ -12,73 +12,22 @@ Each `AudioNode` is associated with a certain number of audio channels that faci
 We usually represent the channels with the standard abbreviations detailed in the table below:
 
 | Name | Number of channels | Channels |
-| :----: | :------------------: | :--------: |
+| :----: | :------: | :-------- |
 | Mono | 1 | 0: M - mono |
-| Stereo | 2 | 0: L - left <br /> 1: R -right |
+| Stereo | 2 | 0: L - left <br /> 1: R - right |
 | Quad | 4 | 0: L - left <br /> 1: R - right <br /> 2: SL - surround left <br /> 3: SR - surround right |
-| Stereo | 6 | 0: L - left <br /> 1: R - right <br /> 2: C - center <br /> 3: LFE - subwoofer <br /> 4: SL - surround left <br /> 4: SR - surround right |
+| Stereo | 6 | 0: L - left <br /> 1: R - right <br /> 2: C - center <br /> 3: LFE - subwoofer <br /> 4: SL - surround left <br /> 5: SR - surround right |
 
-## Properties
+## Read-only properties
 
-### `context` <ReadOnly />
-
-Returns the associated [`BaseAudioContext`](/core/base-audio-context).
-
-### `numberOfInputs` <ReadOnly />
-
-Returns unsigned int value representing the number of input connections for the node. Source nodes are characterized by having a `numberOfInputs` value of 0.
-
-### `numberOfOutputs` <ReadOnly />
-
-Returns unsigned int value representing the number of output connections for the node. Destination nodes are characterized by having a `numberOfOutputs` value of 0.
-
-
-### `channelCount` <ReadOnly />
-
-Returns unsigned int value representing the number of channels utilized to decide how many channels are engaged during up-mixing or down-mixing with the node's inputs.
-
-The application of `channelCount` is contingent upon the channelCountMode setting:
-- If `channelCountMode` is set to max, `channelCount` is ignored.
-- If `channelCountMode` is set to clamped-max, `channelCount` serves as the maximum permissible value.
-- If channelCountMode` is set to explicit, `channelCount` specifies the exact number of channels to be used.
-
-### `channelCountMode` <ReadOnly />
-
-Returns an enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs.
-
-Possible values: `max`, `clamped-max`, `explicit`.
-
-### `channelInterpretation` <ReadOnly />
-
-Returns an enumerated value that specifies how input channels are mapped to output channels when number of them is different.
-
-Possible values: `speakers`, `discrete`
-
-#### `speakers`
-
-| Number of input channels | Number of output channels | Mixing rules |
-| :------------------------: |:-------------------------: | :------------: |
-| 1 (Mono) | 2 (Stereo) | output.L = input.M <br /> output.R = input.M |
-| 1 (Mono) | 4 (Quad) | output.L = input.M <br /> output.R = input.M <br /> output.SL = 0 <br /> output.SR = 0 |
-| 1 (Mono) | 6 (5.1) | output.L = 0 <br /> output.R = 0 <br /> output.C = input.M <br /> output.LFE = 0 <br /> output.SL = 0 <br /> output.SR = 0 |
-| 2 (Stereo) | 1 (Mono) | output.M = 0.5 \* (input.L + input.R) |
-| 2 (Stereo) | 4 (Quad) | output.L = input.L <br /> output.R = input.R <br /> output.SL = 0 <br /> output.SR = 0 |
-| 2 (Stereo) | 6 (5.1) | output.L = input.L <br /> output.R = input.R <br /> output.C = 0 <br /> output.LFE = 0 <br /> output.SL = 0 <br /> output.SR = 0 |
-| 4 (Quad) | 1 (Mono) | output.M = 0.25 \* (input.L + input.R + input.SL + input.SR) |
-| 4 (Quad) | 2 (Stereo) | output.L = 0.5 \* (input.L + input.SL) <br /> output.R = 0.5 \* (input.R + input.SR) |
-| 4 (Quad) | 6 (5.1) | output.L = input.L <br /> output.R = input.R <br /> output.C = 0 <br /> output.LFE = 0 <br /> output.SL = input.SL <br /> output.SR = input.SR |
-| 6 (5.1) | 1 (Mono) | output.M = 0.7071 \* (input.L + input.R) + input.C <br /> + 0.5 \* (input.SL + input.SR) |
-| 6 (5.1) | 2 (Stereo) | output.L = input.L + 0.7071 \* (input.C + input.SL) <br /> output.R = input.R + 0.7071 \* (input.C + input.SR) |
-| 6 (5.1) | 4 (Quad) | output.L = input.L + 0.7071 \* input.C <br /> output.R = input.R + 0.7071 \* input.C <br /> output.SL = input.SL <br /> output.SR = input.SR |
-
-Other cases are covered by `discrete`
-
-#### `discrete`
-
-| Number of input channels | Number of output channels | Mixing rules |
-| :------------------------: | :-------------------------: | :------------: |
-| x | y where y > x | Fill each output channel with its counterpart(channel with same number), rest of output channels are silent channels |
-| x | y where y < x | Fill each output channel with its counterpart(channel with same number), rest of input channels are skipped |
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `context` | [`BaseAudioContext`](/core/base-audio-context) | Returns the associated context. |
+| `numberOfInputs` | `number` | Returns value representing the number of input connections for the node. Source nodes are characterized by having a `numberOfInputs` value of 0. |
+| `numberOfOutputs` | `number` | Returns value representing the number of output connections for the node. Destination nodes are characterized by having a `numberOfOutputs` value of 0. |
+| `channelCount` | `number` | Returns value representing the number of channels utilized to decide how many channels are engaged during up-mixing or down-mixing with the node's inputs. |
+| `channelCountMode` | [`ChannelCountMode`](/types/channel-count-mode) | Returns an enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. |
+| `channelInterpretation` | [`ChannelInterpretation`](/types/channel-interpretation) | Returns an enumerated value that specifies how input channels are mapped to output channels when number of them is different. |
 
 ## Methods
 
@@ -86,27 +35,20 @@ Other cases are covered by `discrete`
 
 The `connect` method lets you connect one of the node's outputs to a destination.
 
-Parameters:
-  - `destination: AudioNode`
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `destination` | [`AudioNode`](/core/audio-node) | Audio node to which to connect. |
 
-  The [`AudioNode`](/core/audio-node) to which to connect.
-
-Returns `undefined`.
-
-Exceptions:
-  - `InvalidAccessError: Error`
-
-  Thrown if the `destination` node is not part of the same audio context as node.
+**Returns** `undefined`.
 
 ### `disconnect`
 
 The `disconnect` method lets you disconnect one or more nodes from the node.
 
-Parameters:
-  - `destination: AudioNode` <Optional />
-
-  The [`AudioNode`](/core/audio-node) which to disconnect from.
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `destination` <Optional /> | [`AudioNode`](/core/audio-node) | Audio node to which to connect. |
 
 If no arguments provided node disconnects from all outgoing connections.
 
-Returns `undefined`.
+**Returns** `undefined`.

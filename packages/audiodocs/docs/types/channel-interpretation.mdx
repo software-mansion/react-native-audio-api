@@ -1,0 +1,45 @@
+---
+sidebar_position: 2
+---
+
+# ChannelInterpretation
+
+`ChannelInterpretation` type specifies how input channels are mapped out to output channels when the number of them are different.
+
+**Acceptable values:**
+  - `speakers`
+
+  Use set of standard mapping rules for all combinations of common input and output setups.
+
+  - `discrete`
+
+  Covers all other cases. Mapping depends on relationship between number of input channels and number of output channels.
+
+
+## Channels mapping table
+
+### `speakers`
+
+| Number of input channels | Number of output channels | Mixing rules |
+| :------------------------: | :------------------------- | :------------ |
+| 1 (Mono) | 2 (Stereo) | output.L = input.M <br /> output.R = input.M |
+| 1 (Mono) | 4 (Quad) | output.L = input.M <br /> output.R = input.M <br /> output.SL = 0 <br /> output.SR = 0 |
+| 1 (Mono) | 6 (5.1) | output.L = 0 <br /> output.R = 0 <br /> output.C = input.M <br /> output.LFE = 0 <br /> output.SL = 0 <br /> output.SR = 0 |
+| 2 (Stereo) | 1 (Mono) | output.M = 0.5 \* (input.L + input.R) |
+| 2 (Stereo) | 4 (Quad) | output.L = input.L <br /> output.R = input.R <br /> output.SL = 0 <br /> output.SR = 0 |
+| 2 (Stereo) | 6 (5.1) | output.L = input.L <br /> output.R = input.R <br /> output.C = 0 <br /> output.LFE = 0 <br /> output.SL = 0 <br /> output.SR = 0 |
+| 4 (Quad) | 1 (Mono) | output.M = 0.25 \* (input.L + input.R + input.SL + input.SR) |
+| 4 (Quad) | 2 (Stereo) | output.L = 0.5 \* (input.L + input.SL) <br /> output.R = 0.5 \* (input.R + input.SR) |
+| 4 (Quad) | 6 (5.1) | output.L = input.L <br /> output.R = input.R <br /> output.C = 0 <br /> output.LFE = 0 <br /> output.SL = input.SL <br /> output.SR = input.SR |
+| 6 (5.1) | 1 (Mono) | output.M = 0.7071 \* (input.L + input.R) + input.C <br /> + 0.5 \* (input.SL + input.SR) |
+| 6 (5.1) | 2 (Stereo) | output.L = input.L + 0.7071 \* (input.C + input.SL) <br /> output.R = input.R + 0.7071 \* (input.C + input.SR) |
+| 6 (5.1) | 4 (Quad) | output.L = input.L + 0.7071 \* input.C <br /> output.R = input.R + 0.7071 \* input.C <br /> output.SL = input.SL <br /> output.SR = input.SR |
+
+### `discrete`
+
+| Number of input channels | Number of output channels | Mixing rules |
+| :------------------------: | :------------------------- | :------------ |
+| x | y where y > x | Fill each output channel with its counterpart(channel with same number), rest of output channels are silent channels |
+| x | y where y < x | Fill each output channel with its counterpart(channel with same number), rest of input channels are skipped |
+
+
