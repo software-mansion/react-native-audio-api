@@ -6,89 +6,43 @@ import InteractiveExample from '@site/src/components/InteractiveExample';
 
 # See your sound
 
-In this section, we explore the capabilities of the `AnalyserNode` interface, focusing on techniques for extracting, processing, and visualizing audio data.
+In this section, we explore the capabilities of the [`AnalyserNode`](/visualization/analyser-node) interface, focusing on techniques for extracting, processing, and visualizing audio data.
 Our exploration will lead us to create simple audio visualizer app.
 
 ## Base application
 
-Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application that plays sound from a file.
-Simply copy and paste the provided code into your project to get started.
+Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application designed to play sound from a file.
+In addiction we will utilize `Canvas` from `react-native-skia` to visually represent our sound. To begin, simply copy and paste the code provided below into your project.
 
-import BaseApp from '@site/src/examples/SeeYourSound/BaseAppComponent';
-import BaseAppSrc from '!!raw-loader!@site/src/examples/SeeYourSound/BaseAppSource';
+import Base from '@site/src/examples/SeeYourSound/BaseComponent';
+import BaseSrc from '!!raw-loader!@site/src/examples/SeeYourSound/BaseSource';
 
-<InteractiveExample component={BaseApp} src={BaseAppSrc} />
+<InteractiveExample component={Base} src={BaseSrc} />
 
-## Preparing canvas
+## Create an analyzer to capture and process time-domain and frequency data in real-time
 
-In order to visualize our data we will use `Canvas` from `react-native-skia`.
+To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`](/visualization/analyser-node).
+It is an [`AudioNode`](/core/audio-node) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
+We will use two specific [`AnalyserNode's`](/visualization/analyser-node) methods: [`getByteTimeDomainData`](/visualization/analyser-node#getbytetimedomaindata) and [`getByteFrequencyData`](/visualization/analyser-node#getbytefrequencydata).
+These methods will allow us to acquire the necessary data for our analysis.
 
-```tsx
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useContext,
-  useMemo,
-  createContext,
-  PropsWithChildren
-} from 'react';
-import {
-  AudioContext,
-  AudioBuffer,
-  AudioBufferSourceNode,
-} from 'react-native-audio-api';
-import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas } from '@shopify/react-native-skia';
+[code]
 
-interface Size {
-  width: number;
-  height: number;
-}
+## Visualize time-domain data
 
-interface CanvasContext {
-  initialized: boolean;
-  size: Size;
-}
+[description]
 
-const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
-  size: { width: 0, height: 0 },
-});
+[img]
 
-const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
+[example]
 
-  const onCanvasLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
+## Visualize frequency data
 
-    setSize({ width, height });
-  };
+[description]
 
-  const context = useMemo(
-    () => ({
-      initialized: true,
-      size: { width: size.width, height: size.height },
-    }),
-    [size.width, size.height]
-  );
+[img]
 
-  return (
-    <SKCanvas style={{flex: 1}} onLayout={onCanvasLayout}>
-      <CanvasContext.Provider value={context}>
-        {children}
-      </CanvasContext.Provider>
-    </SKCanvas>
-  );
-};
-```
-
-import Canvas from '@site/src/examples/SeeYourSound/CanvasComponent';
-import CanvasSrc from '!!raw-loader!@site/src/examples/SeeYourSound/CanvasSource';
-
-<InteractiveExample component={Canvas} src={CanvasSrc} />
-
-## Create `AnalyserNode` and get frequency and time-domain data
+[example]
 
 ## What's next?
 
