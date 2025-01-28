@@ -1,20 +1,3 @@
----
-sidebar_position: 5
----
-
-import InteractiveExample from '@site/src/components/InteractiveExample';
-
-# See your sound
-
-In this section, we explore the capabilities of the [`AnalyserNode`](/visualization/analyser-node) interface, focusing on techniques for extracting, processing, and visualizing audio data.
-Our exploration will lead us to create simple audio visualizer app.
-
-## Base application
-
-Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application designed to play sound from a file.
-In addiction we will utilize `Canvas` from `react-native-skia` to visually represent our sound. To begin, simply copy and paste the code provided below into your project.
-
-```tsx
 import React, {
   useState,
   useEffect,
@@ -27,7 +10,8 @@ import React, {
 import {
   AudioContext,
   AudioBuffer,
-  AudioBufferSourceNode
+  AudioBufferSourceNode,
+  AnalyserNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
 import { Canvas as SKCanvas } from '@shopify/react-native-skia';
@@ -73,98 +57,7 @@ const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
   );
 };
 
-const AudioVisualizer: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      bufferSourceRef.current?.stop();
-    } else {
-      if (!audioContextRef.current) {
-        return
-      }
-
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
-      bufferSourceRef.current.buffer = audioBufferRef.current;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
-
-      bufferSourceRef.current.start();
-    }
-
-    setIsPlaying((prev) => !prev);
-  };
-
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    const fetchBuffer = async () => {
-      setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
-
-      setIsLoading(false);
-    };
-
-    fetchBuffer();
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
-
-  return (
-    <View>
-      <View style={{ flex: 0.2 }} />
-      <Canvas>
-      </Canvas>
-      <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
-        {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
-            justifyContent: 'center',
-            flexDirection: 'row',
-            marginTop: 16,
-          }}>
-        <Button
-            onPress={handlePlayPause}
-            title={isPlaying ? 'Pause' : 'Play'}
-            disabled={!audioBufferRef.current}
-          />
-        </View>
-      </View>
-    </View>
-  );
-};
-
-export default AudioVisualizer;
-```
-
-## Create an analyzer to capture and process time-domain and frequency data in real-time
-
-To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`](/visualization/analyser-node).
-It is an [`AudioNode`](/core/audio-node) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
-We will use two specific [`AnalyserNode's`](/visualization/analyser-node) methods: [`getByteTimeDomainData`](/visualization/analyser-node#getbytetimedomaindata) and [`getByteFrequencyData`](/visualization/analyser-node#getbytefrequencydata).
-These methods will allow us to acquire the necessary data for our analysis.
-
-```jsx {7,12,17-18,23,29,35,39,45-62,69-75}
-/* ... */
-
-import {
-  AudioContext,
-  AudioBuffer,
-  AudioBufferSourceNode,
-  AnalyserNode,
-} from 'react-native-audio-api';
-
-/* ... */
-
-const FFT_SIZE = 512
+const FFT_SIZE = 512;
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -176,6 +69,7 @@ const AudioVisualizer: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -268,26 +162,3 @@ const AudioVisualizer: React.FC = () => {
 };
 
 export default AudioVisualizer;
-```
-
-We utilize the [`requestAnimationFrame`](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) method to continuously fetch and update real-time audio visualization data.
-
-## Visualize time-domain data
-
-[description]
-
-[img]
-
-[example]
-
-## Visualize frequency data
-
-[description]
-
-[img]
-
-[example]
-
-## What's next?
-
-I’m not sure, but give yourself a pat on the back – you’ve earned it! More guides are on the way, so stay tuned! 🎼
