@@ -45,11 +45,13 @@ export class AudioBuffer {
       );
     }
 
-    this.buffer.copyFromChannel(
-      new Float32Array(destination),
-      channelNumber,
-      startInChannel
-    );
+    const array = new Float32Array(destination);
+
+    this.buffer.copyFromChannel(array, channelNumber, startInChannel);
+
+    for (let i = 0; i < destination.length; i++) {
+      destination[i] = array[i];
+    }
   }
 
   public copyToChannel(
@@ -133,27 +135,43 @@ export class AnalyserNode extends AudioNode {
   }
 
   public getByteFrequencyData(array: number[]): void {
-    (this.node as globalThis.AnalyserNode).getByteFrequencyData(
-      new Uint8Array(array)
-    );
+    const data = new Uint8Array(array);
+
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(data);
+
+    for (let i = 0; i < array.length; i++) {
+      array[i] = data[i];
+    }
   }
 
   public getByteTimeDomainData(array: number[]): void {
-    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(
-      new Uint8Array(array)
-    );
+    const data = new Uint8Array(array);
+
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(data);
+
+    console.log('data', data[0]);
+
+    for (let i = 0; i < array.length; i++) {
+      array[i] = data[i];
+    }
   }
 
   public getFloatFrequencyData(array: number[]): void {
-    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(
-      new Float32Array(array)
-    );
+    const data = new Float32Array(array);
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(data);
+
+    for (let i = 0; i < array.length; i++) {
+      array[i] = data[i];
+    }
   }
 
   public getFloatTimeDomainData(array: number[]): void {
-    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(
-      new Float32Array(array)
-    );
+    const data = new Float32Array(array);
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(data);
+
+    for (let i = 0; i < array.length; i++) {
+      array[i] = data[i];
+    }
   }
 }
 
@@ -348,12 +366,22 @@ export class BiquadFilterNode extends AudioNode {
         `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
       );
     }
+    const magData = new Float32Array(magResponseOutput);
+    const phaseData = new Float32Array(phaseResponseOutput);
 
     (this.node as globalThis.BiquadFilterNode).getFrequencyResponse(
       new Float32Array(frequencyArray),
-      new Float32Array(magResponseOutput),
-      new Float32Array(phaseResponseOutput)
+      magData,
+      phaseData
     );
+
+    for (let i = 0; i < magData.length; i++) {
+      magResponseOutput[i] = magData[i];
+    }
+
+    for (let i = 0; i < phaseData.length; i++) {
+      phaseResponseOutput[i] = phaseData[i];
+    }
   }
 }
 
