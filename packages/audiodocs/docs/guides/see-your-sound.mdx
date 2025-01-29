@@ -11,67 +11,22 @@ Our exploration will lead us to create simple audio visualizer app.
 
 ## Base application
 
-Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application designed to play sound from a file.
-In addiction we will utilize `Canvas` from `react-native-skia` to visually represent our sound. To begin, simply copy and paste the code provided below into your project.
+Building on what we have learned in the previous tutorials, we will begin by developing a straightforward application designed to play sound from a file. To begin, simply copy and paste the code provided below into your project.
 
 ```tsx
 import React, {
   useState,
   useEffect,
   useRef,
-  useContext,
   useMemo,
-  createContext,
-  PropsWithChildren
 } from 'react';
+import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AudioBuffer,
-  AudioBufferSourceNode
+  AudioBufferSourceNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas } from '@shopify/react-native-skia';
-
-interface Size {
-  width: number;
-  height: number;
-}
-
-interface CanvasContext {
-  initialized: boolean;
-  size: Size;
-}
-
-const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
-  size: { width: 0, height: 0 },
-});
-
-const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-
-  const onCanvasLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-
-    setSize({ width, height });
-  };
-
-  const context = useMemo(
-    () => ({
-      initialized: true,
-      size: { width: size.width, height: size.height },
-    }),
-    [size.width, size.height]
-  );
-
-  return (
-    <SKCanvas style={{flex: 1}} onLayout={onCanvasLayout}>
-      <CanvasContext.Provider value={context}>
-        {children}
-      </CanvasContext.Provider>
-    </SKCanvas>
-  );
-};
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,7 +61,12 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await FileSystem.downloadAsync(
+        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3',
+        FileSystem.documentDirectory + 'audio.mp3'
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
 
       setIsLoading(false);
     };
@@ -119,14 +79,13 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View>
+    <View style={{ flex: 1}}>
       <View style={{ flex: 0.2 }} />
-      <Canvas>
-      </Canvas>
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
@@ -135,6 +94,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
+            color={'#38acdd'}
           />
         </View>
       </View>
@@ -145,7 +105,7 @@ const AudioVisualizer: React.FC = () => {
 export default AudioVisualizer;
 ```
 
-## Create an analyzer to capture and process time-domain and frequency data in real-time
+## Create an analyzer to capture and process audio data
 
 To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`](/visualization/analyser-node).
 It is an [`AudioNode`](/core/audio-node) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
@@ -164,7 +124,7 @@ import {
 
 /* ... */
 
-const FFT_SIZE = 512
+const FFT_SIZE = 512;
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -231,7 +191,12 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await FileSystem.downloadAsync(
+        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3',
+        FileSystem.documentDirectory + 'audio.mp3'
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
 
       setIsLoading(false);
     };
@@ -244,14 +209,13 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View>
+    <View style={{ flex: 1}}>
       <View style={{ flex: 0.2 }} />
-      <Canvas>
-      </Canvas>
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
@@ -260,6 +224,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
+            color={'#38acdd'}
           />
         </View>
       </View>
@@ -272,21 +237,25 @@ export default AudioVisualizer;
 
 We utilize the [`requestAnimationFrame`](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) method to continuously fetch and update real-time audio visualization data.
 
-## Visualize time-domain data
+## Visualize time-domain and frequency data
 
-[description]
+We're ready to delve into visualizing our sound data using `react-native-skia`, exploring both time-domain and frequency-domain analyses.
+Before we begin, take a moment to review the differences between these two perspectives by visiting [Time domain vs Frequency domain](/visualization/analyser-node#time-domain-vs-frequency-domain).
+This background will enhance your understanding as we proceed with the visualizations.
 
-[img]
+**Time domain**
 
-[example]
+import TimeDomain from '@site/src/examples/SeeYourSound/TimeDomainComponent';
+import TimeDomainSrc from '!!raw-loader!@site/src/examples/SeeYourSound/TimeDomainSource';
 
-## Visualize frequency data
+<InteractiveExample component={TimeDomain} src={TimeDomainSrc} />
 
-[description]
+import FrequencyDomain from '@site/src/examples/SeeYourSound/FrequencyDomainComponent';
+import FrequencyDomainSrc from '!!raw-loader!@site/src/examples/SeeYourSound/FrequencyDomainSource';
 
-[img]
+**Frequency domain**
 
-[example]
+<InteractiveExample component={FrequencyDomain} src={FrequencyDomainSrc} />
 
 ## What's next?
 

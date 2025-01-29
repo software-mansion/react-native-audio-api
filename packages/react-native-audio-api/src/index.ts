@@ -149,8 +149,6 @@ export class AnalyserNode extends AudioNode {
 
     (this.node as globalThis.AnalyserNode).getByteTimeDomainData(data);
 
-    console.log('data', data[0]);
-
     for (let i = 0; i < array.length; i++) {
       array[i] = data[i];
     }

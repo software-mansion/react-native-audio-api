@@ -2,8 +2,6 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useContext,
-  createContext
 } from 'react';
 import {
   AudioContext,
@@ -13,57 +11,40 @@ import {
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button } from 'react-native';
 
-interface Size {
-  width: number;
-  height: number;
-}
-
-interface CanvasContext {
-  initialized: boolean;
-  size: Size;
-}
-
-const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
-  size: { width: 0, height: 0 },
-});
-
-const Canvas: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (ref.current) {
-        const { width, height } = ref.current.getBoundingClientRect();
-        setSize({ width, height });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, [ref]);
-
-  const contextValue = { initialized: true, size };
-
-  return (
-    <canvas ref={ref} style={{ backgroundColor: 'white', width: '100%', height: '100%' }}>
-      <CanvasContext.Provider value={contextValue}>
-        {children}
-      </CanvasContext.Provider>
-    </canvas>
-  );
-};
-
 interface ChartProps {
   data: number[];
-  size: number;
+  dataSize: number;
 }
 
 const TimeChart: React.FC<ChartProps> = (props) => {
-  const size = useContext(CanvasContext);
+  const { data, dataSize } = props;
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    const maxWidth = canvas.width;
+    const maxHeight = canvas.height;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+
+    data.forEach((value, index) => {
+      const x = (index * maxWidth) / dataSize;
+      const y = maxHeight - (value / 255) * maxHeight;
+      ctx.lineTo(x, y);
+    });
+
+    ctx.strokeStyle = '#B5E1F1';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }, [data, dataSize]);
+
+  return (
+    <canvas ref={canvasRef} style={{flex: 1}}></canvas>
+  );
 }
 
 const FFT_SIZE = 512;
@@ -149,8 +130,7 @@ const AudioVisualizer: React.FC = () => {
   return (
     <View>
       <View style={{ flex: 0.2 }} />
-      <Canvas>
-      </Canvas>
+      <TimeChart data={times} dataSize={FFT_SIZE} />
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
@@ -163,6 +143,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
+            color={'#38acdd'}
           />
         </View>
       </View>

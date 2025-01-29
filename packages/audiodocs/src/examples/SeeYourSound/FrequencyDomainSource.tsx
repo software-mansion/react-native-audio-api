@@ -2,11 +2,9 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useContext,
   useMemo,
-  createContext,
-  PropsWithChildren
 } from 'react';
+import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AudioBuffer,
@@ -14,25 +12,21 @@ import {
   AnalyserNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas } from '@shopify/react-native-skia';
+import { Canvas as SKCanvas, vec, Line } from '@shopify/react-native-skia';
 
 interface Size {
   width: number;
   height: number;
 }
 
-interface CanvasContext {
-  initialized: boolean;
-  size: Size;
+interface ChartProps {
+  data: number[];
+  dataSize: number;
 }
 
-const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
-  size: { width: 0, height: 0 },
-});
-
-const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
+const FrequencyChart: React.FC<ChartProps> = (props) => {
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
+  const { data, dataSize } = props;
 
   const onCanvasLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -40,22 +34,36 @@ const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
     setSize({ width, height });
   };
 
-  const context = useMemo(
-    () => ({
-      initialized: true,
-      size: { width: size.width, height: size.height },
-    }),
-    [size.width, size.height]
-  );
+  const barWidth = size.width / dataSize;
+
+  const points = useMemo(() => {
+    return data.map((value, index) => {
+      const x = index * barWidth;
+      const y1 = size.height;
+      const y2 = size.height - size.height * (value / 256);
+
+      const hue = (index / dataSize) * 360;
+      const color = `hsl(${hue}, 100%, 50%)`;
+
+      return { x1: x, y1, x2: x, y2, color };
+    });
+  }, [size, data, dataSize]);
 
   return (
-    <SKCanvas style={{flex: 1}} onLayout={onCanvasLayout}>
-      <CanvasContext.Provider value={context}>
-        {children}
-      </CanvasContext.Provider>
+    <SKCanvas style={{ flex: 1 }} onLayout={onCanvasLayout}>
+      {points.map((point, index) => (
+        <Line
+          key={index}
+          p1={vec(point.x1, point.y1)}
+          p2={vec(point.x2, point.y2)}
+          style="stroke"
+          color={point.color}
+          strokeWidth={barWidth}
+        />
+      ))}
     </SKCanvas>
   );
-};
+}
 
 const FFT_SIZE = 512;
 
@@ -69,7 +77,6 @@ const AudioVisualizer: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -125,7 +132,12 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await FileSystem.downloadAsync(
+        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3',
+        FileSystem.documentDirectory + 'audio.mp3'
+      ).then(({ uri }) => {
+        return audioContextRef.current!.decodeAudioDataSource(uri);
+      });
 
       setIsLoading(false);
     };
@@ -138,14 +150,14 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View>
+    <View style={{ flex: 1}}>
       <View style={{ flex: 0.2 }} />
-      <Canvas>
-      </Canvas>
+      <FrequencyChart data={freqs} dataSize={FFT_SIZE / 2} />
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
@@ -154,6 +166,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
+            color={'#38acdd'}
           />
         </View>
       </View>
