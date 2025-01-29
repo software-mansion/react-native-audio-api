@@ -78,7 +78,6 @@ android/keystores/debug.keystore
 .turbo/
 
 packages/react-native-audio-api/lib
-react-native-audio-api*.tgz
 
 # Android
 .kotlin
