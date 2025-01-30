@@ -10,6 +10,8 @@ namespace audioapi {
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio)
     : renderAudio_(renderAudio), audioBus_(0)
 {
+  audioBus_ = new AudioBus(getSampleRate(), RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
 
