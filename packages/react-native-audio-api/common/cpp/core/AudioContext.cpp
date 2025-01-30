@@ -8,12 +8,23 @@
 #include "AudioDestinationNode.h"
 
 namespace audioapi {
-
 AudioContext::AudioContext() : BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
+#endif
+  sampleRate_ = audioPlayer_->getSampleRate();
+
+  audioPlayer_->start();
+}
+
+AudioContext::AudioContext(int sampleRate) : BaseAudioContext() {
+#ifdef ANDROID
+  audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
+#else
+  audioPlayer_ =
+      std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
 #endif
   sampleRate_ = audioPlayer_->getSampleRate();
 

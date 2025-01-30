@@ -420,7 +420,7 @@ export class AudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor() {
+  constructor(_sampleRate?: number) {
     this.context = new window.AudioContext();
 
     this.sampleRate = this.context.sampleRate;

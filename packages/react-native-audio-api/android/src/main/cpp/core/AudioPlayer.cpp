@@ -21,13 +21,36 @@ AudioPlayer::AudioPlayer(
       ->setDataCallback(this)
       ->openStream(mStream_);
 
+  sampleRate_ = mStream_->getSampleRate();
   mBus_ = std::make_shared<AudioBus>(
-      getSampleRate(), RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+  isInitialized_ = true;
+}
+
+AudioPlayer::AudioPlayer(
+    const std::function<void(AudioBus *, int)> &renderAudio,
+    int sampleRate)
+    : renderAudio_(renderAudio) {
+  AudioStreamBuilder builder;
+
+  builder.setSharingMode(SharingMode::Exclusive)
+      ->setFormat(AudioFormat::Float)
+      ->setFormatConversionAllowed(true)
+      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setChannelCount(CHANNEL_COUNT)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setDataCallback(this)
+      ->setSampleRate(sampleRate)
+      ->openStream(mStream_);
+
+  sampleRate_ = sampleRate;
+  mBus_ = std::make_shared<AudioBus>(
+      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
   isInitialized_ = true;
 }
 
 int AudioPlayer::getSampleRate() const {
-  return mStream_->getSampleRate();
+  return sampleRate_;
 }
 
 void AudioPlayer::start() {

@@ -28,7 +28,56 @@
       @throw error;
     }
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:[self.audioSession sampleRate] channels:2];
+    self.sampleRate = [self.audioSession sampleRate];
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+
+    __weak typeof(self) weakSelf = self;
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
+                                                renderBlock:^OSStatus(
+                                                    BOOL *isSilence,
+                                                    const AudioTimeStamp *timestamp,
+                                                    AVAudioFrameCount frameCount,
+                                                    AudioBufferList *outputData) {
+                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                     timestamp:timestamp
+                                                                                    frameCount:frameCount
+                                                                                    outputData:outputData];
+                                                }];
+  }
+
+  return self;
+}
+
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(int)sampleRate
+{
+  if (self = [super init]) {
+    self.renderAudio = [renderAudio copy];
+    self.audioEngine = [[AVAudioEngine alloc] init];
+    self.audioEngine.mainMixerNode.outputVolume = 1;
+
+    self.audioSession = AVAudioSession.sharedInstance;
+    NSError *error = nil;
+
+    // TODO:
+    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
+    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
+    // But setting a recording category might require some setup first, so lets skip it for now :)
+    [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    [self.audioSession setActive:true error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    self.sampleRate = sampleRate;
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -49,7 +98,7 @@
 
 - (int)getSampleRate
 {
-  return [self.audioSession sampleRate];
+  return self.sampleRate;
 }
 
 - (void)start

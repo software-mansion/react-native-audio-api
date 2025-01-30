@@ -12,8 +12,11 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, copy) RenderAudioBlock renderAudio;
+@property (nonatomic, assign) int sampleRate;
 
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio;
+
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(int)sampleRate;
 
 - (int)getSampleRate;
 
