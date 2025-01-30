@@ -205,6 +205,10 @@ void AudioNode::onInputDisabled() {
 }
 
 void AudioNode::onInputConnected(AudioNode *node) {
+  if (!isInitialized_) {
+    return;
+  }
+
   inputNodes_.push_back(node);
 
   if (node->isEnabled()) {
@@ -213,6 +217,10 @@ void AudioNode::onInputConnected(AudioNode *node) {
 }
 
 void AudioNode::onInputDisconnected(AudioNode *node) {
+  if (!isInitialized_) {
+    return;
+  }
+
   auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
 
   if (position != inputNodes_.end()) {
