@@ -8,8 +8,8 @@
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ =
-      std::make_shared<AudioBus>(context->getSampleRate(), 4360, channelCount_);
+  audioBus_ = std::make_shared<AudioBus>(
+      context->getSampleRate(), RENDER_QUANTUM_SIZE, channelCount_);
 }
 
 AudioNode::~AudioNode() {

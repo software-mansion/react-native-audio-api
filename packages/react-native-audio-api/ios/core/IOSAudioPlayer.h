@@ -25,7 +25,6 @@ class IOSAudioPlayer {
   ~IOSAudioPlayer();
 
   int getSampleRate() const;
-  int getBufferSizeInFrames() const;
 
   void start();
   void stop();

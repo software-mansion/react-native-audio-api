@@ -32,7 +32,6 @@ class BaseAudioContext {
   std::string getState();
   [[nodiscard]] int getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
-  [[nodiscard]] int getBufferSizeInFrames() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
   std::shared_ptr<AudioDestinationNode> getDestination();
 
@@ -62,7 +61,6 @@ class BaseAudioContext {
   std::shared_ptr<AudioDecoder> audioDecoder_;
 
   int sampleRate_;
-  int bufferSizeInFrames_;
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 

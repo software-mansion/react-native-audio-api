@@ -17,8 +17,6 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 - (int)getSampleRate;
 
-- (int)getBufferSizeInFrames;
-
 - (void)start;
 
 - (void)stop;

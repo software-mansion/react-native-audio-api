@@ -16,7 +16,6 @@ AudioContext::AudioContext() : BaseAudioContext() {
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
 #endif
   sampleRate_ = audioPlayer_->getSampleRate();
-  bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
 
   audioPlayer_->start();
 }

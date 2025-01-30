@@ -16,9 +16,7 @@
 
 namespace audioapi {
 
-BaseAudioContext::BaseAudioContext()
-    : sampleRate_(DEFAULT_SAMPLE_RATE),
-      bufferSizeInFrames_(RENDER_QUANTUM_SIZE) {
+BaseAudioContext::BaseAudioContext() : sampleRate_(DEFAULT_SAMPLE_RATE) {
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
 
   nodeManager_ = std::make_shared<AudioNodeManager>();
@@ -31,10 +29,6 @@ std::string BaseAudioContext::getState() {
 
 int BaseAudioContext::getSampleRate() const {
   return sampleRate_;
-}
-
-int BaseAudioContext::getBufferSizeInFrames() const {
-  return bufferSizeInFrames_;
 }
 
 std::size_t BaseAudioContext::getCurrentSampleFrame() const {
