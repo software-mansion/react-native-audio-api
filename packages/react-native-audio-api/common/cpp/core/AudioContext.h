@@ -5,11 +5,10 @@
 #include "BaseAudioContext.h"
 
 namespace audioapi {
-
 #ifdef ANDROID
-    class AudioPlayer;
+class AudioPlayer;
 #else
-    class IOSAudioPlayer;
+class IOSAudioPlayer;
 #endif
 
 class AudioContext : public BaseAudioContext {
@@ -21,8 +20,7 @@ class AudioContext : public BaseAudioContext {
 
   std::function<void(AudioBus *, int)> renderAudio();
 
-private:
-
+ private:
 #ifdef ANDROID
     std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
