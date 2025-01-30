@@ -24,16 +24,10 @@ class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
 
-#ifdef ANDROID
-class AudioPlayer;
-#else
-class IOSAudioPlayer;
-#endif
-
 class BaseAudioContext {
  public:
   BaseAudioContext();
-  ~BaseAudioContext();
+  virtual ~BaseAudioContext() = default;
 
   std::string getState();
   [[nodiscard]] int getSampleRate() const;
@@ -58,7 +52,6 @@ class BaseAudioContext {
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  std::function<void(AudioBus *, int)> renderAudio();
   AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
@@ -67,12 +60,6 @@ class BaseAudioContext {
   static std::string toString(ContextState state);
   std::shared_ptr<AudioDestinationNode> destination_;
   std::shared_ptr<AudioDecoder> audioDecoder_;
-
-#ifdef ANDROID
-  std::shared_ptr<AudioPlayer> audioPlayer_;
-#else
-  std::shared_ptr<IOSAudioPlayer> audioPlayer_;
-#endif
 
   int sampleRate_;
   int bufferSizeInFrames_;
