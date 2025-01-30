@@ -16,9 +16,7 @@
 
 namespace audioapi {
 
-BaseAudioContext::BaseAudioContext() : sampleRate_(DEFAULT_SAMPLE_RATE) {
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
-
+BaseAudioContext::BaseAudioContext() {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
 }

@@ -5,6 +5,7 @@
 #endif
 
 #include "AudioContext.h"
+#include "AudioDecoder.h"
 #include "AudioDestinationNode.h"
 
 namespace audioapi {
@@ -15,6 +16,7 @@ AudioContext::AudioContext() : BaseAudioContext() {
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
 #endif
   sampleRate_ = audioPlayer_->getSampleRate();
+  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
 
   audioPlayer_->start();
 }
@@ -27,6 +29,7 @@ AudioContext::AudioContext(int sampleRate) : BaseAudioContext() {
       std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
 #endif
   sampleRate_ = audioPlayer_->getSampleRate();
+  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
 
   audioPlayer_->start();
 }

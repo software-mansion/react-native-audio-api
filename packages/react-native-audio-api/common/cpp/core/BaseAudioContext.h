@@ -58,9 +58,11 @@ class BaseAudioContext {
  protected:
   static std::string toString(ContextState state);
   std::shared_ptr<AudioDestinationNode> destination_;
-  std::shared_ptr<AudioDecoder> audioDecoder_;
+  // init in AudioContext or OfflineContext constructor
+  std::shared_ptr<AudioDecoder> audioDecoder_ {};
 
-  int sampleRate_;
+  // init in AudioContext or OfflineContext constructor
+  int sampleRate_ {};
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
