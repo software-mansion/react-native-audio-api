@@ -16,6 +16,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       minDecibels_(DEFAULT_MIN_DECIBELS),
       maxDecibels_(DEFAULT_MAX_DECIBELS),
       smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
+      windowType_(WindowType::BLACKMAN),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
@@ -47,6 +48,10 @@ float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
+std::string AnalyserNode::getWindowType() const {
+  return AnalyserNode::toString(windowType_);
+}
+
 void AnalyserNode::setFftSize(int fftSize) {
   if (fftSize_ == fftSize) {
     return;
@@ -67,6 +72,10 @@ void AnalyserNode::setMaxDecibels(float maxDecibels) {
 
 void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
+}
+
+void AnalyserNode::setWindowType(const std::string &type) {
+  windowType_ = AnalyserNode::fromString(type);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
@@ -197,7 +206,14 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  AnalyserNode::applyWindow(tempBuffer.getData(), fftSize_);
+  switch (windowType_) {
+    case WindowType::BLACKMAN:
+      AnalyserNode::applyBlackManWindow(tempBuffer.getData(), fftSize_);
+      break;
+    case WindowType::HANN:
+      AnalyserNode::applyHannWindow(tempBuffer.getData(), fftSize_);
+      break;
+  }
 
   // do fft analysis - get frequency domain data
   fftFrame_->doFFT(tempBuffer.getData());
@@ -220,16 +236,23 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::applyWindow(float *data, int length) {
+void AnalyserNode::applyBlackManWindow(float *data, int length) {
   // https://www.sciencedirect.com/topics/engineering/blackman-window
-  auto alpha = 0.16f;
-  auto a0 = 0.5f * (1 - alpha);
-  auto a1 = 0.5f;
-  auto a2 = 0.5f * alpha;
+  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.blackman.html#scipy.signal.windows.blackman
 
   for (int i = 0; i < length; ++i) {
     auto x = static_cast<float>(i) / static_cast<float>(length);
-    auto window = a0 - a1 * cos(2 * PI * x) + a2 * cos(4 * PI * x);
+    auto window = 0.42f - 0.5f * cos(2 * PI * x) + 0.08f * cos(4 * PI * x);
+    data[i] *= window;
+  }
+}
+
+void AnalyserNode::applyHannWindow(float *data, int length) {
+  // https://www.sciencedirect.com/topics/engineering/hanning-window
+  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.hann.html#scipy.signal.windows.hann
+  for (int i = 0; i < length; ++i) {
+    auto x = static_cast<float>(i) / static_cast<float>(length - 1);
+    auto window = 0.5f - 0.5f * cos(2 * PI * x);
     data[i] *= window;
   }
 }

@@ -1,4 +1,8 @@
-import { ContextState, PeriodicWaveConstraints } from './core/types';
+import {
+  ContextState,
+  PeriodicWaveConstraints,
+  WindowType,
+} from './core/types';
 
 export class AudioBuffer {
   readonly length: number;
@@ -130,6 +134,16 @@ export class AnalyserNode extends AudioNode {
     this.minDecibels = node.minDecibels;
     this.maxDecibels = node.maxDecibels;
     this.smoothingTimeConstant = node.smoothingTimeConstant;
+  }
+
+  public get window(): WindowType {
+    return 'blackman';
+  }
+
+  public set window(value: WindowType) {
+    console.log(
+      'React Native Audio API: setting window is not supported on web'
+    );
   }
 
   public getByteFrequencyData(array: number[]): void {

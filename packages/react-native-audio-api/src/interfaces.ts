@@ -4,6 +4,7 @@ import {
   OscillatorType,
   ChannelCountMode,
   ChannelInterpretation,
+  WindowType,
 } from './core/types';
 
 export interface IBaseAudioContext {
@@ -144,6 +145,7 @@ export interface IAnalyserNode extends IAudioNode {
   minDecibels: number;
   maxDecibels: number;
   smoothingTimeConstant: number;
+  window: WindowType;
 
   getFloatFrequencyData: (array: number[]) => void;
   getByteFrequencyData: (array: number[]) => void;

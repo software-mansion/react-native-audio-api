@@ -24,3 +24,5 @@ export type OscillatorType =
 export interface PeriodicWaveConstraints {
   disableNormalization: boolean;
 }
+
+export type WindowType = 'blackman' | 'hann';
