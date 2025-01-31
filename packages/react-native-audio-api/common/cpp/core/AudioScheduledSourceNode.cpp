@@ -53,7 +53,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     return;
   }
 
-  int sampleRate = context_->getSampleRate();
+  auto sampleRate = context_->getSampleRate();
 
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;

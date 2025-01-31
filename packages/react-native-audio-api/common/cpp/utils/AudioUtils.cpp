@@ -1,7 +1,7 @@
 #include "AudioUtils.h"
 
 namespace audioapi::AudioUtils {
-size_t timeToSampleFrame(double time, int sampleRate) {
+size_t timeToSampleFrame(double time, float sampleRate) {
   return static_cast<size_t>(time * sampleRate);
 }
 

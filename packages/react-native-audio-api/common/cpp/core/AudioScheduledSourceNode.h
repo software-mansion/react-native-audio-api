@@ -8,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <thread>
+#include <cstddef>
 
 #include "AudioNode.h"
 
