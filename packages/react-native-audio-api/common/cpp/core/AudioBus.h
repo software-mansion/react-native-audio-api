@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <cstddef>
 
 namespace audioapi {
 
