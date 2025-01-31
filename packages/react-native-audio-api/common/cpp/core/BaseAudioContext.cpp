@@ -99,6 +99,10 @@ bool BaseAudioContext::isClosed() const {
   return state_ == ContextState::CLOSED;
 }
 
+float BaseAudioContext::getNyquistFrequency() const {
+  return sampleRate_ / 2.0f;
+}
+
 std::string BaseAudioContext::toString(ContextState state) {
   switch (state) {
     case ContextState::SUSPENDED:

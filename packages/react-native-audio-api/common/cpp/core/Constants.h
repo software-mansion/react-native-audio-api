@@ -7,7 +7,6 @@
 
 namespace audioapi {
 // context
-constexpr int DEFAULT_SAMPLE_RATE = 48000;
 constexpr int RENDER_QUANTUM_SIZE = 128;
 constexpr int CHANNEL_COUNT = 2;
 
@@ -15,14 +14,15 @@ constexpr int CHANNEL_COUNT = 2;
 constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
 constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());
 
-constexpr float NYQUIST_FREQUENCY = DEFAULT_SAMPLE_RATE / 2.0;
 constexpr float MAX_GAIN = MOST_POSITIVE_SINGLE_FLOAT;
 constexpr float MAX_PAN = 1.0;
-constexpr float MAX_FILTER_Q = MOST_POSITIVE_SINGLE_FLOAT;
-constexpr float MAX_FILTER_FREQUENCY = NYQUIST_FREQUENCY;
+
+// biquad filter
 constexpr float MIN_FILTER_FREQUENCY = 0.0;
 static float MAX_FILTER_GAIN = 40 * std::log10(MOST_POSITIVE_SINGLE_FLOAT);
-constexpr float MIN_FILTER_GAIN = -MAX_GAIN;
+static float MIN_FILTER_GAIN = -MAX_GAIN;
+constexpr float MAX_FILTER_Q = MOST_POSITIVE_SINGLE_FLOAT;
+constexpr float MIN_FILTER_Q = -MAX_FILTER_Q;
 
 //detune
 static float MAX_DETUNE = 1200 * std::log2(MOST_POSITIVE_SINGLE_FLOAT);

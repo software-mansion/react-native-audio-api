@@ -11,9 +11,9 @@ namespace audioapi {
 BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
     : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
+      350.0, MIN_FILTER_FREQUENCY, context->getNyquistFrequency());
   detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
-  QParam_ = std::make_shared<AudioParam>(1.0, -MAX_FILTER_Q, MAX_FILTER_Q);
+  QParam_ = std::make_shared<AudioParam>(1.0, MIN_FILTER_Q, MAX_FILTER_Q);
   gainParam_ =
       std::make_shared<AudioParam>(0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
   type_ = BiquadFilterType::LOWPASS;
@@ -68,7 +68,7 @@ void BiquadFilterNode::getFrequencyResponse(
 
   for (size_t i = 0; i < frequencyArraySize; i++) {
     auto omega =
-        static_cast<float>(M_PI) * frequencyArray[i] / NYQUIST_FREQUENCY;
+        static_cast<float>(M_PI) * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
     magResponseOutput[i] = static_cast<float>(abs(response));
@@ -303,7 +303,7 @@ void BiquadFilterNode::applyFilter() {
   double currentTime = context_->getCurrentTime();
 
   float normalizedFrequency =
-      frequencyParam_->getValueAtTime(currentTime) / NYQUIST_FREQUENCY;
+      frequencyParam_->getValueAtTime(currentTime) / context_->getNyquistFrequency();
   float detuneValue = detuneParam_->getValueAtTime(currentTime);
 
   if (detuneValue != 0.0) {

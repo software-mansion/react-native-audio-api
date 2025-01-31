@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 #include "ContextState.h"
 #include "OscillatorType.h"
@@ -48,12 +49,13 @@ class BaseAudioContext {
       bool disableNormalization,
       size_t length);
   std::shared_ptr<AnalyserNode> createAnalyser();
-
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
+
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
+  float getNyquistFrequency() const;
 
  protected:
   static std::string toString(ContextState state);
