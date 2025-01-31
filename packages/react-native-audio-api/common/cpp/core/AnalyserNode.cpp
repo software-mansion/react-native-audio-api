@@ -229,8 +229,7 @@ void AnalyserNode::applyWindow(float *data, int length) {
 
   for (int i = 0; i < length; ++i) {
     auto x = static_cast<float>(i) / static_cast<float>(length);
-    auto window = a0 - a1 * cos(2 * static_cast<float>(M_PI) * x) +
-        a2 * cos(4 * static_cast<float>(M_PI) * x);
+    auto window = a0 - a1 * cos(2 * PI * x) + a2 * cos(4 * PI * x);
     data[i] *= window;
   }
 }
