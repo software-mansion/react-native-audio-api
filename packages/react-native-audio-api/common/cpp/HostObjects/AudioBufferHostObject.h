@@ -3,6 +3,7 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <vector>
+#include <cstddef>
 
 #include <JsiHostObject.h>
 #include "AudioBuffer.h"
@@ -34,7 +35,7 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   JSI_PROPERTY_GETTER(length) {
-    return {audioBuffer_->getLength()};
+    return {static_cast<double>(audioBuffer_->getLength())};
   }
 
   JSI_PROPERTY_GETTER(duration) {
@@ -60,9 +61,9 @@ class AudioBufferHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(copyFromChannel) {
     auto destination = args[0].getObject(runtime).asArray(runtime);
     auto destinationLength =
-        static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+        static_cast<size_t>(destination.getProperty(runtime, "length").asNumber());
     auto channelNumber = static_cast<int>(args[1].getNumber());
-    auto startInChannel = static_cast<int>(args[2].getNumber());
+    auto startInChannel = static_cast<size_t>(args[2].getNumber());
 
     auto *destinationData = new float[destinationLength];
 
@@ -79,9 +80,9 @@ class AudioBufferHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(copyToChannel) {
     auto source = args[0].getObject(runtime).asArray(runtime);
     auto sourceLength =
-        static_cast<int>(source.getProperty(runtime, "length").asNumber());
+        static_cast<size_t>(source.getProperty(runtime, "length").asNumber());
     auto channelNumber = static_cast<int>(args[1].getNumber());
-    auto startInChannel = static_cast<int>(args[2].getNumber());
+    auto startInChannel = static_cast<size_t>(args[2].getNumber());
 
     auto *sourceData = new float[sourceLength];
 

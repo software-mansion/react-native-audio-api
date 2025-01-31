@@ -3,6 +3,7 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <vector>
+#include <cstddef>
 
 #include <JsiHostObject.h>
 #include "AudioParam.h"
@@ -79,7 +80,7 @@ class AudioParamHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(setValueCurveAtTime) {
     auto values = args[0].getObject(runtime).asArray(runtime);
-    auto length = static_cast<int>(values.length(runtime));
+    auto length = static_cast<size_t>(values.length(runtime));
     auto valuesData = new float[length];
     for (size_t i = 0; i < values.length(runtime); i++) {
       valuesData[i] =

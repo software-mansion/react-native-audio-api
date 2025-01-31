@@ -16,9 +16,9 @@ class AudioPlayer : public AudioStreamDataCallback {
   explicit AudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio);
   AudioPlayer(
       const std::function<void(AudioBus *, int)> &renderAudio,
-      int sampleRate);
+      float sampleRate);
 
-  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] float getSampleRate() const;
   void start();
   void stop();
 
@@ -32,7 +32,7 @@ class AudioPlayer : public AudioStreamDataCallback {
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<AudioBus> mBus_;
   bool isInitialized_ = false;
-  int sampleRate_;
+  float sampleRate_;
 };
 
 } // namespace audioapi

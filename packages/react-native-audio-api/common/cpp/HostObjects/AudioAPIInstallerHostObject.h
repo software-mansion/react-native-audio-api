@@ -39,7 +39,7 @@ class AudioAPIInstallerHostObject
       if (args[0].isUndefined()) {
           audioContext = std::make_shared<AudioContext>();
       } else {
-          int sampleRate = static_cast<int>(args[0].getNumber());
+          auto sampleRate = static_cast<float>(args[0].getNumber());
           audioContext = std::make_shared<AudioContext>(sampleRate);
       }
 

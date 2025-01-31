@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 #include <JsiHostObject.h>
 #include <JsiPromise.h>
@@ -100,9 +101,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());
-    auto length = static_cast<int>(args[1].getNumber());
-    auto sampleRate = static_cast<int>(args[2].getNumber());
-    auto buffer = context_->createBuffer(numberOfChannels, length, sampleRate);
+    auto length = static_cast<size_t>(args[1].getNumber());
+    auto sampleRate = static_cast<float>(args[2].getNumber());
+    auto buffer = BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
     auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
     return jsi::Object::createFromHostObject(runtime, bufferHostObject);
   }
