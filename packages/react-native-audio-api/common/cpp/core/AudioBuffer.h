@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstddef>
 
 namespace audioapi {
 
@@ -11,26 +12,26 @@ class AudioBus;
 
 class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
-  explicit AudioBuffer(int numberOfChannels, int length, int sampleRate);
+  explicit AudioBuffer(int numberOfChannels, size_t length, float sampleRate);
   explicit AudioBuffer(AudioBus *bus);
 
-  [[nodiscard]] int getLength() const;
-  [[nodiscard]] int getSampleRate() const;
-  [[nodiscard]] double getDuration() const;
+  [[nodiscard]] size_t getLength() const;
+  [[nodiscard]] float getSampleRate() const;
+  [[nodiscard]] float getDuration() const;
 
   [[nodiscard]] int getNumberOfChannels() const;
   [[nodiscard]] float *getChannelData(int channel) const;
 
   void copyFromChannel(
       float *destination,
-      int destinationLength,
+      size_t destinationLength,
       int channelNumber,
-      int startInChannel) const;
+      size_t startInChannel) const;
   void copyToChannel(
       const float *source,
-      int sourceLength,
+      size_t sourceLength,
       int channelNumber,
-      int startInChannel);
+      size_t startInChannel);
 
  private:
   std::shared_ptr<AudioBus> bus_;
