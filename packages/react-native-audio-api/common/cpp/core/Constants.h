@@ -13,9 +13,11 @@ constexpr int CHANNEL_COUNT = 2;
 // general
 constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
 constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());
+constexpr float PI = static_cast<float>(M_PI);
 
 // pan
 constexpr float MAX_PAN = 1.0;
+constexpr float MIN_PAN = -1.0;
 
 // gain
 constexpr float MAX_GAIN = MOST_POSITIVE_SINGLE_FLOAT;

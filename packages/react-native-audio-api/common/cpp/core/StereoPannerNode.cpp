@@ -11,7 +11,7 @@ namespace audioapi {
 StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
     : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  panParam_ = std::make_shared<AudioParam>(0.0, -MAX_PAN, MAX_PAN);
+  panParam_ = std::make_shared<AudioParam>(0.0, MIN_PAN, MAX_PAN);
   isInitialized_ = true;
 }
 
@@ -36,10 +36,10 @@ void StereoPannerNode::processNode(
 
   for (int i = 0; i < framesToProcess; i += 1) {
     float pan = panParam_->getValueAtTime(time);
-    float x = (pan <= 0 ? pan + 1 : pan) * M_PI / 2;
+    float x = (pan <= 0 ? pan + 1 : pan) * PI / 2;
 
-    float gainL = static_cast<float>(cos(x));
-    float gainR = static_cast<float>(sin(x));
+    auto gainL = static_cast<float>(cos(x));
+    auto gainR = static_cast<float>(sin(x));
 
     float inputL = (*left)[i];
     float inputR = (*right)[i];
