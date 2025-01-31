@@ -7,7 +7,7 @@ namespace audioapi {
 // Small easy interface to manage locking
 class Locker {
  public:
-  Locker() : lockPtr_(0) {}
+  Locker() : lockPtr_(nullptr) {}
   explicit Locker(std::mutex &lockPtr) : lockPtr_(&lockPtr) {
     lock();
   }
@@ -17,7 +17,7 @@ class Locker {
   }
 
   explicit operator bool() const {
-    return !!lockPtr_;
+    return lockPtr_ != nullptr;
   }
 
   void lock() {

@@ -5,7 +5,7 @@ size_t timeToSampleFrame(double time, float sampleRate) {
   return static_cast<size_t>(time * sampleRate);
 }
 
-double sampleFrameToTime(int sampleFrame, int sampleRate) {
+double sampleFrameToTime(int sampleFrame, float sampleRate) {
   return static_cast<double>(sampleFrame) / sampleRate;
 }
 
