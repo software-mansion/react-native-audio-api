@@ -25,7 +25,7 @@ double AudioDestinationNode::getCurrentTime() const {
 
 void AudioDestinationNode::renderAudio(
     AudioBus *destinationBus,
-    int32_t numFrames) {
+    int numFrames) {
   if (!numFrames || !destinationBus || !isInitialized_) {
     return;
   }

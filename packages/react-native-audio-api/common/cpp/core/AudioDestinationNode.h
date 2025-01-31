@@ -15,7 +15,7 @@ class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(BaseAudioContext *context);
 
-  void renderAudio(AudioBus *audioData, int32_t numFrames);
+  void renderAudio(AudioBus *audioData, int numFrames);
 
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
