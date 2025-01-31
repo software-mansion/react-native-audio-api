@@ -19,14 +19,15 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
-  downMixBus_ = std::make_unique<AudioBus>(context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+  downMixBus_ = std::make_unique<AudioBus>(
+      context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
 
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
 
   isInitialized_ = true;
 }
 
-size_t AnalyserNode::getFftSize() const {
+int AnalyserNode::getFftSize() const {
   return fftSize_;
 }
 
@@ -46,7 +47,7 @@ float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
-void AnalyserNode::setFftSize(size_t fftSize) {
+void AnalyserNode::setFftSize(int fftSize) {
   if (fftSize_ == fftSize) {
     return;
   }
@@ -102,7 +103,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, size_t length) {
 }
 
 void AnalyserNode::getFloatTimeDomainData(float *data, size_t length) {
-  auto size = std::min(fftSize_, length);
+  auto size = fftSize_ ? fftSize_ < length : length;
 
   for (size_t i = 0; i < size; i++) {
     data[i] = inputBuffer_->getData()
@@ -112,7 +113,7 @@ void AnalyserNode::getFloatTimeDomainData(float *data, size_t length) {
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, size_t length) {
-  auto size = std::min(fftSize_, length);
+  auto size = fftSize_ ? fftSize_ < length : length;
 
   for (size_t i = 0; i < size; i++) {
     auto value = inputBuffer_->getData()
@@ -146,7 +147,8 @@ void AnalyserNode::processNode(
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    auto framesToCopy = static_cast<int>(inputBuffer_->getSize() - vWriteIndex_);
+    auto framesToCopy =
+        static_cast<int>(inputBuffer_->getSize() - vWriteIndex_);
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),

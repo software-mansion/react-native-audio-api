@@ -67,8 +67,8 @@ void BiquadFilterNode::getFrequencyResponse(
   float a2 = a2_;
 
   for (size_t i = 0; i < frequencyArraySize; i++) {
-    auto omega =
-        static_cast<float>(M_PI) * frequencyArray[i] / context_->getNyquistFrequency();
+    auto omega = static_cast<float>(M_PI) * frequencyArray[i] /
+        context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
     magResponseOutput[i] = static_cast<float>(abs(response));
@@ -302,8 +302,8 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
 void BiquadFilterNode::applyFilter() {
   double currentTime = context_->getCurrentTime();
 
-  float normalizedFrequency =
-      frequencyParam_->getValueAtTime(currentTime) / context_->getNyquistFrequency();
+  float normalizedFrequency = frequencyParam_->getValueAtTime(currentTime) /
+      context_->getNyquistFrequency();
   float detuneValue = detuneParam_->getValueAtTime(currentTime);
 
   if (detuneValue != 0.0) {

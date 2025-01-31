@@ -50,7 +50,8 @@ void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
   }
 
   auto deltaTime = 1.0 / context_->getSampleRate();
-  auto time = context_->getCurrentTime() + static_cast<double>(startOffset) * deltaTime;
+  auto time =
+      context_->getCurrentTime() + static_cast<double>(startOffset) * deltaTime;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
     auto detuneRatio =

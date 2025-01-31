@@ -4,7 +4,10 @@
 
 namespace audioapi {
 
-AudioBuffer::AudioBuffer(int numberOfChannels, size_t length, float sampleRate) {
+AudioBuffer::AudioBuffer(
+    int numberOfChannels,
+    size_t length,
+    float sampleRate) {
   bus_ = std::make_shared<AudioBus>(sampleRate, length, numberOfChannels);
 }
 

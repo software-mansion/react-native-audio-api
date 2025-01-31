@@ -15,13 +15,13 @@ class AnalyserNode : public AudioNode {
  public:
   explicit AnalyserNode(BaseAudioContext *context);
 
-  size_t getFftSize() const;
+  int getFftSize() const;
   size_t getFrequencyBinCount() const;
   float getMinDecibels() const;
   float getMaxDecibels() const;
 
   float getSmoothingTimeConstant() const;
-  void setFftSize(size_t fftSize);
+  void setFftSize(int fftSize);
   void setMinDecibels(float minDecibels);
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
@@ -35,7 +35,7 @@ class AnalyserNode : public AudioNode {
   void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
-  size_t fftSize_;
+  int fftSize_;
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
