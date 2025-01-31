@@ -37,7 +37,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
   audioBus_ = new AudioBus([audioPlayer_ getSampleRate], RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
 }
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio, int sampleRate)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio, float sampleRate)
     : renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
@@ -86,7 +86,7 @@ void IOSAudioPlayer::stop()
   return [audioPlayer_ stop];
 }
 
-int IOSAudioPlayer::getSampleRate() const
+float IOSAudioPlayer::getSampleRate() const
 {
   return [audioPlayer_ getSampleRate];
 }

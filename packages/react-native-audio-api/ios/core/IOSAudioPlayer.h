@@ -24,10 +24,10 @@ class IOSAudioPlayer {
       const std::function<void(AudioBus *, int)> &renderAudio);
   IOSAudioPlayer(
       const std::function<void(AudioBus *, int)> &renderAudio,
-      int sampleRate);
+      float sampleRate);
   ~IOSAudioPlayer();
 
-  int getSampleRate() const;
+  float getSampleRate() const;
 
   void start();
   void stop();
