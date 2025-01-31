@@ -47,7 +47,7 @@ class BaseAudioContext {
       float *real,
       float *imag,
       bool disableNormalization,
-      size_t length);
+      int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
 
@@ -55,7 +55,7 @@ class BaseAudioContext {
   AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
-  float getNyquistFrequency() const;
+  [[nodiscard]] float getNyquistFrequency() const;
 
  protected:
   static std::string toString(ContextState state);
