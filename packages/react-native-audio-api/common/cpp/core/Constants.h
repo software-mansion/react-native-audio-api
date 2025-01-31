@@ -23,9 +23,11 @@ constexpr float MIN_FILTER_FREQUENCY = 0.0;
 static float MAX_FILTER_GAIN = 40 * std::log10(MOST_POSITIVE_SINGLE_FLOAT);
 constexpr float MIN_FILTER_GAIN = -MAX_GAIN;
 
-constexpr int MAX_FFT_SIZE = 32768;
-constexpr int DEFAULT_FFT_SIZE = 2048;
-constexpr double DEFAULT_MAX_DECIBELS = -30;
-constexpr double DEFAULT_MIN_DECIBELS = -100;
-const double DEFAULT_SMOOTHING_TIME_CONSTANT = 0.8;
+// analyser node
+constexpr size_t MAX_FFT_SIZE = 32768;
+constexpr size_t MIN_FFT_SIZE = 32;
+constexpr size_t DEFAULT_FFT_SIZE = 2048;
+constexpr float DEFAULT_MAX_DECIBELS = -30;
+constexpr float DEFAULT_MIN_DECIBELS = -100;
+const float DEFAULT_SMOOTHING_TIME_CONSTANT = 0.8;
 } // namespace audioapi

@@ -18,8 +18,11 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  downMixBus_ = std::make_unique<AudioBus>(context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+
+  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
+
   isInitialized_ = true;
 }
 
@@ -31,15 +34,15 @@ size_t AnalyserNode::getFrequencyBinCount() const {
   return fftSize_ / 2;
 }
 
-double AnalyserNode::getMinDecibels() const {
+float AnalyserNode::getMinDecibels() const {
   return minDecibels_;
 }
 
-double AnalyserNode::getMaxDecibels() const {
+float AnalyserNode::getMaxDecibels() const {
   return maxDecibels_;
 }
 
-double AnalyserNode::getSmoothingTimeConstant() const {
+float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
@@ -53,15 +56,15 @@ void AnalyserNode::setFftSize(size_t fftSize) {
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
 }
 
-void AnalyserNode::setMinDecibels(double minDecibels) {
+void AnalyserNode::setMinDecibels(float minDecibels) {
   minDecibels_ = minDecibels;
 }
 
-void AnalyserNode::setMaxDecibels(double maxDecibels) {
+void AnalyserNode::setMaxDecibels(float maxDecibels) {
   maxDecibels_ = maxDecibels;
 }
 
-void AnalyserNode::setSmoothingTimeConstant(double smoothingTimeConstant) {
+void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
@@ -140,15 +143,10 @@ void AnalyserNode::processNode(
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBus but instead copy the data to its own input buffer.
 
-  if (downMixBus_ == nullptr) {
-    downMixBus_ = std::make_unique<AudioBus>(
-        context_->getSampleRate(), processingBus->getSize(), 1);
-  }
-
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    auto framesToCopy = inputBuffer_->getSize() - vWriteIndex_;
+    auto framesToCopy = static_cast<int>(inputBuffer_->getSize() - vWriteIndex_);
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),

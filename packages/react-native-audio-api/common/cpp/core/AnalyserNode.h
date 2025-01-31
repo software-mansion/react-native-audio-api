@@ -16,14 +16,14 @@ class AnalyserNode : public AudioNode {
 
   size_t getFftSize() const;
   size_t getFrequencyBinCount() const;
-  double getMinDecibels() const;
-  double getMaxDecibels() const;
+  float getMinDecibels() const;
+  float getMaxDecibels() const;
 
-  double getSmoothingTimeConstant() const;
+  float getSmoothingTimeConstant() const;
   void setFftSize(size_t fftSize);
-  void setMinDecibels(double minDecibels);
-  void setMaxDecibels(double maxDecibels);
-  void setSmoothingTimeConstant(double smoothingTimeConstant);
+  void setMinDecibels(float minDecibels);
+  void setMaxDecibels(float maxDecibels);
+  void setSmoothingTimeConstant(float smoothingTimeConstant);
 
   void getFloatFrequencyData(float *data, size_t length);
   void getByteFrequencyData(uint8_t *data, size_t length);
@@ -35,9 +35,9 @@ class AnalyserNode : public AudioNode {
 
  private:
   size_t fftSize_;
-  double minDecibels_;
-  double maxDecibels_;
-  double smoothingTimeConstant_;
+  float minDecibels_;
+  float maxDecibels_;
+  float smoothingTimeConstant_;
 
   std::unique_ptr<AudioArray> inputBuffer_;
   std::unique_ptr<AudioBus> downMixBus_;
