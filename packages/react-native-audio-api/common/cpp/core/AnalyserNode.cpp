@@ -20,7 +20,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   downMixBus_ = std::make_unique<AudioBus>(
-      context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+            context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
 
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
 
@@ -80,7 +80,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   doFFTAnalysis();
 
   auto magnitudeBufferData = magnitudeBuffer_->getData();
-    length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
+  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
 
   const auto rangeScaleFactor =
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
@@ -103,7 +103,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
 }
 
 void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
-  auto size = fftSize_ ? fftSize_ < length : length;
+  auto size = std::min(fftSize_, length);
 
   for (int i = 0; i < size; i++) {
     data[i] = inputBuffer_->getData()
@@ -113,7 +113,7 @@ void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
-  auto size = fftSize_ ? fftSize_ < length : length;
+  auto size = std::min(fftSize_, length);
 
   for (int i = 0; i < size; i++) {
     auto value = inputBuffer_->getData()
@@ -147,8 +147,7 @@ void AnalyserNode::processNode(
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    auto framesToCopy =
-        static_cast<int>(inputBuffer_->getSize() - vWriteIndex_);
+    auto framesToCopy = static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),
@@ -211,7 +210,7 @@ void AnalyserNode::doFFTAnalysis() {
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
-  for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
+  for (size_t i = 0; i < magnitudeBuffer_->getSize(); i++) {
     std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
     auto scalarMagnitude = std::abs(c) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
