@@ -8,7 +8,7 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      444.0, -NYQUIST_FREQUENCY, NYQUIST_FREQUENCY);
+      444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency());
   detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
@@ -49,8 +49,8 @@ void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
     return;
   }
 
-  double deltaTime = 1.0 / context_->getSampleRate();
-  double time = context_->getCurrentTime() + startOffset * deltaTime;
+  auto deltaTime = 1.0 / context_->getSampleRate();
+  auto time = context_->getCurrentTime() + static_cast<double>(startOffset) * deltaTime;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
     auto detuneRatio =
