@@ -211,7 +211,7 @@ void AnalyserNode::doFFTAnalysis() {
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
-  for (size_t i = 0; i < magnitudeBuffer_->getSize(); i++) {
+  for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
     std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
     auto scalarMagnitude = std::abs(c) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
