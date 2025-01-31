@@ -16,7 +16,6 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       loopStart_(0),
       loopEnd_(0),
       vReadIndex_(0.0) {
-  numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);

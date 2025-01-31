@@ -75,16 +75,16 @@ bool AudioNode::isEnabled() const {
 void AudioNode::enable() {
   isEnabled_ = true;
 
-  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
-    it->get()->onInputEnabled();
+  for (auto & outputNode : outputNodes_) {
+    outputNode->onInputEnabled();
   }
 }
 
 void AudioNode::disable() {
   isEnabled_ = false;
 
-  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
-    it->get()->onInputDisabled();
+  for (auto & outputNode : outputNodes_) {
+    outputNode->onInputDisabled();
   }
 }
 
@@ -166,12 +166,14 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
       AudioBus *inputBus = (*it)->processAudio(processingBus, framesToProcess);
 
       if (inputBus != processingBus) {
+          // add assert
         processingBus->sum(inputBus);
       }
     } else {
       // Enforce the summing to be done using the internal bus.
-      AudioBus *inputBus = (*it)->processAudio(0, framesToProcess);
+      AudioBus *inputBus = (*it)->processAudio(nullptr, framesToProcess);
       if (inputBus) {
+          // add assert
         processingBus->sum(inputBus);
       }
     }
