@@ -181,7 +181,7 @@ void AudioParam::setTargetAtTime(
 
 void AudioParam::setValueCurveAtTime(
     const float *values,
-    int length,
+    size_t length,
     double startTime,
     double duration) {
   if (startTime <= getQueueEndTime()) {
@@ -200,9 +200,8 @@ void AudioParam::setValueCurveAtTime(
 
     if (time < endTime) {
       auto k = static_cast<int>(std::floor(
-          (length - 1) / (endTime - startTime) * (time - startTime)));
-      auto factor = static_cast<float>(
-          k - (time - startTime) * (length - 1) / (endTime - startTime));
+              static_cast<double>(length - 1) / (endTime - startTime) * (time - startTime)));
+      auto factor = static_cast<float>(k - (time - startTime) * static_cast<double>(length - 1) / (endTime - startTime));
 
       return AudioUtils::linearInterpolate(values, k, k + 1, factor);
     }

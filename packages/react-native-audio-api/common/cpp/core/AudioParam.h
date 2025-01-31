@@ -3,6 +3,7 @@
 #include <deque>
 #include <memory>
 #include <vector>
+#include <cstddef>
 
 #include "ParamChangeEvent.h"
 #include "ParamChangeEventType.h"
@@ -27,7 +28,7 @@ class AudioParam {
   void setTargetAtTime(float target, double startTime, double timeConstant);
   void setValueCurveAtTime(
       const float *values,
-      int length,
+      size_t length,
       double startTime,
       double duration);
   void cancelScheduledValues(double cancelTime);

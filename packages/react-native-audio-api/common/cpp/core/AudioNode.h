@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstddef>
 
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
