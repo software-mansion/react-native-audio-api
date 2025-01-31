@@ -20,7 +20,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   downMixBus_ = std::make_unique<AudioBus>(
-            context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+      context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
 
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
 
@@ -147,7 +147,8 @@ void AnalyserNode::processNode(
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    auto framesToCopy = static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
+    auto framesToCopy =
+        static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),

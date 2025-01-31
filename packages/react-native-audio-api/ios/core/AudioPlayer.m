@@ -59,10 +59,10 @@
     self.audioSession = AVAudioSession.sharedInstance;
     NSError *error = nil;
 
-// TODO:
-// We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
-// Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
-// But setting a recording category might require some setup first, so lets skip it for now :)
+    // TODO:
+    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
+    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
+    // But setting a recording category might require some setup first, so lets skip it for now :)
     [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
 
     if (error != nil) {
