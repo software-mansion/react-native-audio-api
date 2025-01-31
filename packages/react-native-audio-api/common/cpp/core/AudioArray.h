@@ -2,47 +2,48 @@
 
 #include <algorithm>
 #include <memory>
+#include <cstddef>
 
 namespace audioapi {
 
 class AudioArray {
  public:
-  explicit AudioArray(int size);
+  explicit AudioArray(size_t size);
   ~AudioArray();
 
-  [[nodiscard]] int getSize() const;
+  [[nodiscard]] size_t getSize() const;
   [[nodiscard]] float *getData() const;
 
-  float &operator[](int index);
-  const float &operator[](int index) const;
+  float &operator[](size_t index);
+  const float &operator[](size_t index) const;
 
   void normalize();
-  void resize(int size);
+  void resize(size_t size);
   void scale(float value);
   [[nodiscard]] float getMaxAbsValue() const;
 
   void zero();
-  void zero(int start, int length);
+  void zero(size_t start, size_t length);
 
   void sum(const AudioArray *source);
-  void sum(const AudioArray *source, int start, int length);
+  void sum(const AudioArray *source, size_t start, size_t length);
   void sum(
       const AudioArray *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
 
   void copy(const AudioArray *source);
-  void copy(const AudioArray *source, int start, int length);
+  void copy(const AudioArray *source, size_t start, size_t length);
   void copy(
       const AudioArray *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
 
  private:
   float *data_;
-  int size_;
+  size_t size_;
 };
 
 } // namespace audioapi
