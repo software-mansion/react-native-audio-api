@@ -16,7 +16,7 @@ class AnalyserNode : public AudioNode {
   explicit AnalyserNode(BaseAudioContext *context);
 
   int getFftSize() const;
-  size_t getFrequencyBinCount() const;
+  int getFrequencyBinCount() const;
   float getMinDecibels() const;
   float getMaxDecibels() const;
 
@@ -26,10 +26,10 @@ class AnalyserNode : public AudioNode {
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
 
-  void getFloatFrequencyData(float *data, size_t length);
-  void getByteFrequencyData(uint8_t *data, size_t length);
-  void getFloatTimeDomainData(float *data, size_t length);
-  void getByteTimeDomainData(uint8_t *data, size_t length);
+  void getFloatFrequencyData(float *data, int length);
+  void getByteFrequencyData(uint8_t *data, int length);
+  void getFloatTimeDomainData(float *data, int length);
+  void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;
@@ -49,7 +49,7 @@ class AnalyserNode : public AudioNode {
   bool shouldDoFFTAnalysis_ { true };
 
   void doFFTAnalysis();
-  static void applyWindow(float *data, size_t length);
+  static void applyWindow(float *data, int length);
 };
 
 } // namespace audioapi

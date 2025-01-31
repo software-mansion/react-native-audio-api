@@ -31,7 +31,7 @@ int AnalyserNode::getFftSize() const {
   return fftSize_;
 }
 
-size_t AnalyserNode::getFrequencyBinCount() const {
+int AnalyserNode::getFrequencyBinCount() const {
   return fftSize_ / 2;
 }
 
@@ -69,23 +69,23 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::getFloatFrequencyData(float *data, size_t length) {
+void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
-  length = std::min<size_t>(magnitudeBuffer_->getSize(), length);
+  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
   VectorMath::linearToDecibels(magnitudeBuffer_->getData(), data, length);
 }
 
-void AnalyserNode::getByteFrequencyData(uint8_t *data, size_t length) {
+void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   doFFTAnalysis();
 
   auto magnitudeBufferData = magnitudeBuffer_->getData();
-  length = std::min<size_t>(magnitudeBuffer_->getSize(), length);
+    length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
 
   const auto rangeScaleFactor =
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
 
-  for (size_t i = 0; i < length; i++) {
+  for (int i = 0; i < length; i++) {
     auto dbMag = magnitudeBufferData[i] == 0
         ? minDecibels_
         : AudioUtils::linearToDecibels(magnitudeBufferData[i]);
@@ -102,20 +102,20 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, size_t length) {
   }
 }
 
-void AnalyserNode::getFloatTimeDomainData(float *data, size_t length) {
+void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto size = fftSize_ ? fftSize_ < length : length;
 
-  for (size_t i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++) {
     data[i] = inputBuffer_->getData()
                   [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
                    inputBuffer_->getSize()];
   }
 }
 
-void AnalyserNode::getByteTimeDomainData(uint8_t *data, size_t length) {
+void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = fftSize_ ? fftSize_ < length : length;
 
-  for (size_t i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++) {
     auto value = inputBuffer_->getData()
                      [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
                       inputBuffer_->getSize()];
@@ -211,7 +211,7 @@ void AnalyserNode::doFFTAnalysis() {
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
-  for (size_t i = 0; i < magnitudeBuffer_->getSize(); i++) {
+  for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
     std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
     auto scalarMagnitude = std::abs(c) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
@@ -220,7 +220,7 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::applyWindow(float *data, size_t length) {
+void AnalyserNode::applyWindow(float *data, int length) {
   // https://www.sciencedirect.com/topics/engineering/blackman-window
   auto alpha = 0.16f;
   auto a0 = 0.5f * (1 - alpha);
