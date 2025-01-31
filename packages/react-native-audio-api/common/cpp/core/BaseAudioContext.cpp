@@ -25,7 +25,7 @@ std::string BaseAudioContext::getState() {
   return BaseAudioContext::toString(state_);
 }
 
-int BaseAudioContext::getSampleRate() const {
+float BaseAudioContext::getSampleRate() const {
   return sampleRate_;
 }
 
@@ -63,8 +63,8 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource() {
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
     int numberOfChannels,
-    int length,
-    int sampleRate) {
+    size_t length,
+    float sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
@@ -72,7 +72,7 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     float *real,
     float *imag,
     bool disableNormalization,
-    int length) {
+    size_t length) {
   return std::make_shared<PeriodicWave>(
       sampleRate_, real, imag, length, disableNormalization);
 }

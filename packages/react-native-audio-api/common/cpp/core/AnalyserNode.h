@@ -48,8 +48,8 @@ class AnalyserNode : public AudioNode {
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_ { true };
 
-    void doFFTAnalysis();
-    static void applyWindow(float *data, size_t length);
+  void doFFTAnalysis();
+  static void applyWindow(float *data, size_t length);
 };
 
 } // namespace audioapi
