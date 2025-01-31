@@ -14,8 +14,12 @@ constexpr int CHANNEL_COUNT = 2;
 constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
 constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());
 
-constexpr float MAX_GAIN = MOST_POSITIVE_SINGLE_FLOAT;
+// pan
 constexpr float MAX_PAN = 1.0;
+
+// gain
+constexpr float MAX_GAIN = MOST_POSITIVE_SINGLE_FLOAT;
+constexpr float MIN_GAIN = -MAX_GAIN;
 
 // biquad filter
 constexpr float MIN_FILTER_FREQUENCY = 0.0;
