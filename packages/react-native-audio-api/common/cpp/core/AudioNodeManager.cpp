@@ -5,8 +5,6 @@
 
 namespace audioapi {
 
-AudioNodeManager::AudioNodeManager() {}
-
 AudioNodeManager::~AudioNodeManager() {
   audioNodesToConnect_.clear();
   sourceNodes_.clear();
@@ -18,7 +16,7 @@ void AudioNodeManager::addPendingConnection(
     ConnectionType type) {
   Locker lock(getGraphLock());
 
-  audioNodesToConnect_.push_back(std::make_tuple(from, to, type));
+  audioNodesToConnect_.emplace_back(from, to, type);
 }
 
 void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioNode> &node) {
