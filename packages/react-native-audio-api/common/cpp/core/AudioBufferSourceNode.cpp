@@ -232,8 +232,11 @@ float AudioBufferSourceNode::getPlaybackRateValue(size_t &startOffset) {
   auto time = context_->getCurrentTime() +
       static_cast<double>(startOffset) / context_->getSampleRate();
 
-  return playbackRateParam_->getValueAtTime(time) *
-      std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+  auto sampleRateFactor = buffer_->getSampleRate() / context_->getSampleRate();
+  auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+  auto playbackRate = playbackRateParam_->getValueAtTime(time);
+
+  return playbackRate * sampleRateFactor * detune;
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame() {
