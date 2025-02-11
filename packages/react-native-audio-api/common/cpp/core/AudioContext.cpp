@@ -35,7 +35,7 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
 }
 
 AudioContext::~AudioContext() {
-  if (isRunning()) {
+  if (isClosed()) {
     return;
   }
 
@@ -48,7 +48,7 @@ void AudioContext::close() {
 }
 
 std::function<void(AudioBus *, int)> AudioContext::renderAudio() {
-  if (!isRunning()) {
+  if (!isRunning() || !destination_) {
     return [](AudioBus *, int) {};
   }
 
