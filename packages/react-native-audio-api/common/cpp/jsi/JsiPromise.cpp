@@ -36,9 +36,12 @@ jsi::Value PromiseVendor::createPromise(
         auto reject = std::make_shared<jsi::Function>(std::move(rejectLocal));
 
         auto resolveWrapper =
-            [resolve, &runtime, callInvoker](jsi::Value value) -> void {
-          auto valueShared = std::make_shared<jsi::Value>(std::move(value));
-          callInvoker->invokeAsync([resolve, &runtime, valueShared]() -> void {
+            [resolve, &runtime, callInvoker](
+                const std::function<jsi::Value(jsi::Runtime &)> resolver)
+            -> void {
+          callInvoker->invokeAsync([resolve, &runtime, resolver]() -> void {
+            auto valueShared = std::make_shared<jsi::Value>(resolver(runtime));
+
             resolve->call(runtime, *valueShared);
           });
         };
