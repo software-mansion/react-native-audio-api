@@ -4,6 +4,8 @@ import {
   WindowType,
 } from './core/types';
 
+import { InvalidStateError } from './errors';
+
 export class AudioBuffer {
   readonly length: number;
   readonly duration: number;
@@ -188,7 +190,7 @@ export class AnalyserNode extends AudioNode {
 }
 
 export class AudioScheduledSourceNode extends AudioNode {
-  private hasBeenStarted: boolean = false;
+  protected hasBeenStarted: boolean = false;
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -275,6 +277,29 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
   }
 
   public start(when?: number, offset?: number, duration?: number): void {
+    if (when && when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (offset && offset < 0) {
+      throw new RangeError(
+        `offset must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (duration && duration < 0) {
+      throw new RangeError(
+        `duration must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (this.hasBeenStarted) {
+      throw new InvalidStateError('Cannot call start more than once');
+    }
+
+    this.hasBeenStarted = true;
     (this.node as globalThis.AudioBufferSourceNode).start(
       when,
       offset,
