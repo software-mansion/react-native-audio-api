@@ -7,13 +7,16 @@ Some of the noticeable implementation details that are still in progress or not 
 - Support of different number of channels (current approach in most of the audio-graph nodes assumes working with two channel audio)
 - Multi-input for each node and input mixing (Although specification suggests that most of the nodes can cave only one input or output, common use-cases proves otherwise). Only node that mixes multiple inputs is `DestinationNode`.
 
-## ✅ Completed (**11** out of 32)
+## ✅ Completed (**12** out of 32)
 
 <details>
  <summary><b>AnalyserNode</b></summary>
 </details>
 <details>
   <summary><b>AudioBuffer</b></summary>
+</details>
+<details>
+  <summary><b>AudioBufferSourceNode</b></summary>
 </details>
 <details>
  <summary><b>AudioDestinationNode</b></summary>
@@ -43,7 +46,7 @@ Some of the noticeable implementation details that are still in progress or not 
  <summary><b>StereoPannerNode</b></summary>
 </details>
 
-## 🚧 In Progress (**3** out of 32)
+## 🚧 In Progress (**2** out of 32)
 
 <details>
   <summary><b>AudioContext</b></summary>
@@ -62,25 +65,6 @@ Some of the noticeable implementation details that are still in progress or not 
 | 🔘 resume                       | ❌    |
 | 🔘 setSinkId                    | ❌    |
 | 🔘 suspend                      | ❌    |
-
-</div>
-
-</details>
-
-<details>
-  <summary><b>AudioBufferSourceNode</b></summary>
-
-<div style="padding: 16px; padding-left: 42px;">
-
-| Property 🔹/ Method 🔘 | state |
-| ---------------------- | ----- |
-| 🔹 buffer              | ✅    |
-| 🔹 detune              | ✅    |
-| 🔹 loop                | ✅    |
-| 🔹 loopStart           | ✅    |
-| 🔹 loopEnd             | ✅    |
-| 🔹 playBackRate        | ✅    |
-| 🔘 start(overridden)   | ❌    |
 
 </div>
 
