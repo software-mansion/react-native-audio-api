@@ -12,23 +12,14 @@ import { ActivityIndicator } from 'react-native';
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
+  const [startTime, setStartTime] = useState(0);
+  const [offset, setOffset] = useState(0);
+
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioBufferSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-
-  const setup = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    audioBufferSourceNodeRef.current =
-      audioContextRef.current.createBufferSource();
-
-    audioBufferSourceNodeRef.current.connect(
-      audioContextRef.current.destination
-    );
-  };
+  const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const handleSetAudioSourceFromFile = async () => {
     try {
@@ -38,7 +29,7 @@ const AudioFile: FC = () => {
       });
 
       if (result.canceled === false) {
-        audioBufferSourceNodeRef.current?.stop();
+        bufferSourceRef.current?.stop();
         setIsPlaying(false);
 
         setIsLoading(true);
@@ -62,19 +53,24 @@ const AudioFile: FC = () => {
   }, []);
 
   const handlePress = () => {
-    if (!audioBuffer) {
+    if (!audioBuffer || !audioContextRef.current) {
       return;
     }
 
     if (isPlaying) {
-      audioBufferSourceNodeRef.current?.stop();
+      const stopTime = audioContextRef.current.currentTime;
+      bufferSourceRef.current?.stop(stopTime);
+      setOffset((prev) => prev + stopTime - startTime);
     } else {
-      setup();
-      audioBufferSourceNodeRef.current!.buffer = audioBuffer;
-      audioBufferSourceNodeRef.current?.start();
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
+      bufferSourceRef.current.buffer = audioBuffer;
+      bufferSourceRef.current.connect(audioContextRef.current.destination);
+
+      setStartTime(audioContextRef.current.currentTime);
+      bufferSourceRef.current.start(startTime, offset);
     }
 
-    setIsPlaying(!isPlaying);
+    setIsPlaying((prev) => !prev);
   };
 
   useEffect(() => {
