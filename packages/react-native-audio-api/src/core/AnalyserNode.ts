@@ -1,5 +1,6 @@
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
+import { WindowType } from './types';
 import AudioNode from './AudioNode';
 
 export default class AnalyserNode extends AudioNode {
@@ -61,6 +62,14 @@ export default class AnalyserNode extends AudioNode {
     }
 
     (this.node as IAnalyserNode).smoothingTimeConstant = value;
+  }
+
+  public get window(): WindowType {
+    return (this.node as IAnalyserNode).window;
+  }
+
+  public set window(value: WindowType) {
+    (this.node as IAnalyserNode).window = value;
   }
 
   public get frequencyBinCount(): number {

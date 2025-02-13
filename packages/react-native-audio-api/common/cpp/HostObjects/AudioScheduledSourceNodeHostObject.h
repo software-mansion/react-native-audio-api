@@ -20,10 +20,10 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
   }
 
   JSI_HOST_FUNCTION(start) {
-    auto time = args[0].getNumber();
+    auto when = args[0].getNumber();
     auto audioScheduleSourceNode =
         std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-    audioScheduleSourceNode->start(time);
+    audioScheduleSourceNode->start(when);
     return jsi::Value::undefined();
   }
 

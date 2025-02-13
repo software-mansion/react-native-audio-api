@@ -1,4 +1,8 @@
-import { ContextState, PeriodicWaveConstraints } from './core/types';
+import {
+  ContextState,
+  PeriodicWaveConstraints,
+  WindowType,
+} from './core/types';
 
 export class AudioBuffer {
   readonly length: number;
@@ -134,6 +138,16 @@ export class AnalyserNode extends AudioNode {
     this.smoothingTimeConstant = node.smoothingTimeConstant;
   }
 
+  public get window(): WindowType {
+    return 'blackman';
+  }
+
+  public set window(value: WindowType) {
+    console.log(
+      'React Native Audio API: setting window is not supported on web'
+    );
+  }
+
   public getByteFrequencyData(array: number[]): void {
     const data = new Uint8Array(array);
 
@@ -258,6 +272,14 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loopEnd(value: number) {
     (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
+  }
+
+  public start(when?: number, offset?: number, duration?: number): void {
+    (this.node as globalThis.AudioBufferSourceNode).start(
+      when,
+      offset,
+      duration
+    );
   }
 }
 
@@ -446,7 +468,7 @@ export class AudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor() {
+  constructor(_sampleRate?: number) {
     this.context = new window.AudioContext();
 
     this.sampleRate = this.context.sampleRate;

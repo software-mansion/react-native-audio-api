@@ -28,6 +28,12 @@ class AudioBufferSourceNodeHostObject
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer));
+
+    // start method is overridden in this class
+    functions_->erase("start");
+
+    addFunctions(
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start));
   }
 
   JSI_PROPERTY_GETTER(loop) {
@@ -110,6 +116,18 @@ class AudioBufferSourceNodeHostObject
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     audioBufferSourceNode->setLoopEnd(value.getNumber());
+  }
+
+  JSI_HOST_FUNCTION(start) {
+    auto when = args[0].getNumber();
+    auto offset = args[1].getNumber();
+    auto duration = args[2].getNumber();
+
+    auto audioBufferSourceNode =
+      std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    audioBufferSourceNode->start(when, offset, duration);
+
+    return jsi::Value::undefined();
   }
 };
 

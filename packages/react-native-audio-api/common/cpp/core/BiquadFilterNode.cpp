@@ -11,9 +11,9 @@ namespace audioapi {
 BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
     : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      350.0, MIN_FILTER_FREQUENCY, MAX_FILTER_FREQUENCY);
+      350.0, MIN_FILTER_FREQUENCY, context->getNyquistFrequency());
   detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
-  QParam_ = std::make_shared<AudioParam>(1.0, -MAX_FILTER_Q, MAX_FILTER_Q);
+  QParam_ = std::make_shared<AudioParam>(1.0, MIN_FILTER_Q, MAX_FILTER_Q);
   gainParam_ =
       std::make_shared<AudioParam>(0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
   type_ = BiquadFilterType::LOWPASS;
@@ -67,8 +67,7 @@ void BiquadFilterNode::getFrequencyResponse(
   float a2 = a2_;
 
   for (size_t i = 0; i < frequencyArraySize; i++) {
-    auto omega =
-        static_cast<float>(M_PI) * frequencyArray[i] / NYQUIST_FREQUENCY;
+    auto omega = PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
     magResponseOutput[i] = static_cast<float>(abs(response));
@@ -113,7 +112,7 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
   Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
-  float theta = M_PI * frequency;
+  float theta = PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
   float cosW = std::cos(theta);
   float beta = (1 - cosW) / 2;
@@ -136,7 +135,7 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
   Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
-  float theta = M_PI * frequency;
+  float theta = PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
   float cosW = std::cos(theta);
   float beta = (1 - cosW) / 2;
@@ -159,7 +158,7 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
   float k = std::cos(w0);
 
@@ -181,7 +180,7 @@ void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha =
       0.5f * std::sin(w0) * std::sqrt((A + 1 / A) * (1 / 1.0f - 1) + 2);
   float k = std::cos(w0);
@@ -210,7 +209,7 @@ void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha =
       0.5f * std::sin(w0) * std::sqrt((A + 1 / A) * (1 / 1.0f - 1) + 2);
   float k = std::cos(w0);
@@ -243,7 +242,7 @@ void BiquadFilterNode::setPeakingCoefficients(
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
   float k = std::cos(w0);
 
@@ -270,7 +269,7 @@ void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
   float k = std::cos(w0);
 
@@ -291,7 +290,7 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
     return;
   }
 
-  float w0 = M_PI * frequency;
+  float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
   float k = std::cos(w0);
 
@@ -302,8 +301,8 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
 void BiquadFilterNode::applyFilter() {
   double currentTime = context_->getCurrentTime();
 
-  float normalizedFrequency =
-      frequencyParam_->getValueAtTime(currentTime) / NYQUIST_FREQUENCY;
+  float normalizedFrequency = frequencyParam_->getValueAtTime(currentTime) /
+      context_->getNyquistFrequency();
   float detuneValue = detuneParam_->getValueAtTime(currentTime);
 
   if (detuneValue != 0.0) {

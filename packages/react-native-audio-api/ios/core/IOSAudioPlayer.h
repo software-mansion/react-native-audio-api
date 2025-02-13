@@ -22,10 +22,12 @@ class IOSAudioPlayer {
  public:
   explicit IOSAudioPlayer(
       const std::function<void(AudioBus *, int)> &renderAudio);
+  IOSAudioPlayer(
+      const std::function<void(AudioBus *, int)> &renderAudio,
+      float sampleRate);
   ~IOSAudioPlayer();
 
-  int getSampleRate() const;
-  int getBufferSizeInFrames() const;
+  float getSampleRate() const;
 
   void start();
   void stop();

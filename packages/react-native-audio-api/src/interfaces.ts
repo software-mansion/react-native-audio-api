@@ -4,6 +4,7 @@ import {
   OscillatorType,
   ChannelCountMode,
   ChannelInterpretation,
+  WindowType,
 } from './core/types';
 
 export interface IBaseAudioContext {
@@ -72,8 +73,8 @@ export interface IBiquadFilterNode extends IAudioNode {
 export interface IAudioDestinationNode extends IAudioNode {}
 
 export interface IAudioScheduledSourceNode extends IAudioNode {
-  start: (time: number) => void;
-  stop: (time: number) => void;
+  start(when?: number): void;
+  stop: (when: number) => void;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
@@ -89,9 +90,10 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loop: boolean;
   loopStart: number;
   loopEnd: number;
-
   detune: IAudioParam;
   playbackRate: IAudioParam;
+
+  start: (when?: number, offset?: number, duration?: number) => void;
 }
 
 export interface IAudioBuffer {
@@ -144,6 +146,7 @@ export interface IAnalyserNode extends IAudioNode {
   minDecibels: number;
   maxDecibels: number;
   smoothingTimeConstant: number;
+  window: WindowType;
 
   getFloatFrequencyData: (array: number[]) => void;
   getByteFrequencyData: (array: number[]) => void;

@@ -15,7 +15,7 @@ buildscript {
 
 def reactNativeArchitectures() {
   def value = rootProject.getProperties().get("reactNativeArchitectures")
-  return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a"]
+  return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"]
 }
 
 def isNewArchitectureEnabled() {
@@ -206,4 +206,11 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 
 tasks.preBuild {
     dependsOn assertMinimalReactNativeVersion
+}
+
+task cleanCmakeCache() {
+    tasks.getByName("clean").dependsOn(cleanCmakeCache)
+    doFirst {
+        delete "${projectDir}/.cxx"
+    }
 }

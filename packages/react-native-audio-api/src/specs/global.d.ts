@@ -2,7 +2,7 @@
 import type { IAudioContext } from '../interfaces';
 
 type AudioAPIInstaller = {
-  createAudioContext: () => IAudioContext;
+  createAudioContext: (sampleRate?: number) => IAudioContext;
 };
 
 declare global {

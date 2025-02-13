@@ -1,0 +1,22 @@
+---
+sidebar_position: 3
+---
+
+# WindowType
+
+`WindowType` type specifies which [window function](https://en.wikipedia.org/wiki/Window_function) is applied when extracting frequency data.
+
+**Acceptable values:**
+  - `blackman`
+
+  Set [Blackman window](https://www.sciencedirect.com/topics/engineering/blackman-window) as window function.
+
+  - `hann`
+
+  Set [Hanning window](https://www.sciencedirect.com/topics/engineering/hanning-window) as window function.
+
+:::caution
+
+On `Web`, the value of`window` is permanently `'blackman'`, and it cannot be set like in the `Android` or `iOS`.
+
+:::

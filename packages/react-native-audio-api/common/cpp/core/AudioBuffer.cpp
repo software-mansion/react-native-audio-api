@@ -4,7 +4,10 @@
 
 namespace audioapi {
 
-AudioBuffer::AudioBuffer(int numberOfChannels, int length, int sampleRate) {
+AudioBuffer::AudioBuffer(
+    int numberOfChannels,
+    size_t length,
+    float sampleRate) {
   bus_ = std::make_shared<AudioBus>(sampleRate, length, numberOfChannels);
 }
 
@@ -12,7 +15,7 @@ AudioBuffer::AudioBuffer(AudioBus *bus) {
   bus_ = std::shared_ptr<AudioBus>(bus);
 }
 
-int AudioBuffer::getLength() const {
+size_t AudioBuffer::getLength() const {
   return bus_->getSize();
 }
 
@@ -20,7 +23,7 @@ int AudioBuffer::getNumberOfChannels() const {
   return bus_->getNumberOfChannels();
 }
 
-int AudioBuffer::getSampleRate() const {
+float AudioBuffer::getSampleRate() const {
   return bus_->getSampleRate();
 }
 
@@ -34,9 +37,9 @@ float *AudioBuffer::getChannelData(int channel) const {
 
 void AudioBuffer::copyFromChannel(
     float *destination,
-    int destinationLength,
+    size_t destinationLength,
     int channelNumber,
-    int startInChannel) const {
+    size_t startInChannel) const {
   memcpy(
       destination,
       bus_->getChannel(channelNumber)->getData() + startInChannel,
@@ -46,9 +49,9 @@ void AudioBuffer::copyFromChannel(
 
 void AudioBuffer::copyToChannel(
     const float *source,
-    int sourceLength,
+    size_t sourceLength,
     int channelNumber,
-    int startInChannel) {
+    size_t startInChannel) {
   memcpy(
       bus_->getChannel(channelNumber)->getData() + startInChannel,
       source,

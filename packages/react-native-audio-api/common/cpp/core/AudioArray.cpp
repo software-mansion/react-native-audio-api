@@ -5,7 +5,7 @@
 
 namespace audioapi {
 
-AudioArray::AudioArray(int size) : data_(nullptr), size_(size) {
+AudioArray::AudioArray(size_t size) : data_(nullptr), size_(size) {
   resize(size);
 }
 
@@ -16,7 +16,7 @@ AudioArray::~AudioArray() {
   }
 }
 
-int AudioArray::getSize() const {
+size_t AudioArray::getSize() const {
   return size_;
 }
 
@@ -24,11 +24,11 @@ float *AudioArray::getData() const {
   return data_;
 }
 
-float &AudioArray::operator[](int index) {
+float &AudioArray::operator[](size_t index) {
   return data_[index];
 }
 
-const float &AudioArray::operator[](int index) const {
+const float &AudioArray::operator[](size_t index) const {
   return data_[index];
 }
 
@@ -42,7 +42,7 @@ void AudioArray::normalize() {
   VectorMath::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
 }
 
-void AudioArray::resize(int size) {
+void AudioArray::resize(size_t size) {
   if (size == size_) {
     if (!data_) {
       data_ = new float[size];
@@ -71,7 +71,7 @@ void AudioArray::zero() {
   zero(0, size_);
 }
 
-void AudioArray::zero(int start, int length) {
+void AudioArray::zero(size_t start, size_t length) {
   memset(data_ + start, 0, length * sizeof(float));
 }
 
@@ -79,15 +79,15 @@ void AudioArray::sum(const AudioArray *source) {
   sum(source, 0, 0, size_);
 }
 
-void AudioArray::sum(const AudioArray *source, int start, int length) {
+void AudioArray::sum(const AudioArray *source, size_t start, size_t length) {
   sum(source, start, start, length);
 }
 
 void AudioArray::sum(
     const AudioArray *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   VectorMath::add(
       data_ + destinationStart,
       source->getData() + sourceStart,
@@ -99,15 +99,15 @@ void AudioArray::copy(const AudioArray *source) {
   copy(source, 0, size_);
 }
 
-void AudioArray::copy(const AudioArray *source, int start, int length) {
+void AudioArray::copy(const AudioArray *source, size_t start, size_t length) {
   copy(source, start, start, length);
 }
 
 void AudioArray::copy(
     const AudioArray *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   memcpy(
       data_ + destinationStart,
       source->getData() + sourceStart,

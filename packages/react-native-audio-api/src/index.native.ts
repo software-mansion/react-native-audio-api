@@ -23,4 +23,5 @@ export {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  WindowType,
 } from './core/types';

@@ -1,9 +1,3 @@
-#ifdef ANDROID
-#include "AudioPlayer.h"
-#else
-#include "IOSAudioPlayer.h"
-#endif
-
 #include "BaseAudioContext.h"
 
 #include "AnalyserNode.h"
@@ -23,40 +17,16 @@
 namespace audioapi {
 
 BaseAudioContext::BaseAudioContext() {
-#ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
-#endif
-
-  audioDecoder_ = std::make_shared<AudioDecoder>(audioPlayer_->getSampleRate());
-
-  sampleRate_ = audioPlayer_->getSampleRate();
-  bufferSizeInFrames_ = audioPlayer_->getBufferSizeInFrames();
-
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
-}
-
-BaseAudioContext::~BaseAudioContext() {
-  if (isRunning()) {
-    return;
-  }
-
-  state_ = ContextState::CLOSED;
-  audioPlayer_->stop();
 }
 
 std::string BaseAudioContext::getState() {
   return BaseAudioContext::toString(state_);
 }
 
-int BaseAudioContext::getSampleRate() const {
+float BaseAudioContext::getSampleRate() const {
   return sampleRate_;
-}
-
-int BaseAudioContext::getBufferSizeInFrames() const {
-  return bufferSizeInFrames_;
 }
 
 std::size_t BaseAudioContext::getCurrentSampleFrame() const {
@@ -72,29 +42,39 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 }
 
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
-  return std::make_shared<OscillatorNode>(this);
+  auto oscillator = std::make_shared<OscillatorNode>(this);
+  nodeManager_->addNode(oscillator);
+  return oscillator;
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
-  return std::make_shared<GainNode>(this);
+  auto gain = std::make_shared<GainNode>(this);
+  nodeManager_->addNode(gain);
+  return gain;
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {
-  return std::make_shared<StereoPannerNode>(this);
+  auto stereoPanner = std::make_shared<StereoPannerNode>(this);
+  nodeManager_->addNode(stereoPanner);
+  return stereoPanner;
 }
 
 std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
-  return std::make_shared<BiquadFilterNode>(this);
+  auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
+  nodeManager_->addNode(biquadFilter);
+  return biquadFilter;
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource() {
-  return std::make_shared<AudioBufferSourceNode>(this);
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this);
+  nodeManager_->addNode(bufferSource);
+  return bufferSource;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
     int numberOfChannels,
-    int length,
-    int sampleRate) {
+    size_t length,
+    float sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
@@ -108,23 +88,15 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
-  return std::make_shared<AnalyserNode>(this);
+  auto analyser = std::make_shared<AnalyserNode>(this);
+  nodeManager_->addNode(analyser);
+  return analyser;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
   return std::make_shared<AudioBuffer>(audioBus);
-}
-
-std::function<void(AudioBus *, int)> BaseAudioContext::renderAudio() {
-  if (!isRunning()) {
-    return [](AudioBus *, int) {};
-  }
-
-  return [this](AudioBus *data, int frames) {
-    destination_->renderAudio(data, frames);
-  };
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
@@ -137,6 +109,10 @@ bool BaseAudioContext::isRunning() const {
 
 bool BaseAudioContext::isClosed() const {
   return state_ == ContextState::CLOSED;
+}
+
+float BaseAudioContext::getNyquistFrequency() const {
+  return sampleRate_ / 2.0f;
 }
 
 std::string BaseAudioContext::toString(ContextState state) {

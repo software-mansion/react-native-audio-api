@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <cstddef>
 
 namespace audioapi {
 
@@ -21,14 +22,13 @@ class AudioBus {
     ChannelSurroundRight = 5,
   };
 
-  explicit AudioBus(int sampleRate, int size);
-  explicit AudioBus(int sampleRate, int size, int numberOfChannels);
+  explicit AudioBus(float sampleRate, size_t size, int numberOfChannels);
 
   ~AudioBus();
 
   [[nodiscard]] int getNumberOfChannels() const;
-  [[nodiscard]] int getSampleRate() const;
-  [[nodiscard]] int getSize() const;
+  [[nodiscard]] float getSampleRate() const;
+  [[nodiscard]] size_t getSize() const;
   [[nodiscard]] AudioArray *getChannel(int index) const;
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
@@ -37,47 +37,47 @@ class AudioBus {
   [[nodiscard]] float maxAbsValue() const;
 
   void zero();
-  void zero(int start, int length);
+  void zero(size_t start, size_t length);
 
   void sum(const AudioBus *source);
-  void sum(const AudioBus *source, int start, int length);
+  void sum(const AudioBus *source, size_t start, size_t length);
   void sum(
       const AudioBus *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
 
   void copy(const AudioBus *source);
-  void copy(const AudioBus *source, int start, int length);
+  void copy(const AudioBus *source, size_t start, size_t length);
   void copy(
       const AudioBus *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
 
  private:
   std::vector<std::shared_ptr<AudioArray>> channels_;
 
   int numberOfChannels_;
-  int sampleRate_;
-  int size_;
+  float sampleRate_;
+  size_t size_;
 
   void createChannels();
   void discreteSum(
       const AudioBus *source,
-      int sourceStart,
-      int destinationStart,
-      int length) const;
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length) const;
   void sumByUpMixing(
       const AudioBus *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
   void sumByDownMixing(
       const AudioBus *source,
-      int sourceStart,
-      int destinationStart,
-      int length);
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
 };
 
 } // namespace audioapi

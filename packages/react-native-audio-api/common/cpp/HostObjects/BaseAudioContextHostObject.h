@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 #include <JsiHostObject.h>
 #include <JsiPromise.h>
@@ -100,9 +101,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());
-    auto length = static_cast<int>(args[1].getNumber());
-    auto sampleRate = static_cast<int>(args[2].getNumber());
-    auto buffer = context_->createBuffer(numberOfChannels, length, sampleRate);
+    auto length = static_cast<size_t>(args[1].getNumber());
+    auto sampleRate = static_cast<float>(args[2].getNumber());
+    auto buffer = BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
     auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
     return jsi::Object::createFromHostObject(runtime, bufferHostObject);
   }
@@ -142,20 +143,16 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(decodeAudioDataSource) {
     auto sourcePath = args[0].getString(runtime).utf8(runtime);
 
-    auto promise = promiseVendor_->createPromise(
-        [this, &runtime, sourcePath](std::shared_ptr<Promise> promise) {
-          std::thread([this,
-                       &runtime,
-                       sourcePath,
-                       promise = std::move(promise)]() {
-            auto results = context_->decodeAudioDataSource(sourcePath);
-            auto audioBufferHostObject =
-                std::make_shared<AudioBufferHostObject>(results);
+    auto promise = promiseVendor_->createPromise([this, sourcePath](std::shared_ptr<Promise> promise) {
+      std::thread([this, sourcePath, promise = std::move(promise)]() {
+        auto results = context_->decodeAudioDataSource(sourcePath);
+        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
 
-            promise->resolve(jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject));
-          }).detach();
+        promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
+          return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
         });
+      }).detach();
+    });
 
     return promise;
   }

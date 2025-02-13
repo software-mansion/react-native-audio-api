@@ -21,17 +21,36 @@ AudioPlayer::AudioPlayer(
       ->setDataCallback(this)
       ->openStream(mStream_);
 
+  sampleRate_ = static_cast<float>(mStream_->getSampleRate());
   mBus_ = std::make_shared<AudioBus>(
-      getSampleRate(), getBufferSizeInFrames(), CHANNEL_COUNT);
+      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
   isInitialized_ = true;
 }
 
-int AudioPlayer::getSampleRate() const {
-  return mStream_->getSampleRate();
+AudioPlayer::AudioPlayer(
+    const std::function<void(AudioBus *, int)> &renderAudio,
+    float sampleRate)
+    : renderAudio_(renderAudio) {
+  AudioStreamBuilder builder;
+
+  builder.setSharingMode(SharingMode::Exclusive)
+      ->setFormat(AudioFormat::Float)
+      ->setFormatConversionAllowed(true)
+      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setChannelCount(CHANNEL_COUNT)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setDataCallback(this)
+      ->setSampleRate(static_cast<int>(sampleRate))
+      ->openStream(mStream_);
+
+  sampleRate_ = sampleRate;
+  mBus_ = std::make_shared<AudioBus>(
+      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+  isInitialized_ = true;
 }
 
-int AudioPlayer::getBufferSizeInFrames() const {
-  return mStream_->getBufferSizeInFrames();
+float AudioPlayer::getSampleRate() const {
+  return sampleRate_;
 }
 
 void AudioPlayer::start() {
@@ -59,14 +78,22 @@ DataCallbackResult AudioPlayer::onAudioReady(
   }
 
   auto buffer = static_cast<float *>(audioData);
-  renderAudio_(mBus_.get(), numFrames);
+  int processedFrames = 0;
 
-  // TODO: optimize this with SIMD?
-  for (int32_t i = 0; i < numFrames; i += 1) {
-    for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
-      buffer[i * CHANNEL_COUNT + channel] =
-          mBus_->getChannel(channel)->getData()[i];
+  while (processedFrames < numFrames) {
+    int framesToProcess =
+        std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
+    renderAudio_(mBus_.get(), framesToProcess);
+
+    // TODO: optimize this with SIMD?
+    for (int i = 0; i < framesToProcess; i++) {
+      for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
+        buffer[(processedFrames + i) * CHANNEL_COUNT + channel] =
+            mBus_->getChannel(channel)->getData()[i];
+      }
     }
+
+    processedFrames += framesToProcess;
   }
 
   return DataCallbackResult::Continue;

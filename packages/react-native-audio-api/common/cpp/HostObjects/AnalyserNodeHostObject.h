@@ -19,7 +19,8 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
         JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, frequencyBinCount),
         JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
         JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, maxDecibels),
-        JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant));
+        JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant),
+        JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, window));
 
     addFunctions(
         JSI_EXPORT_FUNCTION(
@@ -36,7 +37,8 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
         JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, minDecibels),
         JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, maxDecibels),
         JSI_EXPORT_PROPERTY_SETTER(
-            AnalyserNodeHostObject, smoothingTimeConstant));
+            AnalyserNodeHostObject, smoothingTimeConstant),
+        JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, window));
   }
 
   JSI_PROPERTY_GETTER(fftSize) {
@@ -62,6 +64,12 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_GETTER(smoothingTimeConstant) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
     return {analyserNode->getSmoothingTimeConstant()};
+  }
+
+  JSI_PROPERTY_GETTER(window) {
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    auto windowType = analyserNode->getWindowType();
+    return jsi::String::createFromUtf8(runtime, windowType);
   }
 
   JSI_HOST_FUNCTION(getFloatFrequencyData) {
@@ -126,26 +134,31 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_SETTER(fftSize) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    auto fftSize = static_cast<size_t>(value.getNumber());
+    auto fftSize = static_cast<int>(value.getNumber());
     analyserNode->setFftSize(fftSize);
   }
 
   JSI_PROPERTY_SETTER(minDecibels) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    auto minDecibels = static_cast<int>(value.getNumber());
+    auto minDecibels = static_cast<float>(value.getNumber());
     analyserNode->setMinDecibels(minDecibels);
   }
 
   JSI_PROPERTY_SETTER(maxDecibels) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-      auto maxDecibels = static_cast<int>(value.getNumber());
+      auto maxDecibels = static_cast<float>(value.getNumber());
       analyserNode->setMaxDecibels(maxDecibels);
   }
 
   JSI_PROPERTY_SETTER(smoothingTimeConstant) {
     auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-    auto smoothingTimeConstant = static_cast<int>(value.getNumber());
+    auto smoothingTimeConstant = static_cast<float>(value.getNumber());
     analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
+  }
+
+  JSI_PROPERTY_SETTER(window) {
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->setWindowType(value.getString(runtime).utf8(runtime));
   }
 };
 } // namespace audioapi

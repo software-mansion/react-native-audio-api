@@ -24,6 +24,9 @@ const AudioVisualizer: React.FC = () => {
   const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
   const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
 
+  const [startTime, setStartTime] = useState(0);
+  const [offset, setOffset] = useState(0);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -31,7 +34,9 @@ const AudioVisualizer: React.FC = () => {
 
   const handlePlayPause = () => {
     if (isPlaying) {
-      bufferSourceRef.current?.stop();
+      const stopTime = audioContextRef.current!.currentTime;
+      bufferSourceRef.current?.stop(stopTime);
+      setOffset((prev) => prev + stopTime - startTime);
     } else {
       if (!audioContextRef.current || !analyserRef.current) {
         return;
@@ -41,7 +46,8 @@ const AudioVisualizer: React.FC = () => {
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(analyserRef.current);
 
-      bufferSourceRef.current.start();
+      setStartTime(audioContextRef.current.currentTime);
+      bufferSourceRef.current.start(startTime, offset);
 
       requestAnimationFrame(draw);
     }

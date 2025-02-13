@@ -27,6 +27,7 @@
  */
 
 #include "PeriodicWave.h"
+#include "Constants.h"
 
 constexpr unsigned NumberOfOctaveBands = 3;
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
@@ -34,10 +35,10 @@ constexpr float interpolate2Point = 0.3;
 constexpr float interpolate3Point = 0.16;
 
 namespace audioapi {
-PeriodicWave::PeriodicWave(int sampleRate, bool disableNormalization)
+PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
     : sampleRate_(sampleRate), disableNormalization_(disableNormalization) {
-  numberOfRanges_ = lround(
-      NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize())));
+  numberOfRanges_ = static_cast<int>(round(
+      NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))));
   auto nyquistFrequency = sampleRate_ / 2;
   lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) /
       static_cast<float>(getMaxNumberOfPartials());
@@ -47,7 +48,7 @@ PeriodicWave::PeriodicWave(int sampleRate, bool disableNormalization)
 }
 
 PeriodicWave::PeriodicWave(
-    int sampleRate,
+    float sampleRate,
     audioapi::OscillatorType type,
     bool disableNormalization)
     : PeriodicWave(sampleRate, disableNormalization) {
@@ -55,7 +56,7 @@ PeriodicWave::PeriodicWave(
 }
 
 PeriodicWave::PeriodicWave(
-    int sampleRate,
+    float sampleRate,
     float *real,
     float *imaginary,
     int length,
@@ -147,7 +148,7 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
     // Coefficient for sin()
     float b;
 
-    auto piFactor = static_cast<float>(1.0f / (i * M_PI));
+    auto piFactor = 1.0f / (PI * static_cast<float>(i));
 
     switch (type) {
       case OscillatorType::SINE:

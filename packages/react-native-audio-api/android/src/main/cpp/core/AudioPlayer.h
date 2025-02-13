@@ -1,6 +1,7 @@
 #pragma once
 
 #include <oboe/Oboe.h>
+#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -13,9 +14,11 @@ class AudioBus;
 class AudioPlayer : public AudioStreamDataCallback {
  public:
   explicit AudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio);
+  AudioPlayer(
+      const std::function<void(AudioBus *, int)> &renderAudio,
+      float sampleRate);
 
-  [[nodiscard]] int getSampleRate() const;
-  [[nodiscard]] int getBufferSizeInFrames() const;
+  [[nodiscard]] float getSampleRate() const;
   void start();
   void stop();
 
@@ -29,6 +32,7 @@ class AudioPlayer : public AudioStreamDataCallback {
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<AudioBus> mBus_;
   bool isInitialized_ = false;
+  float sampleRate_;
 };
 
 } // namespace audioapi

@@ -35,10 +35,18 @@ class AudioAPIInstallerHostObject
   }
 
   JSI_HOST_FUNCTION(createAudioContext) {
-    auto audioContext = std::make_shared<AudioContext>();
-    auto audioContextHostObject =
+      std::shared_ptr<AudioContext> audioContext;
+      if (args[0].isUndefined()) {
+          audioContext = std::make_shared<AudioContext>();
+      } else {
+          auto sampleRate = static_cast<float>(args[0].getNumber());
+          audioContext = std::make_shared<AudioContext>(sampleRate);
+      }
+
+      auto audioContextHostObject =
         std::make_shared<AudioContextHostObject>(audioContext, promiseVendor_);
-    return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
+
+      return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
   }
 
  private:

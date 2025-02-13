@@ -2,7 +2,8 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+#include <unordered_set>
+#include <cstddef>
 
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
@@ -17,6 +18,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
   explicit AudioNode(BaseAudioContext *context);
   virtual ~AudioNode();
+
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
@@ -37,23 +39,21 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;
 
-  int channelCount_ = CHANNEL_COUNT;
-
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int numberOfEnabledInputNodes_ = 0;
+  int channelCount_ = 2;
+  ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
+  ChannelInterpretation channelInterpretation_ =
+          ChannelInterpretation::SPEAKERS;
 
+  std::unordered_set<AudioNode *> inputNodes_ = {};
+  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
+
+  int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;
   bool isEnabled_ = true;
 
   std::size_t lastRenderedFrame_{SIZE_MAX};
-
-  ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
-  ChannelInterpretation channelInterpretation_ =
-      ChannelInterpretation::SPEAKERS;
-
-  std::vector<AudioNode *> inputNodes_ = {};
-  std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
  private:
   static std::string toString(ChannelCountMode mode);

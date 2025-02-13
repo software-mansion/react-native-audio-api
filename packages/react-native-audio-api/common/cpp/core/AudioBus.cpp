@@ -17,12 +17,8 @@ namespace audioapi {
 /**
  * Public interfaces - memory management
  */
-AudioBus::AudioBus(int sampleRate, int size)
-    : numberOfChannels_(CHANNEL_COUNT), sampleRate_(sampleRate), size_(size) {
-  createChannels();
-}
 
-AudioBus::AudioBus(int sampleRate, int size, int numberOfChannels)
+AudioBus::AudioBus(float sampleRate, size_t size, int numberOfChannels)
     : numberOfChannels_(numberOfChannels),
       sampleRate_(sampleRate),
       size_(size) {
@@ -41,11 +37,11 @@ int AudioBus::getNumberOfChannels() const {
   return numberOfChannels_;
 }
 
-int AudioBus::getSampleRate() const {
+float AudioBus::getSampleRate() const {
   return sampleRate_;
 }
 
-int AudioBus::getSize() const {
+size_t AudioBus::getSize() const {
   return size_;
 }
 
@@ -56,7 +52,7 @@ AudioArray *AudioBus::getChannel(int index) const {
 AudioArray *AudioBus::getChannelByType(int channelType) const {
   switch (getNumberOfChannels()) {
     case 1: // mono
-      if (channelType == ChannelMono || channelType == ChannelLeft) {
+      if (channelType == ChannelMono) {
         return getChannel(0);
       }
       return nullptr;
@@ -131,7 +127,7 @@ void AudioBus::zero() {
   zero(0, getSize());
 }
 
-void AudioBus::zero(int start, int length) {
+void AudioBus::zero(size_t start, size_t length) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
     it->get()->zero(start, length);
   }
@@ -169,15 +165,15 @@ void AudioBus::sum(const AudioBus *source) {
   sum(source, 0, 0, getSize());
 }
 
-void AudioBus::sum(const AudioBus *source, int start, int length) {
+void AudioBus::sum(const AudioBus *source, size_t start, size_t length) {
   sum(source, start, start, length);
 }
 
 void AudioBus::sum(
     const AudioBus *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   if (source == this) {
     return;
   }
@@ -210,15 +206,15 @@ void AudioBus::copy(const AudioBus *source) {
   copy(source, 0, 0, getSize());
 }
 
-void AudioBus::copy(const AudioBus *source, int start, int length) {
+void AudioBus::copy(const AudioBus *source, size_t start, size_t length) {
   copy(source, start, start, length);
 }
 
 void AudioBus::copy(
     const AudioBus *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   if (source == this) {
     return;
   }
@@ -255,9 +251,9 @@ void AudioBus::createChannels() {
 
 void AudioBus::discreteSum(
     const AudioBus *source,
-    int sourceStart,
-    int destinationStart,
-    int length) const {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) const {
   int numberOfChannels =
       std::min(getNumberOfChannels(), source->getNumberOfChannels());
 
@@ -272,9 +268,9 @@ void AudioBus::discreteSum(
 
 void AudioBus::sumByUpMixing(
     const AudioBus *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
@@ -351,9 +347,9 @@ void AudioBus::sumByUpMixing(
 
 void AudioBus::sumByDownMixing(
     const AudioBus *source,
-    int sourceStart,
-    int destinationStart,
-    int length) {
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 

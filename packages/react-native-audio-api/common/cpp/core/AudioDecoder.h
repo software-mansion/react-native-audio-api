@@ -8,12 +8,12 @@ class AudioBus;
 
 class AudioDecoder {
  public:
-  explicit AudioDecoder(int sampleRate) : sampleRate_(sampleRate) {}
+  explicit AudioDecoder(float sampleRate) : sampleRate_(sampleRate) {}
 
   [[nodiscard]] AudioBus *decodeWithFilePath(const std::string &path) const;
 
  private:
-  int sampleRate_;
+  float sampleRate_;
 };
 
 } // namespace audioapi

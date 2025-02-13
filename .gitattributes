@@ -2,3 +2,11 @@
 # specific for windows script files
 *.bat text eol=crlf
 docs/assets/example-01.mp4 filter=lfs diff=lfs merge=lfs -text
+
+packages/react-native-audio-api/common/cpp/libs/* linguist-vendored
+packages/react-native-audio-api/android/libs/* linguist-vendored
+apps/* linguist-vendored
+docs/* linguist-vendored
+.github/* linguist-vendored
+.yarn/* linguist-vendored
+packages/audiodocs/* linguist-vendored

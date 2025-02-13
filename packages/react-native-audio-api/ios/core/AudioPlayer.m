@@ -28,7 +28,9 @@
       @throw error;
     }
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:[self.audioSession sampleRate] channels:2];
+    self.sampleRate = [self.audioSession sampleRate];
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -47,24 +49,56 @@
   return self;
 }
 
-- (int)getSampleRate
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
 {
-  return [self.audioSession sampleRate];
+  if (self = [super init]) {
+    self.renderAudio = [renderAudio copy];
+    self.audioEngine = [[AVAudioEngine alloc] init];
+    self.audioEngine.mainMixerNode.outputVolume = 1;
+
+    self.audioSession = AVAudioSession.sharedInstance;
+    NSError *error = nil;
+
+    // TODO:
+    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
+    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
+    // But setting a recording category might require some setup first, so lets skip it for now :)
+    [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    [self.audioSession setActive:true error:&error];
+
+    if (error != nil) {
+      @throw error;
+    }
+
+    self.sampleRate = sampleRate;
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+
+    __weak typeof(self) weakSelf = self;
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
+                                                renderBlock:^OSStatus(
+                                                    BOOL *isSilence,
+                                                    const AudioTimeStamp *timestamp,
+                                                    AVAudioFrameCount frameCount,
+                                                    AudioBufferList *outputData) {
+                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                     timestamp:timestamp
+                                                                                    frameCount:frameCount
+                                                                                    outputData:outputData];
+                                                }];
+  }
+
+  return self;
 }
 
-- (int)getBufferSizeInFrames
+- (float)getSampleRate
 {
-  // Note: might be important in the future.
-  // For some reason audioSession.IOBufferDuration is always 0.01, which for sample rate of 48k
-  // gives exactly 480 frames, while at the same time frameCount requested by AVAudioSourceEngine
-  // might vary f.e. between 555-560.
-  // preferredIOBufferDuration seems to be double the value (resulting in 960 frames),
-  // which is safer to base our internal AudioBus sizes.
-  // Buut no documentation => no guarantee :)
-  // If something is crackling when it should play silence, start here 📻
-  double maxBufferDuration =
-      fmax(0.02, fmax(self.audioSession.IOBufferDuration, self.audioSession.preferredIOBufferDuration));
-  return (int)(maxBufferDuration * self.audioSession.sampleRate + 1);
+  return self.sampleRate;
 }
 
 - (void)start

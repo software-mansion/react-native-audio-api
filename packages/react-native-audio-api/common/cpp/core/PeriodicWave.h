@@ -40,11 +40,11 @@ namespace audioapi {
 class PeriodicWave {
  public:
   explicit PeriodicWave(
-      int sampleRate,
+      float sampleRate,
       OscillatorType type,
       bool disableNormalization);
   explicit PeriodicWave(
-      int sampleRate,
+      float sampleRate,
       float *real,
       float *imaginary,
       int length,
@@ -57,7 +57,7 @@ class PeriodicWave {
   getSample(float fundamentalFrequency, float phase, float phaseIncrement);
 
  private:
-  explicit PeriodicWave(int sampleRate, bool disableNormalization);
+  explicit PeriodicWave(float sampleRate, bool disableNormalization);
 
   // Partial is any frequency component of a sound.
   // Both harmonics(fundamentalFrequency * k)  and overtones are partials.
@@ -102,7 +102,7 @@ class PeriodicWave {
       const float *higherWaveData) const;
 
   // determines the time resolution of the waveform.
-  int sampleRate_;
+  float sampleRate_;
   // determines number of frequency segments (or bands) the signal is divided.
   int numberOfRanges_;
   // the lowest frequency (in hertz) where playback will include all of the

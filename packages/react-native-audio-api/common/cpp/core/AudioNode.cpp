@@ -9,13 +9,10 @@ namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
   audioBus_ = std::make_shared<AudioBus>(
-      context->getSampleRate(),
-      context->getBufferSizeInFrames(),
-      channelCount_);
+      context->getSampleRate(), RENDER_QUANTUM_SIZE, channelCount_);
 }
 
 AudioNode::~AudioNode() {
-  isInitialized_ = false;
   cleanup();
 }
 
@@ -44,30 +41,15 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
       shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
 }
 
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  outputNodes_.push_back(node);
-  node->onInputConnected(this);
-}
-
 void AudioNode::disconnect() {
   for (auto &outputNode : outputNodes_) {
-    disconnectNode(outputNode);
+    disconnect(outputNode);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   context_->getNodeManager()->addPendingConnection(
       shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
-}
-
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
-  node->onInputDisconnected(this);
-
-  auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
-
-  if (position != outputNodes_.end()) {
-    outputNodes_.erase(position);
-  }
 }
 
 bool AudioNode::isEnabled() const {
@@ -77,16 +59,16 @@ bool AudioNode::isEnabled() const {
 void AudioNode::enable() {
   isEnabled_ = true;
 
-  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
-    it->get()->onInputEnabled();
+  for (auto &outputNode : outputNodes_) {
+    outputNode->onInputEnabled();
   }
 }
 
 void AudioNode::disable() {
   isEnabled_ = false;
 
-  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
-    it->get()->onInputDisabled();
+  for (auto &outputNode : outputNodes_) {
+    outputNode->onInputDisabled();
   }
 }
 
@@ -168,12 +150,14 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
       AudioBus *inputBus = (*it)->processAudio(processingBus, framesToProcess);
 
       if (inputBus != processingBus) {
+        // add assert
         processingBus->sum(inputBus);
       }
     } else {
       // Enforce the summing to be done using the internal bus.
-      AudioBus *inputBus = (*it)->processAudio(0, framesToProcess);
+      AudioBus *inputBus = (*it)->processAudio(nullptr, framesToProcess);
       if (inputBus) {
+        // add assert
         processingBus->sum(inputBus);
       }
     }
@@ -186,8 +170,28 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
 }
 
 void AudioNode::cleanup() {
+  isInitialized_ = false;
+
+  for (const auto &outputNode : outputNodes_) {
+    outputNode->onInputDisconnected(this);
+  }
+
+  for (const auto &inputNode : inputNodes_) {
+    inputNode->disconnectNode(shared_from_this());
+  }
+
   outputNodes_.clear();
   inputNodes_.clear();
+}
+
+void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
+  outputNodes_.insert(node);
+  node->onInputConnected(this);
+}
+
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
+  outputNodes_.erase(node);
+  node->onInputDisconnected(this);
 }
 
 void AudioNode::onInputEnabled() {
@@ -207,7 +211,11 @@ void AudioNode::onInputDisabled() {
 }
 
 void AudioNode::onInputConnected(AudioNode *node) {
-  inputNodes_.push_back(node);
+  if (!isInitialized_) {
+    return;
+  }
+
+  inputNodes_.insert(node);
 
   if (node->isEnabled()) {
     onInputEnabled();
@@ -215,22 +223,14 @@ void AudioNode::onInputConnected(AudioNode *node) {
 }
 
 void AudioNode::onInputDisconnected(AudioNode *node) {
-  auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
-
-  if (position != inputNodes_.end()) {
-    inputNodes_.erase(position);
-  }
-
-  if (!inputNodes_.empty()) {
+  if (!isInitialized_) {
     return;
   }
 
+  inputNodes_.erase(node);
+
   if (isEnabled()) {
     node->onInputDisabled();
-  }
-
-  for (const auto &outputNode : outputNodes_) {
-    disconnectNode(outputNode);
   }
 }
 

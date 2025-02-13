@@ -16,10 +16,9 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       loopStart_(0),
       loopEnd_(0),
       vReadIndex_(0.0) {
-  numberOfInputs_ = 0;
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
-  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
+  detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
@@ -73,10 +72,25 @@ void AudioBufferSourceNode::setBuffer(
 
   buffer_ = buffer;
   alignedBus_ = std::make_shared<AudioBus>(
-      context_->getSampleRate(), buffer_->getLength());
+      context_->getSampleRate(),
+      buffer_->getLength(),
+      buffer_->getNumberOfChannels());
 
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());
+}
+
+void AudioBufferSourceNode::start(double when, double offset, double duration) {
+  AudioScheduledSourceNode::start(when);
+
+  offset = std::min(offset, buffer_->getDuration());
+  if (loop_) {
+    offset = std::min(offset, loopEnd_);
+  }
+
+  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+
+  AudioScheduledSourceNode::stop(when + duration);
 }
 
 void AudioBufferSourceNode::processNode(
@@ -90,7 +104,7 @@ void AudioBufferSourceNode::processNode(
 
   // No audio data to fill, zero the output and return.
   if (!isPlaying() || !alignedBus_ || alignedBus_->getSize() == 0 ||
-      !playbackRate) {
+      playbackRate == 0.0f) {
     processingBus->zero();
     return;
   }
@@ -115,7 +129,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
-  size_t direction = playbackRate < 0 ? -1 : 1;
+  size_t direction = playbackRate < 0.0f ? -1 : 1;
 
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
@@ -165,7 +179,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
   }
 
   // update reading index for next render quantum
-  vReadIndex_ = readIndex;
+  vReadIndex_ = static_cast<double>(readIndex);
 }
 
 void AudioBufferSourceNode::processWithInterpolation(
@@ -173,13 +187,13 @@ void AudioBufferSourceNode::processWithInterpolation(
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
-  size_t direction = playbackRate < 0 ? -1 : 1;
+  size_t direction = playbackRate < 0.0f ? -1 : 1;
 
   size_t writeIndex = startOffset;
 
-  double vFrameStart = getVirtualStartFrame();
-  double vFrameEnd = getVirtualEndFrame();
-  double vFrameDelta = vFrameEnd - vFrameStart;
+  auto vFrameStart = getVirtualStartFrame();
+  auto vFrameEnd = getVirtualEndFrame();
+  auto vFrameDelta = vFrameEnd - vFrameStart;
 
   auto frameStart = static_cast<size_t>(vFrameStart);
   auto frameEnd = static_cast<size_t>(vFrameEnd);
@@ -195,7 +209,8 @@ void AudioBufferSourceNode::processWithInterpolation(
   while (framesLeft > 0) {
     auto readIndex = static_cast<size_t>(vReadIndex_);
     size_t nextReadIndex = readIndex + 1;
-    float factor = vReadIndex_ - readIndex;
+    auto factor =
+        static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
 
     if (nextReadIndex >= frameEnd) {
       nextReadIndex = loop_ ? frameStart : readIndex;
@@ -210,11 +225,11 @@ void AudioBufferSourceNode::processWithInterpolation(
     }
 
     writeIndex += 1;
-    vReadIndex_ += playbackRate * direction;
+    vReadIndex_ += playbackRate * static_cast<double>(direction);
     framesLeft -= 1;
 
     if (vReadIndex_ < vFrameStart || vReadIndex_ >= vFrameEnd) {
-      vReadIndex_ -= direction * vFrameDelta;
+      vReadIndex_ -= static_cast<double>(direction) * vFrameDelta;
 
       if (!loop_) {
         processingBus->zero(writeIndex, framesLeft);
@@ -227,23 +242,26 @@ void AudioBufferSourceNode::processWithInterpolation(
 }
 
 float AudioBufferSourceNode::getPlaybackRateValue(size_t &startOffset) {
-  double time =
-      context_->getCurrentTime() + startOffset / context_->getSampleRate();
+  auto time = context_->getCurrentTime() +
+      static_cast<double>(startOffset) / context_->getSampleRate();
 
-  return playbackRateParam_->getValueAtTime(time) *
-      std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+  auto sampleRateFactor = buffer_->getSampleRate() / context_->getSampleRate();
+  auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+  auto playbackRate = playbackRateParam_->getValueAtTime(time);
+
+  return playbackRate * sampleRateFactor * detune;
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame() {
-  double loopStartFrame = loopStart_ * context_->getSampleRate();
+  auto loopStartFrame = loopStart_ * context_->getSampleRate();
 
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_ ? loopStartFrame
                                                                : 0.0;
 }
 
 double AudioBufferSourceNode::getVirtualEndFrame() {
-  double inputBufferLength = alignedBus_->getSize();
-  double loopEndFrame = loopEnd_ * context_->getSampleRate();
+  auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
+  auto loopEndFrame = loopEnd_ * context_->getSampleRate();
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_
       ? std::min(loopEndFrame, inputBufferLength)

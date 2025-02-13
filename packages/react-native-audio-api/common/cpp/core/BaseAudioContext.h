@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 #include "ContextState.h"
 #include "OscillatorType.h"
@@ -24,21 +25,14 @@ class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
 
-#ifdef ANDROID
-class AudioPlayer;
-#else
-class IOSAudioPlayer;
-#endif
-
 class BaseAudioContext {
  public:
   BaseAudioContext();
-  ~BaseAudioContext();
+  virtual ~BaseAudioContext() = default;
 
   std::string getState();
-  [[nodiscard]] int getSampleRate() const;
+  [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
-  [[nodiscard]] int getBufferSizeInFrames() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
   std::shared_ptr<AudioDestinationNode> getDestination();
 
@@ -48,34 +42,29 @@ class BaseAudioContext {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource();
   static std::shared_ptr<AudioBuffer>
-  createBuffer(int numberOfChannels, int length, int sampleRate);
+  createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       float *real,
       float *imag,
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
-
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
+
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  std::function<void(AudioBus *, int)> renderAudio();
   AudioNodeManager *getNodeManager();
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
+  [[nodiscard]] float getNyquistFrequency() const;
 
  protected:
   static std::string toString(ContextState state);
   std::shared_ptr<AudioDestinationNode> destination_;
-  std::shared_ptr<AudioDecoder> audioDecoder_;
+  // init in AudioContext or OfflineContext constructor
+  std::shared_ptr<AudioDecoder> audioDecoder_ {};
 
-#ifdef ANDROID
-  std::shared_ptr<AudioPlayer> audioPlayer_;
-#else
-  std::shared_ptr<IOSAudioPlayer> audioPlayer_;
-#endif
-
-  int sampleRate_;
-  int bufferSizeInFrames_;
+  // init in AudioContext or OfflineContext constructor
+  float sampleRate_ {};
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 

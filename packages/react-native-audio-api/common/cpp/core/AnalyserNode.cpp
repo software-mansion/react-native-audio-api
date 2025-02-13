@@ -16,34 +16,43 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       minDecibels_(DEFAULT_MIN_DECIBELS),
       maxDecibels_(DEFAULT_MAX_DECIBELS),
       smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
+      windowType_(WindowType::BLACKMAN),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  downMixBus_ = std::make_unique<AudioBus>(
+      context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+
+  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
+
   isInitialized_ = true;
 }
 
-size_t AnalyserNode::getFftSize() const {
+int AnalyserNode::getFftSize() const {
   return fftSize_;
 }
 
-size_t AnalyserNode::getFrequencyBinCount() const {
+int AnalyserNode::getFrequencyBinCount() const {
   return fftSize_ / 2;
 }
 
-double AnalyserNode::getMinDecibels() const {
+float AnalyserNode::getMinDecibels() const {
   return minDecibels_;
 }
 
-double AnalyserNode::getMaxDecibels() const {
+float AnalyserNode::getMaxDecibels() const {
   return maxDecibels_;
 }
 
-double AnalyserNode::getSmoothingTimeConstant() const {
+float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
-void AnalyserNode::setFftSize(size_t fftSize) {
+std::string AnalyserNode::getWindowType() const {
+  return AnalyserNode::toString(windowType_);
+}
+
+void AnalyserNode::setFftSize(int fftSize) {
   if (fftSize_ == fftSize) {
     return;
   }
@@ -53,35 +62,39 @@ void AnalyserNode::setFftSize(size_t fftSize) {
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
 }
 
-void AnalyserNode::setMinDecibels(double minDecibels) {
+void AnalyserNode::setMinDecibels(float minDecibels) {
   minDecibels_ = minDecibels;
 }
 
-void AnalyserNode::setMaxDecibels(double maxDecibels) {
+void AnalyserNode::setMaxDecibels(float maxDecibels) {
   maxDecibels_ = maxDecibels;
 }
 
-void AnalyserNode::setSmoothingTimeConstant(double smoothingTimeConstant) {
+void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::getFloatFrequencyData(float *data, size_t length) {
+void AnalyserNode::setWindowType(const std::string &type) {
+  windowType_ = AnalyserNode::fromString(type);
+}
+
+void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
-  length = std::min<size_t>(magnitudeBuffer_->getSize(), length);
+  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
   VectorMath::linearToDecibels(magnitudeBuffer_->getData(), data, length);
 }
 
-void AnalyserNode::getByteFrequencyData(uint8_t *data, size_t length) {
+void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   doFFTAnalysis();
 
   auto magnitudeBufferData = magnitudeBuffer_->getData();
-  length = std::min<size_t>(magnitudeBuffer_->getSize(), length);
+  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
 
   const auto rangeScaleFactor =
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
 
-  for (size_t i = 0; i < length; i++) {
+  for (int i = 0; i < length; i++) {
     auto dbMag = magnitudeBufferData[i] == 0
         ? minDecibels_
         : AudioUtils::linearToDecibels(magnitudeBufferData[i]);
@@ -98,20 +111,20 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, size_t length) {
   }
 }
 
-void AnalyserNode::getFloatTimeDomainData(float *data, size_t length) {
+void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto size = std::min(fftSize_, length);
 
-  for (size_t i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++) {
     data[i] = inputBuffer_->getData()
                   [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
                    inputBuffer_->getSize()];
   }
 }
 
-void AnalyserNode::getByteTimeDomainData(uint8_t *data, size_t length) {
+void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = std::min(fftSize_, length);
 
-  for (size_t i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++) {
     auto value = inputBuffer_->getData()
                      [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
                       inputBuffer_->getSize()];
@@ -140,15 +153,11 @@ void AnalyserNode::processNode(
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBus but instead copy the data to its own input buffer.
 
-  if (downMixBus_ == nullptr) {
-    downMixBus_ = std::make_unique<AudioBus>(
-        context_->getSampleRate(), processingBus->getSize(), 1);
-  }
-
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    auto framesToCopy = inputBuffer_->getSize() - vWriteIndex_;
+    auto framesToCopy =
+        static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),
@@ -197,7 +206,14 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  AnalyserNode::applyWindow(tempBuffer.getData(), fftSize_);
+  switch (windowType_) {
+    case WindowType::BLACKMAN:
+      AnalyserNode::applyBlackManWindow(tempBuffer.getData(), fftSize_);
+      break;
+    case WindowType::HANN:
+      AnalyserNode::applyHannWindow(tempBuffer.getData(), fftSize_);
+      break;
+  }
 
   // do fft analysis - get frequency domain data
   fftFrame_->doFFT(tempBuffer.getData());
@@ -211,7 +227,7 @@ void AnalyserNode::doFFTAnalysis() {
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
-  for (size_t i = 0; i < magnitudeBuffer_->getSize(); i++) {
+  for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
     std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
     auto scalarMagnitude = std::abs(c) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
@@ -220,17 +236,23 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::applyWindow(float *data, size_t length) {
+void AnalyserNode::applyBlackManWindow(float *data, int length) {
   // https://www.sciencedirect.com/topics/engineering/blackman-window
-  auto alpha = 0.16f;
-  auto a0 = 0.5f * (1 - alpha);
-  auto a1 = 0.5f;
-  auto a2 = 0.5f * alpha;
+  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.blackman.html#scipy.signal.windows.blackman
 
   for (int i = 0; i < length; ++i) {
     auto x = static_cast<float>(i) / static_cast<float>(length);
-    auto window = a0 - a1 * cos(2 * static_cast<float>(M_PI) * x) +
-        a2 * cos(4 * static_cast<float>(M_PI) * x);
+    auto window = 0.42f - 0.5f * cos(2 * PI * x) + 0.08f * cos(4 * PI * x);
+    data[i] *= window;
+  }
+}
+
+void AnalyserNode::applyHannWindow(float *data, int length) {
+  // https://www.sciencedirect.com/topics/engineering/hanning-window
+  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.hann.html#scipy.signal.windows.hann
+  for (int i = 0; i < length; ++i) {
+    auto x = static_cast<float>(i) / static_cast<float>(length - 1);
+    auto window = 0.5f - 0.5f * cos(2 * PI * x);
     data[i] *= window;
   }
 }

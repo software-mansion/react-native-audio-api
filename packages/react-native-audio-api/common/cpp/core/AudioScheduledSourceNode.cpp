@@ -15,15 +15,13 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
 }
 
-void AudioScheduledSourceNode::start(double time) {
+void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
-  startTime_ = time;
-
-  context_->getNodeManager()->addSourceNode(shared_from_this());
+  startTime_ = when;
 }
 
-void AudioScheduledSourceNode::stop(double time) {
-  stopTime_ = time;
+void AudioScheduledSourceNode::stop(double when) {
+  stopTime_ = when;
 }
 
 bool AudioScheduledSourceNode::isUnscheduled() {
@@ -53,7 +51,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     return;
   }
 
-  int sampleRate = context_->getSampleRate();
+  auto sampleRate = context_->getSampleRate();
 
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;
