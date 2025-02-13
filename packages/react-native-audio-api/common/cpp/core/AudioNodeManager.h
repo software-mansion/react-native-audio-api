@@ -4,6 +4,7 @@
 #include <mutex>
 #include <tuple>
 #include <vector>
+#include <unordered_set>
 
 namespace audioapi {
 
@@ -15,20 +16,24 @@ class AudioNodeManager {
   AudioNodeManager() = default;
   ~AudioNodeManager();
 
+  std::mutex &getGraphLock();
+
   void preProcessGraph();
+
   void addPendingConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioNode> &to,
       ConnectionType type);
 
-  void addSourceNode(const std::shared_ptr<AudioNode> &node);
-
-  std::mutex &getGraphLock();
+  void addNode(const std::shared_ptr<AudioNode> &node);
 
  private:
   std::mutex graphLock_;
 
-  std::vector<std::shared_ptr<AudioNode>> sourceNodes_;
+  // all nodes created in the context
+  std::unordered_set<std::shared_ptr<AudioNode>> nodes_;
+
+  // connections to be settled
   std::vector<std::tuple<
       std::shared_ptr<AudioNode>,
       std::shared_ptr<AudioNode>,
@@ -36,7 +41,7 @@ class AudioNodeManager {
       audioNodesToConnect_;
 
   void settlePendingConnections();
-  void removeFinishedSourceNodes();
+  void prepareNodesForDestruction();
 };
 
 } // namespace audioapi

@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+#include <unordered_set>
 #include <cstddef>
 
 #include "ChannelCountMode.h"
@@ -18,6 +18,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
   explicit AudioNode(BaseAudioContext *context);
   virtual ~AudioNode();
+
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
@@ -45,8 +46,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   ChannelInterpretation channelInterpretation_ =
           ChannelInterpretation::SPEAKERS;
 
-    std::vector<AudioNode *> inputNodes_ = {};
-    std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
+  std::unordered_set<AudioNode *> inputNodes_ = {};
+  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;

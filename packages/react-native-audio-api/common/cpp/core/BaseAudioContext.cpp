@@ -42,23 +42,33 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 }
 
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
-  return std::make_shared<OscillatorNode>(this);
+  auto oscillator = std::make_shared<OscillatorNode>(this);
+  nodeManager_->addNode(oscillator);
+  return oscillator;
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
-  return std::make_shared<GainNode>(this);
+  auto gain = std::make_shared<GainNode>(this);
+  nodeManager_->addNode(gain);
+  return gain;
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {
-  return std::make_shared<StereoPannerNode>(this);
+  auto stereoPanner = std::make_shared<StereoPannerNode>(this);
+  nodeManager_->addNode(stereoPanner);
+  return stereoPanner;
 }
 
 std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
-  return std::make_shared<BiquadFilterNode>(this);
+  auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
+  nodeManager_->addNode(biquadFilter);
+  return biquadFilter;
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource() {
-  return std::make_shared<AudioBufferSourceNode>(this);
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this);
+  nodeManager_->addNode(bufferSource);
+  return bufferSource;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
@@ -78,7 +88,9 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
-  return std::make_shared<AnalyserNode>(this);
+  auto analyser = std::make_shared<AnalyserNode>(this);
+  nodeManager_->addNode(analyser);
+  return analyser;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

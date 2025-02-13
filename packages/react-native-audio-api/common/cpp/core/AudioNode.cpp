@@ -13,7 +13,6 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
-  isInitialized_ = false;
   cleanup();
 }
 
@@ -42,30 +41,15 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
       shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
 }
 
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  outputNodes_.push_back(node);
-  node->onInputConnected(this);
-}
-
 void AudioNode::disconnect() {
   for (auto &outputNode : outputNodes_) {
-    disconnectNode(outputNode);
+    disconnect(outputNode);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   context_->getNodeManager()->addPendingConnection(
       shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
-}
-
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
-  node->onInputDisconnected(this);
-
-  auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
-
-  if (position != outputNodes_.end()) {
-    outputNodes_.erase(position);
-  }
 }
 
 bool AudioNode::isEnabled() const {
@@ -186,8 +170,28 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
 }
 
 void AudioNode::cleanup() {
+  isInitialized_ = false;
+
+  for (const auto &outputNode : outputNodes_) {
+    outputNode->onInputDisconnected(this);
+  }
+
+  for (const auto &inputNode : inputNodes_) {
+    inputNode->disconnectNode(shared_from_this());
+  }
+
   outputNodes_.clear();
   inputNodes_.clear();
+}
+
+void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
+  outputNodes_.insert(node);
+  node->onInputConnected(this);
+}
+
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
+  outputNodes_.erase(node);
+  node->onInputDisconnected(this);
 }
 
 void AudioNode::onInputEnabled() {
@@ -211,7 +215,7 @@ void AudioNode::onInputConnected(AudioNode *node) {
     return;
   }
 
-  inputNodes_.push_back(node);
+  inputNodes_.insert(node);
 
   if (node->isEnabled()) {
     onInputEnabled();
@@ -223,22 +227,10 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
     return;
   }
 
-  auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
-
-  if (position != inputNodes_.end()) {
-    inputNodes_.erase(position);
-  }
-
-  if (!inputNodes_.empty()) {
-    return;
-  }
+  inputNodes_.erase(node);
 
   if (isEnabled()) {
     node->onInputDisabled();
-  }
-
-  for (const auto &outputNode : outputNodes_) {
-    disconnectNode(outputNode);
   }
 }
 

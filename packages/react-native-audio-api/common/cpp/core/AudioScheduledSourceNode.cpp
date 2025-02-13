@@ -18,8 +18,6 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 void AudioScheduledSourceNode::start(double time) {
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = time;
-
-  context_->getNodeManager()->addSourceNode(shared_from_this());
 }
 
 void AudioScheduledSourceNode::stop(double time) {

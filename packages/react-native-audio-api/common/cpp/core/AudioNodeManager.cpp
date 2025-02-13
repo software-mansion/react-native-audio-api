@@ -7,7 +7,6 @@ namespace audioapi {
 
 AudioNodeManager::~AudioNodeManager() {
   audioNodesToConnect_.clear();
-  sourceNodes_.clear();
 }
 
 void AudioNodeManager::addPendingConnection(
@@ -19,23 +18,23 @@ void AudioNodeManager::addPendingConnection(
   audioNodesToConnect_.emplace_back(from, to, type);
 }
 
-void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioNode> &node) {
-  Locker lock(getGraphLock());
-
-  sourceNodes_.push_back(node);
-}
-
 void AudioNodeManager::preProcessGraph() {
   if (!Locker::tryLock(getGraphLock())) {
     return;
   }
 
   settlePendingConnections();
-  removeFinishedSourceNodes();
+  prepareNodesForDestruction();
 }
 
 std::mutex &AudioNodeManager::getGraphLock() {
   return graphLock_;
+}
+
+void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
+  Locker lock(getGraphLock());
+
+  nodes_.insert(node);
 }
 
 void AudioNodeManager::settlePendingConnections() {
@@ -43,6 +42,8 @@ void AudioNodeManager::settlePendingConnections() {
     std::shared_ptr<AudioNode> from = std::get<0>(connection);
     std::shared_ptr<AudioNode> to = std::get<1>(connection);
     ConnectionType type = std::get<2>(connection);
+
+    // add assert to check if from and to are neither null nor uninitialized
 
     if (type == ConnectionType::CONNECT) {
       from->connectNode(to);
@@ -54,16 +55,11 @@ void AudioNodeManager::settlePendingConnections() {
   audioNodesToConnect_.clear();
 }
 
-void AudioNodeManager::removeFinishedSourceNodes() {
-  for (auto it = sourceNodes_.begin(); it != sourceNodes_.end();) {
-    auto currentNode = it->get();
-    // Release the source node if use count is equal to 1 (this vector)
-    if (!currentNode->isEnabled() && it->use_count() == 1) {
-      for (auto &outputNode : currentNode->outputNodes_) {
-        currentNode->disconnectNode(outputNode);
-      }
-
-      it = sourceNodes_.erase(it);
+void AudioNodeManager::prepareNodesForDestruction() {
+  for (auto it = nodes_.begin(); it != nodes_.end();) {
+    if (it->use_count() == 1) {
+      it->get()->cleanup();
+      it = nodes_.erase(it);
     } else {
       ++it;
     }
