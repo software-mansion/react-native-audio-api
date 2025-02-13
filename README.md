@@ -1,4 +1,4 @@
-<img src="./docs/assets/react-native-audio-api-gh-cover.png?v0.0.1" alt="React Native Audio API" width="100%">
+<img src="./assets/react-native-audio-api-gh-cover.png?v0.0.1" alt="React Native Audio API" width="100%">
 
 ### React Native Audio API
 
@@ -39,7 +39,7 @@ You can also check out [MDN Web Docs](https://developer.mozilla.org/en-US/docs/W
 
 ## Coverage
 
-Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](./docs/web-audio-coverage.md).
+Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion-labs.github.io/react-native-audio-api/other/web-audio-api-coverage).
 
 ## Examples
 

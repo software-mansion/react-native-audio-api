@@ -1,0 +1,60 @@
+---
+id: web-audio-api-coverage
+sidebar_label: Web Audio API coverage
+sidebar_position: 2
+---
+
+# [Web Audio API coverage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+
+### Coverage table
+
+| Interface | Status | Remarks |
+| :---------: | :------: | :----: |
+| AnalyserNode | ✅ |
+| AudioBuffer | ✅ |
+| AudioBufferSourceNode | ✅ |
+| AudioContext | 🚧 | Available props and methods: `close` |
+| AudioDestinationNode | ✅ |
+| AudioListener | ❌ |
+| AudioNode | ✅ | `connect` to `AudioNode` is only possible, simplified mixing logic |
+| AudioParam | ✅ |
+| AudioScheduledSourceNode | ✅ |
+| AudioSinkInfo | ❌ |
+| AudioWorklet | ❌ |
+| AudioWorkletGlobalScope | ❌ |
+| AudioWorkletNode | ❌ |
+| AudioWorkletProcessor | ❌ |
+| BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `sampleRate`, `state`, all create methods for available or under construction nodes |
+| BiquadFilterNode | ✅ |
+| ChannelMergerNode | ❌ |
+| ChannelSplitterNode | ❌ |
+| ConstantSourceNode | ❌ |
+| ConvolverNode | ❌ |
+| DelayNode | ❌ |
+| DynamicsCompressorNode | ❌ |
+| GainNode | ✅ |
+| IIRFilterNode | ❌ |
+| MediaElementAudioSourceNode | ❌ |
+| MediaStreamAudioDestinationNode | ❌ |
+| MediaStreamAudioSourceNode | ❌ |
+| OfflineAudioCompletionEvent | ❌ |
+| OfflineAudioContext | ❌ |
+| OscillatorNode | ✅ |
+| PannerNode | ❌ |
+| PeriodicWave | ✅ |
+| WaveShaperNode | ❌ |
+| StereoPannerNode | ✅ |
+
+### Description
+
+✅ - Completed
+
+🚧 - Under construction
+
+❌ - Not available
+
+:::info
+
+If you have a use case for any of unavailable interfaces contact us or [create issue](https://github.com/software-mansion-labs/react-native-audio-api)
+
+:::
