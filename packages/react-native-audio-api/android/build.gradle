@@ -207,3 +207,10 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 tasks.preBuild {
     dependsOn assertMinimalReactNativeVersion
 }
+
+task cleanCmakeCache() {
+    tasks.getByName("clean").dependsOn(cleanCmakeCache)
+    doFirst {
+        delete "${projectDir}/.cxx"
+    }
+}
