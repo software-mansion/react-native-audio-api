@@ -17,7 +17,7 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
 
   [[nodiscard]] size_t getLength() const;
   [[nodiscard]] float getSampleRate() const;
-  [[nodiscard]] float getDuration() const;
+  [[nodiscard]] double getDuration() const;
 
   [[nodiscard]] int getNumberOfChannels() const;
   [[nodiscard]] float *getChannelData(int channel) const;

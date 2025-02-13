@@ -15,13 +15,13 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
 }
 
-void AudioScheduledSourceNode::start(double time) {
+void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
-  startTime_ = time;
+  startTime_ = when;
 }
 
-void AudioScheduledSourceNode::stop(double time) {
-  stopTime_ = time;
+void AudioScheduledSourceNode::stop(double when) {
+  stopTime_ = when;
 }
 
 bool AudioScheduledSourceNode::isUnscheduled() {

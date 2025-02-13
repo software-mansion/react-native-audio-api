@@ -27,8 +27,8 @@ float AudioBuffer::getSampleRate() const {
   return bus_->getSampleRate();
 }
 
-float AudioBuffer::getDuration() const {
-  return static_cast<float>(getLength()) / getSampleRate();
+double AudioBuffer::getDuration() const {
+  return static_cast<double>(getLength()) / getSampleRate();
 }
 
 float *AudioBuffer::getChannelData(int channel) const {

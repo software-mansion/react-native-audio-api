@@ -3,6 +3,7 @@ import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
+import { InvalidStateError, RangeError } from '../errors';
 
 export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
@@ -54,5 +55,42 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loopEnd(value: number) {
     (this.node as IAudioBufferSourceNode).loopEnd = value;
+  }
+
+  public start(when: number = 0, offset: number = 0, duration?: number): void {
+    if (when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (offset < 0) {
+      throw new RangeError(
+        `offset must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (duration && duration < 0) {
+      throw new RangeError(
+        `duration must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (this.hasBeenStarted) {
+      throw new InvalidStateError('Cannot call start more than once');
+    }
+
+    this.hasBeenStarted = true;
+
+    if (duration) {
+      (this.node as IAudioBufferSourceNode).start(when, offset, duration);
+      return;
+    }
+
+    (this.node as IAudioBufferSourceNode).start(
+      when,
+      offset,
+      this.buffer!.duration
+    );
   }
 }

@@ -18,17 +18,16 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] bool getLoop() const;
   [[nodiscard]] double getLoopStart() const;
   [[nodiscard]] double getLoopEnd() const;
-
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
-
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
 
   void setLoop(bool loop);
   void setLoopStart(double loopStart);
   void setLoopEnd(double loopEnd);
-
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+
+  void start(double when, double offset, double duration);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;

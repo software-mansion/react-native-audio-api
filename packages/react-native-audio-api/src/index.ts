@@ -257,6 +257,14 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
   public set loopEnd(value: number) {
     (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
   }
+
+  public start(when?: number, offset?: number, duration?: number): void {
+    (this.node as globalThis.AudioBufferSourceNode).start(
+      when,
+      offset,
+      duration
+    );
+  }
 }
 
 export class AudioDestinationNode extends AudioNode {}

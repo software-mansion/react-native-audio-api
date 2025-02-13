@@ -80,6 +80,19 @@ void AudioBufferSourceNode::setBuffer(
   alignedBus_->sum(buffer_->bus_.get());
 }
 
+void AudioBufferSourceNode::start(double when, double offset, double duration) {
+  AudioScheduledSourceNode::start(when);
+
+  offset = std::min(offset, buffer_->getDuration());
+  if (loop_) {
+    offset = std::min(offset, loopEnd_);
+  }
+
+  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+
+  AudioScheduledSourceNode::stop(when + duration);
+}
+
 void AudioBufferSourceNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {

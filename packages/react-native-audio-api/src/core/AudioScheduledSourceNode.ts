@@ -3,12 +3,12 @@ import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 
 export default class AudioScheduledSourceNode extends AudioNode {
-  private hasBeenStarted: boolean = false;
+  protected hasBeenStarted: boolean = false;
 
   public start(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${when}`
+        `when must be a finite non-negative number: ${when}`
       );
     }
 
@@ -23,7 +23,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
   public stop(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${when}`
+        `when must be a finite non-negative number: ${when}`
       );
     }
 
