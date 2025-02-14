@@ -145,14 +145,10 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 void AnalyserNode::processNode(
     audioapi::AudioBus *processingBus,
     int framesToProcess) {
-  if (!isInitialized_) {
-    processingBus->zero();
-    return;
-  }
-
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBus but instead copy the data to its own input buffer.
 
+  // MIXING
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
