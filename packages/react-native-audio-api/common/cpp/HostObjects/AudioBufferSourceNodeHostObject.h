@@ -25,16 +25,19 @@ class AudioBufferSourceNodeHostObject
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, detune),
         JSI_EXPORT_PROPERTY_GETTER(
             AudioBufferSourceNodeHostObject, playbackRate));
+
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer));
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
     // start method is overridden in this class
     functions_->erase("start");
 
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start));
-  }
+    }
 
   JSI_PROPERTY_GETTER(loop) {
     auto audioBufferSourceNode =
