@@ -10,10 +10,10 @@ import {
 import { Container, Button, Spacer } from '../../components';
 
 const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-03.mp3';
+  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-04.mp3';
 
-const LOOP_START = 21;
-const LOOP_END = 25;
+const LOOP_START = 1;
+const LOOP_END = 2;
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
