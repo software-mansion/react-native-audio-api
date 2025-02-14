@@ -81,16 +81,6 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
     }
 
     this.hasBeenStarted = true;
-
-    if (duration) {
-      (this.node as IAudioBufferSourceNode).start(when, offset, duration);
-      return;
-    }
-
-    (this.node as IAudioBufferSourceNode).start(
-      when,
-      offset,
-      this.buffer!.duration
-    );
+    (this.node as IAudioBufferSourceNode).start(when, offset, duration);
   }
 }

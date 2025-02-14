@@ -124,10 +124,17 @@ class AudioBufferSourceNodeHostObject
   JSI_HOST_FUNCTION(start) {
     auto when = args[0].getNumber();
     auto offset = args[1].getNumber();
-    auto duration = args[2].getNumber();
 
     auto audioBufferSourceNode =
       std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+    if (args[2].isUndefined()) {
+        audioBufferSourceNode->start(when, offset);
+
+        return jsi::Value::undefined();
+    }
+
+    auto duration = args[2].getNumber();
     audioBufferSourceNode->start(when, offset, duration);
 
     return jsi::Value::undefined();

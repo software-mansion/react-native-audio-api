@@ -67,6 +67,7 @@ void AudioBufferSourceNode::setBuffer(
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
+    loopEnd_ = 0;
     return;
   }
 
@@ -78,19 +79,26 @@ void AudioBufferSourceNode::setBuffer(
 
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());
+
+  loopEnd_ = buffer_->getDuration();
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
+  // add assert for buffer
+
   offset = std::min(offset, buffer_->getDuration());
+
   if (loop_) {
     offset = std::min(offset, loopEnd_);
   }
 
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 
-  AudioScheduledSourceNode::stop(when + duration);
+  if (duration > 0) {
+    AudioScheduledSourceNode::stop(when + duration);
+  }
 }
 
 void AudioBufferSourceNode::processNode(

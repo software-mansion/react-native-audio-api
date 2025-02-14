@@ -27,7 +27,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void setLoopEnd(double loopEnd);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
-  void start(double when, double offset, double duration);
+  void start(double when, double offset, double duration = -1);
 
  protected:
   void processNode(AudioBus *processingBus, int framesToProcess) override;
