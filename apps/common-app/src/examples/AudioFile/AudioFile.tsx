@@ -1,59 +1,48 @@
 import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
-import { Container, Button, Spacer } from '../../components';
-import * as DocumentPicker from 'expo-document-picker';
-
+import * as FileSystem from 'expo-file-system';
+import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator } from 'react-native';
+
+import { Container, Button, Spacer } from '../../components';
+
+const URL =
+  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-03.mp3';
+
+const LOOP_START = 21;
+const LOOP_END = 25;
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
+
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const handleSetAudioSourceFromFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'audio/*',
-        multiple: false,
-      });
-
-      if (result.canceled === false) {
-        bufferSourceRef.current?.stop();
-        setIsPlaying(false);
-
-        setIsLoading(true);
-        await fetchAudioBuffer(result.assets[0].uri);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error picking file:', error);
-    }
-  };
-
-  const fetchAudioBuffer = useCallback(async (assetUri: string) => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    const buffer =
-      await audioContextRef.current.decodeAudioDataSource(assetUri);
+  const fetchAudioBuffer = useCallback(async () => {
+    setIsLoading(true);
+    const buffer = await FileSystem.downloadAsync(
+      URL,
+      FileSystem.documentDirectory + 'audio.mp3'
+    ).then(({ uri }) => {
+      return audioContextRef.current!.decodeAudioDataSource(uri);
+    });
 
     setAudioBuffer(buffer);
+
+    setIsLoading(false);
   }, []);
 
   const handlePress = () => {
-    if (!audioBuffer || !audioContextRef.current) {
+    if (!audioContextRef.current) {
       return;
     }
 
@@ -62,8 +51,14 @@ const AudioFile: FC = () => {
       bufferSourceRef.current?.stop(stopTime);
       setOffset((prev) => prev + stopTime - startTime);
     } else {
+      if (!audioBuffer) {
+        fetchAudioBuffer();
+      }
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBuffer;
+      bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.loopStart = LOOP_START;
+      bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 
       setStartTime(audioContextRef.current.currentTime);
@@ -78,6 +73,8 @@ const AudioFile: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
+    fetchAudioBuffer();
+
     return () => {
       audioContextRef.current?.close();
     };
@@ -85,11 +82,6 @@ const AudioFile: FC = () => {
 
   return (
     <Container centered>
-      <Button
-        title="Set audio source from file"
-        onPress={handleSetAudioSourceFromFile}
-        width={200}
-      />
       {isLoading && <ActivityIndicator color="#FFFFFF" />}
       <Spacer.Vertical size={20} />
       <Button
