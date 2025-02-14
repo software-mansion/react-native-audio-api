@@ -18,7 +18,7 @@ namespace audioapi {
  * Public interfaces - memory management
  */
 
-AudioBus::AudioBus(float sampleRate, size_t size, int numberOfChannels)
+AudioBus::AudioBus(size_t size, int numberOfChannels, float sampleRate)
     : numberOfChannels_(numberOfChannels),
       sampleRate_(sampleRate),
       size_(size) {
@@ -271,6 +271,7 @@ void AudioBus::sumByUpMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
+  // MIXING
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
@@ -350,6 +351,7 @@ void AudioBus::sumByDownMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
+  // MIXING
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 

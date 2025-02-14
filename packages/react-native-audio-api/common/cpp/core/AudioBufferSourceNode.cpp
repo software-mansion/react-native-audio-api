@@ -18,7 +18,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       loopEnd_(0),
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  alignedBus_ = std::make_shared<AudioBus>(context_->getSampleRate(), 1, RENDER_QUANTUM_SIZE);
+  alignedBus_ = std::make_shared<AudioBus>(
+      1, RENDER_QUANTUM_SIZE, context_->getSampleRate());
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
@@ -68,16 +69,17 @@ void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-    alignedBus_ = std::make_shared<AudioBus>(context_->getSampleRate(), 1, RENDER_QUANTUM_SIZE);
+    alignedBus_ = std::make_shared<AudioBus>(
+        1, RENDER_QUANTUM_SIZE, context_->getSampleRate());
     loopEnd_ = 0;
     return;
   }
 
   buffer_ = buffer;
   alignedBus_ = std::make_shared<AudioBus>(
-      context_->getSampleRate(),
       buffer_->getLength(),
-      buffer_->getNumberOfChannels());
+      buffer_->getNumberOfChannels(),
+      context_->getSampleRate());
 
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());

@@ -8,7 +8,7 @@ AudioBuffer::AudioBuffer(
     int numberOfChannels,
     size_t length,
     float sampleRate) {
-  bus_ = std::make_shared<AudioBus>(sampleRate, length, numberOfChannels);
+  bus_ = std::make_shared<AudioBus>(length, numberOfChannels, sampleRate);
 }
 
 AudioBuffer::AudioBuffer(AudioBus *bus) {

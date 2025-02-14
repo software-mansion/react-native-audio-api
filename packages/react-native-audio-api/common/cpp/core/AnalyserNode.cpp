@@ -21,7 +21,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   downMixBus_ = std::make_unique<AudioBus>(
-      context_->getSampleRate(), RENDER_QUANTUM_SIZE, 1);
+      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
 

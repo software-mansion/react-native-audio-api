@@ -10,7 +10,7 @@ namespace audioapi {
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio)
     : renderAudio_(renderAudio), audioBus_(0)
 {
-  audioBus_ = new AudioBus(getSampleRate(), RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
 
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -34,7 +34,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
-  audioBus_ = new AudioBus([audioPlayer_ getSampleRate], RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, [audioPlayer_ getSampleRate]);
 }
 
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio, float sampleRate)
@@ -62,7 +62,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock sampleRate:sampleRate];
-  audioBus_ = new AudioBus([audioPlayer_ getSampleRate], RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, [audioPlayer_ getSampleRate]);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

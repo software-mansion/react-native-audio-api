@@ -22,7 +22,7 @@ class AudioBus {
     ChannelSurroundRight = 5,
   };
 
-  explicit AudioBus(float sampleRate, size_t size, int numberOfChannels);
+  explicit AudioBus(size_t size, int numberOfChannels, float sampleRate);
 
   ~AudioBus();
 

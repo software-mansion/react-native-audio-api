@@ -9,7 +9,7 @@ namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
   audioBus_ = std::make_shared<AudioBus>(
-      context->getSampleRate(), RENDER_QUANTUM_SIZE, channelCount_);
+      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
 AudioNode::~AudioNode() {

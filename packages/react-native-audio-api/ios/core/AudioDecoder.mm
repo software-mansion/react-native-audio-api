@@ -20,7 +20,7 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
   ma_uint64 totalFrameCount;
   ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
 
-  auto *audioBus = new AudioBus(sampleRate_, static_cast<int>(totalFrameCount), 2);
+  auto *audioBus = new AudioBus(static_cast<int>(totalFrameCount), 2, sampleRate_);
   auto *buffer = new float[totalFrameCount * 2];
 
   ma_uint64 framesDecoded;

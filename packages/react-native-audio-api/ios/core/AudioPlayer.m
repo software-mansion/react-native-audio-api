@@ -8,9 +8,9 @@
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
-    
+
     self.audioSession = AVAudioSession.sharedInstance;
-    
+
     // TODO:
     // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
     // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
@@ -24,16 +24,16 @@
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-      renderBlock:^OSStatus(
-          BOOL *isSilence,
-          const AudioTimeStamp *timestamp,
-          AVAudioFrameCount frameCount,
-          AudioBufferList *outputData) {
-        return [weakSelf renderCallbackWithIsSilence:isSilence
-          timestamp:timestamp
-          frameCount:frameCount
-          outputData:outputData];
-      }];
+                                                renderBlock:^OSStatus(
+                                                    BOOL *isSilence,
+                                                    const AudioTimeStamp *timestamp,
+                                                    AVAudioFrameCount frameCount,
+                                                    AudioBufferList *outputData) {
+                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                     timestamp:timestamp
+                                                                                    frameCount:frameCount
+                                                                                    outputData:outputData];
+                                                }];
   }
 
   return self;
@@ -47,7 +47,7 @@
     self.audioEngine.mainMixerNode.outputVolume = 1;
 
     self.audioSession = AVAudioSession.sharedInstance;
-    
+
     // TODO:
     // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
     // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
@@ -61,16 +61,16 @@
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-      renderBlock:^OSStatus(
-          BOOL *isSilence,
-          const AudioTimeStamp *timestamp,
-          AVAudioFrameCount frameCount,
-          AudioBufferList *outputData) {
-        return [weakSelf renderCallbackWithIsSilence:isSilence
-          timestamp:timestamp
-          frameCount:frameCount
-          outputData:outputData];
-      }];
+                                                renderBlock:^OSStatus(
+                                                    BOOL *isSilence,
+                                                    const AudioTimeStamp *timestamp,
+                                                    AVAudioFrameCount frameCount,
+                                                    AudioBufferList *outputData) {
+                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
+                                                                                     timestamp:timestamp
+                                                                                    frameCount:frameCount
+                                                                                    outputData:outputData];
+                                                }];
   }
 
   return self;

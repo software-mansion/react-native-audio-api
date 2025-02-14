@@ -23,7 +23,7 @@ AudioPlayer::AudioPlayer(
 
   sampleRate_ = static_cast<float>(mStream_->getSampleRate());
   mBus_ = std::make_shared<AudioBus>(
-      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+      RENDER_QUANTUM_SIZE, CHANNEL_COUNT, sampleRate_);
   isInitialized_ = true;
 }
 
@@ -45,7 +45,7 @@ AudioPlayer::AudioPlayer(
 
   sampleRate_ = sampleRate;
   mBus_ = std::make_shared<AudioBus>(
-      sampleRate_, RENDER_QUANTUM_SIZE, CHANNEL_COUNT);
+      RENDER_QUANTUM_SIZE, CHANNEL_COUNT, sampleRate_);
   isInitialized_ = true;
 }
 
