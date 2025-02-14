@@ -5558,7 +5558,6 @@ __metadata:
     "@react-navigation/stack": "npm:^7.0.0"
     "@shopify/react-native-skia": "npm:^1.8.2"
     expo: "npm:^52.0.25"
-    expo-document-picker: "npm:~13.0.2"
     expo-file-system: "npm:~18.0.7"
     react: "npm:18.3.1"
     react-native: "npm:0.76.5"
@@ -5577,7 +5576,6 @@ __metadata:
     "@react-navigation/stack": "*"
     "@shopify/react-native-skia": "*"
     expo: "*"
-    expo-document-picker: "*"
     expo-file-system: "*"
     react: "*"
     react-dom: "*"
@@ -7174,15 +7172,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-document-picker@npm:~13.0.2":
-  version: 13.0.2
-  resolution: "expo-document-picker@npm:13.0.2"
-  peerDependencies:
-    expo: "*"
-  checksum: 10/245b6a25f1abe3b803114cb82d84105c7be85128d3d04305f16a17b1b0599179fe8cc6ab87b945592b548551f7e6b56d7abb8f1f099645d8e3e0bd3ffaaccbc6
-  languageName: node
-  linkType: hard
-
 "expo-file-system@npm:~18.0.7":
   version: 18.0.7
   resolution: "expo-file-system@npm:18.0.7"
@@ -7318,7 +7307,6 @@ __metadata:
     common-app: "workspace:*"
     eslint: "npm:^8.57.0"
     expo: "npm:^52.0.25"
-    expo-document-picker: "npm:~13.0.2"
     expo-file-system: "npm:~18.0.7"
     jest: "npm:^29.6.3"
     prettier: "npm:^3.3.3"
