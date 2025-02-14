@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 
 #include "AudioArray.h"
 #include "AudioBufferSourceNode.h"
@@ -17,7 +18,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       loopEnd_(0),
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
+  alignedBus_ = std::make_shared<AudioBus>(context_->getSampleRate(), 1, RENDER_QUANTUM_SIZE);
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
@@ -67,7 +68,7 @@ void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-    alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
+    alignedBus_ = std::make_shared<AudioBus>(context_->getSampleRate(), 1, RENDER_QUANTUM_SIZE);
     loopEnd_ = 0;
     return;
   }
@@ -87,6 +88,10 @@ void AudioBufferSourceNode::setBuffer(
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
+  if (duration > 0) {
+    AudioScheduledSourceNode::stop(when + duration);
+  }
+
   if (!buffer_) {
     return;
   }
@@ -98,29 +103,30 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   }
 
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
-
-  if (duration > 0) {
-    AudioScheduledSourceNode::stop(when + duration);
-  }
 }
 
 void AudioBufferSourceNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {
+  // No audio data to fill, zero the output and return.
+  if (!buffer_) {
+    processingBus->zero();
+    return;
+  }
+
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
   float playbackRate = getPlaybackRateValue(startOffset);
 
-  // No audio data to fill, zero the output and return.
-  if (!isPlaying() || !alignedBus_ || alignedBus_->getSize() == 0 ||
-      playbackRate == 0.0f) {
+  assert(alignedBus_ != nullptr);
+  assert(alignedBus_->getSize() > 0);
+
+  if (playbackRate == 0.0f || !isPlaying()) {
     processingBus->zero();
     return;
-  }
-
-  if (std::fabs(playbackRate) == 1.0) {
+  } else if (std::fabs(playbackRate) == 1.0) {
     processWithoutInterpolation(
         processingBus, startOffset, offsetLength, playbackRate);
   } else {
@@ -160,6 +166,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
     framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
 
+    // MIXING
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
       processingBus->copy(
@@ -227,6 +234,7 @@ void AudioBufferSourceNode::processWithInterpolation(
       nextReadIndex = loop_ ? frameStart : readIndex;
     }
 
+    // MIXING
     for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
       float *destination = processingBus->getChannel(i)->getData();
       const float *source = alignedBus_->getChannel(i)->getData();

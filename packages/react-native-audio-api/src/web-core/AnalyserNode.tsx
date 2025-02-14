@@ -8,7 +8,7 @@ export class AnalyserNode extends AudioNode {
   maxDecibels: number;
   smoothingTimeConstant: number;
 
-  constructor(context: AudioContext, node: globalThis.AnalyserNode) {
+  constructor(context: BaseAudioContext, node: globalThis.AnalyserNode) {
     super(context, node);
 
     this.fftSize = node.fftSize;
