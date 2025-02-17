@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "StereoPannerNode.h"
 #include "AudioArray.h"
 #include "AudioBus.h"
@@ -22,11 +24,14 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
 void StereoPannerNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {
+  // MIXING
   // TODO: Currently assumed channelCount is 2
   // it should:
   //  - support mono-channel buses
   //  - throw errors when trying to setup stereo panner with more than 2
   //  channels
+
+  assert(processingBus->getNumberOfChannels() <= 2);
 
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
@@ -36,10 +41,10 @@ void StereoPannerNode::processNode(
 
   for (int i = 0; i < framesToProcess; i += 1) {
     float pan = panParam_->getValueAtTime(time);
-    float x = (pan <= 0 ? pan + 1 : pan) * PI / 2;
+    float x = (pan <= 0 ? pan + 1 : pan);
 
-    auto gainL = static_cast<float>(cos(x));
-    auto gainR = static_cast<float>(sin(x));
+    auto gainL = static_cast<float>(cos(x * PI / 2));
+    auto gainR = static_cast<float>(sin(x * PI / 2));
 
     float inputL = (*left)[i];
     float inputR = (*right)[i];
