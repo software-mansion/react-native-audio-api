@@ -1,4 +1,5 @@
 #include <memory>
+#include <cassert>
 
 #include "AudioBus.h"
 #include "AudioNode.h"
@@ -101,6 +102,8 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
     return outputBus;
   }
 
+  assert(context_);
+
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
   // check if the node has already been processed for this rendering quantum
@@ -131,14 +134,6 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
     processingBus->zero();
   }
 
-  if (inputNodes_.empty()) {
-    // If there are no connected inputs, if processing node is the source node,
-    // it will fill processing bus with the audio data, otherwise it will return
-    // silence.
-    processNode(processingBus, framesToProcess);
-    return processingBus;
-  }
-
   for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
     if (!(*it)->isEnabled()) {
       continue;
@@ -149,15 +144,13 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
     if (it == inputNodes_.begin()) {
       AudioBus *inputBus = (*it)->processAudio(processingBus, framesToProcess);
 
-      if (inputBus != processingBus) {
-        // add assert
+      if (processingBus != nullptr && inputBus != processingBus) {
         processingBus->sum(inputBus);
       }
     } else {
       // Enforce the summing to be done using the internal bus.
       AudioBus *inputBus = (*it)->processAudio(nullptr, framesToProcess);
-      if (inputBus) {
-        // add assert
+      if (inputBus && processingBus) {
         processingBus->sum(inputBus);
       }
     }
@@ -167,21 +160,6 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   processNode(processingBus, framesToProcess);
 
   return processingBus;
-}
-
-void AudioNode::cleanup() {
-  isInitialized_ = false;
-
-  for (const auto &outputNode : outputNodes_) {
-    outputNode->onInputDisconnected(this);
-  }
-
-  for (const auto &inputNode : inputNodes_) {
-    inputNode->disconnectNode(shared_from_this());
-  }
-
-  outputNodes_.clear();
-  inputNodes_.clear();
 }
 
 void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
@@ -232,6 +210,21 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
   if (isEnabled()) {
     node->onInputDisabled();
   }
+}
+
+void AudioNode::cleanup() {
+  isInitialized_ = false;
+
+  for (const auto &outputNode : outputNodes_) {
+    outputNode->onInputDisconnected(this);
+  }
+
+  for (const auto &inputNode : inputNodes_) {
+    inputNode->disconnectNode(shared_from_this());
+  }
+
+  outputNodes_.clear();
+  inputNodes_.clear();
 }
 
 } // namespace audioapi
