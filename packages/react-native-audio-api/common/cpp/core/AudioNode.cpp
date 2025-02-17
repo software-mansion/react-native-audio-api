@@ -157,6 +157,7 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   }
 
   // Finally, process the node itself.
+  assert(processingBus != nullptr);
   processNode(processingBus, framesToProcess);
 
   return processingBus;

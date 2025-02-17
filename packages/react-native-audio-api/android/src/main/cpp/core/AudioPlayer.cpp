@@ -1,3 +1,4 @@
+#include <cassert>
 
 #include "AudioPlayer.h"
 #include "AudioArray.h"
@@ -80,11 +81,14 @@ DataCallbackResult AudioPlayer::onAudioReady(
   auto buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
 
+  assert(buffer != nullptr);
+
   while (processedFrames < numFrames) {
     int framesToProcess =
         std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
     renderAudio_(mBus_.get(), framesToProcess);
 
+    // MIXING
     // TODO: optimize this with SIMD?
     for (int i = 0; i < framesToProcess; i++) {
       for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {

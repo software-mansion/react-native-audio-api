@@ -35,6 +35,7 @@ void AudioDestinationNode::renderAudio(
 
   AudioBus *processedBus = processAudio(destinationBus, numFrames);
 
+  // MIXING
   if (processedBus && processedBus != destinationBus) {
     destinationBus->copy(processedBus);
   }
