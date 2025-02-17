@@ -3,7 +3,7 @@ import { IBiquadFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
-import { BiquadFilterType } from './types';
+import { BiquadFilterType } from '../types';
 
 export default class BiquadFilterNode extends AudioNode {
   readonly frequency: AudioParam;

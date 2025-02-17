@@ -1,5 +1,5 @@
 import { IAudioNode } from '../interfaces';
-import { ChannelCountMode, ChannelInterpretation } from './types';
+import { ChannelCountMode, ChannelInterpretation } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 import { InvalidAccessError } from '../errors';
 

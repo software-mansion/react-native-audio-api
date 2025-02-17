@@ -1,4 +1,4 @@
-import { ContextState, PeriodicWaveConstraints } from '../index.native';
+import { ContextState, PeriodicWaveConstraints } from '../types';
 import { RangeError, InvalidAccessError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';

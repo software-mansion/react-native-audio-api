@@ -1,4 +1,4 @@
-import { ContextState, PeriodicWaveConstraints } from '../index.native';
+import { ContextState, PeriodicWaveConstraints } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';

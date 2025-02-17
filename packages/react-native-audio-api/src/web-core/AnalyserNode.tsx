@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode';
-import { WindowType } from '../index.native';
+import { WindowType } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class AnalyserNode extends AudioNode {

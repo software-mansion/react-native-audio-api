@@ -1,5 +1,5 @@
 import BaseAudioContext from './BaseAudioContext';
-import { ChannelCountMode, ChannelInterpretation } from '../index.native';
+import { ChannelCountMode, ChannelInterpretation } from '../types';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;

@@ -1,4 +1,5 @@
-import { OscillatorType } from '../index.native';
+import { OscillatorType } from '../types';
+import { InvalidStateError } from '../errors';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import BaseAudioContext from './BaseAudioContext';
 import AudioParam from './AudioParam';
@@ -21,7 +22,7 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
 
   public set type(value: OscillatorType) {
     if (value === 'custom') {
-      throw new Error(
+      throw new InvalidStateError(
         "'type' cannot be set directly to 'custom'.  Use setPeriodicWave() to create a custom Oscillator type."
       );
     }

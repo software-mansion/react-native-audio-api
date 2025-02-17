@@ -1,5 +1,5 @@
 import { IOscillatorNode } from '../interfaces';
-import { OscillatorType } from './types';
+import { OscillatorType } from '../types';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';

@@ -1,6 +1,6 @@
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
-import { WindowType } from './types';
+import { WindowType } from '../types';
 import AudioNode from './AudioNode';
 
 export default class AnalyserNode extends AudioNode {

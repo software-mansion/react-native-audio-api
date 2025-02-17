@@ -1,5 +1,5 @@
 import { IBaseAudioContext } from '../interfaces';
-import { ContextState, PeriodicWaveConstraints } from './types';
+import { ContextState, PeriodicWaveConstraints } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
 import GainNode from './GainNode';

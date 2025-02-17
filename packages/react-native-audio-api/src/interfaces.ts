@@ -5,7 +5,7 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
-} from './core/types';
+} from './types';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;

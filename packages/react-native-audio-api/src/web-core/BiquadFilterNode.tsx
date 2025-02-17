@@ -2,6 +2,7 @@ import AudioParam from './AudioParam';
 import AudioNode from './AudioNode';
 import BaseAudioContext from './BaseAudioContext';
 import { BiquadFilterType } from '../index.native';
+import { InvalidAccessError } from '../errors';
 
 export default class BiquadFilterNode extends AudioNode {
   readonly frequency: AudioParam;
@@ -37,7 +38,7 @@ export default class BiquadFilterNode extends AudioNode {
       frequencyArray.length !== magResponseOutput.length ||
       frequencyArray.length !== phaseResponseOutput.length
     ) {
-      throw new Error(
+      throw new InvalidAccessError(
         `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
       );
     }
