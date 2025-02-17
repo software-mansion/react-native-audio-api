@@ -14,6 +14,9 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
+
+    ma_decoder_uninit(&decoder);
+
     return nullptr;
   }
 
@@ -27,6 +30,12 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
   if (framesDecoded == 0) {
     NSLog(@"Failed to decode audio file: %s", path.c_str());
+
+    delete[] buffer;
+    delete audioBus;
+    ma_decoder_uninit(&decoder);
+
+    return nullptr;
   }
 
   for (int i = 0; i < decoder.outputChannels; ++i) {

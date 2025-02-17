@@ -20,6 +20,9 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
         "AudioDecoder",
         "Failed to initialize decoder for file: %s",
         path.c_str());
+
+    ma_decoder_uninit(&decoder);
+
     return nullptr;
   }
 
@@ -38,6 +41,12 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const {
         "AudioDecoder",
         "Failed to decode audio file: %s",
         path.c_str());
+
+    delete[] buffer;
+    delete audioBus;
+    ma_decoder_uninit(&decoder);
+
+    return nullptr;
   }
 
   for (int i = 0; i < decoder.outputChannels; ++i) {
