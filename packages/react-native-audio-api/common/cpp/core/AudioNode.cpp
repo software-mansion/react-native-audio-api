@@ -102,7 +102,7 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
     return outputBus;
   }
 
-  assert(context_);
+  assert(context_ != nullptr);
 
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 

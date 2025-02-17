@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "AudioScheduledSourceNode.h"
 #include "AudioArray.h"
 #include "AudioBus.h"
@@ -50,6 +52,8 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     nonSilentFramesToProcess = 0;
     return;
   }
+
+  assert(context_ != nullptr);
 
   auto sampleRate = context_->getSampleRate();
 
