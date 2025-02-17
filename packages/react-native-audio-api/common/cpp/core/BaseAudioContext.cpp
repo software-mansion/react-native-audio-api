@@ -1,6 +1,5 @@
 #include <cassert>
 
-#include "BaseAudioContext.h"
 #include "AnalyserNode.h"
 #include "AudioArray.h"
 #include "AudioBuffer.h"
@@ -9,6 +8,7 @@
 #include "AudioDecoder.h"
 #include "AudioDestinationNode.h"
 #include "AudioNodeManager.h"
+#include "BaseAudioContext.h"
 #include "BiquadFilterNode.h"
 #include "ContextState.h"
 #include "GainNode.h"

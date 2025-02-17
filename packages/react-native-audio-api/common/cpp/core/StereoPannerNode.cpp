@@ -1,10 +1,10 @@
 #include <cassert>
 
-#include "StereoPannerNode.h"
 #include "AudioArray.h"
 #include "AudioBus.h"
 #include "BaseAudioContext.h"
 #include "Constants.h"
+#include "StereoPannerNode.h"
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
 

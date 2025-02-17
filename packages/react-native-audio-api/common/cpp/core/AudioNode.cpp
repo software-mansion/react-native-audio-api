@@ -1,5 +1,5 @@
-#include <memory>
 #include <cassert>
+#include <memory>
 
 #include "AudioBus.h"
 #include "AudioNode.h"

@@ -1,9 +1,9 @@
 #include <cassert>
 
-#include "AudioPlayer.h"
 #include "AudioArray.h"
 #include "AudioBus.h"
 #include "AudioContext.h"
+#include "AudioPlayer.h"
 #include "Constants.h"
 
 namespace audioapi {
