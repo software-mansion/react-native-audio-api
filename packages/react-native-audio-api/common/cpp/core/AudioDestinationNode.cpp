@@ -3,14 +3,13 @@
 #include "AudioNode.h"
 #include "AudioNodeManager.h"
 #include "BaseAudioContext.h"
-#include "VectorMath.h"
 
 namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
     : AudioNode(context), currentSampleFrame_(0) {
   numberOfOutputs_ = 0;
-  numberOfInputs_ = INT_MAX;
+  numberOfInputs_ = 1;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
   isInitialized_ = true;
 }
@@ -26,7 +25,7 @@ double AudioDestinationNode::getCurrentTime() const {
 void AudioDestinationNode::renderAudio(
     AudioBus *destinationBus,
     int numFrames) {
-  if (!numFrames || !destinationBus || !isInitialized_) {
+  if ( numFrames < 0 || !destinationBus || !isInitialized_) {
     return;
   }
 
