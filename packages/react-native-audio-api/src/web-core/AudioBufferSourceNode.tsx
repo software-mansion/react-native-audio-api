@@ -1,9 +1,10 @@
-import { AudioScheduledSourceNode } from './AudioScheduledSourceNode';
-import { AudioParam } from './AudioParam';
-import { AudioBuffer } from './AudioBuffer';
+import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import AudioParam from './AudioParam';
+import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
 
-export class AudioBufferSourceNode extends AudioScheduledSourceNode {
+export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 

@@ -1,6 +1,6 @@
 import { IndexSizeError } from '../errors';
 
-export class AudioBuffer {
+export default class AudioBuffer {
   readonly length: number;
   readonly duration: number;
   readonly sampleRate: number;

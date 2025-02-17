@@ -20,14 +20,14 @@ class AudioContext : public BaseAudioContext {
 
   void close();
 
-  std::function<void(AudioBus *, int)> renderAudio();
-
  private:
 #ifdef ANDROID
-    std::shared_ptr<AudioPlayer> audioPlayer_;
+  std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
-    std::shared_ptr<IOSAudioPlayer> audioPlayer_;
+  std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
+
+  std::function<void(AudioBus *, int)> renderAudio();
 };
 
 } // namespace audioapi

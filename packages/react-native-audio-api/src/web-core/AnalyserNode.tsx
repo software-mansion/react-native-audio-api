@@ -1,7 +1,8 @@
-import { AudioNode } from './AudioNode';
+import AudioNode from './AudioNode';
 import { WindowType } from '../index.native';
+import BaseAudioContext from './BaseAudioContext';
 
-export class AnalyserNode extends AudioNode {
+export default class AnalyserNode extends AudioNode {
   fftSize: number;
   readonly frequencyBinCount: number;
   minDecibels: number;
