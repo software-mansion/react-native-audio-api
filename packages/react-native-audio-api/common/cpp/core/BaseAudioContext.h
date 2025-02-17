@@ -49,20 +49,22 @@ class BaseAudioContext {
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
+
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
+  [[nodiscard]] float getNyquistFrequency() const;
   AudioNodeManager *getNodeManager();
+
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
-  [[nodiscard]] float getNyquistFrequency() const;
 
  protected:
   static std::string toString(ContextState state);
+
   std::shared_ptr<AudioDestinationNode> destination_;
   // init in AudioContext or OfflineContext constructor
   std::shared_ptr<AudioDecoder> audioDecoder_ {};
-
   // init in AudioContext or OfflineContext constructor
   float sampleRate_ {};
   ContextState state_ = ContextState::RUNNING;
