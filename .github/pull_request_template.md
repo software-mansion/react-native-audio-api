@@ -17,3 +17,4 @@ Closes #
 - [ ] Added/Conducted relevant tests
 - [ ] Performed self-review of the code
 - [ ] Updated Web Audio API coverage
+- [ ] Added support for web
