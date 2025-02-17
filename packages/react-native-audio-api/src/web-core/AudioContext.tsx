@@ -1,4 +1,5 @@
 import { ContextState, PeriodicWaveConstraints } from '../index.native';
+import { RangeError, InvalidAccessError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
@@ -56,6 +57,24 @@ export default class AudioContext implements BaseAudioContext {
     length: number,
     sampleRate: number
   ): AudioBuffer {
+    if (numOfChannels < 1 || numOfChannels >= 32) {
+      throw new RangeError(
+        `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
+      );
+    }
+
+    if (length <= 0) {
+      throw new RangeError(
+        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
+      );
+    }
+
+    if (sampleRate <= 0) {
+      throw new RangeError(
+        `The sample rate provided (${sampleRate}) is outside the range [3000, 768000]`
+      );
+    }
+
     return new AudioBuffer(
       this.context.createBuffer(numOfChannels, length, sampleRate)
     );
@@ -66,6 +85,12 @@ export default class AudioContext implements BaseAudioContext {
     imag: number[],
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
+    if (real.length !== imag.length) {
+      throw new InvalidAccessError(
+        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
+      );
+    }
+
     return new PeriodicWave(
       this.context.createPeriodicWave(real, imag, constraints)
     );
