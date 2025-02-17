@@ -43,7 +43,9 @@ void AudioNodeManager::settlePendingConnections() {
     std::shared_ptr<AudioNode> to = std::get<1>(connection);
     ConnectionType type = std::get<2>(connection);
 
-    // add assert to check if from and to are neither null nor uninitialized
+    if (!to || !from) {
+      continue;
+    }
 
     if (type == ConnectionType::CONNECT) {
       from->connectNode(to);
