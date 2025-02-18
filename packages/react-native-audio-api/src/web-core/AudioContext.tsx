@@ -69,9 +69,9 @@ export default class AudioContext implements BaseAudioContext {
       );
     }
 
-    if (sampleRate <= 0) {
+    if (sampleRate < 8000 || sampleRate > 96000) {
       throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [3000, 768000]`
+        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
       );
     }
 
