@@ -1,0 +1,20 @@
+---
+sidebar_position: 3
+---
+
+# ContextState
+
+`ContextState` type represents state of the [`BaseAudioContext`](/core/base-audio-context).
+
+**Acceptable values:**
+  - `suspended`
+
+  The audio context has been suspended (with one of [`suspend`](/core/audio-context#suspend) or [`suspend`](/core/offline-audio-context#suspend)).
+
+  - `running`
+
+  The audio context is running normally.
+
+  - `closed`
+
+  The audio context has been closed (with [`close`](/core/audio-context#close) method).
