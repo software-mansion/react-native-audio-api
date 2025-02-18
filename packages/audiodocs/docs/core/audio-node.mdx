@@ -33,17 +33,19 @@ We usually represent the channels with the standard abbreviations detailed in th
 
 ### `connect`
 
-The `connect` method lets you connect one of the node's outputs to a destination.
+Above method lets you connect one of the node's outputs to a destination.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `destination` | [`AudioNode`](/core/audio-node) | Audio node to which to connect. |
 
-**Returns** `undefined`.
+Throws `InvalidAccessError` if destination node is not part of the same audio context as node.
+
+**Returns** destination `AudioNode`.
 
 ### `disconnect`
 
-The `disconnect` method lets you disconnect one or more nodes from the node.
+Above method lets you disconnect one or more nodes from the node.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -60,5 +62,3 @@ If no arguments provided node disconnects from all outgoing connections.
 
 #### `numberOfOutputs`
 - Destination nodes are characterized by having a `numberOfOutputs` value of 0.
-
-
