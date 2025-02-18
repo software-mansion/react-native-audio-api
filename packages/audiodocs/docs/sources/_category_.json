@@ -1,6 +1,6 @@
 {
-  "label": "Other",
-  "position": 10,
+  "label": "Sources",
+  "position": 4,
   "link": {
     "type": "generated-index"
   }
