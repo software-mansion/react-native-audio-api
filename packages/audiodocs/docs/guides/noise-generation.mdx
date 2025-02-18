@@ -12,7 +12,8 @@ Noise is one of the most basic and common tools in digital audio processing, in 
 
 The most used type of noise. White is a random signal having equal intensity at different frequencies, giving it a constant [power spectral density. (Wikipedia)](https://en.wikipedia.org/wiki/Spectral_density#Power_spectral_density).
 
-To produce white noise, we simply create an `AudioBuffer` containing random samples in range of `[-1; 1]` (in which audio api operates), which can be used by `AudioBufferSourceNode` for playback, further filtering or modification
+To produce white noise, we simply create an [`AudioBuffer`](/sources/audio-buffer) containing random samples in range of `[-1; 1]` (in which audio api operates),
+which can be used by [`AudioBufferSourceNode`](/sources/audio-buffer-source-node) for playback, further filtering or modification
 
 ```tsx
 function createWhiteNoise() {
