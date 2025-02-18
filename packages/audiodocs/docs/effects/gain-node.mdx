@@ -1,0 +1,42 @@
+---
+sidebar_position: 1
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# GainNode
+
+The `GainNode` interface represents the change in volume (amplitude) of the audio signal.
+It is an [`AudioNode`](/core/audio-node) that applies given gain to processing audio data.
+Direct gain modification often results in unpleasant 'clicks'. To avoid this effect, utilize exponential interpolation methods from the [`AudioParam`](/core/audio-param).
+
+![gain-node](/img/gain-node.png)
+
+#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+#### ADSR and envelope
+
+Envelope is term widely used in music and sound engineering, it describes how a sound changes over time.
+The most common way of describing an envelope is ADSR. This acronym stands for: **attack**, **decay**, **sustain** and **release**.
+
+- **Attack** - the time it takes for the sound to reach its peak volume from the beginning.
+- **Decay** - the time it takes for the sound to reach the sustain level after the peak volume.
+- **Sustain** - the volume level that the sound will stay at until the key is released.
+- **Release** - the time it takes for the sound to fade out after the key is released.
+
+![ADSR Example](/img/ADSR.svg)
+
+You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
+
+## Constructor
+
+[`BaseAudioContext.createGain()`](/core/base-audio-context#creategain)
+
+## Properties
+
+| Name | Type | Description | |
+| :----: | :----: | :-------- | :-: |
+| `gain` | [`AudioParam`](/core/audio-param) | Returns [`a-rate`](/core/audio-param#a-rate-vs-k-rate) audio param representing value of gain to apply. | <ReadOnly />
