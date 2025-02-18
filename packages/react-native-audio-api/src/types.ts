@@ -25,4 +25,8 @@ export interface PeriodicWaveConstraints {
   disableNormalization: boolean;
 }
 
+export interface AudioContextOptions {
+  sampleRate: number;
+}
+
 export type WindowType = 'blackman' | 'hann';

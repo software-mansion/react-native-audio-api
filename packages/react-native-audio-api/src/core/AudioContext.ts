@@ -1,9 +1,10 @@
 import { IAudioContext } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
+import { AudioContextOptions } from '../types';
 
 export default class AudioContext extends BaseAudioContext {
-  constructor(sampleRate?: number) {
-    super(global.__AudioAPIInstaller.createAudioContext(sampleRate));
+  constructor(options?: AudioContextOptions) {
+    super(global.__AudioAPIInstaller.createAudioContext(options?.sampleRate));
   }
 
   close(): void {

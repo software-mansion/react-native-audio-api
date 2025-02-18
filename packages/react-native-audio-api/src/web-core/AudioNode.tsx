@@ -21,12 +21,14 @@ export default class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(destination: AudioNode): void {
+  public connect(destination: AudioNode): AudioNode {
     if (this.context !== destination.context) {
       throw new Error('The AudioNodes are from different BaseAudioContexts');
     }
 
     this.node.connect(destination.node);
+
+    return destination;
   }
 
   public disconnect(destination?: AudioNode): void {

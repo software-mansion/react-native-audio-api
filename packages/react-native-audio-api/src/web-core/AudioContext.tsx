@@ -1,4 +1,8 @@
-import { ContextState, PeriodicWaveConstraints } from '../types';
+import {
+  ContextState,
+  PeriodicWaveConstraints,
+  AudioContextOptions,
+} from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
@@ -17,8 +21,8 @@ export default class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor(_sampleRate?: number) {
-    this.context = new window.AudioContext();
+  constructor(options?: AudioContextOptions) {
+    this.context = new window.AudioContext(options);
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
