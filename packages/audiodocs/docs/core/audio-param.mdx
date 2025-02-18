@@ -1,0 +1,34 @@
+---
+sidebar_position: 3
+---
+
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# AudioParam
+
+The `AudioParam` interface represents audio-related parameter (such as `gain` property of [GainNode`](/effects/gain-node)).
+An `AudioParam` can be set to specific value or schedule value change to happen at specific time and following specific pattern.
+
+#### a-rate vs k-rate
+- `a-rate` - takes the current audio parameter value for each sample frame of the audio signal.
+- `k-rate` - uses the same initial audio parameter value for the whole block processed.
+
+## Properties
+
+| Name | Type | Description | |
+| :----: | :----: | :-------- | :-: |
+| `defaultValue` | `number` | Returns initial value of the parameter. | <ReadOnly /> |
+| `minValue` | `number` | Returns minimum possible value of the parameter. | <ReadOnly /> |
+| `maxValue` | `number` | Returns maximum possible value of the parameter. | <ReadOnly /> |
+| `value` | `number` | Returns current value of the parameter. Initially set to `defaultValue`. |
+
+## Methods
+
+### `setValueAtTime`
+
+Above method schedules an instant change to parameter value at given time.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `value` | `number` | A float representing the value the parameter will be set at given time |
+| `time` | `number` | A double representing the time after `AudioContext` was created that the change in value is going to happen. |
