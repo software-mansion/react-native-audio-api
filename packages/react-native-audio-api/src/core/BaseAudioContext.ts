@@ -9,7 +9,7 @@ import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
-import { InvalidAccessError } from '../errors';
+import { InvalidAccessError, NotSupportedError } from '../errors';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -56,19 +56,19 @@ export default class BaseAudioContext {
     sampleRate: number
   ): AudioBuffer {
     if (numOfChannels < 1 || numOfChannels >= 32) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
       );
     }
 
     if (length <= 0) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
       );
     }
 
     if (sampleRate <= 0) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The sample rate provided (${sampleRate}) is outside the range [3000, 768000]`
       );
     }

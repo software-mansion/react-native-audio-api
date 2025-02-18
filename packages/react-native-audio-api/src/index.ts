@@ -26,4 +26,5 @@ export {
   InvalidAccessError,
   InvalidStateError,
   RangeError,
+  NotSupportedError,
 } from './errors';

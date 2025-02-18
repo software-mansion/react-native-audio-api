@@ -1,5 +1,5 @@
 import { ContextState, PeriodicWaveConstraints } from '../types';
-import { RangeError, InvalidAccessError } from '../errors';
+import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
@@ -58,19 +58,19 @@ export default class AudioContext implements BaseAudioContext {
     sampleRate: number
   ): AudioBuffer {
     if (numOfChannels < 1 || numOfChannels >= 32) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
       );
     }
 
     if (length <= 0) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
       );
     }
 
     if (sampleRate <= 0) {
-      throw new RangeError(
+      throw new NotSupportedError(
         `The sample rate provided (${sampleRate}) is outside the range [3000, 768000]`
       );
     }
