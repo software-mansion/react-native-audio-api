@@ -46,7 +46,7 @@ class HiHat implements SoundEngine {
       oscillator.connect(bandpassFilter);
       bandpassFilter.connect(highpassFilter);
       highpassFilter.connect(gain);
-      gain.connect(this.audioContext.destination!);
+      gain.connect(this.audioContext.destination);
 
       oscillator.start(time);
       oscillator.stop(time + this.decay);

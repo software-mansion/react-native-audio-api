@@ -10,6 +10,31 @@ The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
 However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/core/audio-context), [`OfflineAudioContext`](/core/offline-audio-context).
 
+#### Audio graph
+
+An audio graph is a structured representation of audio processing elements and their connections within an audio context.
+The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
+In general we can distinguish four types of nodes:
+- Source nodes (e.g [`AudioBufferSourceNode`](/sources/audio-buffer-source-node), [`OscillatorNode`](/sources/oscillator-node))
+- Effect nodes (e.g [`GainNode`](/effects/gain-node), [`BiquadFilterNode`](/sources/biquad-filter-node))
+- Analysis nodes (e.g [`AnalyserNode`](/analysis/analyser-node))
+- Destination nodes (e.g [`AudioDestinationNode`](/destinations/audio-destination-node))
+
+![](/img/audio-graph.png)
+
+#### Rendering audio graph
+
+Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
+By default render quantum size value is 128 and it is constant.
+
+The [`AudioContext`](/core/audio-context) rendering thread is driven by a system-level audio callback.
+Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
+but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
+
+:::info
+Concept of system-level audio callback do not apply to [`OfflineAudioContext`](/core/offline-audio-context)
+:::
+
 ## Properties
 
 | Name | Type | Description | |
@@ -23,7 +48,7 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 
 ### `createAnalyser`
 
-Above method lets you create [`AnalyserNode`](/visualization/analyser-node).
+Above method lets you create [`AnalyserNode`](/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
