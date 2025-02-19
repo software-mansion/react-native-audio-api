@@ -1,5 +1,5 @@
 import { IAudioParam } from '../interfaces';
-import { RangeError } from '../errors';
+import { RangeError, InvalidStateError } from '../errors';
 
 export default class AudioParam {
   readonly defaultValue: number;
@@ -23,81 +23,114 @@ export default class AudioParam {
     this.audioParam.value = value;
   }
 
-  public setValueAtTime(value: number, startTime: number): void {
+  public setValueAtTime(value: number, startTime: number): AudioParam {
     if (startTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${startTime}`
+        `startTime must be a finite non-negative number: ${startTime}`
       );
     }
 
     this.audioParam.setValueAtTime(value, startTime);
+
+    return this;
   }
 
-  public linearRampToValueAtTime(value: number, endTime: number): void {
+  public linearRampToValueAtTime(value: number, endTime: number): AudioParam {
     if (endTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${endTime}`
+        `endTime must be a finite non-negative number: ${endTime}`
       );
     }
 
     this.audioParam.linearRampToValueAtTime(value, endTime);
+
+    return this;
   }
 
-  public exponentialRampToValueAtTime(value: number, endTime: number): void {
+  public exponentialRampToValueAtTime(
+    value: number,
+    endTime: number
+  ): AudioParam {
     if (endTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${endTime}`
+        `endTime must be a finite non-negative number: ${endTime}`
       );
     }
 
     this.audioParam.exponentialRampToValueAtTime(value, endTime);
+
+    return this;
   }
 
   public setTargetAtTime(
     target: number,
     startTime: number,
     timeConstant: number
-  ): void {
+  ): AudioParam {
     if (startTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${startTime}`
+        `startTime must be a finite non-negative number: ${startTime}`
+      );
+    }
+
+    if (timeConstant < 0) {
+      throw new RangeError(
+        `timeConstant must be a finite non-negative number: ${startTime}`
       );
     }
 
     this.audioParam.setTargetAtTime(target, startTime, timeConstant);
+
+    return this;
   }
 
   public setValueCurveAtTime(
     values: number[],
     startTime: number,
     duration: number
-  ): void {
+  ): AudioParam {
     if (startTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${startTime}`
+        `startTime must be a finite non-negative number: ${startTime}`
       );
     }
 
+    if (duration < 0) {
+      throw new RangeError(
+        `duration must be a finite non-negative number: ${startTime}`
+      );
+    }
+
+    if (values.length < 2) {
+      throw new InvalidStateError(`values must contain at least two values`);
+    }
+
     this.audioParam.setValueCurveAtTime(values, startTime, duration);
+
+    return this;
   }
 
-  public cancelScheduledValues(cancelTime: number): void {
+  public cancelScheduledValues(cancelTime: number): AudioParam {
     if (cancelTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${cancelTime}`
+        `cancelTime must be a finite non-negative number: ${cancelTime}`
       );
     }
 
     this.audioParam.cancelScheduledValues(cancelTime);
+
+    return this;
   }
 
-  public cancelAndHoldAtTime(cancelTime: number): void {
+  public cancelAndHoldAtTime(cancelTime: number): AudioParam {
     if (cancelTime < 0) {
       throw new RangeError(
-        `Time must be a finite non-negative number: ${cancelTime}`
+        `cancelTime must be a finite non-negative number: ${cancelTime}`
       );
     }
 
     this.audioParam.cancelAndHoldAtTime(cancelTime);
+
+    return this;
   }
 }
