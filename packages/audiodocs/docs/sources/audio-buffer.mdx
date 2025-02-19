@@ -1,0 +1,82 @@
+---
+sidebar_position: 1
+---
+
+import { ReadOnly, Optional } from '@site/src/components/Badges';
+
+# AudioBuffer
+
+The `AudioBuffer` interface represents a short audio asset, typically shorter then one minute.
+It can contain one or more channels, each one appearing to be 32-bit floating-point linear PCM values with a nominal range of [−1,1] (but not limited to that range).
+
+It can be created from audio file using [`BaseAudioContext.decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource) or from raw data using [constructor](/sources/audio-buffer#constructor).
+Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
+
+## Constructor
+
+[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/core/base-audio-context#createbuffer)
+
+## Properties
+
+| Name | Type | Description | |
+| :----: | :----: | :-------- | :-: |
+| `sampleRate` | `number` | Returns a float value representing sample rate of the PCM data stored in the buffer. | <ReadOnly /> |
+| `length` | `length` | Returns an integer value representing length of the PCM data stored in the buffer. | <ReadOnly /> |
+| `duration` | `number` | Returns a double value representing duration, in seconds, of the PCM data stored in the buffer. | <ReadOnly /> |
+| `numberOfChannels` | `number` | Returns an integer value representing the number of audio channels of the PCM data stored in the buffer. | <ReadOnly /> |
+
+## Methods
+
+### `getChannelData`
+
+Above method returns array with PCM data from given channel.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `channel` | `number` | Index of the `AudioBuffer's` channel from which data will be returned. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `IndexSizeError` | `channel` specifies unexisting audio channel. |
+
+#### Returns `number[]`.
+
+### `copyFromChannel`
+
+Above method copies data from given channel of the `AudioBuffer` to an array.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `destination` | `number[]` | The array to which data will be copied. |
+| `channelNumber` | `number` | Index of the `AudioBuffer's` channel from which data will be copied. |
+| `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `IndexSizeError` | `channelNumber` specifies unexisting audio channel. |
+| `IndexSizeError` | `startInChannel` is greater then the `AudioBuffer` length. |
+
+#### Returns `undefined`.
+
+### `copyToChannel`
+
+Above method copies data from given array to specified channel of the `AudioBuffer`.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `source` | `number[]` | The array from which data will be copied. |
+| `channelNumber` | `number` | Index of the `AudioBuffer's` channel to which data will be copied. |
+| `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `IndexSizeError` | `channelNumber` specifies unexisting audio channel. |
+| `IndexSizeError` | `startInChannel` is greater then the `AudioBuffer` length. |
+
+#### Returns `undefined`.
