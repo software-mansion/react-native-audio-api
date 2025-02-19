@@ -106,15 +106,8 @@ export default class BaseAudioContext {
       sourcePath = sourcePath.replace('file://', '');
     }
 
-    try {
-      const buffer = await this.context.decodeAudioDataSource(sourcePath);
-      return new AudioBuffer(buffer);
-    } catch (error) {
-      // Handle error gracefully, for example log it or throw it further with a custom message
-      console.error('Error decoding audio data source:', error);
-      throw new Error(
-        `Failed to decode audio data from source: ${sourcePath}.`
-      );
-    }
+    return new AudioBuffer(
+      await this.context.decodeAudioDataSource(sourcePath)
+    );
   }
 }

@@ -12,7 +12,7 @@ export type BiquadFilterType =
   | 'notch'
   | 'allpass';
 
-export type ContextState = 'running' | 'closed';
+export type ContextState = 'running' | 'closed' | `suspended`;
 
 export type OscillatorType =
   | 'sine'

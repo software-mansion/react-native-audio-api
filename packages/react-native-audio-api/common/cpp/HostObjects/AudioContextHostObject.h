@@ -2,6 +2,7 @@
 
 #include <jsi/jsi.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "AudioContext.h"
@@ -20,9 +21,18 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(close) {
-    auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-    audioContext->close();
-    return jsi::Value::undefined();
+    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
+      std::thread([this, promise = std::move(promise)]() {
+          auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+          audioContext->close();
+
+          promise->resolve([](jsi::Runtime &runtime) {
+              return jsi::Value::undefined();
+          });
+      }).detach();
+    });
+
+    return promise;
   }
 };
 } // namespace audioapi

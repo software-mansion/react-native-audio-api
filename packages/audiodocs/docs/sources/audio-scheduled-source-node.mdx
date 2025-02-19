@@ -14,6 +14,7 @@ It provides ability to start and stop audio playback.
 ### `start`
 
 Above method schedules the node to start audio playback at specified time, if no time is given, it starts immediately.
+You can invoke this method only once in node's life.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -28,14 +29,14 @@ Above method schedules the node to start audio playback at specified time, if no
 
 #### Returns `undefined`.
 
-### `start`
+### `stop`
 
 Above method schedules the node to stop audio playback at specified time, if no time is given, it stops immediately.
 If you invoke this method multiple times on the same node before the designated stop time, the most recent call overwrites previous one.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `when` | `number` | The time, in seconds, at which the node will start to play. |
+| `when` | `number` | The time, in seconds, at which the node will stop playing. |
 
 #### Errors:
 

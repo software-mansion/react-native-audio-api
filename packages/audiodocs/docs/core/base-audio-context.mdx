@@ -14,10 +14,10 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `currentTime` | `number` | Returns double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
-| `destination` | [`AudioDestinationNode`](/core/audio-destination-node) | Returns final output destination associated with the context. | <ReadOnly /> |
-| `sampleRate` | `number` | Returns float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](/types/context-state) | Returns enumerated value represents the current state of the context. | <ReadOnly /> |
+| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
+| `destination` | [`AudioDestinationNode`](/core/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
+| `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
+| `state` | [`ContextState`](/types/context-state) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
 ## Methods
 
@@ -25,13 +25,13 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 
 Above method lets you create [`AnalyserNode`](/visualization/analyser-node).
 
-**Returns** `AnalyserNode`.
+#### Returns `AnalyserNode`.
 
 ### `createBiquadFilter`
 
 Above method lets you create [`BiquadFilterNode`](/effects/biquad-filter-node).
 
-**Returns** `BiquadFilterNode`.
+#### Returns `BiquadFilterNode`.
 
 ### `createBuffer`
 
@@ -43,29 +43,33 @@ Above method lets you create [`AudioBuffer`](/sources/audio-buffer).
 | `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
 | `sampleRate` | `number` | A float representing the sample rate of the buffer. |
 
-Throws `NotSupportedError` if number of channels is outside the range [1, 32], <br />
-or sample rate is outside the range [8000, 96000],
-or if length is less then 1.
+#### Errors
 
-**Returns** `AudioBuffer`.
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
+| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
+| `NotSupportedError` | `length` is less then 1. |
+
+#### Returns `AudioBuffer`.
 
 ### `createBufferSource`
 
 Above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
 
-**Returns** `AudioBufferSourceNode`.
+#### Returns `AudioBufferSourceNode`.
 
 ### `createGain`
 
 Above method lets you create [`GainNode`](/effects/gain-node).
 
-**Returns** `GainNode`.
+#### Returns `GainNode`.
 
 ### `createOscillator`
 
 Above method lets you create [`OscillatorNode`](/sources/oscillator-node).
 
-**Returns** `OscillatorNode`.
+#### Returns `OscillatorNode`.
 
 ### `createPeriodicWave`
 
@@ -77,15 +81,19 @@ Above method lets you create [`PeriodicWave`](/effects/periodic-wave).
 | `imag` | `number[]` | An array of sine terms. |
 | `constraints` <Optional /> | [`PeriodicWaveConstraints`](/types/periodic-wave-constraints) | An object that specifies if normalization is disabled. |
 
-Throws `InvalidAccessError` real and imag arrays do not have same length.
+#### Errors
 
-**Returns** `PeriodicWave`.
+| Error type | Description |
+| :---: | :---- |
+| `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
+
+#### Returns `PeriodicWave`.
 
 ### `createStereoPanner`
 
 Above method lets you create [`StereoPannerNode`](/spatialization/stereo-panner-node).
 
-**Returns** `StereoPannerNode`.
+#### Returns `StereoPannerNode`.
 
 ### `decodeAudioDataSource`
 
@@ -95,9 +103,7 @@ Above method lets you decode audio data file.
 | :---: | :---: | :---- |
 | `sourcePath` | `string` | Path to audio file. |
 
-It is asynchronous method, so it returns a promise.
-
-**Returns** `Promise<AudioBuffer>`.
+#### Returns `Promise<AudioBuffer>`.
 
 ## Remarks
 

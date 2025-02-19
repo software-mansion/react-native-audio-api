@@ -7,7 +7,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 # AudioParam
 
 The `AudioParam` interface represents audio-related parameter (such as `gain` property of [GainNode`](/effects/gain-node)).
-An `AudioParam` can be set to specific value or schedule value change to happen at specific time and following specific pattern.
+It can be set to specific value or schedule value change to happen at specific time, and following specific pattern.
 
 #### a-rate vs k-rate
 - `a-rate` - takes the current audio parameter value for each sample frame of the audio signal.
@@ -17,10 +17,10 @@ An `AudioParam` can be set to specific value or schedule value change to happen 
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `defaultValue` | `number` | Returns initial value of the parameter. | <ReadOnly /> |
-| `minValue` | `number` | Returns minimum possible value of the parameter. | <ReadOnly /> |
-| `maxValue` | `number` | Returns maximum possible value of the parameter. | <ReadOnly /> |
-| `value` | `number` | Returns current value of the parameter. Initially set to `defaultValue`. |
+| `defaultValue` | `number` | Initial value of the parameter. | <ReadOnly /> |
+| `minValue` | `number` | Minimum possible value of the parameter. | <ReadOnly /> |
+| `maxValue` | `number` | Maximum possible value of the parameter. | <ReadOnly /> |
+| `value` | `number` | Current value of the parameter. Initially set to `defaultValue`. |
 
 ## Methods
 
@@ -33,11 +33,15 @@ Above method schedules an instant change to the `value` at given `startTime`.
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will be set at given time |
-| `startTime` | `number` | A double representing the precise time at which the change in value is going to happen. |
+| `startTime` | `number` | The time, in seconds, at which the change in value is going to happen. |
 
-Throws `RangeError` if start time is lower then 0.
+#### Errors:
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `startTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `linearRampToValueAtTime`
 
@@ -49,11 +53,15 @@ The change begins at the time designated for the previous event. It follows a li
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will ramp to by given time. |
-| `endTime` | `number` | A double representing the precise time when the value ramp will end. |
+| `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
 
-Throws `RangeError` if end time is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `endTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `exponentialRampToValueAtTime`
 
@@ -65,27 +73,37 @@ The change begins at the time designated for the previous event. It follows a ex
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will ramp to by given time. |
-| `endTime` | `number` | A double representing the precise time when the value ramp will end. |
+| `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
 
-Throws `RangeError` if end time is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `endTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `setTargetAtTime`
 
-Above method schedules a gradual change to the new value at the start time. This method is useful for decay or release portions of [ADSR envelopes](/effects/gain-node#envelope---adsr).
+Above method schedules a gradual change to the new value at the start time.
+This method is useful for decay or release portions of [ADSR envelopes](/effects/gain-node#envelope---adsr).
 
 ![](/img/setTargetAtTime.png)
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `target` | `number` | A float representing the value to which the `AudioParam` will start transitioning. |
-| `startTime` | `number` | A double representing the precise time when exponential transition will begin. |
+| `startTime` | `number` | The time, in seconds, at which exponential transition will begin. |
 | `timeConstant` | `number` | A double representing the time-constant value of an exponential approach to the `target`. |
 
-Throws `RangeError` if start time is lower then 0, or time constant is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `startTime` is negative number. |
+| `RangeError` | `timeConstant` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `setValueCurveAtTime`
 
@@ -95,13 +113,17 @@ Above method schedules the parameters's value change following a curve defined b
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `values` | `number[]` | An array of values defining a curve, which change will follow. |
-| `startTime` | `number` | A double representing the precise time when change will begin. |
+| `values` | `number[]` | The array of values defining a curve, which change will follow. |
+| `startTime` | `number` | The time, in seconds, at which change will begin. |
 | `duration` | `number` | A double representing total time over which the change will happen. |
 
-Throws `RangeError` if start time is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `startTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `cancelScheduledValues`
 
@@ -109,11 +131,15 @@ Above method cancels all scheduled changes after given cancel time.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `cancelTime` | `number` | A double representing the precise time after which all scheduled changes will be cancelled. |
+| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
 
-Throws `RangeError` if start time is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `cancelTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ### `cancelAndHoldAtTime`
 
@@ -121,12 +147,16 @@ Above method cancels all scheduled changes after given cancel time, but holds it
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `cancelTime` | `number` | A double representing the precise time after which all scheduled changes will be cancelled. |
+| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
 
-Throws `RangeError` if start time is lower then 0.
+#### Errors
 
-**Returns** `AudioParam`.
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `cancelTime` is negative number. |
+
+#### Returns `AudioParam`.
 
 ## Remarks
 
-All time parameters should be in the same time coordinate system as [`BaseAudioContext.currentTime`](/core/base-audio-context)
+All time parameters should be in the same time coordinate system as [`BaseAudioContext.currentTime`](/core/base-audio-context).

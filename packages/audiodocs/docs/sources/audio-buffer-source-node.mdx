@@ -44,6 +44,17 @@ Above method schedules `AudioBufferSourceNode` to start playback of audio data c
 | `offset` <Optional /> | `number` | An offset, in seconds, determines the starting point for audio playback. |
 | `duration` <Optional /> | `number` | The duration, in seconds, of audio playback. |
 
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `RangeError` | `offset` is negative number. |
+| `RangeError` | `duration` is negative number. |
+| `InvalidStateError` | If node has already been started once. |
+
+#### Returns `undefined`.
+
 ## Remarks
 
 #### `buffer`

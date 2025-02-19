@@ -6,7 +6,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AudioNode
 
-`AudioNode` interface serves as a versatile interface for constructing an audio processing graph, representing individual units of audio processing functionality.
+The `AudioNode` interface serves as a versatile interface for constructing an audio processing graph, representing individual units of audio processing functionality.
 Each `AudioNode` is associated with a certain number of audio channels that facilitate the transfer of audio data through processing graph.
 
 We usually represent the channels with the standard abbreviations detailed in the table below:
@@ -22,12 +22,12 @@ We usually represent the channels with the standard abbreviations detailed in th
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `context` | [`BaseAudioContext`](/core/base-audio-context) | Returns the associated context. | <ReadOnly /> |
-| `numberOfInputs` | `number` | Returns integer value representing the number of input connections for the node. | <ReadOnly /> |
-| `numberOfOutputs` | `number` | Returns integer value representing the number of output connections for the node. | <ReadOnly /> |
-| `channelCount` | `number` | Returns integer used to determine how many channels are used when up-mixing or down-mixing node's inputs. | <ReadOnly /> |
-| `channelCountMode` | [`ChannelCountMode`](/types/channel-count-mode) | Returns an enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. | <ReadOnly /> |
-| `channelInterpretation` | [`ChannelInterpretation`](/types/channel-interpretation) | Returns an enumerated value that specifies how input channels are mapped to output channels when number of them is different. | <ReadOnly /> |
+| `context` | [`BaseAudioContext`](/core/base-audio-context) | Associated context. | <ReadOnly /> |
+| `numberOfInputs` | `number` | Integer value representing the number of input connections for the node. | <ReadOnly /> |
+| `numberOfOutputs` | `number` | Integer value representing the number of output connections for the node. | <ReadOnly /> |
+| `channelCount` | `number` | Integer used to determine how many channels are used when up-mixing or down-mixing node's inputs. | <ReadOnly /> |
+| `channelCountMode` | [`ChannelCountMode`](/types/channel-count-mode) | Enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. | <ReadOnly /> |
+| `channelInterpretation` | [`ChannelInterpretation`](/types/channel-interpretation) | Enumerated value that specifies how input channels are mapped to output channels when number of them is different. | <ReadOnly /> |
 
 ## Methods
 
@@ -37,11 +37,15 @@ Above method lets you connect one of the node's outputs to a destination.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` | [`AudioNode`](/core/audio-node) | Audio node to which to connect. |
+| `destination` | [`AudioNode`](/core/audio-node) | `AudioNode` to which to connect. |
 
-Throws `InvalidAccessError` if destination node is not part of the same audio context as node.
+#### Errors:
 
-**Returns** destination `AudioNode`.
+| Error type | Description |
+| :---: | :---- |
+| `InvalidAccessError` | If `destination` is not part of the same audio context as the node. |
+
+#### Returns `undefined`.
 
 ### `disconnect`
 
@@ -49,11 +53,11 @@ Above method lets you disconnect one or more nodes from the node.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` <Optional /> | [`AudioNode`](/core/audio-node) | Audio node to which to connect. |
+| `destination` <Optional /> | [`AudioNode`](/core/audio-node) | `AudioNode` to which to connect. |
 
 If no arguments provided node disconnects from all outgoing connections.
 
-**Returns** `undefined`.
+#### Returns `undefined`.
 
 ## Remarks
 

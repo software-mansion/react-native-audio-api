@@ -22,6 +22,12 @@ export default class AudioContext implements BaseAudioContext {
   readonly sampleRate: number;
 
   constructor(options?: AudioContextOptions) {
+    if (options && (options.sampleRate < 8000 || options.sampleRate > 96000)) {
+      throw new NotSupportedError(
+        `The provided sampleRate is not supported: ${options.sampleRate}`
+      );
+    }
+
     this.context = new window.AudioContext(options);
 
     this.sampleRate = this.context.sampleRate;
@@ -112,7 +118,7 @@ export default class AudioContext implements BaseAudioContext {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 
-  async close(): Promise<void> {
+  async close(): Promise<undefined> {
     await this.context.close();
   }
 }
