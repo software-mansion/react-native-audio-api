@@ -1,0 +1,70 @@
+---
+sidebar_position: 2
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional, Overridden } from '@site/src/components/Badges';
+
+# AudioBufferSourceNode
+
+The `AudioBufferSourceNode` is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which represents audio source with in-memory audio data, stored in `AudioBuffer`.
+You can use it for audio playback, including standard pause and resume functionalities.
+
+An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to created new one.
+However this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](/sources/audio-buffer).
+
+#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={"defined by associated buffer"} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createBufferSource()`](/core/base-audio-context#createbuffersource)
+
+## Properties
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
+| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of playback in cents. |
+| `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
+| `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
+| `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
+| `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+
+## Methods
+
+### `start` <Overridden />
+
+Above method schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated `AudioBuffer`, or starts to play immediately.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `when` | `number` | The time, in seconds, at which the node will start to play. |
+| `offset` <Optional /> | `number` | An offset, in seconds, determines the starting point for audio playback. |
+| `duration` <Optional /> | `number` | The duration, in seconds, of audio playback. |
+
+## Remarks
+
+#### `buffer`
+- If is null, it outputs a single channel of silence (all samples are equal to 0).
+
+#### `detune`
+- Default value is 0.0.
+- Nominal range is -∞ to ∞.
+- Along with `playbackRate`, it determines speed of audio playback.
+
+#### `loop`
+- Default value is false.
+
+#### `loopStart`
+- Default value is 0.
+
+#### `loopEnd`
+- Default value is `buffer.duration`.
+
+#### `playbackRate`
+- Default value is 1.0.
+- Nominal range is -∞ to ∞.
+- Along with `detune`, it determines speed of audio playback.
+- 1.0 plays audio at normal speed, 2.0 plays audio twice as fast as normal speed.

@@ -6,7 +6,7 @@ type ChannelInterpretation = 'speakers' | 'discrete';
 interface AudioNodePropsTableProps {
   numberOfInputs: number;
   numberOfOutputs: number;
-  channelCount: number;
+  channelCount: number | string;
   channelCountMode: ChannelCountMode;
   channelInterpretation: ChannelInterpretation;
 }

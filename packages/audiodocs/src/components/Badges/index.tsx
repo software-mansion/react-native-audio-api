@@ -8,3 +8,7 @@ export function Optional({ footnote }) {
 export function ReadOnly({ footnote }) {
   return <div className={styles.badge}>Read only{footnote ? '*' : ''}</div>;
 }
+
+export function Overridden({ footnote }) {
+  return <div className={styles.badge}>Overridden{footnote ? '*' : ''}</div>;
+}
