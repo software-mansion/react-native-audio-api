@@ -1,0 +1,47 @@
+---
+sidebar_position: 3
+---
+
+import { Optional } from '@site/src/components/Badges';
+
+# AudioScheduledSourceNode
+
+The `AudioScheduledSourceNode` interface is an [`AudioNode`](/core/audio-node) which serves as a parent interface for several types of audio source nodes.
+It provides ability to start and stop audio playback.
+
+## Methods
+
+### `start`
+
+Above method schedules the node to start audio playback at specified time, if no time is given, it starts immediately.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `when` | `number` | The time, in seconds, at which the node will start to play. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `InvalidStateError` | If node has already been started once. |
+
+#### Returns `undefined`.
+
+### `start`
+
+Above method schedules the node to stop audio playback at specified time, if no time is given, it stops immediately.
+If you invoke this method multiple times on the same node before the designated stop time, the most recent call overwrites previous one.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `when` | `number` | The time, in seconds, at which the node will start to play. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `InvalidStateError` | If node has not been started yet. |
+
+#### Returns `undefined`.
