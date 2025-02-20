@@ -70,7 +70,7 @@ void AudioBufferSourceNode::setBuffer(
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     alignedBus_ = std::make_shared<AudioBus>(
-            RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+        RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
     loopEnd_ = 0;
     return;
   }
@@ -79,13 +79,12 @@ void AudioBufferSourceNode::setBuffer(
   channelCount_ = buffer_->getNumberOfChannels();
 
   alignedBus_ = std::make_shared<AudioBus>(
-      buffer_->getLength(),
-      channelCount_,
-      context_->getSampleRate());
+      buffer_->getLength(), channelCount_, context_->getSampleRate());
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+  audioBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
 }

@@ -161,11 +161,17 @@ float AudioBus::maxAbsValue() const {
   return maxAbsValue;
 }
 
-void AudioBus::sum(const AudioBus *source, ChannelInterpretation interpretation) {
+void AudioBus::sum(
+    const AudioBus *source,
+    ChannelInterpretation interpretation) {
   sum(source, 0, 0, getSize(), interpretation);
 }
 
-void AudioBus::sum(const AudioBus *source, size_t start, size_t length, ChannelInterpretation interpretation) {
+void AudioBus::sum(
+    const AudioBus *source,
+    size_t start,
+    size_t length,
+    ChannelInterpretation interpretation) {
   sum(source, start, start, length, interpretation);
 }
 
@@ -378,7 +384,8 @@ void AudioBus::sumByDownMixing(
   }
 
   // Stereo 4 to mono (4 -> 1):
-  // output += 0.25 * (input.left + input.right + input.surroundLeft + input.surroundRight)
+  // output += 0.25 * (input.left + input.right + input.surroundLeft +
+  // input.surroundRight)
   if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
@@ -413,43 +420,44 @@ void AudioBus::sumByDownMixing(
   }
 
   // 5.1 to mono (6 -> 1):
-  // output += sqrt(1/2) * (input.left + input.right) + input.center + 0.5 * (input.surroundLeft + input.surroundRight)
+  // output += sqrt(1/2) * (input.left + input.right) + input.center + 0.5 *
+  // (input.surroundLeft + input.surroundRight)
   if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
     float *sourceCenter = source->getChannelByType(ChannelCenter)->getData();
     float *sourceSurroundLeft =
-          source->getChannelByType(ChannelSurroundLeft)->getData();
+        source->getChannelByType(ChannelSurroundLeft)->getData();
     float *sourceSurroundRight =
-          source->getChannelByType(ChannelSurroundRight)->getData();
+        source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
     VectorMath::multiplyByScalarThenAddToOutput(
-    sourceLeft + sourceStart,
-    SQRT_HALF,
-    destinationData + destinationStart,
-    length);
+        sourceLeft + sourceStart,
+        SQRT_HALF,
+        destinationData + destinationStart,
+        length);
     VectorMath::multiplyByScalarThenAddToOutput(
-    sourceRight + sourceStart,
-    SQRT_HALF,
-    destinationData + destinationStart,
-    length);
+        sourceRight + sourceStart,
+        SQRT_HALF,
+        destinationData + destinationStart,
+        length);
     VectorMath::add(
-    sourceCenter + sourceStart,
-    destinationData + destinationStart,
-    destinationData + destinationStart,
-    length);
+        sourceCenter + sourceStart,
+        destinationData + destinationStart,
+        destinationData + destinationStart,
+        length);
     VectorMath::multiplyByScalarThenAddToOutput(
-    sourceSurroundLeft + sourceStart,
-    0.5f,
-    destinationData + destinationStart,
-    length);
+        sourceSurroundLeft + sourceStart,
+        0.5f,
+        destinationData + destinationStart,
+        length);
     VectorMath::multiplyByScalarThenAddToOutput(
-    sourceSurroundRight + sourceStart,
-    0.5f,
-    destinationData + destinationStart,
-    length);
+        sourceSurroundRight + sourceStart,
+        0.5f,
+        destinationData + destinationStart,
+        length);
 
     return;
   }
@@ -461,40 +469,41 @@ void AudioBus::sumByDownMixing(
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
     float *sourceSurroundLeft =
-            source->getChannelByType(ChannelSurroundLeft)->getData();
+        source->getChannelByType(ChannelSurroundLeft)->getData();
     float *sourceSurroundRight =
-            source->getChannelByType(ChannelSurroundRight)->getData();
+        source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
 
     VectorMath::multiplyByScalarThenAddToOutput(
-            sourceLeft + sourceStart,
-            0.5f,
-            destinationLeft + destinationStart,
-            length);
+        sourceLeft + sourceStart,
+        0.5f,
+        destinationLeft + destinationStart,
+        length);
     VectorMath::multiplyByScalarThenAddToOutput(
-            sourceSurroundLeft + sourceStart,
-            0.5f,
-            destinationLeft + destinationStart,
-            length);
+        sourceSurroundLeft + sourceStart,
+        0.5f,
+        destinationLeft + destinationStart,
+        length);
 
     VectorMath::multiplyByScalarThenAddToOutput(
-            sourceRight + sourceStart,
-            0.5f,
-            destinationRight + destinationStart,
-            length);
+        sourceRight + sourceStart,
+        0.5f,
+        destinationRight + destinationStart,
+        length);
     VectorMath::multiplyByScalarThenAddToOutput(
-            sourceSurroundRight + sourceStart,
-            0.5f,
-            destinationRight + destinationStart,
-            length);
+        sourceSurroundRight + sourceStart,
+        0.5f,
+        destinationRight + destinationStart,
+        length);
     return;
   }
 
   // 5.1 to stereo (6 -> 2):
   // output.left += input.left + sqrt(1/2) * (input.center + input.surroundLeft)
-  // output.right += input.right + sqrt(1/2) * (input.center + input.surroundRight)
+  // output.right += input.right + sqrt(1/2) * (input.center +
+  // input.surroundRight)
   if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();

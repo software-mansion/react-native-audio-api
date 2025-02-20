@@ -107,7 +107,7 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
   }
 
   // Process inputs and return the bus with the most channels.
-  AudioBus* processingBus = processInputs(outputBus, framesToProcess);
+  AudioBus *processingBus = processInputs(outputBus, framesToProcess);
 
   // Apply channel count mode.
   processingBus = applyChannelCountMode(processingBus);
@@ -123,23 +123,23 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
 }
 
 bool AudioNode::isAlreadyProcessed() {
-    assert(context_ != nullptr);
+  assert(context_ != nullptr);
 
-    std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
+  std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
-    // check if the node has already been processed for this rendering quantum
-    if (currentSampleFrame == lastRenderedFrame_) {
-        return true;
-    }
+  // check if the node has already been processed for this rendering quantum
+  if (currentSampleFrame == lastRenderedFrame_) {
+    return true;
+  }
 
-    // Update the last rendered frame before processing node and its inputs.
-    lastRenderedFrame_ = currentSampleFrame;
+  // Update the last rendered frame before processing node and its inputs.
+  lastRenderedFrame_ = currentSampleFrame;
 
-    return false;
+  return false;
 }
 
 AudioBus *AudioNode::processInputs(AudioBus *outputBus, int framesToProcess) {
-  AudioBus* processingBus = audioBus_.get();
+  AudioBus *processingBus = audioBus_.get();
   processingBus->zero();
 
   int maxNumberOfChannels = 0;
@@ -163,14 +163,16 @@ AudioBus *AudioNode::processInputs(AudioBus *outputBus, int framesToProcess) {
 }
 
 AudioBus *AudioNode::applyChannelCountMode(AudioBus *processingBus) {
-  // If the channelCountMode is EXPLICIT, the node should output the number of channels specified by the channelCount.
+  // If the channelCountMode is EXPLICIT, the node should output the number of
+  // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
     return audioBus_.get();
   }
 
-  // If the channelCountMode is CLAMPED_MAX, the node should output the maximum number of channels
-  // clamped to channelCount.
-  if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX && processingBus->getNumberOfChannels() >= channelCount_) {
+  // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
+  // number of channels clamped to channelCount.
+  if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
+      processingBus->getNumberOfChannels() >= channelCount_) {
     return audioBus_.get();
   }
 
