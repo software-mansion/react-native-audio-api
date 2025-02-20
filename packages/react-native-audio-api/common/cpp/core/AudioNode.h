@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_set>
 #include <cstddef>
+#include <vector>
 
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
