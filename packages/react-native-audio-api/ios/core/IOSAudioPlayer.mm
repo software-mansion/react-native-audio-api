@@ -19,8 +19,6 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
       renderAudio_(audioBus_, framesToProcess);
 
-      // add assert
-      // MIXING
       // TODO: optimize this with SIMD?
       for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;

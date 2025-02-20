@@ -148,7 +148,7 @@ void AnalyserNode::processNode(
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBus but instead copy the data to its own input buffer.
 
-  // MIXING
+  // Down mix the input bus to mono
   downMixBus_->copy(processingBus);
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
