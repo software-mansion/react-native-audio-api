@@ -5,6 +5,8 @@
 #include <vector>
 #include <cstddef>
 
+#include "ChannelInterpretation.h"
+
 namespace audioapi {
 
 class BaseAudioContext;
@@ -39,13 +41,13 @@ class AudioBus {
   void zero();
   void zero(size_t start, size_t length);
 
-  void sum(const AudioBus *source);
-  void sum(const AudioBus *source, size_t start, size_t length);
+  void sum(const AudioBus *source, ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
+  void sum(const AudioBus *source, size_t start, size_t length, ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
   void sum(
       const AudioBus *source,
       size_t sourceStart,
       size_t destinationStart,
-      size_t length);
+      size_t length, ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
 
   void copy(const AudioBus *source);
   void copy(const AudioBus *source, size_t start, size_t length);

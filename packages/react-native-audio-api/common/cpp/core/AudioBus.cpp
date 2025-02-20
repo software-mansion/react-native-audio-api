@@ -161,19 +161,20 @@ float AudioBus::maxAbsValue() const {
   return maxAbsValue;
 }
 
-void AudioBus::sum(const AudioBus *source) {
-  sum(source, 0, 0, getSize());
+void AudioBus::sum(const AudioBus *source, ChannelInterpretation interpretation) {
+  sum(source, 0, 0, getSize(), interpretation);
 }
 
-void AudioBus::sum(const AudioBus *source, size_t start, size_t length) {
-  sum(source, start, start, length);
+void AudioBus::sum(const AudioBus *source, size_t start, size_t length, ChannelInterpretation interpretation) {
+  sum(source, start, start, length, interpretation);
 }
 
 void AudioBus::sum(
     const AudioBus *source,
     size_t sourceStart,
     size_t destinationStart,
-    size_t length) {
+    size_t length,
+    ChannelInterpretation interpretation) {
   if (source == this) {
     return;
   }
@@ -181,9 +182,12 @@ void AudioBus::sum(
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
-  // TODO: consider adding ability to enforce discrete summing (if/when it will
-  // be useful). Source channel count is smaller than current bus, we need to
-  // up-mix.
+  if (interpretation == ChannelInterpretation::DISCRETE) {
+    discreteSum(source, sourceStart, destinationStart, length);
+    return;
+  }
+
+  // Source channel count is smaller than current bus, we need to up-mix.
   if (numberOfSourceChannels < numberOfChannels) {
     sumByUpMixing(source, sourceStart, destinationStart, length);
     return;
@@ -271,7 +275,6 @@ void AudioBus::sumByUpMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  // MIXING
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
@@ -351,7 +354,6 @@ void AudioBus::sumByDownMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  // MIXING
   int numberOfSourceChannels = source->getNumberOfChannels();
   int numberOfChannels = getNumberOfChannels();
 
@@ -375,8 +377,8 @@ void AudioBus::sumByDownMixing(
     return;
   }
 
-  // Stereo 4 to mono: output += 0.25 * (input.left + input.right +
-  // input.surroundLeft + input.surroundRight)
+  // Stereo 4 to mono (4 -> 1):
+  // output += 0.25 * (input.left + input.right + input.surroundLeft + input.surroundRight)
   if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
@@ -410,10 +412,89 @@ void AudioBus::sumByDownMixing(
     return;
   }
 
-  // 5.1 to stereo:
+  // 5.1 to mono (6 -> 1):
+  // output += sqrt(1/2) * (input.left + input.right) + input.center + 0.5 * (input.surroundLeft + input.surroundRight)
+  if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
+    float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float *sourceRight = source->getChannelByType(ChannelRight)->getData();
+    float *sourceCenter = source->getChannelByType(ChannelCenter)->getData();
+    float *sourceSurroundLeft =
+          source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight =
+          source->getChannelByType(ChannelSurroundRight)->getData();
+
+    float *destinationData = getChannelByType(ChannelMono)->getData();
+
+    VectorMath::multiplyByScalarThenAddToOutput(
+    sourceLeft + sourceStart,
+    SQRT_HALF,
+    destinationData + destinationStart,
+    length);
+    VectorMath::multiplyByScalarThenAddToOutput(
+    sourceRight + sourceStart,
+    SQRT_HALF,
+    destinationData + destinationStart,
+    length);
+    VectorMath::add(
+    sourceCenter + sourceStart,
+    destinationData + destinationStart,
+    destinationData + destinationStart,
+    length);
+    VectorMath::multiplyByScalarThenAddToOutput(
+    sourceSurroundLeft + sourceStart,
+    0.5f,
+    destinationData + destinationStart,
+    length);
+    VectorMath::multiplyByScalarThenAddToOutput(
+    sourceSurroundRight + sourceStart,
+    0.5f,
+    destinationData + destinationStart,
+    length);
+
+    return;
+  }
+
+  // Stereo 4 to stereo 2 (4 -> 2):
+  // output.left += 0.5 * (input.left +  input.surroundLeft)
+  // output.right += 0.5 * (input.right + input.surroundRight)
+  if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
+    float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
+    float *sourceRight = source->getChannelByType(ChannelRight)->getData();
+    float *sourceSurroundLeft =
+            source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight =
+            source->getChannelByType(ChannelSurroundRight)->getData();
+
+    float *destinationLeft = getChannelByType(ChannelLeft)->getData();
+    float *destinationRight = getChannelByType(ChannelRight)->getData();
+
+    VectorMath::multiplyByScalarThenAddToOutput(
+            sourceLeft + sourceStart,
+            0.5f,
+            destinationLeft + destinationStart,
+            length);
+    VectorMath::multiplyByScalarThenAddToOutput(
+            sourceSurroundLeft + sourceStart,
+            0.5f,
+            destinationLeft + destinationStart,
+            length);
+
+    VectorMath::multiplyByScalarThenAddToOutput(
+            sourceRight + sourceStart,
+            0.5f,
+            destinationRight + destinationStart,
+            length);
+    VectorMath::multiplyByScalarThenAddToOutput(
+            sourceSurroundRight + sourceStart,
+            0.5f,
+            destinationRight + destinationStart,
+            length);
+    return;
+  }
+
+  // 5.1 to stereo (6 -> 2):
   // output.left += input.left + sqrt(1/2) * (input.center + input.surroundLeft)
-  // output.right += input.right + sqrt(1/2) * (input.center +
-  // input.surroundRight)
+  // output.right += input.right + sqrt(1/2) * (input.center + input.surroundRight)
   if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
@@ -460,7 +541,7 @@ void AudioBus::sumByDownMixing(
     return;
   }
 
-  // 5.1 to stereo 4:
+  // 5.1 to stereo 4 (6 -> 4):
   // output.left += input.left + sqrt(1/2) * input.center
   // output.right += input.right + sqrt(1/2) * input.center
   // output.surroundLeft += input.surroundLeft
