@@ -1,7 +1,7 @@
 import AudioParam from './AudioParam';
 import AudioNode from './AudioNode';
 import BaseAudioContext from './BaseAudioContext';
-import { BiquadFilterType } from '../index.native';
+import { BiquadFilterType } from '../types';
 import { InvalidAccessError } from '../errors';
 
 export default class BiquadFilterNode extends AudioNode {

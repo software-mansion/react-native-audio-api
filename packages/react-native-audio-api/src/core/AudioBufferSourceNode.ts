@@ -66,13 +66,13 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
     if (offset < 0) {
       throw new RangeError(
-        `offset must be a finite non-negative number: ${when}`
+        `offset must be a finite non-negative number: ${offset}`
       );
     }
 
     if (duration && duration < 0) {
       throw new RangeError(
-        `duration must be a finite non-negative number: ${when}`
+        `duration must be a finite non-negative number: ${duration}`
       );
     }
 
