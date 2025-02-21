@@ -124,7 +124,29 @@ android {
   }
 
   packagingOptions {
-    excludes = ["**/libc++_shared.so", "**/libfbjni.so", "**/libjsi.so", "**/libreactnativejni.so", "**/libfolly_json.so", "**/libreanimated.so", "**/libjscexecutor.so", "**/libhermes.so"]
+    excludes = [
+      "META-INF",
+      "META-INF/**",
+      "**/libc++_shared.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libfolly_json.so",
+      "**/libfolly_runtime.so",
+      "**/libglog.so",
+      "**/libhermes.so",
+      "**/libhermes-executor-debug.so",
+      "**/libhermes_executor.so",
+      "**/libhermestooling.so",
+      "**/libreactnativejni.so",
+      "**/libturbomodulejsijni.so",
+      "**/libreactnative.so",
+      "**/libreact_nativemodule_core.so",
+      "**/libreact_render*.so",
+      "**/librrc_root.so",
+      "**/libjscexecutor.so",
+      "**/libv8executor.so",
+      "**/libreanimated.so"
+    ]
   }
 
   externalNativeBuild {
