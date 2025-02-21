@@ -118,7 +118,8 @@ android {
                   "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
                   "-DANDROID_TOOLCHAIN=clang",
                   "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
-                  "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}"
+                  "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
+                  "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
       }
     }
   }
