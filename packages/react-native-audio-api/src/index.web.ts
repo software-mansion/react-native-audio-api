@@ -11,3 +11,20 @@ export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
 export { default as GainNode } from './web-core/GainNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
+
+export {
+  OscillatorType,
+  BiquadFilterType,
+  ChannelCountMode,
+  ChannelInterpretation,
+  ContextState,
+  WindowType,
+  PeriodicWaveConstraints,
+} from './types';
+
+export {
+  IndexSizeError,
+  InvalidAccessError,
+  InvalidStateError,
+  RangeError,
+} from './errors';
