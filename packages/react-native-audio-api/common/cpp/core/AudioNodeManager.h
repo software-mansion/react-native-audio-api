@@ -27,6 +27,8 @@ class AudioNodeManager {
 
   void addNode(const std::shared_ptr<AudioNode> &node);
 
+  void cleanup();
+
  private:
   std::mutex graphLock_;
 

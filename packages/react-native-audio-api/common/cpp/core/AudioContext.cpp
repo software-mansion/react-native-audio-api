@@ -7,6 +7,7 @@
 #include "AudioContext.h"
 #include "AudioDecoder.h"
 #include "AudioDestinationNode.h"
+#include "AudioNodeManager.h"
 
 namespace audioapi {
 AudioContext::AudioContext() : BaseAudioContext() {
@@ -35,11 +36,11 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
 }
 
 AudioContext::~AudioContext() {
-  if (isClosed()) {
-    return;
+  if (!isClosed()) {
+    close();
   }
 
-  close();
+  nodeManager_->cleanup();
 }
 
 void AudioContext::close() {
