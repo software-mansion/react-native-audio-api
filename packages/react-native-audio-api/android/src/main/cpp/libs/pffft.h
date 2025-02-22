@@ -74,8 +74,7 @@
 
 */
 
-#ifndef PFFFT_H
-#define PFFFT_H
+#pragma once
 
 #include <stddef.h> // for size_t
 
@@ -197,5 +196,3 @@ int pffft_simd_size(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // PFFFT_H
