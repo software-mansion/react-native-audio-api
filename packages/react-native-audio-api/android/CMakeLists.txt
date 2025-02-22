@@ -15,9 +15,10 @@ include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.cpp")
+file(GLOB_RECURSE ANDROID_C_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.c")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "../common/cpp/*.cpp")
 
-add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
+add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${ANDROID_C_SOURCES} ${COMMON_CPP_SOURCES})
 
 file(GLOB ANDROID_CPP_DIR CONFIGURE_DEPENDS "src/main/cpp/**")
 file(GLOB COMMON_CPP_DIR CONFIGURE_DEPENDS "../common/cpp/**")
@@ -36,10 +37,7 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/react/nativemodule/core/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-  "${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
 )
-
-set(fftw3 ${CMAKE_CURRENT_SOURCE_DIR}/libs/${ANDROID_ABI}/libfftw3.a)
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -51,7 +49,6 @@ set(LINK_LIBRARIES
   android
   log
   oboe::oboe
-  ${fftw3}
 )
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)

@@ -199,8 +199,8 @@ void PeriodicWave::createBandLimitedTables(
   for (int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
     FFTFrame fftFrame(fftSize);
 
-    auto *realFFTFrameData = fftFrame.getRealData();
-    auto *imaginaryFFTFrameData = fftFrame.getImaginaryData();
+    auto *realFFTFrameData = new float[fftSize];
+    auto *imaginaryFFTFrameData = new float[fftSize];
 
     // copy real and imaginary data to the FFT frame and scale it
     VectorMath::multiplyByScalar(
@@ -235,7 +235,7 @@ void PeriodicWave::createBandLimitedTables(
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fftFrame.doInverseFFT(bandLimitedTables_[rangeIndex]);
+    fftFrame.doInverseFFT(bandLimitedTables_[rangeIndex], realFFTFrameData, imaginaryFFTFrameData);
 
     if (!disableNormalization_ && rangeIndex == 0) {
       float maxValue =
@@ -244,6 +244,9 @@ void PeriodicWave::createBandLimitedTables(
         normalizationFactor = 1.0f / maxValue;
       }
     }
+
+    delete [] realFFTFrameData;
+    delete [] imaginaryFFTFrameData;
 
     VectorMath::multiplyByScalar(
         bandLimitedTables_[rangeIndex],
