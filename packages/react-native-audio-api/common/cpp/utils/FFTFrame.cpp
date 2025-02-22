@@ -14,14 +14,11 @@ namespace audioapi {
 static std::unordered_map<size_t, FFTSetup> fftSetups_;
 
 FFTFrame::FFTFrame(int size)
-    : size_(size),
-      log2Size_(static_cast<int>(log2(size))) {
+    : size_(size), log2Size_(static_cast<int>(log2(size))) {
   fftSetup_ = getFFTSetupForSize(log2Size_);
 }
 
-FFTFrame::~FFTFrame() {
-
-}
+FFTFrame::~FFTFrame() {}
 
 FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
   if (!fftSetups_.contains(log2FFTSize)) {
@@ -42,7 +39,10 @@ void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
   VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *data, float *realData, float *imaginaryData) {
+void FFTFrame::doInverseFFT(
+    float *data,
+    float *realData,
+    float *imaginaryData) {
   frame_.realp = realData;
   frame_.imagp = imaginaryData;
   vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_INVERSE);
@@ -57,20 +57,24 @@ void FFTFrame::doInverseFFT(float *data, float *realData, float *imaginaryData) 
 #elif defined(ANDROID)
 
 FFTFrame::FFTFrame(int size)
-    : size_(size),
-      log2Size_(static_cast<int>(log2(size))) {
-    pffftSetup_ = pffft_new_setup(size_, PFFFT_REAL);
-    work_ = (float*) pffft_aligned_malloc(size_ * sizeof(float));
+    : size_(size), log2Size_(static_cast<int>(log2(size))) {
+  pffftSetup_ = pffft_new_setup(size_, PFFFT_REAL);
+  work_ = (float *)pffft_aligned_malloc(size_ * sizeof(float));
 }
 
 FFTFrame::~FFTFrame() {
   pffft_destroy_setup(pffftSetup_);
-    pffft_aligned_free(work_);
+  pffft_aligned_free(work_);
 }
 
 void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
   std::vector<std::complex<float>> out(size_);
-  pffft_transform_ordered(pffftSetup_, data, reinterpret_cast<float*>(&out[0]), work_, PFFFT_FORWARD);
+  pffft_transform_ordered(
+      pffftSetup_,
+      data,
+      reinterpret_cast<float *>(&out[0]),
+      work_,
+      PFFFT_FORWARD);
 
   for (int i = 0; i < size_ / 2; ++i) {
     realData[i] = out[i].real();
@@ -81,13 +85,21 @@ void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
   VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *data, float *realData, float *imaginaryData) {
+void FFTFrame::doInverseFFT(
+    float *data,
+    float *realData,
+    float *imaginaryData) {
   std::vector<std::complex<float>> out(size_ / 2);
   for (int i = 0; i < size_ / 2; i++) {
     out[i] = {realData[i], imaginaryData[i]};
   }
 
-  pffft_transform_ordered(pffftSetup_, reinterpret_cast<float*>(&out[0]), data, work_, PFFFT_BACKWARD);
+  pffft_transform_ordered(
+      pffftSetup_,
+      reinterpret_cast<float *>(&out[0]),
+      data,
+      work_,
+      PFFFT_BACKWARD);
 
   VectorMath::multiplyByScalar(
       data, 1.0f / static_cast<float>(size_), data, size_);

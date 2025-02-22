@@ -219,7 +219,8 @@ void AnalyserNode::doFFTAnalysis() {
   auto *imaginaryFFTFrameData = imaginaryData_->getData();
 
   // do fft analysis - get frequency domain data
-  fftFrame_->doFFT(tempBuffer.getData(), realFFTFrameData, imaginaryFFTFrameData);
+  fftFrame_->doFFT(
+      tempBuffer.getData(), realFFTFrameData, imaginaryFFTFrameData);
 
   // Zero out nquist component
   imaginaryFFTFrameData[0] = 0.0f;
