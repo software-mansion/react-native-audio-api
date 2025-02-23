@@ -30,6 +30,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void start(double when, double offset, double duration = -1);
 
  protected:
+  std::mutex &getBufferLock();
   void processNode(AudioBus *processingBus, int framesToProcess) override;
 
  private:
@@ -37,6 +38,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   bool loop_;
   double loopStart_;
   double loopEnd_;
+  std::mutex bufferLock_;
 
   // playback rate aka pitch change params
   std::shared_ptr<AudioParam> detuneParam_;

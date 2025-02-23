@@ -8,6 +8,7 @@
 #include "AudioUtils.h"
 #include "BaseAudioContext.h"
 #include "Constants.h"
+#include "Locker.h"
 
 namespace audioapi {
 
@@ -67,6 +68,8 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
+  Locker locker(getBufferLock());
+
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     alignedBus_ = std::make_shared<AudioBus>(
@@ -109,11 +112,20 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 }
 
+std::mutex &AudioBufferSourceNode::getBufferLock() {
+  return bufferLock_;
+}
+
 void AudioBufferSourceNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {
   // No audio data to fill, zero the output and return.
   if (!buffer_) {
+    processingBus->zero();
+    return;
+  }
+
+  if (!Locker::tryLock(getBufferLock())) {
     processingBus->zero();
     return;
   }
