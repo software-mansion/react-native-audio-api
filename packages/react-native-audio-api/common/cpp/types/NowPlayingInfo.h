@@ -18,7 +18,7 @@ class NowPlayingInfo {
   int elapsedTime;
   bool isPlaying;
 
-  static std::shared_ptr<NowPlayingInfo> createFromJSIObject(const jsi::Value &jsiValue, jsi::Runtime &runtime) {
+  static std::shared_ptr<NowPlayingInfo> fromJSIValue(const jsi::Value &jsiValue, jsi::Runtime &runtime) {
     auto jsiOptions = jsiValue.getObject(runtime);
     auto options = std::make_shared<NowPlayingInfo>();
 

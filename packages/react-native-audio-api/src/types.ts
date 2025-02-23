@@ -27,51 +27,36 @@ export interface PeriodicWaveConstraints {
 
 export type WindowType = 'blackman' | 'hann';
 
-export enum IOSCategory {
-  Record = 0,
-  Ambient = 1,
-  Playback = 2,
-  MultiRoute = 3,
-  SoloAmbient = 4,
-  PlaybackAndRecord = 5,
-}
+export type IOSCategory =
+  | 'record'
+  | 'ambient'
+  | 'playback'
+  | 'multiRoute'
+  | 'soloAmbient'
+  | 'playbackAndRecord';
 
-export enum IOSMode {
-  Default = 0,
-  GameChat = 1,
-  VideoChat = 2,
-  VoiceChat = 3,
-  Measurement = 4,
-  VoicePrompt = 5,
-  SpokenAudio = 6,
-  MoviePlayback = 7,
-  VideoRecording = 8,
-}
+export type IOSMode =
+  | 'default'
+  | 'gameChat'
+  | 'videoChat'
+  | 'voiceChat'
+  | 'measurement'
+  | 'voicePrompt'
+  | 'spokenAudio'
+  | 'moviePlayback'
+  | 'videoRecording';
 
-export enum IOSCategoryOption {
-  DuckOthers = 0,
-  AllowAirPlay = 1,
-  MixWithOthers = 2,
-  AllowBluetooth = 3,
-  DefaultToSpeaker = 4,
-  AllowBluetoothA2DP = 5,
-  OverrideMutedMicrophoneInterruption = 6,
-  InterruptSpokenAudioAndMixWithOthers = 7,
-}
+export type IOSCategoryOption =
+  | 'duckOthers'
+  | 'allowAirPlay'
+  | 'mixWithOthers'
+  | 'allowBluetooth'
+  | 'defaultToSpeaker'
+  | 'allowBluetoothA2DP'
+  | 'overrideMutedMicrophoneInterruption'
+  | 'interruptSpokenAudioAndMixWithOthers';
 
-export enum InterruptionMode {
-  Manual = 0,
-  Disabled = 1,
-  Automatic = 2,
-}
-
-export interface AudioSessionOptions {
-  iosMode?: IOSMode;
-  iosCategory?: IOSCategory;
-  androidForegroundService?: boolean;
-  interruptionMode?: InterruptionMode;
-  iosCategoryOptions?: IOSCategoryOption[];
-}
+export type InterruptionMode = 'manual' | 'disabled' | 'automatic';
 
 export type AudioEventName =
   | 'play'
@@ -92,6 +77,14 @@ export type AudioEventName =
   | 'iosTogglePlayPause'
   | 'iosEnableLanguageOption'
   | 'iosDisableLanguageOption';
+
+export interface AudioSessionOptions {
+  iosMode?: IOSMode;
+  iosCategory?: IOSCategory;
+  androidForegroundService?: boolean;
+  interruptionMode?: InterruptionMode;
+  iosCategoryOptions?: IOSCategoryOption[];
+}
 
 interface ChangePositionEventData {
   position: number;

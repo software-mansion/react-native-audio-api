@@ -8,6 +8,12 @@ namespace audioapi {
 class NowPlayingInfo;
 class AudioSessionOptions;
 
+#ifdef ANDROID
+class AndroidAudioControls;
+#else
+class IOSAudioControls;
+#endif
+
 class AudioControls {
  public:
   AudioControls();
@@ -24,8 +30,11 @@ class AudioControls {
   void addEventListener();
 
  private:
-  std::shared_ptr<AudioSessionOptions> options_;
-  std::shared_ptr<NowPlayingInfo> nowPlayingInfo_;
+#ifdef ANDROID
+  std::shared_ptr<AndroidAudioControls> audioControls_;
+#else
+  std::shared_ptr<IOSAudioControls> audioControls_;
+#endif
 };
 
 } // namespace audioapi

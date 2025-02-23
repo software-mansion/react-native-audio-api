@@ -3,46 +3,52 @@
 #include "NowPlayingInfo.h"
 #include "AudioSessionOptions.h"
 
+#ifdef ANDROID
+#include "AndroidAudioControls.h"
+#else
+#include "IOSAudioControls.h"
+#endif
+
 namespace audioapi {
 
 AudioControls::AudioControls() {
-  printf("AudioControls::AudioControls\n");
+#ifdef ANDROID
+  audioControls_ = std::make_shared<AndroidAudioControls>();
+#else
+  audioControls_ = std::make_shared<IOSAudioControls>();
+#endif
 }
 
 AudioControls::~AudioControls() {
-  printf("AudioControls::~AudioControls\n");
+  // TODO: cleanup everything if disable was not called
 }
 
 void AudioControls::init(std::shared_ptr<AudioSessionOptions> options) {
-  printf("AudioControls::init\n");
-  options_ = options;
+  audioControls_->init(options);
 }
 
 void AudioControls::updateOptions(std::shared_ptr<AudioSessionOptions> options) {
-  printf("AudioControls::updateOptions\n");
-  options_ = options;
+  audioControls_->updateOptions(options);
 }
 
 void AudioControls::disable() {
-  printf("AudioControls::disable\n");
+  audioControls_->disable();
 }
 
 void AudioControls::showNowPlayingInfo(std::shared_ptr<NowPlayingInfo> nowPlayingInfo) {
-  printf("AudioControls::showNowPlayingInfo\n");
-  nowPlayingInfo_ = nowPlayingInfo;
+  audioControls_->showNowPlayingInfo(nowPlayingInfo);
 }
 
 void AudioControls::updateNowPlayingInfo(std::shared_ptr<NowPlayingInfo> nowPlayingInfo) {
-  printf("AudioControls::updateNowPlayingInfo\n");
-  nowPlayingInfo_ = nowPlayingInfo;
+  audioControls_->updateNowPlayingInfo(nowPlayingInfo);
 }
 
 void AudioControls::hideNowPlayingInfo() {
-  printf("AudioControls::hideNowPlayingInfo\n");
+  audioControls_->hideNowPlayingInfo();
 }
 
 void AudioControls::addEventListener() {
-  printf("AudioControls::addEventListener\n");
+  audioControls_->addEventListener();
 }
 
 } // namespace audioapi

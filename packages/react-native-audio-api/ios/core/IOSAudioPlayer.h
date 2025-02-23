@@ -32,4 +32,5 @@ class IOSAudioPlayer {
   void start();
   void stop();
 };
+
 } // namespace audioapi

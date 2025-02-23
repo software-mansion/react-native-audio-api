@@ -1,8 +1,10 @@
 #pragma once
 
+#include <jsi/jsi.h>
 #include <string>
 
 namespace audioapi {
+using namespace facebook;
 
 class AudioEventName {
  public:

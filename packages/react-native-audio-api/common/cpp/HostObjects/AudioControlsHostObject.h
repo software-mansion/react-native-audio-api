@@ -32,14 +32,14 @@ class AudioControlsHostObject: public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(init) {
-    auto options = AudioSessionOptions::createFromJSIObject(args[0], runtime);
+    auto options = AudioSessionOptions::fromJSIValue(args[0], runtime);
     audioControls_->init(options);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(updateOptions) {
-    auto options = AudioSessionOptions::createFromJSIObject(args[0], runtime);
+    auto options = AudioSessionOptions::fromJSIValue(args[0], runtime);
     audioControls_->updateOptions(options);
 
     return jsi::Value::undefined();
@@ -51,14 +51,14 @@ class AudioControlsHostObject: public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(showNowPlayingInfo) {
-    auto options = NowPlayingInfo::createFromJSIObject(args[0], runtime);
+    auto options = NowPlayingInfo::fromJSIValue(args[0], runtime);
     audioControls_->showNowPlayingInfo(options);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(updateNowPlayingInfo) {
-    auto options = NowPlayingInfo::createFromJSIObject(args[0], runtime);
+    auto options = NowPlayingInfo::fromJSIValue(args[0], runtime);
     audioControls_->updateNowPlayingInfo(options);
 
     return jsi::Value::undefined();
@@ -71,8 +71,6 @@ class AudioControlsHostObject: public JsiHostObject {
 
   JSI_HOST_FUNCTION(addEventListener) {
     AudioEventName eventName = AudioEventName::fromJSIValue(args[0], runtime);
-
-    printf("AudioControlsHostObject::addEventListener %d\n", static_cast<int>(eventName));
 
     audioControls_->addEventListener();
     return jsi::Value::undefined();

@@ -1,25 +1,18 @@
 import type { IAudioControls } from '../interfaces';
 import {
-  IOSMode,
-  IOSCategory,
   EventListener,
   NowPlayingInfo,
   AudioEventName,
-  InterruptionMode,
-  IOSCategoryOption,
   AudioEventCallback,
   AudioSessionOptions,
   NowPlayingInfoUpdate,
 } from '../types';
 
 const defaultOptions: AudioSessionOptions = {
-  iosCategory: IOSCategory.Playback,
-  iosMode: IOSMode.Default,
-  iosCategoryOptions: [
-    IOSCategoryOption.DuckOthers,
-    IOSCategoryOption.MixWithOthers,
-  ],
-  interruptionMode: InterruptionMode.Automatic,
+  iosMode: 'default',
+  iosCategory: 'playback',
+  interruptionMode: 'automatic',
+  iosCategoryOptions: ['mixWithOthers'],
   androidForegroundService: true,
 };
 
