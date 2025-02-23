@@ -18,6 +18,8 @@ export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 
+export { default as AudioControls } from './system/AudioControls';
+
 export {
   OscillatorType,
   BiquadFilterType,

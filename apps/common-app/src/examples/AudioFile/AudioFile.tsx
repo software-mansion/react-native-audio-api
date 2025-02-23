@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { ActivityIndicator } from 'react-native';
 import {
+  AudioControls,
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
@@ -51,26 +52,39 @@ const AudioFile: FC = () => {
       return;
     }
 
-    if (isPlaying) {
-      const stopTime = audioContextRef.current.currentTime;
-      bufferSourceRef.current?.stop(stopTime);
-      setOffset((prev) => prev + stopTime - startTime);
-    } else {
-      if (!audioBuffer) {
-        fetchAudioBuffer();
-      }
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
-      bufferSourceRef.current.buffer = audioBuffer;
-      bufferSourceRef.current.loop = true;
-      bufferSourceRef.current.loopStart = LOOP_START;
-      bufferSourceRef.current.loopEnd = LOOP_END;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
+    AudioControls.init();
+    AudioControls.showNowPlayingInfo({
+      title: 'Example Music',
+      artist: 'Software Mansion',
+      artwork:
+        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-04.jpg',
+      duration: 10,
+    });
 
-      setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(startTime, offset);
-    }
+    AudioControls.addEventListener('stop', () => {});
 
-    setIsPlaying((prev) => !prev);
+    // if (isPlaying) {
+    //   const stopTime = audioContextRef.current.currentTime;
+
+    //   bufferSourceRef.current?.stop(stopTime);
+    //   setOffset((prev) => prev + stopTime - startTime);
+    // } else {
+    //   if (!audioBuffer) {
+    //     fetchAudioBuffer();
+    //   }
+
+    //   bufferSourceRef.current = audioContextRef.current.createBufferSource();
+    //   bufferSourceRef.current.buffer = audioBuffer;
+    //   bufferSourceRef.current.loop = true;
+    //   bufferSourceRef.current.loopStart = LOOP_START;
+    //   bufferSourceRef.current.loopEnd = LOOP_END;
+    //   bufferSourceRef.current.connect(audioContextRef.current.destination);
+
+    //   setStartTime(audioContextRef.current.currentTime);
+    //   bufferSourceRef.current.start(startTime, offset);
+    // }
+
+    // setIsPlaying((prev) => !prev);
   };
 
   useEffect(() => {

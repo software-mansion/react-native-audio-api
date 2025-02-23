@@ -1,11 +1,34 @@
 import {
+  /* Web Audio */
+  WindowType,
   ContextState,
-  BiquadFilterType,
   OscillatorType,
   ChannelCountMode,
+  BiquadFilterType,
   ChannelInterpretation,
-  WindowType,
+
+  /* Audio Controls */
+  NowPlayingInfo,
+  AudioSessionOptions,
+  NowPlayingInfoUpdate,
+  AudioEventName,
+  AudioEventCallback,
 } from './types';
+
+export interface IAudioControls {
+  init: (options: AudioSessionOptions) => void;
+  updateOptions: (options: AudioSessionOptions) => void;
+  disable: () => void;
+
+  showNowPlayingInfo: (info: NowPlayingInfo) => void;
+  updateNowPlayingInfo: (info: NowPlayingInfoUpdate) => void;
+  hideNowPlayingInfo: () => void;
+
+  addEventListener: <EN extends AudioEventName>(
+    eventName: EN,
+    callback: AudioEventCallback<EN>
+  ) => void;
+}
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
