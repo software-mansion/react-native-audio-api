@@ -3,7 +3,7 @@ name: build audio api docs
 on:
   push:
     branches:
-      - main
+      - docsprod
     paths:
       - packages/audiodocs/**
   workflow_dispatch:
