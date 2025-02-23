@@ -5,7 +5,8 @@
 #endif
 
 #if defined(ANDROID)
-#include <fftw3.h>
+#include <pffft.h>
+#include <complex>
 #endif
 
 namespace audioapi {
@@ -13,19 +14,11 @@ namespace audioapi {
 static std::unordered_map<size_t, FFTSetup> fftSetups_;
 
 FFTFrame::FFTFrame(int size)
-    : size_(size),
-      log2Size_(static_cast<int>(log2(size))),
-      realData_(new float[size]),
-      imaginaryData_(new float[size]) {
+    : size_(size), log2Size_(static_cast<int>(log2(size))) {
   fftSetup_ = getFFTSetupForSize(log2Size_);
-  frame_.realp = realData_;
-  frame_.imagp = imaginaryData_;
 }
 
-FFTFrame::~FFTFrame() {
-  delete[] realData_;
-  delete[] imaginaryData_;
-}
+FFTFrame::~FFTFrame() {}
 
 FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
   if (!fftSetups_.contains(log2FFTSize)) {
@@ -36,15 +29,22 @@ FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
   return fftSetups_.at(log2FFTSize);
 }
 
-void FFTFrame::doFFT(float *data) {
+void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
+  frame_.realp = realData;
+  frame_.imagp = imaginaryData;
   vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &frame_, 1, size_ / 2);
   vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_FORWARD);
 
-  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
-  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+  VectorMath::multiplyByScalar(realData, 0.5f, realData, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *data) {
+void FFTFrame::doInverseFFT(
+    float *data,
+    float *realData,
+    float *imaginaryData) {
+  frame_.realp = realData;
+  frame_.imagp = imaginaryData;
   vDSP_fft_zrip(fftSetup_, &frame_, 1, log2Size_, FFT_INVERSE);
   vDSP_ztoc(&frame_, 1, reinterpret_cast<DSPComplex *>(data), 2, size_ / 2);
 
@@ -57,42 +57,49 @@ void FFTFrame::doInverseFFT(float *data) {
 #elif defined(ANDROID)
 
 FFTFrame::FFTFrame(int size)
-    : size_(size),
-      log2Size_(static_cast<int>(log2(size))),
-      realData_(new float[size]),
-      imaginaryData_(new float[size]) {
-  frame_ = fftwf_alloc_complex(size / 2);
+    : size_(size), log2Size_(static_cast<int>(log2(size))) {
+  pffftSetup_ = pffft_new_setup(size_, PFFFT_REAL);
+  work_ = (float *)pffft_aligned_malloc(size_ * sizeof(float));
 }
 
 FFTFrame::~FFTFrame() {
-  delete[] realData_;
-  delete[] imaginaryData_;
-  fftwf_free(frame_);
+  pffft_destroy_setup(pffftSetup_);
+  pffft_aligned_free(work_);
 }
 
-void FFTFrame::doFFT(float *data) {
-  auto plan = fftwf_plan_dft_r2c_1d(size_, data, frame_, FFTW_ESTIMATE);
-  fftwf_execute(plan);
-  fftwf_destroy_plan(plan);
+void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
+  std::vector<std::complex<float>> out(size_);
+  pffft_transform_ordered(
+      pffftSetup_,
+      data,
+      reinterpret_cast<float *>(&out[0]),
+      work_,
+      PFFFT_FORWARD);
 
   for (int i = 0; i < size_ / 2; ++i) {
-    realData_[i] = frame_[i][0];
-    imaginaryData_[i] = frame_[i][1];
+    realData[i] = out[i].real();
+    imaginaryData[i] = out[i].imag();
   }
 
-  VectorMath::multiplyByScalar(realData_, 0.5f, realData_, size_ / 2);
-  VectorMath::multiplyByScalar(imaginaryData_, 0.5f, imaginaryData_, size_ / 2);
+  VectorMath::multiplyByScalar(realData, 0.5f, realData, size_ / 2);
+  VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(float *data) {
+void FFTFrame::doInverseFFT(
+    float *data,
+    float *realData,
+    float *imaginaryData) {
+  std::vector<std::complex<float>> out(size_ / 2);
   for (int i = 0; i < size_ / 2; i++) {
-    frame_[i][0] = realData_[i];
-    frame_[i][1] = imaginaryData_[i];
+    out[i] = {realData[i], imaginaryData[i]};
   }
 
-  auto plan = fftwf_plan_dft_c2r_1d(size_, frame_, data, FFTW_ESTIMATE);
-  fftwf_execute(plan);
-  fftwf_destroy_plan(plan);
+  pffft_transform_ordered(
+      pffftSetup_,
+      reinterpret_cast<float *>(&out[0]),
+      data,
+      work_,
+      PFFFT_BACKWARD);
 
   VectorMath::multiplyByScalar(
       data, 1.0f / static_cast<float>(size_), data, size_);

@@ -14,7 +14,7 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
-  cleanup();
+  isInitialized_ = false;
 }
 
 int AudioNode::getNumberOfInputs() const {
@@ -102,65 +102,91 @@ AudioBus *AudioNode::processAudio(AudioBus *outputBus, int framesToProcess) {
     return outputBus;
   }
 
+  if (isAlreadyProcessed()) {
+    return audioBus_.get();
+  }
+
+  // Process inputs and return the bus with the most channels.
+  AudioBus *processingBus = processInputs(outputBus, framesToProcess);
+
+  // Apply channel count mode.
+  processingBus = applyChannelCountMode(processingBus);
+
+  // Mix all input buses into the processing bus.
+  mixInputsBuses(processingBus);
+
+  assert(processingBus != nullptr);
+  // Finally, process the node itself.
+  processNode(processingBus, framesToProcess);
+
+  return processingBus;
+}
+
+bool AudioNode::isAlreadyProcessed() {
   assert(context_ != nullptr);
 
   std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
 
   // check if the node has already been processed for this rendering quantum
-  bool isAlreadyProcessed = currentSampleFrame == lastRenderedFrame_;
-
-  // Node can't use output bus if:
-  // - outputBus is not provided, which means that next node is doing a
-  // multi-node summing.
-  // - it has more than one input, which means that it has to sum all inputs
-  // using internal bus.
-  // - it has more than one output, so each output node can get the processed
-  // data without re-calculating the node.
-  bool canUseOutputBus =
-      outputBus != nullptr && inputNodes_.size() < 2 && outputNodes_.size() < 2;
-
-  if (isAlreadyProcessed) {
-    // If it was already processed in the rendering quantum, return it.
-    return audioBus_.get();
+  if (currentSampleFrame == lastRenderedFrame_) {
+    return true;
   }
 
   // Update the last rendered frame before processing node and its inputs.
   lastRenderedFrame_ = currentSampleFrame;
 
-  AudioBus *processingBus = canUseOutputBus ? outputBus : audioBus_.get();
+  return false;
+}
 
-  if (!canUseOutputBus) {
-    // Clear the bus before summing all connected nodes.
-    processingBus->zero();
-  }
+AudioBus *AudioNode::processInputs(AudioBus *outputBus, int framesToProcess) {
+  AudioBus *processingBus = audioBus_.get();
+  processingBus->zero();
 
-  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
-    if (!(*it)->isEnabled()) {
+  int maxNumberOfChannels = 0;
+  for (auto inputNode : inputNodes_) {
+    assert(inputNode != nullptr);
+
+    if (!inputNode->isEnabled()) {
       continue;
     }
 
-    // Process first connected node, it can be directly connected to the
-    // processingBus, resulting in one less summing operation.
-    if (it == inputNodes_.begin()) {
-      AudioBus *inputBus = (*it)->processAudio(processingBus, framesToProcess);
+    auto inputBus = inputNode->processAudio(outputBus, framesToProcess);
+    inputBuses_.push_back(inputBus);
 
-      if (processingBus != nullptr && inputBus != processingBus) {
-        processingBus->sum(inputBus);
-      }
-    } else {
-      // Enforce the summing to be done using the internal bus.
-      AudioBus *inputBus = (*it)->processAudio(nullptr, framesToProcess);
-      if (inputBus && processingBus) {
-        processingBus->sum(inputBus);
-      }
+    if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
+      maxNumberOfChannels = inputBus->getNumberOfChannels();
+      processingBus = inputBus;
     }
   }
 
-  // Finally, process the node itself.
-  assert(processingBus != nullptr);
-  processNode(processingBus, framesToProcess);
+  return processingBus;
+}
+
+AudioBus *AudioNode::applyChannelCountMode(AudioBus *processingBus) {
+  // If the channelCountMode is EXPLICIT, the node should output the number of
+  // channels specified by the channelCount.
+  if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
+    return audioBus_.get();
+  }
+
+  // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
+  // number of channels clamped to channelCount.
+  if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
+      processingBus->getNumberOfChannels() >= channelCount_) {
+    return audioBus_.get();
+  }
 
   return processingBus;
+}
+
+void AudioNode::mixInputsBuses(AudioBus *processingBus) {
+  assert(processingBus != nullptr);
+
+  for (auto inputBus : inputBuses_) {
+    processingBus->sum(inputBus, channelInterpretation_);
+  }
+
+  inputBuses_.clear();
 }
 
 void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {

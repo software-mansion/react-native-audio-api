@@ -40,7 +40,7 @@
 #endif
 
 #if defined(ANDROID)
-#include <fftw3.h>
+#include <pffft.h>
 #endif
 
 namespace audioapi {
@@ -50,22 +50,12 @@ class FFTFrame {
   explicit FFTFrame(int size);
   ~FFTFrame();
 
-  [[nodiscard]] float *getRealData() const {
-    return realData_;
-  }
-  [[nodiscard]] float *getImaginaryData() const {
-    return imaginaryData_;
-  }
-
-  void doFFT(float *data);
-
-  void doInverseFFT(float *data);
+  void doFFT(float *data, float *realData, float *imaginaryData);
+  void doInverseFFT(float *data, float *realData, float *imaginaryData);
 
  private:
   int size_;
   int log2Size_;
-  float *realData_;
-  float *imaginaryData_;
 
 #if defined(HAVE_ACCELERATE)
     FFTSetup fftSetup_;
@@ -75,7 +65,8 @@ class FFTFrame {
 #endif
 
 #if defined(ANDROID)
-    fftwf_complex *frame_;
+    PFFFT_Setup *pffftSetup_;
+    float *work_;
 #endif
 };
 

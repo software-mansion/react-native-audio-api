@@ -63,7 +63,6 @@ void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
     float sample =
         periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
 
-    // MIXING - oscillator get bus with appropriate number of channels
     for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
       (*processingBus->getChannel(j))[i] = sample;
     }

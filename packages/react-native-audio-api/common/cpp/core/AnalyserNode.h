@@ -50,6 +50,8 @@ class AnalyserNode : public AudioNode {
   int vWriteIndex_;
 
   std::unique_ptr<FFTFrame> fftFrame_;
+  std::shared_ptr<AudioArray> realData_;
+  std::shared_ptr<AudioArray> imaginaryData_;
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_ { true };
 

@@ -68,4 +68,14 @@ void AudioNodeManager::prepareNodesForDestruction() {
   }
 }
 
+void AudioNodeManager::cleanup() {
+  Locker lock(getGraphLock());
+
+  for (auto &node : nodes_) {
+    node->cleanup();
+  }
+
+  nodes_.clear();
+}
+
 } // namespace audioapi

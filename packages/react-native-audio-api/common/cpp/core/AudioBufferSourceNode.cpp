@@ -8,6 +8,7 @@
 #include "AudioUtils.h"
 #include "BaseAudioContext.h"
 #include "Constants.h"
+#include "Locker.h"
 
 namespace audioapi {
 
@@ -19,7 +20,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
   alignedBus_ = std::make_shared<AudioBus>(
-      1, RENDER_QUANTUM_SIZE, context_->getSampleRate());
+      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
@@ -67,22 +68,26 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer) {
+  Locker locker(getBufferLock());
+
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     alignedBus_ = std::make_shared<AudioBus>(
-        1, RENDER_QUANTUM_SIZE, context_->getSampleRate());
+        RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
     loopEnd_ = 0;
     return;
   }
 
   buffer_ = buffer;
-  alignedBus_ = std::make_shared<AudioBus>(
-      buffer_->getLength(),
-      buffer_->getNumberOfChannels(),
-      context_->getSampleRate());
+  channelCount_ = buffer_->getNumberOfChannels();
 
+  alignedBus_ = std::make_shared<AudioBus>(
+      buffer_->getLength(), channelCount_, context_->getSampleRate());
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());
+
+  audioBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
 }
@@ -107,11 +112,20 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 }
 
+std::mutex &AudioBufferSourceNode::getBufferLock() {
+  return bufferLock_;
+}
+
 void AudioBufferSourceNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {
   // No audio data to fill, zero the output and return.
   if (!buffer_) {
+    processingBus->zero();
+    return;
+  }
+
+  if (!Locker::tryLock(getBufferLock())) {
     processingBus->zero();
     return;
   }
@@ -168,7 +182,6 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
     framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
 
-    // MIXING
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
       processingBus->copy(
@@ -236,7 +249,6 @@ void AudioBufferSourceNode::processWithInterpolation(
       nextReadIndex = loop_ ? frameStart : readIndex;
     }
 
-    // MIXING
     for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
       float *destination = processingBus->getChannel(i)->getData();
       const float *source = alignedBus_->getChannel(i)->getData();

@@ -12,7 +12,7 @@ namespace audioapi {
 
 StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
     : AudioNode(context) {
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
+  channelCountMode_ = ChannelCountMode::EXPLICIT;
   panParam_ = std::make_shared<AudioParam>(0.0, MIN_PAN, MAX_PAN);
   isInitialized_ = true;
 }
@@ -24,15 +24,6 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
 void StereoPannerNode::processNode(
     AudioBus *processingBus,
     int framesToProcess) {
-  // MIXING
-  // TODO: Currently assumed channelCount is 2
-  // it should:
-  //  - support mono-channel buses
-  //  - throw errors when trying to setup stereo panner with more than 2
-  //  channels
-
-  assert(processingBus->getNumberOfChannels() <= 2);
-
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
@@ -40,8 +31,9 @@ void StereoPannerNode::processNode(
   AudioArray *right = processingBus->getChannelByType(AudioBus::ChannelRight);
 
   for (int i = 0; i < framesToProcess; i += 1) {
-    float pan = panParam_->getValueAtTime(time);
-    float x = (pan <= 0 ? pan + 1 : pan);
+    auto pan = panParam_->getValueAtTime(time);
+
+    auto x = (pan <= 0 ? pan + 1 : pan);
 
     auto gainL = static_cast<float>(cos(x * PI / 2));
     auto gainR = static_cast<float>(sin(x * PI / 2));
