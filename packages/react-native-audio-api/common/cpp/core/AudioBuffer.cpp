@@ -1,4 +1,6 @@
 #include "AudioBuffer.h"
+
+#include <utility>
 #include "AudioArray.h"
 #include "AudioBus.h"
 
@@ -11,8 +13,8 @@ AudioBuffer::AudioBuffer(
   bus_ = std::make_shared<AudioBus>(length, numberOfChannels, sampleRate);
 }
 
-AudioBuffer::AudioBuffer(AudioBus *bus) {
-  bus_ = std::shared_ptr<AudioBus>(bus);
+AudioBuffer::AudioBuffer(std::shared_ptr<AudioBus> bus) {
+  bus_ = std::move(bus);
 }
 
 size_t AudioBuffer::getLength() const {

@@ -13,7 +13,7 @@ class AudioBus;
 class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
   explicit AudioBuffer(int numberOfChannels, size_t length, float sampleRate);
-  explicit AudioBuffer(AudioBus *bus);
+  explicit AudioBuffer(std::shared_ptr<AudioBus> bus);
 
   [[nodiscard]] size_t getLength() const;
   [[nodiscard]] float getSampleRate() const;

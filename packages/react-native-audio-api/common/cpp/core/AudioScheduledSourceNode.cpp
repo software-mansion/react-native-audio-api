@@ -43,7 +43,7 @@ bool AudioScheduledSourceNode::isFinished() {
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess,
     size_t &startOffset,
     size_t &nonSilentFramesToProcess) {

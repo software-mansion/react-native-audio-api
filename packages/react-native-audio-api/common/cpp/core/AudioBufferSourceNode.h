@@ -31,7 +31,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
 
  protected:
   std::mutex &getBufferLock();
-  void processNode(AudioBus *processingBus, int framesToProcess) override;
+  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   // Looping related properties
@@ -57,13 +57,13 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   double getVirtualEndFrame();
 
   void processWithoutInterpolation(
-      AudioBus *processingBus,
+      const std::shared_ptr<AudioBus>& processingBus,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate);
 
   void processWithInterpolation(
-      AudioBus *processingBus,
+      const std::shared_ptr<AudioBus>& processingBus,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate);

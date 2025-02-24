@@ -119,7 +119,7 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
 
   assert(processingBus != nullptr);
   // Finally, process the node itself.
-  processNode(processingBus.get(), framesToProcess);
+  processNode(processingBus, framesToProcess);
 
   return processingBus;
 }

@@ -350,7 +350,7 @@ void BiquadFilterNode::applyFilter() {
 }
 
 void BiquadFilterNode::processNode(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   resetCoefficients();
   applyFilter();

@@ -32,7 +32,7 @@ class BiquadFilterNode : public AudioNode {
       std::vector<float> &phaseResponseOutput);
 
  protected:
-  void processNode(AudioBus *processingBus, int framesToProcess) override;
+  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;

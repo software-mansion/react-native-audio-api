@@ -117,7 +117,7 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 }
 
 void AudioBufferSourceNode::processNode(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   // No audio data to fill, zero the output and return.
   if (!buffer_) {
@@ -158,7 +158,7 @@ void AudioBufferSourceNode::processNode(
  */
 
 void AudioBufferSourceNode::processWithoutInterpolation(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -216,7 +216,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 }
 
 void AudioBufferSourceNode::processWithInterpolation(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {

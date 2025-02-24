@@ -147,13 +147,13 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 }
 
 void AnalyserNode::processNode(
-    audioapi::AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBus but instead copy the data to its own input buffer.
 
   // Down mix the input bus to mono
-  downMixBus_->copy(processingBus);
+  downMixBus_->copy(processingBus.get());
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
     auto framesToCopy =

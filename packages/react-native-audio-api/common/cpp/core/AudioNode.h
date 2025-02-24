@@ -63,7 +63,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelInterpretation interpretation);
 
   std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess);
-  virtual void processNode(AudioBus *processingBus, int framesToProcess) = 0;
+  virtual void processNode(const std::shared_ptr<AudioBus>&, int) = 0;
 
   bool isAlreadyProcessed();
   std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess);

@@ -38,7 +38,9 @@ void OscillatorNode::setPeriodicWave(
   type_ = OscillatorType::CUSTOM;
 }
 
-void OscillatorNode::processNode(AudioBus *processingBus, int framesToProcess) {
+void OscillatorNode::processNode(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 

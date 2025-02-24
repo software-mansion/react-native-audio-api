@@ -7,7 +7,7 @@
 
 namespace audioapi {
 
-AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
+std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 2, sampleRate_);
@@ -23,7 +23,7 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
   ma_uint64 totalFrameCount;
   ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
 
-  auto *audioBus = new AudioBus(static_cast<int>(totalFrameCount), 2, sampleRate_);
+  auto audioBus = std::make_shared<AudioBus>(static_cast<int>(totalFrameCount), 2, sampleRate_);
   auto *buffer = new float[totalFrameCount * 2];
 
   ma_uint64 framesDecoded;
@@ -32,7 +32,6 @@ AudioBus *AudioDecoder::decodeWithFilePath(const std::string &path) const
     NSLog(@"Failed to decode audio file: %s", path.c_str());
 
     delete[] buffer;
-    delete audioBus;
     ma_decoder_uninit(&decoder);
 
     return nullptr;

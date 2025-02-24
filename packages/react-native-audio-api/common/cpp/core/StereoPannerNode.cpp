@@ -22,7 +22,7 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
 }
 
 void StereoPannerNode::processNode(
-    AudioBus *processingBus,
+    const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();

@@ -14,7 +14,9 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
-void GainNode::processNode(AudioBus *processingBus, int framesToProcess) {
+void GainNode::processNode(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
