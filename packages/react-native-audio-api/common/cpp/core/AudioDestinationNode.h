@@ -16,10 +16,10 @@ class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(BaseAudioContext *context);
 
-  void renderAudio(AudioBus *audioData, int numFrames);
-
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
+
+  void renderAudio(const std::shared_ptr<AudioBus>& audioData, int numFrames);
 
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio

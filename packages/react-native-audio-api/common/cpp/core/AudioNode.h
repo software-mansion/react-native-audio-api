@@ -57,18 +57,18 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::size_t lastRenderedFrame_{SIZE_MAX};
 
  private:
-  std::vector<AudioBus*> inputBuses_;
+  std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
 
   static std::string toString(ChannelCountMode mode);
   static std::string toString(ChannelInterpretation interpretation);
 
-  AudioBus *processAudio(AudioBus *outputBus, int framesToProcess);
+  std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess);
   virtual void processNode(AudioBus *processingBus, int framesToProcess) = 0;
 
   bool isAlreadyProcessed();
-  AudioBus *processInputs(AudioBus *outputBus, int framesToProcess);
-  AudioBus *applyChannelCountMode(AudioBus *processingBus);
-  void mixInputsBuses(AudioBus *processingBus);
+  std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess);
+  std::shared_ptr<AudioBus> applyChannelCountMode(std::shared_ptr<AudioBus> processingBus);
+  void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
   void disconnectNode(const std::shared_ptr<AudioNode> &node);

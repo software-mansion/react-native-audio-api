@@ -48,12 +48,13 @@ void AudioContext::close() {
   audioPlayer_->stop();
 }
 
-std::function<void(AudioBus *, int)> AudioContext::renderAudio() {
+std::function<void(std::shared_ptr<AudioBus>, int)>
+AudioContext::renderAudio() {
   if (!isRunning() || !destination_) {
-    return [](AudioBus *, int) {};
+    return [](const std::shared_ptr<AudioBus> &, int) {};
   }
 
-  return [this](AudioBus *data, int frames) {
+  return [this](const std::shared_ptr<AudioBus> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }

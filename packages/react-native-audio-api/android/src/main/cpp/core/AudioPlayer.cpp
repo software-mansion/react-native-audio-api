@@ -9,7 +9,7 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(AudioBus *, int)> &renderAudio)
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
     : renderAudio_(renderAudio) {
   AudioStreamBuilder builder;
 
@@ -29,7 +29,7 @@ AudioPlayer::AudioPlayer(
 }
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(AudioBus *, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
     float sampleRate)
     : renderAudio_(renderAudio) {
   AudioStreamBuilder builder;
@@ -86,7 +86,7 @@ DataCallbackResult AudioPlayer::onAudioReady(
   while (processedFrames < numFrames) {
     int framesToProcess =
         std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
-    renderAudio_(mBus_.get(), framesToProcess);
+    renderAudio_(mBus_, framesToProcess);
 
     // TODO: optimize this with SIMD?
     for (int i = 0; i < framesToProcess; i++) {

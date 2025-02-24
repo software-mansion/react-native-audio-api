@@ -27,7 +27,7 @@ class AudioContext : public BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
 
-  std::function<void(AudioBus *, int)> renderAudio();
+  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
 };
 
 } // namespace audioapi

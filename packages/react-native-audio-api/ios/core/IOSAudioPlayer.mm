@@ -7,11 +7,9 @@
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
     : renderAudio_(renderAudio), audioBus_(0)
 {
-  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
-
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
 
@@ -34,10 +32,10 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
-  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, [audioPlayer_ getSampleRate]);
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
 }
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio, float sampleRate)
+IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio, float sampleRate)
     : renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
@@ -62,7 +60,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(AudioBus *, int)> &rende
   };
 
   audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock sampleRate:sampleRate];
-  audioBus_ = new AudioBus(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, [audioPlayer_ getSampleRate]);
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -71,7 +69,6 @@ IOSAudioPlayer::~IOSAudioPlayer()
   [audioPlayer_ cleanup];
 
   if (audioBus_) {
-    delete audioBus_;
     audioBus_ = 0;
   }
 }

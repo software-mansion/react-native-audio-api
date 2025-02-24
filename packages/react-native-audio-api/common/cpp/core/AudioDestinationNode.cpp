@@ -23,7 +23,7 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(
-    AudioBus *destinationBus,
+    const std::shared_ptr<AudioBus> &destinationBus,
     int numFrames) {
   if (numFrames < 0 || !destinationBus || !isInitialized_) {
     return;
@@ -33,10 +33,10 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->zero();
 
-  AudioBus *processedBus = processAudio(destinationBus, numFrames);
+  auto processedBus = processAudio(destinationBus, numFrames);
 
   if (processedBus && processedBus != destinationBus) {
-    destinationBus->copy(processedBus);
+    destinationBus->copy(processedBus.get());
   }
 
   destinationBus->normalize();

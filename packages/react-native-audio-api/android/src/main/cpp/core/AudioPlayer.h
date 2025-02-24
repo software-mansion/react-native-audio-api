@@ -13,9 +13,9 @@ class AudioBus;
 
 class AudioPlayer : public AudioStreamDataCallback {
  public:
-  explicit AudioPlayer(const std::function<void(AudioBus *, int)> &renderAudio);
+  explicit AudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio);
   AudioPlayer(
-      const std::function<void(AudioBus *, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);
 
   [[nodiscard]] float getSampleRate() const;
@@ -28,7 +28,7 @@ class AudioPlayer : public AudioStreamDataCallback {
       int32_t numFrames) override;
 
  private:
-  std::function<void(AudioBus *, int)> renderAudio_;
+  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<AudioBus> mBus_;
   bool isInitialized_ = false;

@@ -15,15 +15,15 @@ class AudioBus;
 
 class IOSAudioPlayer {
  protected:
-  AudioBus *audioBus_;
+  std::shared_ptr<AudioBus> audioBus_;
   AudioPlayer *audioPlayer_;
-  std::function<void(AudioBus *, int)> renderAudio_;
+  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
 
  public:
   explicit IOSAudioPlayer(
-      const std::function<void(AudioBus *, int)> &renderAudio);
+      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio);
   IOSAudioPlayer(
-      const std::function<void(AudioBus *, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);
   ~IOSAudioPlayer();
 
