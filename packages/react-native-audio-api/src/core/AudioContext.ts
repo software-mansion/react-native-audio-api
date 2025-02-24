@@ -11,7 +11,7 @@ export default class AudioContext extends BaseAudioContext {
       );
     }
 
-    super(global.__AudioAPIInstaller.createAudioContext(options?.sampleRate));
+    super(global.createAudioContext(options?.sampleRate));
   }
 
   async close(): Promise<undefined> {

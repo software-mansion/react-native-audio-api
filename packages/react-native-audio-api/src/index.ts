@@ -1,7 +1,20 @@
-import { installModule } from './specs/install';
+import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
+import type { IAudioContext } from './interfaces';
 
-if (global.__AudioAPIInstaller == null) {
-  installModule();
+/* eslint-disable no-var */
+declare global {
+  var createAudioContext: (sampleRate?: number) => IAudioContext;
+}
+/* eslint-disable no-var */
+
+if (global.createAudioContext == null) {
+  if (!NativeAudioAPIModule) {
+    throw new Error(
+      `Failed to install react-native-audio-api: The native module could not be found.`
+    );
+  }
+
+  NativeAudioAPIModule.install();
 }
 
 export { default as AudioBuffer } from './core/AudioBuffer';

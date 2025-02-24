@@ -36,14 +36,13 @@
   "scripts": {
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lint": "yarn lint:js && yarn lint:cpp && yarn lint:kotlin",
-    "format": "yarn format:android && yarn format:ios && yarn format:common && yarn format:kotlin",
+    "lint": "yarn lint:js && yarn lint:cpp",
+    "format": "yarn format:android && yarn format:ios && yarn format:common",
     "lint:js": "eslint \"**/*.{js,ts,tsx}\"",
     "lint:cpp": "./scripts/cpplint.sh",
     "format:android": "find android/src/ -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:ios": "find ios/ -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" | xargs clang-format -i --Werror",
     "format:common": "find common/cpp/ -path 'common/cpp/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
-    "format:kotlin": "ktlint -F 'android/src/main/java/**'",
     "build": "bob build",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"
