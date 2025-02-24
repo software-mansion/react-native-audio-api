@@ -1,9 +1,9 @@
 #include <fbjni/fbjni.h>
-#include "AudioAPIInstaller.h"
+#include "AudioAPIModule.h"
 
 using namespace audioapi;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
   return facebook::jni::initialize(
-      vm, [] { AudioAPIInstaller::registerNatives(); });
+      vm, [] { AudioAPIModule::registerNatives(); });
 }
