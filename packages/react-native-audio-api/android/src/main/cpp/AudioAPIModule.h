@@ -34,7 +34,6 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
-  std::shared_ptr<AudioAPIModuleInstaller> installer_;
 
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,

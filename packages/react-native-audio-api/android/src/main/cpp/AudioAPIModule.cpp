@@ -13,10 +13,7 @@ AudioAPIModule::AudioAPIModule(
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
-      jsCallInvoker_(jsCallInvoker) {
-  installer_ =
-      std::make_shared<AudioAPIModuleInstaller>(jsiRuntime, jsCallInvoker);
-}
+      jsCallInvoker_(jsCallInvoker) {}
 
 jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     jni::alias_ref<jhybridobject> jThis,
@@ -36,6 +33,6 @@ void AudioAPIModule::registerNatives() {
 }
 
 void AudioAPIModule::injectJSIBindings() {
-  installer_->injectJSIBindings(jsiRuntime_);
+  AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime_, jsCallInvoker_);
 }
 } // namespace audioapi
