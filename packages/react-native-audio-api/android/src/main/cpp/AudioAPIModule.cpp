@@ -14,7 +14,8 @@ AudioAPIModule::AudioAPIModule(
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
       jsCallInvoker_(jsCallInvoker) {
-  promiseVendor_ = std::make_shared<PromiseVendor>(jsiRuntime, jsCallInvoker);
+  installer_ =
+      std::make_shared<AudioAPIModuleInstaller>(jsiRuntime, jsCallInvoker);
 }
 
 jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
@@ -35,31 +36,6 @@ void AudioAPIModule::registerNatives() {
 }
 
 void AudioAPIModule::injectJSIBindings() {
-  auto createAudioContext = jsi::Function::createFromHostFunction(
-      *jsiRuntime_,
-      jsi::PropNameID::forAscii(*jsiRuntime_, "createAudioContext"),
-      0,
-      [this](
-          jsi::Runtime &runtime,
-          const jsi::Value &thisValue,
-          const jsi::Value *args,
-          size_t count) -> jsi::Value {
-        std::shared_ptr<AudioContext> audioContext;
-        if (args[0].isUndefined()) {
-          audioContext = std::make_shared<AudioContext>();
-        } else {
-          auto sampleRate = static_cast<float>(args[0].getNumber());
-          audioContext = std::make_shared<AudioContext>(sampleRate);
-        }
-
-        auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-            audioContext, promiseVendor_);
-
-        return jsi::Object::createFromHostObject(
-            runtime, audioContextHostObject);
-      });
-
-  jsiRuntime_->global().setProperty(
-      *jsiRuntime_, "createAudioContext", createAudioContext);
+  installer_->injectJSIBindings(jsiRuntime_);
 }
 } // namespace audioapi

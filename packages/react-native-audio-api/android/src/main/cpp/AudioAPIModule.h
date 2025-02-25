@@ -1,16 +1,12 @@
 #pragma once
 
-#include <JsiHostObject.h>
-#include <JsiPromise.h>
 #include <ReactCommon/CallInvokerHolder.h>
 #include <fbjni/fbjni.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <utility>
-
-#include "AudioContext.h"
-#include "AudioContextHostObject.h"
+#include "AudioAPIModuleInstaller.h"
 
 namespace audioapi {
 
@@ -38,7 +34,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
-  std::shared_ptr<PromiseVendor> promiseVendor_;
+  std::shared_ptr<AudioAPIModuleInstaller> installer_;
 
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
