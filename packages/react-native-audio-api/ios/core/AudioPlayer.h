@@ -2,23 +2,21 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <IOSAudioManager.h>
 
 typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 @interface AudioPlayer : NSObject
 
-@property (nonatomic, strong) AVAudioEngine *audioEngine;
-@property (nonatomic, weak) AVAudioSession *audioSession;
-@property (nonatomic, weak) NSNotificationCenter *notificationCenter;
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, copy) RenderAudioBlock renderAudio;
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) bool isRunning;
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio;
+- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio;
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate;
+- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate;
 
 - (float)getSampleRate;
 
@@ -31,13 +29,5 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 - (void)suspend;
 
 - (void)cleanup;
-
-- (void)setupAndInitAudioSession;
-
-- (void)setupAndInitNotificationHandlers;
-
-- (void)connectAudioEngine;
-
-- (void)handleEngineConfigurationChange:(NSNotification *)notification;
 
 @end

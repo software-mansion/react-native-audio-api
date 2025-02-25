@@ -12,10 +12,12 @@ class AudioPlayer;
 class IOSAudioPlayer;
 #endif
 
+class AudioManager;
+
 class AudioContext : public BaseAudioContext {
  public:
-  AudioContext();
-  explicit AudioContext(float sampleRate);
+  AudioContext(std::shared_ptr<AudioManager> &audioManager);
+  explicit AudioContext(std::shared_ptr<AudioManager> &audioManager, float sampleRate);
   ~AudioContext() override;
 
   void close();
@@ -23,6 +25,7 @@ class AudioContext : public BaseAudioContext {
   void suspend();
 
  private:
+
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
