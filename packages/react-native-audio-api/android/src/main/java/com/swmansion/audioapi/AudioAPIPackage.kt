@@ -33,7 +33,7 @@ class AudioAPIPackage :
               AudioAPIModule::class.java.simpleName,
               _canOverrideExistingModule = true,
               _needsEagerInit = false,
-              isCxxModule = true,
+              isCxxModule = false,
               isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
             ),
         ),
