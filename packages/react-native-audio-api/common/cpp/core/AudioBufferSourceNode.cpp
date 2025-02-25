@@ -54,6 +54,10 @@ std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
   return buffer_;
 }
 
+std::string AudioBufferSourceNode::getTimeStretch() const {
+    return toString(timeStretch_);
+}
+
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
 }
@@ -90,6 +94,11 @@ void AudioBufferSourceNode::setBuffer(
       RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
+}
+
+void AudioBufferSourceNode::setTimeStretch(const std::string& timeStretchType) {
+    Locker locker(getBufferLock());
+    timeStretch_ = fromString(timeStretchType);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
