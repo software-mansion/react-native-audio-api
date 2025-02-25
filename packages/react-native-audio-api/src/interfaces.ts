@@ -33,7 +33,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
-  close(): Promise<undefined>;
+  close(): Promise<void>;
+  resume(): Promise<void>;
+  suspend(): Promise<void>;
 }
 
 export interface IAudioNode {

@@ -22,6 +22,8 @@ class AudioPlayer : public AudioStreamDataCallback {
   [[nodiscard]] float getSampleRate() const;
   void start();
   void stop();
+  void resume();
+  void suspend();
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,

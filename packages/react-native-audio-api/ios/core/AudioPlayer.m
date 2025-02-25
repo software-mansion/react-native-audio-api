@@ -8,15 +8,11 @@
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
+    self.isRunning = true;
 
-    self.audioSession = AVAudioSession.sharedInstance;
+    [self setupAndInitAudioSession];
+    [self setupAndInitNotificationHandlers];
 
-    // TODO:
-    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
-    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
-    // But setting a recording category might require some setup first, so lets skip it for now :)
-    // [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
-    // [self.audioSession setActive:true error:&error];
 
     self.sampleRate = [self.audioSession sampleRate];
 
@@ -45,15 +41,10 @@
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
+    self.isRunning = true;
 
-    self.audioSession = AVAudioSession.sharedInstance;
-
-    // TODO:
-    // We will probably want to change it to AVAudioSessionCategoryPlayAndRecord in the future.
-    // Eventually we to make this a dynamic setting, if user of the lib wants to use recording features.
-    // But setting a recording category might require some setup first, so lets skip it for now :)
-    // [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
-    // [self.audioSession setActive:true error:&error];
+    [self setupAndInitAudioSession];
+    [self setupAndInitNotificationHandlers];
 
     self.sampleRate = sampleRate;
 
@@ -83,19 +74,13 @@
 
 - (void)start
 {
-  [self.audioEngine attachNode:self.sourceNode];
-  [self.audioEngine connect:self.sourceNode to:self.audioEngine.mainMixerNode format:self.format];
-
-  if (!self.audioEngine.isRunning) {
-    NSError *error = nil;
-    if (![self.audioEngine startAndReturnError:&error]) {
-      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
-    }
-  }
+  self.isRunning = true;
+  [self connectAudioEngine];
 }
 
 - (void)stop
 {
+  self.isRunning = false;
   [self.audioEngine detachNode:self.sourceNode];
 
   if (self.audioEngine.isRunning) {
@@ -108,6 +93,19 @@
   if (error != nil) {
     @throw error;
   }
+}
+
+- (void)suspend
+{
+  [self.audioEngine pause];
+  self.isRunning = false;
+}
+
+- (void)resume
+{
+  self.isRunning = true;
+  [self setupAndInitAudioSession];
+  [self connectAudioEngine];
 }
 
 - (void)cleanup
@@ -129,6 +127,69 @@
   self.renderAudio(outputData, frameCount);
 
   return noErr;
+}
+
+- (void)setupAndInitAudioSession
+{
+  NSError *error = nil;
+
+  if (!self.audioSession) {
+    self.audioSession = [AVAudioSession sharedInstance];
+  }
+
+  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
+                            mode:AVAudioSessionModeDefault
+                         options:AVAudioSessionCategoryOptionDuckOthers|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowAirPlay
+                           error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
+  }
+
+  [self.audioSession setActive:true error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
+  }
+}
+
+- (void)setupAndInitNotificationHandlers
+{
+  if (!self.notificationCenter) {
+    self.notificationCenter = [NSNotificationCenter defaultCenter];
+  }
+
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleEngineConfigurationChange:)
+                                  name:AVAudioEngineConfigurationChangeNotification
+                                object:nil];
+}
+
+- (void)connectAudioEngine
+{
+  if ([self.audioEngine isRunning]) {
+    return;
+  }
+
+  [self.audioEngine attachNode:self.sourceNode];
+  [self.audioEngine connect:self.sourceNode to:self.audioEngine.mainMixerNode format:self.format];
+
+  if (![self.audioEngine isRunning]) {
+    NSError *error = nil;
+
+    if (![self.audioEngine startAndReturnError:&error]) {
+      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+    }
+  }
+}
+
+- (void)handleEngineConfigurationChange:(NSNotification *)notification
+{
+  if (!self.isRunning) {
+    return;
+  }
+
+  [self connectAudioEngine];
 }
 
 @end

@@ -70,6 +70,18 @@ void AudioPlayer::stop() {
   }
 }
 
+void AudioPlayer::resume() {
+  if (mStream_) {
+    mStream_->requestStart();
+  }
+}
+
+void AudioPlayer::suspend() {
+  if (mStream_) {
+    mStream_->requestPause();
+  }
+}
+
 DataCallbackResult AudioPlayer::onAudioReady(
     AudioStream *oboeStream,
     void *audioData,

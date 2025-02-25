@@ -19,6 +19,8 @@ class AudioContext : public BaseAudioContext {
   ~AudioContext() override;
 
   void close();
+  void resume();
+  void suspend();
 
  private:
 #ifdef ANDROID
