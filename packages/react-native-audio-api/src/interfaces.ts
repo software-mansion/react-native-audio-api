@@ -5,6 +5,7 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
+  TimeStretchType,
 } from './types';
 
 export interface IBaseAudioContext {
@@ -92,6 +93,7 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loopEnd: number;
   detune: IAudioParam;
   playbackRate: IAudioParam;
+  timeStretch: TimeStretchType;
 
   start: (when?: number, offset?: number, duration?: number) => void;
 }
