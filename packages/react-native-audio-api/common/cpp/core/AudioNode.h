@@ -9,6 +9,7 @@
 #include "ChannelCountMode.h"
 #include "ChannelInterpretation.h"
 #include "Constants.h"
+#include "StretcherNode.h"
 
 namespace audioapi {
 
@@ -57,12 +58,14 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::size_t lastRenderedFrame_{SIZE_MAX};
 
  private:
+  friend class StretcherNode;
+
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
 
   static std::string toString(ChannelCountMode mode);
   static std::string toString(ChannelInterpretation interpretation);
 
-  std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess);
+  virtual std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess);
   virtual void processNode(const std::shared_ptr<AudioBus>&, int) = 0;
 
   bool isAlreadyProcessed();
