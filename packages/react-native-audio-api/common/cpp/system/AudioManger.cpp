@@ -8,6 +8,21 @@
 
 namespace audioapi {
 
+AudioManager *AudioManager::audioManager_ = nullptr;
+
+AudioManager *AudioManager::getInstance() {
+  if (audioManager_ == nullptr) {
+    audioManager_ = new AudioManager();
+  }
+
+  return audioManager_;
+}
+
+void AudioManager::destroyInstance() {
+  delete audioManager_;
+  audioManager_ = nullptr;
+}
+
 AudioManager::AudioManager() {
 #ifdef ANDROID
 
@@ -19,7 +34,7 @@ AudioManager::AudioManager() {
 #ifdef ANDROID
 
 #else
-std::shared_ptr<IOSAudioManagerBridge> & AudioManager::getIOSManagerBridge() {
+std::shared_ptr<IOSAudioManagerBridge> &AudioManager::getIOSManagerBridge() {
   return audioManagerBridge_;
 }
 #endif // ANDROID

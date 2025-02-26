@@ -11,11 +11,12 @@
 #include "AudioDestinationNode.h"
 
 namespace audioapi {
-AudioContext::AudioContext(std::shared_ptr<AudioManager> &audioManager): BaseAudioContext() {
+AudioContext::AudioContext(): BaseAudioContext() {
+  auto audioManager = AudioManager::getInstance();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
 #else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(audioManager->getIOSManagerBridge(), this->renderAudio());
 #endif
 
   sampleRate_ = audioPlayer_->getSampleRate();
@@ -24,12 +25,13 @@ AudioContext::AudioContext(std::shared_ptr<AudioManager> &audioManager): BaseAud
   audioPlayer_->start();
 }
 
-AudioContext::AudioContext(std::shared_ptr<AudioManager> &audioManager, float sampleRate): BaseAudioContext() {
+AudioContext::AudioContext(float sampleRate): BaseAudioContext() {
+  auto audioManager = AudioManager::getInstance();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
 #else
   audioPlayer_ =
-      std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
+      std::make_shared<IOSAudioPlayer>(audioManager->getIOSManagerBridge(), this->renderAudio(), sampleRate);
 #endif
 
   sampleRate_ = audioPlayer_->getSampleRate();

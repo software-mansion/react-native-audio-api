@@ -16,8 +16,8 @@ class AudioManager;
 
 class AudioContext : public BaseAudioContext {
  public:
-  AudioContext(std::shared_ptr<AudioManager> &audioManager);
-  explicit AudioContext(std::shared_ptr<AudioManager> &audioManager, float sampleRate);
+  explicit AudioContext();
+  explicit AudioContext(float sampleRate);
   ~AudioContext() override;
 
   void close();

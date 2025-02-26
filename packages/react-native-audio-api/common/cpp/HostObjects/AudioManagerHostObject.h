@@ -14,10 +14,16 @@ using namespace facebook;
 
 class AudioManagerHostObject : public JsiHostObject {
  public:
-  explicit AudioManagerHostObject(const std::shared_ptr<AudioManager> &audioManager): audioManager_(audioManager) {}
+  explicit AudioManagerHostObject() {
+    audioManager_ = AudioManager::getInstance();
+  }
+
+  ~AudioManagerHostObject() override {
+    AudioManager::destroyInstance();
+  }
 
  protected:
-  std::shared_ptr<AudioManager> audioManager_;
+  AudioManager *audioManager_;
 };
 
 } // namespace audioapi
