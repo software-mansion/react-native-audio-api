@@ -44,6 +44,7 @@ const AudioVisualizer: React.FC = () => {
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
+      bufferSourceRef.current.playbackRate.value = 1;
       bufferSourceRef.current.connect(analyserRef.current);
 
       setStartTime(audioContextRef.current.currentTime);

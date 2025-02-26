@@ -119,6 +119,14 @@ AudioArray *AudioBus::getChannelByType(int channelType) const {
   }
 }
 
+AudioArray &AudioBus::operator[](size_t index) {
+  return *channels_[index];
+}
+
+const AudioArray &AudioBus::operator[](size_t index) const {
+  return *channels_[index];
+}
+
 /**
  * Public interfaces - audio processing and setters
  */

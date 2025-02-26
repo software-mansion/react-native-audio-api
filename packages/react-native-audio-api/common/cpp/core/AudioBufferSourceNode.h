@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <string>
 
+#include "signalsmith-stretch.h"
 #include "AudioBuffer.h"
 #include "AudioScheduledSourceNode.h"
 #include "TimeStretchType.h"
@@ -55,6 +56,10 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
+
+  // time stretching
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+  std::shared_ptr<AudioBus> playbackRateBus_;
 
   float getPlaybackRateValue(size_t &startOffset);
 

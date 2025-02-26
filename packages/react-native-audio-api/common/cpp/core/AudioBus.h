@@ -34,6 +34,9 @@ class AudioBus {
   [[nodiscard]] AudioArray *getChannel(int index) const;
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
+    AudioArray &operator[](size_t index);
+    const AudioArray &operator[](size_t index) const;
+
   void normalize();
   void scale(float value);
   [[nodiscard]] float maxAbsValue() const;
