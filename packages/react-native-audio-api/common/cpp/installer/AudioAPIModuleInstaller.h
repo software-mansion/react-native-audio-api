@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <JsiPromise.h>
 #include "AudioContext.h"
 #include "AudioManager.h"
@@ -11,8 +13,7 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioAPIModuleInstaller {
-public:
-
+ public:
   static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
     auto audioManager = getAudioManager(jsiRuntime);
@@ -22,7 +23,7 @@ public:
         *jsiRuntime, "AudioManager", audioManager);
   }
 
-private:
+ private:
   static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,

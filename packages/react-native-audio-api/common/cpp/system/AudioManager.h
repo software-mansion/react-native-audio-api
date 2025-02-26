@@ -12,12 +12,12 @@ class IOSAudioManagerBridge;
 #endif // ANDROID
 
 class AudioManager {
-public:
-    AudioManager(AudioManager const &) = delete;
-    void operator=(AudioManager const &) = delete;
+ public:
+  AudioManager(AudioManager const &) = delete;
+  void operator=(AudioManager const &) = delete;
 
-    static AudioManager *getInstance();
-    static void destroyInstance();
+  static AudioManager *getInstance();
+  static void destroyInstance();
 
 #ifdef ANDROID
 
@@ -26,9 +26,9 @@ public:
 #endif // ANDROID
 
  private:
-    AudioManager();
+  AudioManager();
 
-    static AudioManager *audioManager_;
+  static AudioManager *audioManager_;
 #ifdef ANDROID
 
 #else

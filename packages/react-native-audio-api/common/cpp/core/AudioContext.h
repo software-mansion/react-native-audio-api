@@ -25,7 +25,6 @@ class AudioContext : public BaseAudioContext {
   void suspend();
 
  private:
-
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
