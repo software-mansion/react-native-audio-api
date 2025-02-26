@@ -2,19 +2,19 @@
 
 @implementation AudioPlayer
 
-- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio
+- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager renderAudio:(RenderAudioBlock)renderAudio
 {
   if (self = [super init]) {
-    
   }
 
   return self;
 }
 
-- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
+- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager
+                         renderAudio:(RenderAudioBlock)renderAudio
+                          sampleRate:(float)sampleRate
 {
   if (self = [super init]) {
-    
   }
 
   return self;
@@ -91,38 +91,38 @@
 
 - (void)start
 {
-//  self.isRunning = true;
-//  [self connectAudioEngine];
+  //  self.isRunning = true;
+  //  [self connectAudioEngine];
 }
 
 - (void)stop
 {
-//  self.isRunning = false;
-//  [self.audioEngine detachNode:self.sourceNode];
-//
-//  if (self.audioEngine.isRunning) {
-//    [self.audioEngine stop];
-//  }
-//
-//  NSError *error = nil;
-//  [self.audioSession setActive:false error:&error];
-//
-//  if (error != nil) {
-//    @throw error;
-//  }
+  //  self.isRunning = false;
+  //  [self.audioEngine detachNode:self.sourceNode];
+  //
+  //  if (self.audioEngine.isRunning) {
+  //    [self.audioEngine stop];
+  //  }
+  //
+  //  NSError *error = nil;
+  //  [self.audioSession setActive:false error:&error];
+  //
+  //  if (error != nil) {
+  //    @throw error;
+  //  }
 }
 
 - (void)suspend
 {
-//  [self.audioEngine pause];
-//  self.isRunning = false;
+  //  [self.audioEngine pause];
+  //  self.isRunning = false;
 }
 
 - (void)resume
 {
-//  self.isRunning = true;
-//  [self setupAndInitAudioSession];
-//  [self connectAudioEngine];
+  //  self.isRunning = true;
+  //  [self setupAndInitAudioSession];
+  //  [self connectAudioEngine];
 }
 
 - (void)cleanup

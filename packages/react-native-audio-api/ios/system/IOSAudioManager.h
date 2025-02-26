@@ -1,7 +1,7 @@
 #pragma once
 
-#import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import <Foundation/Foundation.h>
 
 @interface IOSAudioManager : NSObject
 
@@ -18,7 +18,7 @@
 - (bool)configureNotifications;
 - (bool)rebuildAudioEngine;
 
-- (NSString*)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
+- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
 - (void)handleInterruption:(NSNotification *)notification;

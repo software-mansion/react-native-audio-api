@@ -14,9 +14,11 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) bool isRunning;
 
-- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio;
+- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager renderAudio:(RenderAudioBlock)renderAudio;
 
-- (instancetype)initWithAudioManager:(IOSAudioManager*)audioManager renderAudio:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate;
+- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager
+                         renderAudio:(RenderAudioBlock)renderAudio
+                          sampleRate:(float)sampleRate;
 
 - (float)getSampleRate;
 

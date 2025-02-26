@@ -8,7 +8,6 @@ typedef struct objc_object AudioPlayer;
 
 #include <functional>
 
-
 namespace audioapi {
 
 class AudioBus;

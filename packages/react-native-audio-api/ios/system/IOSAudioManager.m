@@ -45,19 +45,20 @@
   // TODO: take from dict
   [self.audioSession setCategory:AVAudioSessionCategoryPlayback
                             mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowAirPlay
+                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
+                         AVAudioSessionCategoryOptionAllowAirPlay
                            error:&error];
 
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
-    return  false;
+    return false;
   }
 
   [self.audioSession setActive:true error:&error];
 
   if (error != nil) {
     NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
-    return  false;
+    return false;
   }
 
   return true;
@@ -69,10 +70,22 @@
     self.notificationCenter = [NSNotificationCenter defaultCenter];
   }
 
-  [self.notificationCenter addObserver:self selector:@selector(handleInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
-  [self.notificationCenter addObserver:self selector:@selector(handleRouteChange:) name:AVAudioSessionRouteChangeNotification object:nil];
-  [self.notificationCenter addObserver:self selector:@selector(handleMediaServicesReset:) name:AVAudioSessionMediaServicesWereResetNotification object:nil];
-  [self.notificationCenter addObserver:self selector:@selector(handleEngineConfigurationChange:) name:AVAudioEngineConfigurationChangeNotification object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleInterruption:)
+                                  name:AVAudioSessionInterruptionNotification
+                                object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleRouteChange:)
+                                  name:AVAudioSessionRouteChangeNotification
+                                object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleMediaServicesReset:)
+                                  name:AVAudioSessionMediaServicesWereResetNotification
+                                object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleEngineConfigurationChange:)
+                                  name:AVAudioEngineConfigurationChangeNotification
+                                object:nil];
 
   return true;
 }
@@ -97,16 +110,15 @@
     return true;
   }
 
-
   if (![self.audioEngine startAndReturnError:&error]) {
     NSLog(@"Error while rebuilding audio engine: %@", [error localizedDescription]);
-    return  false;
+    return false;
   }
 
   return true;
 }
 
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat*)format
+- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
 {
   NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
 
