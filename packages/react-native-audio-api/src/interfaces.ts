@@ -8,6 +8,10 @@ import {
   TimeStretchType,
 } from './types';
 
+export interface AudioAPIInstaller {
+  createAudioContext: (sampleRate?: number) => IAudioContext;
+}
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly state: ContextState;
@@ -34,7 +38,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
-  close(): Promise<undefined>;
+  close(): Promise<void>;
+  resume(): Promise<void>;
+  suspend(): Promise<void>;
 }
 
 export interface IAudioNode {

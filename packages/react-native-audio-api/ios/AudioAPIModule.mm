@@ -6,7 +6,7 @@
 #import <ReactCommon/RCTTurboModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
-#import "AudioAPIInstallerHostObject.h"
+#include "AudioAPIModuleInstaller.h"
 
 @implementation AudioAPIModule
 
@@ -38,11 +38,18 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   assert(jsiRuntime != nullptr);
 
-  auto hostObject = std::make_shared<audioapi::AudioAPIInstallerHostObject>(jsiRuntime, jsCallInvoker);
-  hostObject->install();
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker);
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @true;
 }
+
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+  return std::make_shared<facebook::react::NativeAudioAPIModuleSpecJSI>(params);
+}
+#endif // RCT_NEW_ARCH_ENABLED
 
 @end

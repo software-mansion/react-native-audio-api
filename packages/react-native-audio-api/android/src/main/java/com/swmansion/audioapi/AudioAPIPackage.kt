@@ -1,16 +1,41 @@
 package com.swmansion.audioapi
 
+import com.facebook.react.BaseReactPackage
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.common.annotations.UnstableReactNativeAPI
 import com.facebook.react.module.annotations.ReactModuleList
-import com.facebook.react.uimanager.ViewManager
-import com.swmansion.audioapi.nativemodules.AudioAPIModule
+import com.facebook.react.module.model.ReactModuleInfo
+import com.facebook.react.module.model.ReactModuleInfoProvider
 
 @ReactModuleList(nativeModules = [AudioAPIModule::class])
-class AudioAPIPackage : ReactPackage {
-  override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-    listOf<NativeModule>(AudioAPIModule(reactContext))
+class AudioAPIPackage :
+  BaseReactPackage(),
+  ReactPackage {
+  @UnstableReactNativeAPI
+  override fun getModule(
+    name: String,
+    reactContext: ReactApplicationContext,
+  ): NativeModule? =
+    when (name) {
+      AudioAPIModule.NAME -> AudioAPIModule(reactContext)
+      else -> null
+    }
 
-  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = emptyList()
+  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider =
+    ReactModuleInfoProvider(
+      fun (): Map<String, ReactModuleInfo> =
+        mapOf(
+          AudioAPIModule.NAME to
+            ReactModuleInfo(
+              AudioAPIModule.NAME,
+              AudioAPIModule::class.java.simpleName,
+              _canOverrideExistingModule = true,
+              _needsEagerInit = false,
+              isCxxModule = false,
+              isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
+            ),
+        ),
+    )
 }

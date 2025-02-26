@@ -2,9 +2,5 @@
 
 namespace audioapi {
 
-    enum class TimeStretchType {
-        LINEAR,
-        SPEECH,
-        MUSIC
-    };
+enum class TimeStretchType {LINEAR, SPEECH, MUSIC};
 } // namespace audioapi

@@ -48,6 +48,16 @@ void AudioContext::close() {
   audioPlayer_->stop();
 }
 
+void AudioContext::resume() {
+  state_ = ContextState::RUNNING;
+  audioPlayer_->resume();
+}
+
+void AudioContext::suspend() {
+  state_ = ContextState::SUSPENDED;
+  audioPlayer_->suspend();
+}
+
 std::function<void(std::shared_ptr<AudioBus>, int)>
 AudioContext::renderAudio() {
   if (!isRunning() || !destination_) {

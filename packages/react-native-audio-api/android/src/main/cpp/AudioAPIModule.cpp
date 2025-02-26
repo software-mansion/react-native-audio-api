@@ -1,18 +1,21 @@
-#include "AudioAPIInstaller.h"
+#include "AudioAPIModule.h"
+
+#include "AudioContext.h"
+#include "AudioContextHostObject.h"
 
 namespace audioapi {
 
 using namespace facebook::jni;
 
-AudioAPIInstaller::AudioAPIInstaller(
-    jni::alias_ref<AudioAPIInstaller::jhybridobject> &jThis,
+AudioAPIModule::AudioAPIModule(
+    jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
     jsi::Runtime *jsiRuntime,
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
       jsCallInvoker_(jsCallInvoker) {}
 
-jni::local_ref<AudioAPIInstaller::jhybriddata> AudioAPIInstaller::initHybrid(
+jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     jni::alias_ref<jhybridobject> jThis,
     jlong jsContext,
     jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
@@ -22,16 +25,14 @@ jni::local_ref<AudioAPIInstaller::jhybriddata> AudioAPIInstaller::initHybrid(
   return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
 }
 
-void AudioAPIInstaller::registerNatives() {
+void AudioAPIModule::registerNatives() {
   registerHybrid({
-      makeNativeMethod("initHybrid", AudioAPIInstaller::initHybrid),
-      makeNativeMethod("install", AudioAPIInstaller::install),
+      makeNativeMethod("initHybrid", AudioAPIModule::initHybrid),
+      makeNativeMethod("injectJSIBindings", AudioAPIModule::injectJSIBindings),
   });
 }
 
-void AudioAPIInstaller::install() {
-  auto hostObject = std::make_shared<AudioAPIInstallerHostObject>(
-      jsiRuntime_, jsCallInvoker_);
-  hostObject->install();
+void AudioAPIModule::injectJSIBindings() {
+  AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime_, jsCallInvoker_);
 }
 } // namespace audioapi

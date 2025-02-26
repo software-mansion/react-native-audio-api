@@ -83,6 +83,16 @@ void IOSAudioPlayer::stop()
   return [audioPlayer_ stop];
 }
 
+void IOSAudioPlayer::resume()
+{
+  return [audioPlayer_ resume];
+}
+
+void IOSAudioPlayer::suspend()
+{
+  return [audioPlayer_ suspend];
+}
+
 float IOSAudioPlayer::getSampleRate() const
 {
   return [audioPlayer_ getSampleRate];

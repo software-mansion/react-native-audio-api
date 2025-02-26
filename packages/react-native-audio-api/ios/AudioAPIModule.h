@@ -9,7 +9,7 @@
 
 @interface AudioAPIModule : RCTEventEmitter
 #ifdef RCT_NEW_ARCH_ENABLED
-                            <RCTCallInvokerModule>
+                            <NativeAudioAPIModuleSpec, RCTCallInvokerModule>
 #else
                             <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
