@@ -24,19 +24,17 @@ class AudioAPIPackage :
     }
 
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider =
-    ReactModuleInfoProvider(
-
-      fun (): Map<String, ReactModuleInfo> =
-        mapOf(
-          AudioAPIModule.NAME to
-            ReactModuleInfo(
-              AudioAPIModule.NAME,
-              AudioAPIModule::class.java.simpleName,
-              _canOverrideExistingModule = true,
-              _needsEagerInit = false,
-              isCxxModule = false,
-              isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
-            ),
-        ),
-    )
+    ReactModuleInfoProvider {
+      mapOf(
+        AudioAPIModule.NAME to
+          ReactModuleInfo(
+            AudioAPIModule.NAME,
+            AudioAPIModule::class.java.simpleName,
+            _canOverrideExistingModule = true,
+            _needsEagerInit = false,
+            isCxxModule = false,
+            isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
+          ),
+      )
+    }
 }
