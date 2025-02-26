@@ -3,7 +3,6 @@
 #include <memory>
 #include <cstddef>
 
-#include "signalsmith-stretch.h"
 #include "AudioBuffer.h"
 #include "AudioScheduledSourceNode.h"
 

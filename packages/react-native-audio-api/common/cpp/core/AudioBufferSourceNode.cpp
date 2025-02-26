@@ -23,7 +23,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
-  playbackRateParam_ = std::make_shared<AudioParam>(1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
+  playbackRateParam_ = std::make_shared<AudioParam>(
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
   isInitialized_ = true;
 }
@@ -132,9 +133,8 @@ void AudioBufferSourceNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
   float playbackRate = getPlaybackRateValue(startOffset);
-  updatePlaybackInfo(
-      processingBus, framesToProcess, startOffset, offsetLength);
 
   assert(alignedBus_ != nullptr);
   assert(alignedBus_->getSize() > 0);
