@@ -23,14 +23,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
-  playbackRateParam_ = std::make_shared<AudioParam>(1.0, -2, 2);
-
-  stretch_ =
-      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
-  stretch_->presetDefault(1, context_->getSampleRate());
-
-  playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 2, 1, context_->getSampleRate());
+  playbackRateParam_ = std::make_shared<AudioParam>(1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
   isInitialized_ = true;
 }
@@ -60,10 +53,6 @@ std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
   return buffer_;
 }
 
-std::string AudioBufferSourceNode::getTimeStretch() const {
-  return toString(timeStretch_);
-}
-
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
 }
@@ -85,9 +74,6 @@ void AudioBufferSourceNode::setBuffer(
     alignedBus_ = std::make_shared<AudioBus>(
         RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
     loopEnd_ = 0;
-    stretch_->presetDefault(1, context_->getSampleRate());
-    playbackRateBus_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE * 2, 1, context_->getSampleRate());
     return;
   }
 
@@ -103,15 +89,6 @@ void AudioBufferSourceNode::setBuffer(
       RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
-
-  stretch_->presetDefault(channelCount_, context_->getSampleRate());
-  playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 2, channelCount_, context_->getSampleRate());
-}
-
-void AudioBufferSourceNode::setTimeStretch(const std::string &timeStretchType) {
-  Locker locker(getBufferLock());
-  timeStretch_ = fromString(timeStretchType);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -157,7 +134,7 @@ void AudioBufferSourceNode::processNode(
 
   float playbackRate = getPlaybackRateValue(startOffset);
   updatePlaybackInfo(
-      processingBus, framesToProcess * playbackRate, startOffset, offsetLength);
+      processingBus, framesToProcess, startOffset, offsetLength);
 
   assert(alignedBus_ != nullptr);
   assert(alignedBus_->getSize() > 0);
@@ -165,19 +142,13 @@ void AudioBufferSourceNode::processNode(
   if (playbackRate == 0.0f || !isPlaying()) {
     processingBus->zero();
     return;
-  } else if (std::fabs(playbackRate) == 1.0 || playbackRate > 0) {
+  } else if (std::fabs(playbackRate) == 1.0) {
     processWithoutInterpolation(
         processingBus, startOffset, offsetLength, playbackRate);
   } else {
     processWithInterpolation(
         processingBus, startOffset, offsetLength, playbackRate);
   }
-
-  stretch_->process(
-      playbackRateBus_.get()[0],
-      offsetLength,
-      processingBus.get()[0],
-      offsetLength / playbackRate);
 
   handleStopScheduled();
 }
@@ -213,7 +184,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
-      playbackRateBus_->copy(
+      processingBus->copy(
           alignedBus_.get(), readIndex, writeIndex, framesToCopy);
     } else {
       for (int i = 0; i < framesToCopy; i += 1) {
@@ -232,7 +203,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
       readIndex -= direction * frameDelta;
 
       if (!loop_) {
-        playbackRateBus_->zero(writeIndex, framesLeft);
+        processingBus->zero(writeIndex, framesLeft);
         playbackState_ = PlaybackState::FINISHED;
         disable();
         break;
