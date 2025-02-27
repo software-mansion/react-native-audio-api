@@ -98,9 +98,9 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
 }
 
 std::shared_ptr<StretcherNode> BaseAudioContext::createStretcher() {
-    auto node = std::make_shared<StretcherNode>(this);
-    nodeManager_->addNode(node);
-    return node;
+  auto node = std::make_shared<StretcherNode>(this);
+  nodeManager_->addNode(node);
+  return node;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

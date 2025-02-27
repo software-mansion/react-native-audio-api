@@ -99,7 +99,8 @@ std::string AudioNode::toString(ChannelInterpretation interpretation) {
 
 std::shared_ptr<AudioBus> AudioNode::processAudio(
     std::shared_ptr<AudioBus> outputBus,
-    int framesToProcess, bool checkIsAlreadyProcessed) {
+    int framesToProcess,
+    bool checkIsAlreadyProcessed) {
   if (!isInitialized_) {
     return outputBus;
   }
@@ -109,7 +110,8 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
   }
 
   // Process inputs and return the bus with the most channels.
-  auto processingBus = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
+  auto processingBus =
+      processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
 
   // Apply channel count mode.
   processingBus = applyChannelCountMode(processingBus);
@@ -142,7 +144,8 @@ bool AudioNode::isAlreadyProcessed() {
 
 std::shared_ptr<AudioBus> AudioNode::processInputs(
     const std::shared_ptr<AudioBus> &outputBus,
-    int framesToProcess, bool checkIsAlreadyProcessed) {
+    int framesToProcess,
+    bool checkIsAlreadyProcessed) {
   auto processingBus = audioBus_;
   processingBus->zero();
 
@@ -154,7 +157,8 @@ std::shared_ptr<AudioBus> AudioNode::processInputs(
       continue;
     }
 
-    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
+    auto inputBus = inputNode->processAudio(
+        outputBus, framesToProcess, checkIsAlreadyProcessed);
     inputBuses_.push_back(inputBus);
 
     if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
