@@ -13,10 +13,13 @@
 
 - (instancetype)init;
 - (void)cleanup;
+- (float)getSampleRate;
 
 - (bool)configureAudioSession;
 - (bool)configureNotifications;
 - (bool)rebuildAudioEngine;
+- (void)startEngine;
+- (void)stopEngine;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;

@@ -5,8 +5,6 @@
 - (instancetype)init
 {
   if (self == [super init]) {
-    printf("Initializing IOSAudioManager\n");
-
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.sourceNodes = [[NSMutableDictionary alloc] init];
@@ -21,8 +19,6 @@
 
 - (void)cleanup
 {
-  printf("Cleaning up IOSAudioManager\n");
-
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
@@ -32,6 +28,11 @@
   self.audioSession = nil;
   self.sourceFormats = nil;
   self.notificationCenter = nil;
+}
+
+- (float)getSampleRate
+{
+  return [self.audioSession sampleRate];
 }
 
 - (bool)configureAudioSession
@@ -118,6 +119,30 @@
   return true;
 }
 
+- (void)startEngine
+{
+  NSError *error = nil;
+
+  if ([self.audioEngine isRunning]) {
+    return;
+  }
+
+  [self.audioEngine startAndReturnError:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while starting the audio engine: %@", [error localizedDescription]);
+  }
+}
+
+- (void)stopEngine
+{
+  if (![self.audioEngine isRunning]) {
+    return;
+  }
+
+  [self.audioEngine pause];
+}
+
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
 {
   NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
@@ -127,6 +152,10 @@
 
   [self.audioEngine attachNode:sourceNode];
   [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
+
+  if ([self.sourceNodes count] == 1) {
+    [self startEngine];
+  }
 
   return sourceNodeId;
 }
@@ -138,6 +167,10 @@
 
   [self.sourceNodes removeObjectForKey:sourceNodeId];
   [self.sourceFormats removeObjectForKey:sourceNodeId];
+
+  if ([self.sourceNodes count] == 0) {
+    [self stopEngine];
+  }
 }
 
 - (void)handleInterruption:(NSNotification *)notification

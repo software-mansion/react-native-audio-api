@@ -10,9 +10,11 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;
+@property (nonatomic, weak) IOSAudioManager *audioManager;
 @property (nonatomic, copy) RenderAudioBlock renderAudio;
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) bool isRunning;
+@property (nonatomic, strong) NSString *sourceNodeId;
 
 - (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager renderAudio:(RenderAudioBlock)renderAudio;
 
