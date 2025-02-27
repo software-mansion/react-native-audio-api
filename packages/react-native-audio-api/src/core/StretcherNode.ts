@@ -5,9 +5,11 @@ import BaseAudioContext from './BaseAudioContext';
 
 export default class StretcherNode extends AudioNode {
   readonly rate: AudioParam;
+  readonly semitones: AudioParam;
 
   constructor(context: BaseAudioContext, stretcher: IStretcherNode) {
     super(context, stretcher);
     this.rate = new AudioParam(stretcher.rate);
+    this.semitones = new AudioParam(stretcher.semitones);
   }
 }

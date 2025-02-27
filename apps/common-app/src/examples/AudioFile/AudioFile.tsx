@@ -5,15 +5,21 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
+  StretcherNode,
 } from 'react-native-audio-api';
 
-import { Container, Button, Spacer } from '../../components';
+import { Container, Button, Spacer, Slider } from '../../components';
 
 const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-04.mp3';
+  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
 
-const LOOP_START = 1;
-const LOOP_END = 2;
+const LOOP_START = 0;
+const LOOP_END = 10;
+
+const INITIAL_RATE = 1;
+const INITIAL_SEMITONES = 0;
+
+const labelWidth = 80;
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,11 +27,58 @@ const AudioFile: FC = () => {
 
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
+  const [rate, setRate] = useState(INITIAL_RATE);
+  const [semitones, setSemitones] = useState(INITIAL_SEMITONES);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const stretcherRef = useRef<StretcherNode | null>(null);
+
+  const handleRateChange = (newValue: number) => {
+    setRate(newValue);
+
+    if (stretcherRef.current) {
+      stretcherRef.current.rate.value = newValue;
+    }
+  };
+
+  const handleSemitonesChange = (newValue: number) => {
+    setSemitones(newValue);
+
+    if (stretcherRef.current) {
+      stretcherRef.current.semitones.value = newValue;
+    }
+  };
+
+  const handlePress = () => {
+    if (!audioContextRef.current || !stretcherRef.current) {
+      return;
+    }
+
+    if (isPlaying) {
+      const stopTime = audioContextRef.current.currentTime;
+      bufferSourceRef.current?.stop(stopTime);
+      setOffset((prev) => prev + stopTime - startTime);
+    } else {
+      if (!audioBuffer) {
+        fetchAudioBuffer();
+      }
+
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
+      bufferSourceRef.current.buffer = audioBuffer;
+      bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.loopStart = LOOP_START;
+      bufferSourceRef.current.loopEnd = LOOP_END;
+      bufferSourceRef.current.connect(stretcherRef.current);
+
+      setStartTime(audioContextRef.current.currentTime);
+      bufferSourceRef.current.start(startTime, offset);
+    }
+
+    setIsPlaying((prev) => !prev);
+  };
 
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
@@ -46,36 +99,14 @@ const AudioFile: FC = () => {
     setIsLoading(false);
   }, []);
 
-  const handlePress = () => {
-    if (!audioContextRef.current) {
-      return;
-    }
-
-    if (isPlaying) {
-      const stopTime = audioContextRef.current.currentTime;
-      bufferSourceRef.current?.stop(stopTime);
-      setOffset((prev) => prev + stopTime - startTime);
-    } else {
-      if (!audioBuffer) {
-        fetchAudioBuffer();
-      }
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
-      bufferSourceRef.current.buffer = audioBuffer;
-      bufferSourceRef.current.loop = true;
-      bufferSourceRef.current.loopStart = LOOP_START;
-      bufferSourceRef.current.loopEnd = LOOP_END;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
-
-      setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(startTime, offset);
-    }
-
-    setIsPlaying((prev) => !prev);
-  };
-
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
+    }
+
+    if (!stretcherRef.current) {
+      stretcherRef.current = audioContextRef.current.createStretcher();
+      stretcherRef.current.connect(audioContextRef.current.destination);
     }
 
     fetchAudioBuffer();
@@ -88,11 +119,30 @@ const AudioFile: FC = () => {
   return (
     <Container centered>
       {isLoading && <ActivityIndicator color="#FFFFFF" />}
-      <Spacer.Vertical size={20} />
       <Button
         title={isPlaying ? 'Stop' : 'Play'}
         onPress={handlePress}
         disabled={!audioBuffer}
+      />
+      <Spacer.Vertical size={49} />
+      <Slider
+        label="Rate"
+        value={rate}
+        onValueChange={handleRateChange}
+        min={0.0}
+        max={3.0}
+        step={0.25}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={20} />
+      <Slider
+        label="Semitones"
+        value={semitones}
+        onValueChange={handleSemitonesChange}
+        min={-12}
+        max={12}
+        step={1}
+        minLabelWidth={labelWidth}
       />
     </Container>
   );

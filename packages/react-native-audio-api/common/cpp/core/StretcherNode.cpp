@@ -10,6 +10,7 @@ namespace audioapi {
 StretcherNode::StretcherNode(BaseAudioContext *context) : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::EXPLICIT;
   rate_ = std::make_shared<AudioParam>(1.0, 0.0, 3.0);
+  semitones_ = std::make_shared<AudioParam>(0.0, -12.0, 12.0);
 
   stretch_ =
       std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
@@ -24,9 +25,23 @@ std::shared_ptr<AudioParam> StretcherNode::getRateParam() const {
   return rate_;
 }
 
+std::shared_ptr<AudioParam> StretcherNode::getSemitonesParam() const {
+  return semitones_;
+}
+
 void StretcherNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {}
+    int framesToProcess) {
+  auto time = context_->getCurrentTime();
+  auto semitones = semitones_->getValueAtTime(time);
+
+  stretch_->setTransposeSemitones(semitones);
+  stretch_->process(
+      playbackRateBus_.get()[0],
+      framesNeededToStretch_,
+      audioBus_.get()[0],
+      framesToProcess);
+}
 
 std::shared_ptr<AudioBus> StretcherNode::processAudio(
     std::shared_ptr<AudioBus> outputBus,
@@ -41,13 +56,16 @@ std::shared_ptr<AudioBus> StretcherNode::processAudio(
   }
 
   auto time = context_->getCurrentTime();
+
   auto rate = rate_->getValueAtTime(time);
-  auto framesNeededToStretch =
+  framesNeededToStretch_ =
       static_cast<int>(rate * static_cast<float>(framesToProcess));
-  auto writeIndex = 0;
 
   playbackRateBus_->zero();
+  auto writeIndex = 0;
+  auto framesNeededToStretch = framesNeededToStretch_;
 
+  // Collecting frames needed to stretch
   while (framesNeededToStretch > 0) {
     auto framesToCopy = std::min(framesNeededToStretch, framesToProcess);
 
@@ -70,11 +88,7 @@ std::shared_ptr<AudioBus> StretcherNode::processAudio(
     framesNeededToStretch -= framesToCopy;
   }
 
-  stretch_->process(
-      playbackRateBus_.get()[0],
-      static_cast<int>(rate * static_cast<float>(framesToProcess)),
-      audioBus_.get()[0],
-      framesToProcess);
+  processNode(audioBus_, framesToProcess);
 
   return audioBus_;
 }

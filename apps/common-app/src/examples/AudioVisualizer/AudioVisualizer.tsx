@@ -5,7 +5,6 @@ import {
   AnalyserNode,
   AudioBuffer,
   AudioBufferSourceNode,
-  StretcherNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -32,7 +31,6 @@ const AudioVisualizer: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
-  const stretcherRef = useRef<StretcherNode | null>(null);
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -40,24 +38,16 @@ const AudioVisualizer: React.FC = () => {
       bufferSourceRef.current?.stop(stopTime);
       setOffset((prev) => prev + stopTime - startTime);
     } else {
-      if (
-        !audioContextRef.current ||
-        !analyserRef.current ||
-        !stretcherRef.current
-      ) {
+      if (!audioContextRef.current || !analyserRef.current) {
         return;
       }
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
-      bufferSourceRef.current.playbackRate.value = 1;
-      bufferSourceRef.current.connect(stretcherRef.current);
+      bufferSourceRef.current.connect(analyserRef.current);
 
       setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(
-        startTime,
-        offset * stretcherRef.current.rate.value
-      );
+      bufferSourceRef.current.start(startTime, offset);
 
       requestAnimationFrame(draw);
     }
@@ -95,12 +85,6 @@ const AudioVisualizer: React.FC = () => {
       analyserRef.current.smoothingTimeConstant = 0.8;
 
       analyserRef.current.connect(audioContextRef.current.destination);
-    }
-
-    if (!stretcherRef.current) {
-      stretcherRef.current = audioContextRef.current.createStretcher();
-      stretcherRef.current.rate.value = 2;
-      stretcherRef.current.connect(analyserRef.current);
     }
 
     const fetchBuffer = async () => {

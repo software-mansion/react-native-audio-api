@@ -16,16 +16,20 @@ class StretcherNode : public AudioNode {
     explicit StretcherNode(BaseAudioContext *context);
 
     [[nodiscard]] std::shared_ptr<AudioParam> getRateParam() const;
+    [[nodiscard]] std::shared_ptr<AudioParam> getSemitonesParam() const;
 
  protected:
     void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
     std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
 
  private:
+    // k-rate params
     std::shared_ptr<AudioParam> rate_;
+    std::shared_ptr<AudioParam> semitones_;
 
     std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
     std::shared_ptr<AudioBus> playbackRateBus_;
+    int framesNeededToStretch_ = RENDER_QUANTUM_SIZE;
 
     static TimeStretchType fromString(const std::string &type) {
         std::string lowerType = type;

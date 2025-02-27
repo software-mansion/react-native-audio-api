@@ -163,4 +163,5 @@ export interface IAnalyserNode extends IAudioNode {
 
 export interface IStretcherNode extends IAudioNode {
   readonly rate: IAudioParam;
+  readonly semitones: IAudioParam;
 }

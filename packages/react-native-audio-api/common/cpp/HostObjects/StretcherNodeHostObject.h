@@ -14,7 +14,8 @@ namespace audioapi {
     public:
         explicit StretcherNodeHostObject(const std::shared_ptr<StretcherNode> &node)
                 : AudioNodeHostObject(node) {
-            addGetters(JSI_EXPORT_PROPERTY_GETTER(StretcherNodeHostObject, rate));
+            addGetters(JSI_EXPORT_PROPERTY_GETTER(StretcherNodeHostObject, rate),
+                       JSI_EXPORT_PROPERTY_GETTER(StretcherNodeHostObject, semitones));
         }
 
         JSI_PROPERTY_GETTER(rate) {
@@ -22,6 +23,13 @@ namespace audioapi {
             auto rateParam =
                     std::make_shared<AudioParamHostObject>(stretcherNode->getRateParam());
             return jsi::Object::createFromHostObject(runtime, rateParam);
+        }
+
+        JSI_PROPERTY_GETTER(semitones) {
+            auto stretcherNode = std::static_pointer_cast<StretcherNode>(node_);
+            auto semitonesParam =
+                    std::make_shared<AudioParamHostObject>(stretcherNode->getSemitonesParam());
+            return jsi::Object::createFromHostObject(runtime, semitonesParam);
         }
     };
 } // namespace audioapi
