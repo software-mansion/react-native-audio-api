@@ -20,23 +20,18 @@ StretcherNode::StretcherNode(BaseAudioContext *context) : AudioNode(context) {
   isInitialized_ = true;
 }
 
-std::string StretcherNode::getTimeStretch() const {
-  return toString(timeStretch_);
-}
-
-std::shared_ptr<AudioParam> StretcherNode::getRate() const { return rate_; }
-
-void StretcherNode::setTimeStretch(const std::string &timeStretchType) {
-  timeStretch_ = fromString(timeStretchType);
+std::shared_ptr<AudioParam> StretcherNode::getRateParam() const {
+  return rate_;
 }
 
 void StretcherNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {}
+    int framesToProcess) {
+}
 
 std::shared_ptr<AudioBus> StretcherNode::processAudio(
         std::shared_ptr<AudioBus> outputBus,
-        int framesToProcess) {
+        int framesToProcess, bool checkIsAlreadyProcessed) {
 
     if (!isInitialized_) {
         return outputBus;
@@ -48,13 +43,16 @@ std::shared_ptr<AudioBus> StretcherNode::processAudio(
 
     auto time = context_->getCurrentTime();
     auto rate = rate_->getValueAtTime(time);
-    auto framesToStretch = static_cast<int>(rate * static_cast<float>(framesToProcess));
+    auto framesNeededToStretch = static_cast<int>(rate * static_cast<float>(framesToProcess));
+    auto writeIndex = 0;
 
     playbackRateBus_->zero();
 
-    while (framesToStretch > 0) {
-        // Process inputs and return the bus with the most channels.
-        auto processingBus = processInputs(outputBus, framesToProcess);
+    while (framesNeededToStretch > 0) {
+        auto framesToCopy = std::min(framesNeededToStretch, framesToProcess);
+
+        // Process inputs and return the bus with the most channels. We must not check if the node has already been processed, cause we need to process it multiple times in this case.
+        auto processingBus = processInputs(outputBus, framesToCopy, false);
 
         // Apply channel count mode.
         processingBus = applyChannelCountMode(processingBus);
@@ -64,10 +62,13 @@ std::shared_ptr<AudioBus> StretcherNode::processAudio(
 
         assert(processingBus != nullptr);
 
-        playbackRateBus_->copy(processingBus.get(), 0, 0, 0);
+        playbackRateBus_->copy(processingBus.get(), 0, writeIndex, framesToCopy);
+
+        writeIndex += framesToCopy;
+        framesNeededToStretch -= framesToCopy;
     }
 
-    processNode(playbackRateBus_, framesToProcess);
+    stretch_->process(playbackRateBus_.get()[0], static_cast<int>(rate * static_cast<float>(framesToProcess)), audioBus_.get()[0], framesToProcess);
 
     return audioBus_;
 }

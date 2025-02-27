@@ -14,6 +14,7 @@
 #include "GainNode.h"
 #include "OscillatorNode.h"
 #include "StereoPannerNode.h"
+#include "StretcherNode.h"
 
 namespace audioapi {
 
@@ -94,6 +95,12 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addNode(analyser);
   return analyser;
+}
+
+std::shared_ptr<StretcherNode> BaseAudioContext::createStretcher() {
+    auto node = std::make_shared<StretcherNode>(this);
+    nodeManager_->addNode(node);
+    return node;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

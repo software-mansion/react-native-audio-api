@@ -19,9 +19,9 @@ class GainNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_GETTER(gain) {
     auto gainNode = std::static_pointer_cast<GainNode>(node_);
-    auto gainParam_ =
+    auto gainParam =
         std::make_shared<AudioParamHostObject>(gainNode->getGainParam());
-    return jsi::Object::createFromHostObject(runtime, gainParam_);
+    return jsi::Object::createFromHostObject(runtime, gainParam);
   }
 };
 } // namespace audioapi

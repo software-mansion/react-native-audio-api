@@ -5,7 +5,6 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
-  TimeStretchType,
 } from './types';
 
 export interface AudioAPIInstaller {
@@ -34,6 +33,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
+  createStretcher: () => IStretcherNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
 }
 
@@ -99,7 +99,6 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loopEnd: number;
   detune: IAudioParam;
   playbackRate: IAudioParam;
-  timeStretch: TimeStretchType;
 
   start: (when?: number, offset?: number, duration?: number) => void;
 }
@@ -160,4 +159,8 @@ export interface IAnalyserNode extends IAudioNode {
   getByteFrequencyData: (array: number[]) => void;
   getFloatTimeDomainData: (array: number[]) => void;
   getByteTimeDomainData: (array: number[]) => void;
+}
+
+export interface IStretcherNode extends IAudioNode {
+  readonly rate: IAudioParam;
 }

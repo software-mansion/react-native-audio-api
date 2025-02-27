@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 
-#include "AudioNode.h"
 #include "signalsmith-stretch.h"
 #include "TimeStretchType.h"
+#include "AudioNode.h"
 #include "AudioParam.h"
 
 namespace audioapi {
@@ -15,18 +15,14 @@ class StretcherNode : public AudioNode {
  public:
     explicit StretcherNode(BaseAudioContext *context);
 
-    [[nodiscard]] std::string getTimeStretch() const;
-    [[nodiscard]] std::shared_ptr<AudioParam> getRate() const;
-
-    void setTimeStretch(const std::string& timeStretchType);
+    [[nodiscard]] std::shared_ptr<AudioParam> getRateParam() const;
 
  protected:
     void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-    std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess) override;
+    std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
 
  private:
     std::shared_ptr<AudioParam> rate_;
-    TimeStretchType timeStretch_ = TimeStretchType::LINEAR;
 
     std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
     std::shared_ptr<AudioBus> playbackRateBus_;

@@ -33,7 +33,7 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->zero();
 
-  auto processedBus = processAudio(destinationBus, numFrames);
+  auto processedBus = processAudio(destinationBus, numFrames, true);
 
   if (processedBus && processedBus != destinationBus) {
     destinationBus->copy(processedBus.get());

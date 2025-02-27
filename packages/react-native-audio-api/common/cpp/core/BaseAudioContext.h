@@ -24,6 +24,7 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
+class StretcherNode;
 
 class BaseAudioContext {
  public:
@@ -49,6 +50,7 @@ class BaseAudioContext {
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
+  std::shared_ptr<StretcherNode> createStretcher();
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
 
