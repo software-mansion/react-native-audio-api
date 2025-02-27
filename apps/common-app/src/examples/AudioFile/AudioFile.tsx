@@ -74,7 +74,10 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.connect(stretcherRef.current);
 
       setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(startTime, offset);
+      bufferSourceRef.current.start(
+        startTime,
+        offset * stretcherRef.current.rate.value
+      );
     }
 
     setIsPlaying((prev) => !prev);
