@@ -4,6 +4,7 @@
 #include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/dsp/Windows.h>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
@@ -204,10 +205,10 @@ void AnalyserNode::doFFTAnalysis() {
 
   switch (windowType_) {
     case WindowType::BLACKMAN:
-      AnalyserNode::applyBlackManWindow(tempBuffer.getData(), fftSize_);
+      Windows::Blackman().apply(tempBuffer.getData(), fftSize_);
       break;
     case WindowType::HANN:
-      AnalyserNode::applyHannWindow(tempBuffer.getData(), fftSize_);
+      Windows::Hann().apply(tempBuffer.getData(), fftSize_);
       break;
   }
 
@@ -230,27 +231,6 @@ void AnalyserNode::doFFTAnalysis() {
     magnitudeBufferData[i] = static_cast<float>(
         smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
-  }
-}
-
-void AnalyserNode::applyBlackManWindow(float *data, int length) {
-  // https://www.sciencedirect.com/topics/engineering/blackman-window
-  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.blackman.html#scipy.signal.windows.blackman
-
-  for (int i = 0; i < length; ++i) {
-    auto x = static_cast<float>(i) / static_cast<float>(length);
-    auto window = 0.42f - 0.5f * cos(2 * PI * x) + 0.08f * cos(4 * PI * x);
-    data[i] *= window;
-  }
-}
-
-void AnalyserNode::applyHannWindow(float *data, int length) {
-  // https://www.sciencedirect.com/topics/engineering/hanning-window
-  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.hann.html#scipy.signal.windows.hann
-  for (int i = 0; i < length; ++i) {
-    auto x = static_cast<float>(i) / static_cast<float>(length - 1);
-    auto window = 0.5f - 0.5f * cos(2 * PI * x);
-    data[i] *= window;
   }
 }
 } // namespace audioapi

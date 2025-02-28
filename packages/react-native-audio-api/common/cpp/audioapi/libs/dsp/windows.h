@@ -156,7 +156,7 @@ namespace windows {
 		void fill(Data &&data, int size) const {
 			double invSize = 1.0/size;
 			for (int i = 0; i < size; ++i) {
-				double r = (2*i + 1)*invSize - 1;
+				double r = (2*i - 1)*invSize - 1;
 				double arg = std::sqrt(1 - r*r);
 				data[i] = bessel0(beta*arg)*invB0;
 			}
