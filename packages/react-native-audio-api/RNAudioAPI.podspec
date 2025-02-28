@@ -1,13 +1,10 @@
 require "json"
-require_relative './scripts/audioapi_utils'
 
 package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
-$config = find_config()
-assert_minimal_react_native_version($config)
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
-folly_flags = "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32 -DREACT_NATIVE_MINOR_VERSION=#{$config[:react_native_minor_version]}"
+folly_flags = "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
@@ -36,28 +33,13 @@ Pod::Spec.new do |s|
 
   s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate'
 
-  s.pod_target_xcconfig    = {
-    "USE_HEADERMAP" => "YES",
-    "DEFINES_MODULE" => "YES",
-    "HEADER_SEARCH_PATHS" => '"$(PODS_TARGET_SRCROOT)/ReactCommon" "$(PODS_TARGET_SRCROOT)" "$(PODS_ROOT)/RCT-Folly" "$(PODS_ROOT)/boost" "$(PODS_ROOT)/boost-for-react-native" "$(PODS_ROOT)/DoubleConversion" "$(PODS_ROOT)/Headers/Private/React-Core" "$(PODS_ROOT)/Headers/Private/Yoga"',
-    "FRAMEWORK_SEARCH_PATHS" => '"${PODS_CONFIGURATION_BUILD_DIR}/React-hermes"',
-    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
-    "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-  }
   s.compiler_flags = "#{folly_flags}"
 
-  s.xcconfig = {
-    "HEADER_SEARCH_PATHS" => [
-      '"$(PODS_ROOT)/boost"',
-      '"$(PODS_ROOT)/boost-for-react-native"',
-      '"$(PODS_ROOT)/glog"',
-      '"$(PODS_ROOT)/RCT-Folly"',
-      '"$(PODS_ROOT)/Headers/Public/React-hermes"',
-      '"$(PODS_ROOT)/Headers/Public/hermes-engine"',
-      "\"$(PODS_ROOT)/#{$config[:react_native_common_dir]}\"",
-      "\"$(PODS_ROOT)/#{$config[:react_native_audioapi_dir_from_pods_root]}/ios/audioapi/ios\"",
-      "\"$(PODS_ROOT)/#{$config[:react_native_audioapi_dir_from_pods_root]}/common/cpp/audioapi\"",
-    ].join(' '),
+  s.pod_target_xcconfig = {
+    "USE_HEADERMAP" => "YES",
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+    "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
+    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\" \"$(PODS_TARGET_SRCROOT)/ios\"",
     'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
   }
 
