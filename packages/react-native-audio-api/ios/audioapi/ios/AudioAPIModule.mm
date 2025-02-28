@@ -1,34 +1,41 @@
 #import "AudioAPIModule.h"
 
-#ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTBridge+Private.h>
+
+#ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>
 #import <ReactCommon/RCTTurboModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
 #include <audioapi/AudioAPIModuleInstaller.h>
 
-@implementation AudioAPIModule
+using namespace audioapi;
+using namespace facebook::react;
 
-#if defined(RCT_NEW_ARCH_ENABLED)
+@interface RCTBridge (JSIRuntime)
+- (void *)runtime;
+@end
+
+#if defined(RCT_NEW_ARCH_ENABLED) && REACT_NATIVE_MINOR_VERSION >= 75
 // nothing
-#else // defined(RCT_NEW_ARCH_ENABLED)
+#else // defined(RCT_NEW_ARCH_ENABLED) && REACT_NATIVE_MINOR_VERSION >= 75
 @interface RCTBridge (RCTTurboModule)
 - (std::shared_ptr<facebook::react::CallInvoker>)jsCallInvoker;
 - (void)_tryAndHandleError:(dispatch_block_t)block;
 @end
 #endif // RCT_NEW_ARCH_ENABLED
 
+@implementation AudioAPIModule
+
 #if defined(RCT_NEW_ARCH_ENABLED)
 @synthesize callInvoker = _callInvoker;
 #endif // defined(RCT_NEW_ARCH_ENABLED)
 
-RCT_EXPORT_MODULE(AudioAPIModule)
+RCT_EXPORT_MODULE(AudioAPIModule);
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
-  auto *cxxBridge = reinterpret_cast<RCTCxxBridge *>(self.bridge);
-  auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(cxxBridge.runtime);
+  auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
 
 #if defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = _callInvoker.callInvoker;
