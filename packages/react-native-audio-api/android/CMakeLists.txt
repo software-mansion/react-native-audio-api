@@ -14,54 +14,67 @@ endif()
 include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
-file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.cpp")
-file(GLOB_RECURSE ANDROID_C_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.c")
-file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "../common/cpp/*.cpp")
+# string(APPEND CMAKE_CXX_FLAGS
+#        " -fexceptions -fno-omit-frame-pointer -frtti -fstack-protector-all\
+#    -std=c++${CMAKE_CXX_STANDARD} -Wall -Werror")
 
-add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${ANDROID_C_SOURCES} ${COMMON_CPP_SOURCES})
-
-file(GLOB ANDROID_CPP_DIR CONFIGURE_DEPENDS "src/main/cpp/**")
-file(GLOB COMMON_CPP_DIR CONFIGURE_DEPENDS "../common/cpp/**")
-
-target_include_directories(
-  react-native-audio-api
-  PUBLIC
-  ${ANDROID_CPP_DIR}
-  ${COMMON_CPP_DIR}
-)
-
-target_include_directories(
-  react-native-audio-api
-  PRIVATE
-  "${REACT_NATIVE_DIR}/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
-  "${REACT_NATIVE_DIR}/ReactCommon/react/nativemodule/core/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-)
-
-find_package(ReactAndroid REQUIRED CONFIG)
-find_package(fbjni REQUIRED CONFIG)
-find_package(oboe REQUIRED CONFIG)
-
-set(LINK_LIBRARIES
-  ReactAndroid::jsi
-  fbjni::fbjni
-  android
-  log
-  oboe::oboe
-)
-
-if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
-  set(RN_VERSION_LINK_LIBRARIES
-    ReactAndroid::reactnative
-  )
-else()
-  set(RN_VERSION_LINK_LIBRARIES
-    ReactAndroid::folly_runtime
-    ReactAndroid::react_nativemodule_core
-    ReactAndroid::glog
-    ReactAndroid::reactnativejni
-  )
+if(${IS_NEW_ARCHITECTURE_ENABLED})
+  string(APPEND CMAKE_CXX_FLAGS " -DRCT_NEW_ARCH_ENABLED")
 endif()
 
-target_link_libraries(react-native-audio-api ${LINK_LIBRARIES} ${RN_VERSION_LINK_LIBRARIES})
+set(ANDROID_CPP_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp")
+set(COMMON_CPP_DIR "${CMAKE_SOURCE_DIR}/../common/cpp")
+
+add_subdirectory("${ANDROID_CPP_DIR}/audioapi")
+
+# file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.cpp")
+# file(GLOB_RECURSE ANDROID_C_SOURCES CONFIGURE_DEPENDS "src/main/cpp/*.c")
+# file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "../common/cpp/*.cpp")
+
+# add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${ANDROID_C_SOURCES} ${COMMON_CPP_SOURCES})
+
+# file(GLOB ANDROID_CPP_DIR CONFIGURE_DEPENDS "src/main/cpp/**")
+# file(GLOB COMMON_CPP_DIR CONFIGURE_DEPENDS "../common/cpp/**")
+
+# target_include_directories(
+#   react-native-audio-api
+#   PUBLIC
+#   ${ANDROID_CPP_DIR}
+#   ${COMMON_CPP_DIR}
+# )
+
+# target_include_directories(
+#   react-native-audio-api
+#   PRIVATE
+#   "${REACT_NATIVE_DIR}/ReactCommon"
+#   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+#   "${REACT_NATIVE_DIR}/ReactCommon/react/nativemodule/core/ReactCommon"
+#   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+# )
+
+# find_package(ReactAndroid REQUIRED CONFIG)
+# find_package(fbjni REQUIRED CONFIG)
+# find_package(oboe REQUIRED CONFIG)
+
+# set(LINK_LIBRARIES
+#   ReactAndroid::jsi
+#   fbjni::fbjni
+#   android
+#   log
+#   oboe::oboe
+# )
+
+# if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
+#   set(RN_VERSION_LINK_LIBRARIES
+#     ReactAndroid::reactnative
+#   )
+# else()
+#   set(RN_VERSION_LINK_LIBRARIES
+#     ReactAndroid::folly_runtime
+#     ReactAndroid::react_nativemodule_core
+#     ReactAndroid::glog
+#     ReactAndroid::reactnativejni
+#   )
+# endif()
+
+# target_link_libraries(react-native-audio-api ${LINK_LIBRARIES} ${RN_VERSION_LINK_LIBRARIES})

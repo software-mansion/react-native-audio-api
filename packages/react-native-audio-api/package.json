@@ -43,10 +43,10 @@
     "lint:kotlin": "ktlint 'android/src/main/java/**'",
     "format": "yarn format:js && yarn format:android:cpp && yarn format:android:kotlin && yarn format:ios && yarn format:common",
     "format:js": "prettier --write --list-different src",
-    "format:android:cpp": "find android/src/ -path android/src/cpp/libs -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
+    "format:android:cpp": "find android/src/ -path android/src/main/cpp/audioapi/android/libs -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**'",
     "format:ios": "find ios/ -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" | xargs clang-format -i",
-    "format:common": "find common/cpp/ -path 'common/cpp/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
+    "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "build": "bob build",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"

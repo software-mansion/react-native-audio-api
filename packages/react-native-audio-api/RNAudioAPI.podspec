@@ -22,7 +22,17 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion-labs/react-native-audio-api.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm}", "common/cpp/**/*.{hpp,cpp,c,h}"
+  s.subspec "audioapi" do |ss|
+    ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h}"
+    ss.header_dir = "audioapi"
+    ss.header_mappings_dir = "common/cpp/audioapi"
+
+    ss.subspec "ios" do |sss|
+      sss.source_files = "ios/audioapi/**/*.{mm,h,m}"
+      sss.header_dir = "audioapi"
+      sss.header_mappings_dir = "ios/ausioapi"
+    end
+  end
 
   s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate'
 
