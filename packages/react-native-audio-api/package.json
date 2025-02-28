@@ -17,7 +17,6 @@
     "android/",
     "ios",
     "RNAudioAPI.podspec",
-    "scripts/audioapi_utils.rb",
     "metro-config",
     "!ios/build",
     "!android/build",

@@ -51,6 +51,7 @@ class Kaiser: public WindowFunction {
   // invB0 = 1 / I0(beta)
   float invB0_;
 
+  // https://en.wikipedia.org/wiki/Bessel_function#Modified_Bessel_functions:_I%CE%B1,_K%CE%B1
   static inline float bessel0(float x) {
     const double significanceLimit = 1e-4;
     auto result = 0.0f;
@@ -65,5 +66,6 @@ class Kaiser: public WindowFunction {
     return result;
   }
 };
-
+// TODO: create once and reuse
+// apply should be a template function
 } // namespace audioapi::Windows
