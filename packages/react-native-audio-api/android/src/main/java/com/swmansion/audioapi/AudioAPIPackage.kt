@@ -26,6 +26,7 @@ class AudioAPIPackage :
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider =
 
     ReactModuleInfoProvider(
+
       fun (): Map<String, ReactModuleInfo> =
         mapOf(
           AudioAPIModule.NAME to
