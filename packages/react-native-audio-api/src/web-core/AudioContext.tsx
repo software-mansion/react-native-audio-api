@@ -14,6 +14,7 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import StretcherNode from './StretcherNode';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -108,6 +109,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createStretcherNode(): StretcherNode {
+    return new StretcherNode(this);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
