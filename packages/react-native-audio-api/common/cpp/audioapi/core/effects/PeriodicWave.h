@@ -44,8 +44,7 @@ class PeriodicWave {
       bool disableNormalization);
   explicit PeriodicWave(
       float sampleRate,
-      float *real,
-      float *imaginary,
+      const std::vector<std::complex<float>> &complexData,
       int length,
       bool disableNormalization);
   ~PeriodicWave();
@@ -80,7 +79,7 @@ class PeriodicWave {
   // For each range, the inverse FFT is performed to get the time domain
   // representation of the band-limited waveform.
   void
-  createBandLimitedTables(const float *real, const float *imaginary, int size);
+  createBandLimitedTables(const std::vector<std::complex<float>> &complexData, int size);
 
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given

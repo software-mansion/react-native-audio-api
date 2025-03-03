@@ -80,12 +80,11 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
-    float *real,
-    float *imag,
+    const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
     int length) {
   return std::make_shared<PeriodicWave>(
-      sampleRate_, real, imag, length, disableNormalization);
+      sampleRate_, complexData, length, disableNormalization);
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {

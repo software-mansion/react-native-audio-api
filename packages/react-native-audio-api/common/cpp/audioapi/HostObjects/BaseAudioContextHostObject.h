@@ -116,22 +116,19 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto length =
         static_cast<int>(real.getProperty(runtime, "length").asNumber());
 
-    auto *realData = new float[length];
-    auto *imagData = new float[length];
+    auto complexData = std::vector<std::complex<float>>(length);
 
     for (size_t i = 0; i < real.length(runtime); i++) {
-      realData[i] =
-          static_cast<float>(real.getValueAtIndex(runtime, i).getNumber());
-    }
-    for (size_t i = 0; i < imag.length(runtime); i++) {
-      realData[i] =
-          static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber());
+        complexData[i] = std::complex<float>(
+            static_cast<float>(real.getValueAtIndex(runtime, i).getNumber()),
+            static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber()));
     }
 
     auto periodicWave = context_->createPeriodicWave(
-        realData, imagData, disableNormalization, length);
+        complexData, disableNormalization, length);
     auto periodicWaveHostObject =
         std::make_shared<PeriodicWaveHostObject>(periodicWave);
+
     return jsi::Object::createFromHostObject(runtime, periodicWaveHostObject);
   }
 

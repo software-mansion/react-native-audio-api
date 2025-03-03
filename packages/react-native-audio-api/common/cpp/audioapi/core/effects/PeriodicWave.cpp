@@ -60,12 +60,11 @@ PeriodicWave::PeriodicWave(
 
 PeriodicWave::PeriodicWave(
     float sampleRate,
-    float *real,
-    float *imaginary,
+    const std::vector<std::complex<float>> &complexData,
     int length,
     bool disableNormalization)
     : PeriodicWave(sampleRate, disableNormalization) {
-  createBandLimitedTables(real, imaginary, length);
+  createBandLimitedTables(complexData, length);
 }
 
 PeriodicWave::~PeriodicWave() {
@@ -140,10 +139,9 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
    */
 
   auto halfSize = fftSize / 2;
-  auto *real = new float[fftSize];
-  auto *imaginary = new float[fftSize];
+  auto complexData = std::vector<std::complex<float>>(halfSize);
 
-  for (int i = 1; i < fftSize; i++) {
+  for (int i = 1; i < halfSize; i++) {
     // All waveforms are odd functions with a positive slope at time 0.
     // Hence the coefficients for cos() are always 0.
 
@@ -183,19 +181,14 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
         throw std::invalid_argument("Custom waveforms are not supported.");
     }
 
-    real[i] = 0.0f;
-    imaginary[i] = b;
+    complexData[i] = std::complex<float>(0.0f, b);
   }
 
-  createBandLimitedTables(real, imaginary, halfSize);
-
-  delete[] real;
-  delete[] imaginary;
+  createBandLimitedTables(complexData, halfSize);
 }
 
 void PeriodicWave::createBandLimitedTables(
-    const float *realData,
-    const float *imaginaryData,
+    const std::vector<std::complex<float>> &complexData,
     int size) {
   float normalizationFactor = 0.5f;
 
@@ -205,17 +198,7 @@ void PeriodicWave::createBandLimitedTables(
   size = std::min(size, halfSize);
 
   for (int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
-    auto *realFFTFrameData = new float[fftSize];
-    auto *imaginaryFFTFrameData = new float[fftSize];
-
-    // copy real and imaginary data to the FFT frame and scale it
-    dsp::multiplyByScalar(
-        realData, static_cast<float>(fftSize), realFFTFrameData, size);
-    dsp::multiplyByScalar(
-        imaginaryData,
-        -static_cast<float>(fftSize),
-        imaginaryFFTFrameData,
-        size);
+    auto complexFFTData = std::vector<std::complex<float>>(halfSize);
 
     // Find the starting partial where we should start culling.
     // We need to clear out the highest frequencies to band-limit the waveform.
@@ -223,31 +206,27 @@ void PeriodicWave::createBandLimitedTables(
 
     // Clamp the size to the number of partials.
     auto clampedSize = std::min(size, numberOfPartials);
-    if (clampedSize < halfSize) {
-      // Zero out the higher frequencies for certain range.
-      std::fill(
-          realFFTFrameData + clampedSize, realFFTFrameData + halfSize, 0.0f);
-      std::fill(
-          imaginaryFFTFrameData + clampedSize,
-          imaginaryFFTFrameData + halfSize,
-          0.0f);
+
+    // copy real and imaginary data to the FFT frame, scale it and set the
+    // higher frequencies to zero.
+    for (int i = 0; i < size; i++) {
+      if (i >= clampedSize && i < halfSize) {
+        complexFFTData[i] = std::complex<float>(0.0f, 0.0f);
+      } else {
+        complexFFTData[i] = {
+            complexData[i].real() * static_cast<float>(fftSize),
+            complexData[i].imag() * -static_cast<float>(fftSize)};
+      }
     }
 
     // Zero out the DC and nquist components.
-    realFFTFrameData[0] = 0.0f;
-    imaginaryFFTFrameData[0] = 0.0f;
+    complexFFTData[0] = {0.0f, 0.0f};
 
     bandLimitedTables_[rangeIndex] = new float[fftSize];
 
-    auto in = std::vector<std::complex<float>>(fftSize);
-    for (int i = 0; i < fftSize; i++) {
-      in[i] =
-          std::complex<float>(realFFTFrameData[i], imaginaryFFTFrameData[i]);
-    }
-
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fft_->doInverseFFT(in, bandLimitedTables_[rangeIndex]);
+    fft_->doInverseFFT(complexFFTData, bandLimitedTables_[rangeIndex]);
 
     if (!disableNormalization_ && rangeIndex == 0) {
       float maxValue =
@@ -256,9 +235,6 @@ void PeriodicWave::createBandLimitedTables(
         normalizationFactor = 1.0f / maxValue;
       }
     }
-
-    delete[] realFFTFrameData;
-    delete[] imaginaryFFTFrameData;
 
     dsp::multiplyByScalar(
         bandLimitedTables_[rangeIndex],
