@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstddef>
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 namespace audioapi {
 
@@ -34,9 +35,10 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
       size_t startInChannel);
 
  private:
-  std::shared_ptr<AudioBus> bus_;
-
   friend class AudioBufferSourceNode;
+
+  std::shared_ptr<AudioBus> bus_;
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
 };
 
 } // namespace audioapi

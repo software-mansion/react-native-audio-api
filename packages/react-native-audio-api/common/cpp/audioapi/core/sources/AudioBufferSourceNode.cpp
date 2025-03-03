@@ -19,9 +19,14 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
   alignedBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
+  timeStretchType_ = TimeStretchType::LINEAR;
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
+  semitones_ = std::make_shared<AudioParam>(0.0, -12.0, 12.0);
+
+  playbackRateBus_ = std::make_shared<AudioBus>(
+          RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
   isInitialized_ = true;
 }
@@ -47,8 +52,16 @@ std::shared_ptr<AudioParam> AudioBufferSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
+std::shared_ptr<AudioParam> AudioBufferSourceNode::getSemitonesParam() const {
+  return semitones_;
+}
+
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
   return buffer_;
+}
+
+std::string AudioBufferSourceNode::getTimeStretchType() const {
+    return toString(timeStretchType_);
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
@@ -86,7 +99,14 @@ void AudioBufferSourceNode::setBuffer(
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
+  playbackRateBus_ = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
+
   loopEnd_ = buffer_->getDuration();
+}
+
+void AudioBufferSourceNode::setTimeStretchType(const std::string &type) {
+    timeStretchType_ = fromString(type);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -127,10 +147,17 @@ void AudioBufferSourceNode::processNode(
     return;
   }
 
+    auto framesNeededToStretch =
+            static_cast<int>(2 * static_cast<float>(framesToProcess));
+
+
+    playbackRateBus_->zero();
+    auto stretch = buffer_->stretch_;
+
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  updatePlaybackInfo(playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
   float playbackRate = getPlaybackRateValue(startOffset);
 
   assert(alignedBus_ != nullptr);
@@ -141,14 +168,54 @@ void AudioBufferSourceNode::processNode(
     return;
   } else if (std::fabs(playbackRate) == 1.0) {
     processWithoutInterpolation(
-        processingBus, startOffset, offsetLength, playbackRate);
+        playbackRateBus_, startOffset, offsetLength, playbackRate);
   } else {
     processWithInterpolation(
-        processingBus, startOffset, offsetLength, playbackRate);
+        playbackRateBus_, startOffset, offsetLength, playbackRate);
   }
 
   handleStopScheduled();
+
+    stretch->process(
+            playbackRateBus_.get()[0],
+            framesNeededToStretch,
+            processingBus.get()[0],
+            framesToProcess);
 }
+
+//std::shared_ptr<AudioBus> AudioBufferSourceNode::processAudio(
+//        std::shared_ptr<AudioBus> outputBus,
+//        int framesToProcess,
+//        bool checkIsAlreadyProcessed) {
+//    if (!isInitialized_) {
+//        return outputBus;
+//    }
+//
+//    if (isAlreadyProcessed()) {
+//        return audioBus_;
+//    }
+//
+//    auto framesNeededToStretch =
+//            static_cast<int>(2 * static_cast<float>(framesToProcess));
+//
+//    if (!buffer_) {
+//        audioBus_->zero();
+//        return audioBus_;
+//    }
+//
+//    playbackRateBus_->zero();
+//    auto stretch = buffer_->stretch_;
+//
+//    processNode(playbackRateBus_, framesNeededToStretch);
+//
+//    stretch->process(
+//            playbackRateBus_.get()[0],
+//            framesNeededToStretch,
+//            audioBus_.get()[0],
+//            framesToProcess);
+//
+//    return audioBus_;
+//}
 
 /**
  * Helper functions
