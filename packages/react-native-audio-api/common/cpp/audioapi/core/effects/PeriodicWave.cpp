@@ -67,6 +67,13 @@ PeriodicWave::PeriodicWave(
   createBandLimitedTables(real, imaginary, length);
 }
 
+PeriodicWave::~PeriodicWave() {
+  for (int i = 0; i < numberOfRanges_; i++) {
+    delete[] bandLimitedTables_[i];
+  }
+  delete[] bandLimitedTables_;
+}
+
 int PeriodicWave::getPeriodicWaveSize() const {
   if (sampleRate_ <= 24000) {
     return 2048;
@@ -185,6 +192,9 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   }
 
   createBandLimitedTables(real, imaginary, halfSize);
+
+  delete[] real;
+  delete[] imaginary;
 }
 
 void PeriodicWave::createBandLimitedTables(
