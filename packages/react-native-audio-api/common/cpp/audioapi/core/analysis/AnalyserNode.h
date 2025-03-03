@@ -44,7 +44,9 @@ class AnalyserNode : public AudioNode {
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
+
   WindowType windowType_;
+  std::shared_ptr<AudioArray> windowData_;
 
   std::unique_ptr<AudioArray> inputBuffer_;
   std::unique_ptr<AudioBus> downMixBus_;
@@ -82,8 +84,8 @@ class AnalyserNode : public AudioNode {
   }
 
   void doFFTAnalysis();
-  static void applyBlackManWindow(float *data, int length);
-  static void applyHannWindow(float *data, int length);
+
+  void setWindowData(WindowType type, int size);
 };
 
 } // namespace audioapi

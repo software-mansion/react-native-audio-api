@@ -1,6 +1,6 @@
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 #include <audioapi/dsp/VectorMath.h>
 
 // Implementation of channel summing/mixing is based on the WebKit approach,

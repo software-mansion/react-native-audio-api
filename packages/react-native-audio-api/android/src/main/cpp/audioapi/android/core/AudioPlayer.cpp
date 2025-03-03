@@ -1,8 +1,8 @@
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 

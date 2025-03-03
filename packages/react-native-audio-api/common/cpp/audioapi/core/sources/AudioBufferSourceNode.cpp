@@ -2,8 +2,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
 

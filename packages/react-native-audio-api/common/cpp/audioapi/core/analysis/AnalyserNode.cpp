@@ -1,7 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/Windows.h>
@@ -23,6 +23,8 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
   realData_ = std::make_shared<AudioArray>(fftSize_);
   imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
+
+  setWindowData(windowType_, fftSize_);
 
   isInitialized_ = true;
 }
@@ -61,6 +63,7 @@ void AnalyserNode::setFftSize(int fftSize) {
   realData_ = std::make_shared<AudioArray>(fftSize_);
   imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  setWindowData(windowType_, fftSize_);
 }
 
 void AnalyserNode::setMinDecibels(float minDecibels) {
@@ -76,6 +79,7 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
 }
 
 void AnalyserNode::setWindowType(const std::string &type) {
+  setWindowData(windowType_, fftSize_);
   windowType_ = AnalyserNode::fromString(type);
 }
 
@@ -203,14 +207,7 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  switch (windowType_) {
-    case WindowType::BLACKMAN:
-      Windows::Blackman().apply(tempBuffer.getData(), fftSize_);
-      break;
-    case WindowType::HANN:
-      Windows::Hann().apply(tempBuffer.getData(), fftSize_);
-      break;
-  }
+  VectorMath::multiply(tempBuffer.getData(), windowData_->getData(), tempBuffer.getData(), fftSize_);
 
   auto *realFFTFrameData = realData_->getData();
   auto *imaginaryFFTFrameData = imaginaryData_->getData();
@@ -231,6 +228,25 @@ void AnalyserNode::doFFTAnalysis() {
     magnitudeBufferData[i] = static_cast<float>(
         smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
+  }
+}
+
+void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int size) {
+  if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
+    return;
+  }
+
+  if (!windowData_ || windowData_->getSize() != size) {
+    windowData_ = std::make_shared<AudioArray>(size);
+  }
+
+  switch (windowType_) {
+    case WindowType::BLACKMAN:
+      windows::Blackman().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      break;
+    case WindowType::HANN:
+      windows::Hann().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      break;
   }
 }
 } // namespace audioapi

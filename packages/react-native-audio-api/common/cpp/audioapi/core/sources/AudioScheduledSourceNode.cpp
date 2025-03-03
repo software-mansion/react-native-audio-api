@@ -1,7 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/dsp/AudioUtils.h>
 
