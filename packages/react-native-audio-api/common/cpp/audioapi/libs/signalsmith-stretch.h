@@ -4,7 +4,6 @@
 #include <audioapi/libs/dsp/spectral.h>
 #include <audioapi/libs/dsp/delay.h>
 #include <audioapi/libs/dsp/perf.h>
-SIGNALSMITH_DSP_VERSION_CHECK(1, 6, 0); // Check version is compatible
 #include <vector>
 #include <algorithm>
 #include <functional>

@@ -1,12 +1,13 @@
-#include <audioapi/libs/dsp/common.h>
+#include <audioapi/core/Constants.h>
 
 #ifndef SIGNALSMITH_DSP_SPECTRAL_H
 #define SIGNALSMITH_DSP_SPECTRAL_H
 
 #include <audioapi/libs/dsp/perf.h>
 #include <audioapi/libs/dsp/fft.h>
-#include <audioapi/libs/dsp/windows.h>
 #include <audioapi/libs/dsp/delay.h>
+
+#include <audioapi/dsp/Windows.h>
 
 #include <cmath>
 
@@ -76,7 +77,7 @@ namespace spectral {
 		/// Sets the size (using the default Blackman-Harris window)
 		void setSize(int size, int rotateSamples=0) {
 			setSize(size, [](double x) {
-				double phase = 2*M_PI*x;
+				double phase = 2 * audioapi::PI * x;
 				// Blackman-Harris
 				return 0.35875 - 0.48829*std::cos(phase) + 0.14128*std::cos(phase*2) - 0.01168*std::cos(phase*3);
 			}, Sample(0.5), rotateSamples);
@@ -249,16 +250,12 @@ namespace spectral {
 
 			auto &window = fft.setSizeWindow(_fftSize, rotateToZero ? _windowSize/2 : 0);
 			if (windowShape == Window::kaiser) {
-				using Kaiser = ::signalsmith::windows::Kaiser;
 				/// Roughly optimal Kaiser for STFT analysis (forced to perfect reconstruction)
-				auto kaiser_ = Kaiser::withBandwidth(_windowSize/double(_interval), true);
-				kaiser_.fill(window, _windowSize);
+				audioapi::windows::Kaiser::withBandwidth(_windowSize/_interval, true).apply(window.data(), _windowSize);
 			} else {
-				using Confined = ::signalsmith::windows::ApproximateConfinedGaussian;
-				auto confined = Confined::withBandwidth(_windowSize/double(_interval));
-				confined.fill(window, _windowSize);
+				audioapi::windows::ApproximateConfinedGaussian::withBandwidth(_windowSize/_interval).apply(window.data(), _windowSize);
 			}
-			::signalsmith::windows::forcePerfectReconstruction(window, _windowSize, _interval);
+            audioapi::windows::WindowFunction::forcePerfectReconstruction(window.data(), _windowSize, _interval);
 
 			// TODO: fill extra bits of an input buffer with NaN/Infinity, to break this, and then fix by adding zero-padding to WindowedFFT (as opposed to zero-valued window sections)
 			for (int i = _windowSize; i < _fftSize; ++i) {

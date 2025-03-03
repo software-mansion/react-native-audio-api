@@ -1,5 +1,3 @@
-#include <audioapi/libs/dsp/common.h>
-
 #ifndef SIGNALSMITH_DSP_DELAY_H
 #define SIGNALSMITH_DSP_DELAY_H
 
@@ -7,10 +5,10 @@
 #include <array>
 #include <cmath> // for std::ceil()
 #include <type_traits>
-
 #include <complex>
+
 #include <audioapi/libs/dsp/fft.h>
-#include <audioapi/libs/dsp/windows.h>
+#include <audioapi/dsp/Windows.h>
 
 namespace signalsmith {
 namespace delay {
@@ -482,14 +480,14 @@ namespace delay {
 		InterpolatorKaiserSincN(double passFreq) : InterpolatorKaiserSincN(passFreq, 1 - passFreq) {}
 		InterpolatorKaiserSincN(double passFreq, double stopFreq) {
 			subSampleSteps = 2*n; // Heuristic again.  Really it depends on the bandwidth as well.
-			double kaiserBandwidth = (stopFreq - passFreq)*(n + 1.0/subSampleSteps);
-			kaiserBandwidth += 1.25/kaiserBandwidth; // We want to place the first zero, but (because using this to window a sinc essentially integrates it in the freq-domain), our ripples (and therefore zeroes) are out of phase.  This is a heuristic fix.
-			double sincScale = M_PI*(passFreq + stopFreq);
+			float kaiserBandwidth = (stopFreq - passFreq)*(n + 1.0/subSampleSteps);
+			kaiserBandwidth += 1.25f / kaiserBandwidth; // We want to place the first zero, but (because using this to window a sinc essentially integrates it in the freq-domain), our ripples (and therefore zeroes) are out of phase.  This is a heuristic fix.
+			double sincScale = audioapi::PI*(passFreq + stopFreq);
 
 			double centreIndex = n*subSampleSteps*0.5, scaleFactor = 1.0/subSampleSteps;
 			std::vector<Sample> windowedSinc(subSampleSteps*n + 1);
 
-			::signalsmith::windows::Kaiser::withBandwidth(kaiserBandwidth, false).fill(windowedSinc, windowedSinc.size());
+            audioapi::windows::Kaiser::withBandwidth(kaiserBandwidth, false).apply(windowedSinc.data(), windowedSinc.size());
 
 			for (size_t i = 0; i < windowedSinc.size(); ++i) {
 				double x = (i - centreIndex)*scaleFactor;
@@ -504,7 +502,7 @@ namespace delay {
 			}
 
 			if (minimumPhase) {
-				signalsmith::fft::FFT<Sample> fft(windowedSinc.size()*2, 1);
+				signalsmith::fft::FFT<Sample> fft(windowedSinc.getSize()*2, 1);
 				windowedSinc.resize(fft.size(), 0);
 				std::vector<std::complex<Sample>> spectrum(fft.size());
 				std::vector<std::complex<Sample>> cepstrum(fft.size());
@@ -529,7 +527,7 @@ namespace delay {
 				}
 				fft.ifft(spectrum, cepstrum);
 				windowedSinc.resize(subSampleSteps*n + 1);
-				windowedSinc.shrink_to_fit();
+                windowedSinc.shrink_to_fit();
 				for (size_t i = 0; i < windowedSinc.size(); ++i) {
 					windowedSinc[i] = cepstrum[i].real()*scaling;
 				}
