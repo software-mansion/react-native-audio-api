@@ -1,5 +1,5 @@
-#include <audioapi/utils/AudioArray.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/utils/AudioArray.h>
 
 namespace audioapi {
 

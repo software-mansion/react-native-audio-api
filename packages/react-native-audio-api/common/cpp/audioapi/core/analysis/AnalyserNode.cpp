@@ -1,10 +1,10 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/Windows.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
@@ -207,7 +207,11 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  VectorMath::multiply(tempBuffer.getData(), windowData_->getData(), tempBuffer.getData(), fftSize_);
+  VectorMath::multiply(
+      tempBuffer.getData(),
+      windowData_->getData(),
+      tempBuffer.getData(),
+      fftSize_);
 
   auto *realFFTFrameData = realData_->getData();
   auto *imaginaryFFTFrameData = imaginaryData_->getData();
@@ -231,7 +235,9 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int size) {
+void AnalyserNode::setWindowData(
+    audioapi::AnalyserNode::WindowType type,
+    int size) {
   if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
     return;
   }
@@ -242,10 +248,12 @@ void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int si
 
   switch (windowType_) {
     case WindowType::BLACKMAN:
-      windows::Blackman().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      windows::Blackman().apply(
+          windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
     case WindowType::HANN:
-      windows::Hann().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      windows::Hann().apply(
+          windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
   }
 }

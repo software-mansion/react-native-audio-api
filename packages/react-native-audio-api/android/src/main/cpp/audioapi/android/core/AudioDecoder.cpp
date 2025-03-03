@@ -1,6 +1,6 @@
+#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/core/utils/AudioDecoder.h>
 
 #include <android/log.h>
 
