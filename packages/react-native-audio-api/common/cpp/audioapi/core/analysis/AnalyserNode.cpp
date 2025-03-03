@@ -212,8 +212,7 @@ void AnalyserNode::doFFTAnalysis() {
       fftSize_);
 
   // do fft analysis - get frequency domain data
-  fft_->doFFT(
-      tempBuffer.getData(), complexData_);
+  fft_->doFFT(tempBuffer.getData(), complexData_);
 
   // Zero out nquist component
   complexData_[0] = std::complex<float>(complexData_[0].real(), 0);

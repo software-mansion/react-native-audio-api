@@ -139,9 +139,9 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
    * discarded.
    */
 
-    auto halfSize = fftSize / 2;
-    auto *real = new float[fftSize];
-    auto *imaginary = new float[fftSize];
+  auto halfSize = fftSize / 2;
+  auto *real = new float[fftSize];
+  auto *imaginary = new float[fftSize];
 
   for (int i = 1; i < fftSize; i++) {
     // All waveforms are odd functions with a positive slope at time 0.
@@ -205,7 +205,6 @@ void PeriodicWave::createBandLimitedTables(
   size = std::min(size, halfSize);
 
   for (int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
-
     auto *realFFTFrameData = new float[fftSize];
     auto *imaginaryFFTFrameData = new float[fftSize];
 
@@ -240,10 +239,11 @@ void PeriodicWave::createBandLimitedTables(
 
     bandLimitedTables_[rangeIndex] = new float[fftSize];
 
-      auto in = std::vector<std::complex<float>>(fftSize);
-        for (int i = 0; i < fftSize; i++) {
-            in[i] = std::complex<float>(realFFTFrameData[i], imaginaryFFTFrameData[i]);
-        }
+    auto in = std::vector<std::complex<float>>(fftSize);
+    for (int i = 0; i < fftSize; i++) {
+      in[i] =
+          std::complex<float>(realFFTFrameData[i], imaginaryFFTFrameData[i]);
+    }
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.

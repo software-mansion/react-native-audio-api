@@ -1,9 +1,9 @@
 #import <AVFoundation/AVFoundation.h>
 
 #include <audioapi/core/Constants.h>
+#include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/ios/core/IOSAudioPlayer.h>
 
 namespace audioapi {
 
