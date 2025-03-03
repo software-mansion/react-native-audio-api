@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
-#include <audioapi/dsp/FFTFrame.h>
+#include <audioapi/dsp/FFT.h>
 
 #include <memory>
 #include <cstddef>
@@ -52,7 +52,7 @@ class AnalyserNode : public AudioNode {
   std::unique_ptr<AudioBus> downMixBus_;
   int vWriteIndex_;
 
-  std::unique_ptr<FFTFrame> fftFrame_;
+  std::unique_ptr<fft::FFT> fft_;
   std::shared_ptr<AudioArray> realData_;
   std::shared_ptr<AudioArray> imaginaryData_;
   std::unique_ptr<AudioArray> magnitudeBuffer_;

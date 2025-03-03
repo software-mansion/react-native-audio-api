@@ -20,7 +20,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   downMixBus_ = std::make_unique<AudioBus>(
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
+  fft_ = std::make_unique<fft::FFT>(fftSize_);
   realData_ = std::make_shared<AudioArray>(fftSize_);
   imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
 
@@ -59,7 +59,7 @@ void AnalyserNode::setFftSize(int fftSize) {
   }
 
   fftSize_ = fftSize;
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
+  fft_ = std::make_unique<fft::FFT>(fftSize_);
   realData_ = std::make_shared<AudioArray>(fftSize_);
   imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
@@ -217,7 +217,7 @@ void AnalyserNode::doFFTAnalysis() {
   auto *imaginaryFFTFrameData = imaginaryData_->getData();
 
   // do fft analysis - get frequency domain data
-  fftFrame_->doFFT(
+  fft_->doFFT(
       tempBuffer.getData(), realFFTFrameData, imaginaryFFTFrameData);
 
   // Zero out nquist component

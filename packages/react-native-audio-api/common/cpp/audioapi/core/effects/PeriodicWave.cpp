@@ -28,7 +28,7 @@
 
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/effects/PeriodicWave.h>
-#include <audioapi/dsp/FFTFrame.h>
+#include <audioapi/dsp/FFT.h>
 #include <audioapi/dsp/VectorMath.h>
 
 constexpr unsigned NumberOfOctaveBands = 3;
@@ -209,7 +209,7 @@ void PeriodicWave::createBandLimitedTables(
   size = std::min(size, halfSize);
 
   for (int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
-    FFTFrame fftFrame(fftSize);
+    fft::FFT fft(fftSize);
 
     auto *realFFTFrameData = new float[fftSize];
     auto *imaginaryFFTFrameData = new float[fftSize];
@@ -247,7 +247,7 @@ void PeriodicWave::createBandLimitedTables(
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fftFrame.doInverseFFT(
+    fft.doInverseFFT(
         bandLimitedTables_[rangeIndex],
         realFFTFrameData,
         imaginaryFFTFrameData);

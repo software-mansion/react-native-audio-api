@@ -44,12 +44,14 @@
 #include <audioapi/android/libs/pffft.h>
 #endif
 
-namespace audioapi {
+namespace audioapi::fft {
 
-class FFTFrame {
+class FFT {
  public:
-  explicit FFTFrame(int size);
-  ~FFTFrame();
+  explicit FFT(int size);
+  ~FFT();
+
+  int getSize() const;
 
   void doFFT(float *data, float *realData, float *imaginaryData);
   void doInverseFFT(float *data, float *realData, float *imaginaryData);

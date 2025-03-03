@@ -1,6 +1,11 @@
-#include <audioapi/dsp/FFTFrame.h>
+#include <audioapi/dsp/FFT.h>
 
-namespace audioapi {
+namespace audioapi::fft {
+
+int FFT::getSize() const {
+    return size_;
+}
+
 #if defined(HAVE_ACCELERATE)
 static std::unordered_map<size_t, FFTSetup> fftSetups_;
 
@@ -47,18 +52,18 @@ void FFTFrame::doInverseFFT(
 
 #elif defined(ANDROID)
 
-FFTFrame::FFTFrame(int size)
+FFT::FFT(int size)
     : size_(size), log2Size_(static_cast<int>(log2(size))) {
   pffftSetup_ = pffft_new_setup(size_, PFFFT_REAL);
   work_ = (float *)pffft_aligned_malloc(size_ * sizeof(float));
 }
 
-FFTFrame::~FFTFrame() {
+FFT::~FFT() {
   pffft_destroy_setup(pffftSetup_);
   pffft_aligned_free(work_);
 }
 
-void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
+void FFT::doFFT(float *data, float *realData, float *imaginaryData) {
   std::vector<std::complex<float>> out(size_);
   pffft_transform_ordered(
       pffftSetup_,
@@ -76,7 +81,7 @@ void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
   VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(
+void FFT::doInverseFFT(
     float *data,
     float *realData,
     float *imaginaryData) {
