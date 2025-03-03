@@ -51,7 +51,7 @@ class FFT {
   explicit FFT(int size);
   ~FFT();
 
-  int getSize() const;
+  [[nodiscard]] int getSize() const;
 
   void doFFT(float *data, float *realData, float *imaginaryData);
   void doInverseFFT(float *data, float *realData, float *imaginaryData);

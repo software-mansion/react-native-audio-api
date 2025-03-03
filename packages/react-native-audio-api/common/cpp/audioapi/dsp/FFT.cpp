@@ -9,14 +9,14 @@ int FFT::getSize() const {
 #if defined(HAVE_ACCELERATE)
 static std::unordered_map<size_t, FFTSetup> fftSetups_;
 
-FFTFrame::FFTFrame(int size)
+FFT::FFT(int size)
     : size_(size), log2Size_(static_cast<int>(log2(size))) {
   fftSetup_ = getFFTSetupForSize(log2Size_);
 }
 
-FFTFrame::~FFTFrame() {}
+FFT::~FFT() {}
 
-FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
+FFTSetup FFT::getFFTSetupForSize(size_t log2FFTSize) {
   if (!fftSetups_.contains(log2FFTSize)) {
     fftSetups_.emplace(
         log2FFTSize, vDSP_create_fftsetup(log2FFTSize, FFT_RADIX2));
@@ -25,7 +25,7 @@ FFTSetup FFTFrame::getFFTSetupForSize(size_t log2FFTSize) {
   return fftSetups_.at(log2FFTSize);
 }
 
-void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
+void FFT::doFFT(float *data, float *realData, float *imaginaryData) {
   frame_.realp = realData;
   frame_.imagp = imaginaryData;
   vDSP_ctoz(reinterpret_cast<DSPComplex *>(data), 2, &frame_, 1, size_ / 2);
@@ -35,7 +35,7 @@ void FFTFrame::doFFT(float *data, float *realData, float *imaginaryData) {
   VectorMath::multiplyByScalar(imaginaryData, 0.5f, imaginaryData, size_ / 2);
 }
 
-void FFTFrame::doInverseFFT(
+void FFT::doInverseFFT(
     float *data,
     float *realData,
     float *imaginaryData) {
