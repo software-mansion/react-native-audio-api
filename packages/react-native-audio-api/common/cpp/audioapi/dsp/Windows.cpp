@@ -46,20 +46,6 @@ void Kaiser::apply(float *data, int size) const {
   }
 }
 
-float Kaiser::bessel0(float x) {
-  const double significanceLimit = 1e-4;
-  auto result = 0.0f;
-  auto term = 1.0f;
-  auto m = 1.0f;
-  while (term > significanceLimit) {
-    result += term;
-    ++m;
-    term *= (x * x) / (4 * m * m);
-  }
-
-  return result;
-}
-
 float Kaiser::bandwidthToBeta(float bandwidth, bool heuristicOptimal) {
   if (heuristicOptimal) { // Heuristic based on numerical search
     return bandwidth + 8.0f / (bandwidth + 3.0f) * (bandwidth + 3.0f) +

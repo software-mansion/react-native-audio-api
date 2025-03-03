@@ -43,9 +43,7 @@ class Blackman: public WindowFunction {
 // https://en.wikipedia.org/wiki/Kaiser_window
 class Kaiser: public WindowFunction {
  public:
-  explicit Kaiser(float beta, float amplitude = 1.0f): WindowFunction(amplitude), beta_(beta) {
-    invB0_ = 1.0f / bessel0(beta);
-  }
+  explicit Kaiser(float beta, float amplitude = 1.0f): WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta)) {};
 
   static Kaiser withBandwidth(float bandwidth, bool heuristicOptimal = false, float amplitude = 1.0f) {
     return Kaiser(bandwidthToBeta(bandwidth, heuristicOptimal), amplitude);
@@ -60,7 +58,19 @@ class Kaiser: public WindowFunction {
   float invB0_;
 
   // https://en.wikipedia.org/wiki/Bessel_function#Modified_Bessel_functions:_I%CE%B1,_K%CE%B1
-  static float bessel0(float x);
+  static inline float bessel0(float x) {
+      const double significanceLimit = 1e-4;
+      auto result = 0.0f;
+      auto term = 1.0f;
+      auto m = 1.0f;
+      while (term > significanceLimit) {
+          result += term;
+          ++m;
+          term *= (x * x) / (4 * m * m);
+      }
+
+      return result;
+  }
   static float bandwidthToBeta(float bandwidth, bool heuristicOptimal = false);
 };
 
