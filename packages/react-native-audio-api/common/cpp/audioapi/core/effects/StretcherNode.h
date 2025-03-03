@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/libs/signalsmith-stretch.h>
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 

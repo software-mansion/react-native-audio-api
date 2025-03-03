@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <complex>
 
-#include <audioapi/libs/dsp/fft.h>
+#include <audioapi/libs/signalsmith-stretch/fft.h>
 #include <audioapi/dsp/Windows.h>
 
 namespace signalsmith {
@@ -487,7 +487,7 @@ namespace delay {
 			double centreIndex = n*subSampleSteps*0.5, scaleFactor = 1.0/subSampleSteps;
 			std::vector<Sample> windowedSinc(subSampleSteps*n + 1);
 
-            audioapi::windows::Kaiser::withBandwidth(kaiserBandwidth, false).apply(windowedSinc.data(), windowedSinc.size());
+            audioapi::dsp::Kaiser::withBandwidth(kaiserBandwidth, false).apply(windowedSinc.data(), windowedSinc.size());
 
 			for (size_t i = 0; i < windowedSinc.size(); ++i) {
 				double x = (i - centreIndex)*scaleFactor;

@@ -1,6 +1,6 @@
 #include <audioapi/dsp/AudioUtils.h>
 
-namespace audioapi::AudioUtils {
+namespace audioapi::dsp {
 size_t timeToSampleFrame(double time, float sampleRate) {
   return static_cast<size_t>(time * sampleRate);
 }
@@ -30,4 +30,4 @@ float linearToDecibels(float value) {
 float decibelsToLinear(float value) {
   return powf(10, value / 20);
 }
-} // namespace audioapi::AudioUtils
+} // namespace audioapi::dsp

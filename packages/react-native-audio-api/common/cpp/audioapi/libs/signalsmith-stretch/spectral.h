@@ -3,9 +3,9 @@
 #ifndef SIGNALSMITH_DSP_SPECTRAL_H
 #define SIGNALSMITH_DSP_SPECTRAL_H
 
-#include <audioapi/libs/dsp/perf.h>
-#include <audioapi/libs/dsp/fft.h>
-#include <audioapi/libs/dsp/delay.h>
+#include <audioapi/libs/signalsmith-stretch/perf.h>
+#include <audioapi/libs/signalsmith-stretch/fft.h>
+#include <audioapi/libs/signalsmith-stretch/delay.h>
 
 #include <audioapi/dsp/Windows.h>
 
@@ -251,11 +251,11 @@ namespace spectral {
 			auto &window = fft.setSizeWindow(_fftSize, rotateToZero ? _windowSize/2 : 0);
 			if (windowShape == Window::kaiser) {
 				/// Roughly optimal Kaiser for STFT analysis (forced to perfect reconstruction)
-				audioapi::windows::Kaiser::withBandwidth(_windowSize/_interval, true).apply(window.data(), _windowSize);
+				audioapi::dsp::Kaiser::withBandwidth(_windowSize/_interval, true).apply(window.data(), _windowSize);
 			} else {
-				audioapi::windows::ApproximateConfinedGaussian::withBandwidth(_windowSize/_interval).apply(window.data(), _windowSize);
+				audioapi::dsp::ApproximateConfinedGaussian::withBandwidth(_windowSize/_interval).apply(window.data(), _windowSize);
 			}
-            audioapi::windows::WindowFunction::forcePerfectReconstruction(window.data(), _windowSize, _interval);
+            audioapi::dsp::WindowFunction::forcePerfectReconstruction(window.data(), _windowSize, _interval);
 
 			// TODO: fill extra bits of an input buffer with NaN/Infinity, to break this, and then fix by adding zero-padding to WindowedFFT (as opposed to zero-valued window sections)
 			for (int i = _windowSize; i < _fftSize; ++i) {

@@ -1,7 +1,7 @@
 #ifndef SIGNALSMITH_FFT_V5
 #define SIGNALSMITH_FFT_V5
 
-#include <audioapi/libs/dsp/perf.h>
+#include <audioapi/libs/signalsmith-stretch/perf.h>
 #include <audioapi/core/Constants.h>
 
 #include <vector>

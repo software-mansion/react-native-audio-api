@@ -1,7 +1,7 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/dsp/Windows.h>
 
-namespace audioapi::windows {
+namespace audioapi::dsp {
 
 void WindowFunction::forcePerfectReconstruction(
     float *data,
@@ -77,4 +77,4 @@ float ApproximateConfinedGaussian::getGaussian(float x) const {
   return std::exp(-x * x * gaussianFactor_);
 }
 
-} // namespace audioapi::windows
+} // namespace audioapi::dsp

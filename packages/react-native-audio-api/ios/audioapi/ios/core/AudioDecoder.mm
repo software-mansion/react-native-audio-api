@@ -1,5 +1,5 @@
 #define MINIAUDIO_IMPLEMENTATION
-#import <audioapi/libs/miniaudio.h>
+#import <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>

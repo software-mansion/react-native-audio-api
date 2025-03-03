@@ -29,6 +29,7 @@
 #pragma once
 
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/dsp/FFT.h>
 
 #include <algorithm>
 #include <cmath>
@@ -112,6 +113,8 @@ class PeriodicWave {
   float scale_;
   // array of band-limited waveforms.
   float **bandLimitedTables_;
+  //
+  std::unique_ptr<dsp::FFT> fft_;
   // if true, the waveTable is not normalized.
   bool disableNormalization_;
 };

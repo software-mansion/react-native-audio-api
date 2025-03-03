@@ -5,7 +5,7 @@
 #include <android/log.h>
 
 #define MINIAUDIO_IMPLEMENTATION
-#include <audioapi/libs/miniaudio.h>
+#include <audioapi/libs/miniaudio/miniaudio.h>
 
 namespace audioapi {
 

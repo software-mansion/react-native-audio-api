@@ -52,9 +52,8 @@ class AnalyserNode : public AudioNode {
   std::unique_ptr<AudioBus> downMixBus_;
   int vWriteIndex_;
 
-  std::unique_ptr<fft::FFT> fft_;
-  std::shared_ptr<AudioArray> realData_;
-  std::shared_ptr<AudioArray> imaginaryData_;
+  std::unique_ptr<dsp::FFT> fft_;
+  std::vector<std::complex<float>> complexData_;
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_ { true };
 

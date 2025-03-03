@@ -250,7 +250,7 @@ void AudioBufferSourceNode::processWithInterpolation(
       float *destination = processingBus->getChannel(i)->getData();
       const float *source = alignedBus_->getChannel(i)->getData();
 
-      destination[writeIndex] = AudioUtils::linearInterpolate(
+      destination[writeIndex] = dsp::linearInterpolate(
           source, readIndex, nextReadIndex, factor);
     }
 

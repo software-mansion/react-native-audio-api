@@ -1,9 +1,9 @@
 #ifndef SIGNALSMITH_STRETCH_H
 #define SIGNALSMITH_STRETCH_H
 
-#include <audioapi/libs/dsp/spectral.h>
-#include <audioapi/libs/dsp/delay.h>
-#include <audioapi/libs/dsp/perf.h>
+#include <audioapi/libs/signalsmith-stretch/spectral.h>
+#include <audioapi/libs/signalsmith-stretch/delay.h>
+#include <audioapi/libs/signalsmith-stretch/perf.h>
 #include <vector>
 #include <algorithm>
 #include <functional>

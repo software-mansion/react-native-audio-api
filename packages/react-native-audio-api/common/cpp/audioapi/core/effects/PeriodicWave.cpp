@@ -28,7 +28,6 @@
 
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/effects/PeriodicWave.h>
-#include <audioapi/dsp/FFT.h>
 #include <audioapi/dsp/VectorMath.h>
 
 constexpr unsigned NumberOfOctaveBands = 3;
@@ -47,6 +46,8 @@ PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
   scale_ = static_cast<float>(getPeriodicWaveSize()) /
       static_cast<float>(sampleRate_);
   bandLimitedTables_ = new float *[numberOfRanges_];
+
+  fft_ = std::make_unique<dsp::FFT>(getPeriodicWaveSize());
 }
 
 PeriodicWave::PeriodicWave(
@@ -137,17 +138,12 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
    * real and imaginary can finely shape which harmonic content is retained or
    * discarded.
    */
-  auto halfSize = fftSize / 2;
 
-  auto *real = new float[halfSize];
-  auto *imaginary = new float[halfSize];
+    auto halfSize = fftSize / 2;
+    auto *real = new float[fftSize];
+    auto *imaginary = new float[fftSize];
 
-  // Reset Direct Current (DC) component. First element of frequency domain
-  // representation - c0. https://math24.net/complex-form-fourier-series.html
-  real[0] = 0.0f;
-  imaginary[0] = 0.0f;
-
-  for (int i = 1; i < halfSize; i++) {
+  for (int i = 1; i < fftSize; i++) {
     // All waveforms are odd functions with a positive slope at time 0.
     // Hence the coefficients for cos() are always 0.
 
@@ -209,15 +205,14 @@ void PeriodicWave::createBandLimitedTables(
   size = std::min(size, halfSize);
 
   for (int rangeIndex = 0; rangeIndex < numberOfRanges_; rangeIndex++) {
-    fft::FFT fft(fftSize);
 
     auto *realFFTFrameData = new float[fftSize];
     auto *imaginaryFFTFrameData = new float[fftSize];
 
     // copy real and imaginary data to the FFT frame and scale it
-    VectorMath::multiplyByScalar(
+    dsp::multiplyByScalar(
         realData, static_cast<float>(fftSize), realFFTFrameData, size);
-    VectorMath::multiplyByScalar(
+    dsp::multiplyByScalar(
         imaginaryData,
         -static_cast<float>(fftSize),
         imaginaryFFTFrameData,
@@ -245,16 +240,18 @@ void PeriodicWave::createBandLimitedTables(
 
     bandLimitedTables_[rangeIndex] = new float[fftSize];
 
+      auto in = std::vector<std::complex<float>>(fftSize);
+        for (int i = 0; i < fftSize; i++) {
+            in[i] = std::complex<float>(realFFTFrameData[i], imaginaryFFTFrameData[i]);
+        }
+
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fft.doInverseFFT(
-        bandLimitedTables_[rangeIndex],
-        realFFTFrameData,
-        imaginaryFFTFrameData);
+    fft_->doInverseFFT(in, bandLimitedTables_[rangeIndex]);
 
     if (!disableNormalization_ && rangeIndex == 0) {
       float maxValue =
-          VectorMath::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
+          dsp::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
       if (maxValue != 0) {
         normalizationFactor = 1.0f / maxValue;
       }
@@ -263,7 +260,7 @@ void PeriodicWave::createBandLimitedTables(
     delete[] realFFTFrameData;
     delete[] imaginaryFFTFrameData;
 
-    VectorMath::multiplyByScalar(
+    dsp::multiplyByScalar(
         bandLimitedTables_[rangeIndex],
         normalizationFactor,
         bandLimitedTables_[rangeIndex],

@@ -20,9 +20,8 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   downMixBus_ = std::make_unique<AudioBus>(
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
-  fft_ = std::make_unique<fft::FFT>(fftSize_);
-  realData_ = std::make_shared<AudioArray>(fftSize_);
-  imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
+  fft_ = std::make_unique<dsp::FFT>(fftSize_);
+  complexData_ = std::vector<std::complex<float>>(fftSize_);
 
   setWindowData(windowType_, fftSize_);
 
@@ -59,9 +58,8 @@ void AnalyserNode::setFftSize(int fftSize) {
   }
 
   fftSize_ = fftSize;
-  fft_ = std::make_unique<fft::FFT>(fftSize_);
-  realData_ = std::make_shared<AudioArray>(fftSize_);
-  imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
+  fft_ = std::make_unique<dsp::FFT>(fftSize_);
+  complexData_ = std::vector<std::complex<float>>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   setWindowData(windowType_, fftSize_);
 }
@@ -87,7 +85,7 @@ void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
   length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
-  VectorMath::linearToDecibels(magnitudeBuffer_->getData(), data, length);
+  dsp::linearToDecibels(magnitudeBuffer_->getData(), data, length);
 }
 
 void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
@@ -102,7 +100,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   for (int i = 0; i < length; i++) {
     auto dbMag = magnitudeBufferData[i] == 0
         ? minDecibels_
-        : AudioUtils::linearToDecibels(magnitudeBufferData[i]);
+        : dsp::linearToDecibels(magnitudeBufferData[i]);
     auto scaledValue = UINT8_MAX * (dbMag - minDecibels_) * rangeScaleFactor;
 
     if (scaledValue < 0) {
@@ -207,28 +205,24 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  VectorMath::multiply(
+  dsp::multiply(
       tempBuffer.getData(),
       windowData_->getData(),
       tempBuffer.getData(),
       fftSize_);
 
-  auto *realFFTFrameData = realData_->getData();
-  auto *imaginaryFFTFrameData = imaginaryData_->getData();
-
   // do fft analysis - get frequency domain data
   fft_->doFFT(
-      tempBuffer.getData(), realFFTFrameData, imaginaryFFTFrameData);
+      tempBuffer.getData(), complexData_);
 
   // Zero out nquist component
-  imaginaryFFTFrameData[0] = 0.0f;
+  complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
 
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
   for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
-    std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
-    auto scalarMagnitude = std::abs(c) * magnitudeScale;
+    auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
         smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
@@ -248,11 +242,11 @@ void AnalyserNode::setWindowData(
 
   switch (windowType_) {
     case WindowType::BLACKMAN:
-      windows::Blackman().apply(
+      dsp::Blackman().apply(
           windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
     case WindowType::HANN:
-      windows::Hann().apply(
+      dsp::Hann().apply(
           windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
   }

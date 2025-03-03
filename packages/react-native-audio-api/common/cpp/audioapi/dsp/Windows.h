@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
-namespace audioapi::windows {
+namespace audioapi::dsp {
 
 // https://en.wikipedia.org/wiki/Window_function
 // https://personalpages.hs-kempten.de/~vollratj/InEl/pdf/Window%20function%20-%20Wikipedia.pdf
@@ -92,4 +92,4 @@ private:
 
   [[nodiscard]] float getGaussian(float x) const;
 };
-} // namespace audioapi::Windows
+} // namespace audioapi::dsp
