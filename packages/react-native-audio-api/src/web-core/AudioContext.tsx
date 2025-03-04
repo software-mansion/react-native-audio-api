@@ -16,6 +16,8 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import StretcherNode from './StretcherNode';
 
+import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
+
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
 
@@ -111,8 +113,12 @@ export default class AudioContext implements BaseAudioContext {
     return new AnalyserNode(this, this.context.createAnalyser());
   }
 
-  createStretcherNode(): StretcherNode {
-    return new StretcherNode(this);
+  async createStretcher(): Promise<StretcherNode> {
+    await globalWasmPromise;
+
+    const wasmStretch = await window[globalTag](this.context);
+
+    return new StretcherNode(this, wasmStretch);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

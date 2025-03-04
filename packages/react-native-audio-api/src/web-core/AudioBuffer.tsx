@@ -17,14 +17,14 @@ export default class AudioBuffer {
     this.numberOfChannels = buffer.numberOfChannels;
   }
 
-  public getChannelData(channel: number): number[] {
+  public getChannelData(channel: number): Float32Array {
     if (channel < 0 || channel >= this.numberOfChannels) {
       throw new IndexSizeError(
         `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
       );
     }
 
-    return Array.from(this.buffer.getChannelData(channel));
+    return this.buffer.getChannelData(channel);
   }
 
   public copyFromChannel(
