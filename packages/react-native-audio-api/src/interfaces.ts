@@ -34,7 +34,6 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
-  createStretcher: () => IStretcherNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
 }
 
@@ -162,9 +161,4 @@ export interface IAnalyserNode extends IAudioNode {
   getByteFrequencyData: (array: number[]) => void;
   getFloatTimeDomainData: (array: number[]) => void;
   getByteTimeDomainData: (array: number[]) => void;
-}
-
-export interface IStretcherNode extends IAudioNode {
-  readonly rate: IAudioParam;
-  readonly semitones: IAudioParam;
 }

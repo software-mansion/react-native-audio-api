@@ -12,7 +12,6 @@
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
-#include <audioapi/HostObjects/StretcherNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -44,7 +43,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStretcher),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
   }
 
@@ -136,12 +134,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto analyser = context_->createAnalyser();
     auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
     return jsi::Object::createFromHostObject(runtime, analyserHostObject);
-  }
-
-  JSI_HOST_FUNCTION(createStretcher) {
-    auto stretcher = context_->createStretcher();
-    auto stretcherHostObject = std::make_shared<StretcherNodeHostObject>(stretcher);
-    return jsi::Object::createFromHostObject(runtime, stretcherHostObject);
   }
 
   JSI_HOST_FUNCTION(decodeAudioDataSource) {

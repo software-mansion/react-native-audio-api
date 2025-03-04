@@ -4,7 +4,6 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
-#include <audioapi/core/effects/StretcherNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
@@ -91,12 +90,6 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addNode(analyser);
   return analyser;
-}
-
-std::shared_ptr<StretcherNode> BaseAudioContext::createStretcher() {
-  auto node = std::make_shared<StretcherNode>(this);
-  nodeManager_->addNode(node);
-  return node;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

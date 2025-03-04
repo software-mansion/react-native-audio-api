@@ -23,13 +23,16 @@ class AudioBufferSourceNodeHostObject
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, detune),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, playbackRate));
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, playbackRate),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, semitones),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, timeStretch));
 
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, timeStretch));
 
     // start method is overridden in this class
     functions_->erase("start");
@@ -89,6 +92,21 @@ class AudioBufferSourceNodeHostObject
     return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
   }
 
+  JSI_PROPERTY_GETTER(semitones) {
+    auto audioBufferSourceNode =
+            std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    auto semitonesParam =
+            std::make_shared<AudioParamHostObject>(audioBufferSourceNode->getSemitonesParam());
+    return jsi::Object::createFromHostObject(runtime, semitonesParam);
+  }
+
+  JSI_PROPERTY_GETTER(timeStretch) {
+    auto audioBufferSourceNode =
+            std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    auto timeStretch = audioBufferSourceNode->getTimeStretchType();
+    return jsi::String::createFromUtf8(runtime, timeStretch);
+  }
+
   JSI_PROPERTY_SETTER(loop) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
@@ -118,6 +136,12 @@ class AudioBufferSourceNodeHostObject
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     audioBufferSourceNode->setLoopEnd(value.getNumber());
+  }
+
+  JSI_PROPERTY_SETTER(timeStretch) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    audioBufferSourceNode->setTimeStretchType(value.getString(runtime).utf8(runtime));
   }
 
   JSI_HOST_FUNCTION(start) {

@@ -7,7 +7,6 @@
 #include <memory>
 #include <cstddef>
 #include <algorithm>
-#include <cassert>
 #include <string>
 
 namespace audioapi {
@@ -86,12 +85,6 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  std::shared_ptr<AudioBus> alignedBus_;
-
-  float getPlaybackRateValue(size_t &startOffset);
-
-  double getVirtualStartFrame();
-  double getVirtualEndFrame();
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -104,6 +97,11 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
       size_t startOffset,
       size_t offsetLength,
       float playbackRate);
+
+  float getPlaybackRateValue();
+
+  double getVirtualStartFrame();
+  double getVirtualEndFrame();
 };
 
 } // namespace audioapi
