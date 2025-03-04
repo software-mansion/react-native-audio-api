@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <vector>
+#include <complex>
 
 namespace audioapi {
 class PeriodicWave {

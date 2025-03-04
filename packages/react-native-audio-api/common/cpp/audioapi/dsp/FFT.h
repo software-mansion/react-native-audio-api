@@ -7,6 +7,7 @@
 #include <cmath>
 #include <utility>
 #include <complex>
+#include <vector>
 
 namespace audioapi::dsp {
 

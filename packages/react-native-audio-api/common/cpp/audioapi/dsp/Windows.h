@@ -13,9 +13,9 @@ class WindowFunction {
 
   virtual void apply(float *data, int size) const = 0;
   // forces STFT perfect-reconstruction (WOLA) on an existing window, for a given STFT interval.
-  static void forcePerfectReconstruction(float *data, int windowLength, int interval) ;
+  static void forcePerfectReconstruction(float *data, int windowLength, int interval);
 
-protected:
+ protected:
   // 1/L = amplitude
   float amplitude_;
 };
@@ -25,7 +25,7 @@ protected:
 // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.hann.html#scipy.signal.windows.hann
 class Hann: public WindowFunction {
  public:
-  explicit Hann(float amplitude = 1.0f): WindowFunction(amplitude) {};
+  explicit Hann(float amplitude = 1.0f): WindowFunction(amplitude) {}
 
   void apply(float *data, int size) const override;
 };
@@ -34,7 +34,7 @@ class Hann: public WindowFunction {
 // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.blackman.html#scipy.signal.windows.blackman
 class Blackman: public WindowFunction {
  public:
-  explicit Blackman(float amplitude = 1.0f): WindowFunction(amplitude) {};
+  explicit Blackman(float amplitude = 1.0f): WindowFunction(amplitude) {}
 
   void apply(float *data, int size) const override;
 };
@@ -43,7 +43,7 @@ class Blackman: public WindowFunction {
 // https://en.wikipedia.org/wiki/Kaiser_window
 class Kaiser: public WindowFunction {
  public:
-  explicit Kaiser(float beta, float amplitude = 1.0f): WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta)) {};
+  explicit Kaiser(float beta, float amplitude = 1.0f): WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta)) {}
 
   static Kaiser withBandwidth(float bandwidth, bool heuristicOptimal = false, float amplitude = 1.0f) {
     return Kaiser(bandwidthToBeta(bandwidth, heuristicOptimal), amplitude);
@@ -76,8 +76,8 @@ class Kaiser: public WindowFunction {
 
 // https://www.recordingblogs.com/wiki/gaussian-window
 class ApproximateConfinedGaussian: public WindowFunction {
-public:
-  explicit ApproximateConfinedGaussian(float sigma, float amplitude = 1.0f): WindowFunction(amplitude), gaussianFactor_(0.0625f/(sigma*sigma)) {};
+ public:
+  explicit ApproximateConfinedGaussian(float sigma, float amplitude = 1.0f): WindowFunction(amplitude), gaussianFactor_(0.0625f/(sigma*sigma)) {}
 
   static ApproximateConfinedGaussian withBandwidth(float bandwidth, float amplitude = 1.0f) {
     return ApproximateConfinedGaussian(bandwidthToSigma(bandwidth), amplitude);
@@ -85,7 +85,7 @@ public:
 
   void apply(float *data, int size) const override;
 
-private:
+ private:
   float gaussianFactor_;
 
   static float bandwidthToSigma(float bandwidth);

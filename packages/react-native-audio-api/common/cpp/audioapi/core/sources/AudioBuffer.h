@@ -1,11 +1,12 @@
 #pragma once
 
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
 #include <cstddef>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 namespace audioapi {
 

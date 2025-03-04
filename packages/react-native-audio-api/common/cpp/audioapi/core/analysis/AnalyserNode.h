@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <string>
 #include <complex>
+#include <vector>
 
 namespace audioapi {
 
