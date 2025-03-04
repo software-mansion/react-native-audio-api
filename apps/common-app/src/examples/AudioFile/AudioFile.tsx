@@ -5,7 +5,6 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
-  StretcherNode,
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
@@ -27,33 +26,32 @@ const AudioFile: FC = () => {
 
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [rate, setRate] = useState(INITIAL_RATE);
+  const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [semitones, setSemitones] = useState(INITIAL_SEMITONES);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const stretcherRef = useRef<StretcherNode | null>(null);
 
-  const handleRateChange = (newValue: number) => {
-    setRate(newValue);
+  const handlePlaybackRateChange = (newValue: number) => {
+    setPlaybackRate(newValue);
 
-    if (stretcherRef.current) {
-      stretcherRef.current.rate.value = newValue;
+    if (bufferSourceRef.current) {
+      bufferSourceRef.current.playbackRate.value = newValue;
     }
   };
 
   const handleSemitonesChange = (newValue: number) => {
     setSemitones(newValue);
 
-    if (stretcherRef.current) {
-      stretcherRef.current.semitones.value = newValue;
+    if (bufferSourceRef.current) {
+      bufferSourceRef.current.semitones.value = newValue;
     }
   };
 
   const handlePress = () => {
-    if (!audioContextRef.current || !stretcherRef.current) {
+    if (!audioContextRef.current) {
       return;
     }
 
@@ -71,13 +69,11 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.loop = true;
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
-      bufferSourceRef.current.connect(stretcherRef.current);
+      bufferSourceRef.current.timeStretch = 'speech-music';
+      bufferSourceRef.current.connect(audioContextRef.current.destination);
 
       setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(
-        startTime,
-        offset * stretcherRef.current.rate.value
-      );
+      bufferSourceRef.current.start(startTime, offset);
     }
 
     setIsPlaying((prev) => !prev);
@@ -107,11 +103,6 @@ const AudioFile: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
-    if (!stretcherRef.current) {
-      stretcherRef.current = audioContextRef.current.createStretcher();
-      stretcherRef.current.connect(audioContextRef.current.destination);
-    }
-
     fetchAudioBuffer();
 
     return () => {
@@ -129,9 +120,9 @@ const AudioFile: FC = () => {
       />
       <Spacer.Vertical size={49} />
       <Slider
-        label="Rate"
-        value={rate}
-        onValueChange={handleRateChange}
+        label="playbackRate"
+        value={playbackRate}
+        onValueChange={handlePlaybackRateChange}
         min={0.0}
         max={3.0}
         step={0.25}
