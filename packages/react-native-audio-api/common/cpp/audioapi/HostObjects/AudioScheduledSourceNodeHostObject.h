@@ -28,7 +28,7 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
             std::static_pointer_cast<AudioScheduledSourceNode>(node_);
     audioScheduleSourceNode->setOnendedCallback(nullptr);
 
-    onendedCallback_.release();
+    onendedCallback_ = nullptr;
   }
 
   JSI_PROPERTY_SETTER(onended) {
