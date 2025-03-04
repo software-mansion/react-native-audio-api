@@ -3562,9 +3562,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@shopify/react-native-skia@npm:^1.8.2":
-  version: 1.8.2
-  resolution: "@shopify/react-native-skia@npm:1.8.2"
+"@shopify/react-native-skia@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@shopify/react-native-skia@npm:1.10.2"
   dependencies:
     canvaskit-wasm: "npm:0.39.1"
     react-reconciler: "npm:0.27.0"
@@ -3579,7 +3579,7 @@ __metadata:
       optional: true
   bin:
     setup-skia-web: ./scripts/setup-canvaskit.js
-  checksum: 10/7bb95d28aebcbf8537228069ace8788823c72783eabe0c8c48b7e11afe5c44c19b819aeaac823d4240c7aab542d7eaa2a02f24b045067400fbc038fa65ba2cd5
+  checksum: 10/682add08f8e2b323bae120928224bf290073dc901de3db694c82822c1fc85bfd95f50a325407cdf7df301657933ae520a4361304fd5a4c23f832d790bde4a6cc
   languageName: node
   linkType: hard
 
@@ -5556,7 +5556,7 @@ __metadata:
     "@react-navigation/native": "npm:^7.0.0"
     "@react-navigation/native-stack": "npm:^7.0.0"
     "@react-navigation/stack": "npm:^7.0.0"
-    "@shopify/react-native-skia": "npm:^1.8.2"
+    "@shopify/react-native-skia": "npm:1.10.2"
     expo: "npm:^52.0.25"
     expo-file-system: "npm:~18.0.7"
     react: "npm:18.3.1"
@@ -7300,7 +7300,7 @@ __metadata:
     "@react-navigation/native": "npm:^7.0.0"
     "@react-navigation/native-stack": "npm:^7.0.0"
     "@react-navigation/stack": "npm:^7.0.0"
-    "@shopify/react-native-skia": "npm:^1.8.2"
+    "@shopify/react-native-skia": "npm:1.10.2"
     "@types/react": "npm:^18.2.6"
     "@types/react-test-renderer": "npm:^18.0.0"
     babel-jest: "npm:^29.6.3"
