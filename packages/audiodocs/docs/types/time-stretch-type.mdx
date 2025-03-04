@@ -1,0 +1,22 @@
+---
+sidebar_position: 6
+---
+
+# TimeStretchType
+
+`TimeStretchType` type specifies algorithm which will be used during time-stretching(changing speed of the playback).
+
+**Acceptable values:**
+  - `'linear'`
+
+  Use naive linear approach while time-stretching the sound.
+
+  - `'speech-music'`
+
+  Use sophisticated algorithm with pitch correction while time-stretching the sound
+
+:::caution
+
+On `Web`, the value of `timeStretch` is permanently `'linear'`, and it cannot be set like on the `Android` or `iOS`.
+
+:::
