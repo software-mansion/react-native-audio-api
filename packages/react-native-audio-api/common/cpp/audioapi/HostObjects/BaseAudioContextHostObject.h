@@ -156,7 +156,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
 
         if (!results) {
-          promise->reject("Failed to decode audio data source");
+          promise->reject("Failed to decode audio data source.");
           return;
         }
 

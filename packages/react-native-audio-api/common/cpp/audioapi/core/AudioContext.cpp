@@ -39,23 +39,33 @@ AudioContext::~AudioContext() {
   if (!isClosed()) {
     close();
   }
-
-  nodeManager_->cleanup();
 }
 
 void AudioContext::close() {
   state_ = ContextState::CLOSED;
   audioPlayer_->stop();
+
+  nodeManager_->cleanup();
 }
 
-void AudioContext::resume() {
+bool AudioContext::resume() {
+  if (isClosed()) {
+    return false;
+  }
+
   state_ = ContextState::RUNNING;
   audioPlayer_->resume();
+  return true;
 }
 
-void AudioContext::suspend() {
+bool AudioContext::suspend() {
+  if (isClosed()) {
+    return false;
+  }
+
   state_ = ContextState::SUSPENDED;
   audioPlayer_->suspend();
+  return true;
 }
 
 std::function<void(std::shared_ptr<AudioBus>, int)>

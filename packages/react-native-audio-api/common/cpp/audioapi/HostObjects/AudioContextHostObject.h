@@ -42,10 +42,15 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       std::thread([this, promise = std::move(promise)]() {
           auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-          audioContext->resume();
+          auto result = audioContext->resume();
+
+          if (!result) {
+            promise->reject("Failed to resume audio context, because it is already closed.");
+            return;
+          }
 
           promise->resolve([](jsi::Runtime &runtime) {
-              return jsi::Value::undefined();
+            return jsi::Value::undefined();
           });
       }).detach();
     });
@@ -57,10 +62,15 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       std::thread([this, promise = std::move(promise)]() {
           auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-          audioContext->suspend();
+          auto result = audioContext->suspend();
+
+          if (!result) {
+            promise->reject("Failed to resume audio context, because it is already closed.");
+            return;
+          }
 
           promise->resolve([](jsi::Runtime &runtime) {
-              return jsi::Value::undefined();
+            return jsi::Value::undefined();
           });
       }).detach();
     });
