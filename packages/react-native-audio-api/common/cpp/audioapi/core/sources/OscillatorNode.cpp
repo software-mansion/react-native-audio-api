@@ -1,5 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -79,6 +80,11 @@ void OscillatorNode::processNode(
   }
 
   handleStopScheduled();
+}
+
+double OscillatorNode::getStopTime() const {
+  return dsp::sampleFrameToTime(
+      static_cast<int>(phase_), context_->getSampleRate());
 }
 
 } // namespace audioapi

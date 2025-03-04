@@ -40,6 +40,11 @@ bool AudioScheduledSourceNode::isFinished() {
   return playbackState_ == PlaybackState::FINISHED;
 }
 
+void AudioScheduledSourceNode::setOnendedCallback(
+    const std::function<void(double)> &onendedCallback) {
+  onendedCallback_ = onendedCallback;
+}
+
 void AudioScheduledSourceNode::updatePlaybackInfo(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess,
@@ -104,6 +109,11 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   if (stopFrame < firstFrame) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
+
+    if (onendedCallback_) {
+      onendedCallback_(getStopTime());
+    }
+
     playbackState_ = PlaybackState::FINISHED;
     disable();
     return;
@@ -116,6 +126,9 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
 void AudioScheduledSourceNode::handleStopScheduled() {
   if (isPlaying() && stopTime_ > 0 && context_->getCurrentTime() >= stopTime_) {
+    if (onendedCallback_) {
+      onendedCallback_(getStopTime());
+    }
     playbackState_ = PlaybackState::FINISHED;
     disable();
   }

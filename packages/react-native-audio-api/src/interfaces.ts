@@ -82,6 +82,7 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
+  onended: (arg: number) => void;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {

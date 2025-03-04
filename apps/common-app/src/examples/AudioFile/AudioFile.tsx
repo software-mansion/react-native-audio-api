@@ -24,7 +24,6 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [semitones, setSemitones] = useState(INITIAL_SEMITONES);
@@ -56,9 +55,7 @@ const AudioFile: FC = () => {
     }
 
     if (isPlaying) {
-      const stopTime = audioContextRef.current.currentTime;
-      bufferSourceRef.current?.stop(stopTime);
-      setOffset((prev) => prev + stopTime - startTime);
+      bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
@@ -67,13 +64,20 @@ const AudioFile: FC = () => {
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.onended = (stopTime: number) => {
+        setOffset((_prev) => stopTime);
+      };
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.timeStretch = 'speech-music';
+      bufferSourceRef.current.playbackRate.value = playbackRate;
+      bufferSourceRef.current.semitones.value = semitones;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 
-      setStartTime(audioContextRef.current.currentTime);
-      bufferSourceRef.current.start(startTime, offset);
+      bufferSourceRef.current.start(
+        audioContextRef.current.currentTime,
+        offset
+      );
     }
 
     setIsPlaying((prev) => !prev);

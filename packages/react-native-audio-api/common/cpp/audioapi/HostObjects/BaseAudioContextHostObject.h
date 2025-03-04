@@ -26,8 +26,11 @@ class BaseAudioContextHostObject : public JsiHostObject {
  public:
   explicit BaseAudioContextHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      const std::shared_ptr<PromiseVendor> &promiseVendor)
-      : context_(context), promiseVendor_(promiseVendor) {
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker)
+      : context_(context), callInvoker_(callInvoker) {
+      promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
@@ -67,7 +70,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(createOscillator) {
     auto oscillator = context_->createOscillator();
     auto oscillatorHostObject =
-        std::make_shared<OscillatorNodeHostObject>(oscillator);
+        std::make_shared<OscillatorNodeHostObject>(oscillator, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   }
 
@@ -94,7 +97,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(createBufferSource) {
     auto bufferSource = context_->createBufferSource();
     auto bufferSourceHostObject =
-        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
+        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
@@ -161,5 +164,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
  protected:
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
+  std::shared_ptr<react::CallInvoker> callInvoker_;
 };
 } // namespace audioapi

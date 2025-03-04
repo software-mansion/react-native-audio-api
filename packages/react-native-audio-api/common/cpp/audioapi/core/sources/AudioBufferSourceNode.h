@@ -38,6 +38,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
  protected:
   std::mutex &getBufferLock();
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  double getStopTime() const override;
 
  private:
   static TimeStretchType fromString(const std::string &type) {

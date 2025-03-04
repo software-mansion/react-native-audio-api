@@ -183,6 +183,11 @@ void AudioBufferSourceNode::processNode(
   handleStopScheduled();
 }
 
+double AudioBufferSourceNode::getStopTime() const {
+  return dsp::sampleFrameToTime(
+      static_cast<int>(vReadIndex_), buffer_->getSampleRate());
+}
+
 /**
  * Helper functions
  */
