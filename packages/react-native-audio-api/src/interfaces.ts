@@ -5,6 +5,7 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
+  TimeStretchType,
 } from './types';
 
 export interface AudioAPIInstaller {
@@ -99,6 +100,8 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loopEnd: number;
   detune: IAudioParam;
   playbackRate: IAudioParam;
+  semitones: IAudioParam;
+  timeStretch: TimeStretchType;
 
   start: (when?: number, offset?: number, duration?: number) => void;
 }

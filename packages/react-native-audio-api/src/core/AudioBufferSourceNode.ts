@@ -4,16 +4,19 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
 import { InvalidStateError, RangeError } from '../errors';
+import { TimeStretchType } from '../types';
 
 export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
+  readonly semitones: AudioParam;
 
   constructor(context: BaseAudioContext, node: IAudioBufferSourceNode) {
     super(context, node);
 
     this.detune = new AudioParam(node.detune);
     this.playbackRate = new AudioParam(node.playbackRate);
+    this.semitones = new AudioParam(node.semitones);
   }
 
   public get buffer(): AudioBuffer | null {
@@ -55,6 +58,14 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loopEnd(value: number) {
     (this.node as IAudioBufferSourceNode).loopEnd = value;
+  }
+
+  public get timeStretch(): TimeStretchType {
+    return (this.node as IAudioBufferSourceNode).timeStretch;
+  }
+
+  public set timeStretch(value: TimeStretchType) {
+    (this.node as IAudioBufferSourceNode).timeStretch = value;
   }
 
   public start(when: number = 0, offset: number = 0, duration?: number): void {

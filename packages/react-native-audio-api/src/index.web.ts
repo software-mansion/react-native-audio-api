@@ -20,6 +20,7 @@ export {
   ContextState,
   WindowType,
   PeriodicWaveConstraints,
+  TimeStretchType,
 } from './types';
 
 export {
