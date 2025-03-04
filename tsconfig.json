@@ -9,10 +9,11 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "NodeNext",
+    "moduleSuffixes": [".ios", ".android", ".native", ".web", ""],
     "lib": ["es6", "dom", "ES2021"],
     "esModuleInterop": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   }
 }

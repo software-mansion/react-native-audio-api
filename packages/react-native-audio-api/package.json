@@ -5,11 +5,10 @@
   "bin": {
     "setup-custom-wasm": "./scripts/setup-custom-wasm.js"
   },
+  "source": "src/index",
   "main": "lib/module/index",
   "module": "lib/module/index",
   "react-native": "src/index",
-  "browser": "src/web-core/index",
-  "source": "src/index",
   "types": "lib/typescript/index.d.ts",
   "files": [
     "src/",
