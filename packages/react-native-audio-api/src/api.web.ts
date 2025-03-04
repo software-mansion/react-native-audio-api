@@ -11,6 +11,9 @@ export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
 export { default as GainNode } from './web-core/GainNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
+export { default as StretcherNode } from './web-core/StretcherNode';
+
+export * from './web-core/custom';
 
 export {
   OscillatorType,

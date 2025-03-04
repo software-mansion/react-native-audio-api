@@ -12376,6 +12376,8 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
+  bin:
+    setup-custom-wasm: ./scripts/setup-custom-wasm.js
   languageName: unknown
   linkType: soft
 
