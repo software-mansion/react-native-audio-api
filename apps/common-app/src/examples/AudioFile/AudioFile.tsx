@@ -64,8 +64,8 @@ const AudioFile: FC = () => {
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
-      bufferSourceRef.current.onended = (stopTime: number) => {
-        setOffset((_prev) => stopTime);
+      bufferSourceRef.current.onended = (stopTime?: number) => {
+        setOffset((_prev) => stopTime || 0);
       };
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
