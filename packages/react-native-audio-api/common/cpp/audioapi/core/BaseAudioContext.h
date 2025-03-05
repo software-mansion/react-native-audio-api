@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <complex>
 #include <cstddef>
 #include <cassert>
 
@@ -25,7 +26,6 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
-class StretcherNode;
 
 class BaseAudioContext {
  public:
@@ -46,12 +46,10 @@ class BaseAudioContext {
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
-      float *real,
-      float *imag,
+      const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
-  std::shared_ptr<StretcherNode> createStretcher();
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
 

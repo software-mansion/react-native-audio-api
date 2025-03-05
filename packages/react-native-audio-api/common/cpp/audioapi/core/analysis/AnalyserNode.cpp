@@ -1,17 +1,18 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/dsp/Windows.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
     : AudioNode(context),
-      fftSize_(DEFAULT_FFT_SIZE),
-      minDecibels_(DEFAULT_MIN_DECIBELS),
-      maxDecibels_(DEFAULT_MAX_DECIBELS),
-      smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
+      fftSize_(2048),
+      minDecibels_(-100),
+      maxDecibels_(-30),
+      smoothingTimeConstant_(0.8),
       windowType_(WindowType::BLACKMAN),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
@@ -19,9 +20,10 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   downMixBus_ = std::make_unique<AudioBus>(
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
-  realData_ = std::make_shared<AudioArray>(fftSize_);
-  imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
+  fft_ = std::make_unique<dsp::FFT>(fftSize_);
+  complexData_ = std::vector<std::complex<float>>(fftSize_);
+
+  setWindowData(windowType_, fftSize_);
 
   isInitialized_ = true;
 }
@@ -56,10 +58,10 @@ void AnalyserNode::setFftSize(int fftSize) {
   }
 
   fftSize_ = fftSize;
-  fftFrame_ = std::make_unique<FFTFrame>(fftSize_);
-  realData_ = std::make_shared<AudioArray>(fftSize_);
-  imaginaryData_ = std::make_shared<AudioArray>(fftSize_);
+  fft_ = std::make_unique<dsp::FFT>(fftSize_);
+  complexData_ = std::vector<std::complex<float>>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  setWindowData(windowType_, fftSize_);
 }
 
 void AnalyserNode::setMinDecibels(float minDecibels) {
@@ -75,6 +77,7 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
 }
 
 void AnalyserNode::setWindowType(const std::string &type) {
+  setWindowData(windowType_, fftSize_);
   windowType_ = AnalyserNode::fromString(type);
 }
 
@@ -82,7 +85,7 @@ void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
   length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
-  VectorMath::linearToDecibels(magnitudeBuffer_->getData(), data, length);
+  dsp::linearToDecibels(magnitudeBuffer_->getData(), data, length);
 }
 
 void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
@@ -97,7 +100,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   for (int i = 0; i < length; i++) {
     auto dbMag = magnitudeBufferData[i] == 0
         ? minDecibels_
-        : AudioUtils::linearToDecibels(magnitudeBufferData[i]);
+        : dsp::linearToDecibels(magnitudeBufferData[i]);
     auto scaledValue = UINT8_MAX * (dbMag - minDecibels_) * rangeScaleFactor;
 
     if (scaledValue < 0) {
@@ -202,55 +205,49 @@ void AnalyserNode::doFFTAnalysis() {
     tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
   }
 
-  switch (windowType_) {
-    case WindowType::BLACKMAN:
-      AnalyserNode::applyBlackManWindow(tempBuffer.getData(), fftSize_);
-      break;
-    case WindowType::HANN:
-      AnalyserNode::applyHannWindow(tempBuffer.getData(), fftSize_);
-      break;
-  }
-
-  auto *realFFTFrameData = realData_->getData();
-  auto *imaginaryFFTFrameData = imaginaryData_->getData();
+  dsp::multiply(
+      tempBuffer.getData(),
+      windowData_->getData(),
+      tempBuffer.getData(),
+      fftSize_);
 
   // do fft analysis - get frequency domain data
-  fftFrame_->doFFT(
-      tempBuffer.getData(), realFFTFrameData, imaginaryFFTFrameData);
+  fft_->doFFT(tempBuffer.getData(), complexData_);
 
   // Zero out nquist component
-  imaginaryFFTFrameData[0] = 0.0f;
+  complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
 
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
   auto magnitudeBufferData = magnitudeBuffer_->getData();
 
   for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
-    std::complex<float> c(realFFTFrameData[i], imaginaryFFTFrameData[i]);
-    auto scalarMagnitude = std::abs(c) * magnitudeScale;
+    auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
         smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
   }
 }
 
-void AnalyserNode::applyBlackManWindow(float *data, int length) {
-  // https://www.sciencedirect.com/topics/engineering/blackman-window
-  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.blackman.html#scipy.signal.windows.blackman
-
-  for (int i = 0; i < length; ++i) {
-    auto x = static_cast<float>(i) / static_cast<float>(length);
-    auto window = 0.42f - 0.5f * cos(2 * PI * x) + 0.08f * cos(4 * PI * x);
-    data[i] *= window;
+void AnalyserNode::setWindowData(
+    audioapi::AnalyserNode::WindowType type,
+    int size) {
+  if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
+    return;
   }
-}
 
-void AnalyserNode::applyHannWindow(float *data, int length) {
-  // https://www.sciencedirect.com/topics/engineering/hanning-window
-  // https://docs.scipy.org/doc//scipy-1.2.3/reference/generated/scipy.signal.windows.hann.html#scipy.signal.windows.hann
-  for (int i = 0; i < length; ++i) {
-    auto x = static_cast<float>(i) / static_cast<float>(length - 1);
-    auto window = 0.5f - 0.5f * cos(2 * PI * x);
-    data[i] *= window;
+  if (!windowData_ || windowData_->getSize() != size) {
+    windowData_ = std::make_shared<AudioArray>(size);
+  }
+
+  switch (windowType_) {
+    case WindowType::BLACKMAN:
+      dsp::Blackman().apply(
+          windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      break;
+    case WindowType::HANN:
+      dsp::Hann().apply(
+          windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      break;
   }
 }
 } // namespace audioapi

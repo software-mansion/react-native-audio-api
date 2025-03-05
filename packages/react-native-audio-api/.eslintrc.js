@@ -3,8 +3,8 @@ module.exports = {
   extends: ['../../.eslintrc.js'],
   overrides: [
     {
-      files: ['./src/**/*.ts', './src/**/*.tsx'],
+      files: ['./src/**/*.{ts,tsx}'],
     },
   ],
-  ignorePatterns: ['lib'],
+  ignorePatterns: ['lib', 'src/web-core/custom/signalsmithStretch' ],
 };

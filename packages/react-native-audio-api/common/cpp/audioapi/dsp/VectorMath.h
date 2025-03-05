@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace audioapi::VectorMath {
+namespace audioapi::dsp {
 
 void multiplyByScalarThenAddToOutput(const float *inputVector, float scalar, float *outputVector, size_t numberOfElementsToProcess);
 
@@ -46,4 +46,4 @@ void multiply(const float *inputVector1, const float *inputVector2, float *outpu
 float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
 
 void linearToDecibels(const float *inputVector, float *outputVector, size_t numberOfElementsToProcess);
-} // namespace audioapi::VectorMath
+} // namespace audioapi::dsp

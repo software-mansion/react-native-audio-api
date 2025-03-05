@@ -1343,7 +1343,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-skia (1.8.2):
+  - react-native-skia (1.11.11):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1654,7 +1654,7 @@ PODS:
     - React-logger (= 0.76.5)
     - React-perflogger (= 0.76.5)
     - React-utils (= 0.76.5)
-  - RNAudioAPI (0.4.12-beta.4):
+  - RNAudioAPI (0.4.12-beta.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1674,9 +1674,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.4.12-beta.4)
+    - RNAudioAPI/audioapi (= 0.4.12-beta.5)
     - Yoga
-  - RNAudioAPI/audioapi (0.4.12-beta.4):
+  - RNAudioAPI/audioapi (0.4.12-beta.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1696,9 +1696,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.4.12-beta.4)
+    - RNAudioAPI/audioapi/ios (= 0.4.12-beta.5)
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.4.12-beta.4):
+  - RNAudioAPI/audioapi/ios (0.4.12-beta.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2193,7 +2193,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 7eb5d69e1154e7743487ef0c8d7261e5b59afb32
   React-microtasksnativemodule: 01dd998649ff5f8814846b7eee84c4d57f5d3671
   react-native-safe-area-context: 0d8827b2420dfb4c8a8e27639585e61b912261be
-  react-native-skia: d9165d6bf4de0ea3d63fe52f5f5915f5929ea1a8
+  react-native-skia: f30213be39a6e0616883be599cd85e2d8b41ca69
   react-native-vector-icons: df0ba25fd039d1af44c3db5e959448e36a46ef42
   React-nativeconfig: f7ab6c152e780b99a8c17448f2d99cf5f69a2311
   React-NativeModulesApple: 9aeb901b9bfcc9235e912445fb3cf4780a99baf4
@@ -2222,7 +2222,7 @@ SPEC CHECKSUMS:
   React-utils: f584a494ac233c7857bab176416b0c49cb4037ba
   ReactCodegen: 1f59af46efc9351f27046d90d9ceb5e99385f623
   ReactCommon: 5809a8ee421b7219221a475b78180f8f34b5c5ec
-  RNAudioAPI: 14de46065fcdc40d132a2f3fea1fe47e1057d2ec
+  RNAudioAPI: 03b21ae0ba26b4104637acad5d5a34bfbe105353
   RNGestureHandler: 6aedf747478f64fbeddb3ad5d5d0dfdf2361d136
   RNReanimated: 46fef9f63b135755066fd05d7568304b81e2ebdc
   RNScreens: 2629b92a0f38e7432677bee3bc08a352ac5b4279

@@ -5,7 +5,6 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
-  StretcherNode,
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
@@ -17,7 +16,7 @@ const LOOP_START = 0;
 const LOOP_END = 10;
 
 const INITIAL_RATE = 1;
-const INITIAL_SEMITONES = 0;
+const INITIAL_DETUNE = 0;
 
 const labelWidth = 80;
 
@@ -25,42 +24,38 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [rate, setRate] = useState(INITIAL_RATE);
-  const [semitones, setSemitones] = useState(INITIAL_SEMITONES);
+  const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
+  const [detune, setDetune] = useState(INITIAL_DETUNE);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const stretcherRef = useRef<StretcherNode | null>(null);
 
-  const handleRateChange = (newValue: number) => {
-    setRate(newValue);
+  const handlePlaybackRateChange = (newValue: number) => {
+    setPlaybackRate(newValue);
 
-    if (stretcherRef.current) {
-      stretcherRef.current.rate.value = newValue;
+    if (bufferSourceRef.current) {
+      bufferSourceRef.current.playbackRate.value = newValue;
     }
   };
 
-  const handleSemitonesChange = (newValue: number) => {
-    setSemitones(newValue);
+  const handleDetuneChange = (newValue: number) => {
+    setDetune(newValue);
 
-    if (stretcherRef.current) {
-      stretcherRef.current.semitones.value = newValue;
+    if (bufferSourceRef.current) {
+      bufferSourceRef.current.detune.value = newValue;
     }
   };
 
   const handlePress = () => {
-    if (!audioContextRef.current || !stretcherRef.current) {
+    if (!audioContextRef.current) {
       return;
     }
 
     if (isPlaying) {
-      const stopTime = audioContextRef.current.currentTime;
-      bufferSourceRef.current?.stop(stopTime);
-      setOffset((prev) => prev + stopTime - startTime);
+      bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
@@ -69,14 +64,19 @@ const AudioFile: FC = () => {
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.onended = (stopTime?: number) => {
+        setOffset((_prev) => stopTime || 0);
+      };
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
-      bufferSourceRef.current.connect(stretcherRef.current);
+      bufferSourceRef.current.timeStretch = 'speech-music';
+      bufferSourceRef.current.playbackRate.value = playbackRate;
+      bufferSourceRef.current.detune.value = detune;
+      bufferSourceRef.current.connect(audioContextRef.current.destination);
 
-      setStartTime(audioContextRef.current.currentTime);
       bufferSourceRef.current.start(
-        startTime,
-        offset * stretcherRef.current.rate.value
+        audioContextRef.current.currentTime,
+        offset
       );
     }
 
@@ -107,11 +107,6 @@ const AudioFile: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
-    if (!stretcherRef.current) {
-      stretcherRef.current = audioContextRef.current.createStretcher();
-      stretcherRef.current.connect(audioContextRef.current.destination);
-    }
-
     fetchAudioBuffer();
 
     return () => {
@@ -129,9 +124,9 @@ const AudioFile: FC = () => {
       />
       <Spacer.Vertical size={49} />
       <Slider
-        label="Rate"
-        value={rate}
-        onValueChange={handleRateChange}
+        label="Playback rate"
+        value={playbackRate}
+        onValueChange={handlePlaybackRateChange}
         min={0.0}
         max={3.0}
         step={0.25}
@@ -139,12 +134,12 @@ const AudioFile: FC = () => {
       />
       <Spacer.Vertical size={20} />
       <Slider
-        label="Semitones"
-        value={semitones}
-        onValueChange={handleSemitonesChange}
-        min={-12}
-        max={12}
-        step={1}
+        label="Detune"
+        value={detune}
+        onValueChange={handleDetuneChange}
+        min={-1200}
+        max={1200}
+        step={100}
         minLabelWidth={labelWidth}
       />
     </Container>

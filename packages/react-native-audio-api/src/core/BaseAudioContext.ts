@@ -9,7 +9,6 @@ import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
-import StretcherNode from './StretcherNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 
 export default class BaseAudioContext {
@@ -99,10 +98,6 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  createStretcher(): StretcherNode {
-    return new StretcherNode(this, this.context.createStretcher());
   }
 
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {

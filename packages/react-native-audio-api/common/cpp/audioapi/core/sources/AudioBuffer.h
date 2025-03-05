@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -34,9 +36,10 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
       size_t startInChannel);
 
  private:
-  std::shared_ptr<AudioBus> bus_;
-
   friend class AudioBufferSourceNode;
+
+  std::shared_ptr<AudioBus> bus_;
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
 };
 
 } // namespace audioapi

@@ -29,10 +29,13 @@
 #pragma once
 
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/dsp/FFT.h>
 
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <vector>
+#include <complex>
 
 namespace audioapi {
 class PeriodicWave {
@@ -43,10 +46,10 @@ class PeriodicWave {
       bool disableNormalization);
   explicit PeriodicWave(
       float sampleRate,
-      float *real,
-      float *imaginary,
+      const std::vector<std::complex<float>> &complexData,
       int length,
       bool disableNormalization);
+  ~PeriodicWave();
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
@@ -78,7 +81,7 @@ class PeriodicWave {
   // For each range, the inverse FFT is performed to get the time domain
   // representation of the band-limited waveform.
   void
-  createBandLimitedTables(const float *real, const float *imaginary, int size);
+  createBandLimitedTables(const std::vector<std::complex<float>> &complexData, int size);
 
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given
@@ -111,6 +114,8 @@ class PeriodicWave {
   float scale_;
   // array of band-limited waveforms.
   float **bandLimitedTables_;
+  //
+  std::unique_ptr<dsp::FFT> fft_;
   // if true, the waveTable is not normalized.
   bool disableNormalization_;
 };

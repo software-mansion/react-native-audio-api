@@ -1,11 +1,11 @@
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 #include <android/log.h>
 
 #define MINIAUDIO_IMPLEMENTATION
-#include <audioapi/libs/miniaudio.h>
+#include <audioapi/libs/miniaudio/miniaudio.h>
 
 namespace audioapi {
 

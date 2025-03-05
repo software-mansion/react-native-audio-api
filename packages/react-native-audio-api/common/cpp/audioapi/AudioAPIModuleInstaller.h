@@ -37,10 +37,8 @@ class AudioAPIModuleInstaller {
             audioContext = std::make_shared<AudioContext>(sampleRate);
           }
 
-          auto promiseVendor = std::make_shared<PromiseVendor>(jsiRuntime, jsCallInvoker);
-
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              audioContext, promiseVendor);
+              audioContext, jsiRuntime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);

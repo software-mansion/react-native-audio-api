@@ -1,12 +1,13 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
-#include <audioapi/dsp/FFTFrame.h>
+#include <audioapi/dsp/FFT.h>
 
 #include <memory>
 #include <cstddef>
 #include <string>
 #include <complex>
+#include <vector>
 
 namespace audioapi {
 
@@ -44,15 +45,16 @@ class AnalyserNode : public AudioNode {
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
+
   WindowType windowType_;
+  std::shared_ptr<AudioArray> windowData_;
 
   std::unique_ptr<AudioArray> inputBuffer_;
   std::unique_ptr<AudioBus> downMixBus_;
   int vWriteIndex_;
 
-  std::unique_ptr<FFTFrame> fftFrame_;
-  std::shared_ptr<AudioArray> realData_;
-  std::shared_ptr<AudioArray> imaginaryData_;
+  std::unique_ptr<dsp::FFT> fft_;
+  std::vector<std::complex<float>> complexData_;
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_ { true };
 
@@ -82,8 +84,8 @@ class AnalyserNode : public AudioNode {
   }
 
   void doFFTAnalysis();
-  static void applyBlackManWindow(float *data, int length);
-  static void applyHannWindow(float *data, int length);
+
+  void setWindowData(WindowType type, int size);
 };
 
 } // namespace audioapi

@@ -1,9 +1,8 @@
-#include <audioapi/libs/dsp/common.h>
-
 #ifndef SIGNALSMITH_FFT_V5
 #define SIGNALSMITH_FFT_V5
 
-#include <audioapi/libs/dsp/perf.h>
+#include <audioapi/libs/signalsmith-stretch/perf.h>
+#include <audioapi/core/Constants.h>
 
 #include <vector>
 #include <complex>
@@ -129,7 +128,7 @@ namespace signalsmith { namespace fft {
 			if (!foundStep) {
 				for (size_t i = 0; i < subLength; ++i) {
 					for (size_t f = 0; f < factor; ++f) {
-						double phase = 2*M_PI*i*f/length;
+						double phase = 2*audioapi::PI*i*f/length;
 						complex twiddle = {V(std::cos(phase)), V(-std::sin(phase))};
 						twiddleVector.push_back(twiddle);
 					}
@@ -212,7 +211,7 @@ namespace signalsmith { namespace fft {
 					for (size_t f = 0; f < factor; ++f) {
 						complex sum = working[0];
 						for (size_t i = 1; i < factor; ++i) {
-							double phase = 2*M_PI*f*i/factor;
+							double phase = 2*audioapi::PI*f*i/factor;
 							complex twiddle = {V(std::cos(phase)), V(-std::sin(phase))};
 							sum += _fft_impl::complexMul<inverse>(working[i], twiddle);
 						}
@@ -431,13 +430,13 @@ namespace signalsmith { namespace fft {
 			size_t hhSize = size/4 + 1;
 			twiddlesMinusI.resize(hhSize);
 			for (size_t i = 0; i < hhSize; ++i) {
-				V rotPhase = -2*M_PI*(modified ? i + 0.5 : i)/size;
+				V rotPhase = -2*audioapi::PI*(modified ? i + 0.5 : i)/size;
 				twiddlesMinusI[i] = {std::sin(rotPhase), -std::cos(rotPhase)};
 			}
 			if (modified) {
 				modifiedRotations.resize(size/2);
 				for (size_t i = 0; i < size/2; ++i) {
-					V rotPhase = -2*M_PI*i/size;
+					V rotPhase = -2*audioapi::PI*i/size;
 					modifiedRotations[i] = {std::cos(rotPhase), std::sin(rotPhase)};
 				}
 			}
