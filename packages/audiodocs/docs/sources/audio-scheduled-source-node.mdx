@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-import { Optional } from '@site/src/components/Badges';
+import { Optional, Experimental } from '@site/src/components/Badges';
 
 # AudioScheduledSourceNode
 
@@ -46,3 +46,26 @@ If you invoke this method multiple times on the same node before the designated 
 | `InvalidStateError` | If node has not been started yet. |
 
 #### Returns `undefined`.
+
+## Events
+
+### `onended` <Experimental />
+
+Above callback is fired when source node has stopped playing.
+By setting this callback you can achieve pause functionality.
+
+```ts
+const [offset, setOffset] = useState(0);
+
+/* ... */
+
+audioBufferSourceNode.onended = (stopTime?: number) => {
+  setOffset((_prev) => stopTime || 0);
+};
+
+source.start(context.currentTime, offset)
+```
+
+:::caution
+Tested only on Android and iOS.
+:::

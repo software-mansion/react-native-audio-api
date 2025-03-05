@@ -32,7 +32,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback do not apply to `OfflineAudioContext`.
+Concept of system-level audio callback does not apply to `OfflineAudioContext`.
 :::
 
 ## Properties
@@ -126,7 +126,11 @@ Above method lets you decode audio data file.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `sourcePath` | `string` | Path to audio file. |
+| `sourcePath` | `string` | Path to audio file located on the device. |
+
+:::caution
+On the web `sourcePath` should be a URL.
+:::
 
 #### Returns `Promise<AudioBuffer>`.
 

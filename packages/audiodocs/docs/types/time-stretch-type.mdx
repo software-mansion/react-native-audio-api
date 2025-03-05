@@ -4,16 +4,16 @@ sidebar_position: 6
 
 # TimeStretchType
 
-`TimeStretchType` type specifies algorithm which will be used during time-stretching(changing speed of the playback).
+`TimeStretchType` type specifies algorithm which will be used during time-stretching (changing speed of the playback) and pitch-shifting (changing pitch of the playback).
 
 **Acceptable values:**
   - `'linear'`
 
-  Use naive linear approach while time-stretching the sound.
+  Uses naive linear approach while time-stretching and pitch-shifting the sound.
 
   - `'speech-music'`
 
-  Use sophisticated algorithm with pitch correction while time-stretching the sound
+  Uses sophisticated algorithm with pitch correction while time-stretching (`playbackRate`) and enables accurate pitch-shifting (`detune`).
 
 :::caution
 
