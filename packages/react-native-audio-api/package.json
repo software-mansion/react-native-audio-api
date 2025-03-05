@@ -3,7 +3,7 @@
   "version": "0.4.12-beta.5",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
-    "setup-custom-wasm": "./scripts/setup-custom-wasm.js"
+    "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
   },
   "source": "src/index",
   "main": "lib/module/index",
@@ -35,7 +35,7 @@
     "!**/__mocks__",
     "!**/.*",
     "!**/node_modules",
-    "scripts/setup-custom-wasm.js"
+    "scripts/setup-rn-audio-api-web.js"
   ],
   "scripts": {
     "test": "jest",
