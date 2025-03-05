@@ -10,7 +10,10 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
       444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency());
-  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
+  detuneParam_ = std::make_shared<AudioParam>(
+      0.0,
+      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
   isInitialized_ = true;

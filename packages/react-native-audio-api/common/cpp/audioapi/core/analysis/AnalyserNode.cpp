@@ -9,10 +9,10 @@
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
     : AudioNode(context),
-      fftSize_(DEFAULT_FFT_SIZE),
-      minDecibels_(DEFAULT_MIN_DECIBELS),
-      maxDecibels_(DEFAULT_MAX_DECIBELS),
-      smoothingTimeConstant_(DEFAULT_SMOOTHING_TIME_CONSTANT),
+      fftSize_(2048),
+      minDecibels_(-100),
+      maxDecibels_(-30),
+      smoothingTimeConstant_(0.8),
       windowType_(WindowType::BLACKMAN),
       vWriteIndex_(0) {
   inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);

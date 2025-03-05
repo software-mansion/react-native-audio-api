@@ -37,6 +37,7 @@ class AudioPlayer : public AudioStreamDataCallback {
   std::shared_ptr<AudioBus> mBus_;
   bool isInitialized_ = false;
   float sampleRate_;
+  int channelCount_;
 };
 
 } // namespace audioapi

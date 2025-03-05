@@ -8,43 +8,42 @@ namespace audioapi {
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
-    : renderAudio_(renderAudio) {
+    : renderAudio_(renderAudio), channelCount_(2) {
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(PerformanceMode::LowLatency)
-      ->setChannelCount(CHANNEL_COUNT)
+      ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
       ->openStream(mStream_);
 
   sampleRate_ = static_cast<float>(mStream_->getSampleRate());
   mBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, CHANNEL_COUNT, sampleRate_);
+      RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   isInitialized_ = true;
 }
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
     float sampleRate)
-    : renderAudio_(renderAudio) {
+    : renderAudio_(renderAudio), channelCount_(2) {
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(PerformanceMode::LowLatency)
-      ->setChannelCount(CHANNEL_COUNT)
+      ->setChannelCount(2)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
       ->setSampleRate(static_cast<int>(sampleRate))
       ->openStream(mStream_);
 
   sampleRate_ = sampleRate;
-  mBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, CHANNEL_COUNT, sampleRate_);
+  mBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 2, sampleRate_);
   isInitialized_ = true;
 }
 
@@ -100,8 +99,8 @@ DataCallbackResult AudioPlayer::onAudioReady(
 
     // TODO: optimize this with SIMD?
     for (int i = 0; i < framesToProcess; i++) {
-      for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
-        buffer[(processedFrames + i) * CHANNEL_COUNT + channel] =
+      for (int channel = 0; channel < channelCount_; channel += 1) {
+        buffer[(processedFrames + i) * channelCount_ + channel] =
             mBus_->getChannel(channel)->getData()[i];
       }
     }
