@@ -1,9 +1,14 @@
 import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
-import type { IAudioContext } from './interfaces';
+import type { IAudioContext, IOfflineAudioContext } from './interfaces';
 
 /* eslint-disable no-var */
 declare global {
   var createAudioContext: (sampleRate?: number) => IAudioContext;
+  var createOfflineAudioContext: (
+    numberOfChannels: number,
+    length: number,
+    sampleRate: number
+  ) => IOfflineAudioContext;
 }
 /* eslint-disable no-var */
 
@@ -20,6 +25,7 @@ if (global.createAudioContext == null) {
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioContext } from './core/AudioContext';
+export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';
 export { default as AudioNode } from './core/AudioNode';
 export { default as AnalyserNode } from './core/AnalyserNode';

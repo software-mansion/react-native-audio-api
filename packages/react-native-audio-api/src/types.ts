@@ -29,4 +29,10 @@ export interface AudioContextOptions {
   sampleRate: number;
 }
 
+export interface OfflineAudioContextOptions {
+  numberOfChannels: number;
+  length: number;
+  sampleRate: number;
+}
+
 export type WindowType = 'blackman' | 'hann';
