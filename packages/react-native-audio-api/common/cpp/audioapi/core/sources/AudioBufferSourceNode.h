@@ -77,7 +77,6 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   // k-rate params
   std::shared_ptr<AudioParam> detuneParam_;
   std::shared_ptr<AudioParam> playbackRateParam_;
-  std::shared_ptr<AudioParam> semitones_;
 
   std::shared_ptr<AudioBus> playbackRateBus_;
 
@@ -99,7 +98,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
       size_t offsetLength,
       float playbackRate);
 
-  float getPlaybackRateValue();
+  float getComputedPlaybackRateValue();
 
   double getVirtualStartFrame();
   double getVirtualEndFrame();

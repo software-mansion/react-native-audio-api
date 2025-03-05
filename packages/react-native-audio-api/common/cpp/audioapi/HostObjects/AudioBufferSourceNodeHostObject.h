@@ -25,7 +25,6 @@ class AudioBufferSourceNodeHostObject
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, detune),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, playbackRate),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, semitones),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, timeStretch));
 
     addSetters(
@@ -91,14 +90,6 @@ class AudioBufferSourceNodeHostObject
     auto playbackRateHostObject =
         std::make_shared<AudioParamHostObject>(playbackRate);
     return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
-  }
-
-  JSI_PROPERTY_GETTER(semitones) {
-    auto audioBufferSourceNode =
-            std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    auto semitonesParam =
-            std::make_shared<AudioParamHostObject>(audioBufferSourceNode->getSemitonesParam());
-    return jsi::Object::createFromHostObject(runtime, semitonesParam);
   }
 
   JSI_PROPERTY_GETTER(timeStretch) {

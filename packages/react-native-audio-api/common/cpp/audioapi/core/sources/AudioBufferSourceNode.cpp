@@ -18,10 +18,10 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
-  detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
+  detuneParam_ = std::make_shared<AudioParam>(
+      0.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
   playbackRateParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
-  semitones_ = std::make_shared<AudioParam>(0.0, -12.0, 12.0);
 
   playbackRateBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
@@ -48,10 +48,6 @@ std::shared_ptr<AudioParam> AudioBufferSourceNode::getDetuneParam() const {
 std::shared_ptr<AudioParam> AudioBufferSourceNode::getPlaybackRateParam()
     const {
   return playbackRateParam_;
-}
-
-std::shared_ptr<AudioParam> AudioBufferSourceNode::getSemitonesParam() const {
-  return semitones_;
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
@@ -140,26 +136,28 @@ void AudioBufferSourceNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  auto playbackRate = getPlaybackRateValue();
-  auto semitones = semitones_->getValueAtTime(context_->getCurrentTime());
-  auto stretch = buffer_->stretch_;
-
   if (timeStretchType_ == TimeStretchType::LINEAR) {
+    auto computedPlaybackRate = getComputedPlaybackRateValue();
     updatePlaybackInfo(
         processingBus, framesToProcess, startOffset, offsetLength);
 
-    if (playbackRate == 0.0f || !isPlaying()) {
+    if (computedPlaybackRate == 0.0f || !isPlaying()) {
       processingBus->zero();
       return;
-    } else if (std::fabs(playbackRate) == 1.0) {
+    } else if (std::fabs(computedPlaybackRate) == 1.0) {
       processWithoutInterpolation(
-          processingBus, startOffset, offsetLength, playbackRate);
+          processingBus, startOffset, offsetLength, computedPlaybackRate);
     } else {
       processWithInterpolation(
-          processingBus, startOffset, offsetLength, playbackRate);
+          processingBus, startOffset, offsetLength, computedPlaybackRate);
     }
   } else {
-    playbackRate = std::clamp(playbackRate, 0.0f, 3.0f);
+    auto time = context_->getCurrentTime();
+    auto playbackRate =
+        std::clamp(playbackRateParam_->getValueAtTime(time), 0.0f, 3.0f);
+    auto detune =
+        std::clamp(detuneParam_->getValueAtTime(time) / 100.0f, -12.0f, 12.0f);
+
     playbackRateBus_->zero();
 
     auto framesNeededToStretch =
@@ -171,14 +169,16 @@ void AudioBufferSourceNode::processNode(
     processWithoutInterpolation(
         playbackRateBus_, startOffset, offsetLength, playbackRate);
 
+    auto stretch = buffer_->stretch_;
+
     stretch->process(
         playbackRateBus_.get()[0],
         framesNeededToStretch,
         processingBus.get()[0],
         framesToProcess);
-  }
 
-  stretch->setTransposeSemitones(semitones);
+    stretch->setTransposeSemitones(detune);
+  }
 
   handleStopScheduled();
 }
@@ -309,12 +309,12 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 }
 
-float AudioBufferSourceNode::getPlaybackRateValue() {
+float AudioBufferSourceNode::getComputedPlaybackRateValue() {
   auto time = context_->getCurrentTime();
 
   auto sampleRateFactor = buffer_->getSampleRate() / context_->getSampleRate();
-  auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
   auto playbackRate = playbackRateParam_->getValueAtTime(time);
+  auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
 
   return playbackRate * sampleRateFactor * detune;
 }

@@ -9,14 +9,12 @@ import { TimeStretchType } from '../types';
 export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
-  readonly semitones: AudioParam;
 
   constructor(context: BaseAudioContext, node: IAudioBufferSourceNode) {
     super(context, node);
 
     this.detune = new AudioParam(node.detune);
     this.playbackRate = new AudioParam(node.playbackRate);
-    this.semitones = new AudioParam(node.semitones);
   }
 
   public get buffer(): AudioBuffer | null {

@@ -16,7 +16,7 @@ const LOOP_START = 0;
 const LOOP_END = 10;
 
 const INITIAL_RATE = 1;
-const INITIAL_SEMITONES = 0;
+const INITIAL_DETUNE = 0;
 
 const labelWidth = 80;
 
@@ -26,7 +26,7 @@ const AudioFile: FC = () => {
 
   const [offset, setOffset] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
-  const [semitones, setSemitones] = useState(INITIAL_SEMITONES);
+  const [detune, setDetune] = useState(INITIAL_DETUNE);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
@@ -41,11 +41,11 @@ const AudioFile: FC = () => {
     }
   };
 
-  const handleSemitonesChange = (newValue: number) => {
-    setSemitones(newValue);
+  const handleDetuneChange = (newValue: number) => {
+    setDetune(newValue);
 
     if (bufferSourceRef.current) {
-      bufferSourceRef.current.semitones.value = newValue;
+      bufferSourceRef.current.detune.value = newValue;
     }
   };
 
@@ -71,7 +71,7 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.timeStretch = 'speech-music';
       bufferSourceRef.current.playbackRate.value = playbackRate;
-      bufferSourceRef.current.semitones.value = semitones;
+      bufferSourceRef.current.detune.value = detune;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 
       bufferSourceRef.current.start(
@@ -124,7 +124,7 @@ const AudioFile: FC = () => {
       />
       <Spacer.Vertical size={49} />
       <Slider
-        label="playbackRate"
+        label="Playback rate"
         value={playbackRate}
         onValueChange={handlePlaybackRateChange}
         min={0.0}
@@ -134,12 +134,12 @@ const AudioFile: FC = () => {
       />
       <Spacer.Vertical size={20} />
       <Slider
-        label="Semitones"
-        value={semitones}
-        onValueChange={handleSemitonesChange}
-        min={-12}
-        max={12}
-        step={1}
+        label="Detune"
+        value={detune}
+        onValueChange={handleDetuneChange}
+        min={-1200}
+        max={1200}
+        step={100}
         minLabelWidth={labelWidth}
       />
     </Container>
