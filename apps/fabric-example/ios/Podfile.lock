@@ -1343,7 +1343,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-skia (1.10.2):
+  - react-native-skia (1.11.11):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2193,7 +2193,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 7eb5d69e1154e7743487ef0c8d7261e5b59afb32
   React-microtasksnativemodule: 01dd998649ff5f8814846b7eee84c4d57f5d3671
   react-native-safe-area-context: 0d8827b2420dfb4c8a8e27639585e61b912261be
-  react-native-skia: 2b57598318bf23f17a14fc16905816a2ad835039
+  react-native-skia: f30213be39a6e0616883be599cd85e2d8b41ca69
   react-native-vector-icons: df0ba25fd039d1af44c3db5e959448e36a46ef42
   React-nativeconfig: f7ab6c152e780b99a8c17448f2d99cf5f69a2311
   React-NativeModulesApple: 9aeb901b9bfcc9235e912445fb3cf4780a99baf4
