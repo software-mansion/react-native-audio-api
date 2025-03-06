@@ -1,6 +1,9 @@
-const path = require('path');
+/** This file is required to properly resolve native dependencies */
+const { getDependencies } = require('../common-app/scripts/dependencies');
+
+const dependencies = getDependencies(__dirname);
 
 module.exports = {
-  project: {},
-  assets: [path.join(__dirname, 'node_modules', 'assets/fonts')],
+  dependencies,
+  assets: ['./assets/fonts/'],
 };
