@@ -128,7 +128,7 @@ const AudioFile: FC = () => {
         value={playbackRate}
         onValueChange={handlePlaybackRateChange}
         min={0.0}
-        max={3.0}
+        max={2.0}
         step={0.25}
         minLabelWidth={labelWidth}
       />
