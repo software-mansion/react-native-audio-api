@@ -12,7 +12,6 @@ import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 class AudioAPIModule(
   reactContext: ReactApplicationContext,
 ) : NativeAudioAPIModuleSpec(reactContext) {
-
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }

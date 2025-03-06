@@ -13,8 +13,10 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
   ],
 )
 class AudioAPIPackage : BaseReactPackage() {
-
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
+  override fun getModule(
+    name: String,
+    reactContext: ReactApplicationContext,
+  ): NativeModule? {
     when (name) {
       AudioAPIModule.NAME -> return AudioAPIModule(reactContext)
     }
