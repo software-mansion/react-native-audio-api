@@ -12,11 +12,8 @@ import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 class AudioAPIModule(
   reactContext: ReactApplicationContext,
 ) : NativeAudioAPIModuleSpec(reactContext) {
-  companion object {
-    init {
-      System.loadLibrary("react-native-audio-api")
-    }
 
+  companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
 
@@ -30,8 +27,13 @@ class AudioAPIModule(
   private external fun injectJSIBindings()
 
   init {
-    val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
-    mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
+    try {
+      System.loadLibrary("react-native-audio-api")
+      val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
+      mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
+    } catch (exception: UnsatisfiedLinkError) {
+      throw RuntimeException("Could not load native module AudioAPIModule", exception)
+    }
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)

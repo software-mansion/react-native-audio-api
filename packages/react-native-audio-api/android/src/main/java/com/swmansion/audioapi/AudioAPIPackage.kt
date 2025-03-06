@@ -1,41 +1,40 @@
 package com.swmansion.audioapi
 
 import com.facebook.react.BaseReactPackage
-import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.common.annotations.UnstableReactNativeAPI
 import com.facebook.react.module.annotations.ReactModuleList
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
 
-@ReactModuleList(nativeModules = [AudioAPIModule::class])
-class AudioAPIPackage :
-  BaseReactPackage(),
-  ReactPackage {
-  @UnstableReactNativeAPI
-  override fun getModule(
-    name: String,
-    reactContext: ReactApplicationContext,
-  ): NativeModule? =
+@ReactModuleList(
+  nativeModules = [
+    AudioAPIModule::class,
+  ],
+)
+class AudioAPIPackage : BaseReactPackage() {
+
+  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
     when (name) {
-      AudioAPIModule.NAME -> AudioAPIModule(reactContext)
-      else -> null
+      AudioAPIModule.NAME -> return AudioAPIModule(reactContext)
     }
+    return null
+  }
 
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider =
-    ReactModuleInfoProvider(
-      fun (): Map<String, ReactModuleInfo> =
-        mapOf(
-          AudioAPIModule.NAME to
-            ReactModuleInfo(
-              AudioAPIModule.NAME,
-              AudioAPIModule::class.java.simpleName,
-              _canOverrideExistingModule = true,
-              _needsEagerInit = false,
-              isCxxModule = false,
-              isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
-            ),
-        ),
-    )
+    ReactModuleInfoProvider {
+      val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
+      val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
+      moduleInfos[AudioAPIModule.NAME] =
+        ReactModuleInfo(
+          AudioAPIModule.NAME,
+          AudioAPIModule.NAME,
+          canOverrideExistingModule = true,
+          needsEagerInit = false,
+          hasConstants = true,
+          isCxxModule = false,
+          isTurboModule = isTurboModule,
+        )
+      moduleInfos
+    }
 }

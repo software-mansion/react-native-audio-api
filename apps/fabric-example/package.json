@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "react-native": "0.76.5"
+    "react-native": "0.77.1"
   },
   "devDependencies": {
     "@react-native-community/cli": "15.0.0",
