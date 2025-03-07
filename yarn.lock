@@ -12377,7 +12377,7 @@ __metadata:
     react: "*"
     react-native: "*"
   bin:
-    setup-custom-wasm: ./scripts/setup-custom-wasm.js
+    setup-rn-audio-api-web: ./scripts/setup-rn-audio-api-web.js
   languageName: unknown
   linkType: soft
 
