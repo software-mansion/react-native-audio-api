@@ -14,7 +14,7 @@ The current input time, within the sample buffer. You can change how often this 
 
 ### `stretch.schedule({...})`
 
-This adds a scheduled change, removing any scheduled changes occuring after this one. The object properties are:
+This adds a scheduled change, removing any scheduled changes occurring after this one. The object properties are:
 
 - `output` (seconds): audio context time for this change. The node compensates for its own latency, but this means you might want to schedule some things ahead of time, otherwise you'll have a softer transition as it catches up.
 - `active` (bool): processing audio
