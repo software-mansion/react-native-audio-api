@@ -1,3 +1,4 @@
+/* eslint-disable */
 var SignalsmithStretch = (() => {
   var _scriptName =
     typeof document != 'undefined' ? document.currentScript?.src : undefined;

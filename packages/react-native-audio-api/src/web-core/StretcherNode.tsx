@@ -46,6 +46,7 @@ export default class StretcherNode extends AudioNode {
   _playbackRate: number = 1;
   _loopStart: number = -1;
   _loopEnd: number = -1;
+  _loop = false;
   _isPlaying = false;
 
   constructor(context: BaseAudioContext, node: IStretcherNode) {
@@ -59,7 +60,7 @@ export default class StretcherNode extends AudioNode {
 
   public set buffer(buffer: AudioBuffer) {
     this._buffer = buffer;
-    const channelArrays = [];
+    const channelArrays: Float32Array[] = [];
 
     for (let i = 0; i < buffer.numberOfChannels; i += 1) {
       channelArrays.push(buffer.getChannelData(i));
@@ -87,7 +88,9 @@ export default class StretcherNode extends AudioNode {
   public set loopStart(value: number) {
     this._loopStart = value;
 
-    (this.node as unknown as IStretcherNode).schedule({ loopStart: value });
+    if (this._isPlaying) {
+      (this.node as unknown as IStretcherNode).schedule({ loopStart: value });
+    }
   }
 
   public get loopEnd(): number {
@@ -97,7 +100,17 @@ export default class StretcherNode extends AudioNode {
   public set loopEnd(value: number) {
     this._loopEnd = value;
 
-    (this.node as unknown as IStretcherNode).schedule({ loopEnd: value });
+    if (this._isPlaying) {
+      (this.node as unknown as IStretcherNode).schedule({ loopEnd: value });
+    }
+  }
+
+  public get loop(): boolean {
+    return this._loop;
+  }
+
+  public set loop(value: boolean) {
+    this._loop = value;
   }
 
   public start(
@@ -109,12 +122,19 @@ export default class StretcherNode extends AudioNode {
   ): void {
     this._isPlaying = true;
 
+    if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
+      (this.node as unknown as IStretcherNode).schedule({
+        loopStart: this._loopStart,
+        loopEnd: this._loopEnd,
+      });
+    }
+
     (this.node as unknown as IStretcherNode).start(
-      when,
-      offset,
-      duration,
-      rate,
-      semitones
+      when ?? 0,
+      offset ?? 0,
+      duration ?? this._buffer?.duration ?? 0,
+      rate ?? this._playbackRate ?? 0,
+      semitones ?? 0
     );
   }
 
