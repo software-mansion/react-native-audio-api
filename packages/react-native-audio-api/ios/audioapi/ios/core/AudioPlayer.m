@@ -2,7 +2,7 @@
 
 @implementation AudioPlayer
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.renderAudio = [renderAudio copy];
@@ -14,8 +14,9 @@
     [self setupAndInitNotificationHandlers];
 
     self.sampleRate = [self.audioSession sampleRate];
+    self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -34,7 +35,9 @@
   return self;
 }
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
+                              sampleRate:(float)sampleRate
+                            channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.renderAudio = [renderAudio copy];
@@ -46,8 +49,9 @@
     [self setupAndInitNotificationHandlers];
 
     self.sampleRate = sampleRate;
+    self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -119,7 +123,7 @@
                              frameCount:(AVAudioFrameCount)frameCount
                              outputData:(AudioBufferList *)outputData
 {
-  if (outputData->mNumberBuffers < 2) {
+  if (outputData->mNumberBuffers < self.channelCount) {
     return noErr; // Ensure we have stereo output
   }
 

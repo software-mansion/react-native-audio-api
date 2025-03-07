@@ -1,5 +1,3 @@
-#include <audioapi/libs/dsp/common.h>
-
 #ifndef SIGNALSMITH_DSP_PERF_H
 #define SIGNALSMITH_DSP_PERF_H
 

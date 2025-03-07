@@ -12,7 +12,6 @@
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
-#include <audioapi/HostObjects/StretcherNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -27,8 +26,11 @@ class BaseAudioContextHostObject : public JsiHostObject {
  public:
   explicit BaseAudioContextHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      const std::shared_ptr<PromiseVendor> &promiseVendor)
-      : context_(context), promiseVendor_(promiseVendor) {
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker)
+      : context_(context), callInvoker_(callInvoker) {
+      promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
@@ -44,7 +46,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStretcher),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
   }
 
@@ -69,7 +70,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(createOscillator) {
     auto oscillator = context_->createOscillator();
     auto oscillatorHostObject =
-        std::make_shared<OscillatorNodeHostObject>(oscillator);
+        std::make_shared<OscillatorNodeHostObject>(oscillator, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   }
 
@@ -96,7 +97,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(createBufferSource) {
     auto bufferSource = context_->createBufferSource();
     auto bufferSourceHostObject =
-        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
+        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
@@ -116,22 +117,19 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto length =
         static_cast<int>(real.getProperty(runtime, "length").asNumber());
 
-    auto *realData = new float[length];
-    auto *imagData = new float[length];
+    auto complexData = std::vector<std::complex<float>>(length);
 
     for (size_t i = 0; i < real.length(runtime); i++) {
-      realData[i] =
-          static_cast<float>(real.getValueAtIndex(runtime, i).getNumber());
-    }
-    for (size_t i = 0; i < imag.length(runtime); i++) {
-      realData[i] =
-          static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber());
+        complexData[i] = std::complex<float>(
+            static_cast<float>(real.getValueAtIndex(runtime, i).getNumber()),
+            static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber()));
     }
 
     auto periodicWave = context_->createPeriodicWave(
-        realData, imagData, disableNormalization, length);
+        complexData, disableNormalization, length);
     auto periodicWaveHostObject =
         std::make_shared<PeriodicWaveHostObject>(periodicWave);
+
     return jsi::Object::createFromHostObject(runtime, periodicWaveHostObject);
   }
 
@@ -139,12 +137,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto analyser = context_->createAnalyser();
     auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
     return jsi::Object::createFromHostObject(runtime, analyserHostObject);
-  }
-
-  JSI_HOST_FUNCTION(createStretcher) {
-    auto stretcher = context_->createStretcher();
-    auto stretcherHostObject = std::make_shared<StretcherNodeHostObject>(stretcher);
-    return jsi::Object::createFromHostObject(runtime, stretcherHostObject);
   }
 
   JSI_HOST_FUNCTION(decodeAudioDataSource) {
@@ -172,5 +164,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
  protected:
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
+  std::shared_ptr<react::CallInvoker> callInvoker_;
 };
 } // namespace audioapi

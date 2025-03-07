@@ -1,14 +1,14 @@
 #import <AVFoundation/AVFoundation.h>
 
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
-    : renderAudio_(renderAudio), audioBus_(0)
+    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -18,7 +18,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
       renderAudio_(audioBus_, framesToProcess);
 
       // TODO: optimize this with SIMD?
-      for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
+      for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
         auto *inputChannel = audioBus_->getChannel(channel)->getData();
 
@@ -31,12 +31,12 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
     }
   };
 
-  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock];
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
+  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock channelCount:channelCount_];
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, getSampleRate());
 }
 
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio, float sampleRate)
-    : renderAudio_(renderAudio), audioBus_(0)
+    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -46,7 +46,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
       renderAudio_(audioBus_, framesToProcess);
 
       // TODO: optimize this with SIMD?
-      for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
+      for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
         auto *inputChannel = audioBus_->getChannel(channel)->getData();
 
@@ -59,8 +59,10 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
     }
   };
 
-  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock sampleRate:sampleRate];
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, CHANNEL_COUNT, getSampleRate());
+  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudioBlock:renderAudioBlock
+                                                    sampleRate:sampleRate
+                                                  channelCount:channelCount_];
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, getSampleRate());
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

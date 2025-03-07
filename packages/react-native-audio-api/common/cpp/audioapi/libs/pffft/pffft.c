@@ -61,7 +61,7 @@
 #  define _USE_MATH_DEFINES // ask gently MSVC to define M_PI, M_SQRT2 etc.
 #endif
 
-#include <audioapi/android/libs/pffft.h>
+#include <audioapi/libs/pffft/pffft.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>

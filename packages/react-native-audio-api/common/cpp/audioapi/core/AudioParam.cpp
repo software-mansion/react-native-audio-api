@@ -206,7 +206,7 @@ void AudioParam::setValueCurveAtTime(
           (time - startTime) * static_cast<double>(length - 1) /
               (endTime - startTime));
 
-      return AudioUtils::linearInterpolate(values, k, k + 1, factor);
+      return dsp::linearInterpolate(values, k, k + 1, factor);
     }
 
     return endValue;

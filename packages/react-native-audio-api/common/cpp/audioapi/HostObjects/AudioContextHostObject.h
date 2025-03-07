@@ -15,8 +15,9 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
       const std::shared_ptr<AudioContext> &audioContext,
-      const std::shared_ptr<PromiseVendor> &promiseVendor)
-      : BaseAudioContextHostObject(audioContext, promiseVendor) {
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker)
+      : BaseAudioContextHostObject(audioContext, runtime, callInvoker) {
     addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),

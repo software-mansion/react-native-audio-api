@@ -34,4 +34,13 @@ export default class AudioScheduledSourceNode extends AudioNode {
 
     (this.node as globalThis.AudioScheduledSourceNode).stop(when);
   }
+
+  // eslint-disable-next-line accessor-pairs
+  public set onended(callback: (arg?: number) => void) {
+    const eventCallback = (_event: Event) => {
+      callback();
+    };
+
+    (this.node as globalThis.AudioScheduledSourceNode).onended = eventCallback;
+  }
 }

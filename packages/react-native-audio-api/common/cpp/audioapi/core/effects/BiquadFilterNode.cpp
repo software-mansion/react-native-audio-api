@@ -1,7 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
@@ -10,12 +10,16 @@ namespace audioapi {
 
 BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
     : AudioNode(context) {
-  frequencyParam_ = std::make_shared<AudioParam>(
-      350.0, MIN_FILTER_FREQUENCY, context->getNyquistFrequency());
-  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
-  QParam_ = std::make_shared<AudioParam>(1.0, MIN_FILTER_Q, MAX_FILTER_Q);
-  gainParam_ =
-      std::make_shared<AudioParam>(0.0, MIN_FILTER_GAIN, MAX_FILTER_GAIN);
+  frequencyParam_ =
+      std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency());
+  detuneParam_ = std::make_shared<AudioParam>(
+      0.0,
+      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
+  QParam_ = std::make_shared<AudioParam>(
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
+  gainParam_ = std::make_shared<AudioParam>(
+      0.0, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT);
   type_ = BiquadFilterType::LOWPASS;
   isInitialized_ = true;
 }

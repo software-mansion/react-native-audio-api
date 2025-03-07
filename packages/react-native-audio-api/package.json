@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.4.12-beta.5",
+  "version": "0.4.12",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-custom-wasm": "./scripts/setup-custom-wasm.js"
@@ -20,7 +20,6 @@
     "android/",
     "ios",
     "RNAudioAPI.podspec",
-    "scripts/audioapi_utils.rb",
     "metro-config",
     "!ios/build",
     "!android/build",

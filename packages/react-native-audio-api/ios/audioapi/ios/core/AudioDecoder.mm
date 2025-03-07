@@ -1,9 +1,9 @@
 #define MINIAUDIO_IMPLEMENTATION
-#import <audioapi/libs/miniaudio.h>
+#import <audioapi/libs/miniaudio/miniaudio.h>
 
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 

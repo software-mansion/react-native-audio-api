@@ -1,6 +1,6 @@
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 #include <utility>
 
@@ -11,10 +11,17 @@ AudioBuffer::AudioBuffer(
     size_t length,
     float sampleRate) {
   bus_ = std::make_shared<AudioBus>(length, numberOfChannels, sampleRate);
+  stretch_ =
+      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+  stretch_->presetDefault(numberOfChannels, sampleRate);
 }
 
 AudioBuffer::AudioBuffer(std::shared_ptr<AudioBus> bus) {
   bus_ = std::move(bus);
+
+  stretch_ =
+      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+  stretch_->presetDefault(bus_->getNumberOfChannels(), bus_->getSampleRate());
 }
 
 size_t AudioBuffer::getLength() const {

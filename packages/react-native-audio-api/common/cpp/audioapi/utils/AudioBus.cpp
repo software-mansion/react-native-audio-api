@@ -1,7 +1,7 @@
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 // Implementation of channel summing/mixing is based on the WebKit approach,
 // source:
@@ -375,12 +375,12 @@ void AudioBus::sumByDownMixing(
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceLeft + sourceStart,
         0.5f,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceRight + sourceStart,
         0.5f,
         destinationData + destinationStart,
@@ -401,22 +401,22 @@ void AudioBus::sumByDownMixing(
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceLeft + sourceStart,
         0.25f,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceRight + sourceStart,
         0.25f,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundLeft + sourceStart,
         0.25f,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundRight + sourceStart,
         0.25f,
         destinationData + destinationStart,
@@ -438,27 +438,27 @@ void AudioBus::sumByDownMixing(
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceLeft + sourceStart,
         SQRT_HALF,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceRight + sourceStart,
         SQRT_HALF,
         destinationData + destinationStart,
         length);
-    VectorMath::add(
+    dsp::add(
         sourceCenter + sourceStart,
         destinationData + destinationStart,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundLeft + sourceStart,
         0.5f,
         destinationData + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundRight + sourceStart,
         0.5f,
         destinationData + destinationStart,
@@ -481,23 +481,23 @@ void AudioBus::sumByDownMixing(
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
 
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceLeft + sourceStart,
         0.5f,
         destinationLeft + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundLeft + sourceStart,
         0.5f,
         destinationLeft + destinationStart,
         length);
 
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceRight + sourceStart,
         0.5f,
         destinationRight + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundRight + sourceStart,
         0.5f,
         destinationRight + destinationStart,
@@ -521,33 +521,33 @@ void AudioBus::sumByDownMixing(
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
 
-    VectorMath::add(
+    dsp::add(
         sourceLeft + sourceStart,
         destinationLeft + destinationStart,
         destinationLeft + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceCenter + sourceStart,
         SQRT_HALF,
         destinationLeft + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundLeft + sourceStart,
         SQRT_HALF,
         destinationLeft + destinationStart,
         length);
 
-    VectorMath::add(
+    dsp::add(
         sourceRight + sourceStart,
         destinationRight + destinationStart,
         destinationRight + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceCenter + sourceStart,
         SQRT_HALF,
         destinationRight + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceSurroundRight + sourceStart,
         SQRT_HALF,
         destinationRight + destinationStart,
@@ -576,28 +576,28 @@ void AudioBus::sumByDownMixing(
     float *destinationSurroundRight =
         getChannelByType(ChannelSurroundRight)->getData();
 
-    VectorMath::add(
+    dsp::add(
         sourceLeft + sourceStart,
         destinationLeft + destinationStart,
         destinationLeft + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceCenter, SQRT_HALF, destinationLeft + destinationStart, length);
 
-    VectorMath::add(
+    dsp::add(
         sourceRight + sourceStart,
         destinationRight + destinationStart,
         destinationRight + destinationStart,
         length);
-    VectorMath::multiplyByScalarThenAddToOutput(
+    dsp::multiplyByScalarThenAddToOutput(
         sourceCenter, SQRT_HALF, destinationRight + destinationStart, length);
 
-    VectorMath::add(
+    dsp::add(
         sourceSurroundLeft + sourceStart,
         destinationSurroundLeft + destinationStart,
         destinationSurroundLeft + destinationStart,
         length);
-    VectorMath::add(
+    dsp::add(
         sourceSurroundRight + sourceStart,
         destinationSurroundRight + destinationStart,
         destinationSurroundRight + destinationStart,

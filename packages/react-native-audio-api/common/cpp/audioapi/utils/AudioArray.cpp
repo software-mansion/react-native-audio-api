@@ -1,5 +1,5 @@
-#include <audioapi/core/utils/AudioArray.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/utils/AudioArray.h>
 
 namespace audioapi {
 
@@ -37,7 +37,7 @@ void AudioArray::normalize() {
     return;
   }
 
-  VectorMath::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
+  dsp::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
 }
 
 void AudioArray::resize(size_t size) {
@@ -58,11 +58,11 @@ void AudioArray::resize(size_t size) {
 }
 
 void AudioArray::scale(float value) {
-  VectorMath::multiplyByScalar(data_, value, data_, size_);
+  dsp::multiplyByScalar(data_, value, data_, size_);
 }
 
 float AudioArray::getMaxAbsValue() const {
-  return VectorMath::maximumMagnitude(data_, size_);
+  return dsp::maximumMagnitude(data_, size_);
 }
 
 void AudioArray::zero() {
@@ -86,7 +86,7 @@ void AudioArray::sum(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  VectorMath::add(
+  dsp::add(
       data_ + destinationStart,
       source->getData() + sourceStart,
       data_ + destinationStart,

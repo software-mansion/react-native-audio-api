@@ -1,7 +1,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
@@ -9,7 +10,10 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
       444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency());
-  detuneParam_ = std::make_shared<AudioParam>(0.0, -MAX_DETUNE, MAX_DETUNE);
+  detuneParam_ = std::make_shared<AudioParam>(
+      0.0,
+      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
   isInitialized_ = true;
@@ -79,6 +83,11 @@ void OscillatorNode::processNode(
   }
 
   handleStopScheduled();
+}
+
+double OscillatorNode::getStopTime() const {
+  return dsp::sampleFrameToTime(
+      static_cast<int>(phase_), context_->getSampleRate());
 }
 
 } // namespace audioapi

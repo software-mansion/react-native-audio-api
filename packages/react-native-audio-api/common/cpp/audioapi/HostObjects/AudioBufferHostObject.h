@@ -74,6 +74,8 @@ class AudioBufferHostObject : public JsiHostObject {
       destination.setValueAtIndex(runtime, i, jsi::Value(destinationData[i]));
     }
 
+    delete[] destinationData;
+
     return jsi::Value::undefined();
   }
 
@@ -93,6 +95,8 @@ class AudioBufferHostObject : public JsiHostObject {
 
     audioBuffer_->copyToChannel(
         sourceData, sourceLength, channelNumber, startInChannel);
+
+    delete[] sourceData;
 
     return jsi::Value::undefined();
   }
