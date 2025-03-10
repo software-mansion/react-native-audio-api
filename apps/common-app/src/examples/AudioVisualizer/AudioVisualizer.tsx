@@ -21,8 +21,12 @@ const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
-  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [times, setTimes] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
+  const [freqs, setFreqs] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE / 2).fill(0)
+  );
 
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -63,11 +67,11 @@ const AudioVisualizer: React.FC = () => {
     const timesArrayLength = analyserRef.current.fftSize;
     const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(timesArrayLength);
+    const timesArray = new Uint8Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
     setTimes(timesArray);
 
-    const freqsArray = new Array(frequencyArrayLength);
+    const freqsArray = new Uint8Array(frequencyArrayLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
     setFreqs(freqsArray);
 

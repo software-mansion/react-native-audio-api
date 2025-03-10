@@ -29,41 +29,19 @@ export default class AnalyserNode extends AudioNode {
     );
   }
 
-  public getByteFrequencyData(array: number[]): void {
-    const data = new Uint8Array(array);
-
-    (this.node as globalThis.AnalyserNode).getByteFrequencyData(data);
-
-    for (let i = 0; i < array.length; i++) {
-      array[i] = data[i];
-    }
+  public getByteFrequencyData(array: Uint8Array): void {
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(array);
   }
 
-  public getByteTimeDomainData(array: number[]): void {
-    const data = new Uint8Array(array);
-
-    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(data);
-
-    for (let i = 0; i < array.length; i++) {
-      array[i] = data[i];
-    }
+  public getByteTimeDomainData(array: Uint8Array): void {
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(array);
   }
 
-  public getFloatFrequencyData(array: number[]): void {
-    const data = new Float32Array(array);
-    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(data);
-
-    for (let i = 0; i < array.length; i++) {
-      array[i] = data[i];
-    }
+  public getFloatFrequencyData(array: Float32Array): void {
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(array);
   }
 
-  public getFloatTimeDomainData(array: number[]): void {
-    const data = new Float32Array(array);
-    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(data);
-
-    for (let i = 0; i < array.length; i++) {
-      array[i] = data[i];
-    }
+  public getFloatTimeDomainData(array: Float32Array): void {
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(array);
   }
 }
