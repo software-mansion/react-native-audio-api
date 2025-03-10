@@ -46,8 +46,11 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  createBufferSource(pitchCorrection: boolean): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(
+      this,
+      this.context.createBufferSource(pitchCorrection)
+    );
   }
 
   createBuffer(

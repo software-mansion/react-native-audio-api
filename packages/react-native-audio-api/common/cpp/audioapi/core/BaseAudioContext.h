@@ -42,7 +42,7 @@ class BaseAudioContext {
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource();
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(

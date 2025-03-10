@@ -3,7 +3,6 @@ import AudioParam from './AudioParam';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
-import { TimeStretchType } from '../types';
 
 export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
@@ -60,16 +59,6 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loopEnd(value: number) {
     (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
-  }
-
-  public get timeStretch(): TimeStretchType {
-    return 'linear';
-  }
-
-  public set timeStretch(value: TimeStretchType) {
-    console.log(
-      'React Native Audio API: setting timeStretch is not supported on web'
-    );
   }
 
   public start(when?: number, offset?: number, duration?: number): void {

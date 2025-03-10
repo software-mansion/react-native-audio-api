@@ -30,5 +30,3 @@ export interface AudioContextOptions {
 }
 
 export type WindowType = 'blackman' | 'hann';
-
-export type TimeStretchType = 'linear' | 'speech-music';

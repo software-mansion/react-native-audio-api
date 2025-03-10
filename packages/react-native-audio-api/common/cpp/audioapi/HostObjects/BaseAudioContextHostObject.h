@@ -95,7 +95,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(createBufferSource) {
-    auto bufferSource = context_->createBufferSource();
+    auto pitchCorrection = args[0].asBool();
+    auto bufferSource = context_->createBufferSource(pitchCorrection);
     auto bufferSourceHostObject =
         std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);

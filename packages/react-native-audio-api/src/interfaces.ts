@@ -5,7 +5,6 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
-  TimeStretchType,
 } from './types';
 
 export interface AudioAPIInstaller {
@@ -22,7 +21,7 @@ export interface IBaseAudioContext {
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
-  createBufferSource: () => IAudioBufferSourceNode;
+  createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBuffer: (
     channels: number,
     length: number,
@@ -100,7 +99,6 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loopEnd: number;
   detune: IAudioParam;
   playbackRate: IAudioParam;
-  timeStretch: TimeStretchType;
 
   start: (when?: number, offset?: number, duration?: number) => void;
 }
