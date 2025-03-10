@@ -19,7 +19,7 @@ which can be used by [`AudioBufferSourceNode`](/sources/audio-buffer-source-node
 function createWhiteNoise() {
   const aCtx = = new AudioContext();
   const bufferSize = aCtx.sampleRate * 2;
-  const output = new Array<number>(bufferSize);
+  const output = new Float32Array(bufferSize);
 
   for (let i = 0; i < bufferSize; i += 1) {
     output[i] = Math.random() * 2 - 1;
@@ -50,7 +50,7 @@ const createPinkNoise = () => {
   const aCtx = new AudioContext();
 
   const bufferSize = 2 * aCtx.sampleRate;
-  const output = new Array<number>(bufferSize);
+  const output = new Float32Array(bufferSize);
 
   let b0, b1, b2, b3, b4, b5, b6;
   b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
@@ -94,7 +94,7 @@ Brownian noise, similarly to pink one, decreases in power by $\dfrac{12dB}{octav
     const aCtx = new AudioContext();
 
     const bufferSize = 2 * aCtx.sampleRate;
-    const output = new Array<number>(bufferSize);
+    const output = new Float32Array(bufferSize);
     let lastOut = 0.0;
 
     for (let i = 0; i < bufferSize; i += 1) {

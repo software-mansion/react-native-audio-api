@@ -44,7 +44,7 @@ Above method returns array with PCM data from given channel.
 | :---: | :---- |
 | `IndexSizeError` | `channel` specifies unexisting audio channel. |
 
-#### Returns `number[]`.
+#### Returns `Float32Array`.
 
 ### `copyFromChannel`
 
@@ -52,7 +52,7 @@ Above method copies data from given channel of the `AudioBuffer` to an array.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` | `number[]` | The array to which data will be copied. |
+| `destination` | `Float32Array` | The array to which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel from which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 
@@ -71,7 +71,7 @@ Above method copies data from given array to specified channel of the `AudioBuff
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `source` | `number[]` | The array from which data will be copied. |
+| `source` | `Float32Array` | The array from which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel to which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 
