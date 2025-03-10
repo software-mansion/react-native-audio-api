@@ -79,8 +79,8 @@ export default class BaseAudioContext {
   }
 
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
     if (real.length !== imag.length) {

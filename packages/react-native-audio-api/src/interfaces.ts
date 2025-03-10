@@ -29,8 +29,8 @@ export interface IBaseAudioContext {
     sampleRate: number
   ) => IAudioBuffer;
   createPeriodicWave: (
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
@@ -71,9 +71,9 @@ export interface IBiquadFilterNode extends IAudioNode {
   type: BiquadFilterType;
 
   getFrequencyResponse(
-    frequencyArray: number[],
-    magResponseOutput: number[],
-    phaseResponseOutput: number[]
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
   ): void;
 }
 
