@@ -35,8 +35,6 @@ class Clap implements SoundEngine {
 
     buffer.copyToChannel(output, 0, 0);
 
-    // console.log(buffer.getChannelData(0).slice(0, 1000));
-
     return buffer;
   }
 
