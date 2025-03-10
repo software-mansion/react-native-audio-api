@@ -79,16 +79,13 @@ class AudioParamHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(setValueCurveAtTime) {
-    auto values = args[0].getObject(runtime).asArray(runtime);
-    auto length = static_cast<size_t>(values.length(runtime));
-    auto valuesData = new float[length];
-    for (size_t i = 0; i < values.length(runtime); i++) {
-      valuesData[i] =
-          static_cast<float>(values.getValueAtIndex(runtime, i).getNumber());
-    }
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto values = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
+
     double startTime = args[1].getNumber();
     double duration = args[2].getNumber();
-    param_->setValueCurveAtTime(valuesData, length, startTime, duration);
+    param_->setValueCurveAtTime(values, length, startTime, duration);
     return jsi::Value::undefined();
   }
 

@@ -139,7 +139,7 @@ export interface IAudioParam {
     timeConstant: number
   ) => void;
   setValueCurveAtTime: (
-    values: number[],
+    values: Float32Array,
     startTime: number,
     duration: number
   ) => void;

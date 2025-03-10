@@ -85,7 +85,7 @@ export default class AudioParam {
   }
 
   public setValueCurveAtTime(
-    values: number[],
+    values: Float32Array,
     startTime: number,
     duration: number
   ): AudioParam {
