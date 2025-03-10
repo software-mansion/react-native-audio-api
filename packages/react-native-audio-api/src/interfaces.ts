@@ -111,14 +111,14 @@ export interface IAudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
-  getChannelData(channel: number): number[];
+  getChannelData(channel: number): Float32Array;
   copyFromChannel(
-    destination: number[],
+    destination: Float32Array,
     channelNumber: number,
     startInChannel: number
   ): void;
   copyToChannel(
-    source: number[],
+    source: Float32Array,
     channelNumber: number,
     startInChannel: number
   ): void;
@@ -157,8 +157,8 @@ export interface IAnalyserNode extends IAudioNode {
   smoothingTimeConstant: number;
   window: WindowType;
 
-  getFloatFrequencyData: (array: number[]) => void;
-  getByteFrequencyData: (array: number[]) => void;
-  getFloatTimeDomainData: (array: number[]) => void;
-  getByteTimeDomainData: (array: number[]) => void;
+  getFloatFrequencyData: (array: Float32Array) => void;
+  getByteFrequencyData: (array: Uint8Array) => void;
+  getFloatTimeDomainData: (array: Float32Array) => void;
+  getByteTimeDomainData: (array: Uint8Array) => void;
 }

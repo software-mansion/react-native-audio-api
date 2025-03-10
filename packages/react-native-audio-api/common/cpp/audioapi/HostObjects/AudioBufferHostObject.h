@@ -47,56 +47,42 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(getChannelData) {
-    int channel = static_cast<int>(args[0].getNumber());
-    float *channelData = audioBuffer_->getChannelData(channel);
+    auto channel = static_cast<int>(args[0].getNumber());
+    auto *channelData = audioBuffer_->getChannelData(channel);
+    auto length = static_cast<int>(audioBuffer_->getLength());
 
-    auto array = jsi::Array(runtime, audioBuffer_->getLength());
-    for (int i = 0; i < audioBuffer_->getLength(); i++) {
-      array.setValueAtIndex(runtime, i, jsi::Value(channelData[i]));
-    }
+    auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
+    auto float32Array = float32ArrayCtor.callAsConstructor(runtime, length).getObject(runtime).getArrayBuffer(runtime);
 
-    return array;
+//    memcpy(float32Array.data(runtime), channelData, length * sizeof(float));
+
+    //TODO: Fix this
+
+    return float32Array;
   }
 
   JSI_HOST_FUNCTION(copyFromChannel) {
-    auto destination = args[0].getObject(runtime).asArray(runtime);
-    auto destinationLength =
-        static_cast<size_t>(destination.getProperty(runtime, "length").asNumber());
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto destination = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
     auto channelNumber = static_cast<int>(args[1].getNumber());
     auto startInChannel = static_cast<size_t>(args[2].getNumber());
 
-    auto *destinationData = new float[destinationLength];
-
     audioBuffer_->copyFromChannel(
-        destinationData, destinationLength, channelNumber, startInChannel);
-
-    for (int i = 0; i < destinationLength; i++) {
-      destination.setValueAtIndex(runtime, i, jsi::Value(destinationData[i]));
-    }
-
-    delete[] destinationData;
+        destination, length, channelNumber, startInChannel);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(copyToChannel) {
-    auto source = args[0].getObject(runtime).asArray(runtime);
-    auto sourceLength =
-        static_cast<size_t>(source.getProperty(runtime, "length").asNumber());
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
     auto channelNumber = static_cast<int>(args[1].getNumber());
     auto startInChannel = static_cast<size_t>(args[2].getNumber());
 
-    auto *sourceData = new float[sourceLength];
-
-    for (int i = 0; i < sourceLength; i++) {
-      sourceData[i] =
-          static_cast<float>(source.getValueAtIndex(runtime, i).getNumber());
-    }
-
     audioBuffer_->copyToChannel(
-        sourceData, sourceLength, channelNumber, startInChannel);
-
-    delete[] sourceData;
+        source, length, channelNumber, startInChannel);
 
     return jsi::Value::undefined();
   }

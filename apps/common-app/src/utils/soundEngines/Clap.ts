@@ -27,13 +27,15 @@ class Clap implements SoundEngine {
       this.audioContext.sampleRate
     );
 
-    const output = new Array<number>(bufferSize);
+    const output = new Float32Array(bufferSize);
 
     for (let i = 0; i < bufferSize; i++) {
       output[i] = Math.random() * 2 - 1;
     }
 
     buffer.copyToChannel(output, 0, 0);
+
+    // console.log(buffer.getChannelData(0).slice(0, 1000));
 
     return buffer;
   }

@@ -39,8 +39,8 @@ function goofyResample(
     audioContext.sampleRate
   );
 
-  const processingChannel: Array<number> = [];
-  const upSampleChannel: Array<number> = [];
+  const processingChannel = new Float32Array(input.length);
+  const upSampleChannel = new Float32Array(input.length);
 
   for (let i = 0; i < input.length; i += 1) {
     processingChannel[i] = input[i] / maxInputValue;
