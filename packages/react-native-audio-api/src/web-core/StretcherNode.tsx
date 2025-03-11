@@ -2,6 +2,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioNode from './AudioNode';
 
+import { clamp } from '../utils';
 import { globalTag } from './custom/LoadCustomWasm';
 
 interface ScheduleOptions {
@@ -162,7 +163,11 @@ export default class StretcherNode extends AudioNode {
 
   public start(when?: number, offset?: number, duration?: number): void {
     this._isPlaying = true;
-    const tNow = this.context.currentTime;
+    const startAt = when ?? this.context.currentTime;
+    const offsetBy = offset
+      ? startAt +
+        clamp(offset, 0, duration ?? this._buffer?.duration ?? Infinity)
+      : undefined;
 
     if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
       this.asStretcher().schedule({
@@ -172,11 +177,11 @@ export default class StretcherNode extends AudioNode {
     }
 
     this.asStretcher().start(
-      when ?? tNow,
-      offset ? (when ?? tNow) + offset : undefined,
+      startAt,
+      offsetBy,
       duration,
       this.playbackRate.value,
-      Math.floor(Math.max(Math.min(this.detune.value / 100, 12), -12))
+      Math.floor(clamp(this.detune.value / 100, -12, 12))
     );
   }
 
