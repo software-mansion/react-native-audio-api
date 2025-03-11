@@ -12,7 +12,7 @@ import {
   AnalyserNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas, vec, Points } from '@shopify/react-native-skia';
+import { Canvas as SKCanvas, vec, Points, SkPoint } from '@shopify/react-native-skia';
 
 interface Size {
   width: number;
@@ -20,7 +20,7 @@ interface Size {
 }
 
 interface ChartProps {
-  data: number[];
+  data: Uint8Array;
   dataSize: number;
 }
 
@@ -39,12 +39,16 @@ const TimeChart: React.FC<ChartProps> = (props) => {
     const maxWidth = size.width - 2 * startWidth;
     const maxHeight = size.height;
 
-    return data.map((value, index) => {
+    const p: SkPoint[] = [];
+
+    data.forEach((value, index) => {
       const x = startWidth + (index * maxWidth) / dataSize;
       const y = maxHeight - (value / 255) * maxHeight;
 
-      return vec(x, y);
+      p.push(vec(x, y));
     });
+
+    return p;
   }, [size, data, dataSize]);
 
   return (
@@ -59,8 +63,7 @@ const FFT_SIZE = 512;
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
-  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [times, setTimes] = useState<Uint8Array>(new Uint8Array(FFT_SIZE).fill(127));
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -95,13 +98,9 @@ const AudioVisualizer: React.FC = () => {
     const timesArrayLength = analyserRef.current.fftSize;
     const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(timesArrayLength);
+    const timesArray = new Uint8Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
     setTimes(timesArray);
-
-    const freqsArray = new Array(frequencyArrayLength);
-    analyserRef.current.getByteFrequencyData(freqsArray);
-    setFreqs(freqsArray);
 
     requestAnimationFrame(draw);
   };

@@ -82,6 +82,10 @@ Above method lets you create [`AudioBuffer`](/sources/audio-buffer).
 
 Above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
 
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/types/audio-buffer-source-node-options) | Dictionary object that specifies if pitch correction has to be available. |
+
 #### Returns `AudioBufferSourceNode`.
 
 ### `createGain`
@@ -102,8 +106,8 @@ Above method lets you create `PeriodicWave`.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `real` | `number[]` | An array of cosine terms. |
-| `imag` | `number[]` | An array of sine terms. |
+| `real` | `Float32Array` | An array of cosine terms. |
+| `imag` | `Float32Array` | An array of sine terms. |
 | `constraints` <Optional /> | [`PeriodicWaveConstraints`](/types/periodic-wave-constraints) | An object that specifies if normalization is disabled. |
 
 #### Errors

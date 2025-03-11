@@ -28,7 +28,7 @@ export default class AudioBuffer {
   }
 
   public copyFromChannel(
-    destination: number[],
+    destination: Float32Array,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -44,17 +44,11 @@ export default class AudioBuffer {
       );
     }
 
-    const array = new Float32Array(destination);
-
-    this.buffer.copyFromChannel(array, channelNumber, startInChannel);
-
-    for (let i = 0; i < destination.length; i++) {
-      destination[i] = array[i];
-    }
+    this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
 
   public copyToChannel(
-    source: number[],
+    source: Float32Array,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -70,10 +64,6 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyToChannel(
-      new Float32Array(source),
-      channelNumber,
-      startInChannel
-    );
+    this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 }

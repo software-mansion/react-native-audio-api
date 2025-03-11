@@ -35,8 +35,7 @@ const HomeScreen: FC = () => {
       style={({ pressed }) => [
         styles.button,
         { borderStyle: pressed ? 'solid' : 'dashed' },
-      ]}
-    >
+      ]}>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.subtitle}>{item.subtitle}</Text>
     </Pressable>
@@ -69,8 +68,7 @@ const App: FC = () => {
             headerTintColor: colors.white,
             headerBackTitle: ' ',
             headerBackAccessibilityLabel: 'Go back',
-          }}
-        >
+          }}>
           <Stack.Screen
             name="Home"
             component={HomeScreen}

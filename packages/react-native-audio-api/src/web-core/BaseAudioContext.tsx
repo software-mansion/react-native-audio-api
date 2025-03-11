@@ -29,8 +29,8 @@ export default interface BaseAudioContext {
     sampleRate: number
   ): AudioBuffer;
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;

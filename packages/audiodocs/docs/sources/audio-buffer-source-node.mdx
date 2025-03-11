@@ -19,7 +19,7 @@ However this node is very inexpensive to create, and what is crucial you can reu
 
 ## Constructor
 
-[`BaseAudioContext.createBufferSource()`](/core/base-audio-context#createbuffersource)
+[`BaseAudioContext.createBufferSource(options)`](/core/base-audio-context#createbuffersource)
 
 ## Properties
 
@@ -31,7 +31,6 @@ However this node is very inexpensive to create, and what is crucial you can reu
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
 | `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
 | `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
-| `timeStretch` | [`TimeStretchType`](/types/time-stretch-type) | Enumerated value that specifies the algorithms used when performing time-stretching and pitch-shifting |
 
 ## Methods
 
@@ -65,7 +64,7 @@ Above method schedules `AudioBufferSourceNode` to start playback of audio data c
 - Default value is 0.0.
 - Nominal range is -∞ to ∞.
 - For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
-- When `AudioBufferSourceNode.timeStretch = 'speech-music'` it is clamped to range -1200 to 1200.
+- When `createBufferSource(true)` it is clamped to range -1200 to 1200.
 
 #### `loop`
 - Default value is false.
@@ -80,4 +79,4 @@ Above method schedules `AudioBufferSourceNode` to start playback of audio data c
 - Default value is 1.0.
 - Nominal range is -∞ to ∞.
 - For example value of 1.0 plays audio at normal speed, whereas value of 2.0 plays audio twice as fast as normal speed.
-- When `AudioBufferSourceNode.timeStretch = 'speech-music'` it is clamped to range 0 to 3.
+- When created with `createBufferSource(true)` it is clamped to range 0 to 3 and uses pitch correction algorithm.

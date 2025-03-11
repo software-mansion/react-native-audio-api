@@ -64,30 +64,19 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
   }
 
   JSI_HOST_FUNCTION(getFrequencyResponse) {
-    auto frequencyArray = args[0].getObject(runtime).asArray(runtime);
-    auto magResponseOut = args[1].getObject(runtime).asArray(runtime);
-    auto phaseResponseOut = args[2].getObject(runtime).asArray(runtime);
+    auto arrayBufferFrequency = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
+    auto length = static_cast<int>(arrayBufferFrequency.size(runtime));
 
-    std::vector<float> frequencyArrayVector(frequencyArray.length(runtime));
-    for (size_t i = 0; i < frequencyArray.length(runtime); i++) {
-      frequencyArrayVector[i] = static_cast<float>(
-          frequencyArray.getValueAtIndex(runtime, i).getNumber());
-    }
+    auto arrayBufferMag = args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto magResponseOut = reinterpret_cast<float *>(arrayBufferMag.data(runtime));
 
-    std::vector<float> magResponseOutVector(magResponseOut.length(runtime));
-    std::vector<float> phaseResponseOutVector(phaseResponseOut.length(runtime));
+    auto arrayBufferPhase = args[2].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
     auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
     biquadFilterNode->getFrequencyResponse(
-        frequencyArrayVector, magResponseOutVector, phaseResponseOutVector);
-
-    for (size_t i = 0; i < magResponseOutVector.size(); i++) {
-      magResponseOut.setValueAtIndex(runtime, i, magResponseOutVector[i]);
-    }
-
-    for (size_t i = 0; i < phaseResponseOutVector.size(); i++) {
-      phaseResponseOut.setValueAtIndex(runtime, i, phaseResponseOutVector[i]);
-    }
+        frequencyArray, magResponseOut, phaseResponseOut, length);
 
     return jsi::Value::undefined();
   }

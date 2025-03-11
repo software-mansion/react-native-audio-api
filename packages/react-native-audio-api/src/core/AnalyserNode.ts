@@ -76,19 +76,19 @@ export default class AnalyserNode extends AudioNode {
     return (this.node as IAnalyserNode).frequencyBinCount;
   }
 
-  public getFloatFrequencyData(array: number[]): void {
+  public getFloatFrequencyData(array: Float32Array): void {
     (this.node as IAnalyserNode).getFloatFrequencyData(array);
   }
 
-  public getByteFrequencyData(array: number[]): void {
+  public getByteFrequencyData(array: Uint8Array): void {
     (this.node as IAnalyserNode).getByteFrequencyData(array);
   }
 
-  public getFloatTimeDomainData(array: number[]): void {
+  public getFloatTimeDomainData(array: Float32Array): void {
     (this.node as IAnalyserNode).getFloatTimeDomainData(array);
   }
 
-  public getByteTimeDomainData(array: number[]): void {
+  public getByteTimeDomainData(array: Uint8Array): void {
     (this.node as IAnalyserNode).getByteTimeDomainData(array);
   }
 }

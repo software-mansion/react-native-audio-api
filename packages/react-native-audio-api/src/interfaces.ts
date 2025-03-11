@@ -5,7 +5,6 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   WindowType,
-  TimeStretchType,
 } from './types';
 
 export interface AudioAPIInstaller {
@@ -22,15 +21,15 @@ export interface IBaseAudioContext {
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
-  createBufferSource: () => IAudioBufferSourceNode;
+  createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBuffer: (
     channels: number,
     length: number,
     sampleRate: number
   ) => IAudioBuffer;
   createPeriodicWave: (
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
@@ -71,9 +70,9 @@ export interface IBiquadFilterNode extends IAudioNode {
   type: BiquadFilterType;
 
   getFrequencyResponse(
-    frequencyArray: number[],
-    magResponseOutput: number[],
-    phaseResponseOutput: number[]
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
   ): void;
 }
 
@@ -100,7 +99,6 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   loopEnd: number;
   detune: IAudioParam;
   playbackRate: IAudioParam;
-  timeStretch: TimeStretchType;
 
   start: (when?: number, offset?: number, duration?: number) => void;
 }
@@ -111,14 +109,14 @@ export interface IAudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
-  getChannelData(channel: number): number[];
+  getChannelData(channel: number): Float32Array;
   copyFromChannel(
-    destination: number[],
+    destination: Float32Array,
     channelNumber: number,
     startInChannel: number
   ): void;
   copyToChannel(
-    source: number[],
+    source: Float32Array,
     channelNumber: number,
     startInChannel: number
   ): void;
@@ -139,7 +137,7 @@ export interface IAudioParam {
     timeConstant: number
   ) => void;
   setValueCurveAtTime: (
-    values: number[],
+    values: Float32Array,
     startTime: number,
     duration: number
   ) => void;
@@ -157,8 +155,8 @@ export interface IAnalyserNode extends IAudioNode {
   smoothingTimeConstant: number;
   window: WindowType;
 
-  getFloatFrequencyData: (array: number[]) => void;
-  getByteFrequencyData: (array: number[]) => void;
-  getFloatTimeDomainData: (array: number[]) => void;
-  getByteTimeDomainData: (array: number[]) => void;
+  getFloatFrequencyData: (array: Float32Array) => void;
+  getByteFrequencyData: (array: Uint8Array) => void;
+  getFloatTimeDomainData: (array: Float32Array) => void;
+  getByteTimeDomainData: (array: Uint8Array) => void;
 }

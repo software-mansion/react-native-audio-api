@@ -9,12 +9,12 @@
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
+AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection)
     : AudioScheduledSourceNode(context),
       loop_(false),
       loopStart_(0),
       loopEnd_(0),
-      timeStretchType_(TimeStretchType::LINEAR),
+      pitchCorrection_(pitchCorrection),
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
@@ -51,11 +51,7 @@ std::shared_ptr<AudioParam> AudioBufferSourceNode::getPlaybackRateParam()
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
-  return buffer_;
-}
-
-std::string AudioBufferSourceNode::getTimeStretchType() const {
-  return toString(timeStretchType_);
+    return buffer_;
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
@@ -89,10 +85,6 @@ void AudioBufferSourceNode::setBuffer(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
-}
-
-void AudioBufferSourceNode::setTimeStretchType(const std::string &type) {
-  timeStretchType_ = fromString(type);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -136,7 +128,7 @@ void AudioBufferSourceNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  if (timeStretchType_ == TimeStretchType::LINEAR) {
+  if (!pitchCorrection_) {
     auto computedPlaybackRate = getComputedPlaybackRateValue();
     updatePlaybackInfo(
         processingBus, framesToProcess, startOffset, offsetLength);

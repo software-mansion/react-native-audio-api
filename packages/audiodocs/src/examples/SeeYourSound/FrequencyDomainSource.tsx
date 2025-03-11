@@ -19,8 +19,16 @@ interface Size {
   height: number;
 }
 
+interface Point {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+}
+
 interface ChartProps {
-  data: number[];
+  data: Uint8Array;
   dataSize: number;
 }
 
@@ -37,7 +45,9 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
   const barWidth = size.width / dataSize;
 
   const points = useMemo(() => {
-    return data.map((value, index) => {
+    const p: Point[] = [];
+
+    data.forEach((value, index) => {
       const x = index * barWidth;
       const y1 = size.height;
       const y2 = size.height - size.height * (value / 256);
@@ -45,8 +55,10 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
       const hue = (index / dataSize) * 360;
       const color = `hsl(${hue}, 100%, 50%)`;
 
-      return { x1: x, y1, x2: x, y2, color };
+      p.push({ x1: x, y1, x2: x, y2, color });
     });
+
+    return p;
   }, [size, data, dataSize]);
 
   return (
@@ -70,8 +82,9 @@ const FFT_SIZE = 512;
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
-  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [freqs, setFreqs] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE / 2).fill(0)
+  );
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -103,14 +116,9 @@ const AudioVisualizer: React.FC = () => {
       return;
     }
 
-    const timesArrayLength = analyserRef.current.fftSize;
     const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(timesArrayLength);
-    analyserRef.current.getByteTimeDomainData(timesArray);
-    setTimes(timesArray);
-
-    const freqsArray = new Array(frequencyArrayLength);
+    const freqsArray = new Uint8Array(frequencyArrayLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
     setFreqs(freqsArray);
 

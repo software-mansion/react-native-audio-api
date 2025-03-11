@@ -57,12 +57,11 @@ std::shared_ptr<AudioParam> BiquadFilterNode::getGainParam() const {
 // angle of the frequency response
 
 void BiquadFilterNode::getFrequencyResponse(
-    const std::vector<float> &frequencyArray,
-    std::vector<float> &magResponseOutput,
-    std::vector<float> &phaseResponseOutput) {
+    const float *frequencyArray,
+    float *magResponseOutput,
+    float *phaseResponseOutput,
+    const int length) {
   applyFilter();
-
-  auto frequencyArraySize = frequencyArray.size();
 
   float b0 = b0_;
   float b1 = b1_;
@@ -70,7 +69,7 @@ void BiquadFilterNode::getFrequencyResponse(
   float a1 = a1_;
   float a2 = a2_;
 
-  for (size_t i = 0; i < frequencyArraySize; i++) {
+  for (size_t i = 0; i < length; i++) {
     auto omega = PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);

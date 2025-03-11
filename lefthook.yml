@@ -1,11 +1,12 @@
 pre-commit:
   parallel: true
   commands:
+    format:
+      run: yarn format
     lint:
-      glob: '*.{js,ts,jsx,tsx}'
       run: yarn lint
     types:
-      glob: '*.{js,ts, jsx, tsx}'
+      glob: '*.{js,ts,jsx,tsx}'
       run: yarn typecheck
 commit-msg:
   parallel: true

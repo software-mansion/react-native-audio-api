@@ -95,7 +95,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(createBufferSource) {
-    auto bufferSource = context_->createBufferSource();
+    auto pitchCorrection = args[0].asBool();
+    auto bufferSource = context_->createBufferSource(pitchCorrection);
     auto bufferSourceHostObject =
         std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource, callInvoker_);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
@@ -111,18 +112,21 @@ class BaseAudioContextHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(createPeriodicWave) {
-    auto real = args[0].getObject(runtime).getArray(runtime);
-    auto imag = args[1].getObject(runtime).getArray(runtime);
+    auto arrayBufferReal = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
+    auto length = static_cast<int>(arrayBufferReal.size(runtime));
+
+    auto arrayBufferImag = args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto imag = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
+
     auto disableNormalization = args[2].getBool();
-    auto length =
-        static_cast<int>(real.getProperty(runtime, "length").asNumber());
 
     auto complexData = std::vector<std::complex<float>>(length);
 
-    for (size_t i = 0; i < real.length(runtime); i++) {
+    for (size_t i = 0; i < length; i++) {
         complexData[i] = std::complex<float>(
-            static_cast<float>(real.getValueAtIndex(runtime, i).getNumber()),
-            static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber()));
+            static_cast<float>(real[i]),
+            static_cast<float>(imag[i]));
     }
 
     auto periodicWave = context_->createPeriodicWave(

@@ -1,5 +1,4 @@
 import { InvalidStateError, RangeError } from '../errors';
-import { TimeStretchType } from '../types';
 
 import AudioParam from './AudioParam';
 import AudioBuffer from './AudioBuffer';
@@ -61,10 +60,6 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set loopEnd(value: number) {
     (this.node as globalThis.AudioBufferSourceNode).loopEnd = value;
-  }
-
-  public get timeStretch(): TimeStretchType {
-    return 'linear';
   }
 
   public start(when?: number, offset?: number, duration?: number): void {
