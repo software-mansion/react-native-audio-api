@@ -2,6 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioContextOptions,
+  AudioBufferSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -61,9 +62,9 @@ export default class AudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  async createBufferSource(options?: {
-    pitchCorrection: boolean;
-  }): Promise<AudioBufferSourceNode | StretcherNode> {
+  async createBufferSource(
+    options?: AudioBufferSourceNodeOptions
+  ): Promise<AudioBufferSourceNode | StretcherNode> {
     if (!options || !options.pitchCorrection) {
       return new AudioBufferSourceNode(this, this.context.createBufferSource());
     }
