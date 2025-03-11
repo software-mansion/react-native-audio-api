@@ -61,8 +61,7 @@ const AudioFile: FC = () => {
         fetchAudioBuffer();
       }
 
-      bufferSourceRef.current =
-        audioContextRef.current.createBufferSource(true);
+      bufferSourceRef.current = audioContextRef.current.createBufferSource({pitchCorrection: true});
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
       bufferSourceRef.current.onended = (stopTime?: number) => {
