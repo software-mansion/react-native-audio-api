@@ -9,7 +9,9 @@
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection)
+AudioBufferSourceNode::AudioBufferSourceNode(
+    BaseAudioContext *context,
+    bool pitchCorrection)
     : AudioScheduledSourceNode(context),
       loop_(false),
       loopStart_(0),
@@ -51,7 +53,7 @@ std::shared_ptr<AudioParam> AudioBufferSourceNode::getPlaybackRateParam()
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
-    return buffer_;
+  return buffer_;
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
