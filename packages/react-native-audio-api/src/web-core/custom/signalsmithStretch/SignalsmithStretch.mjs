@@ -510,7 +510,7 @@ function registerWorkletProcessor(Module, audioNodeKey) {
           return result;
         },
         schedule: (objIn, adjustPrevious) => {
-          let outputTime = 'outputTime' in objIn ? objIn.output : currentTime;
+          let outputTime = 'output' in objIn ? objIn.output : currentTime;
 
           let latestSegment = this.timeMap[this.timeMap.length - 1];
           while (
