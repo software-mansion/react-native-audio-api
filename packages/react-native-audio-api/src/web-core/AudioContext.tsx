@@ -61,8 +61,18 @@ export default class AudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  async createBufferSource(options?: {
+    pitchCorrection: boolean;
+  }): Promise<AudioBufferSourceNode | StretcherNode> {
+    if (!options || !options.pitchCorrection) {
+      return new AudioBufferSourceNode(this, this.context.createBufferSource());
+    }
+
+    await globalWasmPromise;
+
+    const wasmStretch = await window[globalTag](this.context);
+
+    return new StretcherNode(this, wasmStretch);
   }
 
   createBuffer(
@@ -111,14 +121,6 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  async createStretcher(): Promise<StretcherNode> {
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new StretcherNode(this, wasmStretch);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
