@@ -387,11 +387,10 @@ export default class AudioBufferSourceNode<
       return;
     }
 
-    const startAt = when ?? this.context.currentTime;
-    const offsetBy = offset
-      ? startAt +
-        clamp(offset, 0, duration ?? this._buffer?.duration ?? Infinity)
-      : undefined;
+    const startAt =
+      !when || when < this.context.currentTime
+        ? this.context.currentTime
+        : when;
 
     if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
       this.asStretcher().schedule({
@@ -402,7 +401,7 @@ export default class AudioBufferSourceNode<
 
     this.asStretcher().start(
       startAt,
-      offsetBy,
+      offset,
       duration,
       this.playbackRate.value,
       Math.floor(clamp(this.detune.value / 100, -12, 12))
