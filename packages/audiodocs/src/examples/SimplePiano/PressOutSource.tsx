@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system';
 import { View, Text, Pressable } from 'react-native';
 import React, { FC, useEffect, useRef } from 'react';
 import {
@@ -76,10 +75,11 @@ const SimplePiano: FC = () => {
     }
 
     Object.entries(sourceList).forEach(async ([key, url]) => {
-      bufferMapRef.current[key as KeyName] = await FileSystem.downloadAsync(
-        url,
-        `${FileSystem.documentDirectory}/${key}.mp3`
-      ).then(({ uri }) => audioContextRef.current!.decodeAudioDataSource(uri));
+      bufferMapRef.current[key as KeyName] = await fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        );
     });
 
     return () => {

@@ -4,7 +4,6 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
-import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AudioBuffer,
@@ -140,12 +139,11 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await FileSystem.downloadAsync(
-        'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3',
-        FileSystem.documentDirectory + 'audio.mp3'
-      ).then(({ uri }) => {
-        return audioContextRef.current!.decodeAudioDataSource(uri);
-      });
+      audioBufferRef.current = await fetch('https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3')
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        )
 
       setIsLoading(false);
     };

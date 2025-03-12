@@ -131,8 +131,11 @@ const SimplePiano: FC = () => {
     }
 
     Object.entries(sourceList).forEach(async ([key, url]) => {
-      bufferListRef.current[key as KeyName] =
-        await audioContextRef.current!.decodeAudioDataSource(url);
+      bufferListRef.current[key as KeyName] = await fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        );
     });
 
     return () => {

@@ -73,7 +73,6 @@ Like previously, we will need to preload the audio files in order to be able to 
 First, we have the import section and the list of sources we will be using. Let’s also make things easier by using type shorthand for the partial record:
 
 ```tsx
-import * as FileSystem from 'expo-file-system';
 import { AudioBuffer, AudioContext } from 'react-native-audio-api';
 
 /* ... */
@@ -100,10 +99,11 @@ export default function SimplePiano() {
     }
 
     Object.entries(sourceList).forEach(async ([key, url]) => {
-      bufferListRef.current[key as KeyName] = await FileSystem.downloadAsync(
-        url,
-        `${FileSystem.documentDirectory}/${key}.mp3`
-      ).then(({ uri }) => audioContextRef.current!.decodeAudioDataSource(uri));
+      bufferListRef.current[key as KeyName] = await fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        );
     });
   }, []);
 }
