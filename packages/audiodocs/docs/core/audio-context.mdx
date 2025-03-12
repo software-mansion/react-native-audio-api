@@ -23,19 +23,19 @@ It is responsible for supervising and managing audio-processing graph.
 
 ### `close`
 
-Above method lets you close the audio context, releasing any system audio resources that it uses.
+The above method lets you close the audio context, releasing any system audio resources that it uses.
 
 #### Returns `Promise<undefined>`.
 
 ### `suspend`
 
-Above method lets you suspend time progression in the audio context.
+The above method lets you suspend time progression in the audio context.
 It is useful when your application will not use audio for a while.
 
 #### Returns `Promise<undefined>`.
 
 ### `resume`
 
-Above method lets resume time progression in audio context that previously has been suspended.
+The above method lets resume time progression in audio context that previously has been suspended.
 
 #### Returns `Promise<undefined>`.
