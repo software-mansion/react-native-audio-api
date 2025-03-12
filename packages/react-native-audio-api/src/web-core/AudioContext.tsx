@@ -15,7 +15,6 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import StretcherNode from './StretcherNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -64,16 +63,20 @@ export default class AudioContext implements BaseAudioContext {
 
   async createBufferSource(
     options?: AudioBufferSourceNodeOptions
-  ): Promise<AudioBufferSourceNode | StretcherNode> {
+  ): Promise<AudioBufferSourceNode> {
     if (!options || !options.pitchCorrection) {
-      return new AudioBufferSourceNode(this, this.context.createBufferSource());
+      return new AudioBufferSourceNode(
+        this,
+        this.context.createBufferSource(),
+        false
+      );
     }
 
     await globalWasmPromise;
 
     const wasmStretch = await window[globalTag](this.context);
 
-    return new StretcherNode(this, wasmStretch);
+    return new AudioBufferSourceNode(this, wasmStretch, true);
   }
 
   createBuffer(
