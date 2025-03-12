@@ -124,16 +124,6 @@ The above method lets you create `StereoPannerNode`.
 
 #### Returns `StereoPannerNode`.
 
-### `decodeAudioDataSource`
-
-The above method lets you decode audio data file. It saves file in the device file system.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `sourcePath` | `string` | Path to audio file located on the device. |
-
-#### Returns `Promise<AudioBuffer>`.
-
 ### `decodeAudioData`
 
 The above method lets you decode audio data. It decodes with in memory audio data block.
@@ -141,6 +131,16 @@ The above method lets you decode audio data. It decodes with in memory audio dat
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `arrayBuffer` | `ArrayBuffer` | ArrayBuffer with audio data. |
+
+#### Returns `Promise<AudioBuffer>`.
+
+### `decodeAudioDataSource`
+
+The above method lets you decode audio data file. It saves file in the device file system.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `sourcePath` | `string` | Path to audio file located on the device. |
 
 #### Returns `Promise<AudioBuffer>`.
 
