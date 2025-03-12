@@ -18,6 +18,12 @@ We usually represent the channels with the standard abbreviations detailed in th
 | Quad | 4 | 0: L - left <br /> 1: R - right <br /> 2: SL - surround left <br /> 3: SR - surround right |
 | Stereo | 6 | 0: L - left <br /> 1: R - right <br /> 2: C - center <br /> 3: LFE - subwoofer <br /> 4: SL - surround left <br /> 5: SR - surround right |
 
+#### Mixing
+
+When node has more then one input or number of inputs channels differs from output up-mixing or down-mixing must be conducted.
+There are three properties involved in mixing process: `channelCount`, [`ChannelCountMode`](/types/channel-count-mode), [`ChannelInterpretation`](/types/channel-interpretation).
+Based on them we can obtain output's number of channels and mixing strategy.
+
 ## Properties
 
 | Name | Type | Description | |
