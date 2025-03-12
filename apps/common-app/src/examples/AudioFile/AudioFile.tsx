@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
-import * as FileSystem from 'expo-file-system';
 import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
@@ -84,13 +83,12 @@ const AudioFile: FC = () => {
 
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
-    const buffer = await FileSystem.downloadAsync(
-      URL,
-      FileSystem.documentDirectory + 'audio.mp3'
-    )
-      .then(({ uri }) => {
-        return audioContextRef.current!.decodeAudioDataSource(uri);
-      })
+
+    const buffer = await fetch(URL)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) =>
+        audioContextRef.current!.decodeAudioData(arrayBuffer)
+      )
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
         return null;

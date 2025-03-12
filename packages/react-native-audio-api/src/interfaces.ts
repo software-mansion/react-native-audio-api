@@ -34,6 +34,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
+  decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioContext extends IBaseAudioContext {

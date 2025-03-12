@@ -121,4 +121,10 @@ export default class BaseAudioContext {
       await this.context.decodeAudioDataSource(sourcePath)
     );
   }
+
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+    return new AudioBuffer(
+      await this.context.decodeAudioData(new Uint8Array(arrayBuffer))
+    );
+  }
 }

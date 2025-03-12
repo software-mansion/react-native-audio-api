@@ -129,6 +129,10 @@ export default class AudioContext implements BaseAudioContext {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+    return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
+  }
+
   async close(): Promise<void> {
     await this.context.close();
   }

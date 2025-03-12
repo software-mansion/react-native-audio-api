@@ -34,4 +34,5 @@ export default interface BaseAudioContext {
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
   decodeAudioDataSource(source: string): Promise<AudioBuffer>;
+  decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
 }
