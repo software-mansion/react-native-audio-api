@@ -46,6 +46,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioData),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
   }
 
@@ -164,6 +165,30 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
     return promise;
   }
+
+    JSI_HOST_FUNCTION(decodeAudioData) {
+      auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+      auto data = arrayBuffer.data(runtime);
+      auto size = static_cast<int>(arrayBuffer.size(runtime));
+
+      auto promise = promiseVendor_->createPromise([this, data, size](std::shared_ptr<Promise> promise) {
+        std::thread([this, data, size, promise = std::move(promise)]() {
+          auto results = context_->decodeAudioData(data, size);
+          auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+
+          if (!results) {
+            promise->reject("Failed to decode audio data source.");
+            return;
+          }
+
+          promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
+            return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          });
+        }).detach();
+      });
+
+      return promise;
+    }
 
  protected:
   std::shared_ptr<BaseAudioContext> context_;

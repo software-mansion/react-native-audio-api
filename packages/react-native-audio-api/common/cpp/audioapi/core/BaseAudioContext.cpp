@@ -65,8 +65,10 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   return biquadFilter;
 }
 
-std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
+    bool pitchCorrection) {
+  auto bufferSource =
+      std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
   nodeManager_->addNode(bufferSource);
   return bufferSource;
 }
@@ -95,6 +97,18 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
+
+  if (!audioBus) {
+    return nullptr;
+  }
+
+  return std::make_shared<AudioBuffer>(audioBus);
+}
+
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
+    const void *data,
+    size_t size) {
+  auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
 
   if (!audioBus) {
     return nullptr;
