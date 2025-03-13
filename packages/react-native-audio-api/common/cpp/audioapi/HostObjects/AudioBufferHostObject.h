@@ -55,6 +55,8 @@ class AudioBufferHostObject : public JsiHostObject {
     auto length = static_cast<int>(audioBuffer_->getLength());
     auto size = static_cast<int>(length * sizeof(float));
 
+    // reading or writing from this ArrayBuffer could cause a crash
+    // if underlying channelData is deallocated
     auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(channelData, size);
     auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 

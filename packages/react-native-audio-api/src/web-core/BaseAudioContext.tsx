@@ -21,7 +21,7 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
-  createBufferSource(): AudioBufferSourceNode;
+  createBufferSource(): Promise<AudioBufferSourceNode>;
   createBuffer(
     numOfChannels: number,
     length: number,

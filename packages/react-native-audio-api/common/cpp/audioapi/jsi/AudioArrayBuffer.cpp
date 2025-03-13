@@ -7,7 +7,7 @@ size_t AudioArrayBuffer::size() const {
 }
 
 uint8_t *AudioArrayBuffer::data() {
-  return const_cast<uint8_t *>(data_);
+  return data_;
 }
 
 } // namespace audioapi

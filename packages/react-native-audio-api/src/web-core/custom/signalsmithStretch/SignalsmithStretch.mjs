@@ -510,8 +510,7 @@ function registerWorkletProcessor(Module, audioNodeKey) {
           return result;
         },
         schedule: (objIn, adjustPrevious) => {
-          let outputTime =
-            'outputTime' in objIn ? objIn.outputTime : currentTime;
+          let outputTime = 'output' in objIn ? objIn.output : currentTime;
 
           let latestSegment = this.timeMap[this.timeMap.length - 1];
           while (
@@ -524,13 +523,15 @@ function registerWorkletProcessor(Module, audioNodeKey) {
           let obj = {
             active: latestSegment.active,
             input: null,
-            output: outputTime,
             rate: latestSegment.rate,
             semitones: latestSegment.semitones,
             loopStart: latestSegment.loopStart,
             loopEnd: latestSegment.loopEnd,
           };
+
           Object.assign(obj, objIn);
+          obj.output = outputTime;
+
           if (obj.input === null) {
             let rate = latestSegment.active ? latestSegment.rate : 0;
             obj.input =

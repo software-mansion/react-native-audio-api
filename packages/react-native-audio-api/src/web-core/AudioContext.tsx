@@ -2,6 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioContextOptions,
+  AudioBufferSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -14,7 +15,6 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import StretcherNode from './StretcherNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -61,8 +61,22 @@ export default class AudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  async createBufferSource(
+    options?: AudioBufferSourceNodeOptions
+  ): Promise<AudioBufferSourceNode> {
+    if (!options || !options.pitchCorrection) {
+      return new AudioBufferSourceNode(
+        this,
+        this.context.createBufferSource(),
+        false
+      );
+    }
+
+    await globalWasmPromise;
+
+    const wasmStretch = await window[globalTag](this.context);
+
+    return new AudioBufferSourceNode(this, wasmStretch, true);
   }
 
   createBuffer(
@@ -111,14 +125,6 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  async createStretcher(): Promise<StretcherNode> {
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new StretcherNode(this, wasmStretch);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
