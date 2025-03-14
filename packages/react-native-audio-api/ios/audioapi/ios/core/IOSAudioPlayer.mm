@@ -8,8 +8,8 @@
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-  const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
-  const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
+    const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
     : channelCount_(2), renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
@@ -41,9 +41,9 @@ IOSAudioPlayer::IOSAudioPlayer(
 }
 
 IOSAudioPlayer::IOSAudioPlayer(
-  const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
-  const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-  float sampleRate)
+    const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    float sampleRate)
     : channelCount_(2), renderAudio_(renderAudio), audioBus_(0)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
