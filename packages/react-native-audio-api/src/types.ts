@@ -30,3 +30,7 @@ export interface AudioContextOptions {
 }
 
 export type WindowType = 'blackman' | 'hann';
+
+export interface AudioBufferSourceNodeOptions {
+  pitchCorrection: boolean;
+}

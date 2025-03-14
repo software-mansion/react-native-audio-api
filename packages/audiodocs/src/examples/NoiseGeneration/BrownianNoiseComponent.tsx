@@ -16,7 +16,7 @@ const WhiteNoise: FC = () => {
     }
 
     const bufferSize = 2 * aCtx.sampleRate;
-    const output = new Array<number>(bufferSize);
+    const output = new Float32Array(bufferSize);
     let lastOut = 0.0;
 
     for (let i = 0; i < bufferSize; i += 1) {

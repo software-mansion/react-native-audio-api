@@ -12,12 +12,35 @@ specific sample rate which is the quantity of frames that will play in one secon
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using [`BaseAudioContext.decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource) or from raw data using [constructor](/sources/audio-buffer#constructor).
+It can be created from audio file using `decodeAudioData`, `decodeAudioDataSource` or from raw data using `constructor`.
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
 
 ## Constructor
 
 [`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/core/base-audio-context#createbuffer)
+
+## Decoding
+
+#### [`BaseAudioContext.decodeAudioData`](/core/base-audio-context#decodeaudiodata)
+
+```tsx
+const audioBuffer = await fetch(URL)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) =>
+        audioContextRef.current!.decodeAudioData(arrayBuffer)
+      )
+```
+
+#### [`BaseAudioContext.decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource)
+
+```tsx
+import * as FileSystem from 'expo-file-system';
+
+const audioBuffer = await FileSystem.downloadAsync(
+      URL,
+      `${FileSystem.documentDirectory}/example-music-01.mp3`
+    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
+```
 
 ## Properties
 
@@ -32,7 +55,7 @@ Once you have data in `AudioBuffer`, audio can be played by passing it to [`Audi
 
 ### `getChannelData`
 
-Above method returns array with PCM data from given channel.
+The above method returns modifiable array with PCM data from given channel.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -44,15 +67,15 @@ Above method returns array with PCM data from given channel.
 | :---: | :---- |
 | `IndexSizeError` | `channel` specifies unexisting audio channel. |
 
-#### Returns `number[]`.
+#### Returns `Float32Array`.
 
 ### `copyFromChannel`
 
-Above method copies data from given channel of the `AudioBuffer` to an array.
+The above method copies data from given channel of the `AudioBuffer` to an array.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` | `number[]` | The array to which data will be copied. |
+| `destination` | `Float32Array` | The array to which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel from which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 
@@ -67,11 +90,11 @@ Above method copies data from given channel of the `AudioBuffer` to an array.
 
 ### `copyToChannel`
 
-Above method copies data from given array to specified channel of the `AudioBuffer`.
+The above method copies data from given array to specified channel of the `AudioBuffer`.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `source` | `number[]` | The array from which data will be copied. |
+| `source` | `Float32Array` | The array from which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel to which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 

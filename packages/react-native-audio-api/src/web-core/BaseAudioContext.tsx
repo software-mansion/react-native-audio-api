@@ -21,17 +21,18 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
-  createBufferSource(): AudioBufferSourceNode;
+  createBufferSource(): Promise<AudioBufferSourceNode>;
   createBuffer(
     numOfChannels: number,
     length: number,
     sampleRate: number
   ): AudioBuffer;
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
   decodeAudioDataSource(source: string): Promise<AudioBuffer>;
+  decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
 }

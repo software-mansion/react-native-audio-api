@@ -32,11 +32,10 @@ export default function App() {
 
 ## Loading an audio file
 
-Before we can play anything, we need to gain access to some audio data. For the purpose of this guide, we will first download it from a remote source using [Expo FileSystem](https://docs.expo.dev/versions/latest/sdk/filesystem/) `downloadAsync` API.
+Before we can play anything, we need to gain access to some audio data. For the purpose of this guide, we will first download it from a remote source using.
 
-```jsx {2,10-13}
+```jsx {9-12}
 import React from 'react';
-import * as FileSystem from 'expo-file-system';
 import { View, Button } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
@@ -44,10 +43,9 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
-    const audioBuffer = await FileSystem.downloadAsync(
-      'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
-      `${FileSystem.documentDirectory}/example-music-01.mp3`
-    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
+    const audioBuffer = await fetch('https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
   };
 
   return (
@@ -58,15 +56,14 @@ export default function App() {
 }
 ```
 
-We have used the [`decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource) method of the [`BaseAudioContext`](/core/base-audio-context), which takes a URL to a local file or bundled audio asset and decodes it into raw audio data that can be used within our system.
+We have used the [`decodeAudioData`](/core/base-audio-context#decodeaudiodata) method of the [`BaseAudioContext`](/core/base-audio-context), which takes a URL to a local file or bundled audio asset and decodes it into raw audio data that can be used within our system.
 
 ## Play the audio
 
 The last and final step is to create an [`AudioBufferSourceNode`](/sources/audio-buffer-source-node), connect it to the `AudioContext's` destination, and start playing the sound. For the purpose of this guide, we will play the sound for just 10 seconds.
 
-```jsx {15-16,18-20}
+```jsx {13-14,16-18}
 import React from 'react';
-import * as FileSystem from 'expo-file-system';
 import { View, Button } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 
@@ -74,10 +71,9 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
-    const audioBuffer = await FileSystem.downloadAsync(
-      'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
-      `${FileSystem.documentDirectory}/example-music-01.mp3`
-    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
+    const audioBuffer = await fetch('https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
     const playerNode = audioContext.createBufferSource();
     playerNode.buffer = audioBuffer;
@@ -103,18 +99,12 @@ import LetsMakeSomeNoiseSrc from '!!raw-loader!@site/src/examples/LetsMakeSomeNo
 
 <InteractiveExample src={LetsMakeSomeNoiseSrc} component={LetsMakeSomeNoise} />
 
-:::info
-
-In the web environment, you can use `decodeAudioDataSource` directly on the asset URL, without the need to download it first.
-
-:::
-
 ## Summary
 
 In this guide, we have learned how to create a simple audio player using [`AudioContext`](/core/audio-context) and [``AudioBufferSourceNode``](/sources/audio-buffer-source-node) as well as how we can load audio data from a remote source. To sum up:
 
 - `AudioContext` is the main object that controls the audio graph.
-- the [`decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource) method can be used to load audio data from a local audio source in the form of an [`AudioBuffer`](sources/audio-buffer).
+- the [`decodeAudioData`](/core/base-audio-context#decodeaudiodata) method can be used to load audio data from a remote resource in the form of an [`AudioBuffer`](sources/audio-buffer).
 - `AudioBufferSourceNode` can be used with any `AudioBuffer`.
 - In order to hear the sounds, we need to connect the source node to the destination node exposed by `AudioContext`.
 - We can control the playback of the sound using [`start`](/sources/audio-buffer-source-node#start) and [`stop`](/sources/audio-scheduled-source-node#stop) methods of the `AudioBufferSourceNode` (and other source nodes, which we will show later).

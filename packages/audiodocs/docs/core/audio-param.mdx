@@ -26,7 +26,7 @@ It can be set to specific value or schedule value change to happen at specific t
 
 ### `setValueAtTime`
 
-Above method schedules an instant change to the `value` at given `startTime`.
+The above method schedules an instant change to the `value` at given `startTime`.
 
 ![](/img/setValueAtTime.png)
 
@@ -45,7 +45,7 @@ Above method schedules an instant change to the `value` at given `startTime`.
 
 ### `linearRampToValueAtTime`
 
-Above method schedules a gradual linear change to the new value.
+The above method schedules a gradual linear change to the new value.
 The change begins at the time designated for the previous event. It follows a linear ramp to the `value`, achieving it by the specified `endTime`.
 
 ![](/img/linearRampToValueAtTime.png)
@@ -65,7 +65,7 @@ The change begins at the time designated for the previous event. It follows a li
 
 ### `exponentialRampToValueAtTime`
 
-Above method schedules a gradual exponential change to the new value.
+The above method schedules a gradual exponential change to the new value.
 The change begins at the time designated for the previous event. It follows a exponential ramp to the `value`, achieving it by the specified `endTime`.
 
 ![](/img/exponentialRampToValueAtTime.png)
@@ -85,7 +85,7 @@ The change begins at the time designated for the previous event. It follows a ex
 
 ### `setTargetAtTime`
 
-Above method schedules a gradual change to the new value at the start time.
+The above method schedules a gradual change to the new value at the start time.
 This method is useful for decay or release portions of [ADSR envelopes](/effects/gain-node#envelope---adsr).
 
 ![](/img/setTargetAtTime.png)
@@ -107,13 +107,13 @@ This method is useful for decay or release portions of [ADSR envelopes](/effects
 
 ### `setValueCurveAtTime`
 
-Above method schedules the parameters's value change following a curve defined by given array.
+The above method schedules the parameters's value change following a curve defined by given array.
 
 ![](/img/setValueCurveAtTime.png)
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `values` | `number[]` | The array of values defining a curve, which change will follow. |
+| `values` | `Float32Array` | The array of values defining a curve, which change will follow. |
 | `startTime` | `number` | The time, in seconds, at which change will begin. |
 | `duration` | `number` | A double representing total time over which the change will happen. |
 
@@ -127,7 +127,7 @@ Above method schedules the parameters's value change following a curve defined b
 
 ### `cancelScheduledValues`
 
-Above method cancels all scheduled changes after given cancel time.
+The above method cancels all scheduled changes after given cancel time.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -143,7 +143,7 @@ Above method cancels all scheduled changes after given cancel time.
 
 ### `cancelAndHoldAtTime`
 
-Above method cancels all scheduled changes after given cancel time, but holds its value at given cancel time until further changes appear.
+The above method cancels all scheduled changes after given cancel time, but holds its value at given cancel time until further changes appear.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |

@@ -2,6 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioContextOptions,
+  AudioBufferSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -14,6 +15,8 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+
+import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -58,8 +61,22 @@ export default class AudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  async createBufferSource(
+    options?: AudioBufferSourceNodeOptions
+  ): Promise<AudioBufferSourceNode> {
+    if (!options || !options.pitchCorrection) {
+      return new AudioBufferSourceNode(
+        this,
+        this.context.createBufferSource(),
+        false
+      );
+    }
+
+    await globalWasmPromise;
+
+    const wasmStretch = await window[globalTag](this.context);
+
+    return new AudioBufferSourceNode(this, wasmStretch, true);
   }
 
   createBuffer(
@@ -91,8 +108,8 @@ export default class AudioContext implements BaseAudioContext {
   }
 
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
     if (real.length !== imag.length) {
@@ -115,6 +132,10 @@ export default class AudioContext implements BaseAudioContext {
       response.arrayBuffer()
     );
 
+    return this.decodeAudioData(arrayBuffer);
+  }
+
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 

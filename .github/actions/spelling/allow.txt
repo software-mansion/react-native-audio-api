@@ -25,6 +25,7 @@ skia
 swm
 swmansion
 rnaa
+signalsmith
 
 tada
 vec
@@ -33,3 +34,6 @@ javac
 
 website
 audiodocs
+Doxygen
+mjs
+UMD

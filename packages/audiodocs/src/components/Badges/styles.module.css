@@ -9,3 +9,8 @@
   white-space: nowrap;
   margin: 0 0.25rem;
 }
+
+.experimental {
+  color: var(--swm-sidebar-label-text-experimental);
+  background-color: var(--swm-sidebar-label-background-experimental);
+}

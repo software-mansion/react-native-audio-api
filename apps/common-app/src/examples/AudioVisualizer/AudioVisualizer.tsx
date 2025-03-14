@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as FileSystem from 'expo-file-system';
 import {
   AudioContext,
   AnalyserNode,
@@ -20,9 +19,14 @@ const URL =
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
-  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [times, setTimes] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
+  const [freqs, setFreqs] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE / 2).fill(0)
+  );
 
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -30,7 +34,6 @@ const AudioVisualizer: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -42,8 +45,12 @@ const AudioVisualizer: React.FC = () => {
         return;
       }
 
+      if (!audioBuffer) {
+        fetchAudioBuffer();
+      }
+
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
-      bufferSourceRef.current.buffer = audioBufferRef.current;
+      bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.connect(analyserRef.current);
 
       setStartTime(audioContextRef.current.currentTime);
@@ -63,15 +70,33 @@ const AudioVisualizer: React.FC = () => {
     const timesArrayLength = analyserRef.current.fftSize;
     const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(timesArrayLength);
+    const timesArray = new Uint8Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
     setTimes(timesArray);
 
-    const freqsArray = new Array(frequencyArrayLength);
+    const freqsArray = new Uint8Array(frequencyArrayLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
     setFreqs(freqsArray);
 
     requestAnimationFrame(draw);
+  };
+
+  const fetchAudioBuffer = async () => {
+    setIsLoading(true);
+
+    const buffer = await fetch(URL)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) =>
+        audioContextRef.current!.decodeAudioData(arrayBuffer)
+      )
+      .catch((error) => {
+        console.error('Error decoding audio data source:', error);
+        return null;
+      });
+
+    setAudioBuffer(buffer);
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -87,19 +112,7 @@ const AudioVisualizer: React.FC = () => {
       analyserRef.current.connect(audioContextRef.current.destination);
     }
 
-    const fetchBuffer = async () => {
-      setIsLoading(true);
-      audioBufferRef.current = await FileSystem.downloadAsync(
-        URL,
-        FileSystem.documentDirectory + 'audio.mp3'
-      ).then(({ uri }) => {
-        return audioContextRef.current!.decodeAudioDataSource(uri);
-      });
-
-      setIsLoading(false);
-    };
-
-    fetchBuffer();
+    fetchAudioBuffer();
 
     return () => {
       audioContextRef.current?.close();
@@ -131,7 +144,7 @@ const AudioVisualizer: React.FC = () => {
           <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
-            disabled={!audioBufferRef.current}
+            disabled={!audioBuffer}
           />
         </View>
       </View>

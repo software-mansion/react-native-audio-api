@@ -32,7 +32,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback do not apply to `OfflineAudioContext`.
+Concept of system-level audio callback does not apply to `OfflineAudioContext`.
 :::
 
 ## Properties
@@ -48,19 +48,19 @@ Concept of system-level audio callback do not apply to `OfflineAudioContext`.
 
 ### `createAnalyser`
 
-Above method lets you create [`AnalyserNode`](/analysis/analyser-node).
+The above method lets you create [`AnalyserNode`](/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
 ### `createBiquadFilter`
 
-Above method lets you create `BiquadFilterNode`.
+The above method lets you create `BiquadFilterNode`.
 
 #### Returns `BiquadFilterNode`.
 
 ### `createBuffer`
 
-Above method lets you create [`AudioBuffer`](/sources/audio-buffer).
+The above method lets you create [`AudioBuffer`](/sources/audio-buffer).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -80,30 +80,34 @@ Above method lets you create [`AudioBuffer`](/sources/audio-buffer).
 
 ### `createBufferSource`
 
-Above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
+The above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/types/audio-buffer-source-node-options) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
 ### `createGain`
 
-Above method lets you create [`GainNode`](/effects/gain-node).
+The above method lets you create [`GainNode`](/effects/gain-node).
 
 #### Returns `GainNode`.
 
 ### `createOscillator`
 
-Above method lets you create `OscillatorNode`.
+The above method lets you create `OscillatorNode`.
 
 #### Returns `OscillatorNode`.
 
 ### `createPeriodicWave`
 
-Above method lets you create `PeriodicWave`.
+The above method lets you create `PeriodicWave`.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `real` | `number[]` | An array of cosine terms. |
-| `imag` | `number[]` | An array of sine terms. |
+| `real` | `Float32Array` | An array of cosine terms. |
+| `imag` | `Float32Array` | An array of sine terms. |
 | `constraints` <Optional /> | [`PeriodicWaveConstraints`](/types/periodic-wave-constraints) | An object that specifies if normalization is disabled. |
 
 #### Errors
@@ -116,17 +120,27 @@ Above method lets you create `PeriodicWave`.
 
 ### `createStereoPanner`
 
-Above method lets you create `StereoPannerNode`.
+The above method lets you create `StereoPannerNode`.
 
 #### Returns `StereoPannerNode`.
 
-### `decodeAudioDataSource`
+### `decodeAudioData`
 
-Above method lets you decode audio data file.
+The above method lets you decode audio data. It decodes with in memory audio data block.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `sourcePath` | `string` | Path to audio file. |
+| `arrayBuffer` | `ArrayBuffer` | ArrayBuffer with audio data. |
+
+#### Returns `Promise<AudioBuffer>`.
+
+### `decodeAudioDataSource`
+
+The above method lets you decode audio data file. It saves file in the device file system.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `sourcePath` | `string` | Path to audio file located on the device. |
 
 #### Returns `Promise<AudioBuffer>`.
 
@@ -134,4 +148,4 @@ Above method lets you decode audio data file.
 
 #### `currentTime`
 
-- Timer starts when context is created.
+- Timer starts when context is created, stops when context is suspended.

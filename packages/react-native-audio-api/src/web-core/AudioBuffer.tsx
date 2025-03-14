@@ -17,18 +17,18 @@ export default class AudioBuffer {
     this.numberOfChannels = buffer.numberOfChannels;
   }
 
-  public getChannelData(channel: number): number[] {
+  public getChannelData(channel: number): Float32Array {
     if (channel < 0 || channel >= this.numberOfChannels) {
       throw new IndexSizeError(
         `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
       );
     }
 
-    return Array.from(this.buffer.getChannelData(channel));
+    return this.buffer.getChannelData(channel);
   }
 
   public copyFromChannel(
-    destination: number[],
+    destination: Float32Array,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -44,17 +44,11 @@ export default class AudioBuffer {
       );
     }
 
-    const array = new Float32Array(destination);
-
-    this.buffer.copyFromChannel(array, channelNumber, startInChannel);
-
-    for (let i = 0; i < destination.length; i++) {
-      destination[i] = array[i];
-    }
+    this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
 
   public copyToChannel(
-    source: number[],
+    source: Float32Array,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -70,10 +64,6 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyToChannel(
-      new Float32Array(source),
-      channelNumber,
-      startInChannel
-    );
+    this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 }
