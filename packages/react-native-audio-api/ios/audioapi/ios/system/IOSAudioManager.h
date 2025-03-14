@@ -10,6 +10,9 @@
 @property (nonatomic, weak) NSNotificationCenter *notificationCenter;
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
+@property (nonatomic, assign) bool isRunning;
+@property (nonatomic, assign) bool isInterrupted;
+@property (nonatomic, assign) bool hadConfigurationChange;
 
 - (instancetype)init;
 - (void)cleanup;

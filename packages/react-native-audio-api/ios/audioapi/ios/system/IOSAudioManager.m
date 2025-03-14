@@ -5,6 +5,8 @@
 - (instancetype)init
 {
   if (self == [super init]) {
+    NSLog(@"[IOSAudioManager] init");
+
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.sourceNodes = [[NSMutableDictionary alloc] init];
@@ -19,6 +21,7 @@
 
 - (void)cleanup
 {
+  NSLog(@"[IOSAudioManager] cleanup");
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
@@ -37,6 +40,7 @@
 
 - (bool)configureAudioSession
 {
+  NSLog(@"[IOSAudioManager] configureAudioSession");
   NSError *error = nil;
 
   if (!self.audioSession) {
@@ -51,14 +55,14 @@
                            error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
     return false;
   }
 
   [self.audioSession setActive:true error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return false;
   }
 
@@ -67,6 +71,7 @@
 
 - (bool)configureNotifications
 {
+  NSLog(@"[IOSAudioManager] configureNotifications");
   if (!self.notificationCenter) {
     self.notificationCenter = [NSNotificationCenter defaultCenter];
   }
@@ -93,6 +98,7 @@
 
 - (bool)rebuildAudioEngine
 {
+  NSLog(@"[IOSAudioManager] rebuildAudioEngine");
   NSError *error = nil;
 
   if ([self.audioEngine isRunning]) {
@@ -112,7 +118,7 @@
   }
 
   if (![self.audioEngine startAndReturnError:&error]) {
-    NSLog(@"Error while rebuilding audio engine: %@", [error localizedDescription]);
+    NSLog(@"Error while rebuilding audio engine: %@", [error debugDescription]);
     return false;
   }
 
@@ -121,6 +127,7 @@
 
 - (void)startEngine
 {
+  NSLog(@"[IOSAudioManager] startEngine");
   NSError *error = nil;
 
   if ([self.audioEngine isRunning]) {
@@ -130,12 +137,13 @@
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    NSLog(@"Error while starting the audio engine: %@", [error localizedDescription]);
+    NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
   }
 }
 
 - (void)stopEngine
 {
+  NSLog(@"[IOSAudioManager] stopEngine");
   if (![self.audioEngine isRunning]) {
     return;
   }
@@ -146,6 +154,7 @@
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
 {
   NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
+  NSLog(@"[IOSAudioManager] attaching new source node with ID: %@", sourceNodeId);
 
   [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
   [self.sourceFormats setValue:format forKey:sourceNodeId];
@@ -162,6 +171,8 @@
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
+  NSLog(@"[IOSAudioManager] detaching source nde with ID: %@", sourceNodeId);
+
   AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
   [self.audioEngine detachNode:sourceNode];
 
@@ -175,24 +186,84 @@
 
 - (void)handleInterruption:(NSNotification *)notification
 {
-  // TODO: parse notification user info and pause/restart the engine
+  NSError *error;
+  UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
+  UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
+
+  if (type == AVAudioSessionInterruptionTypeBegan) {
+    self.isInterrupted = true;
+    NSLog(@"[IOSAudioManager] Detected interruption, stopping the engine");
+
+    if (self.isRunning) {
+      [self.audioEngine pause];
+    }
+
+    return;
+  }
+
+  if (type != AVAudioSessionInterruptionTypeEnded) {
+    NSLog(@"[IOSAudioManager] Unexpected interruption state, chilling");
+    return;
+  }
+
+  self.isInterrupted = false;
+
+  if (option != AVAudioSessionInterruptionOptionShouldResume) {
+    NSLog(@"[IOSAudioManager] Interruption ended, but engine is not allowed to resume");
+    return;
+  }
+
+  NSLog(@"[IOSAudioManager] Interruption ended, resuming the engine");
+  bool success = [self.audioSession setActive:true error:&error];
+
+  if (!success) {
+    NSLog(@"[IOSAudioManager] Unable to activate the audio session, reason: %@", [error debugDescription]);
+    return;
+  }
+
+  if (self.hadConfigurationChange) {
+    [self rebuildAudioEngine];
+  }
+
+  if (!self.isRunning) {
+    return;
+  }
+
+  [self.audioEngine startAndReturnError:&error];
+
+  if (error != nil) {
+    NSLog(@"[IOSAudioManager] Error while restarting the engine, reason: %@", [error debugDescription]);
+  }
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
 {
-  // TODO: pause the engine if notification is device unavailable and there is no new device
+  // TODO: pause the engine if notification is "device unavailable" and there is no new device
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
-  // TODO: pause and panic or just rebuild?
+  // TODO: teardown and rebuild everything from scratch 🫠
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  // TODO: add variable isRunning?
+  if (!self.isRunning) {
+    NSLog(@"[IOSAudioManager] detected engine configuration change when engine is not running, marking for rebuild");
+    self.hadConfigurationChange = true;
+    return;
+  }
 
-  [self rebuildAudioEngine];
+  if (self.isInterrupted) {
+    NSLog(@"[IOSAudioManager] detected engine configuration change during interruption, marking for rebuild");
+    self.hadConfigurationChange = true;
+    return;
+  }
+
+  NSLog(@"[IOSAudioManager] detected engine configuration change, rebuilding the graph");
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self rebuildAudioEngine];
+  });
 }
 
 @end
