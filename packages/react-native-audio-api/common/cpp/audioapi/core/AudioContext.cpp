@@ -4,6 +4,8 @@
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #endif
 
+#include <audioapi/system/AudioManager.h>
+
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-
 namespace audioapi {
 
 #ifdef ANDROID

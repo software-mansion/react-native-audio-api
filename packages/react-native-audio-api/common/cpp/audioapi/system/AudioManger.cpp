@@ -1,9 +1,9 @@
-#include "AudioManager.h"
+#include <audioapi/system/AudioManager.h>
 
 #ifdef ANDROID
 
 #else
-#include "IOSAudioManagerBridge.h"
+#include <audioapi/ios/system/IOSAudioManagerBridge.h>
 #endif // ANDROID
 
 namespace audioapi {

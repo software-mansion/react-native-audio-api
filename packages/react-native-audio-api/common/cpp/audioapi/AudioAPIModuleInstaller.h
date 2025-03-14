@@ -2,7 +2,9 @@
 
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/system/AudioManager.h>
 #include <audioapi/HostObjects/AudioContextHostObject.h>
+#include <audioapi/HostObjects/AudioManagerHostObject.h>
 
 #include <memory>
 

@@ -75,6 +75,10 @@
 
 - (void)stop
 {
+  if (!self.isRunning) {
+    return;
+  }
+
   self.isRunning = false;
   [self.audioManager detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;

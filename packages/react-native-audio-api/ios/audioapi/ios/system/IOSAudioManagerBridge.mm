@@ -1,5 +1,6 @@
+#import <AVFoundation/AVFoundation.h>
 
-#include <IOSAudioManagerBridge.h>
+#include <audioapi/ios/system/IOSAudioManagerBridge.h>
 
 namespace audioapi {
 
