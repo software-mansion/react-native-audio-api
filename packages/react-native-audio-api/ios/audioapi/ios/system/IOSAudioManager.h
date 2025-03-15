@@ -14,6 +14,10 @@
 @property (nonatomic, assign) bool isInterrupted;
 @property (nonatomic, assign) bool hadConfigurationChange;
 
+@property (nonatomic, assign) AVAudioSessionMode sessionMode;
+@property (nonatomic, assign) AVAudioSessionCategory sessionCategory;
+@property (nonatomic, assign) AVAudioSessionCategoryOptions sessionOptions;
+
 - (instancetype)init;
 - (void)cleanup;
 - (float)getSampleRate;
@@ -23,6 +27,10 @@
 - (bool)rebuildAudioEngine;
 - (void)startEngine;
 - (void)stopEngine;
+
+- (void)setSessionOptionsWithCategory:(AVAudioSessionCategory)category
+                                 mode:(AVAudioSessionMode)mode
+                              options:(AVAudioSessionCategoryOptions)options;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;

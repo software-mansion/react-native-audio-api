@@ -10,6 +10,8 @@ namespace audioapi {
 class IOSAudioManagerBridge;
 #endif // ANDROID
 
+class SessionOptions;
+
 class AudioManager {
  public:
   AudioManager(AudioManager const &) = delete;
@@ -17,6 +19,9 @@ class AudioManager {
 
   static AudioManager *getInstance();
   static void destroyInstance();
+
+  void setSessionOptions(std::shared_ptr<SessionOptions> &sessionOptions);
+  // std::shared_ptr<SessionOptions> getSessionOptions() const;
 
 #ifdef ANDROID
 
@@ -28,6 +33,7 @@ class AudioManager {
   AudioManager();
 
   static AudioManager *audioManager_;
+
 #ifdef ANDROID
 
 #else

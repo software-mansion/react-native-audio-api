@@ -7,8 +7,10 @@ typedef struct objc_object IOSAudioManager;
 #endif // __OBJC__
 
 #include <functional>
+#include <memory>
 
 namespace audioapi {
+class SessionOptions;
 
 class IOSAudioManagerBridge {
  protected:
@@ -17,6 +19,9 @@ class IOSAudioManagerBridge {
  public:
   explicit IOSAudioManagerBridge();
   IOSAudioManager *getAudioManager();
+
+  void setSessionOptions(std::shared_ptr<SessionOptions> &sessionOptions);
+  //  std::shared_ptr<SessionOptions> getSessionOptions() const;
 
   ~IOSAudioManagerBridge();
 };

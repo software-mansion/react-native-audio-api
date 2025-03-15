@@ -12,6 +12,11 @@
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
 
+    self.sessionCategory = AVAudioSessionCategoryPlayback;
+    self.sessionMode = AVAudioSessionModeDefault;
+    self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
+        AVAudioSessionCategoryOptionAllowAirPlay;
+
     [self configureAudioSession];
     [self configureNotifications];
   }
@@ -40,19 +45,19 @@
 
 - (bool)configureAudioSession
 {
-  NSLog(@"[IOSAudioManager] configureAudioSession");
+  NSLog(
+      @"[IOSAudioManager] configureAudioSession, category: %@, mode: %@, options: %lu",
+      self.sessionCategory,
+      self.sessionMode,
+      (unsigned long)self.sessionOptions);
+
   NSError *error = nil;
 
   if (!self.audioSession) {
     self.audioSession = [AVAudioSession sharedInstance];
   }
 
-  // TODO: take from dict
-  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
-                            mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-                         AVAudioSessionCategoryOptionAllowAirPlay
-                           error:&error];
+  [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
 
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
@@ -149,6 +154,32 @@
   }
 
   [self.audioEngine pause];
+}
+
+- (void)setSessionOptionsWithCategory:(AVAudioSessionCategory)category
+                                 mode:(AVAudioSessionMode)mode
+                              options:(AVAudioSessionCategoryOptions)options
+{
+  bool hasDirtySettings = false;
+
+  if (self.sessionCategory != category) {
+    hasDirtySettings = true;
+    self.sessionCategory = category;
+  }
+
+  if (self.sessionMode != mode) {
+    hasDirtySettings = true;
+    self.sessionMode = mode;
+  }
+
+  if (self.sessionOptions != options) {
+    hasDirtySettings = true;
+    self.sessionOptions = options;
+  }
+
+  if (hasDirtySettings) {
+    [self configureAudioSession];
+  }
 }
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format

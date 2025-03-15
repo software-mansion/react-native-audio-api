@@ -1,4 +1,5 @@
 #include <audioapi/system/AudioManager.h>
+#include <audioapi/system/SessionOptions.h>
 
 #ifdef ANDROID
 
@@ -22,6 +23,23 @@ void AudioManager::destroyInstance() {
   delete audioManager_;
   audioManager_ = nullptr;
 }
+
+void AudioManager::setSessionOptions(
+    std::shared_ptr<SessionOptions> &sessionOptions) {
+#ifdef ANDROID
+
+#else
+  audioManagerBridge_->setSessionOptions(sessionOptions);
+#endif
+}
+
+// std::shared_ptr<SessionOptions> AudioManager::getSessionOptions() const {
+// #ifdef ANDROID
+
+// #else
+//   return audioManagerBridge_->getSessionOptions();
+// #endif
+// }
 
 AudioManager::AudioManager() {
 #ifdef ANDROID
