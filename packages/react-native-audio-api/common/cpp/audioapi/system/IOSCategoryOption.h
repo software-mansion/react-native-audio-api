@@ -22,7 +22,7 @@ class IOSCategoryOption {
   IOSCategoryOption() = default;
   explicit constexpr IOSCategoryOption(Option option) : option_(option) {}
 
-  constexpr operator Option() const { return option_; }
+  constexpr explicit operator Option() const { return option_; }
   explicit operator bool() const = delete;
   constexpr bool operator==(IOSCategoryOption other) const { return option_ == other.option_; }
   constexpr bool operator!=(IOSCategoryOption other) const { return option_ != other.option_; }
@@ -69,12 +69,12 @@ class IOSCategoryOption {
     return IOSCategoryOption(IOSCategoryOption::fromString(optionName));
   }
 
-  Option value() const {
+  [[nodiscard]] Option value() const {
     return option_;
   }
 
-  std::string strValue() const {
-    switch (option_) {
+  [[nodiscard]] static std::string toString(Option option) {
+    switch (option) {
       case Option::DUCK_OTHERS:
         return "duckOthers";
       case Option::ALLOW_AIR_PLAY:
@@ -95,7 +95,7 @@ class IOSCategoryOption {
   }
 
   jsi::Value toJSIValue(jsi::Runtime &runtime) const {
-    return jsi::String::createFromUtf8(runtime, strValue());
+    return jsi::String::createFromUtf8(runtime, toString(option_));
   }
 
  private:

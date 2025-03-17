@@ -23,7 +23,7 @@ class IOSMode {
   IOSMode() = default;
   explicit constexpr IOSMode(Mode mode) : mode_(mode) {}
 
-  constexpr operator Mode() const { return mode_; }
+  constexpr explicit operator Mode() const { return mode_; }
   explicit operator bool() const = delete;
   constexpr bool operator==(IOSMode other) const { return mode_ == other.mode_; }
   constexpr bool operator!=(IOSMode other) const { return mode_ != other.mode_; }
@@ -73,12 +73,12 @@ class IOSMode {
     return IOSMode(IOSMode::fromString(modeName));
   }
 
-  Mode value() const {
+  [[nodiscard]] Mode value() const {
     return mode_;
   }
 
-  std::string strValue() const {
-    switch (mode_) {
+    [[nodiscard]] static std::string toString(Mode mode) {
+    switch (mode) {
       case Mode::DEFAULT:
         return "default";
       case Mode::GAME_CHAT:
@@ -103,7 +103,7 @@ class IOSMode {
   }
 
   jsi::Value toJSIValue(jsi::Runtime &runtime) const {
-    return jsi::String::createFromUtf8(runtime, strValue());
+    return jsi::String::createFromUtf8(runtime, toString(mode_));
   }
 
  private:

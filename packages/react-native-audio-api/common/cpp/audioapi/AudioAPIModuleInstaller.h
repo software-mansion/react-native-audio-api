@@ -17,8 +17,10 @@ class AudioAPIModuleInstaller {
   static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
     auto audioManager = getAudioManager(jsiRuntime);
+
     jsiRuntime->global().setProperty(
         *jsiRuntime, "createAudioContext", createAudioContext);
+
     jsiRuntime->global().setProperty(
         *jsiRuntime, "AudioManager", audioManager);
   }

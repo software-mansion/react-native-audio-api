@@ -20,7 +20,7 @@ class IOSCategory {
   IOSCategory() = default;
   explicit constexpr IOSCategory(Category category) : category_(category) {}
 
-  constexpr operator Category() const { return category_; }
+  constexpr explicit operator Category() const { return category_; }
   explicit operator bool() const = delete;
   constexpr bool operator==(IOSCategory other) const { return category_ == other.category_; }
   constexpr bool operator!=(IOSCategory other) const { return category_ != other.category_; }
@@ -58,12 +58,12 @@ class IOSCategory {
     return IOSCategory(fromString(categoryName));
   }
 
-  Category value() const {
+  [[nodiscard]] Category value() const {
     return category_;
   }
 
-  std::string strValue() const {
-    switch (category_) {
+  [[nodiscard]] static std::string toString(Category category) {
+    switch (category) {
       case Category::RECORD:
         return "record";
       case Category::AMBIENT:
@@ -82,7 +82,7 @@ class IOSCategory {
   }
 
   jsi::Value toJSIValue(jsi::Runtime &runtime) const {
-    return jsi::String::createFromUtf8(runtime, strValue());
+    return jsi::String::createFromUtf8(runtime, toString(category_));
   }
 
  private:

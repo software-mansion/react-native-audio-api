@@ -2,13 +2,12 @@
 
 #include <audioapi/system/AudioManager.h>
 #include <audioapi/system/SessionOptions.h>
+#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/JsiPromise.h>
 #include <jsi/jsi.h>
 
 #include <utility>
 #include <memory>
-
-#include <JsiHostObject.h>
-#include <JsiPromise.h>
 
 
 namespace audioapi {

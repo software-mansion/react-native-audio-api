@@ -65,8 +65,8 @@ class SessionOptions {
     return jsiValue;
   }
 
-  IOSMode iosMode;
-  IOSCategory iosCategory;
+  IOSMode iosMode{};
+  IOSCategory iosCategory{};
   std::vector<IOSCategoryOption> iosCategoryOptions;
 };
 
