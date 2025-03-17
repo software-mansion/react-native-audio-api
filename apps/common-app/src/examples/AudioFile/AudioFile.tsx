@@ -16,7 +16,7 @@ AudioManager.setOptions({
 });
 
 const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
 
 const LOOP_START = 0;
 const LOOP_END = 10;

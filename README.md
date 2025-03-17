@@ -33,13 +33,13 @@ To learn more about expo development builds, please check out [Development Build
 ## Documentation
 
 Check out our dedicated documentation page for info about this library, API reference and more:
-[https://software-mansion-labs.github.io/react-native-audio-api/](https://software-mansion-labs.github.io/react-native-audio-api/)
+[https://software-mansion.github.io/react-native-audio-api/](https://software-mansion.github.io/react-native-audio-api/)
 
 You can also check out [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for fully detailed description of the audio api.
 
 ## Coverage
 
-Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion-labs.github.io/react-native-audio-api/other/web-audio-api-coverage).
+Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion.github.io/react-native-audio-api/other/web-audio-api-coverage).
 
 ## Examples
 

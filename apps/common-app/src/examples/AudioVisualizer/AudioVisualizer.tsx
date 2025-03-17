@@ -14,7 +14,7 @@ import { layout } from '../../styles';
 const FFT_SIZE = 512;
 
 const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);

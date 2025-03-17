@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'software-mansion-labs/react-native-audio-api'
+    if: github.repository == 'software-mansion/react-native-audio-api'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo

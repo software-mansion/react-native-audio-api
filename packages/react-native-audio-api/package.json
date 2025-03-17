@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
@@ -65,14 +65,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/software-mansion-labs/react-native-audio-api.git"
+    "url": "git+https://github.com/software-mansion/react-native-audio-api.git"
   },
-  "author": "Software Mansion Labs (https://github.com/software-mansion-labs)",
+  "author": "Software Mansion Labs (https://github.com/software-mansion)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/software-mansion-labs/react-native-audio-api/issues"
+    "url": "https://github.com/software-mansion/react-native-audio-api/issues"
   },
-  "homepage": "https://github.com/software-mansion-labs/react-native-audio-api#readme",
+  "homepage": "https://github.com/software-mansion/react-native-audio-api#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
