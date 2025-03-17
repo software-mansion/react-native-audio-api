@@ -65,14 +65,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/software-mansion-labs/react-native-audio-api.git"
+    "url": "git+https://github.com/software-mansion/react-native-audio-api.git"
   },
-  "author": "Software Mansion Labs (https://github.com/software-mansion-labs)",
+  "author": "Software Mansion Labs (https://github.com/software-mansion)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/software-mansion-labs/react-native-audio-api/issues"
+    "url": "https://github.com/software-mansion/react-native-audio-api/issues"
   },
-  "homepage": "https://github.com/software-mansion-labs/react-native-audio-api#readme",
+  "homepage": "https://github.com/software-mansion/react-native-audio-api#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

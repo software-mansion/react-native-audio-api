@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   s.authors      = package_json["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
-  s.source       = { :git => "https://github.com/software-mansion-labs/react-native-audio-api.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h}"

@@ -43,7 +43,7 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
-    const audioBuffer = await fetch('https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
+    const audioBuffer = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
   };
@@ -71,7 +71,7 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
-    const audioBuffer = await fetch('https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
+    const audioBuffer = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
