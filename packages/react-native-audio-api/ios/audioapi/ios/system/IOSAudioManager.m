@@ -271,7 +271,7 @@
 {
   UInt8 reason = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
   NSLog(@"[IOSAudioManager] Route change detected, reason: %u", reason);
-  
+
   if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
     NSLog(@"[IOSAudioManager] The previously used audio device became unavailable. Audio engine paused");
     [self.audioEngine pause];
