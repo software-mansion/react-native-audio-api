@@ -269,12 +269,22 @@
 
 - (void)handleRouteChange:(NSNotification *)notification
 {
-  // TODO: pause the engine if notification is "device unavailable" and there is no new device
+  UInt8 reason = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
+  NSLog(@"[IOSAudioManager] Route change detected, reason: %u", reason);
+  
+  if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
+    NSLog(@"[IOSAudioManager] The previously used audio device became unavailable. Audio engine paused");
+    [self.audioEngine pause];
+  }
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
-  // TODO: teardown and rebuild everything from scratch 🫠
+  NSLog(@"[IOSAudioManager] Media services have been reset, tearing down and rebuilding everything.");
+  [self cleanup];
+  [self configureAudioSession];
+  [self configureNotifications];
+  [self rebuildAudioEngine];
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification

@@ -1609,7 +1609,7 @@ PODS:
     - React-logger (= 0.77.1)
     - React-perflogger (= 0.77.1)
     - React-utils (= 0.77.1)
-  - RNAudioAPI (0.5.0):
+  - RNAudioAPI (0.5.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1629,9 +1629,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.5.0)
+    - RNAudioAPI/audioapi (= 0.5.1)
     - Yoga
-  - RNAudioAPI/audioapi (0.5.0):
+  - RNAudioAPI/audioapi (0.5.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1651,9 +1651,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.5.0)
+    - RNAudioAPI/audioapi/ios (= 0.5.1)
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.5.0):
+  - RNAudioAPI/audioapi/ios (0.5.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2093,12 +2093,12 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  boost: 1dca942403ed9342f98334bf4c3621f011aa7946
-  DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
+  boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
+  DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: 79c4b7ec726447eec5f8593379466bd9fde1aa14
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
-  glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
+  glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
   hermes-engine: ccc24d29d650ea725d582a9a53d57cd417fbdb53
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: 664055db806cce35c3c1b43c84414dd66e117ae6
@@ -2161,7 +2161,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: e7e92253013754a8c35ebdbf8ad700f4e8956f62
   ReactCodegen: 49a456de505abbb71ac006eb6c4204c2399b0aaf
   ReactCommon: 8da6c58517fa560d0fc7a9da83093457303ae9f8
-  RNAudioAPI: 78be15065f0c11f99a6ad768556868a1969214a2
+  RNAudioAPI: 7d6b09cc79ce77ce51f64f35c08353733ba895ea
   RNGestureHandler: 9b05fab9a0b48fe48c968de7dbb9ca38a2b4f7ab
   RNReanimated: ce90e23f6a212a9a5e48e37ce3469621cc864ce4
   RNScreens: 991214b4e69016c1ae32830d9cea31c9c9422367
