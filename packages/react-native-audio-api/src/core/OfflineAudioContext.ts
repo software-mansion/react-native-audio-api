@@ -14,8 +14,8 @@ export default class OfflineAudioContext extends BaseAudioContext {
     super(
       global.createOfflineAudioContext(
         options.numberOfChannels,
-        options.sampleRate,
-        options.length
+        options.length,
+        options.sampleRate
       )
     );
   }
