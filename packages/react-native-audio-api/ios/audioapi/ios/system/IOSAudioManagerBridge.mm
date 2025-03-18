@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #include <audioapi/ios/system/IOSAudioManagerBridge.h>
+#include <audioapi/system/LockScreenInfo.h>
 #include <audioapi/system/SessionOptions.h>
 
 namespace audioapi {
@@ -111,6 +112,32 @@ void IOSAudioManagerBridge::setSessionOptions(std::shared_ptr<SessionOptions> &s
   }
 
   [iosAudioManager_ setSessionOptionsWithCategory:category mode:mode options:options];
+}
+
+void IOSAudioManagerBridge::setNowPlaying(std::shared_ptr<LockScreenInfo> &lockScreenInfo)
+{
+  auto title = lockScreenInfo->title_;
+  auto artwork = lockScreenInfo->artwork_;
+  auto artist = lockScreenInfo->artist_;
+  auto album = lockScreenInfo->album_;
+  auto genre = lockScreenInfo->genre_;
+  auto duration = lockScreenInfo->duration_;
+  auto elapsedTime = lockScreenInfo->elapsedTime_;
+  auto isLiveStream = lockScreenInfo->isLiveStream_;
+
+  NSDictionary *textualInfo = @{
+    @"title" : @(title.empty() ? nil : title.c_str()),
+    @"artwork" : @(artwork.empty() ? nil : artwork.c_str()),
+    @"artist" : @(artist.empty() ? nil : artist.c_str()),
+    @"album" : @(album.empty() ? nil : album.c_str()),
+    @"genre" : @(genre.empty() ? nil : genre.c_str()),
+    @"isLiveStream" : @(isLiveStream)
+  };
+
+  NSDictionary *numbericalInfo =
+      @{@"duration" : [NSNumber numberWithDouble:duration], @"elapsedTime" : [NSNumber numberWithDouble:elapsedTime]};
+
+  [iosAudioManager_ setNowPlayingWithTextualInfo:textualInfo NumericalInfo:numbericalInfo];
 }
 
 } // namespace audioapi

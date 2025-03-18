@@ -2,6 +2,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 @interface IOSAudioManager : NSObject
 
@@ -31,6 +32,7 @@
 - (void)setSessionOptionsWithCategory:(AVAudioSessionCategory)category
                                  mode:(AVAudioSessionMode)mode
                               options:(AVAudioSessionCategoryOptions)options;
+- (void)setNowPlayingWithTextualInfo:(NSDictionary *)textualInfo NumericalInfo:(NSDictionary *)numericalInfo;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;

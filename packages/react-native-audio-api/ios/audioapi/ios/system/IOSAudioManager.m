@@ -1,5 +1,18 @@
 #import <IOSAudioManager.h>
 
+@import MediaPlayer;
+
+#define MEDIA_DICT                                                \
+  @{                                                              \
+    @"album" : MPMediaItemPropertyAlbumTitle,                     \
+    @"artist" : MPMediaItemPropertyArtist,                        \
+    @"genre" : MPMediaItemPropertyGenre,                          \
+    @"duration" : MPMediaItemPropertyPlaybackDuration,            \
+    @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
+    @"title" : MPMediaItemPropertyTitle,                          \
+    @"isLiveStream" : MPNowPlayingInfoPropertyIsLiveStream        \
+  }
+
 @implementation IOSAudioManager
 
 - (instancetype)init
@@ -19,6 +32,7 @@
 
     [self configureAudioSession];
     [self configureNotifications];
+    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
 
   return self;
@@ -180,6 +194,46 @@
   if (hasDirtySettings) {
     [self configureAudioSession];
   }
+}
+
+- (void)setNowPlayingWithTextualInfo:(NSDictionary *)textualInfo NumericalInfo:(NSDictionary *)numericalInfo
+{
+  MPNowPlayingInfoCenter *playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
+  NSMutableDictionary *mediaDict = [NSMutableDictionary dictionary];
+
+  for (NSString *key in MEDIA_DICT) {
+    if ([textualInfo objectForKey:key] != nil) {
+      [mediaDict setValue:[textualInfo objectForKey:key] forKey:[MEDIA_DICT objectForKey:key]];
+    }
+  }
+
+  for (NSString *key in MEDIA_DICT) {
+    if ([numericalInfo objectForKey:key] != nil) {
+      [mediaDict setValue:[numericalInfo objectForKey:key] forKey:[MEDIA_DICT objectForKey:key]];
+    }
+  }
+
+  playingInfoCenter.nowPlayingInfo = mediaDict;
+
+  MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
+  [remoteCenter.pauseCommand addTarget:self action:@selector(onPause:)];
+  remoteCenter.pauseCommand.enabled = true;
+  [remoteCenter.playCommand addTarget:self action:@selector(onPlay:)];
+  remoteCenter.playCommand.enabled = true;
+
+  // TODO add artwork
+}
+
+- (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
+{
+  [self stopEngine];
+  return MPRemoteCommandHandlerStatusSuccess;
+}
+
+- (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
+{
+  [self startEngine];
+  return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format

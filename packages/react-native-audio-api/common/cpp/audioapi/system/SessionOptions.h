@@ -65,9 +65,12 @@ class SessionOptions {
     return jsiValue;
   }
 
-  IOSMode iosMode{};
-  IOSCategory iosCategory{};
-  std::vector<IOSCategoryOption> iosCategoryOptions;
+  IOSMode iosMode = IOSMode();
+  IOSCategory iosCategory = IOSCategory();
+  std::vector<IOSCategoryOption> iosCategoryOptions = {
+          IOSCategoryOption(IOSCategoryOption::Option::DUCK_OTHERS),
+          IOSCategoryOption(IOSCategoryOption::Option::ALLOW_BLUETOOTH),
+          IOSCategoryOption(IOSCategoryOption::Option::ALLOW_AIR_PLAY)};
 };
 
 } // namespace audioapi

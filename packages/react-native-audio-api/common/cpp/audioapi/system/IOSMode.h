@@ -20,7 +20,7 @@ class IOSMode {
     VIDEO_RECORDING,
   };
 
-  IOSMode() = default;
+  IOSMode() : mode_(Mode::DEFAULT) {}
   explicit constexpr IOSMode(Mode mode) : mode_(mode) {}
 
   constexpr explicit operator Mode() const { return mode_; }

@@ -11,6 +11,7 @@ class IOSAudioManagerBridge;
 #endif // ANDROID
 
 class SessionOptions;
+class LockScreenInfo;
 
 class AudioManager {
  public:
@@ -21,7 +22,7 @@ class AudioManager {
   static void destroyInstance();
 
   void setSessionOptions(std::shared_ptr<SessionOptions> &sessionOptions);
-  // std::shared_ptr<SessionOptions> getSessionOptions() const;
+  void setNowPlaying(std::shared_ptr<LockScreenInfo> &lockScreenInfo);
 
 #ifdef ANDROID
 

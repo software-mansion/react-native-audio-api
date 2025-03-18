@@ -1,5 +1,5 @@
 import type { IAudioManager } from './interface';
-import { SessionOptions } from './types';
+import { SessionOptions, LockScreenInfo } from './types';
 
 class AudioManager {
   protected module(): IAudioManager {
@@ -8,6 +8,10 @@ class AudioManager {
 
   setOptions(options: SessionOptions) {
     this.module().setOptions(options);
+  }
+
+  setNowPlaying(info: LockScreenInfo) {
+    this.module().setNowPlaying(info);
   }
 }
 

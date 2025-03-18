@@ -33,13 +33,14 @@ void AudioManager::setSessionOptions(
 #endif
 }
 
-// std::shared_ptr<SessionOptions> AudioManager::getSessionOptions() const {
-// #ifdef ANDROID
+void AudioManager::setNowPlaying(
+    std::shared_ptr<LockScreenInfo> &lockScreenInfo) {
+#ifdef ANDROID
 
-// #else
-//   return audioManagerBridge_->getSessionOptions();
-// #endif
-// }
+#else
+  audioManagerBridge_->setNowPlaying(lockScreenInfo);
+#endif
+}
 
 AudioManager::AudioManager() {
 #ifdef ANDROID

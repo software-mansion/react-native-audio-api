@@ -32,3 +32,14 @@ export interface SessionOptions {
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
 }
+
+export interface LockScreenInfo {
+  title?: string;
+  artwork?: string;
+  artist?: string;
+  album?: string;
+  genre: string;
+  duration?: number;
+  elapsedTime?: number;
+  isLiveStream?: boolean;
+}

@@ -11,6 +11,7 @@ typedef struct objc_object IOSAudioManager;
 
 namespace audioapi {
 class SessionOptions;
+class LockScreenInfo;
 
 class IOSAudioManagerBridge {
  protected:
@@ -21,7 +22,7 @@ class IOSAudioManagerBridge {
   IOSAudioManager *getAudioManager();
 
   void setSessionOptions(std::shared_ptr<SessionOptions> &sessionOptions);
-  //  std::shared_ptr<SessionOptions> getSessionOptions() const;
+  void setNowPlaying(std::shared_ptr<LockScreenInfo> &lockScreenInfo);
 
   ~IOSAudioManagerBridge();
 };

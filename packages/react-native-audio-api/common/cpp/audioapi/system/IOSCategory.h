@@ -17,7 +17,7 @@ class IOSCategory {
     PLAYBACK_AND_RECORD,
   };
 
-  IOSCategory() = default;
+  IOSCategory(): category_(Category::PLAYBACK) {}
   explicit constexpr IOSCategory(Category category) : category_(category) {}
 
   constexpr explicit operator Category() const { return category_; }
