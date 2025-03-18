@@ -4,14 +4,20 @@ import { OfflineAudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
 
 export default class OfflineAudioContext extends BaseAudioContext {
-  constructor(options?: OfflineAudioContextOptions) {
-    if (options && (options.sampleRate < 8000 || options.sampleRate > 96000)) {
+  constructor(options: OfflineAudioContextOptions) {
+    if (options.sampleRate < 8000 || options.sampleRate > 96000) {
       throw new NotSupportedError(
         `The provided sampleRate is not supported: ${options.sampleRate}`
       );
     }
 
-    super(global.createAudioContext(options?.sampleRate));
+    super(
+      global.createOfflineAudioContext(
+        options.numberOfChannels,
+        options.sampleRate,
+        options.length
+      )
+    );
   }
 
   async suspend(): Promise<undefined> {

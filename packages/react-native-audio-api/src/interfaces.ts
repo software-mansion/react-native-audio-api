@@ -11,8 +11,8 @@ export interface AudioAPIInstaller {
   createAudioContext: (sampleRate?: number) => IAudioContext;
   createOfflineAudioContext: (
     numberOfChannels: number,
-    length: number,
-    sampleRate: number
+    sampleRate: number,
+    length: number
   ) => IAudioContext;
 }
 

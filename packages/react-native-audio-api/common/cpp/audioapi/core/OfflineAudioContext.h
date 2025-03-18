@@ -16,7 +16,6 @@ class OfflineAudioContext : public BaseAudioContext {
 
  private:
   int32_t numFrames_;
-
 };
 
 } // namespace audioapi

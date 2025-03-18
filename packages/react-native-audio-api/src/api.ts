@@ -12,7 +12,10 @@ declare global {
 }
 /* eslint-disable no-var */
 
-if (global.createAudioContext == null) {
+if (
+  global.createAudioContext == null ||
+  global.createOfflineAudioContext == null
+) {
   if (!NativeAudioAPIModule) {
     throw new Error(
       `Failed to install react-native-audio-api: The native module could not be found.`
