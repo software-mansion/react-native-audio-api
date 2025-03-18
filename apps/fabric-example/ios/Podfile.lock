@@ -1630,9 +1630,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - RNAudioAPI/audioapi (= 0.5.1)
-    - RNAudioAPI/audioapi (= 0.5.1)
     - Yoga
-  - RNAudioAPI/audioapi (0.5.1):
   - RNAudioAPI/audioapi (0.5.1):
     - DoubleConversion
     - glog
@@ -2159,14 +2157,14 @@ SPEC CHECKSUMS:
   React-RuntimeHermes: 25194897d244f2c1b68511926c7be413466f6e6c
   React-runtimescheduler: b2839d0c1276b8f0edabc28414c9a5c82bb5c700
   React-timing: 127d8598b5a15ae5b29ebd0ec474d590285c6f2f
-  React-utils: e33fe9381f4f7f25b2dfdf9526c82f5be8712c86
-  ReactAppDependencyProvider: e7e92253013754a8c35ebdbf8ad700f4e8956f62
-  ReactCodegen: 49a456de505abbb71ac006eb6c4204c2399b0aaf
-  ReactCommon: 8da6c58517fa560d0fc7a9da83093457303ae9f8
-  RNAudioAPI: 78be15065f0c11f99a6ad768556868a1969214a2
-  RNGestureHandler: 9b05fab9a0b48fe48c968de7dbb9ca38a2b4f7ab
-  RNReanimated: ce90e23f6a212a9a5e48e37ce3469621cc864ce4
-  RNScreens: 991214b4e69016c1ae32830d9cea31c9c9422367
+  React-utils: 238c18f8035ace0faccd7e8ce574ccfc7adf26aa
+  ReactAppDependencyProvider: 41e9fb63606c32cce924653d2d410cb01ec81286
+  ReactCodegen: 8cae67dac8144aa8d9d5bee12e55ead0fb73537f
+  ReactCommon: 08f4808f02ff115884e870e5cfea689703ff759a
+  RNAudioAPI: f3dae25889a88480cd298f1e7deda32025c9fc19
+  RNGestureHandler: 8b1080a6db0be82dbca18550d6212b885bfab6b2
+  RNReanimated: afed763d6c0b1916bfef1dbde4271ec0947dd376
+  RNScreens: 0d4cb9afe052607ad0aa71f645a88bb7c7f2e64c
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 1fd059161b449018342943b095a6d4e69bcaa719
 
