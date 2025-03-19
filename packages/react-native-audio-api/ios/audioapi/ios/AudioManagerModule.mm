@@ -131,24 +131,38 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 
 - (void)setSessionCategoryOptions:(NSArray *)options
 {
-  AVAudioSessionCategoryOptions sessionOptions = 0; // No options set initially
+  AVAudioSessionCategoryOptions sessionOptions = 0;
 
   for (NSString *option in options) {
     if ([option isEqualToString:@"duckOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionDuckOthers;
-    } else if ([option isEqualToString:@"allowAirPlay"]) {
+    }
+    
+    if ([option isEqualToString:@"allowAirPlay"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowAirPlay;
-    } else if ([option isEqualToString:@"mixWithOthers"]) {
+    }
+    
+    if ([option isEqualToString:@"mixWithOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
-    } else if ([option isEqualToString:@"allowBluetooth"]) {
+    }
+    
+    if ([option isEqualToString:@"allowBluetooth"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
-    } else if ([option isEqualToString:@"defaultToSpeaker"]) {
+    }
+    
+    if ([option isEqualToString:@"defaultToSpeaker"]) {
       sessionOptions |= AVAudioSessionCategoryOptionDefaultToSpeaker;
-    } else if ([option isEqualToString:@"allowBluetoothA2DP"]) {
+    }
+    
+    if ([option isEqualToString:@"allowBluetoothA2DP"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
-    } else if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
+    }
+    
+    if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
       sessionOptions |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
-    } else if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
+    }
+    
+    if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
     }
   }
