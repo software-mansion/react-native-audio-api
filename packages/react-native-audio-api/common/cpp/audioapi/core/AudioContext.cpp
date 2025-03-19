@@ -10,18 +10,6 @@
 #include <audioapi/core/utils/AudioNodeManager.h>
 
 namespace audioapi {
-AudioContext::AudioContext() : BaseAudioContext() {
-#ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio());
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio());
-#endif
-  sampleRate_ = audioPlayer_->getSampleRate();
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
-
-  audioPlayer_->start();
-}
-
 AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
@@ -29,6 +17,7 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
   audioPlayer_ =
       std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
 #endif
+
   sampleRate_ = audioPlayer_->getSampleRate();
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
 

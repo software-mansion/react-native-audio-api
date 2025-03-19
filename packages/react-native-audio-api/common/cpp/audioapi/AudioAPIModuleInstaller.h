@@ -14,6 +14,7 @@ class AudioAPIModuleInstaller {
  public:
   static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
+
     jsiRuntime->global().setProperty(
         *jsiRuntime, "createAudioContext", createAudioContext);
   }
@@ -30,12 +31,8 @@ class AudioAPIModuleInstaller {
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           std::shared_ptr<AudioContext> audioContext;
-          if (args[0].isUndefined()) {
-            audioContext = std::make_shared<AudioContext>();
-          } else {
-            auto sampleRate = static_cast<float>(args[0].getNumber());
-            audioContext = std::make_shared<AudioContext>(sampleRate);
-          }
+          auto sampleRate = static_cast<float>(args[0].getNumber());
+          audioContext = std::make_shared<AudioContext>(sampleRate);
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               audioContext, jsiRuntime, jsCallInvoker);
