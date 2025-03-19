@@ -14,7 +14,8 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
 #else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
+  audioPlayer_ =
+      std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
 #endif
 
   sampleRate_ = audioPlayer_->getSampleRate();

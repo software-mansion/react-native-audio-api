@@ -20,7 +20,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 }
 #endif // RCT_NEW_ARCH_ENABLED
 
-- (id) init
+- (id)init
 {
   if (self == [super init]) {
     self.audioManager = [[AudioManager alloc] init];
@@ -29,12 +29,14 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   return self;
 }
 
-- (void)invalidate {
+- (void)invalidate
+{
   [self.audioManager cleanup];
   [super invalidate];
 }
 
-- (void)setNowPlaying:(NSDictionary *)info {
+- (void)setNowPlaying:(NSDictionary *)info
+{
   [self.audioManager setNowPlaying:info];
 }
 
@@ -75,10 +77,11 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self.audioManager setSessionCategory:sessionCategory];
 }
 
-- (void)setSessionMode:(NSString *)mode {
+- (void)setSessionMode:(NSString *)mode
+{
   AVAudioSessionMode sessionMode;
 
-  if([mode isEqualToString:@"default"]) {
+  if ([mode isEqualToString:@"default"]) {
     sessionMode = AVAudioSessionModeDefault;
     return;
   }
@@ -93,7 +96,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
     return;
   }
 
-  if([mode isEqualToString:@"voiceChat"]) {
+  if ([mode isEqualToString:@"voiceChat"]) {
     sessionMode = AVAudioSessionModeVoiceChat;
     return;
   }
@@ -118,7 +121,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
     return;
   }
 
-  if([mode isEqualToString:@"videoRecording"]) {
+  if ([mode isEqualToString:@"videoRecording"]) {
     sessionMode = AVAudioSessionModeVideoRecording;
     return;
   }
@@ -126,29 +129,30 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self.audioManager setSessionMode:sessionMode];
 }
 
-- (void)setSessionCategoryOptions:(NSArray *)options {
+- (void)setSessionCategoryOptions:(NSArray *)options
+{
   AVAudioSessionCategoryOptions sessionOptions = 0; // No options set initially
 
-    for (NSString *option in options) {
-        if ([option isEqualToString:@"duckOthers"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionDuckOthers;
-        } else if ([option isEqualToString:@"allowAirPlay"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionAllowAirPlay;
-        } else if ([option isEqualToString:@"mixWithOthers"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
-        } else if ([option isEqualToString:@"allowBluetooth"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
-        } else if ([option isEqualToString:@"defaultToSpeaker"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionDefaultToSpeaker;
-        } else if ([option isEqualToString:@"allowBluetoothA2DP"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
-        } else if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
-        } else if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
-            sessionOptions |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
-        }
+  for (NSString *option in options) {
+    if ([option isEqualToString:@"duckOthers"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionDuckOthers;
+    } else if ([option isEqualToString:@"allowAirPlay"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionAllowAirPlay;
+    } else if ([option isEqualToString:@"mixWithOthers"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
+    } else if ([option isEqualToString:@"allowBluetooth"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
+    } else if ([option isEqualToString:@"defaultToSpeaker"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+    } else if ([option isEqualToString:@"allowBluetoothA2DP"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+    } else if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
+    } else if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
     }
-  
+  }
+
   [self.audioManager setSessionOptions:sessionOptions];
 }
 
@@ -158,4 +162,3 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 }
 
 @end
-

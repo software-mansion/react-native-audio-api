@@ -19,26 +19,27 @@
 {
   if (self == [super init]) {
     NSLog(@"[IOSAudioManager] init");
-    
+
     self.audioEngine = [[AudioEngine alloc] init];
-    
+
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
     self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-    AVAudioSessionCategoryOptionAllowAirPlay;
-    
+        AVAudioSessionCategoryOptionAllowAirPlay;
+
     [self configureAudioSession];
     [self configureNotifications];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
-  
+
   return self;
 }
 
-- (void) cleanup {
+- (void)cleanup
+{
   NSLog(@"[IOSAudioManager] cleanup");
   [AudioEngine cleanup];
-  
+
   self.audioSession = nil;
   self.notificationCenter = nil;
 }
@@ -48,7 +49,8 @@
   return [self.audioSession sampleRate];
 }
 
-- (void)setNowPlaying:(NSDictionary *)info {
+- (void)setNowPlaying:(NSDictionary *)info
+{
   MPNowPlayingInfoCenter *playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
   NSMutableDictionary *mediaDict = [NSMutableDictionary dictionary];
 

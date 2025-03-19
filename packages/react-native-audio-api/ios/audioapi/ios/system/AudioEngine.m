@@ -18,7 +18,8 @@ static NSMutableDictionary *sourceFormats_;
   return self;
 }
 
-+ (void) cleanup {
++ (void)cleanup
+{
   if ([audioEngine_ isRunning]) {
     [audioEngine_ stop];
   }

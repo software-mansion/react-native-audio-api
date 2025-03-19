@@ -12,9 +12,9 @@
 
 @interface AudioManagerModule : RCTEventEmitter
 #ifdef RCT_NEW_ARCH_ENABLED
-                            <NativeAudioManagerModuleSpec>
+                                <NativeAudioManagerModuleSpec>
 #else
-                            <RCTBridgeModule>
+                                <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioManager *audioManager;

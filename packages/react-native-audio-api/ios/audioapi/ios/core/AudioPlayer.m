@@ -4,8 +4,8 @@
 @implementation AudioPlayer
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
-                          sampleRate:(float)sampleRate
-                        channelCount:(int)channelCount
+                         sampleRate:(float)sampleRate
+                       channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.sampleRate = sampleRate;
@@ -77,8 +77,7 @@
   if (outputData->mNumberBuffers < self.channelCount) {
     return noErr; // Ensure we have stereo output
   }
-  
-  
+
   if (self.isRunning) {
     self.renderAudio(outputData, frameCount);
   }
