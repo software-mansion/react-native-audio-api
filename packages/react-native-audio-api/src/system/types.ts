@@ -33,7 +33,11 @@ export interface SessionOptions {
   iosCategory?: IOSCategory;
 }
 
-export interface LockScreenInfo {
+interface BaseLockScreenInfo {
+  [key: string]: string | boolean | number | undefined;
+}
+
+export interface LockScreenInfo extends BaseLockScreenInfo {
   title?: string;
   artwork?: string;
   artist?: string;

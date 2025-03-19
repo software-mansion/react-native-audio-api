@@ -12,7 +12,6 @@ namespace audioapi {
 
 class AudioBus;
 class AudioContext;
-class IOSAudioManagerBridge;
 
 class IOSAudioPlayer {
  protected:
@@ -22,11 +21,7 @@ class IOSAudioPlayer {
   int channelCount_;
 
  public:
-  explicit IOSAudioPlayer(
-      const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio);
   IOSAudioPlayer(
-      const std::shared_ptr<IOSAudioManagerBridge> audioManagerBridge,
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);
   ~IOSAudioPlayer();

@@ -1,11 +1,9 @@
 import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
 import type { IAudioContext } from './interfaces';
-import type { IAudioManager } from './system';
 
 /* eslint-disable no-var */
 declare global {
-  var createAudioContext: (sampleRate?: number) => IAudioContext;
-  var AudioManager: IAudioManager;
+  var createAudioContext: (sampleRate: number) => IAudioContext;
 }
 /* eslint-disable no-var */
 

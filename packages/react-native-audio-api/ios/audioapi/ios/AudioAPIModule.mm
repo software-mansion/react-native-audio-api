@@ -4,7 +4,6 @@
 
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>
-#import <ReactCommon/RCTTurboModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
 #include <audioapi/AudioAPIModuleInstaller.h>

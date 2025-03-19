@@ -1,47 +1,17 @@
 #import <audioapi/ios/core/AudioPlayer.h>
+#import <audioapi/ios/system/AudioEngine.h>
 
 @implementation AudioPlayer
 
-- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager
-                         renderAudio:(RenderAudioBlock)renderAudio
-                        channelCount:(int)channelCount
-{
-  if (self = [super init]) {
-    self.audioManager = audioManager;
-    self.channelCount = channelCount;
-    self.renderAudio = [renderAudio copy];
-    self.sampleRate = [self.audioManager getSampleRate];
-
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
-
-    __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
-  }
-
-  return self;
-}
-
-- (instancetype)initWithAudioManager:(IOSAudioManager *)audioManager
-                         renderAudio:(RenderAudioBlock)renderAudio
+- (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                           sampleRate:(float)sampleRate
                         channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.sampleRate = sampleRate;
-    self.audioManager = audioManager;
+
     self.channelCount = channelCount;
     self.renderAudio = [renderAudio copy];
-    // [self.audioManager setSampleRate:sampleRate]; // TODO: not sure if necessary
 
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
 
@@ -70,7 +40,7 @@
 - (void)start
 {
   self.isRunning = true;
-  self.sourceNodeId = [self.audioManager attachSourceNode:self.sourceNode format:self.format];
+  self.sourceNodeId = [AudioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)stop
@@ -80,7 +50,7 @@
   }
 
   self.isRunning = false;
-  [self.audioManager detachSourceNodeWithId:self.sourceNodeId];
+  [AudioEngine detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;
 }
 
@@ -107,8 +77,11 @@
   if (outputData->mNumberBuffers < self.channelCount) {
     return noErr; // Ensure we have stereo output
   }
-
-  self.renderAudio(outputData, frameCount);
+  
+  
+  if (self.isRunning) {
+    self.renderAudio(outputData, frameCount);
+  }
 
   return noErr;
 }

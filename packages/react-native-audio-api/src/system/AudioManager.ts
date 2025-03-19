@@ -1,17 +1,27 @@
-import type { IAudioManager } from './interface';
 import { SessionOptions, LockScreenInfo } from './types';
+import NativeAudioManagerModule from '../specs/NativeAudioManagerModule';
+
+if (!NativeAudioManagerModule) {
+  throw new Error(
+    `Failed to install react-native-audio-api: The native module could not be found.`
+  );
+}
 
 class AudioManager {
-  protected module(): IAudioManager {
-    return global.AudioManager;
-  }
-
   setOptions(options: SessionOptions) {
-    this.module().setOptions(options);
+    NativeAudioManagerModule.setSessionCategory(options.iosCategory || '');
+    NativeAudioManagerModule.setSessionMode(options.iosMode || '');
+    NativeAudioManagerModule.setSessionCategoryOptions(
+      options.iosOptions || []
+    );
   }
 
   setNowPlaying(info: LockScreenInfo) {
-    this.module().setNowPlaying(info);
+    NativeAudioManagerModule.setNowPlaying(info);
+  }
+
+  getSampleRate(): number {
+    return NativeAudioManagerModule.getSampleRate();
   }
 }
 

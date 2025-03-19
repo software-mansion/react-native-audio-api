@@ -1,4 +1,4 @@
-#import <IOSAudioManager.h>
+#import <audioapi/ios/system/AudioManager.h>
 
 @import MediaPlayer;
 
@@ -13,48 +13,78 @@
     @"isLiveStream" : MPNowPlayingInfoPropertyIsLiveStream        \
   }
 
-@implementation IOSAudioManager
+@implementation AudioManager
 
 - (instancetype)init
 {
   if (self == [super init]) {
     NSLog(@"[IOSAudioManager] init");
-
-    self.audioEngine = [[AVAudioEngine alloc] init];
-    self.audioEngine.mainMixerNode.outputVolume = 1;
-    self.sourceNodes = [[NSMutableDictionary alloc] init];
-    self.sourceFormats = [[NSMutableDictionary alloc] init];
-
+    
+    self.audioEngine = [[AudioEngine alloc] init];
+    
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
     self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-        AVAudioSessionCategoryOptionAllowAirPlay;
-
+    AVAudioSessionCategoryOptionAllowAirPlay;
+    
     [self configureAudioSession];
     [self configureNotifications];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
-
+  
   return self;
 }
 
-- (void)cleanup
-{
+- (void) cleanup {
   NSLog(@"[IOSAudioManager] cleanup");
-  if ([self.audioEngine isRunning]) {
-    [self.audioEngine stop];
-  }
-
-  self.audioEngine = nil;
-  self.sourceNodes = nil;
+  [AudioEngine cleanup];
+  
   self.audioSession = nil;
-  self.sourceFormats = nil;
   self.notificationCenter = nil;
 }
 
 - (float)getSampleRate
 {
   return [self.audioSession sampleRate];
+}
+
+- (void)setNowPlaying:(NSDictionary *)info {
+  MPNowPlayingInfoCenter *playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
+  NSMutableDictionary *mediaDict = [NSMutableDictionary dictionary];
+
+  for (NSString *key in MEDIA_DICT) {
+    if ([info objectForKey:key] != nil) {
+      [mediaDict setValue:[info objectForKey:key] forKey:[MEDIA_DICT objectForKey:key]];
+    }
+  }
+
+  playingInfoCenter.nowPlayingInfo = mediaDict;
+}
+
+- (void)setSessionOptionsWithCategory:(AVAudioSessionCategory)category
+                                 mode:(AVAudioSessionMode)mode
+                              options:(AVAudioSessionCategoryOptions)options
+{
+  bool hasDirtySettings = false;
+
+  if (self.sessionCategory != category) {
+    hasDirtySettings = true;
+    self.sessionCategory = category;
+  }
+
+  if (self.sessionMode != mode) {
+    hasDirtySettings = true;
+    self.sessionMode = mode;
+  }
+
+  if (self.sessionOptions != options) {
+    hasDirtySettings = true;
+    self.sessionOptions = options;
+  }
+
+  if (hasDirtySettings) {
+    [self configureAudioSession];
+  }
 }
 
 - (bool)configureAudioSession
@@ -115,160 +145,6 @@
   return true;
 }
 
-- (bool)rebuildAudioEngine
-{
-  NSLog(@"[IOSAudioManager] rebuildAudioEngine");
-  NSError *error = nil;
-
-  if ([self.audioEngine isRunning]) {
-    return true;
-  }
-
-  for (id sourceNodeId in self.sourceNodes) {
-    AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-    AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
-
-    [self.audioEngine attachNode:sourceNode];
-    [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
-  }
-
-  if ([self.audioEngine isRunning]) {
-    return true;
-  }
-
-  if (![self.audioEngine startAndReturnError:&error]) {
-    NSLog(@"Error while rebuilding audio engine: %@", [error debugDescription]);
-    return false;
-  }
-
-  return true;
-}
-
-- (void)startEngine
-{
-  NSLog(@"[IOSAudioManager] startEngine");
-  NSError *error = nil;
-
-  if ([self.audioEngine isRunning]) {
-    return;
-  }
-
-  [self.audioEngine startAndReturnError:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
-  }
-}
-
-- (void)stopEngine
-{
-  NSLog(@"[IOSAudioManager] stopEngine");
-  if (![self.audioEngine isRunning]) {
-    return;
-  }
-
-  [self.audioEngine pause];
-}
-
-- (void)setSessionOptionsWithCategory:(AVAudioSessionCategory)category
-                                 mode:(AVAudioSessionMode)mode
-                              options:(AVAudioSessionCategoryOptions)options
-{
-  bool hasDirtySettings = false;
-
-  if (self.sessionCategory != category) {
-    hasDirtySettings = true;
-    self.sessionCategory = category;
-  }
-
-  if (self.sessionMode != mode) {
-    hasDirtySettings = true;
-    self.sessionMode = mode;
-  }
-
-  if (self.sessionOptions != options) {
-    hasDirtySettings = true;
-    self.sessionOptions = options;
-  }
-
-  if (hasDirtySettings) {
-    [self configureAudioSession];
-  }
-}
-
-- (void)setNowPlayingWithTextualInfo:(NSDictionary *)textualInfo NumericalInfo:(NSDictionary *)numericalInfo
-{
-  MPNowPlayingInfoCenter *playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
-  NSMutableDictionary *mediaDict = [NSMutableDictionary dictionary];
-
-  for (NSString *key in MEDIA_DICT) {
-    if ([textualInfo objectForKey:key] != nil) {
-      [mediaDict setValue:[textualInfo objectForKey:key] forKey:[MEDIA_DICT objectForKey:key]];
-    }
-  }
-
-  for (NSString *key in MEDIA_DICT) {
-    if ([numericalInfo objectForKey:key] != nil) {
-      [mediaDict setValue:[numericalInfo objectForKey:key] forKey:[MEDIA_DICT objectForKey:key]];
-    }
-  }
-
-  playingInfoCenter.nowPlayingInfo = mediaDict;
-
-  MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
-  [remoteCenter.pauseCommand addTarget:self action:@selector(onPause:)];
-  remoteCenter.pauseCommand.enabled = true;
-  [remoteCenter.playCommand addTarget:self action:@selector(onPlay:)];
-  remoteCenter.playCommand.enabled = true;
-
-  // TODO add artwork
-}
-
-- (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
-{
-  [self stopEngine];
-  return MPRemoteCommandHandlerStatusSuccess;
-}
-
-- (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
-{
-  [self startEngine];
-  return MPRemoteCommandHandlerStatusSuccess;
-}
-
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
-{
-  NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
-  NSLog(@"[IOSAudioManager] attaching new source node with ID: %@", sourceNodeId);
-
-  [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
-  [self.sourceFormats setValue:format forKey:sourceNodeId];
-
-  [self.audioEngine attachNode:sourceNode];
-  [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
-
-  if ([self.sourceNodes count] == 1) {
-    [self startEngine];
-  }
-
-  return sourceNodeId;
-}
-
-- (void)detachSourceNodeWithId:(NSString *)sourceNodeId
-{
-  NSLog(@"[IOSAudioManager] detaching source nde with ID: %@", sourceNodeId);
-
-  AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-  [self.audioEngine detachNode:sourceNode];
-
-  [self.sourceNodes removeObjectForKey:sourceNodeId];
-  [self.sourceFormats removeObjectForKey:sourceNodeId];
-
-  if ([self.sourceNodes count] == 0) {
-    [self stopEngine];
-  }
-}
-
 - (void)handleInterruption:(NSNotification *)notification
 {
   NSError *error;
@@ -279,9 +155,7 @@
     self.isInterrupted = true;
     NSLog(@"[IOSAudioManager] Detected interruption, stopping the engine");
 
-    if (self.isRunning) {
-      [self.audioEngine pause];
-    }
+    [AudioEngine stopEngine];
 
     return;
   }
@@ -307,18 +181,10 @@
   }
 
   if (self.hadConfigurationChange) {
-    [self rebuildAudioEngine];
+    [AudioEngine rebuildAudioEngine];
   }
 
-  if (!self.isRunning) {
-    return;
-  }
-
-  [self.audioEngine startAndReturnError:&error];
-
-  if (error != nil) {
-    NSLog(@"[IOSAudioManager] Error while restarting the engine, reason: %@", [error debugDescription]);
-  }
+  [AudioEngine startEngine];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -328,7 +194,7 @@
 
   if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
     NSLog(@"[IOSAudioManager] The previously used audio device became unavailable. Audio engine paused");
-    [self.audioEngine pause];
+    [AudioEngine stopEngine];
   }
 }
 
@@ -338,12 +204,12 @@
   [self cleanup];
   [self configureAudioSession];
   [self configureNotifications];
-  [self rebuildAudioEngine];
+  [AudioEngine rebuildAudioEngine];
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  if (!self.isRunning) {
+  if (![AudioEngine isRunning]) {
     NSLog(@"[IOSAudioManager] detected engine configuration change when engine is not running, marking for rebuild");
     self.hadConfigurationChange = true;
     return;
@@ -357,7 +223,7 @@
 
   NSLog(@"[IOSAudioManager] detected engine configuration change, rebuilding the graph");
   dispatch_async(dispatch_get_main_queue(), ^{
-    [self rebuildAudioEngine];
+    [AudioEngine rebuildAudioEngine];
   });
 }
 
