@@ -10,7 +10,7 @@ export default function App() {
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
-    const playerNode = audioContext.createBufferSource();
+    const playerNode = await audioContext.createBufferSource();
     playerNode.buffer = audioBuffer;
 
     playerNode.connect(audioContext.destination);
