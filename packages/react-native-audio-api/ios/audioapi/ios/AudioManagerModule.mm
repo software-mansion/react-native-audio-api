@@ -137,31 +137,31 @@ RCT_EXPORT_MODULE(AudioManagerModule);
     if ([option isEqualToString:@"duckOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionDuckOthers;
     }
-    
+
     if ([option isEqualToString:@"allowAirPlay"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowAirPlay;
     }
-    
+
     if ([option isEqualToString:@"mixWithOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
     }
-    
+
     if ([option isEqualToString:@"allowBluetooth"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
     }
-    
+
     if ([option isEqualToString:@"defaultToSpeaker"]) {
       sessionOptions |= AVAudioSessionCategoryOptionDefaultToSpeaker;
     }
-    
+
     if ([option isEqualToString:@"allowBluetoothA2DP"]) {
       sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
     }
-    
+
     if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
       sessionOptions |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
     }
-    
+
     if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
       sessionOptions |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
     }
