@@ -698,4 +698,5 @@ void linearToDecibels(
     outputVector[i] = dsp::linearToDecibels(inputVector[i]);
   }
 }
+
 } // namespace audioapi::dsp

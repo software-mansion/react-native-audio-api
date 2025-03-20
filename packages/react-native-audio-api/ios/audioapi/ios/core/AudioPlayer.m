@@ -9,6 +9,8 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isInterrupted = false;
+    self.configrationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
@@ -44,6 +46,8 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isInterrupted = false;
+    self.configrationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
@@ -94,7 +98,7 @@
   [self.audioSession setActive:false error:&error];
 
   if (error != nil) {
-    @throw error;
+    NSLog(@"Error while deactivating audio session: %@", [error debugDescription]);
   }
 }
 
@@ -139,21 +143,29 @@
   if (!self.audioSession) {
     self.audioSession = [AVAudioSession sharedInstance];
   }
+  
+  [self.audioSession setPreferredIOBufferDuration:0.01 error:&error];
+  
+  if (error != nil) {
+    NSLog(@"Error while setting buffer size in audio session: %@", [error debugDescription]);
+    return;
+  }
 
   [self.audioSession setCategory:AVAudioSessionCategoryPlayback
                             mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-                         AVAudioSessionCategoryOptionAllowAirPlay
+                         options:AVAudioSessionCategoryOptionDuckOthers
                            error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    return;
   }
 
   [self.audioSession setActive:true error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    return;
   }
 }
 
@@ -182,18 +194,48 @@
     NSError *error = nil;
 
     if (![self.audioEngine startAndReturnError:&error]) {
-      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+      NSLog(@"Error starting audio engine: %@", [error debugDescription]);
     }
   }
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  if (!self.isRunning) {
+  if (!self.isRunning || self.isInterrupted) {
+    self.configrationChanged = true;
     return;
   }
 
-  [self connectAudioEngine];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self connectAudioEngine];
+  });
+}
+
+- (void)handleInterruption:(NSNotification *)notification
+{
+  NSError *error;
+  UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
+  UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
+  
+  if (type == AVAudioSessionInterruptionTypeBegan) {
+    self.isInterrupted = true;
+    return;
+  }
+  
+  if (type != AVAudioSessionInterruptionTypeEnded || option != AVAudioSessionInterruptionOptionShouldResume) {
+    return;
+  }
+  
+  bool success = [self.audioSession setActive:true error:&error];
+  
+  if (!success) {
+    NSLog(@"ERror: %@", [error debugDescription]);
+    return;
+  }
+
+  if (self.configrationChanged && self.isRunning) {
+    [self connectAudioEngine];
+  }
 }
 
 @end

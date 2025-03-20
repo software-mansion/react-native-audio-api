@@ -16,6 +16,8 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) int channelCount;
 @property (nonatomic, assign) bool isRunning;
+@property (nonatomic, assign) bool isInterrupted;
+@property (nonatomic, assign) bool configrationChanged;
 
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio channelCount:(int)channelCount;
 
@@ -42,5 +44,6 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 - (void)connectAudioEngine;
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification;
+- (void)handleInterruption:(NSNotification *)notification;
 
 @end

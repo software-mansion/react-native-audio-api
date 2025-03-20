@@ -4,6 +4,7 @@
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/dsp/VectorMath.h>
 
 namespace audioapi {
 
@@ -16,15 +17,14 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
       renderAudio_(audioBus_, framesToProcess);
+      
 
-      // TODO: optimize this with SIMD?
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
         auto *inputChannel = audioBus_->getChannel(channel)->getData();
+        
+        memcpy(outputChannel + processedFrames, inputChannel, framesToProcess * sizeof(float));
 
-        for (int i = 0; i < framesToProcess; i++) {
-          outputChannel[processedFrames + i] = inputChannel[i];
-        }
       }
 
       processedFrames += framesToProcess;
@@ -45,14 +45,11 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
       renderAudio_(audioBus_, framesToProcess);
 
-      // TODO: optimize this with SIMD?
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
         auto *inputChannel = audioBus_->getChannel(channel)->getData();
-
-        for (int i = 0; i < framesToProcess; i++) {
-          outputChannel[processedFrames + i] = inputChannel[i];
-        }
+        
+        memcpy(outputChannel + processedFrames, inputChannel, framesToProcess * sizeof(float));
       }
 
       processedFrames += framesToProcess;
