@@ -165,7 +165,7 @@ void AudioBufferSourceNode::processNode(
     updatePlaybackInfo(
         playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
-    if (playbackRate == 0.0f || !isPlaying()) {
+    if (playbackRate == 0.0f || !isPlaying() || !buffer_) {
       processingBus->zero();
       return;
     }
@@ -173,15 +173,18 @@ void AudioBufferSourceNode::processNode(
     processWithoutInterpolation(
         playbackRateBus_, startOffset, offsetLength, playbackRate);
 
+    if (!buffer_) {
+      processingBus->zero();
+      return;
+    }
+
     auto stretch = buffer_->stretch_;
 
-    if (framesToProcess != framesNeededToStretch) {
-      stretch->process(
-          playbackRateBus_.get()[0],
-          framesNeededToStretch,
-          processingBus.get()[0],
-          framesToProcess);
-    }
+    stretch->process(
+        playbackRateBus_.get()[0],
+        framesNeededToStretch,
+        processingBus.get()[0],
+        framesToProcess);
 
     if (detune != 0.0f) {
       stretch->setTransposeSemitones(detune);
@@ -247,6 +250,10 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 
       if (!loop_) {
         processingBus->zero(writeIndex, framesLeft);
+
+        if (onendedCallback_) {
+          onendedCallback_(getStopTime());
+        }
         playbackState_ = PlaybackState::FINISHED;
         disable();
         break;
