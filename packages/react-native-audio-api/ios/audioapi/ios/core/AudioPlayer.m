@@ -143,9 +143,9 @@
   if (!self.audioSession) {
     self.audioSession = [AVAudioSession sharedInstance];
   }
-  
+
   [self.audioSession setPreferredIOBufferDuration:0.01 error:&error];
-  
+
   if (error != nil) {
     NSLog(@"Error while setting buffer size in audio session: %@", [error debugDescription]);
     return;
@@ -216,18 +216,18 @@
   NSError *error;
   UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
   UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
-  
+
   if (type == AVAudioSessionInterruptionTypeBegan) {
     self.isInterrupted = true;
     return;
   }
-  
+
   if (type != AVAudioSessionInterruptionTypeEnded || option != AVAudioSessionInterruptionOptionShouldResume) {
     return;
   }
-  
+
   bool success = [self.audioSession setActive:true error:&error];
-  
+
   if (!success) {
     NSLog(@"ERror: %@", [error debugDescription]);
     return;
