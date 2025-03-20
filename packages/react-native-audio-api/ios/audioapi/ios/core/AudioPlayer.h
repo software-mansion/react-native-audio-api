@@ -17,7 +17,7 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, assign) int channelCount;
 @property (nonatomic, assign) bool isRunning;
 @property (nonatomic, assign) bool isInterrupted;
-@property (nonatomic, assign) bool configrationChanged;
+@property (nonatomic, assign) bool configurationChanged;
 
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio channelCount:(int)channelCount;
 

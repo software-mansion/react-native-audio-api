@@ -10,7 +10,7 @@
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
     self.isInterrupted = false;
-    self.configrationChanged = false;
+    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
@@ -47,7 +47,7 @@
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
     self.isInterrupted = false;
-    self.configrationChanged = false;
+    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
@@ -144,17 +144,14 @@
     self.audioSession = [AVAudioSession sharedInstance];
   }
 
-  [self.audioSession setPreferredIOBufferDuration:0.01 error:&error];
+  [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
 
   if (error != nil) {
     NSLog(@"Error while setting buffer size in audio session: %@", [error debugDescription]);
     return;
   }
 
-  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
-                            mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers
-                           error:&error];
+  [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
 
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
@@ -178,7 +175,11 @@
   [self.notificationCenter addObserver:self
                               selector:@selector(handleEngineConfigurationChange:)
                                   name:AVAudioEngineConfigurationChangeNotification
-                                object:nil];
+                                object:self];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleInterruption:)
+                                  name:AVAudioSessionInterruptionNotification
+                                object:self];
 }
 
 - (void)connectAudioEngine
@@ -202,7 +203,7 @@
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
   if (!self.isRunning || self.isInterrupted) {
-    self.configrationChanged = true;
+    self.configurationChanged = true;
     return;
   }
 
@@ -233,8 +234,10 @@
     return;
   }
 
-  if (self.configrationChanged && self.isRunning) {
-    [self connectAudioEngine];
+  if (self.configurationChanged && self.isRunning) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self connectAudioEngine];
+    });
   }
 }
 
