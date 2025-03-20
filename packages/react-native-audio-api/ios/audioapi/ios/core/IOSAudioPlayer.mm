@@ -12,9 +12,11 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
+    printf("numFrames: %d\n", numFrames);
 
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
+      printf("framesToProcess: %d\n", framesToProcess);
       renderAudio_(audioBus_, framesToProcess);
 
       // TODO: optimize this with SIMD?
@@ -40,9 +42,11 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
+    printf("numFrames: %d\n", numFrames);
 
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
+      printf("framesToProcess: %d\n", framesToProcess);
       renderAudio_(audioBus_, framesToProcess);
 
       // TODO: optimize this with SIMD?

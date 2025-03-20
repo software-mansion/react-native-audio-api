@@ -23,7 +23,6 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [offset, setOffset] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
 
@@ -31,6 +30,16 @@ const AudioFile: FC = () => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playbackRateRef = useRef<number>(INITIAL_RATE);
+  const isPlayingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    playbackRateRef.current = playbackRate;
+  }, [playbackRate]);
 
   const handlePlaybackRateChange = (newValue: number) => {
     setPlaybackRate(newValue);
@@ -53,32 +62,23 @@ const AudioFile: FC = () => {
       return;
     }
 
-    if (isPlaying) {
-      bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
-    } else {
-      if (!audioBuffer) {
-        fetchAudioBuffer();
-      }
+    // if (isPlaying) {
+    //   bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
+    // } else {
+    //   if (!audioBuffer) {
+    //     fetchAudioBuffer();
+    //   }
 
-      bufferSourceRef.current = audioContextRef.current.createBufferSource({
-        pitchCorrection: true,
-      });
-      bufferSourceRef.current.buffer = audioBuffer;
-      bufferSourceRef.current.loop = true;
-      bufferSourceRef.current.onended = (stopTime?: number) => {
-        setOffset((_prev) => stopTime || 0);
-      };
-      bufferSourceRef.current.loopStart = LOOP_START;
-      bufferSourceRef.current.loopEnd = LOOP_END;
-      bufferSourceRef.current.playbackRate.value = playbackRate;
-      bufferSourceRef.current.detune.value = detune;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
+    //   bufferSourceRef.current = audioContextRef.current.createBufferSource({
+    //     pitchCorrection: true,
+    //   });
+    //   bufferSourceRef.current.buffer = audioBuffer;
+    //   bufferSourceRef.current.playbackRate.value = playbackRate;
+    //   bufferSourceRef.current.detune.value = detune;
+    //   bufferSourceRef.current.connect(audioContextRef.current.destination);
 
-      bufferSourceRef.current.start(
-        audioContextRef.current.currentTime,
-        offset
-      );
-    }
+    //   bufferSourceRef.current.start(audioContextRef.current.currentTime);
+    // }
 
     setIsPlaying((prev) => !prev);
   };
@@ -112,6 +112,33 @@ const AudioFile: FC = () => {
       audioContextRef.current?.close();
     };
   }, [fetchAudioBuffer]);
+
+  useEffect(() => {
+    function retryLoop() {
+      if (!isPlayingRef.current || !audioBuffer) {
+        return;
+      }
+
+      console.log('retryLoop');
+
+      bufferSourceRef.current = audioContextRef.current!.createBufferSource({
+        pitchCorrection: true,
+      });
+
+      bufferSourceRef.current.buffer = audioBuffer;
+      bufferSourceRef.current.playbackRate.value = 2;
+      bufferSourceRef.current.detune.value = 0;
+      bufferSourceRef.current.connect(audioContextRef.current!.destination);
+
+      bufferSourceRef.current.start(audioContextRef.current!.currentTime);
+
+      setTimeout(retryLoop, (audioBuffer.duration * 1000) / 2 - 200);
+    }
+
+    if (isPlaying) {
+      retryLoop();
+    }
+  }, [isPlaying, audioBuffer]);
 
   return (
     <Container centered>
