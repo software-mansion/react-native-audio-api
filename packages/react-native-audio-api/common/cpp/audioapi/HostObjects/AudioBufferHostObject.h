@@ -31,6 +31,10 @@ class AudioBufferHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
   }
 
+  [[nodiscard]] size_t getSizeInBytes() const {
+    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() * sizeof(float);
+  }
+
   JSI_PROPERTY_GETTER(sampleRate) {
     return {audioBuffer_->getSampleRate()};
   }
@@ -48,8 +52,6 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(getChannelData) {
-    // this method could cause a crash if channelData is already deallocated,
-    // but we handle deallocation internally so it should be safe
     auto channel = static_cast<int>(args[0].getNumber());
     auto channelData = reinterpret_cast<uint8_t *>(audioBuffer_->getChannelData(channel));
     auto length = static_cast<int>(audioBuffer_->getLength());

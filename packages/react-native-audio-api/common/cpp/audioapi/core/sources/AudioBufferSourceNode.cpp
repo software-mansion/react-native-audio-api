@@ -109,6 +109,11 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 }
 
+void AudioBufferSourceNode::disable() {
+  AudioNode::disable();
+  buffer_ = nullptr;
+}
+
 std::mutex &AudioBufferSourceNode::getBufferLock() {
   return bufferLock_;
 }
@@ -160,18 +165,27 @@ void AudioBufferSourceNode::processNode(
     updatePlaybackInfo(
         playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
+    if (playbackRate == 0.0f || !isPlaying()) {
+      processingBus->zero();
+      return;
+    }
+
     processWithoutInterpolation(
         playbackRateBus_, startOffset, offsetLength, playbackRate);
 
     auto stretch = buffer_->stretch_;
 
-    stretch->process(
-        playbackRateBus_.get()[0],
-        framesNeededToStretch,
-        processingBus.get()[0],
-        framesToProcess);
+    if (framesToProcess != framesNeededToStretch) {
+      stretch->process(
+          playbackRateBus_.get()[0],
+          framesNeededToStretch,
+          processingBus.get()[0],
+          framesToProcess);
+    }
 
-    stretch->setTransposeSemitones(detune);
+    if (detune != 0.0f) {
+      stretch->setTransposeSemitones(detune);
+    }
   }
 
   handleStopScheduled();
