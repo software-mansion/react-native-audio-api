@@ -24,8 +24,8 @@ class AudioManager {
     );
   }
 
-  getSampleRate(): number {
-    return NativeAudioManagerModule.getSampleRate();
+  getDevicePreferredSampleRate(): number {
+    return NativeAudioManagerModule.getDevicePreferredSampleRate();
   }
 
   onRemotePlay(callback: () => void) {

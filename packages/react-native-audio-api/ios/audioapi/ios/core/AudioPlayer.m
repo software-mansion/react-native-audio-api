@@ -39,8 +39,9 @@
 
 - (void)start
 {
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.isRunning = true;
-  self.sourceNodeId = [AudioEngine attachSourceNode:self.sourceNode format:self.format];
+  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)stop
@@ -49,8 +50,9 @@
     return;
   }
 
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.isRunning = false;
-  [AudioEngine detachSourceNodeWithId:self.sourceNodeId];
+  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;
 }
 

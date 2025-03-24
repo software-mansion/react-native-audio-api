@@ -5,15 +5,19 @@
 
 @interface AudioEngine : NSObject
 
-- (instancetype)init;
-+ (void)cleanup;
+@property (nonatomic, strong) AVAudioEngine *audioEngine;
+@property (nonatomic, strong) NSMutableDictionary *sourceNodes;
+@property (nonatomic, strong) NSMutableDictionary *sourceFormats;
 
-+ (bool)rebuildAudioEngine;
-+ (void)startEngine;
-+ (void)stopEngine;
-+ (bool)isRunning;
++ (instancetype)sharedInstance;
+- (void)cleanup;
 
-+ (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
-+ (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
+- (bool)rebuildAudioEngine;
+- (void)startEngine;
+- (void)stopEngine;
+- (bool)isRunning;
+
+- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
+- (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
 @end

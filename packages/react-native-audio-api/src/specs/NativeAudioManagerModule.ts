@@ -11,7 +11,7 @@ interface Spec extends TurboModule {
     mode: string,
     options: Array<string>
   ): void;
-  getSampleRate(): number;
+  getDevicePreferredSampleRate(): number;
 
   readonly onRemotePlay: EventEmitter<void>;
   readonly onRemotePause: EventEmitter<void>;

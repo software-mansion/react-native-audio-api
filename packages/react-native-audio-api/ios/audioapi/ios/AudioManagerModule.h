@@ -6,10 +6,10 @@
 #import <React/RCTBridgeModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
-#import <AVFoundation/AVFoundation.h>
-#import <Foundation/Foundation.h>
-#import <MediaPlayer/MediaPlayer.h>
-#import <audioapi/ios/system/AudioEngine.h>
+@class AudioEngine;
+@class NotificationManager;
+@class AudioSessionManager;
+@class LockScreenManager;
 
 @interface AudioManagerModule : NativeAudioManagerModuleSpecBase
 #ifdef RCT_NEW_ARCH_ENABLED
@@ -19,15 +19,8 @@
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioEngine *audioEngine;
-@property (nonatomic, weak) AVAudioSession *audioSession;
-@property (nonatomic, weak) NSNotificationCenter *notificationCenter;
-
-@property (nonatomic, assign) bool isInterrupted;
-@property (nonatomic, assign) bool hadConfigurationChange;
-
-@property (nonatomic, assign) AVAudioSessionMode sessionMode;
-@property (nonatomic, assign) AVAudioSessionCategory sessionCategory;
-@property (nonatomic, assign) AVAudioSessionCategoryOptions sessionOptions;
-@property (nonatomic, copy) NSString *artworkUrl;
+@property (nonatomic, strong) NotificationManager *notificationManager;
+@property (nonatomic, strong) AudioSessionManager *audioSessionManager;
+@property (nonatomic, strong) LockScreenManager *lockScreenManager;
 
 @end
