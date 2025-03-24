@@ -36,6 +36,8 @@ class AudioScheduledSourceNode : public AudioNode {
  protected:
   PlaybackState playbackState_;
 
+  std::function<void(double)> onendedCallback_;
+
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,
       int framesToProcess,
@@ -47,8 +49,6 @@ class AudioScheduledSourceNode : public AudioNode {
  private:
   double startTime_;
   double stopTime_;
-
-  std::function<void(double)> onendedCallback_;
 };
 
 } // namespace audioapi

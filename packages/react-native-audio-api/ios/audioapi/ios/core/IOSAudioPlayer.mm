@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #include <audioapi/core/Constants.h>
+#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -17,14 +18,11 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
       renderAudio_(audioBus_, framesToProcess);
 
-      // TODO: optimize this with SIMD?
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
         auto *inputChannel = audioBus_->getChannel(channel)->getData();
 
-        for (int i = 0; i < framesToProcess; i++) {
-          outputChannel[processedFrames + i] = inputChannel[i];
-        }
+        memcpy(outputChannel + processedFrames, inputChannel, framesToProcess * sizeof(float));
       }
 
       processedFrames += framesToProcess;

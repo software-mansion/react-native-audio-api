@@ -109,7 +109,11 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto sampleRate = static_cast<float>(args[2].getNumber());
     auto buffer = BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
     auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-    return jsi::Object::createFromHostObject(runtime, bufferHostObject);
+
+    auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
+    jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
+
+    return jsiObject;
   }
 
   JSI_HOST_FUNCTION(createPeriodicWave) {
@@ -158,7 +162,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
         }
 
         promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-          return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
+          return jsiObject;
         });
       }).detach();
     });
@@ -182,7 +188,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
           }
 
           promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-            return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+            auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+            jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
+            return jsiObject;
           });
         }).detach();
       });

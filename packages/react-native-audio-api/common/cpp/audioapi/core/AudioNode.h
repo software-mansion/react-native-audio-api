@@ -32,7 +32,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   bool isEnabled() const;
   void enable();
-  void disable();
+  virtual void disable();
 
  protected:
   friend class AudioNodeManager;

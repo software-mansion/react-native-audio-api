@@ -30,6 +30,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
   void start(double when, double offset, double duration = -1);
+  void disable() override;
 
  protected:
   std::mutex &getBufferLock();

@@ -254,7 +254,9 @@ void AudioNode::cleanup() {
   }
 
   for (const auto &inputNode : inputNodes_) {
-    inputNode->disconnectNode(shared_from_this());
+    if (inputNode) {
+      inputNode->disconnectNode(shared_from_this());
+    }
   }
 
   outputNodes_.clear();
