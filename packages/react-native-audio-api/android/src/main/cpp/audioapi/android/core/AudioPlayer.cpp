@@ -7,26 +7,6 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio)
-    : renderAudio_(renderAudio), channelCount_(2) {
-  AudioStreamBuilder builder;
-
-  builder.setSharingMode(SharingMode::Exclusive)
-      ->setFormat(AudioFormat::Float)
-      ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::None)
-      ->setChannelCount(channelCount_)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
-      ->setDataCallback(this)
-      ->openStream(mStream_);
-
-  sampleRate_ = static_cast<float>(mStream_->getSampleRate());
-  mBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
-  isInitialized_ = true;
-}
-
-AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
     float sampleRate)
     : renderAudio_(renderAudio), channelCount_(2) {
