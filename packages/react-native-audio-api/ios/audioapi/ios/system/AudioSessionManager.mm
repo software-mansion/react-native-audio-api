@@ -26,8 +26,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-        AVAudioSessionCategoryOptionAllowAirPlay;
+    self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowAirPlay;
 
     [self configureAudioSession];
   }
@@ -39,33 +38,6 @@ static AudioSessionManager *_sharedInstance = nil;
   NSLog(@"[AudioSessionManager] cleanup");
 
   self.audioSession = nil;
-}
-
-- (bool)configureAudioSession
-{
-  NSLog(
-      @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu",
-      self.sessionCategory,
-      self.sessionMode,
-      (unsigned long)self.sessionOptions);
-
-  NSError *error = nil;
-
-  [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
-    return false;
-  }
-
-  [self.audioSession setActive:true error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
-    return false;
-  }
-
-  return true;
 }
 
 - (NSNumber *)getDevicePreferredSampleRate
@@ -172,6 +144,33 @@ static AudioSessionManager *_sharedInstance = nil;
 - (bool)setActive:(bool)active error:(NSError **)error
 {
   return [self.audioSession setActive:active error:error];
+}
+
+- (bool)configureAudioSession
+{
+  NSLog(
+      @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu",
+      self.sessionCategory,
+      self.sessionMode,
+      (unsigned long)self.sessionOptions);
+
+  NSError *error = nil;
+
+  [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    return false;
+  }
+
+  [self setActive:true error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    return false;
+  }
+
+  return true;
 }
 
 @end

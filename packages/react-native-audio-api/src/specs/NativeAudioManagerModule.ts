@@ -9,7 +9,8 @@ interface Spec extends TurboModule {
   setSessionOptions(
     category: string,
     mode: string,
-    options: Array<string>
+    options: Array<string>,
+    active: boolean
   ): void;
   getDevicePreferredSampleRate(): number;
 

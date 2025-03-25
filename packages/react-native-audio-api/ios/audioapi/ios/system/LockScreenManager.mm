@@ -47,21 +47,27 @@ static LockScreenManager *_sharedInstance = nil;
 - (void)cleanup
 {
   NSLog(@"[LockScreenManager] cleanup");
-  self.playingInfoCenter = nil;
+  [self resetLockScreenInfo];
 }
 
 - (void)setLockScreenInfo:(NSDictionary *)info
 {
-  // lock screen info
-  NSMutableDictionary *mediaDict = [NSMutableDictionary dictionary];
+  // now playing info(lock screen info)
+  NSMutableDictionary *lockScreenInfoDict;
+
+  if (self.playingInfoCenter.nowPlayingInfo == nil) {
+    lockScreenInfoDict = [NSMutableDictionary dictionary];
+  } else {
+    lockScreenInfoDict = [[NSMutableDictionary alloc] initWithDictionary:self.playingInfoCenter.nowPlayingInfo];
+  }
 
   for (NSString *key in LOCK_SCREEN_INFO) {
     if ([info objectForKey:key] != nil) {
-      [mediaDict setValue:[info objectForKey:key] forKey:[LOCK_SCREEN_INFO objectForKey:key]];
+      [lockScreenInfoDict setValue:[info objectForKey:key] forKey:[LOCK_SCREEN_INFO objectForKey:key]];
     }
   }
 
-  self.playingInfoCenter.nowPlayingInfo = mediaDict;
+  self.playingInfoCenter.nowPlayingInfo = lockScreenInfoDict;
 
   // playback state
   NSString *state = [info objectForKey:@"state"];

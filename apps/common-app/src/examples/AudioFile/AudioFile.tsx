@@ -3,17 +3,10 @@ import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
   AudioContext,
-  AudioManager,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
-
-AudioManager.setOptions({
-  iosMode: 'default',
-  iosCategory: 'playback',
-  iosOptions: ['duckOthers', 'allowBluetooth', 'allowAirPlay'],
-});
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';

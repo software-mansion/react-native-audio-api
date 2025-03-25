@@ -31,6 +31,7 @@ export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
+  active?: boolean;
 }
 
 export type MediaState = 'state_playing' | 'state_paused' | 'state_stopped';
@@ -47,7 +48,7 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   genre?: string;
   duration?: number;
   isLiveStream?: boolean;
-  state: MediaState;
-  speed: number;
-  elapsedTime: number;
+  state?: MediaState;
+  speed?: number;
+  elapsedTime?: number;
 }

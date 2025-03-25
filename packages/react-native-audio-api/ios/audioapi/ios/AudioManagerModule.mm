@@ -54,9 +54,15 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 {
   [self.lockScreenManager resetLockScreenInfo];
 }
-- (void)setSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options
+- (void)setSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active
 {
-  [self.audioSessionManager setSessionOptions:category mode:mode options:options];
+  NSError *error = nil;
+
+  if (active) {
+    [self.audioSessionManager setSessionOptions:category mode:mode options:options];
+  } else {
+    [self.audioSessionManager setActive:false error:&error];
+  }
 }
 
 - (NSNumber *)getDevicePreferredSampleRate
