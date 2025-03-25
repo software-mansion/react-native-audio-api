@@ -155,6 +155,8 @@ static AudioSessionManager *_sharedInstance = nil;
       (unsigned long)self.sessionOptions);
 
   NSError *error = nil;
+  
+  [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
 
   [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
 
