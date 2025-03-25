@@ -15,10 +15,8 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit OfflineAudioContextHostObject(
       const std::shared_ptr<OfflineAudioContext> &audioContext,
-      const std::shared_ptr<PromiseVendor> &promiseVendor,
-      const std::shared_ptr<react::CallInvoker> &jsCallInvoker)
-      : BaseAudioContextHostObject(audioContext, promiseVendor),
-        jsCallInvoker_(jsCallInvoker) {
+      const std::shared_ptr<PromiseVendor> &promiseVendor)
+      : BaseAudioContextHostObject(audioContext, promiseVendor) {
     addFunctions(
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
@@ -67,8 +65,5 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
 
     return promise;
   }
-
-  protected:
-   std::shared_ptr<react::CallInvoker> jsCallInvoker_;
 };
 } // namespace audioapi
