@@ -139,6 +139,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 
+  async startRendering(): Promise<AudioBuffer> {
+    return new AudioBuffer(await this.context.startRendering());
+  }
+
   async resume(): Promise<void> {
     await this.context.resume();
   }
