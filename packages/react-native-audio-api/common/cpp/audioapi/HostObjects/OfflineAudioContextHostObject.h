@@ -28,11 +28,6 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
   JSI_HOST_FUNCTION(resume) {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
-      OfflineAudioContextSuspendCallback callback = [promise]() {
-        promise->resolve([](jsi::Runtime &runtime) {
-          return jsi::Value::undefined();
-        });
-      };
       audioContext->resume();
     });
 

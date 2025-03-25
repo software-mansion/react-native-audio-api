@@ -41,8 +41,8 @@ void OfflineAudioContext::resume() {
   }
 
   if (state_ == ContextState::RUNNING) return;
-  
   assert(state_ == ContextState::SUSPENDED);
+
   resumeRendering();
 }
 
@@ -72,7 +72,7 @@ void OfflineAudioContext::suspend(double when, std::function<void()> callback) {
 
   int32_t frame = when * sampleRate_;
   frame = RENDER_QUANTUM_SIZE *
-          (frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE;
+          ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
   
   if (frame < currentSampleFrame_) {
     int32_t currentFrameClamped = std::min(currentSampleFrame_, numFrames_);
@@ -99,7 +99,6 @@ void OfflineAudioContext::suspend(double when, std::function<void()> callback) {
 }
 
 void OfflineAudioContext::resumeRendering() {
-  Locker locker(stateLock_);
   state_ = ContextState::RUNNING;
   std::thread([this]() {
     auto audioBus = std::make_shared<AudioBus>(
@@ -123,6 +122,7 @@ void OfflineAudioContext::resumeRendering() {
         assert(currentSampleFrame_ < numFrames_);
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
+        state_ = ContextState::SUSPENDED;
         callback();
         return;
       }
@@ -135,14 +135,14 @@ void OfflineAudioContext::resumeRendering() {
 }
 
 void OfflineAudioContext::startRendering(OfflineAudioContextResultCallback callback) {
-  {
-    Locker locker(stateLock_);
-    if (isRenderingStarted_) {
-      throw std::runtime_error("cannot call startRendering more than once");
-    }
-    isRenderingStarted_ = true;
-    resultCallback_ = callback;
+  Locker locker(stateLock_);
+  if (isRenderingStarted_) {
+    throw std::runtime_error("cannot call startRendering more than once");
   }
+  resultBus_ = std::make_shared<AudioBus>(
+      static_cast<int>(numFrames_), CHANNEL_COUNT, sampleRate_);
+  isRenderingStarted_ = true;
+  resultCallback_ = callback;
   resumeRendering();
 }
 
