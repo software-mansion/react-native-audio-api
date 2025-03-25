@@ -1,6 +1,7 @@
 export { default as AudioBuffer } from './web-core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './web-core/AudioBufferSourceNode';
 export { default as AudioContext } from './web-core/AudioContext';
+export { default as OfflineAudioContext } from './web-core/OfflineAudioContext';
 export { default as AudioDestinationNode } from './web-core/AudioDestinationNode';
 export { default as AudioNode } from './web-core/AudioNode';
 export { default as AnalyserNode } from './web-core/AnalyserNode';

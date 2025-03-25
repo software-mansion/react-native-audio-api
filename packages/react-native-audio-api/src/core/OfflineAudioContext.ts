@@ -1,4 +1,4 @@
-import { IAudioContext, IOfflineAudioContext } from '../interfaces';
+import { IOfflineAudioContext } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
 import { OfflineAudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
