@@ -164,6 +164,8 @@
     NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return;
   }
+
+  self.isInterrupted = false;
 }
 
 - (void)setupAndInitNotificationHandlers
@@ -175,11 +177,11 @@
   [self.notificationCenter addObserver:self
                               selector:@selector(handleEngineConfigurationChange:)
                                   name:AVAudioEngineConfigurationChangeNotification
-                                object:self];
+                                object:nil];
   [self.notificationCenter addObserver:self
                               selector:@selector(handleInterruption:)
                                   name:AVAudioSessionInterruptionNotification
-                                object:self];
+                                object:nil];
 }
 
 - (void)connectAudioEngine
@@ -198,6 +200,8 @@
       NSLog(@"Error starting audio engine: %@", [error debugDescription]);
     }
   }
+
+  self.configurationChanged = false;
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
@@ -227,12 +231,7 @@
     return;
   }
 
-  bool success = [self.audioSession setActive:true error:&error];
-
-  if (!success) {
-    NSLog(@"ERror: %@", [error debugDescription]);
-    return;
-  }
+  [self setupAndInitAudioSession];
 
   if (self.configurationChanged && self.isRunning) {
     dispatch_async(dispatch_get_main_queue(), ^{
