@@ -61,36 +61,4 @@ jsi::Value PromiseVendor::createPromise(
   return promiseCtor.callAsConstructor(runtime, runPromise);
 }
 
-jsi::Value PromiseVendor::createEmptyPromise() {
-  if (runtime_ == nullptr) {
-    throw std::runtime_error("Runtime was null!");
-  }
-
-  auto &runtime = *runtime_;
-  auto callInvoker = callInvoker_;
-
-  // get Promise constructor
-  auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-
-  // create a "run" function (first Promise arg)
-  auto runPromise = jsi::Function::createFromHostFunction(
-      runtime,
-      jsi::PropNameID::forUtf8(runtime, "runPromise"),
-      2,
-      [callInvoker](
-          jsi::Runtime &runtime,
-          const jsi::Value &thisValue,
-          const jsi::Value *arguments,
-          size_t count) -> jsi::Value {
-        auto resolveLocal = arguments[0].asObject(runtime).asFunction(runtime);
-        auto resolve = std::make_shared<jsi::Function>(std::move(resolveLocal));
-
-        resolve->call(runtime);
-        return jsi::Value::undefined();
-      });
-
-  // return new Promise((resolve, reject) => ...)
-  return promiseCtor.callAsConstructor(runtime, runPromise);
-}
-
 } // namespace audioapi
