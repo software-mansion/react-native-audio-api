@@ -40,6 +40,10 @@ bool AudioScheduledSourceNode::isFinished() {
   return playbackState_ == PlaybackState::FINISHED;
 }
 
+bool AudioScheduledSourceNode::isStopScheduled() {
+  return playbackState_ == PlaybackState::STOP_SCHEDULED;
+}
+
 void AudioScheduledSourceNode::setOnendedCallback(
     const std::function<void(double)> &onendedCallback) {
   onendedCallback_ = onendedCallback;
@@ -99,23 +103,10 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
   if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
     processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
-    return;
-  }
-
-  // mark as finished in first silent render quantum
-  if (stopFrame < firstFrame) {
-    startOffset = 0;
-    nonSilentFramesToProcess = 0;
-
-    if (onendedCallback_) {
-      onendedCallback_(getStopTime());
-    }
-
-    playbackState_ = PlaybackState::FINISHED;
-    disable();
     return;
   }
 
@@ -125,10 +116,11 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {
-  if (isPlaying() && stopTime_ > 0 && context_->getCurrentTime() >= stopTime_) {
+  if (isStopScheduled()) {
     if (onendedCallback_) {
       onendedCallback_(getStopTime());
     }
+
     playbackState_ = PlaybackState::FINISHED;
     disable();
   }

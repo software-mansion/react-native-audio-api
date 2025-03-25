@@ -25,6 +25,7 @@ class AudioBus {
   };
 
   explicit AudioBus(size_t size, int numberOfChannels, float sampleRate);
+  AudioBus(const AudioBus &other);
 
   ~AudioBus();
 
@@ -34,8 +35,8 @@ class AudioBus {
   [[nodiscard]] AudioArray *getChannel(int index) const;
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
-    AudioArray &operator[](size_t index);
-    const AudioArray &operator[](size_t index) const;
+  AudioArray &operator[](size_t index);
+  const AudioArray &operator[](size_t index) const;
 
   void normalize();
   void scale(float value);

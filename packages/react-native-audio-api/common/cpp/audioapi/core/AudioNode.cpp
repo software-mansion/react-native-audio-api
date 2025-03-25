@@ -248,14 +248,16 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 
 void AudioNode::cleanup() {
   isInitialized_ = false;
-
-  for (const auto &outputNode : outputNodes_) {
-    outputNode->onInputDisconnected(this);
-  }
-
+  
   for (const auto &inputNode : inputNodes_) {
     if (inputNode) {
       inputNode->disconnectNode(shared_from_this());
+    }
+  }
+
+  for (const auto &outputNode : outputNodes_) {
+    if (outputNode) {
+      outputNode->onInputDisconnected(this);
     }
   }
 
