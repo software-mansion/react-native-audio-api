@@ -248,7 +248,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 
 void AudioNode::cleanup() {
   isInitialized_ = false;
-  
+
   for (const auto &inputNode : inputNodes_) {
     if (inputNode) {
       inputNode->disconnectNode(shared_from_this());

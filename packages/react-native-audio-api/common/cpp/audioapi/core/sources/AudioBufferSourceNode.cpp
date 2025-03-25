@@ -29,7 +29,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   playbackRateBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
-  stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+  stretch_ =
+      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
 
   isInitialized_ = true;
 }
@@ -163,64 +164,65 @@ double AudioBufferSourceNode::getStopTime() const {
  */
 
 void AudioBufferSourceNode::processWithoutPitchCorrection(
-        const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) {
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-    auto computedPlaybackRate = getComputedPlaybackRateValue();
-    updatePlaybackInfo(
-            processingBus, framesToProcess, startOffset, offsetLength);
+  auto computedPlaybackRate = getComputedPlaybackRateValue();
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
-    if (computedPlaybackRate == 0.0f || !isPlaying()) {
-        processingBus->zero();
-        return;
-    }
+  if (computedPlaybackRate == 0.0f || !isPlaying()) {
+    processingBus->zero();
+    return;
+  }
 
-    if (std::fabs(computedPlaybackRate) == 1.0) {
-        processWithoutInterpolation(
-                processingBus, startOffset, offsetLength, computedPlaybackRate);
-    } else {
-        processWithInterpolation(
-                processingBus, startOffset, offsetLength, computedPlaybackRate);
-    }
+  if (std::fabs(computedPlaybackRate) == 1.0) {
+    processWithoutInterpolation(
+        processingBus, startOffset, offsetLength, computedPlaybackRate);
+  } else {
+    processWithInterpolation(
+        processingBus, startOffset, offsetLength, computedPlaybackRate);
+  }
 }
 
 void AudioBufferSourceNode::processWithPitchCorrection(
-        const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) {
-    size_t startOffset = 0;
-    size_t offsetLength = 0;
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
 
-    auto time = context_->getCurrentTime();
-    auto playbackRate =
-            std::clamp(playbackRateParam_->getValueAtTime(time), 0.0f, 3.0f);
-    auto detune =
-            std::clamp(detuneParam_->getValueAtTime(time) / 100.0f, -12.0f, 12.0f);
+  auto time = context_->getCurrentTime();
+  auto playbackRate =
+      std::clamp(playbackRateParam_->getValueAtTime(time), 0.0f, 3.0f);
+  auto detune =
+      std::clamp(detuneParam_->getValueAtTime(time) / 100.0f, -12.0f, 12.0f);
 
-    playbackRateBus_->zero();
+  playbackRateBus_->zero();
 
-    auto framesNeededToStretch =
-            static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
-    updatePlaybackInfo(
-            playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
+  updatePlaybackInfo(
+      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
-    if (playbackRate == 0.0f || !isPlaying()) {
-        processingBus->zero();
-        return;
-    }
+  if (playbackRate == 0.0f || !isPlaying()) {
+    processingBus->zero();
+    return;
+  }
 
-    processWithoutInterpolation(
-            playbackRateBus_, startOffset, offsetLength, playbackRate);
+  processWithoutInterpolation(
+      playbackRateBus_, startOffset, offsetLength, playbackRate);
 
-    stretch_->process(
-            playbackRateBus_.get()[0],
-            framesNeededToStretch,
-            processingBus.get()[0],
-            framesToProcess);
+  stretch_->process(
+      playbackRateBus_.get()[0],
+      framesNeededToStretch,
+      processingBus.get()[0],
+      framesToProcess);
 
-    if (detune != 0.0f) {
-        stretch_->setTransposeSemitones(detune);
-    }
+  if (detune != 0.0f) {
+    stretch_->setTransposeSemitones(detune);
+  }
 }
 
 void AudioBufferSourceNode::processWithoutInterpolation(
