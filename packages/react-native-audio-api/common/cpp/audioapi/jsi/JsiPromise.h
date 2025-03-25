@@ -33,6 +33,7 @@ class PromiseVendor {
   PromiseVendor(jsi::Runtime *runtime, const std::shared_ptr<react::CallInvoker> &callInvoker): runtime_(runtime), callInvoker_(callInvoker) {}
 
   jsi::Value createPromise(const std::function<void(std::shared_ptr<Promise>)> &function);
+  jsi::Value createEmptyPromise();
 
  private:
   jsi::Runtime *runtime_;
