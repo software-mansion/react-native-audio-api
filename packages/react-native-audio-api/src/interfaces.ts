@@ -50,7 +50,7 @@ export interface IAudioContext extends IBaseAudioContext {
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
   resume(): Promise<void>;
-  suspend(): Promise<void>;
+  suspend(suspendTime: number): Promise<void>;
   startRendering(): Promise<IAudioBuffer>;
 }
 
