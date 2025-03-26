@@ -1,12 +1,13 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
 GainNode::GainNode(BaseAudioContext *context) : AudioNode(context) {
-  gainParam_ = std::make_shared<AudioParam>(1.0, MIN_GAIN, MAX_GAIN);
+  gainParam_ = std::make_shared<AudioParam>(
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
   isInitialized_ = true;
 }
 

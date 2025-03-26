@@ -27,9 +27,10 @@ class BiquadFilterNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getQParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
   void getFrequencyResponse(
-      const std::vector<float> &frequencyArray,
-      std::vector<float> &magResponseOutput,
-      std::vector<float> &phaseResponseOutput);
+      const float *frequencyArray,
+      float *magResponseOutput,
+      float *phaseResponseOutput,
+      int length);
 
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;

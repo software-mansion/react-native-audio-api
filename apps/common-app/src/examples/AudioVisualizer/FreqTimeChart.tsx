@@ -4,8 +4,8 @@ import { withCanvas } from './Canvas';
 import Charts from './Charts';
 
 interface FreqTimeChartProps {
-  timeData: number[];
-  frequencyData: number[];
+  timeData: Uint8Array;
+  frequencyData: Uint8Array;
   fftSize: number;
   frequencyBinCount: number;
 }

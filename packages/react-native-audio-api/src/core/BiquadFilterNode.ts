@@ -28,9 +28,9 @@ export default class BiquadFilterNode extends AudioNode {
   }
 
   public getFrequencyResponse(
-    frequencyArray: number[],
-    magResponseOutput: number[],
-    phaseResponseOutput: number[]
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
   ) {
     if (
       frequencyArray.length !== magResponseOutput.length ||

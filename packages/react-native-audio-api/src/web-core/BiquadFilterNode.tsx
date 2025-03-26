@@ -30,9 +30,9 @@ export default class BiquadFilterNode extends AudioNode {
   }
 
   public getFrequencyResponse(
-    frequencyArray: number[],
-    magResponseOutput: number[],
-    phaseResponseOutput: number[]
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
   ) {
     if (
       frequencyArray.length !== magResponseOutput.length ||
@@ -42,21 +42,11 @@ export default class BiquadFilterNode extends AudioNode {
         `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
       );
     }
-    const magData = new Float32Array(magResponseOutput);
-    const phaseData = new Float32Array(phaseResponseOutput);
 
     (this.node as globalThis.BiquadFilterNode).getFrequencyResponse(
-      new Float32Array(frequencyArray),
-      magData,
-      phaseData
+      frequencyArray,
+      magResponseOutput,
+      phaseResponseOutput
     );
-
-    for (let i = 0; i < magData.length; i++) {
-      magResponseOutput[i] = magData[i];
-    }
-
-    for (let i = 0; i < phaseData.length; i++) {
-      phaseResponseOutput[i] = phaseData[i];
-    }
   }
 }

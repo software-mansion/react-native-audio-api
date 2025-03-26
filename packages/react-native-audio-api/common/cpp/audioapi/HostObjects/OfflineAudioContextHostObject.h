@@ -22,7 +22,7 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, startRendering));
   }
-  
+
   JSI_HOST_FUNCTION(resume) {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
@@ -52,14 +52,14 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
-      OfflineAudioContextResultCallback callback = 
+      OfflineAudioContextResultCallback callback =
           [promise](std::shared_ptr<AudioBuffer> audioBuffer) -> void {
         auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
         promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
           return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
         });
       };
-      
+
       audioContext->startRendering(callback);
     });
 

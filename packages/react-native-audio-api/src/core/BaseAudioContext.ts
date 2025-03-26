@@ -1,5 +1,9 @@
 import { IBaseAudioContext } from '../interfaces';
-import { ContextState, PeriodicWaveConstraints } from '../types';
+import {
+  ContextState,
+  PeriodicWaveConstraints,
+  AudioBufferSourceNodeOptions,
+} from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
 import GainNode from './GainNode';
@@ -9,7 +13,6 @@ import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
-import StretcherNode from './StretcherNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 
 export default class BaseAudioContext {
@@ -47,8 +50,15 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  createBufferSource(
+    options?: AudioBufferSourceNodeOptions
+  ): AudioBufferSourceNode {
+    const pitchCorrection = options?.pitchCorrection ?? false;
+
+    return new AudioBufferSourceNode(
+      this,
+      this.context.createBufferSource(pitchCorrection)
+    );
   }
 
   createBuffer(
@@ -80,8 +90,8 @@ export default class BaseAudioContext {
   }
 
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
     if (real.length !== imag.length) {
@@ -101,10 +111,6 @@ export default class BaseAudioContext {
     return new AnalyserNode(this, this.context.createAnalyser());
   }
 
-  createStretcher(): StretcherNode {
-    return new StretcherNode(this, this.context.createStretcher());
-  }
-
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
     // Remove the file:// prefix if it exists
     if (sourcePath.startsWith('file://')) {
@@ -113,6 +119,12 @@ export default class BaseAudioContext {
 
     return new AudioBuffer(
       await this.context.decodeAudioDataSource(sourcePath)
+    );
+  }
+
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+    return new AudioBuffer(
+      await this.context.decodeAudioData(new Uint8Array(arrayBuffer))
     );
   }
 }

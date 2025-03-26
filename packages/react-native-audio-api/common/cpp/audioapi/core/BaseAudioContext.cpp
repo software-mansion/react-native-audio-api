@@ -4,14 +4,13 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
-#include <audioapi/core/effects/StretcherNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
@@ -66,8 +65,10 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   return biquadFilter;
 }
 
-std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource() {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this);
+std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
+    bool pitchCorrection) {
+  auto bufferSource =
+      std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
   nodeManager_->addNode(bufferSource);
   return bufferSource;
 }
@@ -80,12 +81,11 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
-    float *real,
-    float *imag,
+    const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
     int length) {
   return std::make_shared<PeriodicWave>(
-      sampleRate_, real, imag, length, disableNormalization);
+      sampleRate_, complexData, length, disableNormalization);
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
@@ -94,15 +94,21 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   return analyser;
 }
 
-std::shared_ptr<StretcherNode> BaseAudioContext::createStretcher() {
-  auto node = std::make_shared<StretcherNode>(this);
-  nodeManager_->addNode(node);
-  return node;
-}
-
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
+
+  if (!audioBus) {
+    return nullptr;
+  }
+
+  return std::make_shared<AudioBuffer>(audioBus);
+}
+
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
+    const void *data,
+    size_t size) {
+  auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
 
   if (!audioBus) {
     return nullptr;

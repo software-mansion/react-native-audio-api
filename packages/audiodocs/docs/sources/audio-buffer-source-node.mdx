@@ -19,14 +19,14 @@ However this node is very inexpensive to create, and what is crucial you can reu
 
 ## Constructor
 
-[`BaseAudioContext.createBufferSource()`](/core/base-audio-context#createbuffersource)
+[`BaseAudioContext.createBufferSource(options)`](/core/base-audio-context#createbuffersource)
 
 ## Properties
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
-| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of playback in cents. |
+| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
 | `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
@@ -36,7 +36,7 @@ However this node is very inexpensive to create, and what is crucial you can reu
 
 ### `start` <Overridden />
 
-Above method schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated `AudioBuffer`, or starts to play immediately.
+The above method schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated `AudioBuffer`, or starts to play immediately.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -63,7 +63,8 @@ Above method schedules `AudioBufferSourceNode` to start playback of audio data c
 #### `detune`
 - Default value is 0.0.
 - Nominal range is -∞ to ∞.
-- Along with `playbackRate`, it determines speed of audio playback.
+- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
+- When `createBufferSource(true)` it is clamped to range -1200 to 1200.
 
 #### `loop`
 - Default value is false.
@@ -77,5 +78,5 @@ Above method schedules `AudioBufferSourceNode` to start playback of audio data c
 #### `playbackRate`
 - Default value is 1.0.
 - Nominal range is -∞ to ∞.
-- Along with `detune`, it determines speed of audio playback.
-- 1.0 plays audio at normal speed, 2.0 plays audio twice as fast as normal speed.
+- For example value of 1.0 plays audio at normal speed, whereas value of 2.0 plays audio twice as fast as normal speed.
+- When created with `createBufferSource(true)` it is clamped to range 0 to 3 and uses pitch correction algorithm.

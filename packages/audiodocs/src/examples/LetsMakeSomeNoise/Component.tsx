@@ -6,11 +6,11 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
-    const audioBuffer = await audioContext.decodeAudioDataSource(
-      '/react-native-audio-api/audio/music/example-music-01.mp3'
-    );
+    const audioBuffer = await fetch('/react-native-audio-api/audio/music/example-music-01.mp3')
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
-    const playerNode = audioContext.createBufferSource();
+    const playerNode = await audioContext.createBufferSource();
     playerNode.buffer = audioBuffer;
 
     playerNode.connect(audioContext.destination);

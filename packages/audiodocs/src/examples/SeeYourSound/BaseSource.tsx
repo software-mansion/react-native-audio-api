@@ -89,7 +89,11 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3')
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        )
 
       setIsLoading(false);
     };

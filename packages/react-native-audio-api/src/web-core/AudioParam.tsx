@@ -84,7 +84,7 @@ export default class AudioParam {
   }
 
   public setValueCurveAtTime(
-    values: number[],
+    values: Float32Array,
     startTime: number,
     duration: number
   ): AudioParam {
@@ -104,11 +104,7 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
-    this.param.setValueCurveAtTime(
-      new Float32Array(values),
-      startTime,
-      duration
-    );
+    this.param.setValueCurveAtTime(values, startTime, duration);
 
     return this;
   }

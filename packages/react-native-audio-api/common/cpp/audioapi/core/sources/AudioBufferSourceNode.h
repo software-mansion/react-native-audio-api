@@ -6,7 +6,7 @@
 #include <memory>
 #include <cstddef>
 #include <algorithm>
-#include <cassert>
+#include <string>
 
 namespace audioapi {
 
@@ -15,7 +15,7 @@ class AudioParam;
 
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferSourceNode(BaseAudioContext *context);
+  explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
 
   [[nodiscard]] bool getLoop() const;
   [[nodiscard]] double getLoopStart() const;
@@ -30,10 +30,12 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
   void start(double when, double offset, double duration = -1);
+  void disable() override;
 
  protected:
   std::mutex &getBufferLock();
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  double getStopTime() const override;
 
  private:
   // Looping related properties
@@ -42,21 +44,20 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   double loopEnd_;
   std::mutex bufferLock_;
 
-  // playback rate aka pitch change params
+  // pitch correction
+  bool pitchCorrection_;
+
+  // k-rate params
   std::shared_ptr<AudioParam> detuneParam_;
   std::shared_ptr<AudioParam> playbackRateParam_;
+
+  std::shared_ptr<AudioBus> playbackRateBus_;
 
   // internal helper
   double vReadIndex_;
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  std::shared_ptr<AudioBus> alignedBus_;
-
-  float getPlaybackRateValue(size_t &startOffset);
-
-  double getVirtualStartFrame();
-  double getVirtualEndFrame();
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -69,6 +70,11 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
       size_t startOffset,
       size_t offsetLength,
       float playbackRate);
+
+  float getComputedPlaybackRateValue();
+
+  double getVirtualStartFrame();
+  double getVirtualEndFrame();
 };
 
 } // namespace audioapi

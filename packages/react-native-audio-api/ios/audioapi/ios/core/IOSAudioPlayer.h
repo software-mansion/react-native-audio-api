@@ -18,6 +18,7 @@ class IOSAudioPlayer {
   std::shared_ptr<AudioBus> audioBus_;
   AudioPlayer *audioPlayer_;
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
+  int channelCount_;
 
  public:
   explicit IOSAudioPlayer(

@@ -12,6 +12,7 @@
 #include <thread>
 #include <cstddef>
 #include <cassert>
+#include <utility>
 
 namespace audioapi {
 
@@ -28,8 +29,14 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isPlaying();
   bool isFinished();
 
+  void setOnendedCallback(const std::function<void(double)> &onendedCallback);
+
+  virtual double getStopTime() const = 0;
+
  protected:
   PlaybackState playbackState_;
+
+  std::function<void(double)> onendedCallback_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,

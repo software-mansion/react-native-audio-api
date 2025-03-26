@@ -2,7 +2,6 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useContext,
   createContext
 } from 'react';
 import {
@@ -64,7 +63,7 @@ const AudioVisualizer: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
@@ -72,7 +71,7 @@ const AudioVisualizer: React.FC = () => {
         return
       }
 
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = await audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 
@@ -89,7 +88,11 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-02.mp3')
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        )
 
       setIsLoading(false);
     };

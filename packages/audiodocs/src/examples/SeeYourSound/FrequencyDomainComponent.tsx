@@ -12,7 +12,7 @@ import {
 import { ActivityIndicator, View, Button } from 'react-native';
 
 interface ChartProps {
-  data: number[];
+  data: Uint8Array;
   dataSize: number;
 }
 
@@ -50,8 +50,9 @@ const FFT_SIZE = 512;
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [times, setTimes] = useState<number[]>(new Array(FFT_SIZE).fill(127));
-  const [freqs, setFreqs] = useState<number[]>(new Array(FFT_SIZE / 2).fill(0));
+  const [freqs, setFreqs] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE / 2).fill(0)
+  );
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -59,7 +60,7 @@ const AudioVisualizer: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
 
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
@@ -67,7 +68,7 @@ const AudioVisualizer: React.FC = () => {
         return
       }
 
-      bufferSourceRef.current = audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = await audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(analyserRef.current);
 
@@ -84,14 +85,9 @@ const AudioVisualizer: React.FC = () => {
       return;
     }
 
-    const timesArrayLength = analyserRef.current.fftSize;
     const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
-    const timesArray = new Array(timesArrayLength);
-    analyserRef.current.getByteTimeDomainData(timesArray);
-    setTimes(timesArray);
-
-    const freqsArray = new Array(frequencyArrayLength);
+    const freqsArray = new Uint8Array(frequencyArrayLength);
     analyserRef.current.getByteFrequencyData(freqsArray);
     setFreqs(freqsArray);
 
@@ -113,7 +109,11 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioDataSource('/react-native-audio-api/audio/music/example-music-02.mp3');
+      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-02.mp3')
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        )
 
       setIsLoading(false);
     };

@@ -16,7 +16,7 @@ const WhiteNoise: FC = () => {
     }
 
     const bufferSize = 2 * aCtx.sampleRate;
-    const output = new Array<number>(bufferSize);
+    const output = new Float32Array(bufferSize);
 
     for (let i = 0; i < bufferSize; i += 1) {
       output[i] = Math.random() * 2 - 1;
@@ -27,9 +27,9 @@ const WhiteNoise: FC = () => {
     return noiseBuffer;
   }
 
-  const onPressIn = () => {
+  const onPressIn = async () => {
     if (!bufferNodeRef.current) {
-      bufferNodeRef.current = aCtxRef.current.createBufferSource();
+      bufferNodeRef.current = await aCtxRef.current.createBufferSource();
       bufferNodeRef.current.buffer = bufferRef.current;
       bufferNodeRef.current.loop = true;
       bufferNodeRef.current.connect(gainRef.current);

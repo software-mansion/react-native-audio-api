@@ -75,7 +75,7 @@ const SimplePiano: FC = () => {
   const bufferListRef = useRef<PRecord<KeyName, AudioBuffer>>({});
   const playingNotesRef = useRef<PRecord<KeyName, PlayingNote>>({});
 
-  const onKeyPressIn = (which: KeyName) => {
+  const onKeyPressIn = async (which: KeyName) => {
     let buffer = bufferListRef.current[which];
     const aCtx = audioContextRef.current;
     let playbackRate = 1;
@@ -90,7 +90,7 @@ const SimplePiano: FC = () => {
       playbackRate = noteToFrequency[which] / noteToFrequency[closestKey];
     }
 
-    const source = aCtx.createBufferSource();
+    const source = await aCtx.createBufferSource();
     const envelope = aCtx.createGain();
     source.buffer = buffer;
     source.playbackRate.value = playbackRate;
@@ -131,8 +131,11 @@ const SimplePiano: FC = () => {
     }
 
     Object.entries(sourceList).forEach(async ([key, url]) => {
-      bufferListRef.current[key as KeyName] =
-        await audioContextRef.current!.decodeAudioDataSource(url);
+      bufferListRef.current[key as KeyName] = await fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          audioContextRef.current!.decodeAudioData(arrayBuffer)
+        );
     });
 
     return () => {

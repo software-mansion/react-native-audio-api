@@ -6,6 +6,7 @@ import {
   Circle,
   Skia,
   PaintStyle,
+  SkPoint,
 } from '@shopify/react-native-skia';
 
 import { useCanvas } from './Canvas';
@@ -36,7 +37,7 @@ function weightWithIndex(value: number, index: number, indexMax: number) {
 }
 
 interface ChartProps {
-  data: number[];
+  data: Uint8Array;
   fftSize: number;
   frequencyBinCount: number;
 }
@@ -61,12 +62,16 @@ const TimeChart: React.FC<ChartProps> = (props) => {
     const startWidth = (maxWidth - 2 * INNER_RADIUS) / 2;
     const startHight = maxHeight - (maxHeight - 2 * INNER_RADIUS) / 2;
 
-    return data.map((value, index) => {
+    const p: SkPoint[] = [];
+
+    data.forEach((value, index) => {
       const x = startWidth + (index * 2 * INNER_RADIUS) / fftSize;
       const y = startHight - (value / 255) * 2 * INNER_RADIUS;
 
-      return vec(x, y);
+      p.push(vec(x, y));
     });
+
+    return p;
   }, [size, data, fftSize]);
 
   return (

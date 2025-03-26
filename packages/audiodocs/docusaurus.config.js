@@ -14,14 +14,14 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://software-mansion-labs.github.io/',
+  url: 'https://software-mansion.github.io/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/react-native-audio-api/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'software-mansion-labs', // Usually your GitHub org/user name.
+  organizationName: 'software-mansion', // Usually your GitHub org/user name.
   projectName: 'react-native-audio-api', // Usually your repo name.
 
   onBrokenLinks: 'throw',
@@ -47,7 +47,7 @@ const config = {
           remarkPlugins: [math],
           rehypePlugins: [katex],
           editUrl:
-            'https://github.com/software-mansion-labs/react-native-audio-api/edit/main/packages/audiodocs/docs',
+            'https://github.com/software-mansion/react-native-audio-api/edit/main/packages/audiodocs/docs',
         },
         blog: false,
         theme: {
@@ -97,7 +97,7 @@ const config = {
         },
         {
           'href':
-            'https://github.com/software-mansion-labs/react-native-audio-api',
+            'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
           'position': 'right',
           'aria-label': 'GitHub repository',

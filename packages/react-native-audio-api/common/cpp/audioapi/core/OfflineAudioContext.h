@@ -4,6 +4,8 @@
 
 #include <mutex>
 #include <map>
+#include <unordered_map>
+#include <memory>
 
 namespace audioapi {
 
@@ -33,7 +35,6 @@ class OfflineAudioContext : public BaseAudioContext {
   std::mutex stateLock_;
 
   void resumeRendering();
-
 };
 
 } // namespace audioapi

@@ -2,20 +2,23 @@
 
 @implementation AudioPlayer
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isInterrupted = false;
+    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
 
     self.sampleRate = [self.audioSession sampleRate];
+    self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -34,20 +37,25 @@
   return self;
 }
 
-- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
+- (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
+                              sampleRate:(float)sampleRate
+                            channelCount:(int)channelCount
 {
   if (self = [super init]) {
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isInterrupted = false;
+    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
     [self setupAndInitNotificationHandlers];
 
     self.sampleRate = sampleRate;
+    self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
 
     __weak typeof(self) weakSelf = self;
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
@@ -90,7 +98,7 @@
   [self.audioSession setActive:false error:&error];
 
   if (error != nil) {
-    @throw error;
+    NSLog(@"Error while deactivating audio session: %@", [error debugDescription]);
   }
 }
 
@@ -119,7 +127,7 @@
                              frameCount:(AVAudioFrameCount)frameCount
                              outputData:(AudioBufferList *)outputData
 {
-  if (outputData->mNumberBuffers < 2) {
+  if (outputData->mNumberBuffers < self.channelCount) {
     return noErr; // Ensure we have stereo output
   }
 
@@ -136,21 +144,28 @@
     self.audioSession = [AVAudioSession sharedInstance];
   }
 
-  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
-                            mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-                         AVAudioSessionCategoryOptionAllowAirPlay
-                           error:&error];
+  [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while setting buffer size in audio session: %@", [error debugDescription]);
+    return;
+  }
+
+  [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    return;
   }
 
   [self.audioSession setActive:true error:&error];
 
   if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
+    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    return;
   }
+
+  self.isInterrupted = false;
 }
 
 - (void)setupAndInitNotificationHandlers
@@ -162,6 +177,10 @@
   [self.notificationCenter addObserver:self
                               selector:@selector(handleEngineConfigurationChange:)
                                   name:AVAudioEngineConfigurationChangeNotification
+                                object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleInterruption:)
+                                  name:AVAudioSessionInterruptionNotification
                                 object:nil];
 }
 
@@ -178,18 +197,47 @@
     NSError *error = nil;
 
     if (![self.audioEngine startAndReturnError:&error]) {
-      NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
+      NSLog(@"Error starting audio engine: %@", [error debugDescription]);
     }
   }
+
+  self.configurationChanged = false;
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  if (!self.isRunning) {
+  if (!self.isRunning || self.isInterrupted) {
+    self.configurationChanged = true;
     return;
   }
 
-  [self connectAudioEngine];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self connectAudioEngine];
+  });
+}
+
+- (void)handleInterruption:(NSNotification *)notification
+{
+  NSError *error;
+  UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
+  UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
+
+  if (type == AVAudioSessionInterruptionTypeBegan) {
+    self.isInterrupted = true;
+    return;
+  }
+
+  if (type != AVAudioSessionInterruptionTypeEnded || option != AVAudioSessionInterruptionOptionShouldResume) {
+    return;
+  }
+
+  [self setupAndInitAudioSession];
+
+  if (self.configurationChanged && self.isRunning) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self connectAudioEngine];
+    });
+  }
 }
 
 @end

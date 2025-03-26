@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <complex>
 #include <cstddef>
 #include <cassert>
 
@@ -25,7 +26,6 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
-class StretcherNode;
 
 class BaseAudioContext {
  public:
@@ -42,18 +42,17 @@ class BaseAudioContext {
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource();
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
-      float *real,
-      float *imag,
+      const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
-  std::shared_ptr<StretcherNode> createStretcher();
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
+  std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

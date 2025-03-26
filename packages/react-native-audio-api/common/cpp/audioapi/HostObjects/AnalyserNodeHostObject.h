@@ -73,63 +73,47 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   }
 
   JSI_HOST_FUNCTION(getFloatFrequencyData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new float[length];
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        analyserNode->getFloatFrequencyData(data, length);
-
-      for (int i = 0; i < length; i++) {
-          destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-      }
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getFloatFrequencyData(data, length);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(getByteFrequencyData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new uint8_t[length];
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto data = arrayBuffer.data(runtime);
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        analyserNode->getByteFrequencyData(data, length);
-
-        for (int i = 0; i < length; i++) {
-            destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-        }
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getByteFrequencyData(data, length);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(getFloatTimeDomainData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new float[length];
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-      analyserNode->getFloatTimeDomainData(data, length);
-
-    for (int i = 0; i < length; i++) {
-        destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-    }
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getFloatTimeDomainData(data, length);
 
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(getByteTimeDomainData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new uint8_t[length];
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    auto data = arrayBuffer.data(runtime);
+    auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-      analyserNode->getByteTimeDomainData(data, length);
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getByteTimeDomainData(data, length);
 
-      for (int i = 0; i < length; i++) {
-          destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-      }
-
-      return jsi::Value::undefined();
+    return jsi::Value::undefined();
   }
 
   JSI_PROPERTY_SETTER(fftSize) {

@@ -38,7 +38,7 @@
 #include <arm_neon.h>
 #endif
 
-namespace audioapi::VectorMath {
+namespace audioapi::dsp {
 
 #if defined(HAVE_ACCELERATE)
 
@@ -695,7 +695,8 @@ void linearToDecibels(
     float *outputVector,
     size_t numberOfElementsToProcess) {
   for (int i = 0; i < numberOfElementsToProcess; i++) {
-    outputVector[i] = AudioUtils::linearToDecibels(inputVector[i]);
+    outputVector[i] = dsp::linearToDecibels(inputVector[i]);
   }
 }
-} // namespace audioapi::VectorMath
+
+} // namespace audioapi::dsp

@@ -1,8 +1,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
@@ -254,7 +254,9 @@ void AudioNode::cleanup() {
   }
 
   for (const auto &inputNode : inputNodes_) {
-    inputNode->disconnectNode(shared_from_this());
+    if (inputNode) {
+      inputNode->disconnectNode(shared_from_this());
+    }
   }
 
   outputNodes_.clear();
