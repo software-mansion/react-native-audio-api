@@ -12,9 +12,9 @@ AudioPlayer::AudioPlayer(
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
-      ->setFormat(AudioFormat::None)
+      ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setPerformanceMode(PerformanceMode::None)
       ->setChannelCount(CHANNEL_COUNT)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
@@ -33,9 +33,9 @@ AudioPlayer::AudioPlayer(
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
-      ->setFormat(AudioFormat::None)
+      ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setPerformanceMode(PerformanceMode::None)
       ->setChannelCount(CHANNEL_COUNT)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
