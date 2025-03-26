@@ -4,11 +4,11 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 #include <algorithm>
 #include <cassert>
@@ -17,7 +17,10 @@
 
 namespace audioapi {
 
-OfflineAudioContext::OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate)
+OfflineAudioContext::OfflineAudioContext(
+    int numberOfChannels,
+    size_t length,
+    float sampleRate)
     : BaseAudioContext(),
       isRenderingStarted_(false),
       length_(length),
