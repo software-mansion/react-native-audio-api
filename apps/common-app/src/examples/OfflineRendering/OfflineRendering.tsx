@@ -1,7 +1,9 @@
 import React, { useCallback, useState, FC } from 'react';
-import * as FileSystem from 'expo-file-system';
-import { AudioBuffer, AudioContext, OfflineAudioContext } from '/Users/user/Documents/sources/react-native-audio-api-fork/node_modules/react-native-audio-api/src/index';
-// import { OfflineAudioContext } from 'react-native-audio-api';
+import {
+  AudioBuffer,
+  AudioContext,
+  OfflineAudioContext,
+} from 'react-native-audio-api';
 
 import { Container, Button } from '../../components';
 
@@ -36,17 +38,11 @@ const AudioFile: FC = () => {
         })
         .catch((e) => console.error(e));
 
-      const buffer = await FileSystem.downloadAsync(
-        URL,
-        FileSystem.documentDirectory + 'audio.mp3'
-      )
-        .then(({ uri }) => {
-          return offlineAudioContext.decodeAudioDataSource(uri);
-        })
-      .catch((error) => {
-          console.error('Error decoding audio data source:', error);
-          return null;
-        });
+      const buffer = await fetch(URL)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) =>
+          offlineAudioContext.decodeAudioData(arrayBuffer)
+        );
       const audioBufferSourceNode = offlineAudioContext.createBufferSource();
       audioBufferSourceNode.buffer = buffer;
 
@@ -64,7 +60,6 @@ const AudioFile: FC = () => {
     audioBufferSourceNode.buffer = renderedBuffer;
     audioBufferSourceNode.connect(audioContext.destination);
     audioBufferSourceNode.start();
-    audioContext.resume();
   }, [renderedBuffer]);
 
   let buttonTitle = '';

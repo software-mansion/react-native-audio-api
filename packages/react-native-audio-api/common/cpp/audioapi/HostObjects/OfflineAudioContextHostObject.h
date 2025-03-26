@@ -14,9 +14,10 @@ using namespace facebook;
 class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit OfflineAudioContextHostObject(
-      const std::shared_ptr<OfflineAudioContext> &audioContext,
-      const std::shared_ptr<PromiseVendor> &promiseVendor)
-      : BaseAudioContextHostObject(audioContext, promiseVendor) {
+          const std::shared_ptr<OfflineAudioContext> &offlineAudioContext,
+          jsi::Runtime *runtime,
+          const std::shared_ptr<react::CallInvoker> &callInvoker)
+      : BaseAudioContextHostObject(offlineAudioContext, runtime, callInvoker) {
     addFunctions(
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
@@ -24,7 +25,7 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(resume) {
-    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
+    auto promise = promiseVendor_->createPromise([this](const std::shared_ptr<Promise>& promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
       audioContext->resume();
     });
@@ -35,7 +36,7 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
   JSI_HOST_FUNCTION(suspend) {
     double when = args[0].getNumber();
 
-    auto promise = promiseVendor_->createPromise([this, when](std::shared_ptr<Promise> promise) {
+    auto promise = promiseVendor_->createPromise([this, when](const std::shared_ptr<Promise>& promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
       OfflineAudioContextSuspendCallback callback = [promise]() {
         promise->resolve([](jsi::Runtime &runtime) {
@@ -49,7 +50,7 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(startRendering) {
-    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
+    auto promise = promiseVendor_->createPromise([this](const std::shared_ptr<Promise>& promise) {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
       OfflineAudioContextResultCallback callback =

@@ -60,27 +60,13 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          std::shared_ptr<OfflineAudioContext> audioContext;
-          if (args[0].isObject()) {
-            auto objectArg = args[0].getObject(runtime);
-            int numberOfChannels = static_cast<int>(
-                objectArg.getProperty(runtime, "numberOfChannels").getNumber());
-            int length = static_cast<int>(
-                objectArg.getProperty(runtime, "length").getNumber());
-            float sampleRate = static_cast<float>(
-                objectArg.getProperty(runtime, "sampleRate").getNumber());
-            audioContext = std::make_shared<OfflineAudioContext>(sampleRate, length);
-          } else {
             auto numberOfChannels = static_cast<int>(args[0].getNumber());
-            auto length = static_cast<int>(args[1].getNumber());
+            auto length = static_cast<size_t>(args[1].getNumber());
             auto sampleRate = static_cast<float>(args[2].getNumber());
-            audioContext = std::make_shared<OfflineAudioContext>(sampleRate, length);
-          }
 
-          auto promiseVendor = std::make_shared<PromiseVendor>(jsiRuntime, jsCallInvoker);
-
+          std::shared_ptr<OfflineAudioContext> offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate);
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
-              audioContext, promiseVendor);
+              offlineAudioContext, jsiRuntime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);

@@ -2,6 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   OfflineAudioContextOptions,
+  AudioBufferSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -14,7 +15,6 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import StretcherNode from './StretcherNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -71,8 +71,22 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, this.context.createBufferSource());
+  async createBufferSource(
+    options?: AudioBufferSourceNodeOptions
+  ): Promise<AudioBufferSourceNode> {
+    if (!options || !options.pitchCorrection) {
+      return new AudioBufferSourceNode(
+        this,
+        this.context.createBufferSource(),
+        false
+      );
+    }
+
+    await globalWasmPromise;
+
+    const wasmStretch = await window[globalTag](this.context);
+
+    return new AudioBufferSourceNode(this, wasmStretch, true);
   }
 
   createBuffer(
@@ -104,8 +118,8 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createPeriodicWave(
-    real: number[],
-    imag: number[],
+    real: Float32Array,
+    imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
     if (real.length !== imag.length) {
@@ -123,19 +137,15 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new AnalyserNode(this, this.context.createAnalyser());
   }
 
-  async createStretcher(): Promise<StretcherNode> {
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new StretcherNode(this, wasmStretch);
-  }
-
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
     const arrayBuffer = await fetch(source).then((response) =>
       response.arrayBuffer()
     );
 
+    return this.decodeAudioData(arrayBuffer);
+  }
+
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
   }
 

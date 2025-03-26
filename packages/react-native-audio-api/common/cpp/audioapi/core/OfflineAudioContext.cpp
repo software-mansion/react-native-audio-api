@@ -4,8 +4,8 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/utils/AudioArray.h>
-#include <audioapi/core/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
@@ -17,10 +17,11 @@
 
 namespace audioapi {
 
-OfflineAudioContext::OfflineAudioContext(float sampleRate, int32_t numFrames)
+OfflineAudioContext::OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate)
     : BaseAudioContext(),
       isRenderingStarted_(false),
-      numFrames_(numFrames),
+      length_(length),
+      numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0) {
   sampleRate_ = sampleRate;
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
@@ -54,12 +55,12 @@ void OfflineAudioContext::suspend(double when, std::function<void()> callback) {
     return;
   }
 
-  double totalRenderDuration = numFrames_ / (double)sampleRate_;
+  double totalRenderDuration = length_ / (double)sampleRate_;
   if (totalRenderDuration <= when) {
     throw std::runtime_error(
         "cannot schedule a suspend at " + std::to_string(when) +
         " seconds becuase it is greater than " + "or equal to the total " +
-        "render duration of " + std::to_string(numFrames_) + " frames (" +
+        "render duration of " + std::to_string(length_) + " frames (" +
         std::to_string(totalRenderDuration) + " seconds)");
   }
 
@@ -68,9 +69,9 @@ void OfflineAudioContext::suspend(double when, std::function<void()> callback) {
       ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (frame < currentSampleFrame_) {
-    int32_t currentFrameClamped = std::min(currentSampleFrame_, numFrames_);
+    int32_t currentFrameClamped = std::min(currentSampleFrame_, length_);
     double currentTime = currentSampleFrame_ / (double)sampleRate_;
-    double totalTime = numFrames_ / (double)sampleRate_;
+    double totalTime = length_ / (double)sampleRate_;
     double currentTimeClamped = std::min(currentTime, totalTime);
     throw std::runtime_error(
         "suspend(" + std::to_string(when) + ") failed to suspend at frame " +
@@ -92,15 +93,15 @@ void OfflineAudioContext::resumeRendering() {
   state_ = ContextState::RUNNING;
   std::thread([this]() {
     auto audioBus = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE, CHANNEL_COUNT, sampleRate_);
+        RENDER_QUANTUM_SIZE, numberOfChannels_, sampleRate_);
 
-    while (currentSampleFrame_ < numFrames_) {
+    while (currentSampleFrame_ < length_) {
       Locker locker(stateLock_);
       int framesToProcess =
-          std::min(numFrames_ - currentSampleFrame_, RENDER_QUANTUM_SIZE);
+          std::min(length_ - currentSampleFrame_, RENDER_QUANTUM_SIZE);
       destination_->renderAudio(audioBus, framesToProcess);
       for (int i = 0; i < framesToProcess; i++) {
-        for (int channel = 0; channel < CHANNEL_COUNT; channel += 1) {
+        for (int channel = 0; channel < numberOfChannels_; channel += 1) {
           resultBus_->getChannel(channel)->getData()[currentSampleFrame_ + i] =
               audioBus->getChannel(channel)->getData()[i];
         }
@@ -110,7 +111,7 @@ void OfflineAudioContext::resumeRendering() {
       // Execute scheduled suspend if exists
       auto suspend = scheduledSuspends_.find(currentSampleFrame_);
       if (suspend != scheduledSuspends_.end()) {
-        assert(currentSampleFrame_ < numFrames_);
+        assert(currentSampleFrame_ < length_);
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
         state_ = ContextState::SUSPENDED;
@@ -132,7 +133,7 @@ void OfflineAudioContext::startRendering(
     throw std::runtime_error("cannot call startRendering more than once");
   }
   resultBus_ = std::make_shared<AudioBus>(
-      static_cast<int>(numFrames_), CHANNEL_COUNT, sampleRate_);
+      static_cast<int>(length_), numberOfChannels_, sampleRate_);
   isRenderingStarted_ = true;
   resultCallback_ = callback;
   resumeRendering();

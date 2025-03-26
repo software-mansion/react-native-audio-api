@@ -14,7 +14,7 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(float sampleRate, int32_t numFrames);
+  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate);
   ~OfflineAudioContext() override;
 
   void resume();
@@ -27,9 +27,10 @@ class OfflineAudioContext : public BaseAudioContext {
   std::unordered_map<int32_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
-  int32_t numFrames_;
+  int32_t length_;
+  int numberOfChannels_;
   int32_t currentSampleFrame_;
-\
+
   std::shared_ptr<AudioBus> resultBus_;
 
   std::mutex stateLock_;
