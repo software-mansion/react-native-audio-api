@@ -1609,7 +1609,7 @@ PODS:
     - React-logger (= 0.77.1)
     - React-perflogger (= 0.77.1)
     - React-utils (= 0.77.1)
-  - RNAudioAPI (0.5.2):
+  - RNAudioAPI (0.5.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1629,9 +1629,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.5.2)
+    - RNAudioAPI/audioapi (= 0.5.3)
     - Yoga
-  - RNAudioAPI/audioapi (0.5.2):
+  - RNAudioAPI/audioapi (0.5.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1651,9 +1651,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.5.2)
+    - RNAudioAPI/audioapi/ios (= 0.5.3)
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.5.2):
+  - RNAudioAPI/audioapi/ios (0.5.3):
     - DoubleConversion
     - glog
     - hermes-engine

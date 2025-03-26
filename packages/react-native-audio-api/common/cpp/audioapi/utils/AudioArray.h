@@ -9,6 +9,7 @@ namespace audioapi {
 class AudioArray {
  public:
   explicit AudioArray(size_t size);
+  AudioArray(const AudioArray &other);
   ~AudioArray();
 
   [[nodiscard]] size_t getSize() const;
