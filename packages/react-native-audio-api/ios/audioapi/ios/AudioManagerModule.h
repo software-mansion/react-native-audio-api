@@ -13,11 +13,11 @@
 @class AudioSessionManager;
 @class LockScreenManager;
 
-@interface AudioManagerModule : 
+@interface AudioManagerModule :
 #ifdef RCT_NEW_ARCH_ENABLED
-                NativeAudioManagerModuleSpecBase <NativeAudioManagerModuleSpec>
+    NativeAudioManagerModuleSpecBase <NativeAudioManagerModuleSpec>
 #else
-                RCTEventEmitter <RCTBridgeModule>
+    RCTEventEmitter <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioEngine *audioEngine;

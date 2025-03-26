@@ -215,15 +215,16 @@ static LockScreenManager *_sharedInstance = nil;
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
-  [remoteCenter.changePlaybackRateCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(
-                                              MPRemoteCommandEvent *_Nonnull event) {
-    MPChangePlaybackRateCommandEvent *changePlaybackRateEvent = (MPChangePlaybackRateCommandEvent *)event;
+  [remoteCenter.changePlaybackRateCommand
+      addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
+        MPChangePlaybackRateCommandEvent *changePlaybackRateEvent = (MPChangePlaybackRateCommandEvent *)event;
 #ifdef RCT_NEW_ARCH_ENABLED
-    [self.audioManagerModule emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]];
+        [self.audioManagerModule
+            emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]];
 #else
 #endif
-    return MPRemoteCommandHandlerStatusSuccess;
-  }];
+        return MPRemoteCommandHandlerStatusSuccess;
+      }];
 
   // Previous/Next Track Commands
   [remoteCenter.nextTrackCommand
