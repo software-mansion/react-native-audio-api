@@ -37,44 +37,44 @@ class AudioManager {
     NativeAudioManagerModule.onRemotePause(callback);
   }
 
-  onStop(callback: () => void) {
-    NativeAudioManagerModule.onStop(callback);
+  onRemoteStop(callback: () => void) {
+    NativeAudioManagerModule.onRemoteStop(callback);
   }
 
-  onTogglePlayPause(callback: () => void) {
-    NativeAudioManagerModule.onTogglePlayPause(callback);
+  onRemoteTogglePlayPause(callback: () => void) {
+    NativeAudioManagerModule.onRemoteTogglePlayPause(callback);
   }
 
-  onChangePlaybackRate(callback: (rate: number) => void) {
-    NativeAudioManagerModule.onChangePlaybackRate(callback);
+  onRemoteChangePlaybackRate(callback: (rate: number) => void) {
+    NativeAudioManagerModule.onRemoteChangePlaybackRate(callback);
   }
 
-  onNextTrack(callback: () => void) {
-    NativeAudioManagerModule.onNextTrack(callback);
+  onRemoteNextTrack(callback: () => void) {
+    NativeAudioManagerModule.onRemoteNextTrack(callback);
   }
 
-  onPreviousTrack(callback: () => void) {
-    NativeAudioManagerModule.onPreviousTrack(callback);
+  onRemotePreviousTrack(callback: () => void) {
+    NativeAudioManagerModule.onRemotePreviousTrack(callback);
   }
 
-  onSkipForward(callback: (interval: number) => void) {
-    NativeAudioManagerModule.onSkipForward(callback);
+  onRemoteSkipForward(callback: (interval: number) => void) {
+    NativeAudioManagerModule.onRemoteSkipForward(callback);
   }
 
-  onSkipBackward(callback: (interval: number) => void) {
-    NativeAudioManagerModule.onSkipBackward(callback);
+  onRemoteSkipBackward(callback: (interval: number) => void) {
+    NativeAudioManagerModule.onRemoteSkipBackward(callback);
   }
 
-  onSeekForward(callback: () => void) {
-    NativeAudioManagerModule.onSeekForward(callback);
+  onRemoteSeekForward(callback: () => void) {
+    NativeAudioManagerModule.onRemoteSeekForward(callback);
   }
 
-  onSeekBackward(callback: () => void) {
-    NativeAudioManagerModule.onSeekBackward(callback);
+  onRemoteSeekBackward(callback: () => void) {
+    NativeAudioManagerModule.onRemoteSeekBackward(callback);
   }
 
-  onChangePlaybackPosition(callback: (position: number) => void) {
-    NativeAudioManagerModule.onChangePlaybackPosition(callback);
+  onRemoteChangePlaybackPosition(callback: (position: number) => void) {
+    NativeAudioManagerModule.onRemoteChangePlaybackPosition(callback);
   }
 }
 

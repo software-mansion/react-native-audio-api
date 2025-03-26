@@ -183,43 +183,64 @@ static LockScreenManager *_sharedInstance = nil;
 
   // Playback Commands
   [remoteCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
+#ifdef RCT_NEW_ARCH_ENABLED
     [self.audioManagerModule emitOnRemotePlay];
+#else
+#endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
 
   [remoteCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
+#ifdef RCT_NEW_ARCH_ENABLED
     [self.audioManagerModule emitOnRemotePause];
+#else
+#endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
 
   [remoteCenter.stopCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-    [self.audioManagerModule emitOnStop];
+#ifdef RCT_NEW_ARCH_ENABLED
+    [self.audioManagerModule emitOnRemoteStop];
+#else
+#endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
 
   [remoteCenter.togglePlayPauseCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-        [self.audioManagerModule emitOnTogglePlayPause];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteTogglePlayPause];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
   [remoteCenter.changePlaybackRateCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(
                                               MPRemoteCommandEvent *_Nonnull event) {
     MPChangePlaybackRateCommandEvent *changePlaybackRateEvent = (MPChangePlaybackRateCommandEvent *)event;
-    [self.audioManagerModule emitOnChangePlaybackRate:[NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]];
+#ifdef RCT_NEW_ARCH_ENABLED
+    [self.audioManagerModule emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]];
+#else
+#endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
 
   // Previous/Next Track Commands
   [remoteCenter.nextTrackCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-        [self.audioManagerModule emitOnNextTrack];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteNextTrack];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
   [remoteCenter.previousTrackCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-        [self.audioManagerModule emitOnPreviousTrack];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemotePreviousTrack];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
@@ -227,27 +248,39 @@ static LockScreenManager *_sharedInstance = nil;
   [remoteCenter.skipBackwardCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
         MPSkipIntervalCommandEvent *skipIntervalEvent = (MPSkipIntervalCommandEvent *)event;
-        [self.audioManagerModule emitOnSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
   [remoteCenter.skipForwardCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
         MPSkipIntervalCommandEvent *skipIntervalEvent = (MPSkipIntervalCommandEvent *)event;
-        [self.audioManagerModule emitOnSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
   // Seek Commands
   [remoteCenter.seekForwardCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-        [self.audioManagerModule emitOnSeekForward];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteSeekForward];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
   [remoteCenter.seekBackwardCommand
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
-        [self.audioManagerModule emitOnSeekBackward];
+#ifdef RCT_NEW_ARCH_ENABLED
+        [self.audioManagerModule emitOnRemoteSeekBackward];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 
@@ -255,8 +288,11 @@ static LockScreenManager *_sharedInstance = nil;
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
         MPChangePlaybackPositionCommandEvent *changePlaybackPositionEvent =
             (MPChangePlaybackPositionCommandEvent *)event;
+#ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule
-            emitOnChangePlaybackPosition:[NSNumber numberWithDouble:changePlaybackPositionEvent.positionTime]];
+            emitOnRemoteChangePlaybackPosition:[NSNumber numberWithDouble:changePlaybackPositionEvent.positionTime]];
+#else
+#endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
 

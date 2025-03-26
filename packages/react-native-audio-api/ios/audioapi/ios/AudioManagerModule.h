@@ -6,16 +6,18 @@
 #import <React/RCTBridgeModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
+#import <React/RCTEventEmitter.h>
+
 @class AudioEngine;
 @class NotificationManager;
 @class AudioSessionManager;
 @class LockScreenManager;
 
-@interface AudioManagerModule : NativeAudioManagerModuleSpecBase
+@interface AudioManagerModule : 
 #ifdef RCT_NEW_ARCH_ENABLED
-                                <NativeAudioManagerModuleSpec>
+                NativeAudioManagerModuleSpecBase <NativeAudioManagerModuleSpec>
 #else
-                                <RCTBridgeModule>
+                RCTEventEmitter <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioEngine *audioEngine;

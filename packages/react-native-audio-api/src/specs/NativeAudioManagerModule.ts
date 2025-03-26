@@ -16,16 +16,16 @@ interface Spec extends TurboModule {
 
   readonly onRemotePlay: EventEmitter<void>;
   readonly onRemotePause: EventEmitter<void>;
-  readonly onStop: EventEmitter<void>;
-  readonly onTogglePlayPause: EventEmitter<void>;
-  readonly onChangePlaybackRate: EventEmitter<number>;
-  readonly onNextTrack: EventEmitter<void>;
-  readonly onPreviousTrack: EventEmitter<void>;
-  readonly onSkipForward: EventEmitter<number>;
-  readonly onSkipBackward: EventEmitter<number>;
-  readonly onSeekForward: EventEmitter<void>;
-  readonly onSeekBackward: EventEmitter<void>;
-  readonly onChangePlaybackPosition: EventEmitter<number>;
+  readonly onRemoteStop: EventEmitter<void>;
+  readonly onRemoteTogglePlayPause: EventEmitter<void>;
+  readonly onRemoteChangePlaybackRate: EventEmitter<number>;
+  readonly onRemoteNextTrack: EventEmitter<void>;
+  readonly onRemotePreviousTrack: EventEmitter<void>;
+  readonly onRemoteSkipForward: EventEmitter<number>;
+  readonly onRemoteSkipBackward: EventEmitter<number>;
+  readonly onRemoteSeekForward: EventEmitter<void>;
+  readonly onRemoteSeekBackward: EventEmitter<void>;
+  readonly onRemoteChangePlaybackPosition: EventEmitter<number>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('AudioManagerModule');

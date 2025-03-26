@@ -7,7 +7,7 @@
 
 #import <React/RCTEventEmitter.h>
 
-@interface AudioAPIModule : RCTEventEmitter
+@interface AudioAPIModule : RCTEventEmitter 
 #ifdef RCT_NEW_ARCH_ENABLED
                             <NativeAudioAPIModuleSpec, RCTCallInvokerModule>
 #else
