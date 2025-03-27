@@ -16,14 +16,20 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
       loopEnd_(0),
       vReadIndex_(0.0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  alignedBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+  alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
 
   detuneParam_ = std::make_shared<AudioParam>(0.0, MIN_DETUNE, MAX_DETUNE);
   playbackRateParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
   isInitialized_ = true;
+}
+
+AudioBufferSourceNode::~AudioBufferSourceNode() {
+  Locker locker(getBufferLock());
+
+  buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
+  alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -69,8 +75,7 @@ void AudioBufferSourceNode::setBuffer(
 
   if (!buffer) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-    alignedBus_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+    alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
     loopEnd_ = 0;
     return;
   }
@@ -80,6 +85,7 @@ void AudioBufferSourceNode::setBuffer(
 
   alignedBus_ = std::make_shared<AudioBus>(
       buffer_->getLength(), channelCount_, context_->getSampleRate());
+
   alignedBus_->zero();
   alignedBus_->sum(buffer_->bus_.get());
 
@@ -116,13 +122,13 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // No audio data to fill, zero the output and return.
-  if (!buffer_) {
+  if (!Locker::tryLock(getBufferLock())) {
     processingBus->zero();
     return;
   }
 
-  if (!Locker::tryLock(getBufferLock())) {
+  // No audio data to fill, zero the output and return.
+  if (!buffer_) {
     processingBus->zero();
     return;
   }
@@ -178,6 +184,11 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t framesToEnd = frameEnd - readIndex;
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
     framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
+
+    assert(readIndex >= 0);
+    assert(writeIndex >= 0);
+    assert(readIndex + framesToCopy <= alignedBus_->getSize());
+    assert(writeIndex + framesToCopy <= processingBus->getSize());
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
