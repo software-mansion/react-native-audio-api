@@ -35,6 +35,13 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   isInitialized_ = true;
 }
 
+AudioBufferSourceNode::~AudioBufferSourceNode() {
+  Locker locker(getBufferLock());
+
+  buffer_.reset();
+  alignedBus_.reset();
+}
+
 bool AudioBufferSourceNode::getLoop() const {
   return loop_;
 }
@@ -108,7 +115,10 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     return;
   }
 
-  offset = std::min(offset, static_cast<double>(alignedBus_->getSize()) / alignedBus_->getSampleRate());
+  offset = std::min(
+      offset,
+      static_cast<double>(alignedBus_->getSize()) /
+          alignedBus_->getSampleRate());
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);
@@ -134,13 +144,13 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // No audio data to fill, zero the output and return.
-  if (!alignedBus_) {
+  if (!Locker::tryLock(getBufferLock())) {
     processingBus->zero();
     return;
   }
 
-  if (!Locker::tryLock(getBufferLock())) {
+  // No audio data to fill, zero the output and return.
+  if (!alignedBus_) {
     processingBus->zero();
     return;
   }
@@ -250,6 +260,11 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
     framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
 
+    assert(readIndex >= 0);
+    assert(writeIndex >= 0);
+    assert(readIndex + framesToCopy <= alignedBus_->getSize());
+    assert(writeIndex + framesToCopy <= processingBus->getSize());
+
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
       processingBus->copy(
@@ -343,7 +358,8 @@ void AudioBufferSourceNode::processWithInterpolation(
 float AudioBufferSourceNode::getComputedPlaybackRateValue() {
   auto time = context_->getCurrentTime();
 
-  auto sampleRateFactor = alignedBus_->getSampleRate() / context_->getSampleRate();
+  auto sampleRateFactor =
+      alignedBus_->getSampleRate() / context_->getSampleRate();
   auto playbackRate = playbackRateParam_->getValueAtTime(time);
   auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
 
