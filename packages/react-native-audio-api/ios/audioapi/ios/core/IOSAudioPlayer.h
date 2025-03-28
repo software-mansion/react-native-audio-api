@@ -10,8 +10,8 @@ typedef struct objc_object AudioPlayer;
 
 namespace audioapi {
 
-class AudioContext;
 class AudioBus;
+class AudioContext;
 
 class IOSAudioPlayer {
  protected:
@@ -21,8 +21,6 @@ class IOSAudioPlayer {
   int channelCount_;
 
  public:
-  explicit IOSAudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio);
   IOSAudioPlayer(
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);

@@ -4,7 +4,6 @@
 
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>
-#import <ReactCommon/RCTTurboModule.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
 #include <audioapi/AudioAPIModuleInstaller.h>
@@ -16,9 +15,9 @@ using namespace facebook::react;
 - (void *)runtime;
 @end
 
-#if defined(RCT_NEW_ARCH_ENABLED) && REACT_NATIVE_MINOR_VERSION >= 75
+#if defined(RCT_NEW_ARCH_ENABLED)
 // nothing
-#else // defined(RCT_NEW_ARCH_ENABLED) && REACT_NATIVE_MINOR_VERSION >= 75
+#else // defined(RCT_NEW_ARCH_ENABLED)
 @interface RCTBridge (RCTTurboModule)
 - (std::shared_ptr<facebook::react::CallInvoker>)jsCallInvoker;
 - (void)_tryAndHandleError:(dispatch_block_t)block;

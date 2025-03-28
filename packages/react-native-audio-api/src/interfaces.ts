@@ -7,10 +7,6 @@ import {
   WindowType,
 } from './types';
 
-export interface AudioAPIInstaller {
-  createAudioContext: (sampleRate?: number) => IAudioContext;
-}
-
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly state: ContextState;

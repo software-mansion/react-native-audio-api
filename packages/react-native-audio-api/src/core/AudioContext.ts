@@ -1,5 +1,6 @@
 import { IAudioContext } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
+import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
 
@@ -11,7 +12,11 @@ export default class AudioContext extends BaseAudioContext {
       );
     }
 
-    super(global.createAudioContext(options?.sampleRate));
+    super(
+      global.createAudioContext(
+        options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
+      )
+    );
   }
 
   async close(): Promise<undefined> {

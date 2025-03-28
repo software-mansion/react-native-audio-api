@@ -14,8 +14,6 @@ class AudioBus;
 
 class AudioPlayer : public AudioStreamDataCallback {
  public:
-  explicit AudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio);
   AudioPlayer(
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);
