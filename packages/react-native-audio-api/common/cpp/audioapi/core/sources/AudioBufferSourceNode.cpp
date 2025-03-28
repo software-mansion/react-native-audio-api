@@ -104,17 +104,17 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     AudioScheduledSourceNode::stop(when + duration);
   }
 
-  if (!buffer_) {
+  if (!alignedBus_) {
     return;
   }
 
-  offset = std::min(offset, buffer_->getDuration());
+  offset = std::min(offset, static_cast<double>(alignedBus_->getSize()) / alignedBus_->getSampleRate());
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);
   }
 
-  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+  vReadIndex_ = static_cast<double>(alignedBus_->getSampleRate() * offset);
 }
 
 void AudioBufferSourceNode::disable() {
@@ -135,7 +135,7 @@ void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   // No audio data to fill, zero the output and return.
-  if (!buffer_ || !alignedBus_) {
+  if (!alignedBus_) {
     processingBus->zero();
     return;
   }
@@ -156,7 +156,7 @@ void AudioBufferSourceNode::processNode(
 
 double AudioBufferSourceNode::getStopTime() const {
   return dsp::sampleFrameToTime(
-      static_cast<int>(vReadIndex_), buffer_->getSampleRate());
+      static_cast<int>(vReadIndex_), alignedBus_->getSampleRate());
 }
 
 /**
@@ -343,7 +343,7 @@ void AudioBufferSourceNode::processWithInterpolation(
 float AudioBufferSourceNode::getComputedPlaybackRateValue() {
   auto time = context_->getCurrentTime();
 
-  auto sampleRateFactor = buffer_->getSampleRate() / context_->getSampleRate();
+  auto sampleRateFactor = alignedBus_->getSampleRate() / context_->getSampleRate();
   auto playbackRate = playbackRateParam_->getValueAtTime(time);
   auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
 
@@ -358,7 +358,7 @@ double AudioBufferSourceNode::getVirtualStartFrame() {
 }
 
 double AudioBufferSourceNode::getVirtualEndFrame() {
-  auto inputBufferLength = static_cast<double>(buffer_->bus_->getSize());
+  auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
   auto loopEndFrame = loopEnd_ * context_->getSampleRate();
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_
