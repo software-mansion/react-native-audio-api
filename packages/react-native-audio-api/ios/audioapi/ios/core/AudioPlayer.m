@@ -39,6 +39,7 @@
 
 - (void)start
 {
+  NSLog(@"[AudioPlayer] start");
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.isRunning = true;
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
@@ -46,6 +47,7 @@
 
 - (void)stop
 {
+  NSLog(@"[AudioPlayer] stop");
   if (!self.isRunning) {
     return;
   }
@@ -58,12 +60,23 @@
 
 - (void)suspend
 {
+  NSLog(@"[AudioPlayer] suspend");
+  if (!self.isRunning) {
+    return;
+  }
+
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.isRunning = false;
+  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
+  self.sourceNodeId = nil;
 }
 
 - (void)resume
 {
+  NSLog(@"[AudioPlayer] resume");
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.isRunning = true;
+  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)cleanup

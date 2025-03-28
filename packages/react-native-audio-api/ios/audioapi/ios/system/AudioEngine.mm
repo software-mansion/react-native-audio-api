@@ -72,6 +72,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)startEngine
 {
+  NSLog(@"[AudioEngine] startEngine");
   NSError *error = nil;
 
   if ([self.audioEngine isRunning]) {
