@@ -197,12 +197,12 @@ void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
   inputBuses_.clear();
 }
 
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  outputNodes_.push_back(std::move(node));
+void AudioNode::connectNode(const std::shared_ptr<AudioNode> node) {
+  outputNodes_.emplace_back(node);
   node->onInputConnected(this);
 }
 
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node, bool notifyNode) {
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> node, bool notifyNode) {
   auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
 
   if (position != outputNodes_.end()) {

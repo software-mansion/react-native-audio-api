@@ -14,21 +14,24 @@
     [self setupAndInitAudioSession];
 
     self.sampleRate = [self.audioSession sampleRate];
+    
+    __weak typeof(self) weakSelf = self;
+    self.renderBlock = ^OSStatus(
+                                 BOOL *isSilence,
+                                 const AudioTimeStamp *timestamp,
+                                 AVAudioFrameCount frameCount,
+                                 AudioBufferList *outputData) {
+                                   if (outputData->mNumberBuffers != 2) {
+                                     return kAudioServicesBadPropertySizeError;
+                                   }
+                                   
+                                   weakSelf.renderAudio(outputData, frameCount);
+                                   return  kAudioServicesNoError;
+                                 };
 
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
 
-    __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
   return self;
@@ -50,17 +53,20 @@
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
 
     __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
+    self.renderBlock = ^OSStatus(
+                                 BOOL *isSilence,
+                                 const AudioTimeStamp *timestamp,
+                                 AVAudioFrameCount frameCount,
+                                 AudioBufferList *outputData) {
+                                   if (outputData->mNumberBuffers != 2) {
+                                     return kAudioServicesBadPropertySizeError;
+                                   }
+                                   
+                                   weakSelf.renderAudio(outputData, frameCount);
+                                   return  kAudioServicesNoError;
+                                 };
+    
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
   return self;
@@ -112,20 +118,6 @@
   self.audioEngine = nil;
   self.audioSession = nil;
   self.renderAudio = nil;
-}
-
-- (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
-                              timestamp:(const AudioTimeStamp *)timestamp
-                             frameCount:(AVAudioFrameCount)frameCount
-                             outputData:(AudioBufferList *)outputData
-{
-  if (outputData->mNumberBuffers < 2) {
-    return noErr; // Ensure we have stereo output
-  }
-
-  self.renderAudio(outputData, frameCount);
-
-  return noErr;
 }
 
 - (void)setupAndInitAudioSession

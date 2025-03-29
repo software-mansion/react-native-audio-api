@@ -20,11 +20,11 @@ class AudioNodeManager {
   void preProcessGraph();
 
   void addPendingConnection(
-      const std::shared_ptr<AudioNode> &from,
-      const std::shared_ptr<AudioNode> &to,
+      const std::shared_ptr<AudioNode> from,
+      const std::shared_ptr<AudioNode> to,
       ConnectionType type);
 
-  void addNode(const std::shared_ptr<AudioNode> &node);
+  void addNode(const std::shared_ptr<AudioNode> node);
 
   void cleanup();
 

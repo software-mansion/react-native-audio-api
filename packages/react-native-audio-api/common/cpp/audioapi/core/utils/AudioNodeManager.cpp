@@ -10,8 +10,8 @@ AudioNodeManager::~AudioNodeManager() {
 }
 
 void AudioNodeManager::addPendingConnection(
-    const std::shared_ptr<AudioNode> &from,
-    const std::shared_ptr<AudioNode> &to,
+    const std::shared_ptr<AudioNode> from,
+    const std::shared_ptr<AudioNode> to,
     ConnectionType type) {
   Locker lock(getGraphLock());
 
@@ -31,10 +31,10 @@ std::mutex &AudioNodeManager::getGraphLock() {
   return graphLock_;
 }
 
-void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
+void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> node) {
   Locker lock(getGraphLock());
 
-  nodes_.push_back(std::move(node));
+  nodes_.emplace_back(node);
 }
 
 void AudioNodeManager::settlePendingConnections() {

@@ -72,8 +72,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::shared_ptr<AudioBus> applyChannelCountMode(std::shared_ptr<AudioBus> processingBus);
   void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
 
-  void connectNode(const std::shared_ptr<AudioNode> &node);
-  void disconnectNode(const std::shared_ptr<AudioNode> &node, bool notifyNode);
+  void connectNode(const std::shared_ptr<AudioNode> node);
+  void disconnectNode(const std::shared_ptr<AudioNode> node, bool notifyNode);
 
   void onInputEnabled();
   void onInputDisabled();
