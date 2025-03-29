@@ -5,13 +5,13 @@
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
 {
   if (self = [super init]) {
+    printf("init with render audio block\n");
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
 
     [self setupAndInitAudioSession];
-    [self setupAndInitNotificationHandlers];
 
     self.sampleRate = [self.audioSession sampleRate];
 
@@ -37,13 +37,13 @@
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
 {
   if (self = [super init]) {
+    printf("init with render audio block and sample rate\n");
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
 
     [self setupAndInitAudioSession];
-    [self setupAndInitNotificationHandlers];
 
     self.sampleRate = sampleRate;
 
@@ -153,20 +153,10 @@
   }
 }
 
-- (void)setupAndInitNotificationHandlers
-{
-  if (!self.notificationCenter) {
-    self.notificationCenter = [NSNotificationCenter defaultCenter];
-  }
-
-  [self.notificationCenter addObserver:self
-                              selector:@selector(handleEngineConfigurationChange:)
-                                  name:AVAudioEngineConfigurationChangeNotification
-                                object:nil];
-}
-
 - (void)connectAudioEngine
 {
+  printf("connect audio engine\n");
+
   if ([self.audioEngine isRunning]) {
     return;
   }
@@ -181,15 +171,6 @@
       NSLog(@"Error starting audio engine: %@", [error localizedDescription]);
     }
   }
-}
-
-- (void)handleEngineConfigurationChange:(NSNotification *)notification
-{
-  if (!self.isRunning) {
-    return;
-  }
-
-  [self connectAudioEngine];
 }
 
 @end

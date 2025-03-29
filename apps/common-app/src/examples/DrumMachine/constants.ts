@@ -9,7 +9,7 @@ export const padding = 24;
 export const maxSize =
   Math.min(screenSize.width, screenSize.height) - padding * 2;
 
-export const initialBpm = 120;
+export const initialBpm = 240;
 export const numBeats = 16;
 export const noteDensity = 2;
 

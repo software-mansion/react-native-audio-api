@@ -1654,7 +1654,7 @@ PODS:
     - React-logger (= 0.76.5)
     - React-perflogger (= 0.76.5)
     - React-utils (= 0.76.5)
-  - RNAudioAPI (0.4.12-beta.4):
+  - RNAudioAPI (0.4.16):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1674,9 +1674,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.4.12-beta.4)
+    - RNAudioAPI/audioapi (= 0.4.16)
     - Yoga
-  - RNAudioAPI/audioapi (0.4.12-beta.4):
+  - RNAudioAPI/audioapi (0.4.16):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1696,9 +1696,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.4.12-beta.4)
+    - RNAudioAPI/audioapi/ios (= 0.4.16)
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.4.12-beta.4):
+  - RNAudioAPI/audioapi/ios (0.4.16):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2150,8 +2150,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  boost: 1dca942403ed9342f98334bf4c3621f011aa7946
-  DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
+  boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
+  DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXConstants: 6b8c5653492349b3c3fe6b905c556bc45b360405
   Expo: 63db23579a7a878567185fa0524b8294b4f93b28
   ExpoAsset: d2d2cbc6a4efadf51a3da27d85d589935abd0b98
@@ -2161,7 +2161,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 7e6ae3311a7d566bd284043dc17627b2dac8c203
   FBLazyVector: 1bf99bb46c6af9a2712592e707347315f23947aa
   fmt: 10c6e61f4be25dc963c36bd73fc7b1705fe975be
-  glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
+  glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
   hermes-engine: 06a9c6900587420b90accc394199527c64259db4
   RCT-Folly: 84578c8756030547307e4572ab1947de1685c599
   RCTDeprecation: fb7d408617e25d7f537940000d766d60149c5fea
@@ -2222,7 +2222,7 @@ SPEC CHECKSUMS:
   React-utils: f584a494ac233c7857bab176416b0c49cb4037ba
   ReactCodegen: 1f59af46efc9351f27046d90d9ceb5e99385f623
   ReactCommon: 5809a8ee421b7219221a475b78180f8f34b5c5ec
-  RNAudioAPI: 14de46065fcdc40d132a2f3fea1fe47e1057d2ec
+  RNAudioAPI: a297729046213b2a00c9f5870c5232ee34b552c2
   RNGestureHandler: 6aedf747478f64fbeddb3ad5d5d0dfdf2361d136
   RNReanimated: 46fef9f63b135755066fd05d7568304b81e2ebdc
   RNScreens: 2629b92a0f38e7432677bee3bc08a352ac5b4279

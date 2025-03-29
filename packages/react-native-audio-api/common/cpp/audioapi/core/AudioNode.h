@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <cstddef>
 #include <vector>
 #include <cassert>
@@ -48,8 +47,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   ChannelInterpretation channelInterpretation_ =
           ChannelInterpretation::SPEAKERS;
 
-  std::unordered_set<AudioNode *> inputNodes_ = {};
-  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
+  std::vector<AudioNode *> inputNodes_ = {};
+  std::vector<std::shared_ptr<AudioNode>> outputNodes_ = {};
 
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;
@@ -74,7 +73,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
-  void disconnectNode(const std::shared_ptr<AudioNode> &node);
+  void disconnectNode(const std::shared_ptr<AudioNode> &node, bool notifyNode);
 
   void onInputEnabled();
   void onInputDisabled();

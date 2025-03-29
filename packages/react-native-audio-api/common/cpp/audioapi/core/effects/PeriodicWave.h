@@ -47,6 +47,7 @@ class PeriodicWave {
       float *imaginary,
       int length,
       bool disableNormalization);
+  ~PeriodicWave();
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
