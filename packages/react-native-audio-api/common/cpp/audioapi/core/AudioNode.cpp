@@ -12,7 +12,7 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 }
 
 AudioNode::~AudioNode() {
-  isInitialized_ = false;
+  cleanup();
 }
 
 int AudioNode::getNumberOfInputs() const {
@@ -41,8 +41,8 @@ void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNode::disconnect() {
-  auto &outputNode : outputNodes_) {
-    disconnect(outputNode);
+  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    disconnect(*it);
   }
 }
 
@@ -58,16 +58,16 @@ bool AudioNode::isEnabled() const {
 void AudioNode::enable() {
   isEnabled_ = true;
 
-  for(auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
-    (*it)->onInputEnabled();
+  for(auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    it->get()->onInputEnabled();
   }
 }
 
 void AudioNode::disable() {
   isEnabled_ = false;
 
-  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
-    (*it)->onInputDisabled();
+  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    it->get()->onInputDisabled();
   }
 }
 
@@ -191,20 +191,28 @@ void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
   assert(processingBus != nullptr);
 
   for (auto it = inputBuses_.begin(); it != inputBuses_.end(); ++it) {
-    processingBus->sum(inputBus.get(), channelInterpretation_);
+    processingBus->sum(it->get(), channelInterpretation_);
   }
 
   inputBuses_.clear();
 }
 
 void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  outputNodes_.insert(node);
+  outputNodes_.push_back(std::move(node));
   node->onInputConnected(this);
 }
 
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
-  outputNodes_.erase(node);
-  node->onInputDisconnected(this);
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node, bool notifyNode) {
+  auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
+
+  if (position != outputNodes_.end()) {
+    outputNodes_.erase(position);
+  }
+
+  // Used in cleanup function
+  if (notifyNode) {
+    node->onInputDisconnected(this);
+  }
 }
 
 void AudioNode::onInputEnabled() {
@@ -228,7 +236,7 @@ void AudioNode::onInputConnected(AudioNode *node) {
     return;
   }
 
-  inputNodes_.insert(node);
+  inputNodes_.push_back(node);
 
   if (node->isEnabled()) {
     onInputEnabled();
@@ -240,7 +248,11 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
     return;
   }
 
-  inputNodes_.erase(node);
+  auto position = std::find(inputNodes_.begin(), inputNodes_.end(), node);
+
+  if (position != inputNodes_.end()) {
+    inputNodes_.erase(position);
+  }
 
   if (isEnabled()) {
     node->onInputDisabled();
@@ -248,17 +260,13 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 }
 
 void AudioNode::cleanup() {
-  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
-    outputNode->get()->onInputDisconnected(this);
-  }
+  isInitialized_ = false;
 
-  for (auto it = inputNodes_.begin(); it != inputNodes_.end(); ++it) {
-    inputNode->get()->disconnectNode(shared_from_this());
+  for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {
+    it->get()->onInputDisconnected(this);
   }
 
   outputNodes_.clear();
-  inputNodes_.clear();
-  isInitialized_ = false;
 }
 
 } // namespace audioapi
