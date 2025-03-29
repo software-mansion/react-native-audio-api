@@ -13,6 +13,13 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
   isInitialized_ = true;
+      
+  context->stats.numOscillators += 1;
+}
+
+OscillatorNode::~OscillatorNode()
+{
+  context_->stats.numOscillators -= 1;
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {

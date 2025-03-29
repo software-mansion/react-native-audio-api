@@ -67,6 +67,15 @@ PeriodicWave::PeriodicWave(
   createBandLimitedTables(real, imaginary, length);
 }
 
+PeriodicWave::~PeriodicWave() {
+  for (int i = 0; i < numberOfRanges_; i++) {
+    delete[] bandLimitedTables_[i];
+  }
+
+  delete[] bandLimitedTables_;
+  bandLimitedTables_ = nullptr;
+}
+
 int PeriodicWave::getPeriodicWaveSize() const {
   if (sampleRate_ <= 24000) {
     return 2048;
@@ -185,6 +194,9 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   }
 
   createBandLimitedTables(real, imaginary, halfSize);
+
+  delete[] real;
+  delete[] imaginary;
 }
 
 void PeriodicWave::createBandLimitedTables(
@@ -368,4 +380,5 @@ float PeriodicWave::doInterpolation(
   return (1 - waveTableInterpolationFactor) * higherWaveDataSample +
       waveTableInterpolationFactor * lowerWaveDataSample;
 }
+
 } // namespace audioapi

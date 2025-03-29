@@ -34,10 +34,6 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 - (void)setupAndInitAudioSession;
 
-- (void)setupAndInitNotificationHandlers;
-
 - (void)connectAudioEngine;
-
-- (void)handleEngineConfigurationChange:(NSNotification *)notification;
 
 @end

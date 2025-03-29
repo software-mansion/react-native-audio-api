@@ -5,6 +5,13 @@
 namespace audioapi {
 
 AudioNodeManager::~AudioNodeManager() {
+  Locker lock(getGraphLock());
+
+  for (auto it = nodes_.begin(); it != nodes_.end();) {
+    it->get()->cleanup();
+  }
+
+  nodes_.clear();
   audioNodesToConnect_.clear();
 }
 
@@ -37,10 +44,10 @@ void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioNodeManager::settlePendingConnections() {
-  for (auto &connection : audioNodesToConnect_) {
-    std::shared_ptr<AudioNode> from = std::get<0>(connection);
-    std::shared_ptr<AudioNode> to = std::get<1>(connection);
-    ConnectionType type = std::get<2>(connection);
+  for (auto it = audioNodesToConnect_.begin(); it != audioNodesToConnect_.end();) {
+    std::shared_ptr<AudioNode> from = std::get<0>(*it);
+    std::shared_ptr<AudioNode> to = std::get<1>(*it);
+    ConnectionType type = std::get<2>(*it);
 
     if (!to || !from) {
       continue;
@@ -57,8 +64,11 @@ void AudioNodeManager::settlePendingConnections() {
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {
-  for (auto it = nodes_.begin(); it != nodes_.end();) {
-    if (it->use_count() == 1) {
+  printf("nodes count: %zu\n", nodes_.size());
+  auto it = nodes_.begin();
+
+  while (it != nodes_.end()) {
+    if (it->use_count == 1) {
       it->get()->cleanup();
       it = nodes_.erase(it);
     } else {
@@ -70,8 +80,8 @@ void AudioNodeManager::prepareNodesForDestruction() {
 void AudioNodeManager::cleanup() {
   Locker lock(getGraphLock());
 
-  for (auto &node : nodes_) {
-    node->cleanup();
+  for (auto it = nodes_.begin(); it != nodes_.end();) {
+    it->get()->cleanup();
   }
 
   nodes_.clear();

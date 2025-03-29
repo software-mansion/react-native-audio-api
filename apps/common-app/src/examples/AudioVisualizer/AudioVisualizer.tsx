@@ -15,7 +15,7 @@ import { layout } from '../../styles';
 const FFT_SIZE = 512;
 
 const URL =
-  'https://software-mansion-labs.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+  'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -118,14 +118,16 @@ const AudioVisualizer: React.FC = () => {
         }
       />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
         <View
           style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: layout.spacing * 2,
-          }}>
+          }}
+        >
           <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}

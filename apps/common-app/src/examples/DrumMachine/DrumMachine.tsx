@@ -21,7 +21,7 @@ import usePlayer from '../../utils/usePlayer';
 import presets from './presets';
 import Grid from './Grid';
 
-const defaultPreset = 'Empty';
+const defaultPreset = 'Bosa Nova';
 
 function setupPlayer(audioCtx: AudioContext) {
   const kick = new Kick(audioCtx);
@@ -148,7 +148,8 @@ const DrumMachine: React.FC = () => {
             // @ts-ignore ???
             width={size}
             height={size}
-            onLayout={onCanvasLayout}>
+            onLayout={onCanvasLayout}
+          >
             <Grid />
             {patterns.map((pattern) => (
               <PatternShape key={pattern.instrumentName} pattern={pattern} />
