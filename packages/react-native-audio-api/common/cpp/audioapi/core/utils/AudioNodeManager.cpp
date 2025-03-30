@@ -4,6 +4,10 @@
 
 namespace audioapi {
 
+AudioNodeManager::AudioNodeManager() {
+  nodeDeconstructor_ = std::make_unique<NodeDeconstructor>();
+}
+
 AudioNodeManager::~AudioNodeManager() {
   cleanup();
 }
@@ -54,16 +58,20 @@ void AudioNodeManager::settlePendingConnections() {
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {
-  auto it = nodes_.begin();
+  if (auto lock = Locker::tryLock(nodeDeconstructor_->getLock())) {
+    auto it = nodes_.begin();
 
-  while (it != nodes_.end()) {
-    if (it->use_count() == 1) {
-      assert(it->get()->inputNodes_.size() == 0);
-      it->get()->cleanup();
-      it = nodes_.erase(it);
-    } else {
-      ++it;
+    while (it != nodes_.end()) {
+      if (it->use_count() == 1 && !it->get()->isEnabled()) {
+        nodeDeconstructor_->addNodeForDeconstruction(*it);
+        it->get()->cleanup();
+        it = nodes_.erase(it);
+      } else {
+        ++it;
+      }
     }
+
+    nodeDeconstructor_->wakeDeconstructor();
   }
 }
 

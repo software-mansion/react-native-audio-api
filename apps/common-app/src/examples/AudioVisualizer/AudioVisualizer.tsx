@@ -82,7 +82,7 @@ const AudioVisualizer: React.FC = () => {
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = FFT_SIZE;
-      analyserRef.current.smoothingTimeConstant = 0.8;
+      analyserRef.current.smoothingTimeConstant = 0.2;
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
