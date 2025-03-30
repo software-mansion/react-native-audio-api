@@ -11,13 +11,12 @@ AudioNodeManager::~AudioNodeManager() {
 }
 
 void AudioNodeManager::addPendingConnection(
-    const std::shared_ptr<AudioNode> from,
-    const std::shared_ptr<AudioNode> to,
+    const std::shared_ptr<AudioNode> &from,
+    const std::shared_ptr<AudioNode> &to,
     ConnectionType type) {
   Locker lock(getGraphLock());
 
-  audioNodesToConnect_.emplace_back(
-      std::shared_ptr(from), std::shared_ptr(to), type);
+  audioNodesToConnect_.emplace_back(from, to, type);
 }
 
 void AudioNodeManager::preProcessGraph() {
@@ -31,9 +30,9 @@ std::mutex &AudioNodeManager::getGraphLock() {
   return graphLock_;
 }
 
-void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> node) {
+void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
   Locker lock(getGraphLock());
-  nodes_.emplace_back(std::shared_ptr(node));
+  nodes_.emplace_back(node);
 }
 
 void AudioNodeManager::settlePendingConnections() {

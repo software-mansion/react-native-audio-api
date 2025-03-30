@@ -16,7 +16,6 @@ class AudioBus;
 class OscillatorNode : public AudioScheduledSourceNode {
  public:
   explicit OscillatorNode(BaseAudioContext *context);
-  ~OscillatorNode();
 
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;

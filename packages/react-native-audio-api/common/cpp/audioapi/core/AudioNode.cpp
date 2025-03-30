@@ -13,7 +13,7 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
 
 AudioNode::~AudioNode() {
   if (isInitialized_) {
-    cleanup(true);
+    cleanup();
   }
 }
 
@@ -208,7 +208,7 @@ void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
   inputBuses_.clear();
 }
 
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> node) {
+void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
   auto position = std::find_if(
       outputNodes_.begin(), outputNodes_.end(), [&node](auto const &nodeSP) {
         return nodeSP.get() == node.get();
@@ -216,12 +216,12 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> node) {
 
   assert(position == outputNodes_.end());
 
-  outputNodes_.emplace_back(std::shared_ptr(node));
+  outputNodes_.emplace_back(node);
   node->onInputConnected(this);
 }
 
 void AudioNode::disconnectNode(
-    const std::shared_ptr<AudioNode> node,
+    const std::shared_ptr<AudioNode> &node,
     bool notifyNode) {
   // Used in cleanup function
   if (notifyNode) {
@@ -283,20 +283,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
   }
 }
 
-void AudioNode::cleanup(bool shouldThrow) {
-  if (shouldThrow) {
-    auto nodes = context_->nodeManager_->nodes_;
-
-    auto position =
-        std::find_if(nodes.begin(), nodes.end(), [this](auto const &nodeSP) {
-          return nodeSP.get() == this;
-        });
-
-    if (position != nodes.end()) {
-      assert(false);
-    }
-  }
-
+void AudioNode::cleanup() {
   isInitialized_ = false;
 
   for (auto it = outputNodes_.begin(); it != outputNodes_.end(); ++it) {

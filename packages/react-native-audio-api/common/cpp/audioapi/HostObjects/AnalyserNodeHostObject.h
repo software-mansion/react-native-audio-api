@@ -85,7 +85,6 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
     }
 
     delete[] data;
-
     return jsi::Value::undefined();
   }
 
@@ -102,7 +101,6 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
     }
 
     delete[] data;
-
     return jsi::Value::undefined();
   }
 

@@ -16,8 +16,6 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   isInitialized_ = true;
 }
 
-OscillatorNode::~OscillatorNode() {}
-
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
   return frequencyParam_;
 }

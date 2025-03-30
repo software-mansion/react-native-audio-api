@@ -48,8 +48,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
   }
 
-  ~BaseAudioContextHostObject() {}
-
   JSI_PROPERTY_GETTER(destination) {
     auto destination = std::make_shared<AudioDestinationNodeHostObject>(
         context_->getDestination());
