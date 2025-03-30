@@ -136,12 +136,9 @@ export default function usePlayer(options: PlayerOptions) {
       playingInstruments.value = getPlayingInstruments();
     }
 
-    // return () => {
-    //   audioContext.close();
-    // };
     return () => {
       playingInstruments.value = getPlayingInstruments();
-      isPlayingRef.current = false;
+      audioContext.close();
     };
 
     // \/ Shared values are not necessary in deps array

@@ -36,6 +36,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
 
   ma_uint64 framesDecoded;
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
+
   if (framesDecoded == 0) {
     __android_log_print(
         ANDROID_LOG_ERROR,

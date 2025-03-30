@@ -73,47 +73,52 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   }
 
   JSI_HOST_FUNCTION(getFloatFrequencyData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new float[length];
+    auto destination = args[0].getObject(runtime).asArray(runtime);
+    auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+    auto data = new float[length];
 
-      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        analyserNode->getFloatFrequencyData(data, length);
-
-      for (int i = 0; i < length; i++) {
-          destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-      }
-
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(getByteFrequencyData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new uint8_t[length];
-
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        analyserNode->getByteFrequencyData(data, length);
-
-        for (int i = 0; i < length; i++) {
-            destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
-        }
-
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(getFloatTimeDomainData) {
-      auto destination = args[0].getObject(runtime).asArray(runtime);
-      auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
-      auto data = new float[length];
-
-      auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-      analyserNode->getFloatTimeDomainData(data, length);
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+      analyserNode->getFloatFrequencyData(data, length);
 
     for (int i = 0; i < length; i++) {
         destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
     }
 
+    delete[] data;
+
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(getByteFrequencyData) {
+    auto destination = args[0].getObject(runtime).asArray(runtime);
+    auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+    auto data = new uint8_t[length];
+
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getByteFrequencyData(data, length);
+
+    for (int i = 0; i < length; i++) {
+        destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
+    }
+
+    delete[] data;
+
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(getFloatTimeDomainData) {
+    auto destination = args[0].getObject(runtime).asArray(runtime);
+    auto length = static_cast<int>(destination.getProperty(runtime, "length").asNumber());
+    auto data = new float[length];
+
+    auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+    analyserNode->getFloatTimeDomainData(data, length);
+
+    for (int i = 0; i < length; i++) {
+        destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
+    }
+
+    delete[] data;
     return jsi::Value::undefined();
   }
 
@@ -129,6 +134,7 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
           destination.setValueAtIndex(runtime, i, jsi::Value(data[i]));
       }
 
+      delete[] data;
       return jsi::Value::undefined();
   }
 

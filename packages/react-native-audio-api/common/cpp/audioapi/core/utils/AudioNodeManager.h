@@ -12,7 +12,7 @@ class AudioNode;
 class AudioNodeManager {
  public:
   enum class ConnectionType { CONNECT, DISCONNECT };
-  AudioNodeManager() = default;
+  AudioNodeManager();
   ~AudioNodeManager();
 
   std::mutex &getGraphLock();
@@ -29,6 +29,7 @@ class AudioNodeManager {
   void cleanup();
 
  private:
+  friend class AudioNode;
   std::mutex graphLock_;
 
   // all nodes created in the context

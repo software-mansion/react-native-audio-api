@@ -42,7 +42,7 @@ void StretcherNode::processNode(
 }
 
 std::shared_ptr<AudioBus> StretcherNode::processAudio(
-    std::shared_ptr<AudioBus> outputBus,
+    const std::shared_ptr<AudioBus> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (!isInitialized_) {

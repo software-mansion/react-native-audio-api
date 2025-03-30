@@ -88,6 +88,7 @@ class BaseAudioContext {
   Stats stats;
 
  protected:
+  friend class AudioNode;
   static std::string toString(ContextState state);
 
   std::shared_ptr<AudioDestinationNode> destination_;

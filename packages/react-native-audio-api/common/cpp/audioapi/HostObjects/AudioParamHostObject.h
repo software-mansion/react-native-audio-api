@@ -81,6 +81,7 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(setValueCurveAtTime) {
     auto values = args[0].getObject(runtime).asArray(runtime);
     auto length = static_cast<size_t>(values.length(runtime));
+    // TODO: memory leak, but function not used much
     auto valuesData = new float[length];
     for (size_t i = 0; i < values.length(runtime); i++) {
       valuesData[i] =

@@ -17,7 +17,6 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, assign) bool isRunning;
 @property (nonatomic, strong) AVAudioSourceNodeRenderBlock renderBlock;
 
-
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio;
 
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate;

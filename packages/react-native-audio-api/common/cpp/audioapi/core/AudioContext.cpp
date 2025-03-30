@@ -60,13 +60,11 @@ void AudioContext::suspend() {
 
 std::function<void(std::shared_ptr<AudioBus>, int)>
 AudioContext::renderAudio() {
-
   if (!isRunning() || !destination_) {
     return [](const std::shared_ptr<AudioBus> &, int) {};
   }
 
   return [this](const std::shared_ptr<AudioBus> &data, int frames) {
-//    printf("numOscillators: %d\n", stats.numOscillators);
     destination_->renderAudio(data, frames);
   };
 }

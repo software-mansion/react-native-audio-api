@@ -5,7 +5,6 @@
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio
 {
   if (self = [super init]) {
-    printf("init with render audio block\n");
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
@@ -14,20 +13,17 @@
     [self setupAndInitAudioSession];
 
     self.sampleRate = [self.audioSession sampleRate];
-    
+
     __weak typeof(self) weakSelf = self;
     self.renderBlock = ^OSStatus(
-                                 BOOL *isSilence,
-                                 const AudioTimeStamp *timestamp,
-                                 AVAudioFrameCount frameCount,
-                                 AudioBufferList *outputData) {
-                                   if (outputData->mNumberBuffers != 2) {
-                                     return kAudioServicesBadPropertySizeError;
-                                   }
-                                   
-                                   weakSelf.renderAudio(outputData, frameCount);
-                                   return  kAudioServicesNoError;
-                                 };
+        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+      if (outputData->mNumberBuffers != 2) {
+        return kAudioServicesBadPropertySizeError;
+      }
+
+      weakSelf.renderAudio(outputData, frameCount);
+      return kAudioServicesNoError;
+    };
 
     _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:2];
 
@@ -40,7 +36,6 @@
 - (instancetype)initWithRenderAudioBlock:(RenderAudioBlock)renderAudio sampleRate:(float)sampleRate
 {
   if (self = [super init]) {
-    printf("init with render audio block and sample rate\n");
     self.renderAudio = [renderAudio copy];
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
@@ -54,18 +49,15 @@
 
     __weak typeof(self) weakSelf = self;
     self.renderBlock = ^OSStatus(
-                                 BOOL *isSilence,
-                                 const AudioTimeStamp *timestamp,
-                                 AVAudioFrameCount frameCount,
-                                 AudioBufferList *outputData) {
-                                   if (outputData->mNumberBuffers != 2) {
-                                     return kAudioServicesBadPropertySizeError;
-                                   }
-                                   
-                                   weakSelf.renderAudio(outputData, frameCount);
-                                   return  kAudioServicesNoError;
-                                 };
-    
+        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+      if (outputData->mNumberBuffers != 2) {
+        return kAudioServicesBadPropertySizeError;
+      }
+
+      weakSelf.renderAudio(outputData, frameCount);
+      return kAudioServicesNoError;
+    };
+
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
@@ -147,8 +139,6 @@
 
 - (void)connectAudioEngine
 {
-  printf("connect audio engine\n");
-
   if ([self.audioEngine isRunning]) {
     return;
   }

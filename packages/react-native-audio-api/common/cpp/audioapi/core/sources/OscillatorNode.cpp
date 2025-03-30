@@ -16,8 +16,7 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   isInitialized_ = true;
 }
 
-OscillatorNode::~OscillatorNode()
-{
+OscillatorNode::~OscillatorNode() {
   context_->stats.numOscillators -= 1;
 }
 
@@ -50,12 +49,11 @@ void OscillatorNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
-
-  if (!isPlaying()) {
-    processingBus->zero();
+  if (!isInitialized_) {
     return;
   }
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
   auto deltaTime = 1.0 / context_->getSampleRate();
   auto time =
