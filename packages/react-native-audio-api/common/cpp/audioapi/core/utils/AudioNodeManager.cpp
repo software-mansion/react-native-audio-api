@@ -46,7 +46,7 @@ void AudioNodeManager::settlePendingConnections() {
     if (type == ConnectionType::CONNECT) {
       from->connectNode(to);
     } else {
-      from->disconnectNode(to, true);
+      from->disconnectNode(to);
     }
   }
 

@@ -73,7 +73,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
-  void disconnectNode(const std::shared_ptr<AudioNode> &node, bool notifyNode);
+  void disconnectNode(const std::shared_ptr<AudioNode> &node);
 
   void onInputEnabled();
   void onInputDisabled();

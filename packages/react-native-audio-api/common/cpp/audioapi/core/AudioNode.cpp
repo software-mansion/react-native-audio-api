@@ -220,19 +220,12 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
   }
 }
 
-void AudioNode::disconnectNode(
-    const std::shared_ptr<AudioNode> &node,
-    bool notifyNode) {
-  // Used in cleanup function
-  if (notifyNode) {
-    node->onInputDisconnected(this);
-  }
-
+void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
   auto position = std::find_if(
       outputNodes_.begin(), outputNodes_.end(), [&node](auto const &nodeSP) {
         return nodeSP.get() == node.get();
       });
-  
+
   if (position != outputNodes_.end()) {
     outputNodes_.erase(position);
   }
