@@ -2,6 +2,7 @@
 
 #include <audioapi/jsi/JsiHostObject.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/utils/AudioArray.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -81,15 +82,18 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(setValueCurveAtTime) {
     auto values = args[0].getObject(runtime).asArray(runtime);
     auto length = static_cast<size_t>(values.length(runtime));
-    // TODO: memory leak, but function not used much
-    auto valuesData = new float[length];
+
+    auto valuesArray = std::make_shared<AudioArray>(length);
+    auto rawData = valuesArray->getData();
+
     for (size_t i = 0; i < values.length(runtime); i++) {
-      valuesData[i] =
-          static_cast<float>(values.getValueAtIndex(runtime, i).getNumber());
+      rawData[i] = static_cast<float>(values.getValueAtIndex(runtime, i).getNumber());
     }
+
     double startTime = args[1].getNumber();
     double duration = args[2].getNumber();
-    param_->setValueCurveAtTime(valuesData, length, startTime, duration);
+    param_->setValueCurveAtTime(valuesArray, length, startTime, duration);
+
     return jsi::Value::undefined();
   }
 
