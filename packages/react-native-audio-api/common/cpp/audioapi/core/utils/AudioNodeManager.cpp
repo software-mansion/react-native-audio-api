@@ -61,7 +61,7 @@ void AudioNodeManager::prepareNodesForDestruction() {
   while (it != nodes_.end()) {
     if (it->use_count() == 1) {
       assert(it->get()->inputNodes_.size() == 0);
-      it->get()->cleanup(false);
+      it->get()->cleanup();
       it = nodes_.erase(it);
     } else {
       ++it;
@@ -73,7 +73,7 @@ void AudioNodeManager::cleanup() {
   Locker lock(getGraphLock());
 
   for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    it->get()->cleanup(false);
+    it->get()->cleanup();
   }
 
   nodes_.clear();

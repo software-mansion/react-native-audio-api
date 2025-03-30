@@ -228,13 +228,13 @@ void AudioNode::disconnectNode(
     node->onInputDisconnected(this);
   }
 
-  auto position = std::find(outputNodes_.begin(), outputNodes_.end(), node);
+  auto position = std::find_if(
+      outputNodes_.begin(), outputNodes_.end(), [&node](auto const &nodeSP) {
+        return nodeSP.get() == node.get();
+      });
 
-  if (position != outputNodes_.end()) {
-    outputNodes_.erase(position);
-  } else {
-    assert(false);
-  }
+  assert(position != outputNodes_.end());
+  outputNodes_.erase(position);
 }
 
 void AudioNode::onInputEnabled() {
