@@ -12,7 +12,7 @@ class AudioNode;
 class AudioNodeManager {
  public:
   enum class ConnectionType { CONNECT, DISCONNECT };
-  AudioNodeManager();
+  AudioNodeManager() = default;
   ~AudioNodeManager();
 
   std::mutex &getGraphLock();

@@ -45,10 +45,6 @@ void OscillatorNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  if (!isInitialized_) {
-    return;
-  }
-
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
   auto deltaTime = 1.0 / context_->getSampleRate();

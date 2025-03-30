@@ -214,10 +214,10 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
         return nodeSP.get() == node.get();
       });
 
-  assert(position == outputNodes_.end());
-
-  outputNodes_.emplace_back(node);
-  node->onInputConnected(this);
+  if (position == outputNodes_.end()) {
+    outputNodes_.emplace_back(node);
+    node->onInputConnected(this);
+  }
 }
 
 void AudioNode::disconnectNode(
@@ -232,9 +232,10 @@ void AudioNode::disconnectNode(
       outputNodes_.begin(), outputNodes_.end(), [&node](auto const &nodeSP) {
         return nodeSP.get() == node.get();
       });
-
-  assert(position != outputNodes_.end());
-  outputNodes_.erase(position);
+  
+  if (position != outputNodes_.end()) {
+    outputNodes_.erase(position);
+  }
 }
 
 void AudioNode::onInputEnabled() {

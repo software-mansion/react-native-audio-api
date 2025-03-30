@@ -4,8 +4,6 @@
 
 namespace audioapi {
 
-AudioNodeManager::AudioNodeManager() {}
-
 AudioNodeManager::~AudioNodeManager() {
   cleanup();
 }

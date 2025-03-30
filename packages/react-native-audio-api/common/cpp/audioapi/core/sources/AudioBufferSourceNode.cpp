@@ -122,7 +122,7 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (auto locker = Locker::tryLock(getBufferLock | ())) {
+  if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!buffer_) {
       processingBus->zero();
