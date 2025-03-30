@@ -62,31 +62,6 @@ class BaseAudioContext {
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isClosed() const;
 
-  struct Stats {
-    unsigned numAudioBuffers;
-    unsigned numAudioBufferSources;
-    unsigned numOscillators;
-    unsigned numAudioArrays;
-    unsigned numAudioBuses;
-    unsigned numAudioManagers;
-    unsigned numBiquads;
-    unsigned numGains;
-    unsigned numPeriodicWaves;
-    unsigned numStereoPanners;
-    unsigned numStretchers;
-    unsigned numDestinations;
-    unsigned numAnalysers;
-    unsigned numAudioParams;
-
-    Stats(): numAudioBuffers(0), numAudioBufferSources(0),
-            numOscillators(0), numAudioArrays(0), numAudioBuses(0),
-            numAudioManagers(0), numBiquads(0), numGains(0),
-            numPeriodicWaves(0), numStereoPanners(0), numStretchers(0),
-            numDestinations(0), numAnalysers(0), numAudioParams(0) {}
-  };
-
-  Stats stats;
-
  protected:
   friend class AudioNode;
   static std::string toString(ContextState state);

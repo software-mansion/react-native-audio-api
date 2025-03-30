@@ -22,13 +22,11 @@ AudioBufferSourceNode::AudioBufferSourceNode(BaseAudioContext *context)
   playbackRateParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
 
-  context->stats.numAudioBufferSources += 1;
   isInitialized_ = true;
 }
 
 AudioBufferSourceNode::~AudioBufferSourceNode() {
   Locker locker(getBufferLock());
-  context_->stats.numAudioBufferSources += 1;
 
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
   alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
