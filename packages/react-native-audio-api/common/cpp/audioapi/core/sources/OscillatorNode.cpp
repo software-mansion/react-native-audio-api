@@ -47,6 +47,11 @@ void OscillatorNode::processNode(
 
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
+  if (!isPlaying()) {
+    processingBus->zero();
+    return;
+  }
+
   auto deltaTime = 1.0 / context_->getSampleRate();
   auto time =
       context_->getCurrentTime() + static_cast<double>(startOffset) * deltaTime;
