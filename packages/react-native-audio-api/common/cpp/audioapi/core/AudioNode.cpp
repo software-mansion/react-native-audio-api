@@ -266,8 +266,6 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 
   if (position != inputNodes_.end()) {
     inputNodes_.erase(position);
-  } else {
-    assert(false);
   }
 }
 

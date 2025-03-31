@@ -144,11 +144,6 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (!Locker::tryLock(getBufferLock())) {
-    processingBus->zero();
-    return;
-  }
-
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!alignedBus_) {
@@ -163,6 +158,8 @@ void AudioBufferSourceNode::processNode(
     }
 
     handleStopScheduled();
+  } else {
+    processingBus->zero();
   }
 }
 
