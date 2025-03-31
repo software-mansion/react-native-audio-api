@@ -13,20 +13,19 @@
     self.channelCount = channelCount;
     self.renderAudio = [renderAudio copy];
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
-
     __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
+    self.renderBlock = ^OSStatus(
+        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+      if (outputData->mNumberBuffers != weakSelf.channelCount) {
+        return kAudioServicesBadPropertySizeError;
+      }
+
+      weakSelf.renderAudio(outputData, frameCount);
+      return kAudioServicesNoError;
+    };
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
   return self;
@@ -82,22 +81,6 @@
 - (void)cleanup
 {
   self.renderAudio = nil;
-}
-
-- (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
-                              timestamp:(const AudioTimeStamp *)timestamp
-                             frameCount:(AVAudioFrameCount)frameCount
-                             outputData:(AudioBufferList *)outputData
-{
-  if (outputData->mNumberBuffers < self.channelCount) {
-    return noErr; // Ensure we have stereo output
-  }
-
-  if (self.isRunning) {
-    self.renderAudio(outputData, frameCount);
-  }
-
-  return noErr;
 }
 
 @end

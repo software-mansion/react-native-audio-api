@@ -72,6 +72,7 @@ PeriodicWave::~PeriodicWave() {
     delete[] bandLimitedTables_[i];
   }
   delete[] bandLimitedTables_;
+  bandLimitedTables_ = nullptr;
 }
 
 int PeriodicWave::getPeriodicWaveSize() const {

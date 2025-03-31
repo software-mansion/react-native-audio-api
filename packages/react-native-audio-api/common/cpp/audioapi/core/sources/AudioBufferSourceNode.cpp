@@ -35,6 +35,13 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   isInitialized_ = true;
 }
 
+AudioBufferSourceNode::~AudioBufferSourceNode() {
+  Locker locker(getBufferLock());
+
+  buffer_.reset();
+  alignedBus_.reset();
+}
+
 bool AudioBufferSourceNode::getLoop() const {
   return loop_;
 }
@@ -104,17 +111,20 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     AudioScheduledSourceNode::stop(when + duration);
   }
 
-  if (!buffer_) {
+  if (!alignedBus_) {
     return;
   }
 
-  offset = std::min(offset, buffer_->getDuration());
+  offset = std::min(
+      offset,
+      static_cast<double>(alignedBus_->getSize()) /
+          alignedBus_->getSampleRate());
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);
   }
 
-  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+  vReadIndex_ = static_cast<double>(alignedBus_->getSampleRate() * offset);
 }
 
 void AudioBufferSourceNode::disable() {
@@ -134,29 +144,31 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // No audio data to fill, zero the output and return.
-  if (!buffer_ || !alignedBus_) {
-    processingBus->zero();
-    return;
-  }
-
   if (!Locker::tryLock(getBufferLock())) {
     processingBus->zero();
     return;
   }
 
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBus, framesToProcess);
-  } else {
-    processWithPitchCorrection(processingBus, framesToProcess);
-  }
+  if (auto locker = Locker::tryLock(getBufferLock())) {
+    // No audio data to fill, zero the output and return.
+    if (!alignedBus_) {
+      processingBus->zero();
+      return;
+    }
 
-  handleStopScheduled();
+    if (!pitchCorrection_) {
+      processWithoutPitchCorrection(processingBus, framesToProcess);
+    } else {
+      processWithPitchCorrection(processingBus, framesToProcess);
+    }
+
+    handleStopScheduled();
+  }
 }
 
 double AudioBufferSourceNode::getStopTime() const {
   return dsp::sampleFrameToTime(
-      static_cast<int>(vReadIndex_), buffer_->getSampleRate());
+      static_cast<int>(vReadIndex_), alignedBus_->getSampleRate());
 }
 
 /**
@@ -249,6 +261,11 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     size_t framesToEnd = frameEnd - readIndex;
     size_t framesToCopy = std::min(framesToEnd, framesLeft);
     framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
+
+    assert(readIndex >= 0);
+    assert(writeIndex >= 0);
+    assert(readIndex + framesToCopy <= alignedBus_->getSize());
+    assert(writeIndex + framesToCopy <= processingBus->getSize());
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
@@ -343,7 +360,8 @@ void AudioBufferSourceNode::processWithInterpolation(
 float AudioBufferSourceNode::getComputedPlaybackRateValue() {
   auto time = context_->getCurrentTime();
 
-  auto sampleRateFactor = buffer_->getSampleRate() / context_->getSampleRate();
+  auto sampleRateFactor =
+      alignedBus_->getSampleRate() / context_->getSampleRate();
   auto playbackRate = playbackRateParam_->getValueAtTime(time);
   auto detune = std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
 
@@ -358,7 +376,7 @@ double AudioBufferSourceNode::getVirtualStartFrame() {
 }
 
 double AudioBufferSourceNode::getVirtualEndFrame() {
-  auto inputBufferLength = static_cast<double>(buffer_->bus_->getSize());
+  auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
   auto loopEndFrame = loopEnd_ * context_->getSampleRate();
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_

@@ -17,6 +17,7 @@ class AudioParam;
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  ~AudioBufferSourceNode();
 
   [[nodiscard]] bool getLoop() const;
   [[nodiscard]] double getLoopStart() const;
