@@ -20,11 +20,9 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 - (id)init
 {
   if (self == [super init]) {
-    NSLog(@"[AudioManager] init");
-
     self.audioEngine = [AudioEngine sharedInstance];
-    self.notificationManager = [NotificationManager sharedInstance];
     self.audioSessionManager = [AudioSessionManager sharedInstance];
+    self.notificationManager = [NotificationManager sharedInstance];
     self.lockScreenManager = [LockScreenManager sharedInstanceWithAudioManagerModule:self];
   }
 
@@ -33,7 +31,6 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 
 - (void)cleanup
 {
-  NSLog(@"[AudioManager] cleanup");
   [self.audioEngine cleanup];
   [self.notificationManager cleanup];
   [self.audioSessionManager cleanup];
