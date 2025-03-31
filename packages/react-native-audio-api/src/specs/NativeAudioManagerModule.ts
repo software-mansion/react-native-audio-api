@@ -23,7 +23,7 @@ interface Spec extends TurboModule {
   readonly onRemoteChangePlaybackPosition: EventEmitter<number>;
 
   // audio session
-  setSessionOptions(
+  setAudioSessionOptions(
     category: string,
     mode: string,
     options: Array<string>,

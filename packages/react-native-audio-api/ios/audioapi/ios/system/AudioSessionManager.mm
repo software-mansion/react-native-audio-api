@@ -45,10 +45,10 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
-- (void)setSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options
+- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options
 {
-  AVAudioSessionCategory sessionCategory;
-  AVAudioSessionMode sessionMode;
+  AVAudioSessionCategory sessionCategory = self.sessionCategory;
+  AVAudioSessionMode sessionMode = self.sessionMode;
   AVAudioSessionCategoryOptions sessionOptions = 0;
 
   if ([category isEqualToString:@"record"]) {
@@ -157,6 +157,11 @@ static AudioSessionManager *_sharedInstance = nil;
   NSError *error = nil;
 
   [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
+  
+  if (error != nil) {
+    NSLog(@"Error while setting preffered IO buffer duration: %@", [error debugDescription]);
+    return false;
+  }
 
   [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
 

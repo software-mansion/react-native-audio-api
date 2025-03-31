@@ -282,12 +282,10 @@ static LockScreenManager *_sharedInstance = nil;
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
 #ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule
-      emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:event.playbackRate]];
+  [self.audioManagerModule emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:event.playbackRate]];
 #else
-  [self.audioManagerModule
-      sendEventWithName:@"onRemoteChangePlaybackRate"
-                   body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
+  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackRate"
+                                        body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
 #endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
@@ -317,7 +315,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
   [self.audioManagerModule emitOnRemoteSeekForward];
 #else
-  [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:@{}];
+  [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:nil];
 #endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
@@ -357,12 +355,10 @@ static LockScreenManager *_sharedInstance = nil;
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
 #ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule
-      emitOnRemoteChangePlaybackPosition:[NSNumber numberWithDouble:event.positionTime]];
+  [self.audioManagerModule emitOnRemoteChangePlaybackPosition:[NSNumber numberWithDouble:event.positionTime]];
 #else
-  [self.audioManagerModule
-      sendEventWithName:@"onRemoteChangePlaybackPosition"
-                   body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
+  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackPosition"
+                                        body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
 #endif
   return MPRemoteCommandHandlerStatusSuccess;
 }

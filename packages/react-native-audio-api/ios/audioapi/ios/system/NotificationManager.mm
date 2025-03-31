@@ -143,7 +143,6 @@ static NotificationManager *_sharedInstance = nil;
     return;
   }
 
-  NSLog(@"[NotificationManager] detected engine configuration change, rebuilding the graph");
   dispatch_async(dispatch_get_main_queue(), ^{
     [audioEngine rebuildAudioEngine];
   });

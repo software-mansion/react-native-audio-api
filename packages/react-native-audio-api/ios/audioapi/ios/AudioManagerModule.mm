@@ -57,12 +57,12 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-- (void)setSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active
+- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active
 {
   NSError *error = nil;
 
   if (active) {
-    [self.audioSessionManager setSessionOptions:category mode:mode options:options];
+    [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
   } else {
     [self.audioSessionManager setActive:false error:&error];
   }

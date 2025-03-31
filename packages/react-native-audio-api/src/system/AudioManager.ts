@@ -16,12 +16,12 @@ class AudioManager {
     NativeAudioManagerModule.resetLockScreenInfo();
   }
 
-  setSessionOptions(options: SessionOptions) {
-    NativeAudioManagerModule.setSessionOptions(
-      options.iosCategory || '',
-      options.iosMode || '',
-      options.iosOptions || [],
-      options.active || true
+  setAudioSessionOptions(options: SessionOptions) {
+    NativeAudioManagerModule.setAudioSessionOptions(
+      options.iosCategory ?? '',
+      options.iosMode ?? '',
+      options.iosOptions ?? [],
+      options.active ?? true
     );
   }
 

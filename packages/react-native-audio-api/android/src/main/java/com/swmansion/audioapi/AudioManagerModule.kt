@@ -8,7 +8,6 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 
-@OptIn(FrameworkAPI::class)
 @ReactModule(name = AudioManagerModule.NAME)
 class AudioManagerModule(
   reactContext: ReactApplicationContext,
@@ -31,10 +30,14 @@ class AudioManagerModule(
   override fun resetLockScreenInfo() {
   }
 
-  override fun setSessionOptions(
+  override fun enableRemoteCommand(name: String?, enabled: Boolean) {
+  }
+
+  override fun setAudioSessionOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
+    active: Boolean
   ) {
   }
 
