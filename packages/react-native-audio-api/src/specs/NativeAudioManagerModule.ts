@@ -2,17 +2,12 @@ import { TurboModuleRegistry, TurboModule } from 'react-native';
 import { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
 
 interface Spec extends TurboModule {
+  // lock screen
   setLockScreenInfo(info: {
     [key: string]: string | boolean | number | undefined;
   }): void;
   resetLockScreenInfo(): void;
-  setSessionOptions(
-    category: string,
-    mode: string,
-    options: Array<string>,
-    active: boolean
-  ): void;
-  getDevicePreferredSampleRate(): number;
+  enableRemoteCommand(name: string, enabled: boolean): void;
 
   readonly onRemotePlay: EventEmitter<void>;
   readonly onRemotePause: EventEmitter<void>;
@@ -26,6 +21,15 @@ interface Spec extends TurboModule {
   readonly onRemoteSeekForward: EventEmitter<void>;
   readonly onRemoteSeekBackward: EventEmitter<void>;
   readonly onRemoteChangePlaybackPosition: EventEmitter<number>;
+
+  // audio session
+  setSessionOptions(
+    category: string,
+    mode: string,
+    options: Array<string>,
+    active: boolean
+  ): void;
+  getDevicePreferredSampleRate(): number;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('AudioManagerModule');

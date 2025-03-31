@@ -18,5 +18,6 @@
 
 - (void)setLockScreenInfo:(NSDictionary *)info;
 - (void)resetLockScreenInfo;
+- (void)enableRemoteCommand:(NSString *)name enabled:(BOOL)enabled;
 
 @end

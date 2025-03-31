@@ -52,3 +52,17 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   speed?: number;
   elapsedTime?: number;
 }
+
+export type RemoteControl =
+  | 'play'
+  | 'pause'
+  | 'stop'
+  | 'togglePlayPause'
+  | 'changePlaybackRate'
+  | 'nextTrack'
+  | 'previousTrack'
+  | 'skipForward'
+  | 'skipBackward'
+  | 'seekForward'
+  | 'seekBackward'
+  | 'changePlaybackPosition';

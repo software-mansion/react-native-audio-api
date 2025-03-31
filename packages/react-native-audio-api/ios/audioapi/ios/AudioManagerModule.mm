@@ -51,6 +51,12 @@ RCT_EXPORT_MODULE(AudioManagerModule);
 {
   [self.lockScreenManager resetLockScreenInfo];
 }
+
+- (void)enableRemoteCommand:(NSString *)name enabled:(BOOL)enabled
+{
+  [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
+}
+
 - (void)setSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active
 {
   NSError *error = nil;

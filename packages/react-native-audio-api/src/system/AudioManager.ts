@@ -1,4 +1,4 @@
-import { SessionOptions, LockScreenInfo } from './types';
+import { SessionOptions, LockScreenInfo, RemoteControl } from './types';
 import NativeAudioManagerModule from '../specs/NativeAudioManagerModule';
 
 if (!NativeAudioManagerModule) {
@@ -29,52 +29,79 @@ class AudioManager {
     return NativeAudioManagerModule.getDevicePreferredSampleRate();
   }
 
-  onRemotePlay(callback: () => void) {
-    NativeAudioManagerModule.onRemotePlay(callback);
-  }
+  enableRemoteCommand(
+    name: RemoteControl,
+    enabled: boolean,
+    callback?: (value?: number) => void
+  ) {
+    NativeAudioManagerModule.enableRemoteCommand(name, enabled);
 
-  onRemotePause(callback: () => void) {
-    NativeAudioManagerModule.onRemotePause(callback);
-  }
+    if (enabled && callback) {
+      switch (name) {
+        case 'play':
+          NativeAudioManagerModule.onRemotePlay(callback as () => void);
+          break;
 
-  onRemoteStop(callback: () => void) {
-    NativeAudioManagerModule.onRemoteStop(callback);
-  }
+        case 'pause':
+          NativeAudioManagerModule.onRemotePause(callback as () => void);
+          break;
 
-  onRemoteTogglePlayPause(callback: () => void) {
-    NativeAudioManagerModule.onRemoteTogglePlayPause(callback);
-  }
+        case 'stop':
+          NativeAudioManagerModule.onRemoteStop(callback as () => void);
+          break;
 
-  onRemoteChangePlaybackRate(callback: (rate: number) => void) {
-    NativeAudioManagerModule.onRemoteChangePlaybackRate(callback);
-  }
+        case 'togglePlayPause':
+          NativeAudioManagerModule.onRemoteTogglePlayPause(
+            callback as () => void
+          );
+          break;
 
-  onRemoteNextTrack(callback: () => void) {
-    NativeAudioManagerModule.onRemoteNextTrack(callback);
-  }
+        case 'changePlaybackRate':
+          NativeAudioManagerModule.onRemoteChangePlaybackRate(
+            callback as (rate: number) => void
+          );
+          break;
 
-  onRemotePreviousTrack(callback: () => void) {
-    NativeAudioManagerModule.onRemotePreviousTrack(callback);
-  }
+        case 'nextTrack':
+          NativeAudioManagerModule.onRemoteNextTrack(callback as () => void);
+          break;
 
-  onRemoteSkipForward(callback: (interval: number) => void) {
-    NativeAudioManagerModule.onRemoteSkipForward(callback);
-  }
+        case 'previousTrack':
+          NativeAudioManagerModule.onRemotePreviousTrack(
+            callback as () => void
+          );
+          break;
 
-  onRemoteSkipBackward(callback: (interval: number) => void) {
-    NativeAudioManagerModule.onRemoteSkipBackward(callback);
-  }
+        case 'skipForward':
+          NativeAudioManagerModule.onRemoteSkipForward(
+            callback as (interval: number) => void
+          );
+          break;
 
-  onRemoteSeekForward(callback: () => void) {
-    NativeAudioManagerModule.onRemoteSeekForward(callback);
-  }
+        case 'skipBackward':
+          NativeAudioManagerModule.onRemoteSkipBackward(
+            callback as (interval: number) => void
+          );
+          break;
 
-  onRemoteSeekBackward(callback: () => void) {
-    NativeAudioManagerModule.onRemoteSeekBackward(callback);
-  }
+        case 'seekForward':
+          NativeAudioManagerModule.onRemoteSeekForward(callback as () => void);
+          break;
 
-  onRemoteChangePlaybackPosition(callback: (position: number) => void) {
-    NativeAudioManagerModule.onRemoteChangePlaybackPosition(callback);
+        case 'seekBackward':
+          NativeAudioManagerModule.onRemoteSeekBackward(callback as () => void);
+          break;
+
+        case 'changePlaybackPosition':
+          NativeAudioManagerModule.onRemoteChangePlaybackPosition(
+            callback as (position: number) => void
+          );
+          break;
+
+        default:
+          console.error('Unsupported RemoteControl action:', name);
+      }
+    }
   }
 }
 
