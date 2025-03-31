@@ -149,19 +149,21 @@ void AudioBufferSourceNode::processNode(
     return;
   }
 
-  // No audio data to fill, zero the output and return.
-  if (!alignedBus_) {
-    processingBus->zero();
-    return;
-  }
+  if (auto locker = Locker::tryLock(getBufferLock())) {
+    // No audio data to fill, zero the output and return.
+    if (!alignedBus_) {
+      processingBus->zero();
+      return;
+    }
 
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBus, framesToProcess);
-  } else {
-    processWithPitchCorrection(processingBus, framesToProcess);
-  }
+    if (!pitchCorrection_) {
+      processWithoutPitchCorrection(processingBus, framesToProcess);
+    } else {
+      processWithPitchCorrection(processingBus, framesToProcess);
+    }
 
-  handleStopScheduled();
+    handleStopScheduled();
+  }
 }
 
 double AudioBufferSourceNode::getStopTime() const {

@@ -9,29 +9,25 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
-    self.isInterrupted = false;
-    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
-    [self setupAndInitNotificationHandlers];
 
     self.sampleRate = [self.audioSession sampleRate];
     self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
-
     __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
+    self.renderBlock = ^OSStatus(
+        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+      if (outputData->mNumberBuffers != weakSelf.channelCount) {
+        return kAudioServicesBadPropertySizeError;
+      }
+
+      weakSelf.renderAudio(outputData, frameCount);
+      return kAudioServicesNoError;
+    };
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
   return self;
@@ -46,29 +42,25 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
-    self.isInterrupted = false;
-    self.configurationChanged = false;
 
     [self setupAndInitAudioSession];
-    [self setupAndInitNotificationHandlers];
 
     self.sampleRate = sampleRate;
     self.channelCount = channelCount;
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
-
     __weak typeof(self) weakSelf = self;
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:^OSStatus(
-                                                    BOOL *isSilence,
-                                                    const AudioTimeStamp *timestamp,
-                                                    AVAudioFrameCount frameCount,
-                                                    AudioBufferList *outputData) {
-                                                  return [weakSelf renderCallbackWithIsSilence:isSilence
-                                                                                     timestamp:timestamp
-                                                                                    frameCount:frameCount
-                                                                                    outputData:outputData];
-                                                }];
+    self.renderBlock = ^OSStatus(
+        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+      if (outputData->mNumberBuffers != weakSelf.channelCount) {
+        return kAudioServicesBadPropertySizeError;
+      }
+
+      weakSelf.renderAudio(outputData, frameCount);
+      return kAudioServicesNoError;
+    };
+
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
   }
 
   return self;
@@ -122,26 +114,22 @@
   self.renderAudio = nil;
 }
 
-- (OSStatus)renderCallbackWithIsSilence:(BOOL *)isSilence
-                              timestamp:(const AudioTimeStamp *)timestamp
-                             frameCount:(AVAudioFrameCount)frameCount
-                             outputData:(AudioBufferList *)outputData
-{
-  if (outputData->mNumberBuffers < self.channelCount) {
-    return noErr; // Ensure we have stereo output
-  }
-
-  self.renderAudio(outputData, frameCount);
-
-  return noErr;
-}
-
 - (void)setupAndInitAudioSession
 {
   NSError *error = nil;
 
   if (!self.audioSession) {
     self.audioSession = [AVAudioSession sharedInstance];
+  }
+
+  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
+                            mode:AVAudioSessionModeDefault
+                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowAirPlay
+                           error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    return;
   }
 
   [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
@@ -151,37 +139,12 @@
     return;
   }
 
-  [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
-    return;
-  }
-
   [self.audioSession setActive:true error:&error];
 
   if (error != nil) {
     NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return;
   }
-
-  self.isInterrupted = false;
-}
-
-- (void)setupAndInitNotificationHandlers
-{
-  if (!self.notificationCenter) {
-    self.notificationCenter = [NSNotificationCenter defaultCenter];
-  }
-
-  [self.notificationCenter addObserver:self
-                              selector:@selector(handleEngineConfigurationChange:)
-                                  name:AVAudioEngineConfigurationChangeNotification
-                                object:nil];
-  [self.notificationCenter addObserver:self
-                              selector:@selector(handleInterruption:)
-                                  name:AVAudioSessionInterruptionNotification
-                                object:nil];
 }
 
 - (void)connectAudioEngine
@@ -199,44 +162,6 @@
     if (![self.audioEngine startAndReturnError:&error]) {
       NSLog(@"Error starting audio engine: %@", [error debugDescription]);
     }
-  }
-
-  self.configurationChanged = false;
-}
-
-- (void)handleEngineConfigurationChange:(NSNotification *)notification
-{
-  if (!self.isRunning || self.isInterrupted) {
-    self.configurationChanged = true;
-    return;
-  }
-
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self connectAudioEngine];
-  });
-}
-
-- (void)handleInterruption:(NSNotification *)notification
-{
-  NSError *error;
-  UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
-  UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
-
-  if (type == AVAudioSessionInterruptionTypeBegan) {
-    self.isInterrupted = true;
-    return;
-  }
-
-  if (type != AVAudioSessionInterruptionTypeEnded || option != AVAudioSessionInterruptionOptionShouldResume) {
-    return;
-  }
-
-  [self setupAndInitAudioSession];
-
-  if (self.configurationChanged && self.isRunning) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self connectAudioEngine];
-    });
   }
 }
 

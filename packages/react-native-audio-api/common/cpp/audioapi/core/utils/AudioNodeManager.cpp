@@ -5,7 +5,7 @@
 namespace audioapi {
 
 AudioNodeManager::~AudioNodeManager() {
-  audioNodesToConnect_.clear();
+  cleanup();
 }
 
 void AudioNodeManager::addPendingConnection(
@@ -18,12 +18,10 @@ void AudioNodeManager::addPendingConnection(
 }
 
 void AudioNodeManager::preProcessGraph() {
-  if (!Locker::tryLock(getGraphLock())) {
-    return;
+  if (auto locker = Locker::tryLock(getGraphLock())) {
+    settlePendingConnections();
+    prepareNodesForDestruction();
   }
-
-  settlePendingConnections();
-  prepareNodesForDestruction();
 }
 
 std::mutex &AudioNodeManager::getGraphLock() {
@@ -32,19 +30,19 @@ std::mutex &AudioNodeManager::getGraphLock() {
 
 void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
   Locker lock(getGraphLock());
-
   nodes_.insert(node);
 }
 
 void AudioNodeManager::settlePendingConnections() {
-  for (auto &connection : audioNodesToConnect_) {
-    std::shared_ptr<AudioNode> from = std::get<0>(connection);
-    std::shared_ptr<AudioNode> to = std::get<1>(connection);
-    ConnectionType type = std::get<2>(connection);
+  for (auto it = audioNodesToConnect_.begin(), end = audioNodesToConnect_.end();
+       it != end;
+       ++it) {
+    std::shared_ptr<AudioNode> from = std::get<0>(*it);
+    std::shared_ptr<AudioNode> to = std::get<1>(*it);
+    ConnectionType type = std::get<2>(*it);
 
-    if (!to || !from) {
-      continue;
-    }
+    assert(from != nullptr);
+    assert(to != nullptr);
 
     if (type == ConnectionType::CONNECT) {
       from->connectNode(to);
@@ -57,8 +55,11 @@ void AudioNodeManager::settlePendingConnections() {
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {
-  for (auto it = nodes_.begin(); it != nodes_.end();) {
+  auto it = nodes_.begin();
+
+  while (it != nodes_.end()) {
     if (it->use_count() == 1) {
+      assert(it->get()->inputNodes_.empty());
       it->get()->cleanup();
       it = nodes_.erase(it);
     } else {
@@ -70,8 +71,8 @@ void AudioNodeManager::prepareNodesForDestruction() {
 void AudioNodeManager::cleanup() {
   Locker lock(getGraphLock());
 
-  for (auto &node : nodes_) {
-    node->cleanup();
+  for (auto it = nodes_.begin(), end = nodes_.end(); it != end; ++it) {
+    it->get()->cleanup();
   }
 
   nodes_.clear();
