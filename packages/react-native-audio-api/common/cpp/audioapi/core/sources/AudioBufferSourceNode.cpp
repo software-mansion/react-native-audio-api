@@ -151,6 +151,8 @@ void AudioBufferSourceNode::processNode(
     }
 
     handleStopScheduled();
+  } else {
+    processingBus->zero();
   }
 }
 
