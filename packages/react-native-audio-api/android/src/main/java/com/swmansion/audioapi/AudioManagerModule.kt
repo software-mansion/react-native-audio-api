@@ -5,7 +5,6 @@ import android.media.AudioManager
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 
 @ReactModule(name = AudioManagerModule.NAME)
@@ -30,14 +29,17 @@ class AudioManagerModule(
   override fun resetLockScreenInfo() {
   }
 
-  override fun enableRemoteCommand(name: String?, enabled: Boolean) {
+  override fun enableRemoteCommand(
+    name: String?,
+    enabled: Boolean,
+  ) {
   }
 
   override fun setAudioSessionOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
-    active: Boolean
+    active: Boolean,
   ) {
   }
 

@@ -157,7 +157,7 @@ static AudioSessionManager *_sharedInstance = nil;
   NSError *error = nil;
 
   [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
-  
+
   if (error != nil) {
     NSLog(@"Error while setting preffered IO buffer duration: %@", [error debugDescription]);
     return false;
