@@ -42,22 +42,23 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self cleanup];
 }
 
-- (void)setLockScreenInfo:(NSDictionary *)info
+RCT_EXPORT_METHOD(setLockScreenInfo : (NSDictionary *)info)
 {
   [self.lockScreenManager setLockScreenInfo:info];
 }
 
-- (void)resetLockScreenInfo
+RCT_EXPORT_METHOD(resetLockScreenInfo)
 {
   [self.lockScreenManager resetLockScreenInfo];
 }
 
-- (void)enableRemoteCommand:(NSString *)name enabled:(BOOL)enabled
+RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled)
 {
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active
+RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
+                      options active : (BOOL)active)
 {
   NSError *error = nil;
 
@@ -68,7 +69,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   }
 }
 
-- (NSNumber *)getDevicePreferredSampleRate
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 {
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
