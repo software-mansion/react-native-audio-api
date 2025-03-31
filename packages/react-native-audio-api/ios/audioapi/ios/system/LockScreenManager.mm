@@ -186,6 +186,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
     [self.audioManagerModule emitOnRemotePlay];
 #else
+    [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
 #endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
@@ -194,6 +195,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
     [self.audioManagerModule emitOnRemotePause];
 #else
+    [self.audioManagerModule sendEventWithName:@"onRemotePause" body:@{}];
 #endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
@@ -202,6 +204,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
     [self.audioManagerModule emitOnRemoteStop];
 #else
+    [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
 #endif
     return MPRemoteCommandHandlerStatusSuccess;
   }];
@@ -211,6 +214,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemoteTogglePlayPause];
 #else
+        [self.audioManagerModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -222,6 +226,9 @@ static LockScreenManager *_sharedInstance = nil;
         [self.audioManagerModule
             emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]];
 #else
+        [self.audioManagerModule
+            sendEventWithName:@"onRemoteChangePlaybackRate"
+                         body:@{@"value" : [NSNumber numberWithDouble:changePlaybackRateEvent.playbackRate]}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -232,6 +239,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemoteNextTrack];
 #else
+        [self.audioManagerModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -241,6 +249,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemotePreviousTrack];
 #else
+        [self.audioManagerModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -250,8 +259,11 @@ static LockScreenManager *_sharedInstance = nil;
       addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull event) {
         MPSkipIntervalCommandEvent *skipIntervalEvent = (MPSkipIntervalCommandEvent *)event;
 #ifdef RCT_NEW_ARCH_ENABLED
-        [self.audioManagerModule emitOnRemoteSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
+        [self.audioManagerModule emitOnRemoteSkipBackward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
 #else
+        [self.audioManagerModule
+            sendEventWithName:@"onRemoteSkipBackward"
+                         body:@{@"value" : [NSNumber numberWithDouble:skipIntervalEvent.interval]}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -262,6 +274,9 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemoteSkipForward:[NSNumber numberWithDouble:skipIntervalEvent.interval]];
 #else
+        [self.audioManagerModule
+            sendEventWithName:@"onRemoteSkipForward"
+                         body:@{@"value" : [NSNumber numberWithDouble:skipIntervalEvent.interval]}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -272,6 +287,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemoteSeekForward];
 #else
+        [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:@{}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -281,6 +297,7 @@ static LockScreenManager *_sharedInstance = nil;
 #ifdef RCT_NEW_ARCH_ENABLED
         [self.audioManagerModule emitOnRemoteSeekBackward];
 #else
+        [self.audioManagerModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -293,6 +310,9 @@ static LockScreenManager *_sharedInstance = nil;
         [self.audioManagerModule
             emitOnRemoteChangePlaybackPosition:[NSNumber numberWithDouble:changePlaybackPositionEvent.positionTime]];
 #else
+        [self.audioManagerModule
+            sendEventWithName:@"onRemoteChangePlaybackPosition"
+                         body:@{@"value" : [NSNumber numberWithDouble:changePlaybackPositionEvent.positionTime]}];
 #endif
         return MPRemoteCommandHandlerStatusSuccess;
       }];
