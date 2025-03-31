@@ -6,5 +6,5 @@ module.exports = {
       files: ['./src/**/*.ts', './src/**/*.tsx'],
     },
   ],
-  ignorePatterns: ['lib'],
+  ignorePatterns: ['lib', 'src/web-core/custom/signalsmithStretch'],
 };

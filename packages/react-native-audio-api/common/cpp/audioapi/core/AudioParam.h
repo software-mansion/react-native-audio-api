@@ -10,6 +10,8 @@
 
 namespace audioapi {
 
+class AudioArray;
+
 class AudioParam {
  public:
   explicit AudioParam(float defaultValue, float minValue, float maxValue);
@@ -27,7 +29,7 @@ class AudioParam {
   void exponentialRampToValueAtTime(float value, double endTime);
   void setTargetAtTime(float target, double startTime, double timeConstant);
   void setValueCurveAtTime(
-      const float *values,
+      const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
       double duration);

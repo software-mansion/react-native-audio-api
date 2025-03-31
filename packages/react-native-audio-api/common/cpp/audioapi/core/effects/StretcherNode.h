@@ -20,7 +20,7 @@ class StretcherNode : public AudioNode {
 
  protected:
     void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-    std::shared_ptr<AudioBus> processAudio(std::shared_ptr<AudioBus> outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
+    std::shared_ptr<AudioBus> processAudio(const std::shared_ptr<AudioBus> &outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
 
  private:
     // k-rate params

@@ -123,6 +123,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
       realData[i] =
           static_cast<float>(real.getValueAtIndex(runtime, i).getNumber());
     }
+
     for (size_t i = 0; i < imag.length(runtime); i++) {
       realData[i] =
           static_cast<float>(imag.getValueAtIndex(runtime, i).getNumber());
@@ -132,6 +133,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
         realData, imagData, disableNormalization, length);
     auto periodicWaveHostObject =
         std::make_shared<PeriodicWaveHostObject>(periodicWave);
+
+    delete[] realData;
+    delete[] imagData;
     return jsi::Object::createFromHostObject(runtime, periodicWaveHostObject);
   }
 

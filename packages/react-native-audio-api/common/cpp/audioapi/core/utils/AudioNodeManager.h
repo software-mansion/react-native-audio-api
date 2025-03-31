@@ -4,7 +4,6 @@
 #include <mutex>
 #include <tuple>
 #include <vector>
-#include <unordered_set>
 
 namespace audioapi {
 
@@ -30,10 +29,11 @@ class AudioNodeManager {
   void cleanup();
 
  private:
+  friend class AudioNode;
   std::mutex graphLock_;
 
   // all nodes created in the context
-  std::unordered_set<std::shared_ptr<AudioNode>> nodes_;
+  std::vector<std::shared_ptr<AudioNode>> nodes_;
 
   // connections to be settled
   std::vector<std::tuple<

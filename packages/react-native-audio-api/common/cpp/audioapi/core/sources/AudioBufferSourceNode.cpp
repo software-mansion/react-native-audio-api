@@ -122,38 +122,36 @@ std::mutex &AudioBufferSourceNode::getBufferLock() {
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (!Locker::tryLock(getBufferLock())) {
-    processingBus->zero();
-    return;
+  if (auto locker = Locker::tryLock(getBufferLock())) {
+    // No audio data to fill, zero the output and return.
+    if (!buffer_) {
+      processingBus->zero();
+      return;
+    }
+
+    size_t startOffset = 0;
+    size_t offsetLength = 0;
+
+    updatePlaybackInfo(
+        processingBus, framesToProcess, startOffset, offsetLength);
+    float playbackRate = getPlaybackRateValue(startOffset);
+
+    assert(alignedBus_ != nullptr);
+    assert(alignedBus_->getSize() > 0);
+
+    if (playbackRate == 0.0f || !isPlaying()) {
+      processingBus->zero();
+      return;
+    } else if (std::fabs(playbackRate) == 1.0) {
+      processWithoutInterpolation(
+          processingBus, startOffset, offsetLength, playbackRate);
+    } else {
+      processWithInterpolation(
+          processingBus, startOffset, offsetLength, playbackRate);
+    }
+
+    handleStopScheduled();
   }
-
-  // No audio data to fill, zero the output and return.
-  if (!buffer_) {
-    processingBus->zero();
-    return;
-  }
-
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
-  float playbackRate = getPlaybackRateValue(startOffset);
-
-  assert(alignedBus_ != nullptr);
-  assert(alignedBus_->getSize() > 0);
-
-  if (playbackRate == 0.0f || !isPlaying()) {
-    processingBus->zero();
-    return;
-  } else if (std::fabs(playbackRate) == 1.0) {
-    processWithoutInterpolation(
-        processingBus, startOffset, offsetLength, playbackRate);
-  } else {
-    processWithInterpolation(
-        processingBus, startOffset, offsetLength, playbackRate);
-  }
-
-  handleStopScheduled();
 }
 
 /**

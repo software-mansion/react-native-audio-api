@@ -1,5 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/AudioArray.h>
 #include <audioapi/dsp/AudioUtils.h>
 
 namespace audioapi {
@@ -179,7 +180,7 @@ void AudioParam::setTargetAtTime(
 }
 
 void AudioParam::setValueCurveAtTime(
-    const float *values,
+    const std::shared_ptr<AudioArray> &values,
     size_t length,
     double startTime,
     double duration) {
@@ -206,7 +207,7 @@ void AudioParam::setValueCurveAtTime(
           (time - startTime) * static_cast<double>(length - 1) /
               (endTime - startTime));
 
-      return AudioUtils::linearInterpolate(values, k, k + 1, factor);
+      return AudioUtils::linearInterpolate(values->getData(), k, k + 1, factor);
     }
 
     return endValue;
@@ -216,7 +217,7 @@ void AudioParam::setValueCurveAtTime(
       startTime,
       startTime + duration,
       getQueueEndValue(),
-      values[length - 1],
+      values->operator[](values->getSize() - 1),
       calculateValue,
       ParamChangeEventType::SET_VALUE_CURVE);
   updateQueue(event);
