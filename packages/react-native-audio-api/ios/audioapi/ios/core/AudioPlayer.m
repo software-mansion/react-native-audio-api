@@ -9,6 +9,7 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isAudioSessionActive = false;
 
     [self setupAndInitAudioSession];
 
@@ -39,6 +40,7 @@
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.isRunning = true;
+    self.isAudioSessionActive = false;
 
     [self setupAndInitAudioSession];
 
@@ -87,7 +89,9 @@
   [self.audioSession setActive:false error:&error];
 
   if (error != nil) {
-    @throw error;
+    NSLog(@"Error while de-activating audio session: %@", [error debugDescription]);
+  } else {
+    self.isAudioSessionActive = false;
   }
 }
 
@@ -119,20 +123,52 @@
     self.audioSession = [AVAudioSession sharedInstance];
   }
 
-  [self.audioSession setCategory:AVAudioSessionCategoryPlayback
-                            mode:AVAudioSessionModeDefault
-                         options:AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth |
-                         AVAudioSessionCategoryOptionAllowAirPlay
-                           error:&error];
+  AVAudioSessionCategory desiredCategory = AVAudioSessionCategoryPlayback;
+  AVAudioSessionMode desiredMode = AVAudioSessionModeDefault;
+  AVAudioSessionCategoryOptions desiredOptions = AVAudioSessionCategoryOptionAllowBluetooth | AVAudioSessionCategoryOptionAllowAirPlay;
 
-  if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error localizedDescription]);
+  if (self.audioSession.category != desiredCategory || self.audioSession.mode != desiredMode || self.audioSession.categoryOptions != desiredOptions) {
+    [self.audioSession setCategory:desiredCategory mode:desiredMode options:desiredOptions error:&error];
+
+    if (error != nil) {
+      NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    }
+  } else {
+    NSLog(@"AVAudioSession category mode and options are valid, skipping configuration");
   }
 
-  [self.audioSession setActive:true error:&error];
+  if (self.sampleRate) {
+    if (self.audioSession.preferredSampleRate != self.sampleRate) {
+      [self.audioSession setPreferredSampleRate:self.sampleRate error:&error];
 
-  if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error localizedDescription]);
+      if (error != nil) {
+        NSLog(@"Error while setting preferred sample rate buffer duration: %@", [error debugDescription]);
+      }
+    } else {
+      NSLog(@"AVAudioSession preferred sample rate is valid, skipping configuration");
+    }
+  }
+
+  if (self.audioSession.preferredIOBufferDuration != 0.02) {
+    [self.audioSession setPreferredIOBufferDuration:0.02 error:&error];
+
+    if (error != nil) {
+      NSLog(@"Error while setting preferred IO buffer duration: %@", [error debugDescription]);
+    }
+  } else {
+    NSLog(@"AVAudioSession preferred IO buffer duration is valid, skipping configuration");
+  }
+
+  if (!self.isAudioSessionActive) {
+    [self.audioSession setActive:true error:&error];
+
+    if (error != nil) {
+      NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    } else {
+      self.isAudioSessionActive = true;
+    }
+  } else {
+    NSLog(@"AVAudioSession was active, skipping unnecessary activation");
   }
 }
 

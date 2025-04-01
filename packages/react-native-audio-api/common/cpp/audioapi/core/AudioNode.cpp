@@ -227,6 +227,7 @@ void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
       });
 
   if (position != outputNodes_.end()) {
+    node->onInputDisconnected(this);
     outputNodes_.erase(position);
   }
 }
