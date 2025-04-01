@@ -35,6 +35,7 @@ class AudioAPIPackage : BaseReactPackage() {
           AudioAPIModule.NAME,
           canOverrideExistingModule = true,
           needsEagerInit = false,
+          hasConstants = true,
           isCxxModule = false,
           isTurboModule = isTurboModule,
         )
@@ -45,6 +46,7 @@ class AudioAPIPackage : BaseReactPackage() {
           AudioManagerModule.NAME,
           canOverrideExistingModule = true,
           needsEagerInit = false,
+          hasConstants = true,
           isCxxModule = false,
           isTurboModule = isTurboModule,
         )
