@@ -63,7 +63,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   size_t stopFrame = stopTime_ == -1.0
       ? std::numeric_limits<size_t>::max()
       : std::max(
-            AudioUtils::timeToSampleFrame(stopTime_, sampleRate), firstFrame);
+            AudioUtils::timeToSampleFrame(stopTime_, sampleRate), lastFrame);
 
   if (isUnscheduled() || isFinished()) {
     startOffset = 0;
@@ -85,7 +85,10 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     startOffset = std::max(startFrame, firstFrame) - firstFrame > 0
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
-    nonSilentFramesToProcess = std::min(lastFrame, stopFrame) - startFrame;
+    nonSilentFramesToProcess = std::max(std::min(lastFrame, stopFrame), startFrame) - startFrame;
+
+    assert(startOffset < framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
     processingBus->zero(0, startOffset);
     return;
   }
@@ -97,6 +100,9 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   if (stopFrame < lastFrame && stopFrame >= firstFrame) {
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
+
+    assert(startOffset < framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
     processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     return;
   }
