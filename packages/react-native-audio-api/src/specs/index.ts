@@ -1,6 +1,6 @@
 'use strict';
 
 import NativeAudioAPIModule from './NativeAudioAPIModule';
-import NativeSystemAudioAPIModule from './NativeAudioManagerModule';
+import { AudioManagerModule, eventEmitter } from './NativeAudioManagerModule';
 
-export { NativeAudioAPIModule, NativeSystemAudioAPIModule };
+export { NativeAudioAPIModule, AudioManagerModule, eventEmitter };

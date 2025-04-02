@@ -1,23 +1,18 @@
 import { SessionOptions, LockScreenInfo, RemoteControl } from './types';
-import NativeAudioManagerModule from '../specs/NativeAudioManagerModule';
-
-if (!NativeAudioManagerModule) {
-  throw new Error(
-    `Failed to install react-native-audio-api: The native module could not be found.`
-  );
-}
+import { AudioManagerModule, eventEmitter } from '../specs';
+import { EmitterSubscription } from 'react-native';
 
 class AudioManager {
   setLockScreenInfo(info: LockScreenInfo) {
-    NativeAudioManagerModule.setLockScreenInfo(info);
+    AudioManagerModule.setLockScreenInfo(info);
   }
 
   resetLockScreenInfo() {
-    NativeAudioManagerModule.resetLockScreenInfo();
+    AudioManagerModule.resetLockScreenInfo();
   }
 
   setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioManagerModule.setAudioSessionOptions(
+    AudioManagerModule.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? [],
@@ -26,75 +21,92 @@ class AudioManager {
   }
 
   getDevicePreferredSampleRate(): number {
-    return NativeAudioManagerModule.getDevicePreferredSampleRate();
+    return AudioManagerModule.getDevicePreferredSampleRate();
   }
 
   enableRemoteCommand(
     name: RemoteControl,
     enabled: boolean,
     callback?: (value?: number) => void
-  ) {
-    NativeAudioManagerModule.enableRemoteCommand(name, enabled);
+  ): EmitterSubscription | null {
+    AudioManagerModule.enableRemoteCommand(name, enabled);
+
+    let subscription = null;
 
     if (enabled && callback) {
       switch (name) {
         case 'play':
-          NativeAudioManagerModule.onRemotePlay(callback as () => void);
+          subscription = eventEmitter!.addListener('onRemotePlay', callback);
           break;
 
         case 'pause':
-          NativeAudioManagerModule.onRemotePause(callback as () => void);
+          subscription = eventEmitter!.addListener('onRemotePause', callback);
           break;
 
         case 'stop':
-          NativeAudioManagerModule.onRemoteStop(callback as () => void);
+          subscription = eventEmitter!.addListener('onRemoteStop', callback);
           break;
 
         case 'togglePlayPause':
-          NativeAudioManagerModule.onRemoteTogglePlayPause(
-            callback as () => void
+          subscription = eventEmitter!.addListener(
+            'onRemoteTogglePlayPause',
+            callback
           );
           break;
 
         case 'changePlaybackRate':
-          NativeAudioManagerModule.onRemoteChangePlaybackRate(
-            callback as (rate: number) => void
+          subscription = eventEmitter!.addListener(
+            'onRemoteChangePlaybackRate',
+            callback
           );
           break;
 
         case 'nextTrack':
-          NativeAudioManagerModule.onRemoteNextTrack(callback as () => void);
+          subscription = eventEmitter!.addListener(
+            'onRemoteNextTrack',
+            callback
+          );
           break;
 
         case 'previousTrack':
-          NativeAudioManagerModule.onRemotePreviousTrack(
-            callback as () => void
+          subscription = eventEmitter!.addListener(
+            'onRemotePreviousTrack',
+            callback
           );
           break;
 
         case 'skipForward':
-          NativeAudioManagerModule.onRemoteSkipForward(
-            callback as (interval: number) => void
+          subscription = eventEmitter!.addListener(
+            'onRemoteSkipForward',
+            callback
           );
           break;
 
         case 'skipBackward':
-          NativeAudioManagerModule.onRemoteSkipBackward(
-            callback as (interval: number) => void
+          subscription = eventEmitter!.addListener(
+            'onRemoteSkipBackward',
+            callback
           );
           break;
 
         case 'seekForward':
-          NativeAudioManagerModule.onRemoteSeekForward(callback as () => void);
+          subscription = eventEmitter!.addListener(
+            'onRemoteSeekForward',
+            callback
+          );
           break;
 
         case 'seekBackward':
-          NativeAudioManagerModule.onRemoteSeekBackward(callback as () => void);
+          subscription = eventEmitter!.addListener(
+            'onRemoteSeekBackward',
+            callback
+          );
           break;
 
         case 'changePlaybackPosition':
-          NativeAudioManagerModule.onRemoteChangePlaybackPosition(
-            callback as (position: number) => void
+          subscription = eventEmitter!.addListener(
+            'onRemoteChangePlaybackPosition',
+            callback
           );
           break;
 
@@ -102,6 +114,8 @@ class AudioManager {
           console.error('Unsupported RemoteControl action:', name);
       }
     }
+
+    return subscription;
   }
 }
 

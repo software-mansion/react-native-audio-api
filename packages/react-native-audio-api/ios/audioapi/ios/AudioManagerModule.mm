@@ -9,14 +9,6 @@
 
 RCT_EXPORT_MODULE(AudioManagerModule);
 
-#ifdef RCT_NEW_ARCH_ENABLED
-- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
-    (const facebook::react::ObjCTurboModule::InitParams &)params
-{
-  return std::make_shared<facebook::react::NativeAudioManagerModuleSpecJSI>(params);
-}
-#endif // RCT_NEW_ARCH_ENABLED
-
 - (id)init
 {
   if (self == [super init]) {
@@ -42,7 +34,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self cleanup];
 }
 
-RCT_EXPORT_METHOD(setLockScreenInfo:(NSDictionary *)info)
+RCT_EXPORT_METHOD(setLockScreenInfo : (NSDictionary *)info)
 {
   [self.lockScreenManager setLockScreenInfo:info];
 }
@@ -52,12 +44,13 @@ RCT_EXPORT_METHOD(resetLockScreenInfo)
   [self.lockScreenManager resetLockScreenInfo];
 }
 
-RCT_EXPORT_METHOD(enableRemoteCommand:(NSString *)name enabled:(BOOL)enabled)
+RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled)
 {
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options active:(BOOL)active)
+RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
+                      options active : (BOOL)active)
 {
   NSError *error = nil;
 
@@ -71,6 +64,29 @@ RCT_EXPORT_METHOD(setAudioSessionOptions:(NSString *)category mode:(NSString *)m
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 {
   return [self.audioSessionManager getDevicePreferredSampleRate];
+}
+
+- (NSArray<NSString *> *)supportedEvents
+{
+  return @[
+    @"onRemotePlay",
+    @"onRemotePause",
+    @"onRemoteStop",
+    @"onRemoteTogglePlayPause",
+    @"onRemoteChangePlaybackRate",
+    @"onRemoteNextTrack",
+    @"onRemotePreviousTrack",
+    @"onRemoteSkipForward",
+    @"onRemoteSkipBackward",
+    @"onRemoteSeekForward",
+    @"onRemoteSeekBackward",
+    @"onRemoteChangePlaybackPosition"
+  ];
+}
+
+- (void)sendEventWithValue:(NSString *)event withValue:(NSString *)value
+{
+  [self sendEventWithName:@"AudioManagerModule" body:@{@"name" : event, @"value" : value}];
 }
 
 @end

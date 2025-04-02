@@ -1,35 +1,51 @@
-import { TurboModuleRegistry, TurboModule } from 'react-native';
-import { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
+import {
+  NativeModules,
+  DeviceEventEmitter,
+  NativeEventEmitter,
+  Platform,
+} from 'react-native';
 
-interface Spec extends TurboModule {
-  // lock screen
+const NativeAudioManagerModule = NativeModules.AudioManagerModule;
+const eventEmitter = Platform.select({
+  ios: new NativeEventEmitter(NativeModules.AudioManagerModule),
+  android: DeviceEventEmitter,
+});
+
+if (!NativeAudioManagerModule || !eventEmitter) {
+  throw new Error(
+    `Failed to install react-native-audio-api: The native module could not be found.`
+  );
+}
+
+const AudioManagerModule = {
   setLockScreenInfo(info: {
     [key: string]: string | boolean | number | undefined;
-  }): void;
-  resetLockScreenInfo(): void;
-  enableRemoteCommand(name: string, enabled: boolean): void;
-
-  readonly onRemotePlay: EventEmitter<void>;
-  readonly onRemotePause: EventEmitter<void>;
-  readonly onRemoteStop: EventEmitter<void>;
-  readonly onRemoteTogglePlayPause: EventEmitter<void>;
-  readonly onRemoteChangePlaybackRate: EventEmitter<number>;
-  readonly onRemoteNextTrack: EventEmitter<void>;
-  readonly onRemotePreviousTrack: EventEmitter<void>;
-  readonly onRemoteSkipForward: EventEmitter<number>;
-  readonly onRemoteSkipBackward: EventEmitter<number>;
-  readonly onRemoteSeekForward: EventEmitter<void>;
-  readonly onRemoteSeekBackward: EventEmitter<void>;
-  readonly onRemoteChangePlaybackPosition: EventEmitter<number>;
-
+  }): void {
+    NativeAudioManagerModule.setLockScreenInfo(info);
+  },
+  resetLockScreenInfo(): void {
+    NativeAudioManagerModule.resetLockScreenInfo();
+  },
+  enableRemoteCommand(name: string, enabled: boolean): void {
+    NativeAudioManagerModule.enableRemoteCommand(name, enabled);
+  },
   // audio session
   setAudioSessionOptions(
     category: string,
     mode: string,
     options: Array<string>,
     active: boolean
-  ): void;
-  getDevicePreferredSampleRate(): number;
-}
+  ): void {
+    NativeAudioManagerModule.setAudioSessionOptions(
+      category,
+      mode,
+      options,
+      active
+    );
+  },
+  getDevicePreferredSampleRate(): number {
+    return NativeAudioManagerModule.getDevicePreferredSampleRate();
+  },
+};
 
-export default TurboModuleRegistry.getEnforcing<Spec>('AudioManagerModule');
+export { eventEmitter, AudioManagerModule };

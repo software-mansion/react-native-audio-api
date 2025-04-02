@@ -4,7 +4,7 @@ export type IOSCategory =
   | 'playback'
   | 'multiRoute'
   | 'soloAmbient'
-  | 'playbackAndRecord';
+  | 'playAndRecord';
 
 export type IOSMode =
   | 'default'
