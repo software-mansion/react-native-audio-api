@@ -23,8 +23,10 @@ class OfflineAudioContext : public BaseAudioContext {
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:
+  std::mutex mutex_;
   bool isRenderingStarted_;
-  std::unordered_map<int32_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
+
+  std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
   size_t length_;
@@ -32,8 +34,6 @@ class OfflineAudioContext : public BaseAudioContext {
   size_t currentSampleFrame_;
 
   std::shared_ptr<AudioBus> resultBus_;
-
-  std::mutex stateLock_;
 
   void resumeRendering();
 };

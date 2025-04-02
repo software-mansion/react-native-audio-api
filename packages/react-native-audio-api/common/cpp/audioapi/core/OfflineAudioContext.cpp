@@ -29,6 +29,8 @@ OfflineAudioContext::OfflineAudioContext(
       currentSampleFrame_(0) {
   sampleRate_ = sampleRate;
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
+  resultBus_ = std::make_shared<AudioBus>(
+      static_cast<int>(length_), numberOfChannels_, sampleRate_);
 }
 
 OfflineAudioContext::~OfflineAudioContext() {
@@ -36,53 +38,22 @@ OfflineAudioContext::~OfflineAudioContext() {
 }
 
 void OfflineAudioContext::resume() {
-  Locker locker(stateLock_);
-
-  if (!isRenderingStarted_) {
-    throw std::runtime_error(
-        "cannot resume an offline context that has not started");
-  }
+  Locker locker(mutex_);
 
   if (state_ == ContextState::RUNNING)
     return;
-  assert(state_ == ContextState::SUSPENDED);
 
   resumeRendering();
 }
 
-void OfflineAudioContext::suspend(double when, const std::function<void()>& callback) {
-  Locker locker(stateLock_);
+void OfflineAudioContext::suspend(
+    double when,
+    const std::function<void()> &callback) {
+  Locker locker(mutex_);
 
-  if (when < 0) {
-    throw std::runtime_error(
-        "negative suspend time (" + std::to_string(when) + ") is not allowed.");
-    return;
-  }
-
-  double totalRenderDuration = length_ / (double)sampleRate_;
-  if (totalRenderDuration <= when) {
-    throw std::runtime_error(
-        "cannot schedule a suspend at " + std::to_string(when) +
-        " seconds becuase it is greater than " + "or equal to the total " +
-        "render duration of " + std::to_string(length_) + " frames (" +
-        std::to_string(totalRenderDuration) + " seconds)");
-  }
-
-  int32_t frame = when * sampleRate_;
+  auto frame = static_cast<size_t>(when * sampleRate_);
   frame = RENDER_QUANTUM_SIZE *
       ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
-
-  if (frame < currentSampleFrame_) {
-    int32_t currentFrameClamped = std::min(currentSampleFrame_, length_);
-    double currentTime = currentSampleFrame_ / (double)sampleRate_;
-    double totalTime = length_ / (double)sampleRate_;
-    double currentTimeClamped = std::min(currentTime, totalTime);
-    throw std::runtime_error(
-        "suspend(" + std::to_string(when) + ") failed to suspend at frame " +
-        std::to_string(frame) + " becuase it is earlier than the current " +
-        "frame of " + std::to_string(currentFrameClamped) + " (" +
-        std::to_string(currentTimeClamped) + " seconds");
-  }
 
   if (scheduledSuspends_.find(frame) != scheduledSuspends_.end()) {
     throw std::runtime_error(
@@ -100,9 +71,9 @@ void OfflineAudioContext::resumeRendering() {
         RENDER_QUANTUM_SIZE, numberOfChannels_, sampleRate_);
 
     while (currentSampleFrame_ < length_) {
-      Locker locker(stateLock_);
-      int framesToProcess =
-          std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
+      Locker locker(mutex_);
+      int framesToProcess = std::min(
+          static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
       destination_->renderAudio(audioBus, framesToProcess);
       for (int i = 0; i < framesToProcess; i++) {
         for (int channel = 0; channel < numberOfChannels_; channel += 1) {
@@ -132,12 +103,8 @@ void OfflineAudioContext::resumeRendering() {
 
 void OfflineAudioContext::startRendering(
     OfflineAudioContextResultCallback callback) {
-  Locker locker(stateLock_);
-  if (isRenderingStarted_) {
-    throw std::runtime_error("cannot call startRendering more than once");
-  }
-  resultBus_ = std::make_shared<AudioBus>(
-      static_cast<int>(length_), numberOfChannels_, sampleRate_);
+  Locker locker(mutex_);
+
   isRenderingStarted_ = true;
   resultCallback_ = std::move(callback);
   resumeRendering();

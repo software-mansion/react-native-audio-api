@@ -54,7 +54,7 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
       auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
       OfflineAudioContextResultCallback callback =
-          [promise](std::shared_ptr<AudioBuffer> audioBuffer) -> void {
+          [promise](const std::shared_ptr<AudioBuffer>& audioBuffer) -> void {
         auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
         promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
           return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
