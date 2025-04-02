@@ -181,7 +181,7 @@ void AudioBufferSourceNode::processWithoutPitchCorrection(
   auto computedPlaybackRate = getComputedPlaybackRateValue();
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
-  if (computedPlaybackRate == 0.0f || !isPlaying()) {
+  if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
     return;
   }
@@ -215,7 +215,7 @@ void AudioBufferSourceNode::processWithPitchCorrection(
   updatePlaybackInfo(
       playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
-  if (playbackRate == 0.0f || !isPlaying()) {
+  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
     return;
   }
