@@ -137,6 +137,7 @@ export default function usePlayer(options: PlayerOptions) {
     }
 
     return () => {
+      playingInstruments.value = getPlayingInstruments();
       audioContext.close();
     };
 

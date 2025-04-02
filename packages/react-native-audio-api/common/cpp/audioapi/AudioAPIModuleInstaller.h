@@ -29,7 +29,7 @@ class AudioAPIModuleInstaller {
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
         0,
-        [jsiRuntime, jsCallInvoker](
+        [jsCallInvoker](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -43,7 +43,7 @@ class AudioAPIModuleInstaller {
           }
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              audioContext, jsiRuntime, jsCallInvoker);
+              audioContext, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);

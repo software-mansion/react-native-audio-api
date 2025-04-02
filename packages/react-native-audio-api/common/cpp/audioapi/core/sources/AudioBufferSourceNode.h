@@ -2,6 +2,7 @@
 
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 #include <memory>
 #include <cstddef>
@@ -16,6 +17,7 @@ class AudioParam;
 class AudioBufferSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  ~AudioBufferSourceNode();
 
   [[nodiscard]] bool getLoop() const;
   [[nodiscard]] double getLoopStart() const;
@@ -46,6 +48,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
 
   // pitch correction
   bool pitchCorrection_;
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
 
   // k-rate params
   std::shared_ptr<AudioParam> detuneParam_;
@@ -58,6 +61,13 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
+  std::shared_ptr<AudioBus> alignedBus_;
+
+  void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
+                                     int framesToProcess);
+
+  void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
+                                  int framesToProcess);
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,

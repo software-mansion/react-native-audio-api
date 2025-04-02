@@ -66,7 +66,7 @@ IOSAudioPlayer::~IOSAudioPlayer()
   [audioPlayer_ cleanup];
 
   if (audioBus_) {
-    audioBus_ = 0;
+    audioBus_ = nullptr;
   }
 }
 
