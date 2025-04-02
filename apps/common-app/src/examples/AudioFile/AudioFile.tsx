@@ -64,7 +64,7 @@ const AudioFile: FC = () => {
         pitchCorrection: true,
       });
       bufferSourceRef.current.buffer = audioBuffer;
-      // bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.loop = true;
       bufferSourceRef.current.onended = (stopTime?: number) => {
         setOffset((_prev) => stopTime || 0);
       };
