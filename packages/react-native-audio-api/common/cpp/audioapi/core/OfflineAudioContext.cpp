@@ -23,14 +23,15 @@ OfflineAudioContext::OfflineAudioContext(
     size_t length,
     float sampleRate)
     : BaseAudioContext(),
-      isRenderingStarted_(false),
       length_(length),
       numberOfChannels_(numberOfChannels),
-      currentSampleFrame_(0) {
+      currentSampleFrame_(0),
+      resultBus_(std::make_shared<AudioBus>(
+          static_cast<int>(length_),
+          numberOfChannels_,
+          sampleRate_)) {
   sampleRate_ = sampleRate;
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
-  resultBus_ = std::make_shared<AudioBus>(
-      static_cast<int>(length_), numberOfChannels_, sampleRate_);
 }
 
 OfflineAudioContext::~OfflineAudioContext() {
@@ -43,7 +44,7 @@ void OfflineAudioContext::resume() {
   if (state_ == ContextState::RUNNING)
     return;
 
-  resumeRendering();
+  renderAudio();
 }
 
 void OfflineAudioContext::suspend(
@@ -51,6 +52,8 @@ void OfflineAudioContext::suspend(
     const std::function<void()> &callback) {
   Locker locker(mutex_);
 
+  // we can only suspend once per render quantum at the end of the quantum
+  // first quantum is [0, RENDER_QUANTUM_SIZE)
   auto frame = static_cast<size_t>(when * sampleRate_);
   frame = RENDER_QUANTUM_SIZE *
       ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
@@ -64,7 +67,7 @@ void OfflineAudioContext::suspend(
   scheduledSuspends_.emplace(frame, callback);
 }
 
-void OfflineAudioContext::resumeRendering() {
+void OfflineAudioContext::renderAudio() {
   state_ = ContextState::RUNNING;
   std::thread([this]() {
     auto audioBus = std::make_shared<AudioBus>(
@@ -108,9 +111,8 @@ void OfflineAudioContext::startRendering(
     OfflineAudioContextResultCallback callback) {
   Locker locker(mutex_);
 
-  isRenderingStarted_ = true;
   resultCallback_ = std::move(callback);
-  resumeRendering();
+  renderAudio();
 }
 
 } // namespace audioapi

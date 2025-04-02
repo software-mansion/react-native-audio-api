@@ -24,7 +24,6 @@ class OfflineAudioContext : public BaseAudioContext {
 
  private:
   std::mutex mutex_;
-  bool isRenderingStarted_;
 
   std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
@@ -35,7 +34,7 @@ class OfflineAudioContext : public BaseAudioContext {
 
   std::shared_ptr<AudioBus> resultBus_;
 
-  void resumeRendering();
+  void renderAudio();
 };
 
 } // namespace audioapi
