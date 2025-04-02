@@ -9,7 +9,15 @@ NodeDeconstructor::NodeDeconstructor() : isExiting_(false) {
 }
 
 NodeDeconstructor::~NodeDeconstructor() {
-  stop();
+  {
+    Locker lock(lock_);
+    isExiting_ = true;
+  }
+
+  condition_.notify_one();
+  if (thread_.joinable()) {
+    thread_.join();
+  }
 }
 
 std::mutex &NodeDeconstructor::getLock() {
@@ -24,18 +32,6 @@ void NodeDeconstructor::addNodeForDeconstruction(
 void NodeDeconstructor::wakeDeconstructor() {
   Locker lock(lock_);
   condition_.notify_one();
-}
-
-void NodeDeconstructor::stop() {
-  {
-    Locker lock(lock_);
-    isExiting_ = true;
-  }
-
-  condition_.notify_one();
-  if (thread_.joinable()) {
-    thread_.join();
-  }
 }
 
 void NodeDeconstructor::process() {

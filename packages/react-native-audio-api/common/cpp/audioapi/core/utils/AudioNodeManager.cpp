@@ -9,7 +9,6 @@ AudioNodeManager::AudioNodeManager() {
 }
 
 AudioNodeManager::~AudioNodeManager() {
-  nodeDeconstructor_->stop();
   cleanup();
 }
 

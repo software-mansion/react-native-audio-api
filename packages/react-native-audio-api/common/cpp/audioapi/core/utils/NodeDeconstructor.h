@@ -19,7 +19,6 @@ class NodeDeconstructor {
   std::mutex &getLock();
   void addNodeForDeconstruction(const std::shared_ptr<AudioNode> &node);
   void wakeDeconstructor();
-  void stop();
 
  private:
   std::mutex lock_;
