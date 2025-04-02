@@ -6,7 +6,6 @@ namespace audioapi {
 
 NodeDeconstructor::NodeDeconstructor() : isExiting_(false) {
   thread_ = std::thread(&NodeDeconstructor::process, this);
-  thread_.detach();
 }
 
 NodeDeconstructor::~NodeDeconstructor() {
