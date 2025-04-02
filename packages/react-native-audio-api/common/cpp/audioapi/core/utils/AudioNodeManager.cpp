@@ -55,21 +55,19 @@ void AudioNodeManager::settlePendingConnections() {
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {
-  auto callback = [this]() {
-    auto it = nodes_.begin();
+  nodeDeconstructor_.callWithLock([this]() {
+      auto it = nodes_.begin();
 
-    while (it != nodes_.end()) {
-      if (it->use_count() == 1) {
-        nodeDeconstructor_.addNodeForDeconstruction(*it);
-        it->get()->cleanup();
-        it = nodes_.erase(it);
-      } else {
-        ++it;
+      while (it != nodes_.end()) {
+          if (it->use_count() == 1) {
+              nodeDeconstructor_.addNodeForDeconstruction(*it);
+              it->get()->cleanup();
+              it = nodes_.erase(it);
+          } else {
+              ++it;
+          }
       }
-    }
-  };
-
-  nodeDeconstructor_.callWithLock(callback);
+  });
   nodeDeconstructor_.notify();
 }
 
