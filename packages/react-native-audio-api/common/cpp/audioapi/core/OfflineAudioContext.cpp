@@ -14,6 +14,7 @@
 #include <cassert>
 #include <iostream>
 #include <thread>
+#include <utility>
 
 namespace audioapi {
 
@@ -49,7 +50,7 @@ void OfflineAudioContext::resume() {
   resumeRendering();
 }
 
-void OfflineAudioContext::suspend(double when, std::function<void()> callback) {
+void OfflineAudioContext::suspend(double when, const std::function<void()>& callback) {
   Locker locker(stateLock_);
 
   if (when < 0) {
@@ -101,7 +102,7 @@ void OfflineAudioContext::resumeRendering() {
     while (currentSampleFrame_ < length_) {
       Locker locker(stateLock_);
       int framesToProcess =
-          std::min(length_ - currentSampleFrame_, RENDER_QUANTUM_SIZE);
+          std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
       destination_->renderAudio(audioBus, framesToProcess);
       for (int i = 0; i < framesToProcess; i++) {
         for (int channel = 0; channel < numberOfChannels_; channel += 1) {
@@ -138,7 +139,7 @@ void OfflineAudioContext::startRendering(
   resultBus_ = std::make_shared<AudioBus>(
       static_cast<int>(length_), numberOfChannels_, sampleRate_);
   isRenderingStarted_ = true;
-  resultCallback_ = callback;
+  resultCallback_ = std::move(callback);
   resumeRendering();
 }
 

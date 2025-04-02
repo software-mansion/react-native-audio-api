@@ -18,7 +18,7 @@ class OfflineAudioContext : public BaseAudioContext {
   ~OfflineAudioContext() override;
 
   void resume();
-  void suspend(double when, OfflineAudioContextSuspendCallback callback);
+  void suspend(double when, const OfflineAudioContextSuspendCallback& callback);
 
   void startRendering(OfflineAudioContextResultCallback callback);
 
@@ -27,9 +27,9 @@ class OfflineAudioContext : public BaseAudioContext {
   std::unordered_map<int32_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
-  int32_t length_;
+  size_t length_;
   int numberOfChannels_;
-  int32_t currentSampleFrame_;
+  size_t currentSampleFrame_;
 
   std::shared_ptr<AudioBus> resultBus_;
 
