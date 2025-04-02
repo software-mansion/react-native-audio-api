@@ -74,13 +74,16 @@ void OfflineAudioContext::resumeRendering() {
       Locker locker(mutex_);
       int framesToProcess = std::min(
           static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
+
       destination_->renderAudio(audioBus, framesToProcess);
+
       for (int i = 0; i < framesToProcess; i++) {
         for (int channel = 0; channel < numberOfChannels_; channel += 1) {
           resultBus_->getChannel(channel)->getData()[currentSampleFrame_ + i] =
               audioBus->getChannel(channel)->getData()[i];
         }
       }
+
       currentSampleFrame_ += framesToProcess;
 
       // Execute scheduled suspend if exists
