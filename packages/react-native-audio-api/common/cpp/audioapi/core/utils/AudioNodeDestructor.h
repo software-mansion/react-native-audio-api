@@ -11,19 +11,19 @@ namespace audioapi {
 
 class AudioNode;
 
-class NodeDeconstructor {
+class AudioNodeDestructor {
  public:
-  NodeDeconstructor();
-  ~NodeDeconstructor();
+  AudioNodeDestructor();
+  ~AudioNodeDestructor();
 
-  std::mutex &getLock();
+  void callWithLock(const std::function<void()> &callback);
   void addNodeForDeconstruction(const std::shared_ptr<AudioNode> &node);
-  void wakeDeconstructor();
+  void notify();
 
  private:
-  std::mutex lock_;
+  mutable std::mutex mutex_;
   std::thread thread_;
-  std::condition_variable condition_;
+  std::condition_variable cv_;
   std::vector<std::shared_ptr<AudioNode>> nodesForDeconstruction_;
 
   std::atomic<bool> isExiting_;

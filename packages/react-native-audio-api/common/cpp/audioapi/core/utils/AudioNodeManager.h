@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/NodeDeconstructor.h>
+#include <audioapi/core/utils/AudioNodeDestructor.h>
 
 #include <memory>
 #include <mutex>
@@ -15,7 +15,7 @@ class AudioNode;
 class AudioNodeManager {
  public:
   enum class ConnectionType { CONNECT, DISCONNECT };
-  AudioNodeManager();
+  AudioNodeManager() = default;
   ~AudioNodeManager();
 
   std::mutex &getGraphLock();
@@ -33,7 +33,7 @@ class AudioNodeManager {
 
  private:
   std::mutex graphLock_;
-  std::unique_ptr<NodeDeconstructor> nodeDeconstructor_;
+  AudioNodeDestructor nodeDeconstructor_;
 
   // all nodes created in the context
   std::unordered_set<std::shared_ptr<AudioNode>> nodes_;
