@@ -16,7 +16,7 @@ class AudioNodeDestructor {
   AudioNodeDestructor();
   ~AudioNodeDestructor();
 
-  void callWithLock(const std::function<void()> &callback);
+  void tryCallWithLock(const std::function<void()> &callback);
   void addNodeForDeconstruction(const std::shared_ptr<AudioNode> &node);
   void notify();
 
