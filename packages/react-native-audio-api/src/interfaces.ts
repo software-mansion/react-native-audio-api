@@ -7,6 +7,15 @@ import {
   WindowType,
 } from './types';
 
+export interface AudioAPIInstaller {
+  createAudioContext: (sampleRate?: number) => IAudioContext;
+  createOfflineAudioContext: (
+    numberOfChannels: number,
+    length: number,
+    sampleRate: number
+  ) => IAudioContext;
+}
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly state: ContextState;
@@ -37,6 +46,12 @@ export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<void>;
   resume(): Promise<void>;
   suspend(): Promise<void>;
+}
+
+export interface IOfflineAudioContext extends IBaseAudioContext {
+  resume(): Promise<void>;
+  suspend(suspendTime: number): Promise<void>;
+  startRendering(): Promise<IAudioBuffer>;
 }
 
 export interface IAudioNode {

@@ -17,14 +17,16 @@ AudioNodeDestructor::~AudioNodeDestructor() {
   }
 }
 
-void AudioNodeDestructor::callWithLock(const std::function<void()> &callback) {
-  Locker lock(mutex_);
-  callback();
+void AudioNodeDestructor::tryCallWithLock(
+    const std::function<void()> &callback) {
+  if (auto lock = Locker::tryLock(mutex_)) {
+    callback();
+  }
 }
 
 void AudioNodeDestructor::addNodeForDeconstruction(
     const std::shared_ptr<AudioNode> &node) {
-  // NOTE: this method must be called within `callWithLock`
+  // NOTE: this method must be called within `tryCallWithLock`
   nodesForDeconstruction_.emplace_back(node);
 }
 

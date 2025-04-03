@@ -55,7 +55,7 @@ void AudioNodeManager::settlePendingConnections() {
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {
-  nodeDeconstructor_.callWithLock([this]() {
+  nodeDeconstructor_.tryCallWithLock([this]() {
     auto it = nodes_.begin();
 
     while (it != nodes_.end()) {
