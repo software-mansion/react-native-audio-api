@@ -17,7 +17,8 @@ AudioNodeDestructor::~AudioNodeDestructor() {
   }
 }
 
-void AudioNodeDestructor::tryCallWithLock(const std::function<void()> &callback) {
+void AudioNodeDestructor::tryCallWithLock(
+    const std::function<void()> &callback) {
   if (auto lock = Locker::tryLock(mutex_)) {
     callback();
   }
