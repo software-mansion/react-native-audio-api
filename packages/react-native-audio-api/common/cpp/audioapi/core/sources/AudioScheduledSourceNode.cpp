@@ -71,7 +71,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
       std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
   size_t stopFrame = stopTime_ == -1.0
       ? std::numeric_limits<size_t>::max()
-      : std::max(dsp::timeToSampleFrame(stopTime_, sampleRate), firstFrame);
+      : dsp::timeToSampleFrame(stopTime_, sampleRate);
 
   if (isUnscheduled() || isFinished()) {
     startOffset = 0;
@@ -93,7 +93,18 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     startOffset = std::max(startFrame, firstFrame) - firstFrame > 0
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
-    nonSilentFramesToProcess = std::min(lastFrame, stopFrame) - startFrame;
+    nonSilentFramesToProcess =
+        std::max(std::min(lastFrame, stopFrame), startFrame) - startFrame;
+
+    assert(startOffset <= framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
+
+    // stop will happen in the same render quantum
+    if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+      processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+    }
+
     processingBus->zero(0, startOffset);
     return;
   }
@@ -106,7 +117,22 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
+
+    assert(startOffset <= framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
+
     processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+    return;
+  }
+
+  // mark as finished in first silent render quantum
+  if (stopFrame < firstFrame) {
+    startOffset = 0;
+    nonSilentFramesToProcess = 0;
+
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    handleStopScheduled();
+    playbackState_ = PlaybackState::FINISHED;
     return;
   }
 
