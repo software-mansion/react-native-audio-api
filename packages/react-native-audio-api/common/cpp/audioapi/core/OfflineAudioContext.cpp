@@ -41,8 +41,9 @@ OfflineAudioContext::~OfflineAudioContext() {
 void OfflineAudioContext::resume() {
   Locker locker(mutex_);
 
-  if (state_ == ContextState::RUNNING)
+  if (state_ == ContextState::RUNNING) {
     return;
+  }
 
   renderAudio();
 }

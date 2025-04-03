@@ -9,14 +9,17 @@ import { Container, Button } from '../../components';
 
 const URL = 'https://download.samplelib.com/mp3/sample-12s.mp3';
 
-const AudioFile: FC = () => {
+const OfflineRendering: FC = () => {
   const [rendering, setRendering] = useState(false);
   const [renderedBuffer, setRenderedBuffer] = useState<AudioBuffer | null>(
     null
   );
 
   const handleStartRendering = useCallback(() => {
-    if (rendering) return;
+    if (rendering) {
+      return;
+    }
+
     setRendering(true);
     (async () => {
       const duration = 5;
@@ -77,4 +80,4 @@ const AudioFile: FC = () => {
   );
 };
 
-export default AudioFile;
+export default OfflineRendering;
