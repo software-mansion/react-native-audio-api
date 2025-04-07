@@ -7,6 +7,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.system.MusicControlModule
 
 class AudioManagerModule(
   reactContext: ReactApplicationContext,
@@ -14,6 +15,9 @@ class AudioManagerModule(
   companion object {
     const val NAME = "AudioManagerModule"
   }
+
+  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  private val musicControl = MusicControlModule(reactContext)
 
   init {
     try {
@@ -25,10 +29,12 @@ class AudioManagerModule(
 
   @ReactMethod
   fun setLockScreenInfo(info: ReadableMap?) {
+    musicControl.setNowPlaying(info)
   }
 
   @ReactMethod
   fun resetLockScreenInfo() {
+    musicControl.resetNowPlaying()
   }
 
   @ReactMethod
@@ -49,8 +55,7 @@ class AudioManagerModule(
 
   @ReactMethod
   fun getDevicePreferredSampleRate(): Double {
-    val audioManager = reactApplicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    return audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
+    return this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
   }
 
   override fun getName(): String = NAME
