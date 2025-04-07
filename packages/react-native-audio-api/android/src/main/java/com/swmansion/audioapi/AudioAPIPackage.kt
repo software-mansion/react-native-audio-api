@@ -48,7 +48,7 @@ class AudioAPIPackage : BaseReactPackage() {
           needsEagerInit = false,
           hasConstants = true,
           isCxxModule = false,
-          isTurboModule = isTurboModule,
+          isTurboModule = false,
         )
       moduleInfos
     }
