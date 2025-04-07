@@ -39,7 +39,7 @@ class AudioManagerModule(
   }
 
   @ReactMethod
- fun setAudioSessionOptions(
+  fun setAudioSessionOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
@@ -53,7 +53,5 @@ class AudioManagerModule(
     return audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
   }
 
-  override fun getName(): String {
-    return NAME
-  }
+  override fun getName(): String = NAME
 }
