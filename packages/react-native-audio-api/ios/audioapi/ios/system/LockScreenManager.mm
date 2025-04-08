@@ -222,125 +222,77 @@ static LockScreenManager *_sharedInstance = nil;
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemotePlay];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemotePause];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemotePause" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteStop];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteTogglePlayPause];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteChangePlaybackRate:[NSNumber numberWithDouble:event.playbackRate]];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackRate"
                                         body:@{@"playbackRate" : [NSNumber numberWithDouble:event.playbackRate]}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteNextTrack];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemotePreviousTrack];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteSeekForward];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:nil];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteSeekBackward];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteSkipForward:[NSNumber numberWithDouble:event.interval]];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteSkipForward"
                                         body:@{@"interval" : [NSNumber numberWithDouble:event.interval]}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteSkipBackward:[NSNumber numberWithDouble:event.interval]];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteSkipBackward"
                                         body:@{@"interval" : [NSNumber numberWithDouble:event.interval]}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-  [self.audioManagerModule emitOnRemoteChangePlaybackPosition:[NSNumber numberWithDouble:event.positionTime]];
-#else
   [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackPosition"
                                         body:@{@"positionTime" : [NSNumber numberWithDouble:event.positionTime]}];
-#endif
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

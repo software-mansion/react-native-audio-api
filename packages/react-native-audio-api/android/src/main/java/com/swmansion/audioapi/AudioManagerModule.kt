@@ -53,8 +53,11 @@ class AudioManagerModule(
   ) {
   }
 
-  @ReactMethod
-  fun getDevicePreferredSampleRate(): Double = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun getDevicePreferredSampleRate(): Double {
+    val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+    return sampleRate.toDouble()
+  }
 
   override fun getName(): String = NAME
 }

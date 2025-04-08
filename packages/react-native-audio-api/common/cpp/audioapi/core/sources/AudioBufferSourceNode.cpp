@@ -101,7 +101,7 @@ void AudioBufferSourceNode::setBuffer(
 
   loopEnd_ = buffer_->getDuration();
 
-  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
+  stretch_->presetDefault(channelCount_, buffer_->getSampleRate(), true);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
