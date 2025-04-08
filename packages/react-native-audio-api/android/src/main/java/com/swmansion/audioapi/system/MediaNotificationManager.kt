@@ -9,7 +9,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.ReactApplicationContext
 
-class MediaNotificationManager(val reactContext: ReactApplicationContext, val notificationId: Int) {
+class MediaNotificationManager(
+  val reactContext: ReactApplicationContext,
+  val notificationId: Int,
+) {
   private var smallIcon: Int = 0
   private var customIcon: Int = 0
 
@@ -49,7 +52,10 @@ class MediaNotificationManager(val reactContext: ReactApplicationContext, val no
 
   @SuppressLint("RestrictedApi")
   @Synchronized
-  fun prepareNotification(builder: NotificationCompat.Builder, isPlaying: Boolean): Notification {
+  fun prepareNotification(
+    builder: NotificationCompat.Builder,
+    isPlaying: Boolean,
+  ): Notification {
     // Add the buttons
 
     builder.mActions.clear()
@@ -72,8 +78,8 @@ class MediaNotificationManager(val reactContext: ReactApplicationContext, val no
           reactContext,
           0,
           openApp,
-          PendingIntent.FLAG_IMMUTABLE
-        )
+          PendingIntent.FLAG_IMMUTABLE,
+        ),
       )
     } catch (e: Exception) {
       println(e.message)
@@ -87,8 +93,8 @@ class MediaNotificationManager(val reactContext: ReactApplicationContext, val no
         reactContext,
         0,
         remove,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-      )
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      ),
     )
 
     return builder.build()
@@ -96,11 +102,16 @@ class MediaNotificationManager(val reactContext: ReactApplicationContext, val no
 
   @SuppressLint("MissingPermission")
   @Synchronized
-  fun show(builder: NotificationCompat.Builder?, isPlaying: Boolean) {
+  fun show(
+    builder: NotificationCompat.Builder?,
+    isPlaying: Boolean,
+  ) {
     NotificationManagerCompat.from(reactContext).notify(
-      notificationId, prepareNotification(
-        builder!!, isPlaying
-      )
+      notificationId,
+      prepareNotification(
+        builder!!,
+        isPlaying,
+      ),
     )
   }
 

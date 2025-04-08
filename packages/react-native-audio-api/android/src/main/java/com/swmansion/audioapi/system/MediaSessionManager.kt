@@ -22,7 +22,9 @@ import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.Companion.i
 import java.io.IOException
 import java.net.URL
 
-class MediaSessionManager(val reactContext: ReactApplicationContext) {
+class MediaSessionManager(
+  val reactContext: ReactApplicationContext,
+) {
   private var mediaSession: MediaSessionCompat = MediaSessionCompat(reactContext, "MediaSessionManager")
   private var nb: NotificationCompat.Builder
   private var mediaNotificationManager: MediaNotificationManager
@@ -50,16 +52,16 @@ class MediaSessionManager(val reactContext: ReactApplicationContext) {
     this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId)
   }
 
-  private fun hasControl(control: Long): Boolean {
-    return (controls and control) == control
-  }
+  private fun hasControl(control: Long): Boolean = (controls and control) == control
 
   private fun updateNotificationMediaStyle() {
     val style = MediaStyle()
     style.setMediaSession(mediaSession.sessionToken)
     var controlCount = 0
-    if (hasControl(PlaybackStateCompat.ACTION_PLAY) || hasControl(PlaybackStateCompat.ACTION_PAUSE) || hasControl(
-        PlaybackStateCompat.ACTION_PLAY_PAUSE
+    if (hasControl(PlaybackStateCompat.ACTION_PLAY) ||
+      hasControl(PlaybackStateCompat.ACTION_PAUSE) ||
+      hasControl(
+        PlaybackStateCompat.ACTION_PLAY_PAUSE,
       )
     ) {
       controlCount += 1
@@ -123,22 +125,23 @@ class MediaSessionManager(val reactContext: ReactApplicationContext) {
     val notificationIcon: String? =
       if (info.hasKey("notificationIcon")) info.getString("notificationIcon") else null
 
-    val rating = if (info.hasKey("rating")) {
-      if (ratingType == RatingCompat.RATING_PERCENTAGE) {
-        RatingCompat.newPercentageRating(info.getDouble("rating").toFloat())
-      } else if (ratingType == RatingCompat.RATING_HEART) {
-        RatingCompat.newHeartRating(info.getBoolean("rating"))
-      } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
-        RatingCompat.newThumbRating(info.getBoolean("rating"))
+    val rating =
+      if (info.hasKey("rating")) {
+        if (ratingType == RatingCompat.RATING_PERCENTAGE) {
+          RatingCompat.newPercentageRating(info.getDouble("rating").toFloat())
+        } else if (ratingType == RatingCompat.RATING_HEART) {
+          RatingCompat.newHeartRating(info.getBoolean("rating"))
+        } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
+          RatingCompat.newThumbRating(info.getBoolean("rating"))
+        } else {
+          RatingCompat.newStarRating(
+            RatingCompat.RATING_3_STARS,
+            info.getDouble("rating").toFloat(),
+          )
+        }
       } else {
-        RatingCompat.newStarRating(
-          RatingCompat.RATING_3_STARS,
-          info.getDouble("rating").toFloat()
-        )
+        RatingCompat.newUnratedRating(ratingType)
       }
-    } else {
-      RatingCompat.newUnratedRating(ratingType)
-    }
 
     md.putText(MediaMetadataCompat.METADATA_KEY_TITLE, title)
     md.putText(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
@@ -172,29 +175,30 @@ class MediaSessionManager(val reactContext: ReactApplicationContext) {
 
       val artworkLocal = localArtwork
 
-      artworkThread = Thread {
-        try {
-          val bitmap: Bitmap? = artwork?.let { loadArtwork(it, artworkLocal) }
+      artworkThread =
+        Thread {
+          try {
+            val bitmap: Bitmap? = artwork?.let { loadArtwork(it, artworkLocal) }
 
-          val currentMetadata: MediaMetadataCompat = mediaSession.controller.metadata
-          val newBuilder =
-            MediaMetadataCompat.Builder(
-              currentMetadata
+            val currentMetadata: MediaMetadataCompat = mediaSession.controller.metadata
+            val newBuilder =
+              MediaMetadataCompat.Builder(
+                currentMetadata,
+              )
+            mediaSession.setMetadata(
+              newBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap).build(),
             )
-          mediaSession.setMetadata(
-            newBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap).build()
-          )
-          // If enabled, Android 8+ "colorizes" the notification color by extracting colors from the artwork
-          nb.setColorized(isColorized)
+            // If enabled, Android 8+ "colorizes" the notification color by extracting colors from the artwork
+            nb.setColorized(isColorized)
 
-          nb.setLargeIcon(bitmap)
-          mediaNotificationManager.show(nb, isPlaying)
+            nb.setLargeIcon(bitmap)
+            mediaNotificationManager.show(nb, isPlaying)
 
-          artworkThread = null
-        } catch (ex: Exception) {
-          ex.printStackTrace()
+            artworkThread = null
+          } catch (ex: Exception) {
+            ex.printStackTrace()
+          }
         }
-      }
       artworkThread!!.start()
     } else {
       md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null)
@@ -207,14 +211,17 @@ class MediaSessionManager(val reactContext: ReactApplicationContext) {
   }
 
   fun resetLockScreenInfo() {
-    if(artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt();
-    artworkThread = null;
+    if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
+    artworkThread = null
 
     mediaNotificationManager.hide()
     mediaSession.setActive(false)
   }
 
-  private fun loadArtwork(url: String, local: Boolean): Bitmap? {
+  private fun loadArtwork(
+    url: String,
+    local: Boolean,
+  ): Bitmap? {
     var bitmap: Bitmap? = null
 
     try {
@@ -224,11 +231,12 @@ class MediaSessionManager(val reactContext: ReactApplicationContext) {
         val helper = instance
         val image = helper.getResourceDrawable(reactContext, url)
 
-        bitmap = if (image is BitmapDrawable) {
-          (image as BitmapDrawable).bitmap
-        } else {
-          BitmapFactory.decodeFile(url)
-        }
+        bitmap =
+          if (image is BitmapDrawable) {
+            (image as BitmapDrawable).bitmap
+          } else {
+            BitmapFactory.decodeFile(url)
+          }
       } else {
         // Open connection to the URL and decodes the image
         val con = URL(url).openConnection()
