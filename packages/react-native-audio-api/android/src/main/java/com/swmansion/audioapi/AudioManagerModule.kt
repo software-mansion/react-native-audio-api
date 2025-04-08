@@ -3,17 +3,19 @@ package com.swmansion.audioapi
 import android.content.Context
 import android.media.AudioManager
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.module.annotations.ReactModule
 
-@ReactModule(name = AudioManagerModule.NAME)
 class AudioManagerModule(
   reactContext: ReactApplicationContext,
-) : NativeAudioManagerModuleSpec(reactContext) {
+) : ReactContextBaseJavaModule(reactContext) {
   companion object {
-    const val NAME = NativeAudioManagerModuleSpec.NAME
+    const val NAME = "AudioManagerModule"
   }
+
+  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
   init {
     try {
@@ -23,19 +25,23 @@ class AudioManagerModule(
     }
   }
 
-  override fun setLockScreenInfo(info: ReadableMap?) {
+  @ReactMethod
+  fun setLockScreenInfo(info: ReadableMap?) {
   }
 
-  override fun resetLockScreenInfo() {
+  @ReactMethod
+  fun resetLockScreenInfo() {
   }
 
-  override fun enableRemoteCommand(
+  @ReactMethod
+  fun enableRemoteCommand(
     name: String?,
     enabled: Boolean,
   ) {
   }
 
-  override fun setAudioSessionOptions(
+  @ReactMethod
+  fun setAudioSessionOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
@@ -43,8 +49,8 @@ class AudioManagerModule(
   ) {
   }
 
-  override fun getDevicePreferredSampleRate(): Double {
-    val audioManager = reactApplicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    return audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
-  }
+  @ReactMethod
+  fun getDevicePreferredSampleRate(): Double = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE).toDouble()
+
+  override fun getName(): String = NAME
 }
