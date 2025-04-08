@@ -3,8 +3,10 @@
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
+#include <audioapi/HostObjects/AudioRecorderHostObject.h>
 
 #include <memory>
 
@@ -16,11 +18,12 @@ class AudioAPIModuleInstaller {
  public:
   static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
+    auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker);
-    jsiRuntime->global().setProperty(
-        *jsiRuntime, "createAudioContext", createAudioContext);
-    jsiRuntime->global().setProperty(
-        *jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
+
+    jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
+    jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
+    jsiRuntime->global().setProperty(*jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
   }
 
  private:
@@ -66,6 +69,25 @@ class AudioAPIModuleInstaller {
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);
+        });
+  }
+
+  static jsi::Function getCreateAudioRecorderFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
+        0,
+        [jsCallInvoker](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto audioRecorder = std::make_shared<AudioRecorder>();
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
+              audioRecorder, &runtime, jsCallInvoker);
+
+          return jsi::Object::createFromHostObject(
+              runtime, audioRecorderHostObject);
         });
   }
 };
