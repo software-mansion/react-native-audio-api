@@ -4,6 +4,7 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
+  AudioManager,
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
@@ -52,6 +53,14 @@ const AudioFile: FC = () => {
     if (!audioContextRef.current) {
       return;
     }
+
+    AudioManager.setLockScreenInfo({
+      title: 'Audio file',
+      artist: 'Software Mansion',
+      album: 'Audio API',
+      // artwork:
+      //   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.jpg',
+    });
 
     if (isPlaying) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
