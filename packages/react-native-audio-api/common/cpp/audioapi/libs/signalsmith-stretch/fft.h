@@ -102,11 +102,11 @@ namespace _impl {
 template<typename Sample>
 struct SimpleFFT {
 	using Complex = std::complex<Sample>;
-	
+
 	SimpleFFT(size_t size=0) {
 		resize(size);
 	}
-	
+
 	void resize(size_t size) {
 		twiddles.resize(size*3/4);
 		for (size_t i = 0; i < size*3/4; ++i) {
@@ -115,7 +115,7 @@ struct SimpleFFT {
 		}
 		working.resize(size);
 	}
-	
+
 	void fft(const Complex *time, Complex *freq) {
 		size_t size = working.size();
 		if (size <= 1) {
@@ -157,7 +157,7 @@ struct SimpleFFT {
 private:
 	std::vector<Complex> twiddles;
 	std::vector<Complex> working;
-	
+
 	template<bool conjB>
 	static Complex mul(const Complex &a, const Complex &b) {
 		return conjB ? Complex{
@@ -197,7 +197,7 @@ private:
 			Complex twiddleB = twiddles[i*twiddleStep];
 			Complex twiddleC = twiddles[i*2*twiddleStep];
 			Complex twiddleD = twiddles[i*3*twiddleStep];
-			
+
 			const Complex *inputA = input + 4*i*stride;
 			const Complex *inputB = input + (4*i + 1)*stride;
 			const Complex *inputC = input + (4*i + 2)*stride;
@@ -252,7 +252,7 @@ private:
 			Complex twiddleB = twiddles[i*twiddleStep];
 			Complex twiddleC = twiddles[i*2*twiddleStep];
 			Complex twiddleD = twiddles[i*3*twiddleStep];
-			
+
 			const Sample *inputAr = inputR + 4*i*stride, *inputAi = inputI + 4*i*stride;
 			const Sample *inputBr = inputR + (4*i + 1)*stride, *inputBi = inputI + (4*i + 1)*stride;
 			const Sample *inputCr = inputR + (4*i + 2)*stride, *inputCi = inputI + (4*i + 2)*stride;
@@ -290,13 +290,13 @@ struct SimpleRealFFT {
 	SimpleRealFFT(size_t size=0) {
 		resize(size);
 	}
-	
+
 	void resize(size_t size) {
 		complexFft.resize(size);
 		tmpTime.resize(size);
 		tmpFreq.resize(size);
 	}
-	
+
 	void fft(const Sample *time, Complex *freq) {
 		for (size_t i = 0; i < tmpTime.size(); ++i) {
 			tmpTime[i] = time[i];
@@ -360,16 +360,16 @@ template<typename Sample>
 struct Pow2FFT {
 	static constexpr bool prefersSplit = true; // whether this FFT implementation is faster when given split-complex inputs
 	using Complex = std::complex<Sample>;
-	
+
 	Pow2FFT(size_t size=0) {
 		resize(size);
 	}
-	
+
 	void resize(size_t size) {
 		simpleFFT.resize(size);
 		tmp.resize(size);
 	}
-	
+
 	void fft(const Complex *time, Complex *freq) {
 		simpleFFT.fft(time, freq);
 	}
@@ -393,7 +393,7 @@ private:
 template<typename Sample>
 struct Pow2RealFFT : public SimpleRealFFT<Sample, Pow2FFT<Sample>> {
 	static constexpr bool prefersSplit = Pow2FFT<Sample>::prefersSplit;
-	
+
 	using SimpleRealFFT<Sample, Pow2FFT<Sample>>::SimpleRealFFT;
 };
 
@@ -402,10 +402,10 @@ template<typename Sample, bool splitComputation=false>
 struct SplitFFT {
 	using Complex = std::complex<Sample>;
 	static constexpr bool prefersSplit = Pow2FFT<Sample>::prefersSplit;
-	
+
 	static constexpr size_t maxSplit = splitComputation ? 4 : 1;
 	static constexpr size_t minInnerSize = 32;
-	
+
 	static size_t fastSizeAbove(size_t size) {
 		size_t pow2 = 1;
 		while (pow2 < 16 && pow2 < size) pow2 *= 2;
@@ -414,11 +414,11 @@ struct SplitFFT {
 		if (multiple == 7) ++multiple;
 		return multiple*pow2;
 	}
-	
+
 	SplitFFT(size_t size=0) {
 		resize(size);
 	}
-	
+
 	void resize(size_t size) {
 		innerSize = 1;
 		outerSize = size;
@@ -427,7 +427,7 @@ struct SplitFFT {
 		dftTwists.resize(0);
 		plan.resize(0);
 		if (!size) return;
-		
+
 		// Inner size = largest power of 2 such that either the inner size >= minInnerSize, or we have the target number of splits
 		while (!(outerSize&1) && (outerSize > maxSplit || innerSize < minInnerSize)) {
 			innerSize *= 2;
@@ -435,7 +435,7 @@ struct SplitFFT {
 		}
 		tmpFreq.resize(size);
 		innerFFT.resize(innerSize);
-		
+
 		outerTwiddles.resize(innerSize*(outerSize - 1));
 		outerTwiddlesR.resize(innerSize*(outerSize - 1));
 		outerTwiddlesI.resize(innerSize*(outerSize - 1));
@@ -469,7 +469,7 @@ struct SplitFFT {
 			interleaveStep = StepType::interleaveOrder5;
 			finalStep = StepType::finalOrder5;
 		}
-		
+
 		if (outerSize <= 1) {
 			if (size > 0) plan.push_back(Step{StepType::passthrough, 0});
 		} else {
@@ -491,14 +491,14 @@ struct SplitFFT {
 			}
 		}
 	}
-	
+
 	size_t size() const {
 		return innerSize*outerSize;
 	}
 	size_t steps() const {
 		return plan.size();
 	}
-	
+
 	void fft(const Complex *time, Complex *freq) {
 		for (auto &step : plan) {
 			fftStep<false>(step, time, freq);
@@ -515,7 +515,7 @@ struct SplitFFT {
 	void fft(size_t step, const Sample *inR, const Sample *inI, Sample *outR, Sample *outI) {
 		fftStep<false>(plan[step], inR, inI, outR, outI);
 	}
-	
+
 	void ifft(const Complex *freq, Complex *time) {
 		for (auto &step : plan) {
 			fftStep<true>(step, freq, time);
@@ -554,7 +554,7 @@ private:
 		size_t offset;
 	};
 	std::vector<Step> plan;
-	
+
 	template<bool inverse>
 	void fftStep(Step step, const Complex *time, Complex *freq) {
 		switch (step.type) {
@@ -710,7 +710,7 @@ private:
 				break;
 		}
 	}
-	
+
 	void finalPass2(Complex *f0) {
 		auto *f1 = f0 + innerSize;
 		for (size_t i = 0; i < innerSize; ++i) {
@@ -757,7 +757,7 @@ private:
 		auto *f2r = f0r + innerSize*2;
 		auto *f2i = f0i + innerSize*2;
 		const Sample tw1r = -0.5, tw1i = -std::sqrt(0.75)*(inverse ? -1 : 1);
-		
+
 		for (size_t i = 0; i < innerSize; ++i) {
 			Sample ar = f0r[i], ai = f0i[i], br = f1r[i], bi = f1i[i], cr = f2r[i], ci = f2i[i];
 
@@ -776,7 +776,7 @@ private:
 		auto *f3 = f0 + innerSize*3;
 		for (size_t i = 0; i < innerSize; ++i) {
 			Complex a = f0[i], b = f1[i], c = f2[i], d = f3[i];
-			
+
 			Complex ac0 = a + c, ac1 = a - c;
 			Complex bd0 = b + d, bd1 = inverse ? (b - d) : (d - b);
 			Complex bd1i = {-bd1.imag(), bd1.real()};
@@ -796,12 +796,12 @@ private:
 		auto *f3i = f0i + innerSize*3;
 		for (size_t i = 0; i < innerSize; ++i) {
 			Sample ar = f0r[i], ai = f0i[i], br = f1r[i], bi = f1i[i], cr = f2r[i], ci = f2i[i], dr = f3r[i], di = f3i[i];
-			
+
 			Sample ac0r = ar + cr, ac0i = ai + ci;
 			Sample ac1r = ar - cr, ac1i = ai - ci;
 			Sample bd0r = br + dr, bd0i = bi + di;
 			Sample bd1r = br - dr, bd1i = bi - di;
-			
+
 			f0r[i] = ac0r + bd0r;
 			f0i[i] = ac0i + bd0i;
 			f1r[i] = inverse ? (ac1r - bd1i) : (ac1r + bd1i);
@@ -827,7 +827,7 @@ private:
 
 			Complex be0 = b + e, be1 = {e.imag() - b.imag(), b.real() - e.real()}; // (b - e)*i
 			Complex cd0 = c + d, cd1 = {d.imag() - c.imag(), c.real() - d.real()};
-			
+
 			Complex bcde01 = be0*tw1r + cd0*tw2r;
 			Complex bcde02 = be0*tw2r + cd0*tw1r;
 			Complex bcde11 = be1*tw1i + cd1*tw2i;
@@ -850,7 +850,7 @@ private:
 		auto *f3i = f0i + innerSize*3;
 		auto *f4r = f0r + innerSize*4;
 		auto *f4i = f0i + innerSize*4;
-		
+
 		const Sample tw1r = 0.30901699437494745;
 		const Sample tw1i = -0.9510565162951535*(inverse ? -1 : 1);
 		const Sample tw2r = -0.8090169943749473;
@@ -890,7 +890,7 @@ private:
 				sum += (dftTmp[i2] = offsetFreq[i2*innerSize]);
 			}
 			offsetFreq[0] = sum;
-			
+
 			for (size_t f = 1; f < outerSize; ++f) {
 				Complex sum = dftTmp[0];
 
@@ -910,7 +910,7 @@ private:
 	template<bool inverse>
 	void finalPassN(Sample *f0r, Sample *f0i) {
 		Sample *tmpR = (Sample *)dftTmp.data(), *tmpI = tmpR + outerSize;
-		
+
 		for (size_t i = 0; i < innerSize; ++i) {
 			Sample *offsetR = f0r + i;
 			Sample *offsetI = f0i + i;
@@ -921,7 +921,7 @@ private:
 			}
 			offsetR[0] = sumR;
 			offsetI[0] = sumI;
-			
+
 			for (size_t f = 1; f < outerSize; ++f) {
 				Sample sumR = *tmpR, sumI = *tmpI;
 
@@ -951,19 +951,19 @@ struct RealFFT {
 	static size_t fastSizeAbove(size_t size) {
 		return ComplexFFT::fastSizeAbove((size + 1)/2)*2;
 	}
-	
+
 	RealFFT(size_t size=0) {
 		resize(size);
 	}
-	
+
 	void resize(size_t size) {
 		size_t hSize = size/2;
 		complexFft.resize(hSize);
 		tmpFreq.resize(hSize);
 		tmpTime.resize(hSize);
-		
+
 		twiddles.resize(hSize/2 + 1);
-		
+
 		if (!halfBinShift) {
 			for (size_t i = 0; i < twiddles.size(); ++i) {
 				Sample rotPhase = i*(-2*M_PI/size) - M_PI/2; // bake rotation by (-i) into twiddles
@@ -974,7 +974,7 @@ struct RealFFT {
 				Sample rotPhase = (i + 0.5)*(-2*M_PI/size) - M_PI/2;
 				twiddles[i] = std::polar(Sample(1), rotPhase);
 			}
-	
+
 			halfBinTwists.resize(hSize);
 			for (size_t i = 0; i < hSize; ++i) {
 				Sample twistPhase = -2*M_PI*i/size;
@@ -982,14 +982,14 @@ struct RealFFT {
 			}
 		}
 	}
-	
+
 	size_t size() const {
 		return complexFft.size()*2;
 	}
 	size_t steps() const {
 		return complexFft.steps() + (splitComputation ? 3 : 2);
 	}
-	
+
 	void fft(const Sample *time, Complex *freq) {
 		for (size_t s = 0; s < steps(); ++s) {
 			fft(s, time, freq);
@@ -1074,7 +1074,7 @@ struct RealFFT {
 						bin0.real() - bin0.imag()
 					};
 				}
-				
+
 				size_t hSize = complexFft.size();
 				size_t startI = halfBinShift ? 0 : 1;
 				size_t endI = hSize/2 + 1;
@@ -1162,7 +1162,7 @@ struct RealFFT {
 			}
 		}
 	}
-	
+
 	void ifft(const Complex *freq, Sample *time) {
 		for (size_t s = 0; s < steps(); ++s) {
 			ifft(s, freq, time);
@@ -1357,8 +1357,8 @@ using ModifiedRealFFT = RealFFT<Sample, splitComputation, true>;
 }} // namespace
 
 // Platform-specific
-#if defined(SIGNALSMITH_USE_ACCELERATE)
-#	include "./platform/fft-accelerate.h"
+#if defined(HAVE_ACCELERATE)
+#	include <audioapi/libs/signalsmith-stretch/fft-accelerate.h>
 #elif defined(SIGNALSMITH_USE_IPP)
 #	include "./platform/fft-ipp.h"
 #endif
