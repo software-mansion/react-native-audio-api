@@ -14,6 +14,12 @@ export interface AudioAPIInstaller {
     length: number,
     sampleRate: number
   ) => IAudioContext;
+  createAudioRecorder: () => IAudioRecorder;
+}
+
+export interface IAudioRecorder {
+  start: () => void;
+  stop: () => void;
 }
 
 export interface IBaseAudioContext {

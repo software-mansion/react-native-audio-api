@@ -21,6 +21,7 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
   sampleRate_ = audioPlayer_->getSampleRate();
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
 
+  state_ = ContextState::RUNNING;
   audioPlayer_->start();
 }
 
