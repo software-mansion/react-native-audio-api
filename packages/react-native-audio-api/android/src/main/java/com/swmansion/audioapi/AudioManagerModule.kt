@@ -7,6 +7,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.system.LockScreenManager
 import com.swmansion.audioapi.system.MediaSessionManager
 
 class AudioManagerModule(
@@ -17,7 +18,7 @@ class AudioManagerModule(
   }
 
   private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  private val mediaSessionManager = MediaSessionManager(reactContext)
+  private val mediaSessionManager: MediaSessionManager = MediaSessionManager(reactContext)
 
   init {
     try {
@@ -39,9 +40,10 @@ class AudioManagerModule(
 
   @ReactMethod
   fun enableRemoteCommand(
-    name: String?,
+    name: String,
     enabled: Boolean,
   ) {
+    mediaSessionManager.enableRemoteCommand(name, enabled)
   }
 
   @ReactMethod
