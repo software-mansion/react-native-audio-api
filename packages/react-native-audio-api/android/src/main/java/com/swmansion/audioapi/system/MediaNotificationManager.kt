@@ -12,7 +12,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.ReactApplicationContext
 
-
 class MediaNotificationManager(
   val reactContext: ReactApplicationContext,
   val notificationId: Int,
@@ -127,29 +126,32 @@ class MediaNotificationManager(
     pause = createAction("pause", "Pause", mask, PlaybackStateCompat.ACTION_PAUSE, pause)
     stop = createAction("stop", "Stop", mask, PlaybackStateCompat.ACTION_STOP, stop)
     next = createAction("next", "Next", mask, PlaybackStateCompat.ACTION_SKIP_TO_NEXT, next)
-    previous = createAction(
-      "previous",
-      "Previous",
-      mask,
-      PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-      previous
-    )
+    previous =
+      createAction(
+        "previous",
+        "Previous",
+        mask,
+        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
+        previous,
+      )
 
-    skipForward = createAction(
-      "skip_forward_5",
-      "Skip Forward",
-      mask,
-      PlaybackStateCompat.ACTION_FAST_FORWARD,
-      skipForward
-    )
+    skipForward =
+      createAction(
+        "skip_forward_5",
+        "Skip Forward",
+        mask,
+        PlaybackStateCompat.ACTION_FAST_FORWARD,
+        skipForward,
+      )
 
-    skipBackward = createAction(
-      "skip_backward_5",
-      "Skip Backward",
-      mask,
-      PlaybackStateCompat.ACTION_REWIND,
-      skipBackward
-    )
+    skipBackward =
+      createAction(
+        "skip_backward_5",
+        "Skip Backward",
+        mask,
+        PlaybackStateCompat.ACTION_REWIND,
+        skipBackward,
+      )
   }
 
   private fun createAction(
@@ -157,12 +159,11 @@ class MediaNotificationManager(
     title: String,
     mask: Long,
     action: Long,
-    oldAction: NotificationCompat.Action?
+    oldAction: NotificationCompat.Action?,
   ): NotificationCompat.Action? {
     if ((mask and action) == 0L) return null // When this action is not enabled, return null
 
     if (oldAction != null) return oldAction // If this action was already created, we won't create another instance
-
 
     // Finds the icon with the given name
     val r: Resources = reactContext.resources
@@ -174,12 +175,13 @@ class MediaNotificationManager(
     val intent = Intent(MEDIA_BUTTON)
     intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
     intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, packageName)
-    val i = PendingIntent.getBroadcast(
-      reactContext,
-      keyCode,
-      intent,
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
+    val i =
+      PendingIntent.getBroadcast(
+        reactContext,
+        keyCode,
+        intent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      )
 
     return NotificationCompat.Action(icon, title, i)
   }

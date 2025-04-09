@@ -16,9 +16,12 @@ import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.Companion.i
 import java.io.IOException
 import java.net.URL
 
-class LockScreenManager(private val reactContext: ReactApplicationContext,
-                        private val mediaSession: MediaSessionCompat,
-                        private val mediaNotificationManager: MediaNotificationManager, val channelId: String) {
+class LockScreenManager(
+  private val reactContext: ReactApplicationContext,
+  private val mediaSession: MediaSessionCompat,
+  private val mediaNotificationManager: MediaNotificationManager,
+  val channelId: String,
+) {
   private var pb: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
   private var state: PlaybackStateCompat = pb.build()
   private var controls: Long = 0
@@ -129,17 +132,19 @@ class LockScreenManager(private val reactContext: ReactApplicationContext,
       nb.setLargeIcon(null as Bitmap?)
     }
 
-    speed = if (info.hasKey("speed")) {
-      info.getDouble("speed").toFloat()
-    } else {
-      state.playbackSpeed
-    }
+    speed =
+      if (info.hasKey("speed")) {
+        info.getDouble("speed").toFloat()
+      } else {
+        state.playbackSpeed
+      }
 
-    elapsedTime = if (info.hasKey("elapsedTime")) {
-      info.getDouble("elapsedTime").toLong()
-    } else {
-      state.position
-    }
+    elapsedTime =
+      if (info.hasKey("elapsedTime")) {
+        info.getDouble("elapsedTime").toLong()
+      } else {
+        state.position
+      }
 
     if (info.hasKey("state")) {
       val state = info.getString("state")
@@ -174,8 +179,10 @@ class LockScreenManager(private val reactContext: ReactApplicationContext,
     mediaSession.setActive(false)
   }
 
-  fun enableRemoteCommand(name: String,
-                          enabled: Boolean) {
+  fun enableRemoteCommand(
+    name: String,
+    enabled: Boolean,
+  ) {
     var controlValue = 0L
     when (name) {
       "play" -> controlValue = PlaybackStateCompat.ACTION_PLAY
@@ -188,11 +195,12 @@ class LockScreenManager(private val reactContext: ReactApplicationContext,
       "skipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
     }
 
-    controls = if(enabled) {
-      controls or controlValue
-    } else {
-      controls and controlValue.inv()
-    }
+    controls =
+      if (enabled) {
+        controls or controlValue
+      } else {
+        controls and controlValue.inv()
+      }
 
     mediaNotificationManager.updateActions(controls)
     pb.setActions(controls)
