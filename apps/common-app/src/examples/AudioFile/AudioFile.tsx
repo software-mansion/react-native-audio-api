@@ -54,20 +54,19 @@ const AudioFile: FC = () => {
       return;
     }
 
-    AudioManager.setLockScreenInfo({
-      title: 'Audio file',
-      artist: 'Software Mansion',
-      album: 'Audio API',
-      // artwork:
-      //   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.jpg',
-    });
-
     if (isPlaying) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
+      AudioManager.setLockScreenInfo({
+        state: 'state_paused',
+      });
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
       }
+
+      AudioManager.setLockScreenInfo({
+        state: 'state_playing',
+      });
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource({
         pitchCorrection: true,
@@ -114,6 +113,20 @@ const AudioFile: FC = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
+
+    AudioManager.setLockScreenInfo({
+      title: 'Audio file',
+      artist: 'Software Mansion',
+      album: 'Audio API',
+      duration: 10,
+    });
+
+    AudioManager.enableRemoteCommand('play', true);
+    AudioManager.enableRemoteCommand('pause', true);
+    AudioManager.enableRemoteCommand('togglePlayPause', true);
+    AudioManager.enableRemoteCommand('nextTrack', true);
+    AudioManager.enableRemoteCommand('previousTrack', true);
+    // AudioManager.enableRemoteCommand('stop', true);
 
     fetchAudioBuffer();
 
