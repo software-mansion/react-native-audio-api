@@ -5,8 +5,11 @@ import android.media.AudioManager
 import android.os.Build
 import android.util.Log
 
-
-class AudioFocusListener(private val audioManager: AudioManager, val eventEmitter: MediaSessionEventEmitter, private val lockScreenManager: LockScreenManager) : AudioManager.OnAudioFocusChangeListener {
+class AudioFocusListener(
+  private val audioManager: AudioManager,
+  val eventEmitter: MediaSessionEventEmitter,
+  private val lockScreenManager: LockScreenManager,
+) : AudioManager.OnAudioFocusChangeListener {
   private var playOnAudioFocus = false
   private var focusRequest: AudioFocusRequest? = null
 
@@ -31,8 +34,11 @@ class AudioFocusListener(private val audioManager: AudioManager, val eventEmitte
 
   fun requestAudioFocus() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      this.focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setOnAudioFocusChangeListener(this).build()
+      this.focusRequest =
+        AudioFocusRequest
+          .Builder(AudioManager.AUDIOFOCUS_GAIN)
+          .setOnAudioFocusChangeListener(this)
+          .build()
 
       audioManager.requestAudioFocus(focusRequest!!)
     } else {

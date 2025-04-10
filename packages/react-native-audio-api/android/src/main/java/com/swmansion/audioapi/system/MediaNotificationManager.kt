@@ -22,7 +22,7 @@ import java.lang.ref.WeakReference
 class MediaNotificationManager(
   val reactContext: ReactApplicationContext,
   val notificationId: Int,
-  val channelId: String
+  val channelId: String,
 ) {
   private var smallIcon: Int = R.drawable.play
   private var customIcon: Int = 0
@@ -110,10 +110,11 @@ class MediaNotificationManager(
     NotificationManagerCompat.from(reactContext).cancel(notificationId)
 
     try {
-      val myIntent = Intent(
-        reactContext,
-        NotificationService::class.java
-      )
+      val myIntent =
+        Intent(
+          reactContext,
+          NotificationService::class.java,
+        )
       reactContext.stopService(myIntent)
     } catch (e: java.lang.Exception) {
       println(e.message)
@@ -209,8 +210,9 @@ class MediaNotificationManager(
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val intent = Intent(this, NotificationService::class.java)
         ContextCompat.startForegroundService(this, intent)
-        notification = MediaNotificationManager(reactContext, notificationId, channelId)
-          .prepareNotification(NotificationCompat.Builder(this, channelId), false)
+        notification =
+          MediaNotificationManager(reactContext, notificationId, channelId)
+            .prepareNotification(NotificationCompat.Builder(this, channelId), false)
         startForeground(notificationId, notification)
       }
     }
@@ -218,15 +220,20 @@ class MediaNotificationManager(
     override fun onCreate() {
       super.onCreate()
       try {
-        notification = MediaNotificationManager(reactContext, notificationId, channelId)
-          .prepareNotification(NotificationCompat.Builder(this, channelId), false)
+        notification =
+          MediaNotificationManager(reactContext, notificationId, channelId)
+            .prepareNotification(NotificationCompat.Builder(this, channelId), false)
         startForeground(notificationId, notification)
       } catch (ex: Exception) {
         ex.printStackTrace()
       }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+      intent: Intent?,
+      flags: Int,
+      startId: Int,
+    ): Int {
       onCreate() // reuse the onCreate logic for service re/starting
       return START_NOT_STICKY
     }

@@ -7,9 +7,14 @@ import android.media.AudioManager
 import android.view.KeyEvent
 import com.facebook.react.bridge.ReactApplicationContext
 
-
-class MediaReceiver(val reactContext: ReactApplicationContext, private val mediaSessionManager: MediaSessionManager): BroadcastReceiver() {
-  override fun onReceive(context: Context?, intent: Intent?) {
+class MediaReceiver(
+  val reactContext: ReactApplicationContext,
+  private val mediaSessionManager: MediaSessionManager,
+) : BroadcastReceiver() {
+  override fun onReceive(
+    context: Context?,
+    intent: Intent?,
+  ) {
     val action = intent!!.action
 
     if (MediaNotificationManager.REMOVE_NOTIFICATION == action) {
@@ -27,7 +32,8 @@ class MediaReceiver(val reactContext: ReactApplicationContext, private val media
       val keyEvent = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
       mediaSessionManager.mediaSession.controller.dispatchMediaButtonEvent(keyEvent)
     } else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == action) {
-      mediaSessionManager.mediaSession.controller.transportControls.pause()
+      mediaSessionManager.mediaSession.controller.transportControls
+        .pause()
     }
   }
 

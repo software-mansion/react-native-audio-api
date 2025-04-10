@@ -20,9 +20,9 @@ class MediaSessionEventEmitter(
 
     if (value != null && dataName != null) {
       when (value) {
-          is Double, is Float -> {
-            data.putDouble(dataName, value as Double)
-          }
+        is Double, is Float -> {
+          data.putDouble(dataName, value as Double)
+        }
 
         is Boolean -> {
           data.putBoolean(dataName, value)

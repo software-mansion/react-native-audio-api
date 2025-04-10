@@ -10,7 +10,6 @@ import android.content.ServiceConnection
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
-import android.provider.MediaStore.Audio.Media
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -18,7 +17,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
-
 
 class MediaSessionManager(
   val reactContext: ReactApplicationContext,
@@ -36,27 +34,31 @@ class MediaSessionManager(
   private val mediaReceiver: MediaReceiver =
     MediaReceiver(reactContext, this)
 
-  private val connection = object : ServiceConnection {
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-      Log.w("MediaSessionManager", "onServiceConnected")
-      val binder = service as MediaNotificationManager.NotificationService.LocalBinder
-      val notificationService = binder.getService()
-      notificationService?.forceForeground()
-      reactContext.unbindService(this)
-    }
+  private val connection =
+    object : ServiceConnection {
+      override fun onServiceConnected(
+        name: ComponentName,
+        service: IBinder,
+      ) {
+        Log.w("MediaSessionManager", "onServiceConnected")
+        val binder = service as MediaNotificationManager.NotificationService.LocalBinder
+        val notificationService = binder.getService()
+        notificationService?.forceForeground()
+        reactContext.unbindService(this)
+      }
 
-    override fun onServiceDisconnected(name: ComponentName) {
-      Log.w("MediaSessionManager", "Service is disconnected.")
-    }
+      override fun onServiceDisconnected(name: ComponentName) {
+        Log.w("MediaSessionManager", "Service is disconnected.")
+      }
 
-    override fun onBindingDied(name: ComponentName) {
-      Log.w("MediaSessionManager", "Binding has died.")
-    }
+      override fun onBindingDied(name: ComponentName) {
+        Log.w("MediaSessionManager", "Binding has died.")
+      }
 
-    override fun onNullBinding(name: ComponentName) {
-      Log.w("MediaSessionManager", "Bind was null.")
+      override fun onNullBinding(name: ComponentName) {
+        Log.w("MediaSessionManager", "Bind was null.")
+      }
     }
-  }
 
   init {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -80,7 +82,7 @@ class MediaSessionManager(
         reactContext,
         mediaReceiver,
         filter,
-        ContextCompat.RECEIVER_NOT_EXPORTED
+        ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     }
 

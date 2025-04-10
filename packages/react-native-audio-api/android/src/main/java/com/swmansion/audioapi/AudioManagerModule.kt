@@ -53,14 +53,10 @@ class AudioManagerModule(
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun getDevicePreferredSampleRate(): Double {
-    return mediaSessionManager.getDevicePreferredSampleRate()
-  }
+  fun getDevicePreferredSampleRate(): Double = mediaSessionManager.getDevicePreferredSampleRate()
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun observeAudioInterruptions(enable: Boolean) {
-    return mediaSessionManager.observeAudioInterruptions(enable)
-  }
+  fun observeAudioInterruptions(enable: Boolean) = mediaSessionManager.observeAudioInterruptions(enable)
 
   override fun getName(): String = NAME
 }
