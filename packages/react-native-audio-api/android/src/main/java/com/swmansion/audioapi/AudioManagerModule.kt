@@ -27,17 +27,17 @@ class AudioManagerModule(
     }
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun setLockScreenInfo(info: ReadableMap?) {
     mediaSessionManager.setLockScreenInfo(info)
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun resetLockScreenInfo() {
     mediaSessionManager.resetLockScreenInfo()
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun enableRemoteCommand(
     name: String,
     enabled: Boolean,
@@ -45,7 +45,7 @@ class AudioManagerModule(
     mediaSessionManager.enableRemoteCommand(name, enabled)
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun setAudioSessionOptions(
     category: String?,
     mode: String?,

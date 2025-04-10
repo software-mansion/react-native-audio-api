@@ -159,12 +159,7 @@ class LockScreenManager(
       }
     }
 
-    isPlaying = playbackState == PlaybackStateCompat.STATE_PLAYING
-
-    pb.setState(playbackState, elapsedTime, speed)
-    pb.setActions(controls)
-    state = pb.build()
-    mediaSession.setPlaybackState(state)
+    updatePlaybackState(this.playbackState)
 
     mediaSession.setMetadata(md.build())
     mediaSession.setActive(true)
@@ -249,6 +244,15 @@ class LockScreenManager(
     }
 
     return bitmap
+  }
+
+  fun updatePlaybackState(playbackState: Int) {
+    isPlaying = playbackState == PlaybackStateCompat.STATE_PLAYING
+
+    pb.setState(playbackState, elapsedTime, speed)
+    pb.setActions(controls)
+    state = pb.build()
+    mediaSession.setPlaybackState(state)
   }
 
   private fun hasControl(control: Long): Boolean = (controls and control) == control

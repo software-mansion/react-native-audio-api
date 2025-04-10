@@ -1,15 +1,10 @@
-import {
-  NativeModules,
-  DeviceEventEmitter,
-  NativeEventEmitter,
-  Platform,
-} from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 const NativeAudioManagerModule = NativeModules.AudioManagerModule;
-const eventEmitter = Platform.select({
-  ios: new NativeEventEmitter(NativeModules.AudioManagerModule),
-  android: DeviceEventEmitter,
-});
+const eventEmitter =
+  Platform.OS === 'android'
+    ? new NativeEventEmitter()
+    : new NativeEventEmitter(NativeModules.AudioManagerModule);
 
 if (!NativeAudioManagerModule || !eventEmitter) {
   throw new Error(

@@ -36,75 +36,75 @@ class AudioManager {
     if (enabled && callback) {
       switch (name) {
         case 'play':
-          subscription = eventEmitter!.addListener('onRemotePlay', callback);
+          subscription = eventEmitter.addListener('onRemotePlay', callback);
           break;
 
         case 'pause':
-          subscription = eventEmitter!.addListener('onRemotePause', callback);
+          subscription = eventEmitter.addListener('onRemotePause', callback);
           break;
 
         case 'stop':
-          subscription = eventEmitter!.addListener('onRemoteStop', callback);
+          subscription = eventEmitter.addListener('onRemoteStop', callback);
           break;
 
         case 'togglePlayPause':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteTogglePlayPause',
             callback
           );
           break;
 
         case 'changePlaybackRate':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteChangePlaybackRate',
             callback
           );
           break;
 
         case 'nextTrack':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteNextTrack',
             callback
           );
           break;
 
         case 'previousTrack':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemotePreviousTrack',
             callback
           );
           break;
 
         case 'skipForward':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteSkipForward',
             callback
           );
           break;
 
         case 'skipBackward':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteSkipBackward',
             callback
           );
           break;
 
         case 'seekForward':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteSeekForward',
             callback
           );
           break;
 
         case 'seekBackward':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteSeekBackward',
             callback
           );
           break;
 
         case 'changePlaybackPosition':
-          subscription = eventEmitter!.addListener(
+          subscription = eventEmitter.addListener(
             'onRemoteChangePlaybackPosition',
             callback
           );

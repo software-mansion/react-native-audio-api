@@ -16,18 +16,21 @@ class MediaSessionManager(
   val notificationId = 100
   val channelId = "react-native-audio-api"
 
-  private val mediaSession: MediaSessionCompat
+  private val mediaSession: MediaSessionCompat = MediaSessionCompat(reactContext, "MediaSessionManager")
   private val mediaNotificationManager: MediaNotificationManager
   private val lockScreenManager: LockScreenManager
+  private val eventEmitter: MediaSessionEventEmitter =
+    MediaSessionEventEmitter(reactContext, notificationId)
 
   init {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
-    this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
     this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId)
     this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
+
+    this.mediaSession.setCallback(MediaSessionCallback(eventEmitter, lockScreenManager))
   }
 
   fun setLockScreenInfo(info: ReadableMap?) {
