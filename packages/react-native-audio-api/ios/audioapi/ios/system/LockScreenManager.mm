@@ -6,10 +6,8 @@
   @{                                                              \
     @"album" : MPMediaItemPropertyAlbumTitle,                     \
     @"artist" : MPMediaItemPropertyArtist,                        \
-    @"genre" : MPMediaItemPropertyGenre,                          \
     @"duration" : MPMediaItemPropertyPlaybackDuration,            \
     @"title" : MPMediaItemPropertyTitle,                          \
-    @"isLiveStream" : MPNowPlayingInfoPropertyIsLiveStream,       \
     @"speed" : MPNowPlayingInfoPropertyPlaybackRate,              \
     @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
   }
@@ -76,8 +74,6 @@ static LockScreenManager *_sharedInstance = nil;
       self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStatePlaying;
     } else if ([state isEqualToString:@"state_paused"]) {
       self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStatePaused;
-    } else if ([state isEqualToString:@"state_stopped"]) {
-      self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStateStopped;
     }
   }
 

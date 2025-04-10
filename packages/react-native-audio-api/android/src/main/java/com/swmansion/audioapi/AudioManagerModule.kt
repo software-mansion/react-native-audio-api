@@ -1,12 +1,11 @@
 package com.swmansion.audioapi
 
-import android.content.Context
-import android.media.AudioManager
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.system.MediaSessionManager
 
 class AudioManagerModule(
   reactContext: ReactApplicationContext,
@@ -15,7 +14,7 @@ class AudioManagerModule(
     const val NAME = "AudioManagerModule"
   }
 
-  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  private val mediaSessionManager: MediaSessionManager = MediaSessionManager(reactContext)
 
   init {
     try {
@@ -25,35 +24,39 @@ class AudioManagerModule(
     }
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun setLockScreenInfo(info: ReadableMap?) {
+    mediaSessionManager.setLockScreenInfo(info)
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun resetLockScreenInfo() {
+    mediaSessionManager.resetLockScreenInfo()
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun enableRemoteCommand(
-    name: String?,
+    name: String,
     enabled: Boolean,
   ) {
+    mediaSessionManager.enableRemoteCommand(name, enabled)
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   fun setAudioSessionOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
     active: Boolean,
   ) {
+    // Nothing to do here
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun getDevicePreferredSampleRate(): Double {
-    val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
-    return sampleRate.toDouble()
-  }
+  fun getDevicePreferredSampleRate(): Double = mediaSessionManager.getDevicePreferredSampleRate()
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun observeAudioInterruptions(enable: Boolean) = mediaSessionManager.observeAudioInterruptions(enable)
 
   override fun getName(): String = NAME
 }

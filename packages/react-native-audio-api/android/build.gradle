@@ -218,6 +218,7 @@ dependencies {
   implementation 'androidx.core:core-ktx:1.13.1'
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
   implementation 'com.google.oboe:oboe:1.9.0'
+  implementation 'androidx.media:media:1.7.0'
 }
 
 def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
