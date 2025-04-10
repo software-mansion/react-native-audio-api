@@ -41,6 +41,9 @@ const AudioManagerModule = {
   getDevicePreferredSampleRate(): number {
     return NativeAudioManagerModule.getDevicePreferredSampleRate();
   },
+  observeAudioInterruptions(enabled: boolean): void {
+    NativeAudioManagerModule.observeAudioInterruptions(enabled);
+  },
 };
 
 export { eventEmitter, AudioManagerModule };

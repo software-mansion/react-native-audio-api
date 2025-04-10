@@ -1,5 +1,6 @@
 package com.swmansion.audioapi.system
 
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.Arguments
@@ -10,7 +11,7 @@ class MediaSessionEventEmitter(
   val reactContext: ReactApplicationContext,
   val notificationId: Int,
 ) {
-  private fun sendEvent(
+  fun sendEvent(
     name: String,
     value: Any?,
     dataName: String?,
@@ -18,12 +19,18 @@ class MediaSessionEventEmitter(
     val data = Arguments.createMap()
 
     if (value != null && dataName != null) {
-      if (value is Double || value is Float) {
-        data.putDouble(dataName, value as Double)
-      } else if (value is Boolean) {
-        data.putBoolean(dataName, value)
-      } else if (value is Int) {
-        data.putInt(dataName, value)
+      when (value) {
+          is Double, is Float -> {
+            data.putDouble(dataName, value as Double)
+          }
+
+        is Boolean -> {
+          data.putBoolean(dataName, value)
+        }
+
+        is Int -> {
+          data.putInt(dataName, value)
+        }
       }
     }
 
@@ -64,9 +71,9 @@ class MediaSessionEventEmitter(
   private fun stopForegroundService() {
     NotificationManagerCompat.from(reactContext).cancel(notificationId)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//      val myIntent: Intent =
-//        Intent(reactContext, MusicControlNotification.NotificationService::class.java)
-//      reactContext.stopService(myIntent)
+      val myIntent =
+        Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
+      reactContext.stopService(myIntent)
     }
   }
 }

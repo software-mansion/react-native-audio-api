@@ -1,7 +1,5 @@
 package com.swmansion.audioapi
 
-import android.content.Context
-import android.media.AudioManager
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -16,7 +14,6 @@ class AudioManagerModule(
     const val NAME = "AudioManagerModule"
   }
 
-  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   private val mediaSessionManager: MediaSessionManager = MediaSessionManager(reactContext)
 
   init {
@@ -52,12 +49,17 @@ class AudioManagerModule(
     options: ReadableArray?,
     active: Boolean,
   ) {
+    // Nothing to do here
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun getDevicePreferredSampleRate(): Double {
-    val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
-    return sampleRate.toDouble()
+    return mediaSessionManager.getDevicePreferredSampleRate()
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun observeAudioInterruptions(enable: Boolean) {
+    return mediaSessionManager.observeAudioInterruptions(enable)
   }
 
   override fun getName(): String = NAME

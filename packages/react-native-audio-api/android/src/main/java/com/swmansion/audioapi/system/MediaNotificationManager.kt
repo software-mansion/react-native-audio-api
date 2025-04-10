@@ -3,20 +3,28 @@ package com.swmansion.audioapi.system
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Intent
 import android.content.res.Resources
+import android.os.Binder
+import android.os.Build
+import android.os.IBinder
 import android.provider.ContactsContract
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
+import com.swmansion.audioapi.R
+import java.lang.ref.WeakReference
 
 class MediaNotificationManager(
   val reactContext: ReactApplicationContext,
   val notificationId: Int,
+  val channelId: String
 ) {
-  private var smallIcon: Int = 0
+  private var smallIcon: Int = R.drawable.play
   private var customIcon: Int = 0
 
   private var play: NotificationCompat.Action? = null
@@ -28,17 +36,9 @@ class MediaNotificationManager(
   private var skipBackward: NotificationCompat.Action? = null
 
   companion object {
-    private const val REMOVE_NOTIFICATION: String = "audio_manager_remove_notification"
-    private const val PACKAGE_NAME: String = "com.swmansion.audioapi.system"
-    private const val MEDIA_BUTTON: String = "audio_manager_media_button"
-  }
-
-  init {
-    val r: Resources = reactContext.resources
-    val packageName: String = reactContext.packageName
-    // Optional custom icon with fallback to the play icon
-    smallIcon = r.getIdentifier("music_control_icon", "drawable", packageName)
-    if (smallIcon == 0) smallIcon = r.getIdentifier("play", "drawable", packageName)
+    const val REMOVE_NOTIFICATION: String = "audio_manager_remove_notification"
+    const val PACKAGE_NAME: String = "com.swmansion.audioapi.system"
+    const val MEDIA_BUTTON: String = "audio_manager_media_button"
   }
 
   @SuppressLint("RestrictedApi")
@@ -110,11 +110,11 @@ class MediaNotificationManager(
     NotificationManagerCompat.from(reactContext).cancel(notificationId)
 
     try {
-//      val myIntent: Intent = Intent(
-//        context,
-//        MusicControlNotification.NotificationService::class.java
-//      )
-//      context.stopService(myIntent)
+      val myIntent = Intent(
+        reactContext,
+        NotificationService::class.java
+      )
+      reactContext.stopService(myIntent)
     } catch (e: java.lang.Exception) {
       println(e.message)
     }
@@ -184,5 +184,69 @@ class MediaNotificationManager(
       )
 
     return NotificationCompat.Action(icon, title, i)
+  }
+
+  inner class NotificationService : Service() {
+    private val binder = LocalBinder()
+    private var notification: Notification? = null
+
+    inner class LocalBinder : Binder() {
+      private var weakService: WeakReference<NotificationService>? = null
+
+      fun onBind(service: NotificationService) {
+        weakService = WeakReference(service)
+      }
+
+      fun getService(): NotificationService? = weakService?.get()
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+      binder.onBind(this)
+      return binder
+    }
+
+    fun forceForeground() {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val intent = Intent(this, NotificationService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+        notification = MediaNotificationManager(reactContext, notificationId, channelId)
+          .prepareNotification(NotificationCompat.Builder(this, channelId), false)
+        startForeground(notificationId, notification)
+      }
+    }
+
+    override fun onCreate() {
+      super.onCreate()
+      try {
+        notification = MediaNotificationManager(reactContext, notificationId, channelId)
+          .prepareNotification(NotificationCompat.Builder(this, channelId), false)
+        startForeground(notificationId, notification)
+      } catch (ex: Exception) {
+        ex.printStackTrace()
+      }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+      onCreate() // reuse the onCreate logic for service re/starting
+      return START_NOT_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+      super.onTaskRemoved(rootIntent)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        stopForeground(STOP_FOREGROUND_REMOVE)
+      }
+      stopSelf() // ensure service is stopped if the task is removed
+    }
+
+    override fun onDestroy() {
+      super.onDestroy()
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        stopForeground(STOP_FOREGROUND_REMOVE)
+      }
+
+      stopSelf() // ensure service is stopped on destroy
+    }
   }
 }

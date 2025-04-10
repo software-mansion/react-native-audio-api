@@ -25,7 +25,7 @@ class LockScreenManager(
   private var pb: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
   private var state: PlaybackStateCompat = pb.build()
   private var controls: Long = 0
-  private var isPlaying: Boolean = false
+  var isPlaying: Boolean = false
 
   private var nb: NotificationCompat.Builder = NotificationCompat.Builder(reactContext, channelId)
 

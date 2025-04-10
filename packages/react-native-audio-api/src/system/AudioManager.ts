@@ -24,6 +24,10 @@ class AudioManager {
     return AudioManagerModule.getDevicePreferredSampleRate();
   }
 
+  observeAudioInterruptions(enabled: boolean) {
+    AudioManagerModule.observeAudioInterruptions(enabled);
+  }
+
   enableRemoteCommand(
     name: RemoteControl,
     enabled: boolean,
