@@ -1,7 +1,7 @@
+#import <audioapi/ios/AudioManagerModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
-#import <audioapi/ios/AudioManagerModule.h>
 
 @implementation NotificationManager
 
@@ -44,9 +44,9 @@ static NotificationManager *_sharedInstance = nil;
 - (void)observeAudioInterruption:(BOOL)enabled
 {
   if (self.audioInterruptionsObserved == enabled) {
-      return;
+    return;
   }
-  
+
   if (enabled) {
     [self.notificationCenter addObserver:self
                                 selector:@selector(handleInterruption:)
