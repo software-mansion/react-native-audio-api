@@ -47,8 +47,6 @@ class MediaNotificationManager(
     builder: NotificationCompat.Builder,
     isPlaying: Boolean,
   ): Notification {
-    // Add the buttons
-
     builder.mActions.clear()
     if (previous != null) builder.addAction(previous)
     if (skipBackward != null) builder.addAction(skipBackward)
@@ -60,7 +58,6 @@ class MediaNotificationManager(
 
     builder.setSmallIcon(if (customIcon != 0) customIcon else smallIcon)
 
-    // Open the app when the notification is clicked
     val packageName: String = reactContext.packageName
     val openApp: Intent? = reactContext.packageManager.getLaunchIntentForPackage(packageName)
     try {
@@ -76,7 +73,6 @@ class MediaNotificationManager(
       println(e.message)
     }
 
-    // Remove notification
     val remove = Intent(REMOVE_NOTIFICATION)
     remove.putExtra(PACKAGE_NAME, reactContext.applicationInfo.packageName)
     builder.setDeleteIntent(
@@ -162,16 +158,13 @@ class MediaNotificationManager(
     action: Long,
     oldAction: NotificationCompat.Action?,
   ): NotificationCompat.Action? {
-    if ((mask and action) == 0L) return null // When this action is not enabled, return null
+    if ((mask and action) == 0L) return null
+    if (oldAction != null) return oldAction
 
-    if (oldAction != null) return oldAction // If this action was already created, we won't create another instance
-
-    // Finds the icon with the given name
     val r: Resources = reactContext.resources
     val packageName: String = reactContext.packageName
     val icon = r.getIdentifier(iconName, "drawable", packageName)
 
-    // Creates the intent based on the action
     val keyCode = PlaybackStateCompat.toKeyCode(action)
     val intent = Intent(MEDIA_BUTTON)
     intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
@@ -234,7 +227,7 @@ class MediaNotificationManager(
       flags: Int,
       startId: Int,
     ): Int {
-      onCreate() // reuse the onCreate logic for service re/starting
+      onCreate()
       return START_NOT_STICKY
     }
 
@@ -243,7 +236,7 @@ class MediaNotificationManager(
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         stopForeground(STOP_FOREGROUND_REMOVE)
       }
-      stopSelf() // ensure service is stopped if the task is removed
+      stopSelf()
     }
 
     override fun onDestroy() {
@@ -253,7 +246,7 @@ class MediaNotificationManager(
         stopForeground(STOP_FOREGROUND_REMOVE)
       }
 
-      stopSelf() // ensure service is stopped on destroy
+      stopSelf()
     }
   }
 }

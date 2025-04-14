@@ -20,7 +20,6 @@ class MediaReceiver(
     if (MediaNotificationManager.REMOVE_NOTIFICATION == action) {
       if (!checkApp(intent)) return
 
-      // removes the notification and deactivates the media session
       mediaSessionManager.mediaNotificationManager.hide()
       mediaSessionManager.mediaSession.isActive = false
 

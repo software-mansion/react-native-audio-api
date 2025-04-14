@@ -91,7 +91,6 @@ class MediaSessionManager(
     val myIntent = Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      // Try to bind the service
       try {
         reactContext.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
       } catch (ignored: Exception) {
