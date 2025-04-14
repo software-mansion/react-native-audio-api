@@ -1,4 +1,14 @@
 {
   "name": "FabricExample",
-  "displayName": "FabricExample"
+  "displayName": "FabricExample",
+  "expo": {
+    "plugins": [
+      [
+        "react-native-audio-api/plugin",
+        {
+          "property": "yes"
+        }
+      ]
+    ]
+  },
 }
