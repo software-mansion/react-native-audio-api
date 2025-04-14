@@ -85,7 +85,8 @@ static NotificationManager *_sharedInstance = nil;
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
+    [self.audioManagerModule sendEventWithName:@"onInterruption"
+                                          body:@{@"type" : @"began", @"shouldResume" : @"false"}];
     return;
   }
 
@@ -131,7 +132,7 @@ static NotificationManager *_sharedInstance = nil;
       reasonStr = @"DoubleUnknown";
       break;
   }
-  
+
   [self.audioManagerModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
 }
 
