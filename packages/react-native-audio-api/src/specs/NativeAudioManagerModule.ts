@@ -24,7 +24,6 @@ const AudioManagerModule = {
   enableRemoteCommand(name: string, enabled: boolean): void {
     NativeAudioManagerModule.enableRemoteCommand(name, enabled);
   },
-  // audio session
   setAudioSessionOptions(
     category: string,
     mode: string,

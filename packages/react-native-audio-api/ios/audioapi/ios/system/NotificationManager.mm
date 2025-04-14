@@ -1,16 +1,17 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/AudioManagerModule.h>
 
 @implementation NotificationManager
 
 static NotificationManager *_sharedInstance = nil;
 
-+ (instancetype)sharedInstance
++ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
 {
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivate];
+    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
   });
   return _sharedInstance;
 }
@@ -21,10 +22,12 @@ static NotificationManager *_sharedInstance = nil;
   return nil;
 }
 
-- (instancetype)initPrivate
+- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
 {
   if (self = [super init]) {
+    self.audioManagerModule = audioManagerModule;
     self.notificationCenter = [NSNotificationCenter defaultCenter];
+    self.audioInterruptionsObserved = false;
 
     [self configureNotifications];
   }
@@ -38,12 +41,26 @@ static NotificationManager *_sharedInstance = nil;
   self.notificationCenter = nil;
 }
 
+- (void)observeAudioInterruption:(BOOL)enabled
+{
+  if (self.audioInterruptionsObserved == enabled) {
+      return;
+  }
+  
+  if (enabled) {
+    [self.notificationCenter addObserver:self
+                                selector:@selector(handleInterruption:)
+                                    name:AVAudioSessionInterruptionNotification
+                                  object:nil];
+  } else {
+    [self.notificationCenter removeObserver:self name:AVAudioSessionInterruptionNotification object:nil];
+  }
+
+  self.audioInterruptionsObserved = enabled;
+}
+
 - (void)configureNotifications
 {
-  [self.notificationCenter addObserver:self
-                              selector:@selector(handleInterruption:)
-                                  name:AVAudioSessionInterruptionNotification
-                                object:nil];
   [self.notificationCenter addObserver:self
                               selector:@selector(handleRouteChange:)
                                   name:AVAudioSessionRouteChangeNotification
@@ -70,6 +87,7 @@ static NotificationManager *_sharedInstance = nil;
     self.isInterrupted = true;
     NSLog(@"[NotificationManager] Detected interruption, stopping the engine");
 
+    [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
     [audioEngine stopEngine];
 
     return;
@@ -99,6 +117,7 @@ static NotificationManager *_sharedInstance = nil;
     [audioEngine rebuildAudioEngine];
   }
 
+  [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
   [audioEngine startEngine];
 }
 

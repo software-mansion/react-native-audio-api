@@ -14,7 +14,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   if (self == [super init]) {
     self.audioEngine = [AudioEngine sharedInstance];
     self.audioSessionManager = [AudioSessionManager sharedInstance];
-    self.notificationManager = [NotificationManager sharedInstance];
+    self.notificationManager = [NotificationManager sharedInstanceWithAudioManagerModule:self];
     self.lockScreenManager = [LockScreenManager sharedInstanceWithAudioManagerModule:self];
   }
 
@@ -59,6 +59,11 @@ RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString
   } else {
     [self.audioSessionManager setActive:false error:&error];
   }
+}
+
+RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
+{
+  [self.notificationManager observeAudioInterruption:enabled];
 }
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
