@@ -3,12 +3,7 @@
   "displayName": "FabricExample",
   "expo": {
     "plugins": [
-      [
-        "react-native-audio-api/plugin",
-        {
-          "property": "yes"
-        }
-      ]
+      "react-native-audio-api"
     ]
-  },
+  }
 }
