@@ -15,20 +15,24 @@ class AudioFocusListener(
 
   override fun onAudioFocusChange(focusChange: Int) {
     Log.d("AudioFocusListener", "onAudioFocusChange: $focusChange")
-    if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-      abandonAudioFocus()
-      playOnAudioFocus = false
-      eventEmitter.onStop()
-    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-      if (lockScreenManager.isPlaying) {
-        playOnAudioFocus = true
-        eventEmitter.onPause()
+    when (focusChange) {
+      AudioManager.AUDIOFOCUS_LOSS -> {
+        playOnAudioFocus = false
+        eventEmitter.onInterruption(mapOf("type" to "began", "shouldResume" to false))
       }
-    } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-      if (playOnAudioFocus) {
-        eventEmitter.onPlay()
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+        playOnAudioFocus = lockScreenManager.isPlaying
+        eventEmitter.onInterruption(mapOf("type" to "began", "shouldResume" to playOnAudioFocus))
       }
-      playOnAudioFocus = false
+      AudioManager.AUDIOFOCUS_GAIN -> {
+        if (playOnAudioFocus) {
+          eventEmitter.onInterruption(mapOf("type" to "ended", "shouldResume" to true))
+        } else {
+          eventEmitter.onInterruption(mapOf("type" to "ended", "shouldResume" to false))
+        }
+
+        playOnAudioFocus = false
+      }
     }
   }
 

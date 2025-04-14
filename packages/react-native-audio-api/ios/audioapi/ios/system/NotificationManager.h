@@ -17,6 +17,6 @@
 + (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
 - (void)cleanup;
 
-- (void)observeAudioInterruption:(BOOL)enabled;
+- (void)observeAudioInterruptions:(BOOL)enabled;
 
 @end

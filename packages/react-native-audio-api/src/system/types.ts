@@ -52,7 +52,7 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   elapsedTime?: number;
 }
 
-export type RemoteControl =
+export type RemoteControlEventName =
   | 'play'
   | 'pause'
   | 'stop'
@@ -65,3 +65,5 @@ export type RemoteControl =
   | 'seekForward'
   | 'seekBackward'
   | 'changePlaybackPosition';
+
+export type InterruptionEventName = 'interruption' | 'routeChange';

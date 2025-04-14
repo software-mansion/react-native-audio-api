@@ -13,23 +13,24 @@ class MediaSessionEventEmitter(
 ) {
   fun sendEvent(
     name: String,
-    value: Any?,
-    dataName: String?,
+    values: Map<String, Any>?,
   ) {
     val data = Arguments.createMap()
 
-    if (value != null && dataName != null) {
-      when (value) {
-        is Double, is Float -> {
-          data.putDouble(dataName, value as Double)
-        }
+    if (values != null) {
+      for (value in values) {
+        when (value.value) {
+          is Double, is Float -> {
+            data.putDouble(value.key, value.value as Double)
+          }
 
-        is Boolean -> {
-          data.putBoolean(dataName, value)
-        }
+          is Boolean -> {
+            data.putBoolean(value.key, value.value as Boolean)
+          }
 
-        is Int -> {
-          data.putInt(dataName, value)
+          is Int -> {
+            data.putInt(value.key, value.value as Int)
+          }
         }
       }
     }
@@ -40,32 +41,36 @@ class MediaSessionEventEmitter(
   }
 
   fun onPlay() {
-    sendEvent("onRemotePlay", null, null)
+    sendEvent("onRemotePlay", null)
   }
 
   fun onPause() {
-    sendEvent("onRemotePause", null, null)
+    sendEvent("onRemotePause", null)
   }
 
   fun onStop() {
     stopForegroundService()
-    sendEvent("onRemoteStop", null, null)
+    sendEvent("onRemoteStop", null)
   }
 
   fun onSkipToNext() {
-    sendEvent("onRemoteNextTrack", null, null)
+    sendEvent("onRemoteNextTrack", null)
   }
 
   fun onSkipToPrevious() {
-    sendEvent("onRemotePreviousTrack", null, null)
+    sendEvent("onRemotePreviousTrack", null)
   }
 
   fun onFastForward() {
-    sendEvent("onRemoteSkipForward", null, null)
+    sendEvent("onRemoteSkipForward", null)
   }
 
   fun onRewind() {
-    sendEvent("onRemoteSkipBackward", null, null)
+    sendEvent("onRemoteSkipBackward", null)
+  }
+
+  fun onInterruption(values: Map<String, Any>) {
+    sendEvent("onInterruption", values)
   }
 
   private fun stopForegroundService() {

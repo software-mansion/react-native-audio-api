@@ -63,7 +63,7 @@ RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
 {
-  [self.notificationManager observeAudioInterruption:enabled];
+  [self.notificationManager observeAudioInterruptions:enabled];
 }
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
@@ -85,13 +85,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
     @"onRemoteSkipBackward",
     @"onRemoteSeekForward",
     @"onRemoteSeekBackward",
-    @"onRemoteChangePlaybackPosition"
+    @"onRemoteChangePlaybackPosition",
+    @"interruption",
+    @"routeChange"
   ];
-}
-
-- (void)sendEventWithValue:(NSString *)event withValue:(NSString *)value
-{
-  [self sendEventWithName:@"AudioManagerModule" body:@{@"name" : event, @"value" : value}];
 }
 
 @end

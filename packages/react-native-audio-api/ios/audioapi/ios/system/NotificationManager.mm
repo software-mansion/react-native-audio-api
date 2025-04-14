@@ -41,7 +41,7 @@ static NotificationManager *_sharedInstance = nil;
   self.notificationCenter = nil;
 }
 
-- (void)observeAudioInterruption:(BOOL)enabled
+- (void)observeAudioInterruptions:(BOOL)enabled
 {
   if (self.audioInterruptionsObserved == enabled) {
     return;
@@ -77,60 +77,62 @@ static NotificationManager *_sharedInstance = nil;
 
 - (void)handleInterruption:(NSNotification *)notification
 {
-  NSError *error;
-  UInt8 type = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
-  UInt8 option = [[notification.userInfo valueForKey:AVAudioSessionInterruptionOptionKey] intValue];
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
-
-  if (type == AVAudioSessionInterruptionTypeBegan) {
-    self.isInterrupted = true;
-    NSLog(@"[NotificationManager] Detected interruption, stopping the engine");
-
-    [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
-    [audioEngine stopEngine];
-
+  if (!self.audioInterruptionsObserved) {
     return;
   }
 
-  if (type != AVAudioSessionInterruptionTypeEnded) {
-    NSLog(@"[NotificationManager] Unexpected interruption state, chilling");
+  NSInteger interruptionType = [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
+  NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
+
+  if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
+    [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
     return;
   }
 
-  self.isInterrupted = false;
-
-  if (option != AVAudioSessionInterruptionOptionShouldResume) {
-    NSLog(@"[NotificationManager] Interruption ended, but engine is not allowed to resume");
+  if (interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
+    [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
     return;
   }
 
-  NSLog(@"[NotificationManager] Interruption ended, resuming the engine");
-  bool success = [audioSessionManager setActive:true error:&error];
-
-  if (!success) {
-    NSLog(@"[NotificationManager] Unable to activate the audio session, reason: %@", [error debugDescription]);
-    return;
-  }
-
-  if (self.hadConfigurationChange) {
-    [audioEngine rebuildAudioEngine];
-  }
-
-  [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
-  [audioEngine startEngine];
+  [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
 {
-  UInt8 reason = [[notification.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
-  NSLog(@"[NotificationManager] Route change detected, reason: %u", reason);
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  NSInteger routeChangeReason = [notification.userInfo[AVAudioSessionRouteChangeReasonKey] integerValue];
+  NSString *reasonStr;
 
-  if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
-    NSLog(@"[NotificationManager] The previously used audio device became unavailable. Audio engine paused");
-    [audioEngine stopEngine];
+  switch (routeChangeReason) {
+    case AVAudioSessionRouteChangeReasonUnknown:
+      reasonStr = @"Unknown";
+      break;
+    case AVAudioSessionRouteChangeReasonOverride:
+      reasonStr = @"Override";
+      break;
+    case AVAudioSessionRouteChangeReasonCategoryChange:
+      reasonStr = @"CategoryChange";
+      break;
+    case AVAudioSessionRouteChangeReasonWakeFromSleep:
+      reasonStr = @"WakeFromSleep";
+      break;
+    case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
+      reasonStr = @"NewDeviceAvailable";
+      break;
+    case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
+      reasonStr = @"OldDeviceUnavailable";
+      break;
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
+      reasonStr = @"ConfigurationChange";
+      break;
+    case AVAudioSessionRouteChangeReasonNoSuitableRouteForCategory:
+      reasonStr = @"NoSuitableRouteForCategory";
+      break;
+    default:
+      reasonStr = @"DoubleUnknown";
+      break;
   }
+  
+  [self.audioManagerModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
