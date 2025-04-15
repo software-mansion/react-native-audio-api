@@ -53,7 +53,10 @@ class LockScreenManager(
   }
 
   fun setLockScreenInfo(info: ReadableMap?) {
-    if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
+    if (artworkThread != null && artworkThread!!.isAlive) {
+      artworkThread!!.interrupt()
+    }
+
     artworkThread = null
 
     if (info == null) {
