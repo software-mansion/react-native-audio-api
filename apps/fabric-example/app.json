@@ -1,22 +1,4 @@
 {
   "name": "FabricExample",
-  "displayName": "FabricExample",
-  "expo": {
-    "plugins": [
-      [ "react-native-audio-api",
-        {
-          "iosBackgroundMode": true,
-          "androidForegroundService": true,
-          "androidFSPermissions" : [
-            "android.permission.FOREGROUND_SERVICE",
-            "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-          ],
-          "androidFSTypes": [
-            "mediaPlayback",
-            "dataSync"
-          ]
-        }
-      ]
-    ]
-  }
+  "displayName": "FabricExample"
 }
