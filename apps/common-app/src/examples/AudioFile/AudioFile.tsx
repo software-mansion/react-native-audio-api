@@ -126,7 +126,6 @@ const AudioFile: FC = () => {
     AudioManager.enableRemoteCommand('togglePlayPause', true);
     AudioManager.enableRemoteCommand('nextTrack', true);
     AudioManager.enableRemoteCommand('previousTrack', true);
-    // AudioManager.enableRemoteCommand('stop', true);
 
     fetchAudioBuffer();
 

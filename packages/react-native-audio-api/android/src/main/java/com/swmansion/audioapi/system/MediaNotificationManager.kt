@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -48,13 +49,34 @@ class MediaNotificationManager(
     isPlaying: Boolean,
   ): Notification {
     builder.mActions.clear()
-    if (previous != null) builder.addAction(previous)
-    if (skipBackward != null) builder.addAction(skipBackward)
-    if (play != null && !isPlaying) builder.addAction(play)
-    if (pause != null && isPlaying) builder.addAction(pause)
-    if (stop != null) builder.addAction(stop)
-    if (next != null) builder.addAction(next)
-    if (skipForward != null) builder.addAction(skipForward)
+
+    if (previous != null) {
+      builder.addAction(previous)
+    }
+
+    if (skipBackward != null) {
+      builder.addAction(skipBackward)
+    }
+
+    if (play != null && !isPlaying) {
+      builder.addAction(play)
+    }
+
+    if (pause != null && isPlaying) {
+      builder.addAction(pause)
+    }
+
+    if (stop != null) {
+      builder.addAction(stop)
+    }
+
+    if (next != null) {
+      builder.addAction(next)
+    }
+
+    if (skipForward != null) {
+      builder.addAction(skipForward)
+    }
 
     builder.setSmallIcon(if (customIcon != 0) customIcon else smallIcon)
 
@@ -70,7 +92,7 @@ class MediaNotificationManager(
         ),
       )
     } catch (e: Exception) {
-      println(e.message)
+      Log.w("AudioManagerModule", "Error creating content intent: ${e.message}")
     }
 
     val remove = Intent(REMOVE_NOTIFICATION)
@@ -113,7 +135,7 @@ class MediaNotificationManager(
         )
       reactContext.stopService(myIntent)
     } catch (e: java.lang.Exception) {
-      println(e.message)
+      Log.w("AudioManagerModule", "Error stopping service: ${e.message}")
     }
   }
 
@@ -158,8 +180,13 @@ class MediaNotificationManager(
     action: Long,
     oldAction: NotificationCompat.Action?,
   ): NotificationCompat.Action? {
-    if ((mask and action) == 0L) return null
-    if (oldAction != null) return oldAction
+    if ((mask and action) == 0L) {
+      return null
+    }
+
+    if (oldAction != null) {
+      return oldAction
+    }
 
     val r: Resources = reactContext.resources
     val packageName: String = reactContext.packageName
@@ -218,7 +245,7 @@ class MediaNotificationManager(
             .prepareNotification(NotificationCompat.Builder(this, channelId), false)
         startForeground(notificationId, notification)
       } catch (ex: Exception) {
-        ex.printStackTrace()
+        Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
       }
     }
 
