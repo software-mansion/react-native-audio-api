@@ -67,3 +67,18 @@ export type RemoteControlEventName =
   | 'changePlaybackPosition';
 
 export type InterruptionEventName = 'interruption' | 'routeChange';
+
+export interface RemoteControlEmptyEventType {}
+
+export interface RemoteControlEventType {
+  value: number;
+}
+
+export interface OnInterruptionEventType {
+  type: 'ended' | 'began';
+  shouldResume: boolean;
+}
+
+export interface OnRouteChangeEventType {
+  reason: string;
+}

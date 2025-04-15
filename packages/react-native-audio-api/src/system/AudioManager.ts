@@ -3,9 +3,19 @@ import {
   LockScreenInfo,
   RemoteControlEventName,
   InterruptionEventName,
+  RemoteControlEmptyEventType,
+  RemoteControlEventType,
+  OnInterruptionEventType,
+  OnRouteChangeEventType,
 } from './types';
 import { AudioManagerModule, eventEmitter } from '../specs';
 import { EmitterSubscription } from 'react-native';
+
+type AudioManagerEventType =
+  | RemoteControlEmptyEventType
+  | RemoteControlEventType
+  | OnInterruptionEventType
+  | OnRouteChangeEventType;
 
 class AudioManager {
   setLockScreenInfo(info: LockScreenInfo) {
@@ -36,8 +46,7 @@ class AudioManager {
   enableRemoteCommand(
     name: RemoteControlEventName | InterruptionEventName,
     enabled: boolean,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    callback?: (event: any) => void
+    callback?: (event: AudioManagerEventType) => void
   ): EmitterSubscription | null {
     AudioManagerModule.enableRemoteCommand(name, enabled);
 

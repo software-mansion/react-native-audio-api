@@ -126,7 +126,7 @@ const AudioFile: FC = () => {
     AudioManager.enableRemoteCommand('play', true);
     AudioManager.enableRemoteCommand('pause', true);
     AudioManager.enableRemoteCommand('stop', true);
-    AudioManager.enableRemoteCommand('interruption', true, (e: any) => {
+    AudioManager.enableRemoteCommand('interruption', true, (e) => {
       console.log('interruption event', e);
     });
 
