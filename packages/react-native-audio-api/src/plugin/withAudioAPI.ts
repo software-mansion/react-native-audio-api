@@ -3,10 +3,8 @@ import {
   createRunOncePlugin,
   ConfigPlugin,
   withInfoPlist,
-  // withAndroidManifest,
-  // withMainApplication,
+  withAndroidManifest,
 } from '@expo/config-plugins';
-// import { ExpoConfig } from '@expo/config-types';
 
 const pkg = require('react-native-audio-api/package.json');
 
@@ -25,45 +23,69 @@ const withBackgroundAudio: ConfigPlugin = (config) => {
   });
 };
 
-const withAndroidPermissions: ConfigPlugin = (config) => {
-  return AndroidConfig.Permissions.withPermissions(config, [
-    'android.permission.FOREGROUND_SERVICE',
-    'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
-  ]);
+// 'android.permission.FOREGROUND_SERVICE',
+// 'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
+
+const withAndroidPermissions: ConfigPlugin<{
+  androidFSPermissions: string[];
+}> = (config, { androidFSPermissions }) => {
+  return AndroidConfig.Permissions.withPermissions(
+    config,
+    androidFSPermissions
+  );
 };
 
-// const addMediaNotificationService = (manifest: ExpoConfig) => {
-//   const service = {
-//     $: {
-//       'android:name': 'system.MediaNotificationManager$NotificationService',
-//       'android:stopWithTask': 'true',
-//       'android:foregroundServiceType': 'mediaPlayback|dataSync',
-//     },
-//   };
+const withForegroundService: ConfigPlugin<{
+  androidFSTypes: string[];
+}> = (config, { androidFSTypes }) => {
+  return withAndroidManifest(config, (mod) => {
+    const manifest = mod.modResults;
+    const mainApplication =
+      AndroidConfig.Manifest.getMainApplicationOrThrow(manifest);
 
-//   const mainApplication =
-//     AndroidConfig.Manifest.getMainApplicationOrThrow(manifest);
+    const SFTypes = androidFSTypes.join('|');
 
-//   if (!mainApplication.service) {
-//     mainApplication.service = [];
-//   }
+    const serviceElement = {
+      $: {
+        'android:name': 'system.MediaNotificationManager$NotificationService',
+        'android:stopWithTask': 'true',
+        'android:foregroundServiceType': SFTypes,
+      },
+      intentFilter: [],
+    };
 
-//   mainApplication.service.push({ $: service.$ });
+    if (!mainApplication.service) {
+      mainApplication.service = [];
+    }
 
-//   return manifest;
-// };
+    mainApplication.service.push(serviceElement);
 
-// const withMediaNotificationService: ConfigPlugin = (config) => {
-//   return withAndroidManifest(config, async (config) => {
-//     config.modResults = addMediaNotificationService(config.modResults);
-//     return config;
-//   });
-// };
+    return mod;
+  });
+};
 
-const withAudioAPI: ConfigPlugin = (config) => {
-  config = withBackgroundAudio(config);
-  config = withAndroidPermissions(config);
-  // config = withMediaNotificationService(config);
+const withAudioAPI: ConfigPlugin<{
+  iosBackgroundMode: boolean;
+  androidForegroundService: boolean;
+  androidFSPermissions: string[];
+  androidFSTypes: string[];
+}> = (
+  config,
+  {
+    iosBackgroundMode = true,
+    androidForegroundService = true,
+    androidFSPermissions,
+    androidFSTypes,
+  }
+) => {
+  if (iosBackgroundMode) {
+    config = withBackgroundAudio(config);
+  }
+  if (androidForegroundService) {
+    config = withAndroidPermissions(config, { androidFSPermissions });
+    config = withForegroundService(config, { androidFSTypes });
+  }
+
   return config;
 };
 
