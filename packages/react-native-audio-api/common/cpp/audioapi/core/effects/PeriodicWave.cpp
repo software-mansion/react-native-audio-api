@@ -72,6 +72,7 @@ PeriodicWave::~PeriodicWave() {
     delete[] bandLimitedTables_[i];
   }
   delete[] bandLimitedTables_;
+  bandLimitedTables_ = nullptr;
 }
 
 int PeriodicWave::getPeriodicWaveSize() const {
@@ -121,7 +122,7 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
 
   // The very top range will have all the partials culled.
   int numberOfPartials =
-      floor(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
+      int(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
 
   return numberOfPartials;
 }

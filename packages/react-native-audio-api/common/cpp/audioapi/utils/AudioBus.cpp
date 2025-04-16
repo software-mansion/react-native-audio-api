@@ -22,6 +22,18 @@ AudioBus::AudioBus(size_t size, int numberOfChannels, float sampleRate)
   createChannels();
 }
 
+AudioBus::AudioBus(const AudioBus &other) {
+  numberOfChannels_ = other.numberOfChannels_;
+  sampleRate_ = other.sampleRate_;
+  size_ = other.size_;
+
+  createChannels();
+
+  for (int i = 0; i < numberOfChannels_; i += 1) {
+    channels_[i] = std::make_shared<AudioArray>(*other.channels_[i]);
+  }
+}
+
 AudioBus::~AudioBus() {
   channels_.clear();
 }

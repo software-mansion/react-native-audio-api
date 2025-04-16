@@ -107,7 +107,7 @@ const AudioVisualizer: React.FC = () => {
     if (!analyserRef.current) {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = FFT_SIZE;
-      analyserRef.current.smoothingTimeConstant = 0.8;
+      analyserRef.current.smoothingTimeConstant = 0.2;
 
       analyserRef.current.connect(audioContextRef.current.destination);
     }
@@ -131,14 +131,16 @@ const AudioVisualizer: React.FC = () => {
         }
       />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
         <View
           style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: layout.spacing * 2,
-          }}>
+          }}
+        >
           <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}

@@ -10,6 +10,7 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
 @ReactModuleList(
   nativeModules = [
     AudioAPIModule::class,
+    AudioManagerModule::class,
   ],
 )
 class AudioAPIPackage : BaseReactPackage() {
@@ -19,6 +20,7 @@ class AudioAPIPackage : BaseReactPackage() {
   ): NativeModule? {
     when (name) {
       AudioAPIModule.NAME -> return AudioAPIModule(reactContext)
+      AudioManagerModule.NAME -> return AudioManagerModule(reactContext)
     }
     return null
   }
@@ -36,6 +38,17 @@ class AudioAPIPackage : BaseReactPackage() {
           hasConstants = true,
           isCxxModule = false,
           isTurboModule = isTurboModule,
+        )
+
+      moduleInfos[AudioManagerModule.NAME] =
+        ReactModuleInfo(
+          AudioManagerModule.NAME,
+          AudioManagerModule.NAME,
+          canOverrideExistingModule = true,
+          needsEagerInit = false,
+          hasConstants = true,
+          isCxxModule = false,
+          isTurboModule = false,
         )
       moduleInfos
     }

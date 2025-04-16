@@ -136,7 +136,7 @@ const DrumMachine: React.FC = () => {
           label="BPM"
           step={1}
           min={24}
-          max={320}
+          max={2000}
           value={bpm}
           onValueChange={setBpm}
         />
@@ -148,7 +148,8 @@ const DrumMachine: React.FC = () => {
             // @ts-ignore ???
             width={size}
             height={size}
-            onLayout={onCanvasLayout}>
+            onLayout={onCanvasLayout}
+          >
             <Grid />
             {patterns.map((pattern) => (
               <PatternShape key={pattern.instrumentName} pattern={pattern} />

@@ -18,7 +18,7 @@ namespace audioapi {
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
-  enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, FINISHED };
+  enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, FINISHED, STOP_SCHEDULED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
   void start(double when);
@@ -28,6 +28,7 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isScheduled();
   bool isPlaying();
   bool isFinished();
+  bool isStopScheduled();
 
   void setOnendedCallback(const std::function<void(double)> &onendedCallback);
 
@@ -35,6 +36,8 @@ class AudioScheduledSourceNode : public AudioNode {
 
  protected:
   PlaybackState playbackState_;
+
+  std::function<void(double)> onendedCallback_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -47,8 +50,6 @@ class AudioScheduledSourceNode : public AudioNode {
  private:
   double startTime_;
   double stopTime_;
-
-  std::function<void(double)> onendedCallback_;
 };
 
 } // namespace audioapi

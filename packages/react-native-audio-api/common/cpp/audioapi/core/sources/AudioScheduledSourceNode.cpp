@@ -40,6 +40,10 @@ bool AudioScheduledSourceNode::isFinished() {
   return playbackState_ == PlaybackState::FINISHED;
 }
 
+bool AudioScheduledSourceNode::isStopScheduled() {
+  return playbackState_ == PlaybackState::STOP_SCHEDULED;
+}
+
 void AudioScheduledSourceNode::setOnendedCallback(
     const std::function<void(double)> &onendedCallback) {
   onendedCallback_ = onendedCallback;
@@ -67,7 +71,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
       std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
   size_t stopFrame = stopTime_ == -1.0
       ? std::numeric_limits<size_t>::max()
-      : std::max(dsp::timeToSampleFrame(stopTime_, sampleRate), firstFrame);
+      : dsp::timeToSampleFrame(stopTime_, sampleRate);
 
   if (isUnscheduled() || isFinished()) {
     startOffset = 0;
@@ -89,7 +93,18 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     startOffset = std::max(startFrame, firstFrame) - firstFrame > 0
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
-    nonSilentFramesToProcess = std::min(lastFrame, stopFrame) - startFrame;
+    nonSilentFramesToProcess =
+        std::max(std::min(lastFrame, stopFrame), startFrame) - startFrame;
+
+    assert(startOffset <= framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
+
+    // stop will happen in the same render quantum
+    if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+      processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+    }
+
     processingBus->zero(0, startOffset);
     return;
   }
@@ -99,8 +114,13 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
   if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
+
+    assert(startOffset <= framesToProcess);
+    assert(nonSilentFramesToProcess <= framesToProcess);
+
     processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     return;
   }
@@ -110,12 +130,9 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     startOffset = 0;
     nonSilentFramesToProcess = 0;
 
-    if (onendedCallback_) {
-      onendedCallback_(getStopTime());
-    }
-
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    handleStopScheduled();
     playbackState_ = PlaybackState::FINISHED;
-    disable();
     return;
   }
 
@@ -125,10 +142,11 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {
-  if (isPlaying() && stopTime_ > 0 && context_->getCurrentTime() >= stopTime_) {
+  if (isStopScheduled()) {
     if (onendedCallback_) {
       onendedCallback_(getStopTime());
     }
+
     playbackState_ = PlaybackState::FINISHED;
     disable();
   }
