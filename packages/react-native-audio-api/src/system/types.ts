@@ -34,7 +34,7 @@ export interface SessionOptions {
   active?: boolean;
 }
 
-export type MediaState = 'state_playing' | 'state_paused' | 'state_stopped';
+export type MediaState = 'state_playing' | 'state_paused';
 
 interface BaseLockScreenInfo {
   [key: string]: string | boolean | number | undefined;
@@ -45,9 +45,8 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   artwork?: string;
   artist?: string;
   album?: string;
-  genre?: string;
   duration?: number;
-  isLiveStream?: boolean;
+  description?: string; // android only
   state?: MediaState;
   speed?: number;
   elapsedTime?: number;
