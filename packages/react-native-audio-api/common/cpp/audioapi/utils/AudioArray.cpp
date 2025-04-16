@@ -7,6 +7,12 @@ AudioArray::AudioArray(size_t size) : data_(nullptr), size_(size) {
   resize(size);
 }
 
+AudioArray::AudioArray(const AudioArray &other) : data_(nullptr), size_(0) {
+  resize(other.size_);
+
+  copy(&other);
+}
+
 AudioArray::~AudioArray() {
   if (data_) {
     delete[] data_;

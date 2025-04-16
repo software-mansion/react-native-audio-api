@@ -48,6 +48,7 @@ using namespace facebook;
 class JsiHostObject : public jsi::HostObject {
  public:
   JsiHostObject();
+  ~JsiHostObject() override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 

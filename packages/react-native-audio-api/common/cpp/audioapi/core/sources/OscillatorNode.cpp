@@ -16,6 +16,7 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
+
   isInitialized_ = true;
 }
 

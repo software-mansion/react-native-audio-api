@@ -31,7 +31,7 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate'
+  s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate', 'MediaPlayer', 'AVFoundation'
 
   s.compiler_flags = "#{folly_flags}"
 

@@ -7,6 +7,7 @@ import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
+import OfflineRendering from './OfflineRendering';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -16,6 +17,7 @@ type NavigationParamList = {
   TextToSpeech: undefined;
   AudioFile: undefined;
   AudioVisualizer: undefined;
+  OfflineRendering: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -70,5 +72,11 @@ export const Examples: Example[] = [
     title: 'Audio Visualizer',
     subtitle: 'Visualize audio data',
     screen: AudioVisualizer,
+  },
+  {
+    key: 'OfflineRendering',
+    title: 'Offline Rendering',
+    subtitle: 'Rendering audio in offline',
+    screen: OfflineRendering,
   },
 ] as const;

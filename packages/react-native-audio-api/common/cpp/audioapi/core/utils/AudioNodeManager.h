@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/core/utils/AudioNodeDestructor.h>
+
 #include <memory>
 #include <mutex>
 #include <tuple>
@@ -31,6 +33,7 @@ class AudioNodeManager {
 
  private:
   std::mutex graphLock_;
+  AudioNodeDestructor nodeDeconstructor_;
 
   // all nodes created in the context
   std::unordered_set<std::shared_ptr<AudioNode>> nodes_;

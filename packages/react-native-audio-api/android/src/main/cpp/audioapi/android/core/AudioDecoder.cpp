@@ -36,6 +36,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
 
   ma_uint64 framesDecoded;
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
+
   if (framesDecoded == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
 
@@ -109,39 +110,4 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
   return audioBus;
 }
 
-// std::shared_ptr<AudioBus> AudioDecoder::decode(ma_decoder &decoder) const {
-// ma_uint64 totalFrameCount;
-// ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
-//
-// auto audioBus = std::make_shared<AudioBus>(
-//         static_cast<int>(totalFrameCount), 2, sampleRate_);
-// auto *buffer = new float[totalFrameCount * 2];
-//
-// ma_uint64 framesDecoded;
-// ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount,
-// &framesDecoded); if (framesDecoded == 0) {
-//     __android_log_print(
-//             ANDROID_LOG_ERROR,
-//             "AudioDecoder",
-//             "Failed to decode");
-//
-//     delete[] buffer;
-//     ma_decoder_uninit(&decoder);
-//
-//     return nullptr;
-// }
-//
-// for (int i = 0; i < decoder.outputChannels; ++i) {
-//     auto channelData = audioBus->getChannel(i)->getData();
-//
-//     for (ma_uint64 j = 0; j < framesDecoded; ++j) {
-//         channelData[j] = buffer[j * decoder.outputChannels + i];
-//     }
-// }
-//
-// delete[] buffer;
-// ma_decoder_uninit(&decoder);
-//
-// return audioBus;
-// }
 } // namespace audioapi

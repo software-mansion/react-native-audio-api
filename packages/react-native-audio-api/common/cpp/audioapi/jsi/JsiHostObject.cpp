@@ -1,6 +1,15 @@
 #include <audioapi/jsi/JsiHostObject.h>
 
+//  set this value to 1 in order to debug the construction/destruction
+#define JSI_DEBUG_ALLOCATIONS 1
+
 namespace audioapi {
+
+#if JSI_DEBUG_ALLOCATIONS
+int objCounter = 0;
+std::vector<JsiHostObject *> objects;
+#endif
+
 JsiHostObject::JsiHostObject() {
   getters_ = std::make_unique<std::unordered_map<
       std::string,
@@ -12,6 +21,23 @@ JsiHostObject::JsiHostObject() {
   setters_ = std::make_unique<std::unordered_map<
       std::string,
       void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
+
+#if JSI_DEBUG_ALLOCATIONS
+  objects.push_back(this);
+  objCounter++;
+#endif
+}
+
+JsiHostObject::~JsiHostObject() {
+#if JSI_DEBUG_ALLOCATIONS
+  for (size_t i = 0; i < objects.size(); ++i) {
+    if (objects.at(i) == this) {
+      objects.erase(objects.begin() + i);
+      break;
+    }
+  }
+  objCounter--;
+#endif
 }
 
 std::vector<jsi::PropNameID> JsiHostObject::getPropertyNames(jsi::Runtime &rt) {

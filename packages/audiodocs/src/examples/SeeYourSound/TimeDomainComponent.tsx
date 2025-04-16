@@ -10,6 +10,7 @@ import {
   AnalyserNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button } from 'react-native';
+import CanvasSizer from './CanvasSizerComponent';
 
 interface ChartProps {
   data: Uint8Array;
@@ -43,7 +44,16 @@ const TimeChart: React.FC<ChartProps> = (props) => {
   }, [data, dataSize]);
 
   return (
-    <canvas ref={canvasRef} style={{flex: 1}}></canvas>
+    <CanvasSizer canvasHeight={300}>
+      {({width, height }) => (
+        <canvas
+          ref={canvasRef}
+          style={{ flex: 1 }}
+          width={width}
+          height={height}
+        />
+      )}
+    </CanvasSizer>
   );
 }
 
