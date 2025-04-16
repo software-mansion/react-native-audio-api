@@ -10,21 +10,15 @@ const pkg = require('react-native-audio-api/package.json');
 
 const withBackgroundAudio: ConfigPlugin = (config) => {
   return withInfoPlist(config, (iosConfig) => {
-    if (iosConfig.modResults.UIBackgroundModes) {
-      iosConfig.modResults.UIBackgroundModes = [
-        ...Array.from(
-          new Set([...iosConfig.modResults.UIBackgroundModes, 'audio'])
-        ),
-      ];
-    } else {
-      iosConfig.modResults.UIBackgroundModes = ['audio'];
-    }
+    iosConfig.modResults.UIBackgroundModes = [
+      ...Array.from(
+        new Set([...(iosConfig.modResults.UIBackgroundModes ?? []), 'audio'])
+      ),
+    ];
+
     return iosConfig;
   });
 };
-
-// 'android.permission.FOREGROUND_SERVICE',
-// 'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
 
 const withAndroidPermissions: ConfigPlugin<{
   androidFSPermissions: string[];
@@ -65,10 +59,10 @@ const withForegroundService: ConfigPlugin<{
 };
 
 const withAudioAPI: ConfigPlugin<{
-  iosBackgroundMode: boolean;
-  androidForegroundService: boolean;
-  androidFSPermissions: string[];
-  androidFSTypes: string[];
+  iosBackgroundMode?: boolean;
+  androidForegroundService?: boolean;
+  androidFSPermissions?: string[];
+  androidFSTypes?: string[];
 }> = (
   config,
   {
@@ -82,8 +76,12 @@ const withAudioAPI: ConfigPlugin<{
     config = withBackgroundAudio(config);
   }
   if (androidForegroundService) {
-    config = withAndroidPermissions(config, { androidFSPermissions });
-    config = withForegroundService(config, { androidFSTypes });
+    config = withAndroidPermissions(config, {
+      androidFSPermissions: androidFSPermissions ?? [],
+    });
+    config = withForegroundService(config, {
+      androidFSTypes: androidFSTypes ?? [],
+    });
   }
 
   return config;
