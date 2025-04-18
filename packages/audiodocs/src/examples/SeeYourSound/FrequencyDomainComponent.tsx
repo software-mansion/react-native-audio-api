@@ -10,6 +10,7 @@ import {
   AnalyserNode,
 } from 'react-native-audio-api';
 import { ActivityIndicator, View, Button } from 'react-native';
+import CanvasSizer from './CanvasSizerComponent';
 
 interface ChartProps {
   data: Uint8Array;
@@ -41,7 +42,16 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
   }, [data, dataSize]);
 
   return (
-    <canvas ref={canvasRef} style={{flex: 1}}></canvas>
+    <CanvasSizer canvasHeight={300}>
+      {({ width, height }) => (
+        <canvas
+          ref={canvasRef}
+          style={{ flex: 1 }}
+          width={width}
+          height={height}
+        />
+      )}
+    </CanvasSizer>
   );
 }
 
@@ -127,7 +137,6 @@ const AudioVisualizer: React.FC = () => {
 
   return (
     <View>
-      <View style={{ flex: 0.2 }} />
       <FrequencyChart data={freqs} dataSize={FFT_SIZE / 2} />
       <View
         style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>

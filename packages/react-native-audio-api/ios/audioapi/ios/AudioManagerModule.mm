@@ -14,7 +14,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   if (self == [super init]) {
     self.audioEngine = [AudioEngine sharedInstance];
     self.audioSessionManager = [AudioSessionManager sharedInstance];
-    self.notificationManager = [NotificationManager sharedInstance];
+    self.notificationManager = [NotificationManager sharedInstanceWithAudioManagerModule:self];
     self.lockScreenManager = [LockScreenManager sharedInstanceWithAudioManagerModule:self];
   }
 
@@ -61,6 +61,11 @@ RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString
   }
 }
 
+RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
+{
+  [self.notificationManager observeAudioInterruptions:enabled];
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 {
   return [self.audioSessionManager getDevicePreferredSampleRate];
@@ -80,13 +85,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
     @"onRemoteSkipBackward",
     @"onRemoteSeekForward",
     @"onRemoteSeekBackward",
-    @"onRemoteChangePlaybackPosition"
+    @"onRemoteChangePlaybackPosition",
+    @"interruption",
+    @"routeChange"
   ];
-}
-
-- (void)sendEventWithValue:(NSString *)event withValue:(NSString *)value
-{
-  [self sendEventWithName:@"AudioManagerModule" body:@{@"name" : event, @"value" : value}];
 }
 
 @end

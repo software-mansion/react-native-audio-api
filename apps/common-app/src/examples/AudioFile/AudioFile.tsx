@@ -4,6 +4,7 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
+  AudioManager,
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
@@ -55,10 +56,19 @@ const AudioFile: FC = () => {
 
     if (isPlaying) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
+      AudioManager.setLockScreenInfo({
+        state: 'state_paused',
+      });
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
       }
+
+      AudioManager.setLockScreenInfo({
+        state: 'state_playing',
+      });
+
+      AudioManager.observeAudioInterruptions(true);
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource({
         pitchCorrection: true,
@@ -105,6 +115,22 @@ const AudioFile: FC = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
+
+    AudioManager.setLockScreenInfo({
+      title: 'Audio file',
+      artist: 'Software Mansion',
+      album: 'Audio API',
+      duration: 10,
+    });
+
+    AudioManager.enableRemoteCommand('play', true);
+    AudioManager.enableRemoteCommand('pause', true);
+    AudioManager.enableRemoteCommand('stop', true);
+    AudioManager.enableRemoteCommand('interruption', true, (e) => {
+      console.log('interruption event', e);
+    });
+
+    AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 
