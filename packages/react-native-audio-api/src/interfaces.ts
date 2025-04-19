@@ -1,10 +1,11 @@
 import {
-  ContextState,
-  BiquadFilterType,
-  OscillatorType,
-  ChannelCountMode,
-  ChannelInterpretation,
   WindowType,
+  ContextState,
+  OscillatorType,
+  BiquadFilterType,
+  ChannelCountMode,
+  AudioRecorderStatus,
+  ChannelInterpretation,
 } from './types';
 
 export interface AudioAPIInstaller {
@@ -14,6 +15,7 @@ export interface AudioAPIInstaller {
     length: number,
     sampleRate: number
   ) => IAudioContext;
+  createAudioRecorder: () => IAudioRecorder;
 }
 
 export interface IBaseAudioContext {
@@ -171,4 +173,20 @@ export interface IAnalyserNode extends IAudioNode {
   getByteFrequencyData: (array: Uint8Array) => void;
   getFloatTimeDomainData: (array: Float32Array) => void;
   getByteTimeDomainData: (array: Uint8Array) => void;
+}
+
+export type IAudioReadyCallback = (buffer: IAudioBuffer) => void;
+export type IErrorCallback = (error: Error) => void;
+export type IStatusChangeCallback = (
+  status: AudioRecorderStatus,
+  previousStatus: AudioRecorderStatus
+) => void;
+
+export interface IAudioRecorder {
+  start: () => void;
+  stop: () => void;
+
+  onAudioReady: (callback: IAudioReadyCallback) => void;
+  onError: (callback: IErrorCallback) => void;
+  onStatusChange: (callback: IStatusChangeCallback) => void;
 }

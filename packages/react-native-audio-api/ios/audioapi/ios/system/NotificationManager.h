@@ -12,7 +12,7 @@
 
 @property (nonatomic, assign) bool isInterrupted;
 @property (nonatomic, assign) bool hadConfigurationChange;
-@property (nonatomic, assign) BOOL audioInterruptionsObserved;
+@property (nonatomic, assign) bool audioInterruptionsObserved;
 
 + (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
 - (void)cleanup;

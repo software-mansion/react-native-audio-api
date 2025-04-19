@@ -121,7 +121,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
-  NSLog(@"[AudioEngine] detaching source nde with ID: %@", sourceNodeId);
+  NSLog(@"[AudioEngine] detaching source node with ID: %@", sourceNodeId);
 
   AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
   [self.audioEngine detachNode:sourceNode];

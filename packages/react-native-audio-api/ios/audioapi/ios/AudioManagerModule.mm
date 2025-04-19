@@ -86,8 +86,8 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
     @"onRemoteSeekForward",
     @"onRemoteSeekBackward",
     @"onRemoteChangePlaybackPosition",
-    @"interruption",
-    @"routeChange"
+    @"onInterruption",
+    @"onRouteChange"
   ];
 }
 
