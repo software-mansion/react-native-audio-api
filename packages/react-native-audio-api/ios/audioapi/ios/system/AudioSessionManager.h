@@ -18,5 +18,6 @@
 - (NSNumber *)getDevicePreferredSampleRate;
 - (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options;
 - (bool)setActive:(bool)active error:(NSError **)error;
+- (bool)setPreferredSampleRate:(double)sampleRate error:(NSError **)error;
 
 @end

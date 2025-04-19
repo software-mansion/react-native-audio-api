@@ -145,4 +145,5 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
     analyserNode->setWindowType(value.getString(runtime).utf8(runtime));
   }
 };
+
 } // namespace audioapi

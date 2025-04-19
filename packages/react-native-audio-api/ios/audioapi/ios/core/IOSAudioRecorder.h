@@ -10,12 +10,19 @@ typedef struct objc_object CAudioRecorder;
 
 namespace audioapi {
 
+class AudioBus;
+
 class IOSAudioRecorder {
  protected:
   CAudioRecorder *audioRecorder_;
 
+  std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
+
  public:
-  IOSAudioRecorder();
+  IOSAudioRecorder(
+      const std::function<void(std::shared_ptr<AudioBus>, int, double)>
+          &onAudioReady);
+
   ~IOSAudioRecorder();
 
   void start();

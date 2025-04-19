@@ -5,14 +5,22 @@
 #endif
 
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
-AudioRecorder::AudioRecorder() {
+AudioRecorder::AudioRecorder(
+    std::function<void(void)> onError,
+    std::function<void(void)> onStatusChange,
+    std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady)
+    : onError_(onError),
+      onStatusChange_(onStatusChange),
+      onAudioReady_(onAudioReady) {
 #ifdef ANDROID
   // Android-specific initialization
 #else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>();
+  audioRecorder_ = std::make_shared<IOSAudioRecorder>(this->getOnAudioReady());
 #endif
 }
 
@@ -32,6 +40,16 @@ void AudioRecorder::stop() {
 #else
   audioRecorder_->stop();
 #endif
+}
+
+std::function<void(std::shared_ptr<AudioBus>, int, double)>
+AudioRecorder::getOnAudioReady() {
+  return
+      [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
+        printf("hazBuf: %p", bus.get());
+        // TODO: potentialy push data to connected graph
+        onAudioReady_(bus, numFrames, when);
+      };
 }
 
 } // namespace audioapi

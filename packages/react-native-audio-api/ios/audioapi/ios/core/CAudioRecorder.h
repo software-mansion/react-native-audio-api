@@ -3,15 +3,17 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
+typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAudioTime *when);
 
 @interface CAudioRecorder : NSObject
 
 @property (nonatomic, assign) bool isRunning;
 @property (nonatomic, assign) int bufferSize;
+
+@property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 @property (nonatomic, strong) AVAudioNodeTapBlock tapBlock;
 
-- (instancetype)init;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock;
 
 - (void)start;
 

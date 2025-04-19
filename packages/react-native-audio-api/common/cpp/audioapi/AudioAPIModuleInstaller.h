@@ -82,9 +82,7 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto audioRecorder = std::make_shared<AudioRecorder>();
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioRecorder, &runtime, jsCallInvoker);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioRecorderHostObject);

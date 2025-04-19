@@ -4,13 +4,15 @@
 
 @implementation CAudioRecorder
 
-- (instancetype)init
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
 {
   if (self = [super init]) {
     NSLog(@"[AudioRecorder] init");
+    self.receiverBlock = [receiverBlock copy];
 
-    self.tapBlock = ^(AVAudioPCMBuffer *_Nonnull buffer, AVAudioTime *_Nonnull when) {
-      NSLog(@"tap taap: %@ %d", buffer.format, buffer.frameLength);
+    __weak typeof(self) weakSelf = self;
+    self.tapBlock = ^(AVAudioPCMBuffer *buffer, AVAudioTime *when) {
+      weakSelf.receiverBlock(buffer, buffer.frameLength, when);
     };
   }
 
@@ -22,20 +24,15 @@
   NSLog(@"[AudioRecorder] start");
   NSError *error;
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  AudioSessionManager *manager = [AudioSessionManager sharedInstance];
-
-  [manager.audioSession setPreferredSampleRate:48000 error:&error];
 
   AVAudioInputNode *input = [audioEngine.audioEngine inputNode];
+  [audioEngine.audioEngine prepare];
+  [audioEngine.audioEngine startAndReturnError:&error];
 
   AVAudioFormat *format = [input outputFormatForBus:0];
-  [audioEngine.audioEngine prepare];
-
   NSLog(@"format: %@", format);
+  [input installTapOnBus:0 bufferSize:2048 format:format block:_tapBlock];
 
-  [input installTapOnBus:0 bufferSize:8192 format:format block:_tapBlock];
-
-  [audioEngine startEngine];
   self.isRunning = true;
 }
 

@@ -180,4 +180,9 @@ static AudioSessionManager *_sharedInstance = nil;
   return true;
 }
 
+- (bool)setPreferredSampleRate:(double)sampleRate error:(NSError **)error
+{
+  return [self.audioSession setPreferredSampleRate:sampleRate error:error];
+}
+
 @end

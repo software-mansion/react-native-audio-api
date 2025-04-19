@@ -40,3 +40,11 @@ export type WindowType = 'blackman' | 'hann';
 export interface AudioBufferSourceNodeOptions {
   pitchCorrection: boolean;
 }
+
+export type AudioRecorderStatus =
+  | 'idle'
+  | 'initializing'
+  | 'ready'
+  | 'running'
+  | 'stopping'
+  | 'error';
