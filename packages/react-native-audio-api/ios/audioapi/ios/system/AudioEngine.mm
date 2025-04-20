@@ -29,6 +29,7 @@ static AudioEngine *_sharedInstance = nil;
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.audioEngine.mainMixerNode.outputVolume = 1;
     self.audioEngine.inputNode.volume = 1;
+    self.inputMixer = [[AVAudioMixerNode alloc] init];
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
@@ -45,6 +46,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.tapId = nil;
+  self.inputMixer = nil;
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
@@ -151,7 +153,9 @@ static AudioEngine *_sharedInstance = nil;
   AVAudioInputNode *input = [self.audioEngine inputNode];
   AVAudioFormat *format = [input inputFormatForBus:0];
 
-  [input installTapOnBus:0 bufferSize:2048 format:format block:tapBlock];
+  [self.audioEngine attachNode:self.inputMixer];
+  [self.audioEngine connect:input to:self.inputMixer format:format];
+  [self.inputMixer installTapOnBus:0 bufferSize:2048 format:format block:tapBlock];
   return tapId;
 }
 
@@ -161,15 +165,13 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  AVAudioInputNode *input = [self.audioEngine inputNode];
-  [input removeTapOnBus:0];
+  [self.inputMixer removeTapOnBus:0];
+  [self.audioEngine detachNode:self.inputMixer];
   self.tapId = nil;
 }
 
 - (void)startIfNecessary
 {
-  NSLog(@"start if necessary %d", [self isRunning]);
-
   if ([self isRunning]) {
     return;
   }

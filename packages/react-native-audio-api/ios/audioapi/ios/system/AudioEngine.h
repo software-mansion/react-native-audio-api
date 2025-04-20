@@ -9,6 +9,7 @@
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
 @property (nonatomic, strong) NSString *tapId;
+@property (nonatomic, strong) AVAudioMixerNode *inputMixer;
 
 + (instancetype)sharedInstance;
 - (void)cleanup;
