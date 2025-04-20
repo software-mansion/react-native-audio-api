@@ -14,13 +14,11 @@ IOSAudioRecorder::IOSAudioRecorder(const std::function<void(std::shared_ptr<Audi
   AudioReceiverBlock audioReceiverBlock = ^(AVAudioPCMBuffer *buffer, int numFrames, AVAudioTime *when) {
     auto bus = std::make_shared<AudioBus>(numFrames, 1, [when sampleRate]);
 
-    printf("length: %zu %f\n", bus->getSize(), bus->getSampleRate());
-
     auto *inputChannel = (float *)buffer.mutableAudioBufferList->mBuffers[0].mData;
     auto *outputChannel = bus->getChannel(0)->getData();
 
     memcpy(outputChannel, inputChannel, numFrames * sizeof(float));
-    onAudioReady_(bus, numFrames, 0.0);
+    onAudioReady_(bus, numFrames, [when sampleTime] / [when sampleRate]);
   };
 
   audioRecorder_ = [[CAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock];

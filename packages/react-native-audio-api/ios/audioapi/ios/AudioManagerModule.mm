@@ -49,16 +49,9 @@ RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-                      options active : (BOOL)active)
+RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)options)
 {
-  NSError *error = nil;
-
-  if (active) {
-    [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
-  } else {
-    [self.audioSessionManager setActive:false error:&error];
-  }
+  [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)

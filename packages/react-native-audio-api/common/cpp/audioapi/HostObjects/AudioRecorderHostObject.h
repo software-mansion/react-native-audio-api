@@ -81,12 +81,16 @@ class AudioRecorderHostObject : public JsiHostObject {
         return;
       }
 
-      callInvoker_->invokeAsync([this, bus = std::move(bus)](jsi::Runtime &runtime) {
-        printf("go to js you ugly\n");
+      callInvoker_->invokeAsync([this, bus = std::move(bus), numFrames, when](jsi::Runtime &runtime) {
         auto buffer = std::make_shared<AudioBuffer>(bus);
         auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
-        audioReadyCallback_->call(runtime, jsi::Object::createFromHostObject(runtime, bufferHostObject));
+        audioReadyCallback_->call(
+          runtime,
+          jsi::Object::createFromHostObject(runtime, bufferHostObject),
+          jsi::Value(numFrames),
+          jsi::Value(when)
+        );
       });
     };
   }

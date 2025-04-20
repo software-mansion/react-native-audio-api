@@ -8,7 +8,11 @@ import {
 import { AudioRecorderStatus } from '../types';
 import AudioBuffer from './AudioBuffer';
 
-export type AudioReadyCallback = (buffer: AudioBuffer) => void;
+export type AudioReadyCallback = (
+  buffer: AudioBuffer,
+  numFrames: number,
+  when: number
+) => void;
 
 export type ErrorCallback = (error: Error) => void;
 
@@ -24,10 +28,12 @@ export default class AudioRecorder {
   private onStatusChangeCallback: StatusChangeCallback | null = null;
 
   private onAudioReadyInternal: IAudioReadyCallback = (
-    buffer: IAudioBuffer
+    buffer: IAudioBuffer,
+    numFrames: number,
+    when: number
   ) => {
     if (this.onAudioReadyCallback) {
-      this.onAudioReadyCallback(new AudioBuffer(buffer));
+      this.onAudioReadyCallback(new AudioBuffer(buffer), numFrames, when);
     }
   };
 

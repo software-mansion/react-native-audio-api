@@ -20,11 +20,12 @@ const Record: FC = () => {
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
       iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
-      active: true,
     });
 
+    recorderRef.current = new AudioRecorder();
+
     return () => {
-      AudioManager.setAudioSessionOptions({ active: false });
+      // AudioManager.setAudioSessionOptions({ active: false });
     };
   }, []);
 
@@ -62,15 +63,22 @@ const Record: FC = () => {
         audioBuffersRef.current = [];
         sourcesRef.current = [];
       },
-      (nextStartAt + 10 - tNow) * 1000
+      (nextStartAt - tNow) * 1000
     );
   };
 
   const onRecord = () => {
-    recorderRef.current = new AudioRecorder();
+    if (!recorderRef.current) {
+      return;
+    }
 
-    recorderRef.current.onAudioReady((buffer) => {
-      console.log('Audio recorder buffer ready:', buffer.duration);
+    recorderRef.current.onAudioReady((buffer, numFrames, when) => {
+      console.log(
+        'Audio recorder buffer ready:',
+        buffer.duration,
+        numFrames,
+        when
+      );
       audioBuffersRef.current.push(buffer);
     });
 

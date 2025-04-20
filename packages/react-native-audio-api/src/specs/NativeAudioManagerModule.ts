@@ -27,15 +27,9 @@ const AudioManagerModule = {
   setAudioSessionOptions(
     category: string,
     mode: string,
-    options: Array<string>,
-    active: boolean
+    options: Array<string>
   ): void {
-    NativeAudioManagerModule.setAudioSessionOptions(
-      category,
-      mode,
-      options,
-      active
-    );
+    NativeAudioManagerModule.setAudioSessionOptions(category, mode, options);
   },
   getDevicePreferredSampleRate(): number {
     return NativeAudioManagerModule.getDevicePreferredSampleRate();

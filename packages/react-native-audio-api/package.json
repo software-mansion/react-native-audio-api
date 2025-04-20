@@ -51,6 +51,7 @@
     "format:ios": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" \\) -not -path \"ios/audioapi/ios/*\" | xargs clang-format -i",
     "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "build": "bob build",
+    "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"
   },

@@ -46,7 +46,6 @@ std::function<void(std::shared_ptr<AudioBus>, int, double)>
 AudioRecorder::getOnAudioReady() {
   return
       [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
-        printf("hazBuf: %p", bus.get());
         // TODO: potentialy push data to connected graph
         onAudioReady_(bus, numFrames, when);
       };

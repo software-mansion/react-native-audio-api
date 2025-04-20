@@ -30,8 +30,7 @@ class AudioManager {
     AudioManagerModule.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
-      options.iosOptions ?? [],
-      options.active ?? true
+      options.iosOptions ?? []
     );
   }
 

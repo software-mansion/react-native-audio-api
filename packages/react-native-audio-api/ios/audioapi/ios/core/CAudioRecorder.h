@@ -9,6 +9,7 @@ typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAu
 
 @property (nonatomic, assign) bool isRunning;
 @property (nonatomic, assign) int bufferSize;
+@property (nonatomic, strong) NSString *tapId;
 
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 @property (nonatomic, strong) AVAudioNodeTapBlock tapBlock;

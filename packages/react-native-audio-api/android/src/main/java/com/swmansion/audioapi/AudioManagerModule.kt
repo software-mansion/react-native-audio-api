@@ -47,7 +47,6 @@ class AudioManagerModule(
     category: String?,
     mode: String?,
     options: ReadableArray?,
-    active: Boolean,
   ) {
     // Nothing to do here
   }

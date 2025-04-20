@@ -35,7 +35,6 @@ AudioBus::AudioBus(const AudioBus &other) {
 }
 
 AudioBus::~AudioBus() {
-  printf("audio bus died\n");
   channels_.clear();
 }
 

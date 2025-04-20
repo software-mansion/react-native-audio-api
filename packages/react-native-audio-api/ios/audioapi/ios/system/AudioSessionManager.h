@@ -7,6 +7,8 @@
 
 @property (nonatomic, weak) AVAudioSession *audioSession;
 
+@property (nonatomic, assign) bool isActive;
+@property (nonatomic, assign) bool hasDirtySettings;
 @property (nonatomic, assign) AVAudioSessionMode sessionMode;
 @property (nonatomic, assign) AVAudioSessionCategory sessionCategory;
 @property (nonatomic, assign) AVAudioSessionCategoryOptions sessionOptions;
@@ -17,7 +19,6 @@
 
 - (NSNumber *)getDevicePreferredSampleRate;
 - (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options;
-- (bool)setActive:(bool)active error:(NSError **)error;
-- (bool)setPreferredSampleRate:(double)sampleRate error:(NSError **)error;
+- (bool)setActive:(bool)active;
 
 @end

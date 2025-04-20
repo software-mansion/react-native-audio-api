@@ -175,8 +175,14 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
-export type IAudioReadyCallback = (buffer: IAudioBuffer) => void;
+export type IAudioReadyCallback = (
+  buffer: IAudioBuffer,
+  numFrames: number,
+  when: number
+) => void;
+
 export type IErrorCallback = (error: Error) => void;
+
 export type IStatusChangeCallback = (
   status: AudioRecorderStatus,
   previousStatus: AudioRecorderStatus
