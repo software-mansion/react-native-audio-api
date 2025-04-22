@@ -51,11 +51,13 @@ class AudioRecorderHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(start) {
     audioRecorder_->start();
+
     return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(stop) {
     audioRecorder_->stop();
+
     return jsi::Value::undefined();
   }
 
