@@ -33,6 +33,7 @@ class AudioScheduledSourceNode : public AudioNode {
   void setOnendedCallback(const std::function<void(double)> &onendedCallback);
 
   virtual double getStopTime() const = 0;
+  void disable() override;
 
  protected:
   PlaybackState playbackState_;

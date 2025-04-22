@@ -141,12 +141,16 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   nonSilentFramesToProcess = framesToProcess;
 }
 
+void AudioScheduledSourceNode::disable() {
+  AudioNode::disable();
+
+  if (onendedCallback_) {
+    onendedCallback_(getStopTime());
+  }
+}
+
 void AudioScheduledSourceNode::handleStopScheduled() {
   if (isStopScheduled()) {
-    if (onendedCallback_) {
-      onendedCallback_(getStopTime());
-    }
-
     playbackState_ = PlaybackState::FINISHED;
     disable();
   }
