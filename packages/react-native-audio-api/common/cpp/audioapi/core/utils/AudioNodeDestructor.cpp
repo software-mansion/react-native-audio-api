@@ -4,7 +4,7 @@
 
 namespace audioapi {
 
-AudioNodeDestructor::AudioNodeDestructor(): isExiting_(false) {
+AudioNodeDestructor::AudioNodeDestructor() : isExiting_(false) {
   thread_ = std::thread(&AudioNodeDestructor::process, this);
 }
 

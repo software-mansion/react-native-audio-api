@@ -8,6 +8,7 @@ import DrumMachine from './DrumMachine';
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
+import SyncedAudioPlayer from './SyncedAudioPlayer';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -18,6 +19,7 @@ type NavigationParamList = {
   AudioFile: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
+  SyncedAudioPlayer: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -78,5 +80,11 @@ export const Examples: Example[] = [
     title: 'Offline Rendering',
     subtitle: 'Rendering audio in offline',
     screen: OfflineRendering,
+  },
+  {
+    key: 'SyncedAudioPlayer',
+    title: 'Synced audio player',
+    subtitle: 'Plays multiple files in sync',
+    screen: SyncedAudioPlayer,
   },
 ] as const;
