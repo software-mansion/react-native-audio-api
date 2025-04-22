@@ -14,6 +14,9 @@ endif()
 include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
+# frtti - enable Run-Time Type Information (dynamic_cast, typeid)
+# -std=c++20 - use C++20 standard
+# -Wall - enable all compiler's warning messages
 string(APPEND CMAKE_CXX_FLAGS
        "-frtti -std=c++${CMAKE_CXX_STANDARD} -Wall")
 
