@@ -68,8 +68,8 @@ const withAudioAPI: ConfigPlugin<{
   {
     iosBackgroundMode = true,
     androidForegroundService = true,
-    androidFSPermissions,
-    androidFSTypes,
+    androidFSPermissions = [],
+    androidFSTypes = [],
   }
 ) => {
   if (iosBackgroundMode) {
@@ -77,10 +77,10 @@ const withAudioAPI: ConfigPlugin<{
   }
   if (androidForegroundService) {
     config = withAndroidPermissions(config, {
-      androidFSPermissions: androidFSPermissions ?? [],
+      androidFSPermissions,
     });
     config = withForegroundService(config, {
-      androidFSTypes: androidFSTypes ?? [],
+      androidFSTypes,
     });
   }
 
