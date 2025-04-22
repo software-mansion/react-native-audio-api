@@ -43,6 +43,12 @@ class AudioRecorderHostObject : public JsiHostObject {
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, onStatusChange));
   }
 
+  ~AudioRecorderHostObject() override {
+    errorCallback_ = nullptr;
+    audioReadyCallback_ = nullptr;
+    statusChangeCallback_ = nullptr;
+  }
+
   JSI_HOST_FUNCTION(start) {
     audioRecorder_->start();
     return jsi::Value::undefined();
@@ -89,7 +95,7 @@ class AudioRecorderHostObject : public JsiHostObject {
         return;
       }
 
-      callInvoker_->invokeAsync([this, bus = std::move(bus), numFrames, when](jsi::Runtime &runtime) {
+      callInvoker_->invokeAsync([this, bus = bus, numFrames, when](jsi::Runtime &runtime) {
         auto buffer = std::make_shared<AudioBuffer>(bus);
         auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
