@@ -15,7 +15,7 @@ include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
 string(APPEND CMAKE_CXX_FLAGS
-       "-fexceptions -frtti -std=c++${CMAKE_CXX_STANDARD} -Wall")
+       "-frtti -std=c++${CMAKE_CXX_STANDARD} -Wall")
 
 if(${IS_NEW_ARCHITECTURE_ENABLED})
   string(APPEND CMAKE_CXX_FLAGS " -DRCT_NEW_ARCH_ENABLED")
