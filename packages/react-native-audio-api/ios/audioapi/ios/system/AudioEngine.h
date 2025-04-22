@@ -21,7 +21,9 @@
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
-- (NSString *)installInputTap:(AVAudioNodeTapBlock)tapBlock;
+- (NSString *)installInputTap:(AVAudioNodeTapBlock)tapBlock
+                 bufferLength:(int)bufferLength
+        enableVoiceProcessing:(bool)enableVoiceProcessing;
 - (void)removeInputTap:(NSString *)tapId;
 
 - (void)startIfNecessary;

@@ -22,11 +22,12 @@ const Record: FC = () => {
       iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
     });
 
-    recorderRef.current = new AudioRecorder();
-
-    return () => {
-      // AudioManager.setAudioSessionOptions({ active: false });
-    };
+    recorderRef.current = new AudioRecorder({
+      sampleRate: 16000,
+      numberOfChannels: 2,
+      bufferLengthInSamples: 1024,
+      iosEnableVoiceProcessing: true,
+    });
   }, []);
 
   const onReplay = () => {

@@ -15,6 +15,10 @@ class IOSAudioRecorder;
 class AudioRecorder {
  public:
   explicit AudioRecorder(
+    float sampleRate,
+    int numberOfChannels,
+    int bufferLength,
+    bool enableVoiceProcessing,
     std::function<void(void)> onError,
     std::function<void(void)> onStatusChange,
     std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady

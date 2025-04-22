@@ -140,22 +140,35 @@ static AudioEngine *_sharedInstance = nil;
 }
 
 - (NSString *)installInputTap:(AVAudioNodeTapBlock)tapBlock
+                 bufferLength:(int)bufferLength
+        enableVoiceProcessing:(bool)enableVoiceProcessing
 {
   if (self.tapId != nil) {
     return nil;
   }
 
   NSString *tapId = [[NSUUID UUID] UUIDString];
+  // NSError *error;
   self.tapId = tapId;
+
+  //  if (enableVoiceProcessing) {
+  //    [[self.audioEngine inputNode] setVoiceProcessingEnabled:true error:&error];
+  //    [[self.audioEngine outputNode] setVoiceProcessingEnabled:true error:&error];
+  //  }
+
+  // if (error != nil) {
+  //   NSLog(@"error while enabing voice processing: %@", [error debugDescription]);
+  // }
 
   [self startIfNecessary];
 
   AVAudioInputNode *input = [self.audioEngine inputNode];
-  AVAudioFormat *format = [input inputFormatForBus:0];
+  AVAudioFormat *inputFormat = [input inputFormatForBus:0];
 
   [self.audioEngine attachNode:self.inputMixer];
-  [self.audioEngine connect:input to:self.inputMixer format:format];
-  [self.inputMixer installTapOnBus:0 bufferSize:2048 format:format block:tapBlock];
+  [self.audioEngine connect:input to:self.inputMixer format:inputFormat];
+
+  [self.inputMixer installTapOnBus:0 bufferSize:bufferLength format:inputFormat block:tapBlock];
   return tapId;
 }
 

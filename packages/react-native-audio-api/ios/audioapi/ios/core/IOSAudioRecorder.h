@@ -20,6 +20,10 @@ class IOSAudioRecorder {
 
  public:
   IOSAudioRecorder(
+      float sampleRate,
+      int numberOfChannels,
+      int bufferLength,
+      bool enableVoiceProcessing,
       const std::function<void(std::shared_ptr<AudioBus>, int, double)>
           &onAudioReady);
 

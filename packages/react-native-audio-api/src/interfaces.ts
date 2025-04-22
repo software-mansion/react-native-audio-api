@@ -8,16 +8,6 @@ import {
   ChannelInterpretation,
 } from './types';
 
-export interface AudioAPIInstaller {
-  createAudioContext: (sampleRate?: number) => IAudioContext;
-  createOfflineAudioContext: (
-    numberOfChannels: number,
-    length: number,
-    sampleRate: number
-  ) => IAudioContext;
-  createAudioRecorder: () => IAudioRecorder;
-}
-
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly state: ContextState;
