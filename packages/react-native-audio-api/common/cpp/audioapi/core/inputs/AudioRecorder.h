@@ -19,9 +19,9 @@ class AudioRecorder {
     int numberOfChannels,
     int bufferLength,
     bool enableVoiceProcessing,
-    std::function<void(void)> onError,
-    std::function<void(void)> onStatusChange,
-    std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady
+    const std::function<void(void)> &onError,
+    const std::function<void(void)> &onStatusChange,
+    const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady
   );
 
   ~AudioRecorder();

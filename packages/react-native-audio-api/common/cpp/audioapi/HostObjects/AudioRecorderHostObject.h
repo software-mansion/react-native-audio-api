@@ -4,6 +4,7 @@
 
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/core/inputs/AudioRecorder.h>
 
 #include <memory>
 #include <utility>

@@ -15,9 +15,10 @@ AudioRecorder::AudioRecorder(
     int numberOfChannels,
     int bufferLength,
     bool enableVoiceProcessing,
-    std::function<void(void)> onError,
-    std::function<void(void)> onStatusChange,
-    std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady)
+    const std::function<void(void)> &onError,
+    const std::function<void(void)> &onStatusChange,
+    const std::function<void(std::shared_ptr<AudioBus>, int, double)>
+        &onAudioReady)
     : onError_(onError),
       onStatusChange_(onStatusChange),
       onAudioReady_(onAudioReady) {
@@ -33,7 +34,11 @@ AudioRecorder::AudioRecorder(
 #endif
 }
 
-AudioRecorder::~AudioRecorder() {}
+AudioRecorder::~AudioRecorder() {
+  onError_ = nullptr;
+  onStatusChange_ = nullptr;
+  onAudioReady_ = nullptr;
+}
 
 void AudioRecorder::start() {
 #ifdef ANDROID
