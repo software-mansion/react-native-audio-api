@@ -5,9 +5,16 @@
 @implementation CAudioRecorder
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
+                         bufferLength:(int)bufferLength
+                enableVoiceProcessing:(bool)enableVoiceProcessing
 {
   if (self = [super init]) {
     self.tapId = nil;
+    self.isRunning = false;
+
+    self.bufferLength = bufferLength;
+    self.enableVoiceProcessing = enableVoiceProcessing;
+
     self.receiverBlock = [receiverBlock copy];
 
     __weak typeof(self) weakSelf = self;
@@ -25,7 +32,9 @@
 
 - (void)start
 {
-  self.tapId = [[AudioEngine sharedInstance] installInputTap:self.tapBlock];
+  self.tapId = [[AudioEngine sharedInstance] installInputTap:self.tapBlock
+                                                bufferLength:self.bufferLength
+                                       enableVoiceProcessing:self.enableVoiceProcessing];
   self.isRunning = true;
 }
 

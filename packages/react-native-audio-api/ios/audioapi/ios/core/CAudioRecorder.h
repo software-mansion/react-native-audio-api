@@ -8,13 +8,16 @@ typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAu
 @interface CAudioRecorder : NSObject
 
 @property (nonatomic, assign) bool isRunning;
-@property (nonatomic, assign) int bufferSize;
+@property (nonatomic, assign) int bufferLength;
+@property (nonatomic, assign) bool enableVoiceProcessing;
+
 @property (nonatomic, strong) NSString *tapId;
-
-@property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 @property (nonatomic, strong) AVAudioNodeTapBlock tapBlock;
+@property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
+                         bufferLength:(int)bufferLength
+                enableVoiceProcessing:(bool)enableVoiceProcessing;
 
 - (void)start;
 

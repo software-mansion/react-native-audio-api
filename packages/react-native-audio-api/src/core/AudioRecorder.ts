@@ -5,7 +5,7 @@ import {
   IStatusChangeCallback,
   IAudioBuffer,
 } from '../interfaces';
-import { AudioRecorderStatus } from '../types';
+import { AudioRecorderStatus, AudioRecorderOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
 
 export type AudioReadyCallback = (
@@ -52,8 +52,8 @@ export default class AudioRecorder {
     }
   };
 
-  constructor() {
-    this.recorder = global.createAudioRecorder();
+  constructor(options: AudioRecorderOptions) {
+    this.recorder = global.createAudioRecorder(options);
   }
 
   public start(): void {

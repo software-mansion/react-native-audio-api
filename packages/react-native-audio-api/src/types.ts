@@ -35,6 +35,13 @@ export interface OfflineAudioContextOptions {
   sampleRate: number;
 }
 
+export interface AudioRecorderOptions {
+  sampleRate: number;
+  numberOfChannels: number;
+  bufferLengthInSamples: number;
+  iosEnableVoiceProcessing: boolean;
+}
+
 export type WindowType = 'blackman' | 'hann';
 
 export interface AudioBufferSourceNodeOptions {

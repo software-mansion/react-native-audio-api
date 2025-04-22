@@ -1,4 +1,5 @@
 import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
+import { AudioRecorderOptions } from './types';
 import type {
   IAudioContext,
   IAudioRecorder,
@@ -14,7 +15,7 @@ declare global {
     sampleRate: number
   ) => IOfflineAudioContext;
 
-  var createAudioRecorder: () => IAudioRecorder;
+  var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 }
 
 /* eslint-disable no-var */
