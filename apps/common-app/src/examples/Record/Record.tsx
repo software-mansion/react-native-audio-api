@@ -23,7 +23,7 @@ const Record: FC = () => {
     });
 
     recorderRef.current = new AudioRecorder({
-      sampleRate: 16000,
+      sampleRate: 48000,
       numberOfChannels: 2,
       bufferLengthInSamples: 1024,
       iosEnableVoiceProcessing: true,
