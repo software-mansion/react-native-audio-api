@@ -16,7 +16,7 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
-       <!-- <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.MediaNotificationManager$NotificationService" android:foregroundServiceType="mediaPlayback|dataSync" /> -->
+        <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.MediaNotificationManager$NotificationService" android:foregroundServiceType="mediaPlayback|dataSync" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
