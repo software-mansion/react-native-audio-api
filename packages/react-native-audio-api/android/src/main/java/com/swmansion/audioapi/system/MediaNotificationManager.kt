@@ -207,7 +207,7 @@ class MediaNotificationManager(
     return NotificationCompat.Action(icon, title, i)
   }
 
-  inner class NotificationService : Service() {
+  class NotificationService : Service() {
     private val binder = LocalBinder()
     private var notification: Notification? = null
 
@@ -231,9 +231,9 @@ class MediaNotificationManager(
         val intent = Intent(this, NotificationService::class.java)
         ContextCompat.startForegroundService(this, intent)
         notification =
-          MediaNotificationManager(reactContext, notificationId, channelId)
-            .prepareNotification(NotificationCompat.Builder(this, channelId), false)
-        startForeground(notificationId, notification)
+          MediaSessionManager.mediaNotificationManager
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
+        startForeground(MediaSessionManager.notificationId, notification)
       }
     }
 
@@ -241,9 +241,9 @@ class MediaNotificationManager(
       super.onCreate()
       try {
         notification =
-          MediaNotificationManager(reactContext, notificationId, channelId)
-            .prepareNotification(NotificationCompat.Builder(this, channelId), false)
-        startForeground(notificationId, notification)
+          MediaSessionManager.mediaNotificationManager
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
+        startForeground(MediaSessionManager.notificationId, notification)
       } catch (ex: Exception) {
         Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
       }

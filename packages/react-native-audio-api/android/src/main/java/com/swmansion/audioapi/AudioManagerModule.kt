@@ -14,24 +14,24 @@ class AudioManagerModule(
     const val NAME = "AudioManagerModule"
   }
 
-  private val mediaSessionManager: MediaSessionManager = MediaSessionManager(reactContext)
-
   init {
     try {
       System.loadLibrary("react-native-audio-api")
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
     }
+
+    MediaSessionManager.initialize(reactContext)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun setLockScreenInfo(info: ReadableMap?) {
-    mediaSessionManager.setLockScreenInfo(info)
+    MediaSessionManager.setLockScreenInfo(info)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun resetLockScreenInfo() {
-    mediaSessionManager.resetLockScreenInfo()
+    MediaSessionManager.resetLockScreenInfo()
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -39,7 +39,7 @@ class AudioManagerModule(
     name: String,
     enabled: Boolean,
   ) {
-    mediaSessionManager.enableRemoteCommand(name, enabled)
+    MediaSessionManager.enableRemoteCommand(name, enabled)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -52,10 +52,10 @@ class AudioManagerModule(
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun getDevicePreferredSampleRate(): Double = mediaSessionManager.getDevicePreferredSampleRate()
+  fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun observeAudioInterruptions(enable: Boolean) = mediaSessionManager.observeAudioInterruptions(enable)
+  fun observeAudioInterruptions(enable: Boolean) = MediaSessionManager.observeAudioInterruptions(enable)
 
   override fun getName(): String = NAME
 }

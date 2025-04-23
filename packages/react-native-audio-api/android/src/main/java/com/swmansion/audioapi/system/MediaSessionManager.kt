@@ -18,21 +18,18 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 
-class MediaSessionManager(
-  val reactContext: ReactApplicationContext,
-) {
+object MediaSessionManager {
+  lateinit var reactContext: ReactApplicationContext
   val notificationId = 100
   val channelId = "react-native-audio-api"
 
-  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  val mediaSession: MediaSessionCompat = MediaSessionCompat(reactContext, "MediaSessionManager")
-  val mediaNotificationManager: MediaNotificationManager
-  private val lockScreenManager: LockScreenManager
-  val eventEmitter: MediaSessionEventEmitter =
-    MediaSessionEventEmitter(reactContext, notificationId)
-  private val audioFocusListener: AudioFocusListener
-  private val mediaReceiver: MediaReceiver =
-    MediaReceiver(reactContext, this)
+  private lateinit var audioManager: AudioManager
+  lateinit var mediaSession: MediaSessionCompat
+  lateinit var mediaNotificationManager: MediaNotificationManager
+  private lateinit var lockScreenManager: LockScreenManager
+  lateinit var eventEmitter: MediaSessionEventEmitter
+  private lateinit var audioFocusListener: AudioFocusListener
+  private lateinit var mediaReceiver: MediaReceiver
 
   private val connection =
     object : ServiceConnection {
@@ -60,13 +57,19 @@ class MediaSessionManager(
       }
     }
 
-  init {
+  fun initialize(reactContext: ReactApplicationContext) {
+    this.reactContext = reactContext
+    this.audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
     this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId, channelId)
     this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
+    this.eventEmitter = MediaSessionEventEmitter(reactContext, notificationId)
+    this.mediaReceiver = MediaReceiver(reactContext, this)
     this.mediaSession.setCallback(MediaSessionCallback(eventEmitter, lockScreenManager))
 
     val filter = IntentFilter()
