@@ -41,7 +41,8 @@ const withForegroundService: ConfigPlugin<{
 
     const serviceElement = {
       $: {
-        'android:name': 'system.MediaNotificationManager$NotificationService',
+        'android:name':
+          'com.swmansion.audioapi.system.MediaNotificationManager$NotificationService',
         'android:stopWithTask': 'true',
         'android:foregroundServiceType': SFTypes,
       },
