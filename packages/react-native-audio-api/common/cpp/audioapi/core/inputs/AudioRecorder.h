@@ -7,7 +7,7 @@ namespace audioapi {
 class AudioBus;
 
 #ifdef ANDROID
-
+class AndroidAudioRecorder;
 #else
 class IOSAudioRecorder;
 #endif
@@ -31,7 +31,7 @@ class AudioRecorder {
 
  private:
 #ifdef ANDROID
-
+  std::shared_ptr<AndroidAudioRecorder> audioRecorder_;
 #else
   std::shared_ptr<IOSAudioRecorder> audioRecorder_;
 #endif

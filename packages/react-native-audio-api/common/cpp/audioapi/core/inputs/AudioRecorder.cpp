@@ -1,5 +1,5 @@
 #ifdef ANDROID
-
+#include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
@@ -23,7 +23,8 @@ AudioRecorder::AudioRecorder(
       onStatusChange_(onStatusChange),
       onAudioReady_(onAudioReady) {
 #ifdef ANDROID
-  // Android-specific initialization
+  audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
+      sampleRate, bufferLength, this->getOnAudioReady());
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
       sampleRate,
@@ -41,19 +42,11 @@ AudioRecorder::~AudioRecorder() {
 }
 
 void AudioRecorder::start() {
-#ifdef ANDROID
-  // Android-specific start logic
-#else
   audioRecorder_->start();
-#endif
 }
 
 void AudioRecorder::stop() {
-#ifdef ANDROID
-  // Android-specific stop logic
-#else
   audioRecorder_->stop();
-#endif
 }
 
 std::function<void(std::shared_ptr<AudioBus>, int, double)>
