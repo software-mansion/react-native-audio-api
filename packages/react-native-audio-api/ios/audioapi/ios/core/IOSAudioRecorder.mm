@@ -45,9 +45,9 @@ IOSAudioRecorder::IOSAudioRecorder(
     // ma_data_converter_uninit(&dataConverter, NULL);
   };
 
-  audioRecorder_ = [[CAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
-                                                    bufferLength:bufferLength
-                                           enableVoiceProcessing:enableVoiceProcessing];
+  audioRecorder_ = [[NativeIOSAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
+                                                            bufferLength:bufferLength
+                                                   enableVoiceProcessing:enableVoiceProcessing];
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()

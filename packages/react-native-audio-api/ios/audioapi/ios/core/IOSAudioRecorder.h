@@ -1,9 +1,9 @@
 #pragma once
 
 #ifdef __OBJC__ // when compiled as Objective-C++
-#import <CAudioRecorder.h>
+#import <NativeIOSAudioRecorder.h>
 #else // when compiled as C++
-typedef struct objc_object CAudioRecorder;
+typedef struct objc_object NativeIOSAudioRecorder;
 #endif // __OBJC__
 
 #include <functional>
@@ -14,7 +14,7 @@ class AudioBus;
 
 class IOSAudioRecorder {
  protected:
-  CAudioRecorder *audioRecorder_;
+  NativeIOSAudioRecorder *audioRecorder_;
 
   std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
 

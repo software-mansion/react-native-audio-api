@@ -5,7 +5,7 @@
 
 typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAudioTime *when);
 
-@interface CAudioRecorder : NSObject
+@interface NativeIOSAudioRecorder : NSObject
 
 @property (nonatomic, assign) bool isRunning;
 @property (nonatomic, assign) int bufferLength;

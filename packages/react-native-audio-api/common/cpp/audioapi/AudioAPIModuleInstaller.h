@@ -63,7 +63,7 @@ class AudioAPIModuleInstaller {
             auto length = static_cast<size_t>(args[1].getNumber());
             auto sampleRate = static_cast<float>(args[2].getNumber());
 
-          std::shared_ptr<OfflineAudioContext> offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate);
+          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate);
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               offlineAudioContext, jsiRuntime, jsCallInvoker);
 
