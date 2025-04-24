@@ -26,7 +26,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
     self.sessionCategory = AVAudioSessionCategoryPlayAndRecord;
     self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay | AVAudioSessionCategoryOptionAllowBluetoothA2DP | AVAudioSessionCategoryOptionDefaultToSpeaker;
+    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay | AVAudioSessionCategoryOptionAllowBluetoothA2DP |
+        AVAudioSessionCategoryOptionDefaultToSpeaker;
     self.hasDirtySettings = true;
     self.isActive = false;
   }
@@ -145,11 +146,11 @@ static AudioSessionManager *_sharedInstance = nil;
   if (active == self.isActive) {
     return true;
   }
-  
+
   if (active) {
     [self configureAudioSession];
   }
-  
+
   NSError *error = nil;
 
   bool success = [self.audioSession setActive:active error:&error];
