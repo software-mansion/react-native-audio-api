@@ -25,9 +25,7 @@ AudioRecorder::AudioRecorder(
       sampleRate, bufferLength, this->getOnAudioReady());
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
-      sampleRate,
-      bufferLength,
-      this->getOnAudioReady());
+      sampleRate, bufferLength, this->getOnAudioReady());
 #endif
 }
 
@@ -48,9 +46,9 @@ void AudioRecorder::stop() {
 std::function<void(std::shared_ptr<AudioBus>, int, double)>
 AudioRecorder::getOnAudioReady() {
   return
-    [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
-      onAudioReady_(bus, numFrames, when);
-    };
+      [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
+        onAudioReady_(bus, numFrames, when);
+      };
 }
 
 } // namespace audioapi
