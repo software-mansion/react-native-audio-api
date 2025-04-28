@@ -16,7 +16,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
 
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
-      
+
       if (isRunning_.load()) {
         renderAudio_(audioBus_, framesToProcess);
       } else {
@@ -56,7 +56,7 @@ void IOSAudioPlayer::start()
   if (isRunning_.load()) {
     return;
   }
-  
+
   [audioPlayer_ start];
   isRunning_.store(true);
 }

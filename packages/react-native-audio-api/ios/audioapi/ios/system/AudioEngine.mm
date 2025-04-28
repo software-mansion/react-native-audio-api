@@ -30,7 +30,7 @@ static AudioEngine *_sharedInstance = nil;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
-    
+
     [[AudioSessionManager sharedInstance] setActive:true];
   }
 
@@ -43,7 +43,7 @@ static AudioEngine *_sharedInstance = nil;
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
-  
+
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
@@ -63,7 +63,7 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine attachNode:sourceNode];
     [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
-  
+
   [self.audioEngine attachNode:self.inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
 
@@ -131,19 +131,20 @@ static AudioEngine *_sharedInstance = nil;
   [self stopIfNecessary];
 }
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode {
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode
+{
   self.inputNode = inputNode;
-  
+
   [self.audioEngine attachNode:inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:nil];
-  
+
   [self startIfNecessary];
 }
 
 - (void)detachInputNode
 {
   [self.audioEngine detachNode:self.inputNode];
-  
+
   [self stopIfNecessary];
 }
 
@@ -154,7 +155,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
-//    [[AudioSessionManager sharedInstance] setActive:true];
+    //    [[AudioSessionManager sharedInstance] setActive:true];
     [self startEngine];
   }
 }
@@ -167,7 +168,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
     [self stopEngine];
-//    [[AudioSessionManager sharedInstance] setActive:false];
+    //    [[AudioSessionManager sharedInstance] setActive:false];
   }
 }
 

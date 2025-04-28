@@ -14,23 +14,22 @@ class AudioBus;
 class AudioContext;
 
 class IOSAudioPlayer {
-  public:
-    IOSAudioPlayer(
-        const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-        float sampleRate);
-    ~IOSAudioPlayer();
+ public:
+  IOSAudioPlayer(
+      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+      float sampleRate);
+  ~IOSAudioPlayer();
 
-    void start();
-    void resume();
-    void stop();
-    void pause();
-  
-  protected:
-    std::shared_ptr<AudioBus> audioBus_;
-    AudioPlayer *audioPlayer_;
-    std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
-    int channelCount_;
-    std::atomic<bool> isRunning_;
+  void start();
+  void resume();
+  void stop();
+  void pause();
 
+ protected:
+  std::shared_ptr<AudioBus> audioBus_;
+  AudioPlayer *audioPlayer_;
+  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
+  int channelCount_;
+  std::atomic<bool> isRunning_;
 };
 } // namespace audioapi

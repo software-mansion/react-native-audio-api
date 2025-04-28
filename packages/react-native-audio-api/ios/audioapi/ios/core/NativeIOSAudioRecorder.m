@@ -17,15 +17,18 @@
     self.receiverBlock = [receiverBlock copy];
 
     __weak typeof(self) weakSelf = self;
-    self.receiverSinkBlock = ^OSStatus(const AudioTimeStamp * _Nonnull timestamp, AVAudioFrameCount frameCount, const AudioBufferList * _Nonnull inputData){
+    self.receiverSinkBlock = ^OSStatus(
+        const AudioTimeStamp *_Nonnull timestamp,
+        AVAudioFrameCount frameCount,
+        const AudioBufferList *_Nonnull inputData) {
       if (!weakSelf.isRunning) {
         AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:48000];
         weakSelf.receiverBlock(inputData, frameCount, time);
       }
-      
+
       return kAudioServicesNoError;
     };
-    
+
     self.sinkNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:self.receiverSinkBlock];
   }
 

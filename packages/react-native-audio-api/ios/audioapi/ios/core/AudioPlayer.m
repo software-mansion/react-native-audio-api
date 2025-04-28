@@ -19,9 +19,9 @@
       if (outputData->mNumberBuffers != weakSelf.channelCount) {
         return kAudioServicesBadPropertySizeError;
       }
-        
+
       weakSelf.renderAudio(outputData, frameCount);
-          
+
       return kAudioServicesNoError;
     };
 
@@ -35,7 +35,7 @@
 - (void)start
 {
   NSLog(@"[AudioPlayer] start");
-  
+
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }

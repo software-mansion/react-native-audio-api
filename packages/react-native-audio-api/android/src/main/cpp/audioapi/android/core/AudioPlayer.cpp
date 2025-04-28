@@ -40,13 +40,13 @@ void AudioPlayer::resume() {
 }
 
 void AudioPlayer::stop() {
-    isInitialized_ = false;
+  isInitialized_ = false;
 
-    if (mStream_) {
-        mStream_->requestStop();
-        mStream_->close();
-        mStream_.reset();
-    }
+  if (mStream_) {
+    mStream_->requestStop();
+    mStream_->close();
+    mStream_.reset();
+  }
 }
 
 void AudioPlayer::pause() {
