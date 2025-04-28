@@ -6,6 +6,12 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 
+#ifdef ANDROID
+#include <audioapi/android/core/AndroidAudioRecorder.h>
+#else
+#include <audioapi/ios/core/IOSAudioRecorder.h>
+#endif
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -24,13 +30,23 @@ class AudioRecorderHostObject : public JsiHostObject {
       : callInvoker_(callInvoker) {
     promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
 
-    audioRecorder_ = std::make_shared<AudioRecorder>(
+#ifdef ANDROID
+    audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
       bufferLength,
       this->getOnError(),
       this->getOnStatusChange(),
       this->getOnAudioReady()
     );
+#else
+  audioRecorder_ = std::make_shared<IOSAudioRecorder>(
+      sampleRate,
+      bufferLength,
+      this->getOnError(),
+      this->getOnStatusChange(),
+      this->getOnAudioReady()
+    );
+#endif
 
     addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),

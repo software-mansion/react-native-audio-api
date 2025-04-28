@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/core/inputs/AudioRecorder.h>
+
 #include <oboe/Oboe.h>
 #include <functional>
 #include <memory>
@@ -10,17 +12,18 @@ using namespace oboe;
 
 class AudioBus;
 
-class AndroidAudioRecorder : public AudioStreamDataCallback {
+class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorder {
  public:
     AndroidAudioRecorder(float sampleRate,
                          int bufferLength,
-                         const std::function<void(std::shared_ptr<AudioBus>, int, double)>
-                         &onAudioReady);
+                         const std::function<void(void)> &onError,
+                         const std::function<void(void)> &onStatusChange,
+                         const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady);
 
     ~AndroidAudioRecorder() override;
 
-    void start();
-    void stop();
+    void start() override;
+    void stop() override;
 
     DataCallbackResult onAudioReady(
             AudioStream *oboeStream,
@@ -28,10 +31,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback {
             int32_t numFrames) override;
 
  private:
-    float sampleRate_;
-    int bufferLength_;
     std::shared_ptr<AudioStream> mStream_;
-    std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
 };
 
 } // namespace audioapi

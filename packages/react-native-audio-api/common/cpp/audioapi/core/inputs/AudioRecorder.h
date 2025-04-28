@@ -6,12 +6,6 @@
 namespace audioapi {
 class AudioBus;
 
-#ifdef ANDROID
-class AndroidAudioRecorder;
-#else
-class IOSAudioRecorder;
-#endif
-
 class AudioRecorder {
  public:
   explicit AudioRecorder(
@@ -20,25 +14,25 @@ class AudioRecorder {
     const std::function<void(void)> &onError,
     const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady
-  );
+  )
+    : sampleRate_(sampleRate),
+      bufferLength_(bufferLength),
+      onError_(onError),
+      onStatusChange_(onStatusChange),
+      onAudioReady_(onAudioReady) {}
 
-  ~AudioRecorder();
+  virtual ~AudioRecorder() = default;
 
-  void start();
-  void stop();
+  virtual void start() = 0;
+  virtual void stop() = 0;
 
- private:
-#ifdef ANDROID
-  std::shared_ptr<AndroidAudioRecorder> audioRecorder_;
-#else
-  std::shared_ptr<IOSAudioRecorder> audioRecorder_;
-#endif
+ protected:
+  float sampleRate_;
+  int bufferLength_;
 
   std::function<void(void)> onError_;
   std::function<void(void)> onStatusChange_;
   std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
-
-  std::function<void(std::shared_ptr<AudioBus>, int, double)> getOnAudioReady();
 };
 
 } // namespace audioapi
