@@ -7,17 +7,13 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 
 @interface NativeIOSAudioRecorder : NSObject
 
-@property (nonatomic, assign) bool isRunning;
 @property (nonatomic, assign) int bufferLength;
-@property (nonatomic, assign) bool enableVoiceProcessing;
 
 @property (nonatomic, strong) AVAudioSinkNode *sinkNode;
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverSinkBlock;
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
-                         bufferLength:(int)bufferLength
-                enableVoiceProcessing:(bool)enableVoiceProcessing;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength;
 
 - (void)start;
 

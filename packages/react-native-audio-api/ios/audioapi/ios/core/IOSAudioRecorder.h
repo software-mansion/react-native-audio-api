@@ -13,11 +13,6 @@ namespace audioapi {
 class AudioBus;
 
 class IOSAudioRecorder {
- protected:
-  NativeIOSAudioRecorder *audioRecorder_;
-
-  std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
-
  public:
   IOSAudioRecorder(
       float sampleRate,
@@ -31,6 +26,11 @@ class IOSAudioRecorder {
 
   void start();
   void stop();
+
+ protected:
+  NativeIOSAudioRecorder *audioRecorder_;
+  std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
+  std::atomic<bool> isRunning_;
 };
 
 } // namespace audioapi

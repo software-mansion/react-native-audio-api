@@ -18,50 +18,61 @@ IOSAudioRecorder::IOSAudioRecorder(
     int bufferLength,
     bool enableVoiceProcessing,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
-    : onAudioReady_(onAudioReady)
+    : onAudioReady_(onAudioReady), isRunning_(false)
 {
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
-    auto bus = std::make_shared<AudioBus>(numFrames, numberOfChannels, sampleRate);
+    if (isRunning_.load()) {
+      auto bus = std::make_shared<AudioBus>(numFrames, numberOfChannels, sampleRate);
 
-    // ma_data_converter_config converterConfig = ma_data_converter_config_init(
-    //                                                                          ma_format_f32,
-    //                                                                          ma_format_f32,
-    //                                                                          buffer.audioBufferList->mNumberBuffers,
-    //                                                                          numberOfChannels,
-    //                                                                          [when sampleRate],
-    //                                                                          sampleRate);
+      // ma_data_converter_config converterConfig = ma_data_converter_config_init(
+      //                                                                          ma_format_f32,
+      //                                                                          ma_format_f32,
+      //                                                                          buffer.audioBufferList->mNumberBuffers,
+      //                                                                          numberOfChannels,
+      //                                                                          [when sampleRate],
+      //                                                                          sampleRate);
 
-    // ma_data_converter dataConverter;
-    // ma_data_converter_init(&converterConfig, NULL, &dataConverter);
+      // ma_data_converter dataConverter;
+      // ma_data_converter_init(&converterConfig, NULL, &dataConverter);
 
-    // ma_data_converter_process_pcm_frames(&dataConverter, NULL, numFrames, NULL, numFrames);
+      // ma_data_converter_process_pcm_frames(&dataConverter, NULL, numFrames, NULL, numFrames);
 
-    auto *inputChannel = (float *)inputBuffer->mBuffers[0].mData;
-    auto *outputChannel = bus->getChannel(0)->getData();
+      auto *inputChannel = (float *)inputBuffer->mBuffers[0].mData;
+      auto *outputChannel = bus->getChannel(0)->getData();
 
-    memcpy(outputChannel, inputChannel, numFrames * sizeof(float));
-    onAudioReady_(bus, numFrames, [when sampleTime] / [when sampleRate]);
+      memcpy(outputChannel, inputChannel, numFrames * sizeof(float));
+      onAudioReady_(bus, numFrames, [when sampleTime] / [when sampleRate]);
 
-    // ma_data_converter_uninit(&dataConverter, NULL);
+      // ma_data_converter_uninit(&dataConverter, NULL);
+    }
   };
 
-  audioRecorder_ = [[NativeIOSAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
-                                                            bufferLength:bufferLength
-                                                   enableVoiceProcessing:enableVoiceProcessing];
+  audioRecorder_ = [[NativeIOSAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock bufferLength:bufferLength];
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()
 {
+  stop();
   [audioRecorder_ cleanup];
 }
 
 void IOSAudioRecorder::start()
 {
+  if (isRunning_.load()) {
+    return;
+  }
+
   [audioRecorder_ start];
+  isRunning_.store(true);
 }
 
 void IOSAudioRecorder::stop()
 {
+  if (!isRunning_.load()) {
+    return;
+  }
+
+  isRunning_.store(false);
   [audioRecorder_ stop];
 }
 

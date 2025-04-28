@@ -4,15 +4,10 @@
 
 @implementation NativeIOSAudioRecorder
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
-                         bufferLength:(int)bufferLength
-                enableVoiceProcessing:(bool)enableVoiceProcessing
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength
 {
   if (self = [super init]) {
-    self.isRunning = false;
-
     self.bufferLength = bufferLength;
-    self.enableVoiceProcessing = enableVoiceProcessing;
 
     self.receiverBlock = [receiverBlock copy];
 
@@ -21,10 +16,8 @@
         const AudioTimeStamp *_Nonnull timestamp,
         AVAudioFrameCount frameCount,
         const AudioBufferList *_Nonnull inputData) {
-      if (!weakSelf.isRunning) {
-        AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:48000];
-        weakSelf.receiverBlock(inputData, frameCount, time);
-      }
+      AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:48000];
+      weakSelf.receiverBlock(inputData, frameCount, time);
 
       return kAudioServicesNoError;
     };
@@ -38,20 +31,16 @@
 - (void)start
 {
   [[AudioEngine sharedInstance] attachInputNode:self.sinkNode];
-  self.isRunning = true;
 }
 
 - (void)stop
 {
-  self.isRunning = false;
   [[AudioEngine sharedInstance] detachInputNode];
 }
 
 - (void)cleanup
 {
-  if (self.isRunning) {
-    [self stop];
-  }
+  self.receiverBlock = nil;
 }
 
 @end
