@@ -97,13 +97,10 @@ class AudioRecorderHostObject : public JsiHostObject {
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 
-  // TODO: can we really assume those are unique ptrs? 🤔
-  // JS also has a ref for them
   std::unique_ptr<jsi::Function> errorCallback_;
   std::unique_ptr<jsi::Function> audioReadyCallback_;
   std::unique_ptr<jsi::Function> statusChangeCallback_;
 
-  // this is ugly as duck
   std::function<void(std::shared_ptr<AudioBus>, int, double)> getOnAudioReady() {
     return [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
       if (audioReadyCallback_ == nullptr) {
