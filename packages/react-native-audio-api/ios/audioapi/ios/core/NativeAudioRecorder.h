@@ -5,7 +5,7 @@
 
 typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when);
 
-@interface NativeIOSAudioRecorder : NSObject
+@interface NativeAudioRecorder : NSObject
 
 @property (nonatomic, assign) int bufferLength;
 

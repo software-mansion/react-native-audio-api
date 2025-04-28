@@ -47,7 +47,7 @@ IOSAudioRecorder::IOSAudioRecorder(
     }
   };
 
-  audioRecorder_ = [[NativeIOSAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock bufferLength:bufferLength];
+  audioRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock bufferLength:bufferLength];
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()

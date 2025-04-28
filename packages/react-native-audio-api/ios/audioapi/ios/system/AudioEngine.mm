@@ -48,6 +48,8 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
+  
+  [[AudioSessionManager sharedInstance] setActive:false];
 }
 
 - (bool)rebuildAudioEngine
@@ -144,6 +146,7 @@ static AudioEngine *_sharedInstance = nil;
 - (void)detachInputNode
 {
   [self.audioEngine detachNode:self.inputNode];
+  self.inputNode = nil;
 
   [self stopIfNecessary];
 }
@@ -155,7 +158,6 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
-    //    [[AudioSessionManager sharedInstance] setActive:true];
     [self startEngine];
   }
 }
@@ -168,7 +170,6 @@ static AudioEngine *_sharedInstance = nil;
 
   if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
     [self stopEngine];
-    //    [[AudioSessionManager sharedInstance] setActive:false];
   }
 }
 

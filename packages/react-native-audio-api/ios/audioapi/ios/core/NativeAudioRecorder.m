@@ -1,8 +1,8 @@
-#import <audioapi/ios/core/NativeIOSAudioRecorder.h>
+#import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
-@implementation NativeIOSAudioRecorder
+@implementation NativeAudioRecorder
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength
 {

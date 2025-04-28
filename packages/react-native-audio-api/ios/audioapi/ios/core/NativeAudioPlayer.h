@@ -5,7 +5,7 @@
 
 typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
-@interface AudioPlayer : NSObject
+@interface NativeAudioPlayer : NSObject
 
 @property (nonatomic, strong) AVAudioFormat *format;
 @property (nonatomic, strong) AVAudioSourceNode *sourceNode;

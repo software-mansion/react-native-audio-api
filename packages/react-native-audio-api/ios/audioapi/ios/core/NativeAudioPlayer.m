@@ -1,7 +1,7 @@
-#import <audioapi/ios/core/AudioPlayer.h>
+#import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
 
-@implementation AudioPlayer
+@implementation NativeAudioPlayer
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
