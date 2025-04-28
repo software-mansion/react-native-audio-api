@@ -26,6 +26,10 @@ swm
 swmansion
 rnaa
 signalsmith
+FLAC
+Roadmap
+WAV
+Worklets
 
 tada
 vec
