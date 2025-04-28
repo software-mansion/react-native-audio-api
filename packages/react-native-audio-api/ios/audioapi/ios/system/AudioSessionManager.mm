@@ -26,7 +26,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay | AVAudioSessionCategoryOptionDuckOthers;
+    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay;
     self.hasDirtySettings = true;
     self.isActive = false;
   }
