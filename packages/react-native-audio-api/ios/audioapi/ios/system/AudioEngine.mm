@@ -125,10 +125,13 @@ static AudioEngine *_sharedInstance = nil;
   NSLog(@"[AudioEngine] detaching source node with ID: %@", sourceNodeId);
 
   AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-  [self.audioEngine detachNode:sourceNode];
+  
+  if (sourceNode != nil) {
+    [self.audioEngine detachNode:sourceNode];
 
-  [self.sourceNodes removeObjectForKey:sourceNodeId];
-  [self.sourceFormats removeObjectForKey:sourceNodeId];
+    [self.sourceNodes removeObjectForKey:sourceNodeId];
+    [self.sourceFormats removeObjectForKey:sourceNodeId];
+  }
 
   [self stopIfNecessary];
 }
@@ -145,8 +148,10 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)detachInputNode
 {
-  [self.audioEngine detachNode:self.inputNode];
-  self.inputNode = nil;
+  if (self.inputNode != nil) {
+    [self.audioEngine detachNode:self.inputNode];
+    self.inputNode = nil;
+  }
 
   [self stopIfNecessary];
 }
