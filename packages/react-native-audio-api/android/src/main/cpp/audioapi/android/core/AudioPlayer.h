@@ -18,11 +18,10 @@ class AudioPlayer : public AudioStreamDataCallback {
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
       float sampleRate);
 
-  [[nodiscard]] float getSampleRate() const;
   void start();
-  void stop();
   void resume();
-  void suspend();
+  void stop();
+  void pause();
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,

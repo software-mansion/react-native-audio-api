@@ -9,7 +9,6 @@
                 enableVoiceProcessing:(bool)enableVoiceProcessing
 {
   if (self = [super init]) {
-    self.tapId = nil;
     self.isRunning = false;
 
     self.bufferLength = bufferLength;
@@ -18,13 +17,16 @@
     self.receiverBlock = [receiverBlock copy];
 
     __weak typeof(self) weakSelf = self;
-    self.tapBlock = ^(AVAudioPCMBuffer *buffer, AVAudioTime *when) {
+    self.receiverSinkBlock = ^OSStatus(const AudioTimeStamp * _Nonnull timestamp, AVAudioFrameCount frameCount, const AudioBufferList * _Nonnull inputData){
       if (!weakSelf.isRunning) {
-        return;
+        AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:48000];
+        weakSelf.receiverBlock(inputData, frameCount, time);
       }
-
-      weakSelf.receiverBlock(buffer, buffer.frameLength, when);
+      
+      return kAudioServicesNoError;
     };
+    
+    self.sinkNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:self.receiverSinkBlock];
   }
 
   return self;
@@ -32,16 +34,14 @@
 
 - (void)start
 {
-  self.tapId = [[AudioEngine sharedInstance] installInputTap:self.tapBlock
-                                                bufferLength:self.bufferLength
-                                       enableVoiceProcessing:self.enableVoiceProcessing];
+  [[AudioEngine sharedInstance] attachInputNode:self.sinkNode];
   self.isRunning = true;
 }
 
 - (void)stop
 {
   self.isRunning = false;
-  [[AudioEngine sharedInstance] removeInputTap:self.tapId];
+  [[AudioEngine sharedInstance] detachInputNode];
 }
 
 - (void)cleanup

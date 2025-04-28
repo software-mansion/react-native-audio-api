@@ -20,7 +20,7 @@ IOSAudioRecorder::IOSAudioRecorder(
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
     : onAudioReady_(onAudioReady)
 {
-  AudioReceiverBlock audioReceiverBlock = ^(AVAudioPCMBuffer *buffer, int numFrames, AVAudioTime *when) {
+  AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     auto bus = std::make_shared<AudioBus>(numFrames, numberOfChannels, sampleRate);
 
     // ma_data_converter_config converterConfig = ma_data_converter_config_init(
@@ -36,7 +36,7 @@ IOSAudioRecorder::IOSAudioRecorder(
 
     // ma_data_converter_process_pcm_frames(&dataConverter, NULL, numFrames, NULL, numFrames);
 
-    auto *inputChannel = (float *)buffer.mutableAudioBufferList->mBuffers[0].mData;
+    auto *inputChannel = (float *)inputBuffer->mBuffers[0].mData;
     auto *outputChannel = bus->getChannel(0)->getData();
 
     memcpy(outputChannel, inputChannel, numFrames * sizeof(float));

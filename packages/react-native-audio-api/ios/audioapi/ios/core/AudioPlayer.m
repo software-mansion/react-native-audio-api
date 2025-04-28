@@ -19,8 +19,9 @@
       if (outputData->mNumberBuffers != weakSelf.channelCount) {
         return kAudioServicesBadPropertySizeError;
       }
-
+        
       weakSelf.renderAudio(outputData, frameCount);
+          
       return kAudioServicesNoError;
     };
 
@@ -31,51 +32,21 @@
   return self;
 }
 
-- (float)getSampleRate
-{
-  return self.sampleRate;
-}
-
 - (void)start
 {
   NSLog(@"[AudioPlayer] start");
+  
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = true;
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)stop
 {
   NSLog(@"[AudioPlayer] stop");
-  if (!self.isRunning) {
-    return;
-  }
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = false;
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;
-}
-
-- (void)suspend
-{
-  NSLog(@"[AudioPlayer] suspend");
-  if (!self.isRunning) {
-    return;
-  }
-
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = false;
-  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
-  self.sourceNodeId = nil;
-}
-
-- (void)resume
-{
-  NSLog(@"[AudioPlayer] resume");
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = true;
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)cleanup

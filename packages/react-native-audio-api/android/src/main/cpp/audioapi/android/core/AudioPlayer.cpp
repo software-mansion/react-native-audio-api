@@ -27,23 +27,9 @@ AudioPlayer::AudioPlayer(
   isInitialized_ = true;
 }
 
-float AudioPlayer::getSampleRate() const {
-  return sampleRate_;
-}
-
 void AudioPlayer::start() {
   if (mStream_) {
     mStream_->requestStart();
-  }
-}
-
-void AudioPlayer::stop() {
-  isInitialized_ = false;
-
-  if (mStream_) {
-    mStream_->requestStop();
-    mStream_->close();
-    mStream_.reset();
   }
 }
 
@@ -53,7 +39,17 @@ void AudioPlayer::resume() {
   }
 }
 
-void AudioPlayer::suspend() {
+void AudioPlayer::stop() {
+    isInitialized_ = false;
+
+    if (mStream_) {
+        mStream_->requestStop();
+        mStream_->close();
+        mStream_.reset();
+    }
+}
+
+void AudioPlayer::pause() {
   if (mStream_) {
     mStream_->requestPause();
   }

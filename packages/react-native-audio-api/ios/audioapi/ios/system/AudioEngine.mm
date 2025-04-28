@@ -25,14 +25,13 @@ static AudioEngine *_sharedInstance = nil;
 - (instancetype)initPrivate
 {
   if (self = [super init]) {
-    self.tapId = nil;
     self.audioEngine = [[AVAudioEngine alloc] init];
-    self.audioEngine.mainMixerNode.outputVolume = 1;
-    self.audioEngine.inputNode.volume = 1;
-    self.inputMixer = [[AVAudioMixerNode alloc] init];
+    self.inputNode = nil;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
+    
+    [[AudioSessionManager sharedInstance] setActive:true];
   }
 
   return self;
@@ -44,18 +43,15 @@ static AudioEngine *_sharedInstance = nil;
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
-
-  self.tapId = nil;
-  self.inputMixer = nil;
+  
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
+  self.inputNode = nil;
 }
 
 - (bool)rebuildAudioEngine
 {
-  NSError *error = nil;
-
   if ([self.audioEngine isRunning]) {
     return true;
   }
@@ -67,15 +63,11 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine attachNode:sourceNode];
     [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
+  
+  [self.audioEngine attachNode:self.inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
 
-  if ([self.audioEngine isRunning]) {
-    return true;
-  }
-
-  if (![self.audioEngine startAndReturnError:&error]) {
-    NSLog(@"Error while rebuilding audio engine: %@", [error debugDescription]);
-    return false;
-  }
+  [self startEngine];
 
   return true;
 }
@@ -103,7 +95,7 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine pause];
+  [self.audioEngine stop];
 }
 
 - (bool)isRunning
@@ -139,48 +131,20 @@ static AudioEngine *_sharedInstance = nil;
   [self stopIfNecessary];
 }
 
-- (NSString *)installInputTap:(AVAudioNodeTapBlock)tapBlock
-                 bufferLength:(int)bufferLength
-        enableVoiceProcessing:(bool)enableVoiceProcessing
-{
-  if (self.tapId != nil) {
-    return nil;
-  }
-
-  NSString *tapId = [[NSUUID UUID] UUIDString];
-  // NSError *error;
-  self.tapId = tapId;
-
-  //  if (enableVoiceProcessing) {
-  //    [[self.audioEngine inputNode] setVoiceProcessingEnabled:true error:&error];
-  //    [[self.audioEngine outputNode] setVoiceProcessingEnabled:true error:&error];
-  //  }
-
-  // if (error != nil) {
-  //   NSLog(@"error while enabing voice processing: %@", [error debugDescription]);
-  // }
-
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode {
+  self.inputNode = inputNode;
+  
+  [self.audioEngine attachNode:inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:nil];
+  
   [self startIfNecessary];
-
-  AVAudioInputNode *input = [self.audioEngine inputNode];
-  AVAudioFormat *inputFormat = [input inputFormatForBus:0];
-
-  [self.audioEngine attachNode:self.inputMixer];
-  [self.audioEngine connect:input to:self.inputMixer format:inputFormat];
-
-  [self.inputMixer installTapOnBus:0 bufferSize:bufferLength format:inputFormat block:tapBlock];
-  return tapId;
 }
 
-- (void)removeInputTap:(NSString *)tapId
+- (void)detachInputNode
 {
-  if (self.tapId == nil || self.tapId != tapId) {
-    return;
-  }
-
-  [self.inputMixer removeTapOnBus:0];
-  [self.audioEngine detachNode:self.inputMixer];
-  self.tapId = nil;
+  [self.audioEngine detachNode:self.inputNode];
+  
+  [self stopIfNecessary];
 }
 
 - (void)startIfNecessary
@@ -189,8 +153,8 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  if ([self.sourceNodes count] > 0 || self.tapId != nil) {
-    [[AudioSessionManager sharedInstance] setActive:true];
+  if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
+//    [[AudioSessionManager sharedInstance] setActive:true];
     [self startEngine];
   }
 }
@@ -201,9 +165,9 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  if ([self.sourceNodes count] == 0 && self.tapId == nil) {
+  if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
     [self stopEngine];
-    [[AudioSessionManager sharedInstance] setActive:false];
+//    [[AudioSessionManager sharedInstance] setActive:false];
   }
 }
 

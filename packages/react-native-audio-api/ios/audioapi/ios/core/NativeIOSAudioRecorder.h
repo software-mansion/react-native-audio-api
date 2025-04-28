@@ -3,7 +3,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAudioTime *when);
+typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when);
 
 @interface NativeIOSAudioRecorder : NSObject
 
@@ -11,8 +11,8 @@ typedef void (^AudioReceiverBlock)(AVAudioPCMBuffer *buffer, int numFrames, AVAu
 @property (nonatomic, assign) int bufferLength;
 @property (nonatomic, assign) bool enableVoiceProcessing;
 
-@property (nonatomic, strong) NSString *tapId;
-@property (nonatomic, strong) AVAudioNodeTapBlock tapBlock;
+@property (nonatomic, strong) AVAudioSinkNode *sinkNode;
+@property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverSinkBlock;
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock

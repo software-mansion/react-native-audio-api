@@ -27,7 +27,7 @@ static AudioSessionManager *_sharedInstance = nil;
     self.sessionCategory = AVAudioSessionCategoryPlayAndRecord;
     self.sessionMode = AVAudioSessionModeDefault;
     self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay | AVAudioSessionCategoryOptionAllowBluetoothA2DP |
-        AVAudioSessionCategoryOptionDefaultToSpeaker;
+        AVAudioSessionCategoryOptionDefaultToSpeaker | AVAudioSessionCategoryOptionDuckOthers;
     self.hasDirtySettings = true;
     self.isActive = false;
   }
