@@ -8,6 +8,7 @@
 {
   if (self = [super init]) {
     self.bufferLength = bufferLength;
+    self.sampleRate = [[[AudioSessionManager sharedInstance] getDevicePreferredSampleRate] doubleValue];
 
     self.receiverBlock = [receiverBlock copy];
 
@@ -16,7 +17,7 @@
         const AudioTimeStamp *_Nonnull timestamp,
         AVAudioFrameCount frameCount,
         const AudioBufferList *_Nonnull inputData) {
-      AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:48000];
+      AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:weakSelf.sampleRate];
       weakSelf.receiverBlock(inputData, frameCount, time);
 
       return kAudioServicesNoError;
