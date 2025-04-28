@@ -48,7 +48,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
-  
+
   [[AudioSessionManager sharedInstance] setActive:false];
 }
 

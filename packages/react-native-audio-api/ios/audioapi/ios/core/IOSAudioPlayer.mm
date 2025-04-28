@@ -35,8 +35,8 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
   };
 
   audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
-                                               sampleRate:sampleRate
-                                             channelCount:channelCount_];
+                                                     sampleRate:sampleRate
+                                                   channelCount:channelCount_];
 
   audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }

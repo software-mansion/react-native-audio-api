@@ -85,11 +85,9 @@ class AudioAPIModuleInstaller {
           auto options = args[0].getObject(runtime);
 
           auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
-          auto numberOfChannels = static_cast<int>(options.getProperty(runtime, "numberOfChannels").getNumber());
           auto bufferLength = static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
-          auto enableVoiceProcessing = static_cast<bool>(options.getProperty(runtime, "iosEnableVoiceProcessing").getBool());
 
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, jsCallInvoker, sampleRate, numberOfChannels, bufferLength, enableVoiceProcessing);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, jsCallInvoker, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
         });

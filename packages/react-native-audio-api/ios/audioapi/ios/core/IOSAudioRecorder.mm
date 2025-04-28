@@ -14,15 +14,13 @@ namespace audioapi {
 
 IOSAudioRecorder::IOSAudioRecorder(
     float sampleRate,
-    int numberOfChannels,
     int bufferLength,
-    bool enableVoiceProcessing,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
     : onAudioReady_(onAudioReady), isRunning_(false)
 {
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
-      auto bus = std::make_shared<AudioBus>(numFrames, numberOfChannels, sampleRate);
+      auto bus = std::make_shared<AudioBus>(numFrames, 1, sampleRate);
 
       // ma_data_converter_config converterConfig = ma_data_converter_config_init(
       //                                                                          ma_format_f32,

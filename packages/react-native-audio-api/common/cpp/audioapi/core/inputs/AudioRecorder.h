@@ -16,9 +16,7 @@ class AudioRecorder {
  public:
   explicit AudioRecorder(
     float sampleRate,
-    int numberOfChannels,
     int bufferLength,
-    bool enableVoiceProcessing,
     const std::function<void(void)> &onError,
     const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady

@@ -12,9 +12,7 @@ namespace audioapi {
 
 AudioRecorder::AudioRecorder(
     float sampleRate,
-    int numberOfChannels,
     int bufferLength,
-    bool enableVoiceProcessing,
     const std::function<void(void)> &onError,
     const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)>
@@ -28,9 +26,7 @@ AudioRecorder::AudioRecorder(
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
       sampleRate,
-      numberOfChannels,
       bufferLength,
-      enableVoiceProcessing,
       this->getOnAudioReady());
 #endif
 }
@@ -52,10 +48,9 @@ void AudioRecorder::stop() {
 std::function<void(std::shared_ptr<AudioBus>, int, double)>
 AudioRecorder::getOnAudioReady() {
   return
-      [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
-        // TODO: potentially push data to connected graph
-        onAudioReady_(bus, numFrames, when);
-      };
+    [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
+      onAudioReady_(bus, numFrames, when);
+    };
 }
 
 } // namespace audioapi

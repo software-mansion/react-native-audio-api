@@ -20,17 +20,13 @@ class AudioRecorderHostObject : public JsiHostObject {
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
       float sampleRate,
-      int numberOfChannels,
-      int bufferLength,
-      bool enableVoiceProcessing)
+      int bufferLength)
       : callInvoker_(callInvoker) {
     promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
 
     audioRecorder_ = std::make_shared<AudioRecorder>(
       sampleRate,
-      numberOfChannels,
       bufferLength,
-      enableVoiceProcessing,
       this->getOnError(),
       this->getOnStatusChange(),
       this->getOnAudioReady()
