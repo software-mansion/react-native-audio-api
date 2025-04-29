@@ -24,7 +24,7 @@ const Record: FC = () => {
 
     recorderRef.current = new AudioRecorder({
       sampleRate: 16000,
-      bufferLengthInSamples: 2048,
+      bufferLengthInSamples: 16000,
     });
   }, []);
 

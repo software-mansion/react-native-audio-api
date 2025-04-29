@@ -16,15 +16,59 @@ IOSAudioRecorder::IOSAudioRecorder(
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
     : AudioRecorder(sampleRate, bufferLength, onError, onStatusChange, onAudioReady)
 {
+  circularBuffer_ = std::make_shared<AudioBus>(std::max(2 * bufferLength, 2048), 1, sampleRate);
+
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
-      auto bus = std::make_shared<AudioBus>(numFrames, 1, sampleRate);
-
+      // copying to circularBuffer_
+      auto *circularBufferChannel = circularBuffer_->getChannel(0)->getData();
       auto *inputChannel = (float *)inputBuffer->mBuffers[0].mData;
-      auto *outputChannel = bus->getChannel(0)->getData();
 
-      memcpy(outputChannel, inputChannel, numFrames * sizeof(float));
-      onAudioReady_(bus, numFrames, [when sampleTime] / [when sampleRate]);
+      auto framesToProcess = numFrames;
+      auto framesToCopy = 0;
+
+      if (writeIdx_ + numFrames > circularBuffer_->getSize()) {
+        framesToCopy = circularBuffer_->getSize() - writeIdx_;
+        memcpy(circularBufferChannel + writeIdx_, inputChannel, framesToCopy * sizeof(float));
+        framesToProcess -= framesToCopy;
+        writeIdx_ = 0;
+      }
+
+      memcpy(circularBufferChannel + writeIdx_, inputChannel + framesToCopy, framesToProcess * sizeof(float));
+
+      writeIdx_ += framesToProcess;
+      if (writeIdx_ >= circularBuffer_->getSize()) {
+        writeIdx_ = 0;
+      }
+
+      // copying to output bus and invoking callback
+      auto availableFrames =
+          writeIdx_ >= readIdx_ ? writeIdx_ - readIdx_ : circularBuffer_->getSize() - (readIdx_ - writeIdx_);
+
+      while (availableFrames >= bufferLength_) {
+        auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
+        auto *outputChannel = bus->getChannel(0)->getData();
+
+        framesToProcess = bufferLength_;
+        framesToCopy = 0;
+        if (readIdx_ + bufferLength_ > circularBuffer_->getSize()) {
+          framesToCopy = circularBuffer_->getSize() - readIdx_;
+          memcpy(outputChannel, circularBufferChannel + readIdx_, framesToCopy * sizeof(float));
+          framesToProcess -= framesToCopy;
+          readIdx_ = 0;
+        }
+
+        memcpy(outputChannel + framesToCopy, circularBufferChannel + readIdx_, framesToProcess * sizeof(float));
+
+        readIdx_ += framesToProcess;
+        if (readIdx_ >= circularBuffer_->getSize()) {
+          readIdx_ = 0;
+        }
+
+        onAudioReady_(bus, bufferLength_, [when sampleTime] / [when sampleRate]);
+
+        availableFrames -= bufferLength_;
+      }
     }
   };
 
