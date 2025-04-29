@@ -8,13 +8,17 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @interface NativeAudioRecorder : NSObject
 
 @property (nonatomic, assign) int bufferLength;
-@property (nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) float sampleRate;
 
 @property (nonatomic, strong) AVAudioSinkNode *sinkNode;
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverSinkBlock;
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength;
+@property (nonatomic, strong) AVAudioConverter *audioConverter;
+@property (nonatomic, strong) AVAudioFormat *inputFormat;
+@property (nonatomic, strong) AVAudioFormat *outputFormat;
+
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength sampleRate:(float)sampleRate;
 
 - (void)start;
 

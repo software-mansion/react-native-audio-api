@@ -23,15 +23,13 @@ const Record: FC = () => {
     });
 
     recorderRef.current = new AudioRecorder({
-      sampleRate: 48000,
-      numberOfChannels: 2,
-      bufferLengthInSamples: 1024,
-      iosEnableVoiceProcessing: true,
+      sampleRate: 16000,
+      bufferLengthInSamples: 2048,
     });
   }, []);
 
   const onReplay = () => {
-    const aCtx = new AudioContext();
+    const aCtx = new AudioContext({ sampleRate: 16000 });
     aCtxRef.current = aCtx;
 
     if (aCtx.state === 'suspended') {
