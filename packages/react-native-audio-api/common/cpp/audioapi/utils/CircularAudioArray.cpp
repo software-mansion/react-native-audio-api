@@ -4,7 +4,10 @@ namespace audioapi {
 
 CircularAudioArray::CircularAudioArray(size_t size) : AudioArray(size) {}
 
-void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvailableSpaceCheck) {
+void CircularAudioArray::push_back(
+    const float *data,
+    size_t size,
+    bool skipAvailableSpaceCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
@@ -25,7 +28,10 @@ void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvai
                                              : vWriteIndex_ + size;
 }
 
-void CircularAudioArray::pop_front(float *data, size_t size, bool skipAvailableDataCheck) {
+void CircularAudioArray::pop_front(
+    float *data,
+    size_t size,
+    bool skipAvailableDataCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
