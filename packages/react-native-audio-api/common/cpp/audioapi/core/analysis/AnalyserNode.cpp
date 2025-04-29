@@ -157,8 +157,7 @@ void AnalyserNode::processNode(
   auto framesToCopy = 0;
 
   if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    framesToCopy =
-        static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
+    framesToCopy = static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
     memcpy(
         inputBuffer_->getData() + vWriteIndex_,
         downMixBus_->getChannel(0)->getData(),
