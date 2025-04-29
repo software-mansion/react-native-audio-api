@@ -11,6 +11,7 @@
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 

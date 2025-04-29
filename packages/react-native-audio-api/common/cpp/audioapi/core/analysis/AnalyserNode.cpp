@@ -5,6 +5,7 @@
 #include <audioapi/dsp/Windows.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
@@ -13,9 +14,9 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
       minDecibels_(-100),
       maxDecibels_(-30),
       smoothingTimeConstant_(0.8),
-      windowType_(WindowType::BLACKMAN),
-      vWriteIndex_(0) {
-  inputBuffer_ = std::make_unique<AudioArray>(MAX_FFT_SIZE * 2);
+      windowType_(WindowType::BLACKMAN) {
+  inputBuffer_ = std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2);
+  tempBuffer_ = std::make_unique<AudioArray>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
   downMixBus_ = std::make_unique<AudioBus>(
       RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
@@ -61,6 +62,7 @@ void AnalyserNode::setFftSize(int fftSize) {
   fft_ = std::make_unique<dsp::FFT>(fftSize_);
   complexData_ = std::vector<std::complex<float>>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  tempBuffer_ = std::make_unique<AudioArray>(fftSize_);
   setWindowData(windowType_, fftSize_);
 }
 
@@ -116,21 +118,18 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
 
 void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto size = std::min(fftSize_, length);
-
-  for (int i = 0; i < size; i++) {
-    data[i] = inputBuffer_->getData()
-                  [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
-                   inputBuffer_->getSize()];
-  }
+  inputBuffer_->pop_back(data, size, std::max(0, fftSize_ - size), true);
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = std::min(fftSize_, length);
+  AudioArray tempBuffer(fftSize_);
+
+  inputBuffer_->pop_back(
+      tempBuffer.getData(), fftSize_, std::max(0, fftSize_ - size), true);
 
   for (int i = 0; i < size; i++) {
-    auto value = inputBuffer_->getData()
-                     [(vWriteIndex_ + i - fftSize_ + inputBuffer_->getSize()) %
-                      inputBuffer_->getSize()];
+    auto value = tempBuffer[i];
 
     float scaledValue = 128 * (value + 1);
 
@@ -153,29 +152,9 @@ void AnalyserNode::processNode(
 
   // Down mix the input bus to mono
   downMixBus_->copy(processingBus.get());
-
-  auto framesToCopy = 0;
-
-  if (vWriteIndex_ + framesToProcess > inputBuffer_->getSize()) {
-    framesToCopy = static_cast<int>(inputBuffer_->getSize()) - vWriteIndex_;
-    memcpy(
-        inputBuffer_->getData() + vWriteIndex_,
-        downMixBus_->getChannel(0)->getData(),
-        framesToCopy * sizeof(float));
-
-    vWriteIndex_ = 0;
-    framesToProcess -= framesToCopy;
-  }
-
-  memcpy(
-      inputBuffer_->getData() + vWriteIndex_,
-      downMixBus_->getChannel(0)->getData() + framesToCopy,
-      framesToProcess * sizeof(float));
-
-  vWriteIndex_ += framesToProcess;
-  if (vWriteIndex_ >= inputBuffer_->getSize()) {
-    vWriteIndex_ = 0;
-  }
+  // Copy the down mixed bus to the input buffer (circular buffer)
+  inputBuffer_->push_back(
+      downMixBus_->getChannel(0)->getData(), framesToProcess);
 
   shouldDoFFTAnalysis_ = true;
 }
@@ -187,33 +166,18 @@ void AnalyserNode::doFFTAnalysis() {
 
   shouldDoFFTAnalysis_ = false;
 
-  // We need to copy the fftSize elements from input buffer to a temporary
-  // buffer to apply the window.
-  AudioArray tempBuffer(this->fftSize_);
-
-  // We want to copy last fftSize_ elements added to the input buffer(fftSize_
-  // elements before vWriteIndex_). However inputBuffer_ works like a circular
-  // buffer so we have two cases to consider.
-  if (vWriteIndex_ < fftSize_) {
-    tempBuffer.copy(
-        inputBuffer_.get(),
-        vWriteIndex_ - fftSize_ + inputBuffer_->getSize(),
-        0,
-        fftSize_ - vWriteIndex_);
-    tempBuffer.copy(
-        inputBuffer_.get(), 0, fftSize_ - vWriteIndex_, vWriteIndex_);
-  } else {
-    tempBuffer.copy(inputBuffer_.get(), vWriteIndex_ - fftSize_, 0, fftSize_);
-  }
+  // We want to copy last fftSize_ elements added to the input buffer to apply
+  // the window.
+  inputBuffer_->pop_back(tempBuffer_->getData(), fftSize_, 0, true);
 
   dsp::multiply(
-      tempBuffer.getData(),
+      tempBuffer_->getData(),
       windowData_->getData(),
-      tempBuffer.getData(),
+      tempBuffer_->getData(),
       fftSize_);
 
   // do fft analysis - get frequency domain data
-  fft_->doFFT(tempBuffer.getData(), complexData_);
+  fft_->doFFT(tempBuffer_->getData(), complexData_);
 
   // Zero out nquist component
   complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
