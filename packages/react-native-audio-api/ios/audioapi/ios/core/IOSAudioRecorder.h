@@ -12,6 +12,7 @@ typedef struct objc_object NativeAudioRecorder;
 namespace audioapi {
 
 class AudioBus;
+class CircularAudioArray;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
@@ -32,9 +33,9 @@ class IOSAudioRecorder : public AudioRecorder {
   NativeAudioRecorder *audioRecorder_;
   std::atomic<bool> isRunning_;
 
-  std::shared_ptr<AudioBus> circularBuffer_;
-  int writeIdx_ = 0;
-  int readIdx_ = 0;
+  std::shared_ptr<CircularAudioArray> circularBuffer_;
+
+  void sendRemainingData();
 };
 
 } // namespace audioapi

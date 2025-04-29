@@ -5,6 +5,7 @@
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 
@@ -16,59 +17,20 @@ IOSAudioRecorder::IOSAudioRecorder(
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
     : AudioRecorder(sampleRate, bufferLength, onError, onStatusChange, onAudioReady)
 {
-  circularBuffer_ = std::make_shared<AudioBus>(std::max(2 * bufferLength, 2048), 1, sampleRate);
+  circularBuffer_ = std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
 
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
-      // copying to circularBuffer_
-      auto *circularBufferChannel = circularBuffer_->getChannel(0)->getData();
-      auto *inputChannel = (float *)inputBuffer->mBuffers[0].mData;
+      auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
+      circularBuffer_->push_back(inputChannel, numFrames);
+    }
 
-      auto framesToProcess = numFrames;
-      auto framesToCopy = 0;
+    while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
+      auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
+      auto *outputChannel = bus->getChannel(0)->getData();
 
-      if (writeIdx_ + numFrames > circularBuffer_->getSize()) {
-        framesToCopy = circularBuffer_->getSize() - writeIdx_;
-        memcpy(circularBufferChannel + writeIdx_, inputChannel, framesToCopy * sizeof(float));
-        framesToProcess -= framesToCopy;
-        writeIdx_ = 0;
-      }
-
-      memcpy(circularBufferChannel + writeIdx_, inputChannel + framesToCopy, framesToProcess * sizeof(float));
-
-      writeIdx_ += framesToProcess;
-      if (writeIdx_ >= circularBuffer_->getSize()) {
-        writeIdx_ = 0;
-      }
-
-      // copying to output bus and invoking callback
-      auto availableFrames =
-          writeIdx_ >= readIdx_ ? writeIdx_ - readIdx_ : circularBuffer_->getSize() - (readIdx_ - writeIdx_);
-
-      while (availableFrames >= bufferLength_) {
-        auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-        auto *outputChannel = bus->getChannel(0)->getData();
-
-        framesToProcess = bufferLength_;
-        framesToCopy = 0;
-        if (readIdx_ + bufferLength_ > circularBuffer_->getSize()) {
-          framesToCopy = circularBuffer_->getSize() - readIdx_;
-          memcpy(outputChannel, circularBufferChannel + readIdx_, framesToCopy * sizeof(float));
-          framesToProcess -= framesToCopy;
-          readIdx_ = 0;
-        }
-
-        memcpy(outputChannel + framesToCopy, circularBufferChannel + readIdx_, framesToProcess * sizeof(float));
-
-        readIdx_ += framesToProcess;
-        if (readIdx_ >= circularBuffer_->getSize()) {
-          readIdx_ = 0;
-        }
-
-        onAudioReady_(bus, bufferLength_, [when sampleTime] / [when sampleRate]);
-
-        availableFrames -= bufferLength_;
-      }
+      circularBuffer_->pop_front(outputChannel, bufferLength_);
+      onAudioReady_(bus, bufferLength_, [when sampleTime] / [when sampleRate]);
     }
   };
 
@@ -103,6 +65,18 @@ void IOSAudioRecorder::stop()
 
   isRunning_.store(false);
   [audioRecorder_ stop];
+
+  sendRemainingData();
+}
+
+void IOSAudioRecorder::sendRemainingData()
+{
+  auto bus = std::make_shared<AudioBus>(circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
+  auto *outputChannel = bus->getChannel(0)->getData();
+  auto availableFrames = circularBuffer_->getNumberOfAvailableFrames();
+
+  circularBuffer_->pop_front(outputChannel, circularBuffer_->getNumberOfAvailableFrames());
+  onAudioReady_(bus, availableFrames, 0);
 }
 
 } // namespace audioapi
