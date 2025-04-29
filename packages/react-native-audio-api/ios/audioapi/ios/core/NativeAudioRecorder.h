@@ -18,7 +18,9 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, strong) AVAudioFormat *inputFormat;
 @property (nonatomic, strong) AVAudioFormat *outputFormat;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock bufferLength:(int)bufferLength sampleRate:(float)sampleRate;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
+                         bufferLength:(int)bufferLength
+                           sampleRate:(float)sampleRate;
 
 - (void)start;
 
