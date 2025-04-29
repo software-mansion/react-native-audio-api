@@ -123,13 +123,12 @@ void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = std::min(fftSize_, length);
-  AudioArray tempBuffer(fftSize_);
 
   inputBuffer_->pop_back(
-      tempBuffer.getData(), fftSize_, std::max(0, fftSize_ - size), true);
+      tempBuffer_->getData(), fftSize_, std::max(0, fftSize_ - size), true);
 
   for (int i = 0; i < size; i++) {
-    auto value = tempBuffer[i];
+    auto value = tempBuffer_->getData()[i];
 
     float scaledValue = 128 * (value + 1);
 
@@ -154,7 +153,7 @@ void AnalyserNode::processNode(
   downMixBus_->copy(processingBus.get());
   // Copy the down mixed bus to the input buffer (circular buffer)
   inputBuffer_->push_back(
-      downMixBus_->getChannel(0)->getData(), framesToProcess);
+      downMixBus_->getChannel(0)->getData(), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
 }

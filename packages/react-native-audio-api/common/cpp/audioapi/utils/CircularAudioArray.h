@@ -10,8 +10,8 @@ class CircularAudioArray : public AudioArray {
   CircularAudioArray(const CircularAudioArray &other) = default;
   ~CircularAudioArray() = default;
 
-  void push_back(const float *data, size_t size);
-  void pop_front(float *data, size_t size);
+  void push_back(const float *data, size_t size, bool skipAvailableSpaceCheck = false);
+  void pop_front(float *data, size_t size, bool skipAvailableDataCheck = false);
   void pop_back(float *data, size_t size, size_t offset = 0, bool skipAvailableDataCheck = false);
 
   [[nodiscard]] size_t getNumberOfAvailableFrames() const;
