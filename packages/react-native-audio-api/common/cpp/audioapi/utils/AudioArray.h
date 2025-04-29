@@ -42,7 +42,7 @@ class AudioArray {
       size_t destinationStart,
       size_t length);
 
- private:
+ protected:
   float *data_;
   size_t size_;
 };
