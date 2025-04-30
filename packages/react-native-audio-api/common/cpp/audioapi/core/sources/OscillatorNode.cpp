@@ -51,7 +51,7 @@ void OscillatorNode::processNode(
 
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
-  if (!isPlaying()) {
+  if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
     return;
   }

@@ -1,5 +1,6 @@
 package com.swmansion.audioapi
 
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -14,24 +15,24 @@ class AudioManagerModule(
     const val NAME = "AudioManagerModule"
   }
 
-  private val mediaSessionManager: MediaSessionManager = MediaSessionManager(reactContext)
-
   init {
     try {
       System.loadLibrary("react-native-audio-api")
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
     }
+
+    MediaSessionManager.initialize(reactContext)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun setLockScreenInfo(info: ReadableMap?) {
-    mediaSessionManager.setLockScreenInfo(info)
+    MediaSessionManager.setLockScreenInfo(info)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun resetLockScreenInfo() {
-    mediaSessionManager.resetLockScreenInfo()
+    MediaSessionManager.resetLockScreenInfo()
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -39,7 +40,7 @@ class AudioManagerModule(
     name: String,
     enabled: Boolean,
   ) {
-    mediaSessionManager.enableRemoteCommand(name, enabled)
+    MediaSessionManager.enableRemoteCommand(name, enabled)
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -47,16 +48,30 @@ class AudioManagerModule(
     category: String?,
     mode: String?,
     options: ReadableArray?,
-    active: Boolean,
   ) {
     // Nothing to do here
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun getDevicePreferredSampleRate(): Double = mediaSessionManager.getDevicePreferredSampleRate()
+  fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun observeAudioInterruptions(enable: Boolean) = mediaSessionManager.observeAudioInterruptions(enable)
+  fun observeAudioInterruptions(enable: Boolean) = MediaSessionManager.observeAudioInterruptions(enable)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun observeVolumeChanges(enable: Boolean) = MediaSessionManager.observeVolumeChanges(enable)
+
+  @ReactMethod
+  fun requestRecordingPermissions(promise: Promise) {
+    val res = MediaSessionManager.requestRecordingPermissions(currentActivity)
+    promise.resolve(res)
+  }
+
+  @ReactMethod
+  fun checkRecordingPermissions(promise: Promise) {
+    val res = MediaSessionManager.checkRecordingPermissions()
+    promise.resolve(res)
+  }
 
   override fun getName(): String = NAME
 }

@@ -1,4 +1,5 @@
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import { PermissionStatus } from '../system/types';
 
 const NativeAudioManagerModule = NativeModules.AudioManagerModule;
 const eventEmitter =
@@ -27,21 +28,25 @@ const AudioManagerModule = {
   setAudioSessionOptions(
     category: string,
     mode: string,
-    options: Array<string>,
-    active: boolean
+    options: Array<string>
   ): void {
-    NativeAudioManagerModule.setAudioSessionOptions(
-      category,
-      mode,
-      options,
-      active
-    );
+    NativeAudioManagerModule.setAudioSessionOptions(category, mode, options);
   },
   getDevicePreferredSampleRate(): number {
     return NativeAudioManagerModule.getDevicePreferredSampleRate();
   },
   observeAudioInterruptions(enabled: boolean): void {
     NativeAudioManagerModule.observeAudioInterruptions(enabled);
+  },
+  observeVolumeChanges(enabled: boolean): void {
+    NativeAudioManagerModule.observeVolumeChanges(enabled);
+  },
+  requestRecordingPermissions(): Promise<PermissionStatus> {
+    return NativeAudioManagerModule.requestRecordingPermissions();
+  },
+
+  checkRecordingPermissions(): Promise<PermissionStatus> {
+    return NativeAudioManagerModule.checkRecordingPermissions();
   },
 };
 

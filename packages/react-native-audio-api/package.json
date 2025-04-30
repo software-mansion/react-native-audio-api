@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.5.6",
+  "version": "0.6.0-rc.5",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
@@ -34,7 +34,8 @@
     "!**/__mocks__",
     "!**/.*",
     "!**/node_modules",
-    "scripts/setup-rn-audio-api-web.js"
+    "scripts/setup-rn-audio-api-web.js",
+    "app.plugin.js"
   ],
   "scripts": {
     "test": "jest",
@@ -51,6 +52,7 @@
     "format:ios": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" -o -iname \"*.cpp\" \\) -not -path \"ios/audioapi/ios/*\" | xargs clang-format -i",
     "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "build": "bob build",
+    "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"
   },
@@ -87,6 +89,7 @@
     "@babel/types": "^7.20.0",
     "@commitlint/config-conventional": "^17.0.2",
     "@evilmartians/lefthook": "^1.5.0",
+    "@expo/config-plugins": "^9.0.0",
     "@react-native/babel-preset": "0.77.1",
     "@react-native/eslint-config": "^0.77.1",
     "@react-native/metro-config": "0.77.1",
@@ -134,7 +137,8 @@
           "esm": true
         }
       ],
-      "typescript"
+      "typescript",
+      "commonjs"
     ]
   },
   "codegenConfig": {

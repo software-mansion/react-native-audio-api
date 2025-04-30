@@ -18,9 +18,10 @@ AudioContext::AudioContext(float sampleRate) : BaseAudioContext() {
       std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
 #endif
 
-  sampleRate_ = audioPlayer_->getSampleRate();
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
+  sampleRate_ = sampleRate;
+  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate);
 
+  state_ = ContextState::RUNNING;
   audioPlayer_->start();
 }
 
@@ -53,7 +54,7 @@ bool AudioContext::suspend() {
   }
 
   state_ = ContextState::SUSPENDED;
-  audioPlayer_->suspend();
+  audioPlayer_->pause();
   return true;
 }
 

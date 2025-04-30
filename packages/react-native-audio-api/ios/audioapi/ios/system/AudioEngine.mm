@@ -1,4 +1,5 @@
 #import <audioapi/ios/system/AudioEngine.h>
+#import <audioapi/ios/system/AudioSessionManager.h>
 
 @implementation AudioEngine
 
@@ -7,9 +8,11 @@ static AudioEngine *_sharedInstance = nil;
 + (instancetype)sharedInstance
 {
   static dispatch_once_t onceToken;
+
   dispatch_once(&onceToken, ^{
     _sharedInstance = [[self alloc] initPrivate];
   });
+
   return _sharedInstance;
 }
 
@@ -23,10 +26,14 @@ static AudioEngine *_sharedInstance = nil;
 {
   if (self = [super init]) {
     self.audioEngine = [[AVAudioEngine alloc] init];
-    self.audioEngine.mainMixerNode.outputVolume = 1;
+    self.inputNode = nil;
+
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
+
+    [[AudioSessionManager sharedInstance] setActive:true];
   }
+
   return self;
 }
 
@@ -40,12 +47,13 @@ static AudioEngine *_sharedInstance = nil;
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
+  self.inputNode = nil;
+
+  [[AudioSessionManager sharedInstance] setActive:false];
 }
 
 - (bool)rebuildAudioEngine
 {
-  NSError *error = nil;
-
   if ([self.audioEngine isRunning]) {
     return true;
   }
@@ -58,14 +66,10 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
 
-  if ([self.audioEngine isRunning]) {
-    return true;
-  }
+  [self.audioEngine attachNode:self.inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
 
-  if (![self.audioEngine startAndReturnError:&error]) {
-    NSLog(@"Error while rebuilding audio engine: %@", [error debugDescription]);
-    return false;
-  }
+  [self startEngine];
 
   return true;
 }
@@ -93,7 +97,7 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine pause];
+  [self.audioEngine stop];
 }
 
 - (bool)isRunning
@@ -112,24 +116,64 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine attachNode:sourceNode];
   [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
 
-  if ([self.sourceNodes count] == 1) {
-    [self startEngine];
-  }
-
+  [self startIfNecessary];
   return sourceNodeId;
 }
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
-  NSLog(@"[AudioEngine] detaching source nde with ID: %@", sourceNodeId);
+  NSLog(@"[AudioEngine] detaching source node with ID: %@", sourceNodeId);
 
   AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-  [self.audioEngine detachNode:sourceNode];
 
-  [self.sourceNodes removeObjectForKey:sourceNodeId];
-  [self.sourceFormats removeObjectForKey:sourceNodeId];
+  if (sourceNode != nil) {
+    [self.audioEngine detachNode:sourceNode];
 
-  if ([self.sourceNodes count] == 0) {
+    [self.sourceNodes removeObjectForKey:sourceNodeId];
+    [self.sourceFormats removeObjectForKey:sourceNodeId];
+  }
+
+  [self stopIfNecessary];
+}
+
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode
+{
+  self.inputNode = inputNode;
+
+  [self.audioEngine attachNode:inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:nil];
+
+  [self startIfNecessary];
+}
+
+- (void)detachInputNode
+{
+  if (self.inputNode != nil) {
+    [self.audioEngine detachNode:self.inputNode];
+    self.inputNode = nil;
+  }
+
+  [self stopIfNecessary];
+}
+
+- (void)startIfNecessary
+{
+  if ([self isRunning]) {
+    return;
+  }
+
+  if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
+    [self startEngine];
+  }
+}
+
+- (void)stopIfNecessary
+{
+  if (![self isRunning]) {
+    return;
+  }
+
+  if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
     [self stopEngine];
   }
 }

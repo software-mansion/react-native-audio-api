@@ -128,12 +128,7 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
 }
 
 void AudioBufferSourceNode::disable() {
-  AudioNode::disable();
-
-  if (onendedCallback_) {
-    onendedCallback_(getStopTime());
-  }
-
+  AudioScheduledSourceNode::disable();
   alignedBus_.reset();
 }
 

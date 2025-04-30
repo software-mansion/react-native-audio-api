@@ -11,6 +11,7 @@
 namespace audioapi {
 
 class AudioNode;
+class AudioScheduledSourceNode;
 
 class AudioNodeManager {
  public:
@@ -27,7 +28,8 @@ class AudioNodeManager {
       const std::shared_ptr<AudioNode> &to,
       ConnectionType type);
 
-  void addNode(const std::shared_ptr<AudioNode> &node);
+  void addProcessingNode(const std::shared_ptr<AudioNode> &node);
+  void addSourceNode(const std::shared_ptr<AudioScheduledSourceNode> &node);
 
   void cleanup();
 
@@ -36,7 +38,8 @@ class AudioNodeManager {
   AudioNodeDestructor nodeDeconstructor_;
 
   // all nodes created in the context
-  std::unordered_set<std::shared_ptr<AudioNode>> nodes_;
+  std::unordered_set<std::shared_ptr<AudioScheduledSourceNode>> sourceNodes_;
+  std::unordered_set<std::shared_ptr<AudioNode>> processingNodes_;
 
   // connections to be settled
   std::vector<std::tuple<
@@ -46,6 +49,7 @@ class AudioNodeManager {
       audioNodesToConnect_;
 
   void settlePendingConnections();
+  void cleanupNode(const std::shared_ptr<AudioNode> &node);
   void prepareNodesForDestruction();
 };
 

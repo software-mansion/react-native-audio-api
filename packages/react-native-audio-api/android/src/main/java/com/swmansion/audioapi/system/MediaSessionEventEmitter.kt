@@ -73,6 +73,10 @@ class MediaSessionEventEmitter(
     sendEvent("onInterruption", values)
   }
 
+  fun onVolumeChange(values: Map<String, Number>) {
+    sendEvent("onVolumeChange", values)
+  }
+
   private fun stopForegroundService() {
     NotificationManagerCompat.from(reactContext).cancel(notificationId)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

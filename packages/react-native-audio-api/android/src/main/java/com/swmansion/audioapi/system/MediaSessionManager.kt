@@ -1,5 +1,7 @@
 package com.swmansion.audioapi.system
 
+import android.Manifest
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
@@ -7,32 +9,32 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 
-class MediaSessionManager(
-  val reactContext: ReactApplicationContext,
-) {
+object MediaSessionManager {
+  lateinit var reactContext: ReactApplicationContext
   val notificationId = 100
   val channelId = "react-native-audio-api"
 
-  private val audioManager: AudioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  val mediaSession: MediaSessionCompat = MediaSessionCompat(reactContext, "MediaSessionManager")
-  val mediaNotificationManager: MediaNotificationManager
-  private val lockScreenManager: LockScreenManager
-  val eventEmitter: MediaSessionEventEmitter =
-    MediaSessionEventEmitter(reactContext, notificationId)
-  private val audioFocusListener: AudioFocusListener
-  private val mediaReceiver: MediaReceiver =
-    MediaReceiver(reactContext, this)
+  private lateinit var audioManager: AudioManager
+  lateinit var mediaSession: MediaSessionCompat
+  lateinit var mediaNotificationManager: MediaNotificationManager
+  private lateinit var lockScreenManager: LockScreenManager
+  lateinit var eventEmitter: MediaSessionEventEmitter
+  private lateinit var audioFocusListener: AudioFocusListener
+  private lateinit var volumeChangeListener: VolumeChangeListener
+  private lateinit var mediaReceiver: MediaReceiver
 
   private val connection =
     object : ServiceConnection {
@@ -60,13 +62,19 @@ class MediaSessionManager(
       }
     }
 
-  init {
+  fun initialize(reactContext: ReactApplicationContext) {
+    this.reactContext = reactContext
+    this.audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
     this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId, channelId)
     this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
+    this.eventEmitter = MediaSessionEventEmitter(reactContext, notificationId)
+    this.mediaReceiver = MediaReceiver(reactContext, this)
     this.mediaSession.setCallback(MediaSessionCallback(eventEmitter, lockScreenManager))
 
     val filter = IntentFilter()
@@ -87,6 +95,7 @@ class MediaSessionManager(
     }
 
     this.audioFocusListener = AudioFocusListener(audioManager, eventEmitter, lockScreenManager)
+    this.volumeChangeListener = VolumeChangeListener(audioManager, eventEmitter)
 
     val myIntent = Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
 
@@ -128,6 +137,35 @@ class MediaSessionManager(
       audioFocusListener.abandonAudioFocus()
     }
   }
+
+  fun observeVolumeChanges(observe: Boolean) {
+    if (observe) {
+      ContextCompat.registerReceiver(
+        reactContext,
+        volumeChangeListener,
+        volumeChangeListener.getIntentFilter(),
+        ContextCompat.RECEIVER_NOT_EXPORTED,
+      )
+    } else {
+      reactContext.unregisterReceiver(volumeChangeListener)
+    }
+  }
+
+  fun requestRecordingPermissions(currentActivity: Activity?): String {
+    ActivityCompat.requestPermissions(currentActivity!!, arrayOf(Manifest.permission.RECORD_AUDIO), 200)
+    return checkRecordingPermissions()
+  }
+
+  fun checkRecordingPermissions(): String =
+    if (ContextCompat.checkSelfPermission(
+        reactContext,
+        Manifest.permission.RECORD_AUDIO,
+      ) == PackageManager.PERMISSION_GRANTED
+    ) {
+      "Granted"
+    } else {
+      "Denied"
+    }
 
   @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {

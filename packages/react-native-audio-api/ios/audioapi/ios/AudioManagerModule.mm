@@ -49,16 +49,9 @@ RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-                      options active : (BOOL)active)
+RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)options)
 {
-  NSError *error = nil;
-
-  if (active) {
-    [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
-  } else {
-    [self.audioSessionManager setActive:false error:&error];
-  }
+  [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
@@ -66,9 +59,27 @@ RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
   [self.notificationManager observeAudioInterruptions:enabled];
 }
 
+RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
+{
+  [self.notificationManager observeVolumeChanges:(BOOL)enabled];
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 {
   return [self.audioSessionManager getDevicePreferredSampleRate];
+}
+
+RCT_EXPORT_METHOD(requestRecordingPermissions : (RCTPromiseResolveBlock)resolve rejecter : (RCTPromiseRejectBlock)
+                      reject)
+{
+  NSString *res = [self.audioSessionManager requestRecordingPermissions];
+  resolve(res);
+}
+
+RCT_EXPORT_METHOD(checkRecordingPermissions : (RCTPromiseResolveBlock)resolve rejecter : (RCTPromiseRejectBlock)reject)
+{
+  NSString *res = [self.audioSessionManager checkRecordingPermissions];
+  resolve(res);
 }
 
 - (NSArray<NSString *> *)supportedEvents
@@ -86,8 +97,9 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
     @"onRemoteSeekForward",
     @"onRemoteSeekBackward",
     @"onRemoteChangePlaybackPosition",
-    @"interruption",
-    @"routeChange"
+    @"onInterruption",
+    @"onRouteChange",
+    @"onVolumeChange"
   ];
 }
 

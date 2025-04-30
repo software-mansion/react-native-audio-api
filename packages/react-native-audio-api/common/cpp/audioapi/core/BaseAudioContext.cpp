@@ -11,6 +11,7 @@
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 
@@ -43,25 +44,25 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   auto oscillator = std::make_shared<OscillatorNode>(this);
-  nodeManager_->addNode(oscillator);
+  nodeManager_->addSourceNode(oscillator);
   return oscillator;
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
   auto gain = std::make_shared<GainNode>(this);
-  nodeManager_->addNode(gain);
+  nodeManager_->addProcessingNode(gain);
   return gain;
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {
   auto stereoPanner = std::make_shared<StereoPannerNode>(this);
-  nodeManager_->addNode(stereoPanner);
+  nodeManager_->addProcessingNode(stereoPanner);
   return stereoPanner;
 }
 
 std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
-  nodeManager_->addNode(biquadFilter);
+  nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
 }
 
@@ -69,7 +70,7 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
     bool pitchCorrection) {
   auto bufferSource =
       std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
-  nodeManager_->addNode(bufferSource);
+  nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
 
@@ -90,7 +91,7 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
-  nodeManager_->addNode(analyser);
+  nodeManager_->addProcessingNode(analyser);
   return analyser;
 }
 

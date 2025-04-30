@@ -6,6 +6,7 @@
 @implementation NotificationManager
 
 static NotificationManager *_sharedInstance = nil;
+static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
 + (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
 {
@@ -57,6 +58,35 @@ static NotificationManager *_sharedInstance = nil;
   }
 
   self.audioInterruptionsObserved = enabled;
+}
+
+// WARNING: this does not work in a simulator environment, test it on a real device
+- (void)observeVolumeChanges:(BOOL)enabled
+{
+  if (self.volumeChangesObserved == enabled) {
+    return;
+  }
+
+  if (enabled) {
+    [[AVAudioSession sharedInstance] addObserver:self
+                                      forKeyPath:@"outputVolume"
+                                         options:NSKeyValueObservingOptionNew
+                                         context:(void *)&VolumeObservationContext];
+  } else {
+    [[AVAudioSession sharedInstance] removeObserver:self forKeyPath:@"outputVolume" context:nil];
+  }
+  self.volumeChangesObserved = enabled;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+  if ([keyPath isEqualToString:@"outputVolume"] && context == &VolumeObservationContext) {
+    NSNumber *volume = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
+    [self.audioManagerModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
+  }
 }
 
 - (void)configureNotifications

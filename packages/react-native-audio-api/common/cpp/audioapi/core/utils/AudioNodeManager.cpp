@@ -1,4 +1,5 @@
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
 
@@ -28,9 +29,16 @@ std::mutex &AudioNodeManager::getGraphLock() {
   return graphLock_;
 }
 
-void AudioNodeManager::addNode(const std::shared_ptr<AudioNode> &node) {
+void AudioNodeManager::addProcessingNode(
+    const std::shared_ptr<AudioNode> &node) {
   Locker lock(getGraphLock());
-  nodes_.insert(node);
+  processingNodes_.insert(node);
+}
+
+void AudioNodeManager::addSourceNode(
+    const std::shared_ptr<AudioScheduledSourceNode> &node) {
+  Locker lock(getGraphLock());
+  sourceNodes_.insert(node);
 }
 
 void AudioNodeManager::settlePendingConnections() {
@@ -54,17 +62,35 @@ void AudioNodeManager::settlePendingConnections() {
   audioNodesToConnect_.clear();
 }
 
+void AudioNodeManager::cleanupNode(const std::shared_ptr<AudioNode> &node) {
+  nodeDeconstructor_.addNodeForDeconstruction(node);
+  node.get()->cleanup();
+}
+
 void AudioNodeManager::prepareNodesForDestruction() {
   nodeDeconstructor_.tryCallWithLock([this]() {
-    auto it = nodes_.begin();
+    auto sNodesIt = sourceNodes_.begin();
 
-    while (it != nodes_.end()) {
-      if (it->use_count() == 1) {
-        nodeDeconstructor_.addNodeForDeconstruction(*it);
-        it->get()->cleanup();
-        it = nodes_.erase(it);
+    while (sNodesIt != sourceNodes_.end()) {
+      // we don't want to destroy nodes that are still playing or will be
+      // playing
+      if (sNodesIt->use_count() == 1 &&
+          (sNodesIt->get()->isUnscheduled() || sNodesIt->get()->isFinished())) {
+        cleanupNode(*sNodesIt);
+        sNodesIt = sourceNodes_.erase(sNodesIt);
       } else {
-        ++it;
+        ++sNodesIt;
+      }
+    }
+
+    auto pNodesIt = processingNodes_.begin();
+
+    while (pNodesIt != processingNodes_.end()) {
+      if (pNodesIt->use_count() == 1) {
+        cleanupNode(*pNodesIt);
+        pNodesIt = processingNodes_.erase(pNodesIt);
+      } else {
+        ++pNodesIt;
       }
     }
   });
@@ -74,11 +100,19 @@ void AudioNodeManager::prepareNodesForDestruction() {
 void AudioNodeManager::cleanup() {
   Locker lock(getGraphLock());
 
-  for (auto it = nodes_.begin(), end = nodes_.end(); it != end; ++it) {
+  for (auto it = sourceNodes_.begin(), end = sourceNodes_.end(); it != end;
+       ++it) {
     it->get()->cleanup();
   }
 
-  nodes_.clear();
+  for (auto it = processingNodes_.begin(), end = processingNodes_.end();
+       it != end;
+       ++it) {
+    it->get()->cleanup();
+  }
+
+  sourceNodes_.clear();
+  processingNodes_.clear();
 }
 
 } // namespace audioapi
