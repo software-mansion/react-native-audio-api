@@ -194,7 +194,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (NSString *)requestRecordingPermissions
 {
-  [self.audioSession requestRecordPermission:^(BOOL granted) {}];
+  [self.audioSession requestRecordPermission:^(BOOL granted){
+  }];
   return [self checkRecordingPermissions];
 }
 
