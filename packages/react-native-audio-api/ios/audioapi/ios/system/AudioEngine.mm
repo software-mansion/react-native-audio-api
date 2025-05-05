@@ -22,7 +22,7 @@ static AudioEngine *_sharedInstance = nil;
     self.sessionManager = sessionManager;
     [self.sessionManager setActive:true];
   }
-  
+
   _sharedInstance = self;
 
   return self;

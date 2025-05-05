@@ -21,7 +21,7 @@
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
-  
+
   return self;
 }
 

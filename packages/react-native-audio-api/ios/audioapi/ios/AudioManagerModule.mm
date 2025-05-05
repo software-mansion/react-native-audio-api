@@ -15,7 +15,7 @@ RCT_EXPORT_MODULE(AudioManagerModule);
   [self.notificationManager cleanup];
   [self.audioSessionManager cleanup];
   [self.lockScreenManager cleanup];
-  
+
   [super invalidate];
 }
 
@@ -25,7 +25,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
   self.lockScreenManager = [[LockScreenManager alloc] initWithAudioManagerModule:self];
   self.notificationManager = [[NotificationManager alloc] initWithAudioManagerModule:self];
-  
+
   return @true;
 }
 
