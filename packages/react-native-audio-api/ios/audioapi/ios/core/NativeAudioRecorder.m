@@ -14,7 +14,7 @@
 
     self.receiverBlock = [receiverBlock copy];
 
-    float devicePrefferedSampleRate = [[[AudioSessionManager sharedInstance] getDevicePreferredSampleRate] floatValue];
+    float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
 
     self.inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                         sampleRate:devicePrefferedSampleRate

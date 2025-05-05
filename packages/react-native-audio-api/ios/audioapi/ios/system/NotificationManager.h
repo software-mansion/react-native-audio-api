@@ -15,7 +15,7 @@
 @property (nonatomic, assign) bool audioInterruptionsObserved;
 @property (nonatomic, assign) bool volumeChangesObserved;
 
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
+- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
 - (void)cleanup;
 
 - (void)observeAudioInterruptions:(BOOL)enabled;

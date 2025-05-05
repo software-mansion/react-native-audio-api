@@ -14,30 +14,14 @@
 
 @implementation LockScreenManager
 
-static LockScreenManager *_sharedInstance = nil;
-
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
-  });
-  return _sharedInstance;
-}
-
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[LockScreenManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
 {
   if (self = [super init]) {
     self.audioManagerModule = audioManagerModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
+  
   return self;
 }
 

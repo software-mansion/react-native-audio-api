@@ -50,4 +50,4 @@ const AudioManagerModule = {
   },
 };
 
-export { eventEmitter, AudioManagerModule };
+export { eventEmitter, AudioManagerModule, NativeAudioManagerModule };

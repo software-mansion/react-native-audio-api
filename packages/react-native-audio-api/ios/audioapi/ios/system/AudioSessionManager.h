@@ -13,7 +13,7 @@
 @property (nonatomic, assign) AVAudioSessionCategory sessionCategory;
 @property (nonatomic, assign) AVAudioSessionCategoryOptions sessionOptions;
 
-+ (instancetype)sharedInstance;
+- (instancetype)init;
 - (void)cleanup;
 - (bool)configureAudioSession;
 

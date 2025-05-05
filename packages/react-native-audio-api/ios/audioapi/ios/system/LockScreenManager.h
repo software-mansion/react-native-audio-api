@@ -13,7 +13,7 @@
 @property (nonatomic, weak) MPNowPlayingInfoCenter *playingInfoCenter;
 @property (nonatomic, copy) NSString *artworkUrl;
 
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
+- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
 - (void)cleanup;
 
 - (void)setLockScreenInfo:(NSDictionary *)info;

@@ -7,22 +7,10 @@ static AudioEngine *_sharedInstance = nil;
 
 + (instancetype)sharedInstance
 {
-  static dispatch_once_t onceToken;
-
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivate];
-  });
-
   return _sharedInstance;
 }
 
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[AudioEngine sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivate
+- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager
 {
   if (self = [super init]) {
     self.audioEngine = [[AVAudioEngine alloc] init];
@@ -31,8 +19,11 @@ static AudioEngine *_sharedInstance = nil;
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
 
-    [[AudioSessionManager sharedInstance] setActive:true];
+    self.sessionManager = sessionManager;
+    [self.sessionManager setActive:true];
   }
+  
+  _sharedInstance = self;
 
   return self;
 }
@@ -49,7 +40,8 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
 
-  [[AudioSessionManager sharedInstance] setActive:false];
+  [self.sessionManager setActive:false];
+  self.sessionManager = nil;
 }
 
 - (bool)rebuildAudioEngine

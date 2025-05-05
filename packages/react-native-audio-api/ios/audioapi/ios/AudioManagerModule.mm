@@ -9,29 +9,24 @@
 
 RCT_EXPORT_MODULE(AudioManagerModule);
 
-- (id)init
-{
-  if (self == [super init]) {
-    self.audioEngine = [AudioEngine sharedInstance];
-    self.audioSessionManager = [AudioSessionManager sharedInstance];
-    self.notificationManager = [NotificationManager sharedInstanceWithAudioManagerModule:self];
-    self.lockScreenManager = [LockScreenManager sharedInstanceWithAudioManagerModule:self];
-  }
-
-  return self;
-}
-
-- (void)cleanup
+- (void)invalidate
 {
   [self.audioEngine cleanup];
   [self.notificationManager cleanup];
   [self.audioSessionManager cleanup];
   [self.lockScreenManager cleanup];
+  
+  [super invalidate];
 }
 
-- (void)dealloc
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
-  [self cleanup];
+  self.audioSessionManager = [[AudioSessionManager alloc] init];
+  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
+  self.lockScreenManager = [[LockScreenManager alloc] initWithAudioManagerModule:self];
+  self.notificationManager = [[NotificationManager alloc] initWithAudioManagerModule:self];
+  
+  return @true;
 }
 
 RCT_EXPORT_METHOD(setLockScreenInfo : (NSDictionary *)info)

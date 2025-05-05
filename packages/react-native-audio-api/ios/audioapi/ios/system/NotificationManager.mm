@@ -5,25 +5,9 @@
 
 @implementation NotificationManager
 
-static NotificationManager *_sharedInstance = nil;
 static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
-  });
-  return _sharedInstance;
-}
-
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[NotificationManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
 {
   if (self = [super init]) {
     self.audioManagerModule = audioManagerModule;
@@ -169,8 +153,8 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
   NSLog(@"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
+  AudioEngine *audioEngine = self.audioManagerModule.audioEngine;
+  AudioSessionManager *audioSessionManager = self.audioManagerModule.audioSessionManager;
 
   [self cleanup];
   [audioSessionManager configureAudioSession];
@@ -180,7 +164,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  AudioEngine *audioEngine = self.audioManagerModule.audioEngine;
 
   if (![audioEngine isRunning]) {
     NSLog(

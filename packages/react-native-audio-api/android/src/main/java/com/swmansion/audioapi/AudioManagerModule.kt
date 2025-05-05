@@ -9,7 +9,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.system.MediaSessionManager
 
 class AudioManagerModule(
-  reactContext: ReactApplicationContext,
+  val reactContext: ReactApplicationContext,
 ) : ReactContextBaseJavaModule(reactContext) {
   companion object {
     const val NAME = "AudioManagerModule"
@@ -21,8 +21,13 @@ class AudioManagerModule(
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
     }
+  }
 
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun install(): Boolean {
     MediaSessionManager.initialize(reactContext)
+
+    return true
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
