@@ -1,0 +1,92 @@
+name: Build nightly and publish to npm
+
+on:
+  schedule:
+    - cron: '32 23 * * *' # Every day at 23:32 UTC
+jobs:
+  build:
+    if: github.repository == 'software-mansion/react-native-audio-api'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      AUDIO_API_DIR: packages/react-native-audio-api
+      AUDIO_API_VERSION: PLACEHOLDER
+      PACKAGE_NAME: PLACEHOLDER
+      TAG: audio-api-nightly # TODO: consider using workflows also for main releases
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # TODO: consider bumping to 22
+          cache: 'yarn'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Determine version
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "AUDIO_API_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Assert AUDIO_API_VERSION
+        if: ${{ env.AUDIO_API_VERSION == 'PLACEHOLDER' }}
+        run: exit 1 # this should never happen
+
+      - name: Install monorepo dependencies
+        run: yarn install --immutable
+
+      - name: Bump version
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        run: |
+          VERSION=${{ env.AUDIO_API_VERSION }}
+          MAJOR=$(echo $VERSION | awk -F. '{print $1}')
+          MINOR=$(echo $VERSION | awk -F. '{print $2}')
+          NEW_VERSION="$MAJOR.$(($MINOR + 1)).0"
+          node ./scripts/set-audio-api-version.js $NEW_VERSION
+
+      - name: Build package
+        id: build
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        run: ./create-npm-package.sh
+
+      - name: Check if any node_modules were packed
+        id: check_node_modules
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        run: >-
+          ! grep --silent -E "node_modules/.+" build.log
+
+      - name: Show build log
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        if: failure() && steps.build.outcome == 'failure'
+        run: cat build.log
+
+      - name: Show packed node_modules
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        if: failure() && steps.node_modules.outcome == 'failure'
+        run: >-
+          ! grep -E "node_modules/.+" build.log
+
+      - name: Add package name to env
+        working-directory: ${{ env.AUDIO_API_DIR }}
+        run: echo "PACKAGE_NAME=$(ls -l | egrep -o "react-native-audio-api-(.*)(=?\.tgz)")" >> $GITHUB_ENV
+
+      - name: Assert package name
+        if: ${{ env.PACKAGE_NAME == 'PLACEHOLDER' }}
+        run: exit 1 # this should never happen
+
+      - name: Upload package to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: ${{ env.AUDIO_API_DIR }}/${{ env.PACKAGE_NAME }}
+
+      - name: Move package to monorepo root
+        run: mv ${{ env.AUDIO_API_DIR }}/${{ env.PACKAGE_NAME }} .
+
+      - name: Publish package to npm
+        run: npm publish $PACKAGE_NAME --tag ${{ env.TAG }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
