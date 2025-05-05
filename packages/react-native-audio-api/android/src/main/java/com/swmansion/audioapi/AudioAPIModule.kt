@@ -3,7 +3,6 @@ package com.swmansion.audioapi
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
@@ -54,17 +53,22 @@ class AudioAPIModule(
     MediaSessionManager.resetLockScreenInfo()
   }
 
-  override fun enableRemoteCommand(name: String?, enabled: Boolean) {
+  override fun enableRemoteCommand(
+    name: String?,
+    enabled: Boolean,
+  ) {
     MediaSessionManager.enableRemoteCommand(name!!, enabled)
   }
 
-  override fun setAudioSessionOptions(category: String?, mode: String?, options: ReadableArray?) {
+  override fun setAudioSessionOptions(
+    category: String?,
+    mode: String?,
+    options: ReadableArray?,
+  ) {
     // noting to do here
   }
 
-  override fun getDevicePreferredSampleRate(): Double {
-    return MediaSessionManager.getDevicePreferredSampleRate()
-  }
+  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
