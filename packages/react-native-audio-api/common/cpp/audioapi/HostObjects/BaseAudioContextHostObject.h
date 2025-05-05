@@ -13,7 +13,7 @@
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
 
-#include <audioapi/AudioEventHandlerRegistry.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/HostObjects/AudioEventHandlerRegistryHostObject.h>
 
 #include <jsi/jsi.h>

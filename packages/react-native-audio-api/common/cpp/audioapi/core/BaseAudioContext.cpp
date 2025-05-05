@@ -1,4 +1,4 @@
-#include <audioapi/AudioEventHandlerRegistry.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
