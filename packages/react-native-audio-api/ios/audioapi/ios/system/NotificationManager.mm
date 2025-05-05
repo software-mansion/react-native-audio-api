@@ -99,8 +99,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioAPIModule sendEventWithName:@"onInterruption"
-                                          body:@{@"type" : @"began", @"shouldResume" : @"false"}];
+    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
     return;
   }
 

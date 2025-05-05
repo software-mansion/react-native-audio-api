@@ -227,7 +227,7 @@
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
   [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackRate"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -258,21 +258,21 @@
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
   [self.audioAPIModule sendEventWithName:@"onRemoteSkipForward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
   [self.audioAPIModule sendEventWithName:@"onRemoteSkipBackward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
   [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackPosition"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

@@ -4,11 +4,11 @@
 #import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
 
+#import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
-#import <audioapi/AudioAPIModuleInstaller.h>
 
 using namespace audioapi;
 using namespace facebook::react;
@@ -50,7 +50,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
   self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
   self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
-  
+
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
 
 #if defined(RCT_NEW_ARCH_ENABLED)
@@ -102,13 +102,15 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];
 }
 
-RCT_EXPORT_METHOD(requestRecordingPermissions:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
+                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   NSString *res = [self.audioSessionManager requestRecordingPermissions];
   resolve(res);
 }
 
-RCT_EXPORT_METHOD(checkRecordingPermissions:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
+                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   NSString *res = [self.audioSessionManager checkRecordingPermissions];
   resolve(res);
