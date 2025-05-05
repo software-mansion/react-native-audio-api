@@ -9,19 +9,15 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 
-BaseAudioContext::BaseAudioContext(
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
+BaseAudioContext::BaseAudioContext() {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
-
-  eventHandlerRegistry_ = eventHandlerRegistry;
 }
 
 std::string BaseAudioContext::getState() {

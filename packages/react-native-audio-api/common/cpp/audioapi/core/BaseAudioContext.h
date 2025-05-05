@@ -26,14 +26,11 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
-class AudioEventHandlerRegistry;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry);
+  BaseAudioContext();
   virtual ~BaseAudioContext() = default;
-
-  std::shared_ptr<AudioEventHandlerRegistry> eventHandlerRegistry_;
 
   std::string getState();
   [[nodiscard]] float getSampleRate() const;

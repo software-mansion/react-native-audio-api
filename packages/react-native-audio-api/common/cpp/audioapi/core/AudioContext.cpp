@@ -11,9 +11,8 @@
 
 namespace audioapi {
 AudioContext::AudioContext(
-    float sampleRate,
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry)
-    : BaseAudioContext(eventHandlerRegistry) {
+    float sampleRate)
+    : BaseAudioContext() {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
 #else

@@ -21,9 +21,8 @@ namespace audioapi {
 OfflineAudioContext::OfflineAudioContext(
     int numberOfChannels,
     size_t length,
-    float sampleRate,
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry)
-    : BaseAudioContext(eventHandlerRegistry),
+    float sampleRate)
+    : BaseAudioContext(),
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0) {
