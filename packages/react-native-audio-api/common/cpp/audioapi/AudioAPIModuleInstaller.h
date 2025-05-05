@@ -7,6 +7,7 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/AudioRecorderHostObject.h>
+#include <audioapi/AudioEventHandlerRegistry.h>
 
 #include <memory>
 
@@ -17,9 +18,11 @@ using namespace facebook;
 class AudioAPIModuleInstaller {
  public:
   static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
-    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
+      auto audioEventHandlerRegistry = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
+
+    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker);
-    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker);
+    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
@@ -27,19 +30,19 @@ class AudioAPIModuleInstaller {
   }
 
  private:
-  static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+  static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
         0,
-        [jsCallInvoker](
+        [jsCallInvoker, eventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
-          audioContext = std::make_shared<AudioContext>(sampleRate);
+          audioContext = std::make_shared<AudioContext>(sampleRate, eventHandlerRegistry);
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               audioContext, &runtime, jsCallInvoker);
@@ -49,12 +52,12 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCreateOfflineAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+  static jsi::Function getCreateOfflineAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
         0,
-        [jsiRuntime, jsCallInvoker](
+        [jsCallInvoker, eventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -63,9 +66,9 @@ class AudioAPIModuleInstaller {
             auto length = static_cast<size_t>(args[1].getNumber());
             auto sampleRate = static_cast<float>(args[2].getNumber());
 
-          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate);
+          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, eventHandlerRegistry);
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
-              offlineAudioContext, jsiRuntime, jsCallInvoker);
+              offlineAudioContext, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);

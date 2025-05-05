@@ -1,3 +1,4 @@
+#include <audioapi/AudioEventHandlerRegistry.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -15,9 +16,12 @@
 
 namespace audioapi {
 
-BaseAudioContext::BaseAudioContext() {
+BaseAudioContext::BaseAudioContext(
+    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
+
+  eventHandlerRegistry_ = eventHandlerRegistry;
 }
 
 std::string BaseAudioContext::getState() {
