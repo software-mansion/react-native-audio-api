@@ -10,7 +10,8 @@ export default function useSystemVolume() {
       setVolume(parseFloat(e.value.toFixed(2)));
     });
     return () => {
-      listener?.remove();
+      // listener?.remove();
+      console.log(listener);
       AudioManager.observeVolumeChanges(false);
     };
   }, []);

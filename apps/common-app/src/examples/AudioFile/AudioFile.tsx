@@ -123,9 +123,17 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    AudioManager.enableRemoteCommand('play');
-    AudioManager.enableRemoteCommand('pause');
-    AudioManager.enableRemoteCommand('stop');
+    AudioManager.enableRemoteEvent('remotePlay', (event) => {
+      console.log('remotePlay event:', event);
+    });
+
+    AudioManager.enableRemoteEvent('remotePause', (event) => {
+      console.log('remotePause event:', event);
+    });
+
+    AudioManager.enableRemoteEvent('remoteChangePlaybackPosition', (event) => {
+      console.log('remoteChangePlaybackPosition event:', event);
+    });
 
     AudioManager.enableRemoteEvent('interruption', (event) => {
       console.log('Interruption event:', event);

@@ -7,7 +7,9 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/AudioRecorderHostObject.h>
+
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/HostObjects/AudioEventHandlerRegistryHostObject.h>
 
 #include <memory>
 
@@ -17,32 +19,32 @@ using namespace facebook;
 
 class AudioAPIModuleInstaller {
  public:
-  static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
-      auto audioEventHandlerRegistry = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
-
-    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
+  static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
     auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker);
-    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
+    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker);
+    auto getAudioEventHandlerRegistry = getGetAudioEventHandlerRegistryFunction(jsiRuntime, audioEventHandlerRegistry);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
+    jsiRuntime->global().setProperty(*jsiRuntime, "getAudioEventEmitter", getAudioEventHandlerRegistry);
   }
 
  private:
-  static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
+  static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
         0,
-        [jsCallInvoker, eventHandlerRegistry](
+        [jsCallInvoker](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
-          audioContext = std::make_shared<AudioContext>(sampleRate, eventHandlerRegistry);
+          audioContext = std::make_shared<AudioContext>(sampleRate);
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               audioContext, &runtime, jsCallInvoker);
@@ -52,12 +54,12 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCreateOfflineAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
+  static jsi::Function getCreateOfflineAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
         0,
-        [jsCallInvoker, eventHandlerRegistry](
+        [jsCallInvoker](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -66,7 +68,7 @@ class AudioAPIModuleInstaller {
             auto length = static_cast<size_t>(args[1].getNumber());
             auto sampleRate = static_cast<float>(args[2].getNumber());
 
-          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, eventHandlerRegistry);
+          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate);
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               offlineAudioContext, &runtime, jsCallInvoker);
 
@@ -93,6 +95,22 @@ class AudioAPIModuleInstaller {
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, jsCallInvoker, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
+        });
+  }
+
+  static jsi::Function getGetAudioEventHandlerRegistryFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "getAudioEventEmitter"),
+        0,
+        [eventHandlerRegistry](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto audioEventHandlerRegistryHostObject = std::make_shared<AudioEventHandlerRegistryHostObject>(eventHandlerRegistry);
+
+          return jsi::Object::createFromHostObject(runtime, audioEventHandlerRegistryHostObject);
         });
   }
 };

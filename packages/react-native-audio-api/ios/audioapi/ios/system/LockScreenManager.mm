@@ -160,31 +160,31 @@
 {
   MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-  if ([name isEqual:@"play"]) {
+  if ([name isEqual:@"remotePlay"]) {
     [self enableCommand:remoteCenter.playCommand withSelector:@selector(onPlay:) enabled:enabled];
-  } else if ([name isEqual:@"pause"]) {
+  } else if ([name isEqual:@"remotePause"]) {
     [self enableCommand:remoteCenter.pauseCommand withSelector:@selector(onPause:) enabled:enabled];
-  } else if ([name isEqual:@"stop"]) {
+  } else if ([name isEqual:@"remoteStop"]) {
     [self enableCommand:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:enabled];
-  } else if ([name isEqual:@"togglePlayPause"]) {
+  } else if ([name isEqual:@"remoteTogglePlayPause"]) {
     [self enableCommand:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
-  } else if ([name isEqual:@"changePlaybackRate"]) {
+  } else if ([name isEqual:@"remoteChangePlaybackRate"]) {
     [self enableCommand:remoteCenter.changePlaybackRateCommand
            withSelector:@selector(onChangePlaybackRate:)
                 enabled:enabled];
-  } else if ([name isEqual:@"nextTrack"]) {
+  } else if ([name isEqual:@"remoteNextTrack"]) {
     [self enableCommand:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:enabled];
-  } else if ([name isEqual:@"previousTrack"]) {
+  } else if ([name isEqual:@"remotePreviousTrack"]) {
     [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
-  } else if ([name isEqual:@"skipForward"]) {
+  } else if ([name isEqual:@"remoteSkipForward"]) {
     [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
-  } else if ([name isEqual:@"skipBackward"]) {
+  } else if ([name isEqual:@"remoteSkipBackward"]) {
     [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
-  } else if ([name isEqual:@"seekForward"]) {
+  } else if ([name isEqual:@"remoteSeekForward"]) {
     [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
-  } else if ([name isEqual:@"seekBackward"]) {
+  } else if ([name isEqual:@"remoteSeekBackward"]) {
     [self enableCommand:remoteCenter.seekBackwardCommand withSelector:@selector(onSeekBackward:) enabled:enabled];
-  } else if ([name isEqual:@"changePlaybackPosition"]) {
+  } else if ([name isEqual:@"remoteChangePlaybackPosition"]) {
     [self enableCommand:remoteCenter.changePlaybackPositionCommand
            withSelector:@selector(onChangePlaybackPosition:)
                 enabled:enabled];
@@ -202,77 +202,85 @@
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemotePlay" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePlay" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemotePause" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePause" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteStop" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteStop" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteTogglePlayPause" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackRate"
-                                    body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
+  auto value = [NSNumber numberWithDouble:event.playbackRate];
+  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackRate" body:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteNextTrack" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePreviousTrack" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteSeekForward" body:nil];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekForward" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekBackward" body:@"{}"];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteSkipForward"
-                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  auto value = [NSNumber numberWithDouble:event.interval];
+  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipForward" body:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteSkipBackward"
-                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  auto value = [NSNumber numberWithDouble:event.interval];
+  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipBackward" body:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
-  [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackPosition"
-                                    body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
+  auto value = [NSNumber numberWithDouble:event.positionTime];
+  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackPosition" body:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

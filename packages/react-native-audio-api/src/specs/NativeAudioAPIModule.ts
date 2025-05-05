@@ -1,10 +1,6 @@
 'use strict';
-import {
-  TurboModuleRegistry,
-  NativeEventEmitter,
-  Platform,
-} from 'react-native';
-import type { TurboModule, NativeModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+import type { TurboModule } from 'react-native';
 import { PermissionStatus } from '../system/types';
 
 interface Spec extends TurboModule {
@@ -27,13 +23,6 @@ interface Spec extends TurboModule {
   checkRecordingPermissions(): Promise<PermissionStatus>;
 }
 
-const NativeAudioAPIModule =
-  TurboModuleRegistry.getEnforcing<Spec>('AudioAPIModule');
+const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule');
 
-const eventEmitter = new NativeEventEmitter(
-  Platform.OS === 'android'
-    ? undefined
-    : (NativeAudioAPIModule as unknown as NativeModule)
-);
-
-export { NativeAudioAPIModule, eventEmitter };
+export { NativeAudioAPIModule };

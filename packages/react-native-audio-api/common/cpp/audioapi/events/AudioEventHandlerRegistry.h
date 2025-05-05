@@ -17,11 +17,13 @@ class AudioEventHandlerRegistry {
       const std::shared_ptr<react::CallInvoker> &callInvoker);
   ~AudioEventHandlerRegistry();
 
-  void registerHandler(const std::string &eventName, uint64_t listenerId, const jsi::Value &value);
+  void registerHandler(const std::string &eventName, uint64_t listenerId, const std::shared_ptr<jsi::Function> &handler);
   void unregisterHandler(const std::string &eventName, uint64_t listenerId);
 
-  template<typename... Args>
-  void invokeHandler(const std::string &eventName, Args&&... args);
+  void invokeHandlerWithJsonString(const std::string &eventName, const std::string &jsonString);
+
+//  template<typename... Args>
+//  void invokeHandler(const std::string &eventName, Args&&... args);
 
   template<typename... Args>
   void invokeHandler(const std::string &eventName, uint64_t listenerId, Args&&... args);

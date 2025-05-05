@@ -8,6 +8,8 @@ import {
   ChannelInterpretation,
 } from './types';
 
+import { RemoteEventName, RemoteEventCallback } from './system/types';
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly state: ContextState;
@@ -185,4 +187,15 @@ export interface IAudioRecorder {
   onAudioReady: (callback: IAudioReadyCallback) => void;
   onError: (callback: IErrorCallback) => void;
   onStatusChange: (callback: IStatusChangeCallback) => void;
+}
+
+export interface IAudioEventEmitter {
+  addAudioEventListener<Name extends RemoteEventName>(
+    name: Name,
+    callback: RemoteEventCallback<Name>
+  ): number;
+  removeAudioEventListener<Name extends RemoteEventName>(
+    name: Name,
+    subscriptionId: number
+  ): void;
 }

@@ -1,5 +1,5 @@
-#import "AudioAPIModule.h"
 #import <React/RCTBridge+Private.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
@@ -9,6 +9,10 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
+
+#import <audioapi/events/AudioEventHandlerRegistry.h>
+
+#import <React/RCTEventDispatcherProtocol.h>
 
 using namespace audioapi;
 using namespace facebook::react;
@@ -26,7 +30,9 @@ using namespace facebook::react;
 @end
 #endif // RCT_NEW_ARCH_ENABLED
 
-@implementation AudioAPIModule
+@implementation AudioAPIModule {
+  std::shared_ptr<AudioEventHandlerRegistry> _eventHandler;
+}
 
 #if defined(RCT_NEW_ARCH_ENABLED)
 @synthesize callInvoker = _callInvoker;
@@ -41,16 +47,13 @@ RCT_EXPORT_MODULE(AudioAPIModule);
   [self.audioSessionManager cleanup];
   [self.lockScreenManager cleanup];
 
+  _eventHandler = nullptr;
+
   [super invalidate];
 }
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
-  self.audioSessionManager = [[AudioSessionManager alloc] init];
-  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
-  self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
-  self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
-
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
 
 #if defined(RCT_NEW_ARCH_ENABLED)
@@ -61,7 +64,14 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   assert(jsiRuntime != nullptr);
 
-  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker);
+  _eventHandler = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
+
+  self.audioSessionManager = [[AudioSessionManager alloc] init];
+  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
+  self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
+  self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
+
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @true;
@@ -116,27 +126,6 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
   resolve(res);
 }
 
-- (NSArray<NSString *> *)supportedEvents
-{
-  return @[
-    @"onRemotePlay",
-    @"onRemotePause",
-    @"onRemoteStop",
-    @"onRemoteTogglePlayPause",
-    @"onRemoteChangePlaybackRate",
-    @"onRemoteNextTrack",
-    @"onRemotePreviousTrack",
-    @"onRemoteSkipForward",
-    @"onRemoteSkipBackward",
-    @"onRemoteSeekForward",
-    @"onRemoteSeekBackward",
-    @"onRemoteChangePlaybackPosition",
-    @"onInterruption",
-    @"onRouteChange",
-    @"onVolumeChange"
-  ];
-}
-
 #ifdef RCT_NEW_ARCH_ENABLED
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
@@ -144,5 +133,12 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
   return std::make_shared<facebook::react::NativeAudioAPIModuleSpecJSI>(params);
 }
 #endif // RCT_NEW_ARCH_ENABLED
+
+- (void)invokeHandlerWithEventName:(NSString *)eventName body:(NSString *)body
+{
+  auto name = [eventName UTF8String];
+  auto jsonString = [body UTF8String];
+  _eventHandler->invokeHandlerWithJsonString(name, jsonString);
+}
 
 @end

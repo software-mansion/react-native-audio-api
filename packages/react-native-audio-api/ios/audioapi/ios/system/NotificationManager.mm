@@ -68,8 +68,10 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
                        context:(void *)context
 {
   if ([keyPath isEqualToString:@"outputVolume"] && context == &VolumeObservationContext) {
-    NSNumber *volume = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
-    [self.audioAPIModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
+    NSNumber *value = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
+    auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+
+    [self.audioAPIModule invokeHandlerWithEventName:@"volumeChange" body:body];
   }
 }
 
@@ -99,16 +101,18 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
+    [self.audioAPIModule invokeHandlerWithEventName:@"interruption"
+                                               body:@"{\"type\":\"began\", \"shouldResume\":false}"];
     return;
   }
 
   if (interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
-    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
+    [self.audioAPIModule invokeHandlerWithEventName:@"interruption"
+                                               body:@"{\"type\":\"ended\", \"shouldResume\":true}"];
     return;
   }
 
-  [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"interruption" body:@"{\"type\":\"ended\", \"shouldResume\":false}"];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -146,7 +150,8 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
       break;
   }
 
-  [self.audioAPIModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
+  auto body = [NSString stringWithFormat:@"{\"reason\": %@}", reasonStr];
+  [self.audioAPIModule invokeHandlerWithEventName:@"routeChange" body:body];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification

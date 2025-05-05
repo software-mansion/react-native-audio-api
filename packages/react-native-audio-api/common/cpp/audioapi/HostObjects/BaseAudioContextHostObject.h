@@ -13,9 +13,6 @@
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
 
-#include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/HostObjects/AudioEventHandlerRegistryHostObject.h>
-
 #include <jsi/jsi.h>
 #include <memory>
 #include <utility>
@@ -51,12 +48,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioData),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource));
-  }
-
-  JSI_PROPERTY_GETTER(audioEventEmitter) {
-      auto audioEventEmitter = context_->eventHandlerRegistry_;
-      auto ho = audioEventEmitter->eventHandlerRegistry_;
-      return jsi::Object::createFromHostObject(runtime, ho);
   }
 
   JSI_PROPERTY_GETTER(destination) {
