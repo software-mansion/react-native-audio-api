@@ -91,12 +91,16 @@
 
 - (void)start
 {
-  [[AudioEngine sharedInstance] attachInputNode:self.sinkNode];
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine attachInputNode:self.sinkNode];
 }
 
 - (void)stop
 {
-  [[AudioEngine sharedInstance] detachInputNode];
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine detachInputNode];
 }
 
 - (void)cleanup

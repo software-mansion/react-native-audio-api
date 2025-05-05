@@ -6,20 +6,20 @@ import {
   RemoteCommandName,
   PermissionStatus,
 } from './types';
-import { AudioManagerModule, eventEmitter } from '../specs';
+import { NativeAudioAPIModule, eventEmitter } from '../specs';
 import { EmitterSubscription } from 'react-native';
 
 class AudioManager {
   setLockScreenInfo(info: LockScreenInfo) {
-    AudioManagerModule.setLockScreenInfo(info);
+    NativeAudioAPIModule.setLockScreenInfo(info);
   }
 
   resetLockScreenInfo() {
-    AudioManagerModule.resetLockScreenInfo();
+    NativeAudioAPIModule.resetLockScreenInfo();
   }
 
   setAudioSessionOptions(options: SessionOptions) {
-    AudioManagerModule.setAudioSessionOptions(
+    NativeAudioAPIModule.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? []
@@ -27,19 +27,19 @@ class AudioManager {
   }
 
   getDevicePreferredSampleRate(): number {
-    return AudioManagerModule.getDevicePreferredSampleRate();
+    return NativeAudioAPIModule.getDevicePreferredSampleRate();
   }
 
   observeAudioInterruptions(enabled: boolean) {
-    AudioManagerModule.observeAudioInterruptions(enabled);
+    NativeAudioAPIModule.observeAudioInterruptions(enabled);
   }
 
   observeVolumeChanges(enabled: boolean) {
-    AudioManagerModule.observeVolumeChanges(enabled);
+    NativeAudioAPIModule.observeVolumeChanges(enabled);
   }
 
   enableRemoteCommand<Name extends RemoteCommandName>(name: Name): void {
-    AudioManagerModule.enableRemoteCommand(name, true);
+    NativeAudioAPIModule.enableRemoteCommand(name, true);
   }
 
   enableRemoteEvent<Name extends RemoteEventName>(
@@ -70,11 +70,11 @@ class AudioManager {
   }
 
   async requestRecordingPermissions(): Promise<PermissionStatus> {
-    return AudioManagerModule.requestRecordingPermissions();
+    return NativeAudioAPIModule.requestRecordingPermissions();
   }
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
-    return AudioManagerModule.checkRecordingPermissions();
+    return NativeAudioAPIModule.checkRecordingPermissions();
   }
 }
 

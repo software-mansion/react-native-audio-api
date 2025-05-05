@@ -1,4 +1,4 @@
-#import <audioapi/ios/AudioManagerModule.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
@@ -7,10 +7,10 @@
 
 static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
-- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
   if (self = [super init]) {
-    self.audioManagerModule = audioManagerModule;
+    self.audioAPIModule = audioAPIModule;
     self.notificationCenter = [NSNotificationCenter defaultCenter];
     self.audioInterruptionsObserved = false;
 
@@ -69,7 +69,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 {
   if ([keyPath isEqualToString:@"outputVolume"] && context == &VolumeObservationContext) {
     NSNumber *volume = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
-    [self.audioManagerModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
+    [self.audioAPIModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
   }
 }
 
@@ -99,17 +99,17 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioManagerModule sendEventWithName:@"onInterruption"
+    [self.audioAPIModule sendEventWithName:@"onInterruption"
                                           body:@{@"type" : @"began", @"shouldResume" : @"false"}];
     return;
   }
 
   if (interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
-    [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
+    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
     return;
   }
 
-  [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
+  [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -147,14 +147,14 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
       break;
   }
 
-  [self.audioManagerModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
+  [self.audioAPIModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
   NSLog(@"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
-  AudioEngine *audioEngine = self.audioManagerModule.audioEngine;
-  AudioSessionManager *audioSessionManager = self.audioManagerModule.audioSessionManager;
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *audioSessionManager = self.audioAPIModule.audioSessionManager;
 
   [self cleanup];
   [audioSessionManager configureAudioSession];
@@ -164,7 +164,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = self.audioManagerModule.audioEngine;
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (![audioEngine isRunning]) {
     NSLog(

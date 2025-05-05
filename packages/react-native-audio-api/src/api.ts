@@ -1,5 +1,4 @@
-import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
-import { NativeAudioManagerModule } from './specs/NativeAudioManagerModule';
+import { NativeAudioAPIModule } from './specs';
 import { AudioRecorderOptions } from './types';
 import type {
   IAudioContext,
@@ -32,7 +31,6 @@ if (
     );
   }
 
-  NativeAudioManagerModule.install();
   NativeAudioAPIModule.install();
 }
 

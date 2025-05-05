@@ -4,16 +4,16 @@
 #import <Foundation/Foundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 
-@class AudioManagerModule;
+@class AudioAPIModule;
 
 @interface LockScreenManager : NSObject
 
-@property (nonatomic, weak) AudioManagerModule *audioManagerModule;
+@property (nonatomic, weak) AudioAPIModule *audioAPIModule;
 
 @property (nonatomic, weak) MPNowPlayingInfoCenter *playingInfoCenter;
 @property (nonatomic, copy) NSString *artworkUrl;
 
-- (instancetype)initWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule;
 - (void)cleanup;
 
 - (void)setLockScreenInfo:(NSDictionary *)info;
