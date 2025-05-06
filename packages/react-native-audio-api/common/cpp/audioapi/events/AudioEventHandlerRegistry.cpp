@@ -92,6 +92,8 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
       eventObject.setProperty(*runtime_, name, get<int>(value));
     } else if (holds_alternative<double>(value)) {
       eventObject.setProperty(*runtime_, name, get<double>(value));
+    } else if (holds_alternative<float>(value)) {
+        eventObject.setProperty(*runtime_, name, get<float>(value));
     } else if (holds_alternative<bool>(value)) {
       eventObject.setProperty(*runtime_, name, get<bool>(value));
     } else if (holds_alternative<std::string>(value)) {
