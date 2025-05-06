@@ -95,7 +95,8 @@ void AudioEventHandlerRegistry::invokeHandler(
   }
 }
 
-jsi::Value AudioEventHandlerRegistry::valueFromJsonString(const std::string &jsonString) {
+jsi::Value AudioEventHandlerRegistry::valueFromJsonString(
+    const std::string &jsonString) {
   std::vector<uint8_t> jsonData(jsonString.begin(), jsonString.end());
 
   return jsi::Value::createFromJsonUtf8(
