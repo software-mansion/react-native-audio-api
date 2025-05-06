@@ -1,16 +1,5 @@
 import { AudioEventName } from './types';
 import { AudioEventEmitter } from './';
-import { NativeAudioAPIModule } from '../specs';
-
-if (global.AudioEventEmitter == null) {
-  if (!NativeAudioAPIModule) {
-    throw new Error(
-      `Failed to install react-native-audio-api: The native module could not be found.`
-    );
-  }
-
-  NativeAudioAPIModule.install();
-}
 
 export default class AudioEventSubscription {
   private readonly audioEventEmitter: AudioEventEmitter;

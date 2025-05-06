@@ -3,17 +3,6 @@ import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventTypeWithValue } from '../events/types';
 import { AudioEventEmitter } from '../events';
-import { NativeAudioAPIModule } from '../specs';
-
-if (global.AudioEventEmitter == null) {
-  if (!NativeAudioAPIModule) {
-    throw new Error(
-      `Failed to install react-native-audio-api: The native module could not be found.`
-    );
-  }
-
-  NativeAudioAPIModule.install();
-}
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
