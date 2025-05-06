@@ -19,7 +19,8 @@ class AudioEventHandlerRegistryHostObject : public JsiHostObject {
         eventHandlerRegistry_ = eventHandlerRegistry;
 
         addFunctions(
-          JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener));
+          JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener),
+          JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));
     }
 
     JSI_HOST_FUNCTION(addAudioEventListener) {

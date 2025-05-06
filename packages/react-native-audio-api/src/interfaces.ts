@@ -7,7 +7,6 @@ import {
   AudioRecorderStatus,
   ChannelInterpretation,
 } from './types';
-
 import { AudioEventName, AudioEventCallback } from './events/types';
 
 export interface IBaseAudioContext {
@@ -87,7 +86,7 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
-  onended: number;
+  onended: string;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
@@ -193,9 +192,9 @@ export interface IAudioEventEmitter {
   addAudioEventListener<Name extends AudioEventName>(
     name: Name,
     callback: AudioEventCallback<Name>
-  ): number;
+  ): string;
   removeAudioEventListener<Name extends AudioEventName>(
     name: Name,
-    subscriptionId: number
+    subscriptionId: string
   ): void;
 }

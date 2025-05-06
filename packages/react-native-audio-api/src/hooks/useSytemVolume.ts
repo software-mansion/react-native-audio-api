@@ -10,10 +10,7 @@ export default function useSystemVolume() {
       setVolume(parseFloat(e.value.toFixed(2)));
     });
     return () => {
-      global.AudioEventEmitter.removeAudioEventListener(
-        'volumeChange',
-        listener!
-      );
+      listener?.remove();
 
       AudioManager.observeVolumeChanges(false);
     };

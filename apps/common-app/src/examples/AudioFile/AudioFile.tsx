@@ -123,26 +123,44 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    AudioManager.enableSystemEvent('remotePlay', (event) => {
-      console.log('remotePlay event:', event);
-    });
+    const remotePlaySubscription = AudioManager.enableSystemEvent(
+      'remotePlay',
+      (event) => {
+        console.log('remotePlay event:', event);
+      }
+    );
 
-    AudioManager.enableSystemEvent('remotePause', (event) => {
-      console.log('remotePause event:', event);
-    });
+    const remotePauseSubscription = AudioManager.enableSystemEvent(
+      'remotePause',
+      (event) => {
+        console.log('remotePause event:', event);
+      }
+    );
 
-    AudioManager.enableSystemEvent('remoteChangePlaybackPosition', (event) => {
-      console.log('remoteChangePlaybackPosition event:', event);
-    });
+    const remoteChangePlaybackPositionSubscription =
+      AudioManager.enableSystemEvent(
+        'remoteChangePlaybackPosition',
+        (event) => {
+          console.log('remoteChangePlaybackPosition event:', event);
+        }
+      );
 
-    AudioManager.enableSystemEvent('interruption', (event) => {
-      console.log('Interruption event:', event);
-    });
+    const interruptionSubscription = AudioManager.enableSystemEvent(
+      'interruption',
+      (event) => {
+        console.log('Interruption event:', event);
+      }
+    );
+
     AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 
     return () => {
+      remotePlaySubscription?.remove();
+      remotePauseSubscription?.remove();
+      remoteChangePlaybackPositionSubscription?.remove();
+      interruptionSubscription?.remove();
       audioContextRef.current?.close();
     };
   }, [fetchAudioBuffer]);

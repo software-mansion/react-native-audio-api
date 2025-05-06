@@ -2,9 +2,24 @@ import { IAudioScheduledSourceNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventTypeWithValue } from '../events/types';
+import { AudioEventEmitter } from '../events';
+import { NativeAudioAPIModule } from '../specs';
+
+if (global.AudioEventEmitter == null) {
+  if (!NativeAudioAPIModule) {
+    throw new Error(
+      `Failed to install react-native-audio-api: The native module could not be found.`
+    );
+  }
+
+  NativeAudioAPIModule.install();
+}
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
+  private readonly audioEventEmitter = new AudioEventEmitter(
+    global.AudioEventEmitter
+  );
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -39,11 +54,12 @@ export default class AudioScheduledSourceNode extends AudioNode {
 
   // eslint-disable-next-line accessor-pairs
   public set onended(callback: (event: EventTypeWithValue) => void) {
-    const id = global.AudioEventEmitter.addAudioEventListener(
+    const subscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback
     );
 
-    (this.node as IAudioScheduledSourceNode).onended = id;
+    (this.node as IAudioScheduledSourceNode).onended =
+      subscription.subscriptionId;
   }
 }

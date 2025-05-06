@@ -1,7 +1,7 @@
 import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
 import { SystemEventName, SystemEventCallback } from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
-import { IAudioEventEmitter } from '../interfaces';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
 if (global.AudioEventEmitter == null) {
   if (!NativeAudioAPIModule) {
@@ -14,9 +14,9 @@ if (global.AudioEventEmitter == null) {
 }
 
 class AudioManager {
-  private readonly audioEventEmitter: IAudioEventEmitter;
+  private readonly audioEventEmitter: AudioEventEmitter;
   constructor() {
-    this.audioEventEmitter = global.AudioEventEmitter;
+    this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
   setLockScreenInfo(info: LockScreenInfo) {
@@ -51,7 +51,7 @@ class AudioManager {
     name: Name,
     callback?: SystemEventCallback<Name>,
     enabled = true
-  ): number | null {
+  ): AudioEventSubscription | null {
     NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
 
     if (!enabled || !callback) {
