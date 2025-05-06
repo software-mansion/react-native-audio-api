@@ -81,14 +81,6 @@ const Record: FC = () => {
       audioBuffersRef.current.push(buffer);
     });
 
-    recorderRef.current.onError((error) => {
-      console.log('Audio recorder error:', error);
-    });
-
-    recorderRef.current.onStatusChange((status, previousStatus) => {
-      console.log('Audio recorder status changed:', status, previousStatus);
-    });
-
     recorderRef.current.start();
 
     setTimeout(() => {

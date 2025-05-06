@@ -4,7 +4,6 @@ import {
   OscillatorType,
   BiquadFilterType,
   ChannelCountMode,
-  AudioRecorderStatus,
   ChannelInterpretation,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
@@ -172,20 +171,11 @@ export type IAudioReadyCallback = (
   when: number
 ) => void;
 
-export type IErrorCallback = (error: Error) => void;
-
-export type IStatusChangeCallback = (
-  status: AudioRecorderStatus,
-  previousStatus: AudioRecorderStatus
-) => void;
-
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
 
   onAudioReady: (callback: IAudioReadyCallback) => void;
-  onError: (callback: IErrorCallback) => void;
-  onStatusChange: (callback: IStatusChangeCallback) => void;
 }
 
 export interface IAudioEventEmitter {

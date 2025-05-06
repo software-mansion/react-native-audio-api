@@ -19,8 +19,6 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(
       float sampleRate,
       int bufferLength,
-      const std::function<void(void)> &onError,
-      const std::function<void(void)> &onStatusChange,
       const std::function<void(std::shared_ptr<AudioBus>, int, double)>
           &onAudioReady);
 

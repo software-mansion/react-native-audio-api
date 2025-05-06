@@ -34,16 +34,12 @@ class AudioRecorderHostObject : public JsiHostObject {
     audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
       bufferLength,
-      this->getOnError(),
-      this->getOnStatusChange(),
       this->getOnAudioReady()
     );
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
       sampleRate,
       bufferLength,
-      this->getOnError(),
-      this->getOnStatusChange(),
       this->getOnAudioReady()
     );
 #endif
@@ -51,15 +47,11 @@ class AudioRecorderHostObject : public JsiHostObject {
     addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, onAudioReady),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, onError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, onStatusChange));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, onAudioReady));
   }
 
   ~AudioRecorderHostObject() override {
-    errorCallback_ = nullptr;
     audioReadyCallback_ = nullptr;
-    statusChangeCallback_ = nullptr;
   }
 
   JSI_HOST_FUNCTION(start) {
@@ -80,26 +72,12 @@ class AudioRecorderHostObject : public JsiHostObject {
     return jsi::Value::undefined();
   }
 
-  JSI_HOST_FUNCTION(onError) {
-    errorCallback_ = std::make_unique<jsi::Function>(args[0].getObject(runtime).getFunction(runtime));
-
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(onStatusChange) {
-    statusChangeCallback_ = std::make_unique<jsi::Function>(args[0].getObject(runtime).getFunction(runtime));
-
-    return jsi::Value::undefined();
-  }
-
  protected:
   std::shared_ptr<AudioRecorder> audioRecorder_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 
-  std::unique_ptr<jsi::Function> errorCallback_;
   std::unique_ptr<jsi::Function> audioReadyCallback_;
-  std::unique_ptr<jsi::Function> statusChangeCallback_;
 
   std::function<void(std::shared_ptr<AudioBus>, int, double)> getOnAudioReady() {
     return [this](const std::shared_ptr<AudioBus> &bus, int numFrames, double when) {
@@ -117,30 +95,6 @@ class AudioRecorderHostObject : public JsiHostObject {
           jsi::Value(numFrames),
           jsi::Value(when)
         );
-      });
-    };
-  }
-
-  std::function<void(void)> getOnError() {
-    return [this]() {
-      if (errorCallback_ == nullptr) {
-        return;
-      }
-
-      callInvoker_->invokeAsync([this](jsi::Runtime &runtime) {
-        errorCallback_->call(runtime);
-      });
-    };
-  }
-
-  std::function<void(void)> getOnStatusChange() {
-    return [this]() {
-      if (statusChangeCallback_ == nullptr) {
-        return;
-      }
-
-      callInvoker_->invokeAsync([this](jsi::Runtime &runtime) {
-        statusChangeCallback_->call(runtime);
       });
     };
   }

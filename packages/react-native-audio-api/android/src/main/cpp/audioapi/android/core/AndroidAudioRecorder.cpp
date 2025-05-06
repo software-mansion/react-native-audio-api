@@ -8,15 +8,11 @@ namespace audioapi {
 AndroidAudioRecorder::AndroidAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(void)> &onError,
-    const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)>
         &onAudioReady)
     : AudioRecorder(
           sampleRate,
           bufferLength,
-          onError,
-          onStatusChange,
           onAudioReady) {
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Exclusive)

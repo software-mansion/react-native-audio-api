@@ -11,14 +11,10 @@ class AudioRecorder {
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(void)> &onError,
-    const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady
   )
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      onError_(onError),
-      onStatusChange_(onStatusChange),
       onAudioReady_(onAudioReady) {}
 
   virtual ~AudioRecorder() = default;
@@ -30,8 +26,6 @@ class AudioRecorder {
   float sampleRate_;
   int bufferLength_;
 
-  std::function<void(void)> onError_;
-  std::function<void(void)> onStatusChange_;
   std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
 };
 

@@ -12,10 +12,8 @@ namespace audioapi {
 IOSAudioRecorder::IOSAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(void)> &onError,
-    const std::function<void(void)> &onStatusChange,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady)
-    : AudioRecorder(sampleRate, bufferLength, onError, onStatusChange, onAudioReady)
+    : AudioRecorder(sampleRate, bufferLength, onAudioReady)
 {
   circularBuffer_ = std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
 

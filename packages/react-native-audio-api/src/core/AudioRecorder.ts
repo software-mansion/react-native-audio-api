@@ -1,8 +1,6 @@
 import {
   IAudioRecorder,
-  IErrorCallback,
   IAudioReadyCallback,
-  IStatusChangeCallback,
   IAudioBuffer,
 } from '../interfaces';
 import { AudioRecorderStatus, AudioRecorderOptions } from '../types';
@@ -24,8 +22,6 @@ export type StatusChangeCallback = (
 export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
   private onAudioReadyCallback: AudioReadyCallback | null = null;
-  private onErrorCallback: ErrorCallback | null = null;
-  private onStatusChangeCallback: StatusChangeCallback | null = null;
 
   private onAudioReadyInternal: IAudioReadyCallback = (
     buffer: IAudioBuffer,
@@ -34,21 +30,6 @@ export default class AudioRecorder {
   ) => {
     if (this.onAudioReadyCallback) {
       this.onAudioReadyCallback(new AudioBuffer(buffer), numFrames, when);
-    }
-  };
-
-  private onErrorInternal: IErrorCallback = (error: Error) => {
-    if (this.onErrorCallback) {
-      this.onErrorCallback(error);
-    }
-  };
-
-  private onStatusChangeInternal: IStatusChangeCallback = (
-    status: AudioRecorderStatus,
-    previousStatus: AudioRecorderStatus
-  ) => {
-    if (this.onStatusChangeCallback) {
-      this.onStatusChangeCallback(status, previousStatus);
     }
   };
 
@@ -67,15 +48,5 @@ export default class AudioRecorder {
   public onAudioReady(callback: AudioReadyCallback): void {
     this.onAudioReadyCallback = callback;
     this.recorder.onAudioReady(this.onAudioReadyInternal);
-  }
-
-  public onError(callback: ErrorCallback): void {
-    this.onErrorCallback = callback;
-    this.recorder.onError(this.onErrorInternal);
-  }
-
-  public onStatusChange(callback: StatusChangeCallback): void {
-    this.onStatusChangeCallback = callback;
-    this.recorder.onStatusChange(this.onStatusChangeInternal);
   }
 }
