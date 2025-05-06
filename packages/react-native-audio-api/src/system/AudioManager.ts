@@ -8,7 +8,7 @@ import {
 import { NativeAudioAPIModule } from '../specs';
 import { IAudioEventEmitter } from '../interfaces';
 
-if (global.getAudioEventEmitter == null) {
+if (global.AudioEventEmitter == null) {
   if (!NativeAudioAPIModule) {
     throw new Error(
       `Failed to install react-native-audio-api: The native module could not be found.`
@@ -21,7 +21,7 @@ if (global.getAudioEventEmitter == null) {
 class AudioManager {
   private readonly audioEventEmitter: IAudioEventEmitter;
   constructor() {
-    this.audioEventEmitter = global.getAudioEventEmitter();
+    this.audioEventEmitter = global.AudioEventEmitter;
   }
 
   setLockScreenInfo(info: LockScreenInfo) {

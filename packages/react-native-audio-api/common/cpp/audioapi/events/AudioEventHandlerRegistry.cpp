@@ -10,23 +10,28 @@ AudioEventHandlerRegistry::AudioEventHandlerRegistry(
   runtime_ = runtime;
   callInvoker_ = callInvoker;
 
-  eventNames_ = {"ended", "remotePlay"};
+  for (const auto &eventName : SYSTEM_EVENT_NAMES) {
+    eventHandlers_[std::string(eventName)] = {};
+  }
 
-  for (const auto &eventName : eventNames_) {
-    eventHandlers_[eventName] = {};
+  for (const auto &eventName : AUDIO_API_EVENT_NAMES) {
+    eventHandlers_[std::string(eventName)] = {};
   }
 }
 
 AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
-  eventNames_.clear();
   eventHandlers_.clear();
 }
 
-void AudioEventHandlerRegistry::registerHandler(
+uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::string &eventName,
-    uint64_t listenerId,
     const std::shared_ptr<jsi::Function> &handler) {
-  eventHandlers_[eventName][listenerId] = handler;
+  static uint64_t LISTENER_ID = 0;
+  LISTENER_ID++;
+
+  eventHandlers_[eventName][LISTENER_ID] = handler;
+
+  return LISTENER_ID;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(
@@ -41,16 +46,13 @@ void AudioEventHandlerRegistry::unregisterHandler(
 void AudioEventHandlerRegistry::invokeHandlerWithJsonString(
     const std::string &eventName,
     const std::string &jsonString) {
-  std::vector<uint8_t> jsonData(jsonString.begin(), jsonString.end());
   auto it = eventHandlers_.find(eventName);
   if (it != eventHandlers_.end()) {
     for (const auto &pair : it->second) {
       auto handler = pair.second;
       if (handler) {
-        callInvoker_->invokeAsync([this, handler, jsonData]() {
-          auto result = jsi::Value::createFromJsonUtf8(
-              *runtime_, jsonData.data(), jsonData.size());
-          handler->call(*runtime_, result);
+        callInvoker_->invokeAsync([this, handler, jsonString]() {
+          handler->call(*runtime_, valueFromJsonString(jsonString));
         });
       }
     }
@@ -91,5 +93,12 @@ void AudioEventHandlerRegistry::invokeHandler(
       }
     }
   }
+}
+
+jsi::Value AudioEventHandlerRegistry::valueFromJsonString(const std::string &jsonString) {
+  std::vector<uint8_t> jsonData(jsonString.begin(), jsonString.end());
+
+  return jsi::Value::createFromJsonUtf8(
+      *runtime_, jsonData.data(), jsonData.size());
 }
 } // namespace audioapi

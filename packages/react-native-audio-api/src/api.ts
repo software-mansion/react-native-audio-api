@@ -18,16 +18,15 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
-  var getAudioEventEmitter: () => IAudioEventEmitter;
+  var AudioEventEmitter: IAudioEventEmitter;
 }
-
 /* eslint-disable no-var */
 
 if (
   global.createAudioContext == null ||
   global.createOfflineAudioContext == null ||
   global.createAudioRecorder == null ||
-  global.getAudioEventEmitter == null
+  global.AudioEventEmitter == null
 ) {
   if (!NativeAudioAPIModule) {
     throw new Error(

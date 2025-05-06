@@ -23,12 +23,13 @@ class AudioAPIModuleInstaller {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker);
     auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker);
-    auto getAudioEventHandlerRegistry = getGetAudioEventHandlerRegistryFunction(jsiRuntime, audioEventHandlerRegistry);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
-    jsiRuntime->global().setProperty(*jsiRuntime, "getAudioEventEmitter", getAudioEventHandlerRegistry);
+
+    auto audioEventHandlerRegistryHostObject = std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
+    jsiRuntime->global().setProperty(*jsiRuntime, "AudioEventEmitter", jsi::Object::createFromHostObject(*jsiRuntime, audioEventHandlerRegistryHostObject));
   }
 
  private:
@@ -95,22 +96,6 @@ class AudioAPIModuleInstaller {
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, jsCallInvoker, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
-        });
-  }
-
-  static jsi::Function getGetAudioEventHandlerRegistryFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
-    return jsi::Function::createFromHostFunction(
-        *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "getAudioEventEmitter"),
-        0,
-        [eventHandlerRegistry](
-            jsi::Runtime &runtime,
-            const jsi::Value &thisValue,
-            const jsi::Value *args,
-            size_t count) -> jsi::Value {
-          auto audioEventHandlerRegistryHostObject = std::make_shared<AudioEventHandlerRegistryHostObject>(eventHandlerRegistry);
-
-          return jsi::Object::createFromHostObject(runtime, audioEventHandlerRegistryHostObject);
         });
   }
 };
