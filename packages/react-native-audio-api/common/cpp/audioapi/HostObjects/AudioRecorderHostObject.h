@@ -28,8 +28,6 @@ class AudioRecorderHostObject : public JsiHostObject {
       float sampleRate,
       int bufferLength)
       : callInvoker_(callInvoker) {
-    promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-
 #ifdef ANDROID
     audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
@@ -74,7 +72,6 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  protected:
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 
   std::unique_ptr<jsi::Function> audioReadyCallback_;
