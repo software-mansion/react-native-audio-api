@@ -24,6 +24,6 @@
 @property (nonatomic, strong) AudioSessionManager *audioSessionManager;
 @property (nonatomic, strong) LockScreenManager *lockScreenManager;
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName body:(NSString *)body;
+- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody;
 
 @end

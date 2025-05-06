@@ -15,9 +15,8 @@ class AudioBufferSourceNodeHostObject
     : public AudioScheduledSourceNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferSourceNode> &node,
-      const std::shared_ptr<react::CallInvoker> &callInvoker)
-      : AudioScheduledSourceNodeHostObject(node, callInvoker) {
+      const std::shared_ptr<AudioBufferSourceNode> &node)
+      : AudioScheduledSourceNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),

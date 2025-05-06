@@ -16,6 +16,8 @@
 
 namespace audioapi {
 
+class AudioEventHandlerRegistry;
+
 class AudioScheduledSourceNode : public AudioNode {
  public:
   // UNSCHEDULED: The node is not scheduled to play.
@@ -35,15 +37,13 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isFinished();
   bool isStopScheduled();
 
-  void setOnendedCallback(const std::function<void(double)> &onendedCallback);
+  void setOnEndedCallbackId(uint64_t callbackId);
 
   virtual double getStopTime() const = 0;
   void disable() override;
 
  protected:
   PlaybackState playbackState_;
-
-  std::function<void(double)> onendedCallback_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -56,6 +56,8 @@ class AudioScheduledSourceNode : public AudioNode {
  private:
   double startTime_;
   double stopTime_;
+
+  uint64_t onEndedCallbackId_ = 0;
 };
 
 } // namespace audioapi

@@ -43,44 +43,27 @@ void AudioEventHandlerRegistry::unregisterHandler(
   }
 }
 
-void AudioEventHandlerRegistry::invokeHandlerWithJsonString(
+void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
-    const std::string &jsonString) {
+    const std::unordered_map<std::string, Value> &body) {
   auto it = eventHandlers_.find(eventName);
   if (it != eventHandlers_.end()) {
     for (const auto &pair : it->second) {
       auto handler = pair.second;
       if (handler) {
-        callInvoker_->invokeAsync([this, handler, jsonString]() {
-          handler->call(*runtime_, valueFromJsonString(jsonString));
+        callInvoker_->invokeAsync([this, handler, body]() {
+          auto eventObject = createEventObject(body);
+          handler->call(*runtime_, eventObject);
         });
       }
     }
   }
 }
 
-// template <typename... Args>
-// void AudioEventHandlerRegistry::invokeHandler(
-//     const std::string &eventName,
-//     Args &&...args) {
-//   auto it = eventHandlers_.find(eventName);
-//   if (it != eventHandlers_.end()) {
-//     for (const auto &pair : it->second) {
-//       auto handler = pair.second;
-//       if (handler) {
-//         callInvoker_->invokeAsync(
-//             [this, handler, args...]() { handler->call(*runtime_, args...);
-//             });
-//       }
-//     }
-//   }
-// }
-
-template <typename... Args>
-void AudioEventHandlerRegistry::invokeHandler(
+void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     uint64_t listenerId,
-    Args &&...args) {
+    const std::unordered_map<std::string, Value> &body) {
   auto it = eventHandlers_.find(eventName);
   if (it != eventHandlers_.end()) {
     auto handlersMap = it->second;
@@ -88,18 +71,35 @@ void AudioEventHandlerRegistry::invokeHandler(
     if (handlerIt != handlersMap.end()) {
       auto handler = handlerIt->second;
       if (handler) {
-        callInvoker_->invokeAsync(
-            [this, handler, args...]() { handler->call(*runtime_, args...); });
+        callInvoker_->invokeAsync([this, handler, body]() {
+          auto eventObject = createEventObject(body);
+          handler->call(*runtime_, eventObject);
+        });
       }
     }
   }
 }
 
-jsi::Value AudioEventHandlerRegistry::valueFromJsonString(
-    const std::string &jsonString) {
-  std::vector<uint8_t> jsonData(jsonString.begin(), jsonString.end());
+jsi::Object AudioEventHandlerRegistry::createEventObject(
+    const std::unordered_map<std::string, Value> &body) {
+  auto eventObject = jsi::Object(*runtime_);
 
-  return jsi::Value::createFromJsonUtf8(
-      *runtime_, jsonData.data(), jsonData.size());
+  for (const auto &pair : body) {
+    const auto name = pair.first.data();
+    const auto &value = pair.second;
+
+    if (holds_alternative<int>(value)) {
+      eventObject.setProperty(*runtime_, name, get<int>(value));
+    } else if (holds_alternative<double>(value)) {
+      eventObject.setProperty(*runtime_, name, get<double>(value));
+    } else if (holds_alternative<bool>(value)) {
+      eventObject.setProperty(*runtime_, name, get<bool>(value));
+    } else if (holds_alternative<std::string>(value)) {
+      eventObject.setProperty(*runtime_, name, get<std::string>(value));
+    }
+  }
+
+  return eventObject;
 }
+
 } // namespace audioapi

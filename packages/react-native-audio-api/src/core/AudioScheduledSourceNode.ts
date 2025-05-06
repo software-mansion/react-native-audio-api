@@ -1,6 +1,7 @@
 import { IAudioScheduledSourceNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
+import { EventTypeWithValue } from '../events/types';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
@@ -37,7 +38,12 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   // eslint-disable-next-line accessor-pairs
-  public set onended(callback: (arg?: number) => void) {
-    (this.node as IAudioScheduledSourceNode).onended = callback;
+  public set onended(callback: (event: EventTypeWithValue) => void) {
+    const id = global.AudioEventEmitter.addAudioEventListener(
+      'ended',
+      callback
+    );
+
+    (this.node as IAudioScheduledSourceNode).onended = id;
   }
 }

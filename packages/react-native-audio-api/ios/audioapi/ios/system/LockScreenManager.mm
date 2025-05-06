@@ -202,85 +202,81 @@
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remotePlay" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePlay" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remotePause" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePause" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteStop" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteStop" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteTogglePlayPause" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteTogglePlayPause" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
-  auto value = [NSNumber numberWithDouble:event.playbackRate];
-  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.playbackRate]};
 
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackRate" body:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackRate" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteNextTrack" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteNextTrack" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remotePreviousTrack" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePreviousTrack" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekForward" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekForward" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekBackward" body:@"{}"];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekBackward" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  auto value = [NSNumber numberWithDouble:event.interval];
-  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.interval]};
 
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipForward" body:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipForward" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  auto value = [NSNumber numberWithDouble:event.interval];
-  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.interval]};
 
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipBackward" body:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipBackward" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
-  auto value = [NSNumber numberWithDouble:event.positionTime];
-  auto body = [NSString stringWithFormat:@"{\"value\": %@}", [value stringValue]];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.positionTime]};
 
-  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackPosition" body:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackPosition" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

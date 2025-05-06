@@ -14,7 +14,7 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate);
+  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~OfflineAudioContext() override;
 
   void resume();

@@ -8,7 +8,7 @@ import {
   ChannelInterpretation,
 } from './types';
 
-import { RemoteEventName, RemoteEventCallback } from './system/types';
+import { AudioEventName, AudioEventCallback } from './events/types';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -87,7 +87,7 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
-  onended: (arg?: number) => void | null;
+  onended: number;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
@@ -190,11 +190,11 @@ export interface IAudioRecorder {
 }
 
 export interface IAudioEventEmitter {
-  addAudioEventListener<Name extends RemoteEventName>(
+  addAudioEventListener<Name extends AudioEventName>(
     name: Name,
-    callback: RemoteEventCallback<Name>
+    callback: AudioEventCallback<Name>
   ): number;
-  removeAudioEventListener<Name extends RemoteEventName>(
+  removeAudioEventListener<Name extends AudioEventName>(
     name: Name,
     subscriptionId: number
   ): void;

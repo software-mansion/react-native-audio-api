@@ -51,42 +51,4 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   elapsedTime?: number;
 }
 
-interface RemoteEmptyType {}
-
-interface RemoteControlEventType {
-  value: number;
-}
-
-interface OnInterruptionEventType {
-  type: 'ended' | 'began';
-  shouldResume: boolean;
-}
-
-interface OnRouteChangeEventType {
-  reason: string;
-}
-
-interface RemoteEvents {
-  remotePlay: RemoteEmptyType;
-  remotePause: RemoteEmptyType;
-  remoteStop: RemoteEmptyType;
-  remoteTogglePlayPause: RemoteEmptyType;
-  remoteChangePlaybackRate: RemoteEmptyType;
-  remoteNextTrack: RemoteEmptyType;
-  remotePreviousTrack: RemoteEmptyType;
-  remoteSkipForward: RemoteEmptyType;
-  remoteSkipBackward: RemoteEmptyType;
-  remoteSeekForward: RemoteEmptyType;
-  remoteSeekBackward: RemoteEmptyType;
-  remoteChangePlaybackPosition: RemoteEmptyType;
-  volumeChange: RemoteControlEventType;
-  interruption: OnInterruptionEventType;
-  routeChange: OnRouteChangeEventType;
-}
-
-export type RemoteEventName = keyof RemoteEvents;
-export type RemoteEventCallback<Name extends RemoteEventName> = (
-  event: RemoteEvents[Name]
-) => void;
-
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';

@@ -2,6 +2,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -44,9 +45,8 @@ bool AudioScheduledSourceNode::isStopScheduled() {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
 }
 
-void AudioScheduledSourceNode::setOnendedCallback(
-    const std::function<void(double)> &onendedCallback) {
-  onendedCallback_ = onendedCallback;
+void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
+  onEndedCallbackId_ = callbackId;
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -144,9 +144,8 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  if (onendedCallback_) {
-    onendedCallback_(getStopTime());
-  }
+  context_->audioEventHandlerRegistry_->invokeHandler(
+      "ended", onEndedCallbackId_, getStopTime());
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

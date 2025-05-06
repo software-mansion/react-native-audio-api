@@ -134,11 +134,34 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
 }
 #endif // RCT_NEW_ARCH_ENABLED
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName body:(NSString *)body
+- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody
 {
   auto name = [eventName UTF8String];
-  auto jsonString = [body UTF8String];
-  _eventHandler->invokeHandlerWithJsonString(name, jsonString);
+
+  std::unordered_map<std::string, Value> body = {};
+
+  for (NSString *key in eventBody) {
+    id value = eventBody[key];
+    std::string stdKey = [key UTF8String];
+
+    if ([value isKindOfClass:[NSString class]]) {
+      std::string stdValue = [value UTF8String];
+      body[stdKey] = Value(stdValue);
+    } else if ([value isKindOfClass:[NSNumber class]]) {
+      const char *type = [value objCType];
+      if (strcmp(type, @encode(int)) == 0) {
+        body[stdKey] = Value([value intValue]);
+      } else if (strcmp(type, @encode(double)) == 0) {
+        body[stdKey] = Value([value doubleValue]);
+      } else if (strcmp(type, @encode(float)) == 0) {
+        body[stdKey] = Value([value floatValue]);
+      } else if (strcmp(type, @encode(BOOL)) == 0) {
+        body[stdKey] = Value([value boolValue]);
+      }
+    }
+  }
+
+  _eventHandler->invokeHandlerWithEventBody(name, body);
 }
 
 @end

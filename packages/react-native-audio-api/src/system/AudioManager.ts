@@ -1,10 +1,5 @@
-import {
-  SessionOptions,
-  LockScreenInfo,
-  RemoteEventName,
-  RemoteEventCallback,
-  PermissionStatus,
-} from './types';
+import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
+import { SystemEventName, SystemEventCallback } from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
 import { IAudioEventEmitter } from '../interfaces';
 
@@ -52,13 +47,9 @@ class AudioManager {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }
 
-  enableRemoteCommand<Name extends RemoteEventName>(name: Name): void {
-    NativeAudioAPIModule!.enableRemoteCommand(name, true);
-  }
-
-  enableRemoteEvent<Name extends RemoteEventName>(
+  enableSystemEvent<Name extends SystemEventName>(
     name: Name,
-    callback?: RemoteEventCallback<Name>,
+    callback?: SystemEventCallback<Name>,
     enabled = true
   ): number | null {
     NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
