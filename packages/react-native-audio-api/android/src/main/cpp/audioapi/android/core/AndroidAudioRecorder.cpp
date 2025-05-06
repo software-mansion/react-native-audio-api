@@ -10,10 +10,7 @@ AndroidAudioRecorder::AndroidAudioRecorder(
     int bufferLength,
     const std::function<void(std::shared_ptr<AudioBus>, int, double)>
         &onAudioReady)
-    : AudioRecorder(
-          sampleRate,
-          bufferLength,
-          onAudioReady) {
+    : AudioRecorder(sampleRate, bufferLength, onAudioReady) {
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Exclusive)
       ->setDirection(Direction::Input)
