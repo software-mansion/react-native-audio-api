@@ -1,5 +1,3 @@
-#pragma once
-
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
 namespace audioapi {

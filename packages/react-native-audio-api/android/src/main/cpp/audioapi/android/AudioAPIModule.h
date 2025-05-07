@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/AudioAPIModuleInstaller.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 
 #include <ReactCommon/CallInvokerHolder.h>
 #include <fbjni/fbjni.h>
@@ -28,6 +29,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
   static void registerNatives();
 
   void injectJSIBindings();
+  void invokeHandlerWithEventNameAndEventBody(jni::alias_ref<jni::JString> eventName, jni::alias_ref<jni::JMap<jstring, jstring>> eventBody);
 
  private:
   friend HybridBase;
@@ -35,6 +37,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
+  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,

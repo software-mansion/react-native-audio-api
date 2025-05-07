@@ -10,7 +10,10 @@ AudioAPIModule::AudioAPIModule(
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
-      jsCallInvoker_(jsCallInvoker) {}
+      jsCallInvoker_(jsCallInvoker) {
+  audioEventHandlerRegistry_ =
+      std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
+}
 
 jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     jni::alias_ref<jhybridobject> jThis,
@@ -26,10 +29,22 @@ void AudioAPIModule::registerNatives() {
   registerHybrid({
       makeNativeMethod("initHybrid", AudioAPIModule::initHybrid),
       makeNativeMethod("injectJSIBindings", AudioAPIModule::injectJSIBindings),
+      makeNativeMethod(
+          "invokeHandlerWithEventNameAndEventBody",
+          AudioAPIModule::invokeHandlerWithEventNameAndEventBody),
   });
 }
 
 void AudioAPIModule::injectJSIBindings() {
-  AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime_, jsCallInvoker_);
+  AudioAPIModuleInstaller::injectJSIBindings(
+      jsiRuntime_, jsCallInvoker_, audioEventHandlerRegistry_);
+}
+
+void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
+    jni::alias_ref<jni::JString> eventName,
+    jni::alias_ref<jni::JMap<jstring, jstring>> eventBody) {
+  std::unordered_map<std::string, Value> body = {};
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+      eventName->toStdString(), body);
 }
 } // namespace audioapi

@@ -23,7 +23,8 @@ class MediaReceiver(
       mediaSessionManager.mediaNotificationManager.hide()
       mediaSessionManager.mediaSession.isActive = false
 
-      mediaSessionManager.eventEmitter.sendEvent("onCloseNotification", null)
+//      mediaSessionManager.eventEmitter.sendEvent("onCloseNotification", null)
+      mediaSessionManager.audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("closeNotification", mapOf()) // add to ts events
     } else if (MediaNotificationManager.MEDIA_BUTTON == action || Intent.ACTION_MEDIA_BUTTON == action) {
       if (!intent.hasExtra(Intent.EXTRA_KEY_EVENT)) return
       if (!checkApp(intent)) return

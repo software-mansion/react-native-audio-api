@@ -1,39 +1,66 @@
 package com.swmansion.audioapi.system
 
+import android.content.Intent
+import android.os.Build
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.core.app.NotificationManagerCompat
+import com.swmansion.audioapi.AudioAPIModule
+import java.lang.ref.WeakReference
+import java.util.HashMap
 
 class MediaSessionCallback(
-  val eventEmitter: MediaSessionEventEmitter,
+  audioAPIModule: AudioAPIModule,
   private val lockScreenManager: LockScreenManager,
 ) : MediaSessionCompat.Callback() {
+  private val audioAPIModule: WeakReference<AudioAPIModule> = WeakReference(audioAPIModule)
+
   override fun onPlay() {
     lockScreenManager.updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-    eventEmitter.onPlay()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePlay", mapOf())
   }
 
   override fun onPause() {
     lockScreenManager.updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-    eventEmitter.onPause()
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePause", mapOf())
   }
 
   override fun onStop() {
-    eventEmitter.onStop()
+    val reactContext = audioAPIModule.get()?.reactContext?.get()!!
+    NotificationManagerCompat.from(reactContext).cancel(MediaSessionManager.notificationId)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val myIntent =
+        Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
+      reactContext.stopService(myIntent)
+    }
+
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteStop", mapOf())
   }
 
   override fun onSkipToNext() {
-    eventEmitter.onSkipToNext()
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteNextTrack", body)
   }
 
   override fun onSkipToPrevious() {
-    eventEmitter.onSkipToPrevious()
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePreviousTrack", body)
   }
 
   override fun onFastForward() {
-    eventEmitter.onFastForward()
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipForward", body)
   }
 
   override fun onRewind() {
-    eventEmitter.onRewind()
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipBackward", body)
+  }
+
+  override fun onSeekTo(pos: Long) {
+    val body = HashMap<String, String>()
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteChangePlaybackPosition", body)
   }
 }

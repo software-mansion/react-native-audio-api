@@ -21,11 +21,14 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.AudioAPIModule
+import java.lang.ref.WeakReference
 
 object MediaSessionManager {
-  lateinit var reactContext: ReactApplicationContext
-  val notificationId = 100
-  val channelId = "react-native-audio-api"
+  lateinit var audioAPIModule: WeakReference<AudioAPIModule>
+  lateinit var reactContext: WeakReference<ReactApplicationContext>
+  const val notificationId = 100
+  const val channelId = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
   lateinit var mediaSession: MediaSessionCompat
@@ -46,7 +49,7 @@ object MediaSessionManager {
         val binder = service as MediaNotificationManager.NotificationService.LocalBinder
         val notificationService = binder.getService()
         notificationService?.forceForeground()
-        reactContext.unbindService(this)
+        reactContext.get()?.unbindService(this)
       }
 
       override fun onServiceDisconnected(name: ComponentName) {
@@ -62,8 +65,12 @@ object MediaSessionManager {
       }
     }
 
-  fun initialize(reactContext: ReactApplicationContext) {
-    this.reactContext = reactContext
+  fun initialize(
+    audioAPIModule: AudioAPIModule,
+    reactContext: ReactApplicationContext,
+  ) {
+    this.audioAPIModule = WeakReference(audioAPIModule)
+    this.reactContext = WeakReference(reactContext)
     this.audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
 
@@ -75,7 +82,7 @@ object MediaSessionManager {
     this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
     this.eventEmitter = MediaSessionEventEmitter(reactContext, notificationId)
     this.mediaReceiver = MediaReceiver(reactContext, this)
-    this.mediaSession.setCallback(MediaSessionCallback(eventEmitter, lockScreenManager))
+    this.mediaSession.setCallback(MediaSessionCallback(audioAPIModule, lockScreenManager))
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
@@ -94,8 +101,8 @@ object MediaSessionManager {
       )
     }
 
-    this.audioFocusListener = AudioFocusListener(audioManager, eventEmitter, lockScreenManager)
-    this.volumeChangeListener = VolumeChangeListener(audioManager, eventEmitter)
+    this.audioFocusListener = AudioFocusListener(audioManager, audioAPIModule, lockScreenManager)
+    this.volumeChangeListener = VolumeChangeListener(audioManager, audioAPIModule)
 
     val myIntent = Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
 
@@ -141,13 +148,13 @@ object MediaSessionManager {
   fun observeVolumeChanges(observe: Boolean) {
     if (observe) {
       ContextCompat.registerReceiver(
-        reactContext,
+        reactContext.get()!!,
         volumeChangeListener,
         volumeChangeListener.getIntentFilter(),
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     } else {
-      reactContext.unregisterReceiver(volumeChangeListener)
+      reactContext.get()?.unregisterReceiver(volumeChangeListener)
     }
   }
 
@@ -158,7 +165,7 @@ object MediaSessionManager {
 
   fun checkRecordingPermissions(): String =
     if (ContextCompat.checkSelfPermission(
-        reactContext,
+        reactContext.get()!!,
         Manifest.permission.RECORD_AUDIO,
       ) == PackageManager.PERMISSION_GRANTED
     ) {
@@ -170,7 +177,7 @@ object MediaSessionManager {
   @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {
     val notificationManager =
-      reactContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      reactContext.get()?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     val mChannel =
       NotificationChannel(channelId, "Audio manager", NotificationManager.IMPORTANCE_LOW)

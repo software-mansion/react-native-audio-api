@@ -9,15 +9,18 @@ import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.MediaSessionManager
+import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
 @ReactModule(name = AudioAPIModule.NAME)
 class AudioAPIModule(
-  val reactContext: ReactApplicationContext,
+  reactContext: ReactApplicationContext,
 ) : NativeAudioAPIModuleSpec(reactContext) {
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
+
+  public val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
 
   private val mHybridData: HybridData
 
@@ -27,6 +30,11 @@ class AudioAPIModule(
   ): HybridData
 
   private external fun injectJSIBindings()
+
+  external fun invokeHandlerWithEventNameAndEventBody(
+    eventName: String,
+    eventBody: Map<String, String>,
+  )
 
   init {
     try {
@@ -39,7 +47,7 @@ class AudioAPIModule(
   }
 
   override fun install(): Boolean {
-    MediaSessionManager.initialize(reactContext)
+    MediaSessionManager.initialize(this, reactContext.get()!!)
     injectJSIBindings()
 
     return true
