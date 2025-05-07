@@ -34,7 +34,6 @@ object MediaSessionManager {
   lateinit var mediaSession: MediaSessionCompat
   lateinit var mediaNotificationManager: MediaNotificationManager
   private lateinit var lockScreenManager: LockScreenManager
-  lateinit var eventEmitter: MediaSessionEventEmitter
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
@@ -80,7 +79,6 @@ object MediaSessionManager {
 
     this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId, channelId)
     this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
-    this.eventEmitter = MediaSessionEventEmitter(reactContext, notificationId)
     this.mediaReceiver = MediaReceiver(reactContext, this)
     this.mediaSession.setCallback(MediaSessionCallback(audioAPIModule, lockScreenManager))
 

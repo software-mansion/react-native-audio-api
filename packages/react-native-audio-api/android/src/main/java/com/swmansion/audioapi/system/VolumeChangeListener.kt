@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import com.swmansion.audioapi.AudioAPIModule
 import java.lang.ref.WeakReference
+import java.util.HashMap
 
 class VolumeChangeListener(
   private val audioManager: AudioManager,
@@ -21,8 +22,8 @@ class VolumeChangeListener(
     val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toDouble()
     val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toDouble()
 
-//    val body = mapOf("value" to currentVolume / maxVolume)
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("volumeChange", mapOf())
+    val body = HashMap<String, Any>().apply { put("value", currentVolume / maxVolume) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("volumeChange", body)
   }
 
   fun getIntentFilter(): IntentFilter {

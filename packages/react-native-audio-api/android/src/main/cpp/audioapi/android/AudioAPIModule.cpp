@@ -42,8 +42,18 @@ void AudioAPIModule::injectJSIBindings() {
 
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
     jni::alias_ref<jni::JString> eventName,
-    jni::alias_ref<jni::JMap<jstring, jstring>> eventBody) {
+    jni::alias_ref<jni::JMap<jstring, jobject>> eventBody) {
   std::unordered_map<std::string, Value> body = {};
+
+  for (const auto &entry : *eventBody) {
+    std::string name = entry.first->toStdString();
+    auto value = entry.second;
+
+    //      if (value->isInstanceOf(jni::JInteger::javaClassStatic())) {
+    //        auto val = value->
+    //      }
+  }
+
   audioEventHandlerRegistry_->invokeHandlerWithEventBody(
       eventName->toStdString(), body);
 }

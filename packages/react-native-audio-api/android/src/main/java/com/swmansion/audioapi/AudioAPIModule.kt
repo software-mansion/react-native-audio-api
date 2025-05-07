@@ -33,7 +33,7 @@ class AudioAPIModule(
 
   external fun invokeHandlerWithEventNameAndEventBody(
     eventName: String,
-    eventBody: Map<String, String>,
+    eventBody: Map<String, Any>,
   )
 
   init {
