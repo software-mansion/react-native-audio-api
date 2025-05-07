@@ -29,6 +29,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connect(const std::shared_ptr<AudioNode> &node);
   void disconnect();
   void disconnect(const std::shared_ptr<AudioNode> &node);
+  virtual std::shared_ptr<AudioBus> processAudio(const std::shared_ptr<AudioBus> &outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
 
   bool isEnabled() const;
   void enable();
@@ -63,7 +64,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelCountMode mode);
   static std::string toString(ChannelInterpretation interpretation);
 
-  virtual std::shared_ptr<AudioBus> processAudio(const std::shared_ptr<AudioBus> &outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
   virtual void processNode(const std::shared_ptr<AudioBus>&, int) = 0;
 
   bool isAlreadyProcessed();
