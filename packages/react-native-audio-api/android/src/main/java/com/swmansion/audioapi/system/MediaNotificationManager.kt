@@ -232,8 +232,8 @@ class MediaNotificationManager(
         ContextCompat.startForegroundService(this, intent)
         notification =
           MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
-        startForeground(MediaSessionManager.notificationId, notification)
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
+        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
       }
     }
 
@@ -242,8 +242,8 @@ class MediaNotificationManager(
       try {
         notification =
           MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
-        startForeground(MediaSessionManager.notificationId, notification)
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
+        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
       } catch (ex: Exception) {
         Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
       }

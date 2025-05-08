@@ -49,9 +49,17 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
     std::string name = entry.first->toStdString();
     auto value = entry.second;
 
-    //      if (value->isInstanceOf(jni::JInteger::javaClassStatic())) {
-    //        auto val = value->
-    //      }
+    if (value->isInstanceOf(jni::JString::javaClassStatic())) {
+      body[name] = jni::static_ref_cast<jni::JString>(value)->toStdString();
+    } else if (value->isInstanceOf(jni::JInteger::javaClassStatic())) {
+      body[name] = jni::static_ref_cast<jni::JInteger>(value)->value();
+    } else if (value->isInstanceOf(jni::JDouble::javaClassStatic())) {
+      body[name] = jni::static_ref_cast<jni::JDouble>(value)->value();
+    } else if (value->isInstanceOf(jni::JFloat::javaClassStatic())) {
+      body[name] = jni::static_ref_cast<jni::JFloat>(value)->value();
+    } else if (value->isInstanceOf(jni::JBoolean::javaClassStatic())) {
+      body[name] = jni::static_ref_cast<jni::JBoolean>(value)->value();
+    }
   }
 
   audioEventHandlerRegistry_->invokeHandlerWithEventBody(

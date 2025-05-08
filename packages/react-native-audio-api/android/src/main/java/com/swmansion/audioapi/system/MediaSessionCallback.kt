@@ -27,7 +27,7 @@ class MediaSessionCallback(
 
   override fun onStop() {
     val reactContext = audioAPIModule.get()?.reactContext?.get()!!
-    NotificationManagerCompat.from(reactContext).cancel(MediaSessionManager.notificationId)
+    NotificationManagerCompat.from(reactContext).cancel(MediaSessionManager.NOTIFICATION_ID)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val myIntent =
         Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
@@ -54,7 +54,7 @@ class MediaSessionCallback(
   }
 
   override fun onSeekTo(pos: Long) {
-    val body = HashMap<String, Any>().apply { put("value", pos.toDouble()) }
+    val body = HashMap<String, Any>().apply { put("value", (pos.toDouble() / 1000)) }
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteChangePlaybackPosition", body)
   }
 }

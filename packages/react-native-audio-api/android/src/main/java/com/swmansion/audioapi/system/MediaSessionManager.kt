@@ -27,8 +27,8 @@ import java.lang.ref.WeakReference
 object MediaSessionManager {
   lateinit var audioAPIModule: WeakReference<AudioAPIModule>
   lateinit var reactContext: WeakReference<ReactApplicationContext>
-  const val notificationId = 100
-  const val channelId = "react-native-audio-api"
+  const val NOTIFICATION_ID = 100
+  const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
   lateinit var mediaSession: MediaSessionCompat
@@ -77,8 +77,8 @@ object MediaSessionManager {
       createChannel()
     }
 
-    this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId, channelId)
-    this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
+    this.mediaNotificationManager = MediaNotificationManager(reactContext, NOTIFICATION_ID, CHANNEL_ID)
+    this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, CHANNEL_ID)
     this.mediaReceiver = MediaReceiver(reactContext, this)
     this.mediaSession.setCallback(MediaSessionCallback(audioAPIModule, lockScreenManager))
 
@@ -178,7 +178,7 @@ object MediaSessionManager {
       reactContext.get()?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     val mChannel =
-      NotificationChannel(channelId, "Audio manager", NotificationManager.IMPORTANCE_LOW)
+      NotificationChannel(CHANNEL_ID, "Audio manager", NotificationManager.IMPORTANCE_LOW)
     mChannel.description = "Audio manager"
     mChannel.setShowBadge(false)
     mChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
