@@ -1,8 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
@@ -33,15 +31,7 @@ IOSAudioRecorder::IOSAudioRecorder(
 
       circularBuffer_->pop_front(outputChannel, bufferLength_);
 
-      auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-      auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-
-      std::unordered_map<std::string, Value> body = {};
-      body.insert({"buffer", audioBufferHostObject});
-      body.insert({"numFrames", bufferLength_});
-      body.insert({"when", [when sampleTime] / [when sampleRate]});
-
-      audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", onAudioReadyCallbackId_, body);
+      invokeOnAudioReadyCallback(bus, bufferLength_, [when sampleTime] / [when sampleRate]);
     }
   };
 
@@ -88,15 +78,7 @@ void IOSAudioRecorder::sendRemainingData()
 
   circularBuffer_->pop_front(outputChannel, circularBuffer_->getNumberOfAvailableFrames());
 
-  auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-
-  std::unordered_map<std::string, Value> body = {};
-  body.insert({"buffer", audioBufferHostObject});
-  body.insert({"numFrames", availableFrames});
-  body.insert({"when", 0});
-
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", onAudioReadyCallbackId_, body);
+  invokeOnAudioReadyCallback(bus, availableFrames, 0);
 }
 
 } // namespace audioapi

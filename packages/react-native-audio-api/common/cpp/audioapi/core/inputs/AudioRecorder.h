@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <functional>
 
 namespace audioapi {
 class AudioBus;
@@ -13,16 +12,12 @@ class AudioRecorder {
     float sampleRate,
     int bufferLength,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
-  )
-    : sampleRate_(sampleRate),
-      bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+  );
 
   virtual ~AudioRecorder() = default;
 
-  void setOnAudioReadyCallbackId(uint64_t callbackId) {
-    onAudioReadyCallbackId_ = callbackId;
-  }
+  void setOnAudioReadyCallbackId(uint64_t callbackId);
+  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames, double when);
 
   virtual void start() = 0;
   virtual void stop() = 0;
