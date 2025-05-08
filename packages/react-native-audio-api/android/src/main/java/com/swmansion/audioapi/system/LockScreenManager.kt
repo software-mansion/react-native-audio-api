@@ -183,14 +183,15 @@ class LockScreenManager(
   ) {
     var controlValue = 0L
     when (name) {
-      "play" -> controlValue = PlaybackStateCompat.ACTION_PLAY
-      "pause" -> controlValue = PlaybackStateCompat.ACTION_PAUSE
-      "stop" -> controlValue = PlaybackStateCompat.ACTION_STOP
-      "togglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
-      "nextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-      "previousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-      "skipForward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
-      "skipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "remotePlay" -> controlValue = PlaybackStateCompat.ACTION_PLAY
+      "remotePause" -> controlValue = PlaybackStateCompat.ACTION_PAUSE
+      "remoteStop" -> controlValue = PlaybackStateCompat.ACTION_STOP
+      "remoteTogglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
+      "remoteNextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+      "remotePreviousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+      "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "remoteSkipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "remoteChangePlaybackPosition" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
     }
 
     controls =

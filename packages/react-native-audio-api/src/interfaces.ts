@@ -4,9 +4,9 @@ import {
   OscillatorType,
   BiquadFilterType,
   ChannelCountMode,
-  AudioRecorderStatus,
   ChannelInterpretation,
 } from './types';
+import { AudioEventName, AudioEventCallback } from './events/types';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -85,7 +85,7 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
-  onended: (arg?: number) => void | null;
+  onended: string;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
@@ -165,24 +165,20 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
-export type IAudioReadyCallback = (
-  buffer: IAudioBuffer,
-  numFrames: number,
-  when: number
-) => void;
-
-export type IErrorCallback = (error: Error) => void;
-
-export type IStatusChangeCallback = (
-  status: AudioRecorderStatus,
-  previousStatus: AudioRecorderStatus
-) => void;
-
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
 
-  onAudioReady: (callback: IAudioReadyCallback) => void;
-  onError: (callback: IErrorCallback) => void;
-  onStatusChange: (callback: IStatusChangeCallback) => void;
+  onAudioReady: string;
+}
+
+export interface IAudioEventEmitter {
+  addAudioEventListener<Name extends AudioEventName>(
+    name: Name,
+    callback: AudioEventCallback<Name>
+  ): string;
+  removeAudioEventListener<Name extends AudioEventName>(
+    name: Name,
+    subscriptionId: string
+  ): void;
 }

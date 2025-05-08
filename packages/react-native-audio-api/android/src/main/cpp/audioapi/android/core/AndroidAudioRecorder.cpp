@@ -1,5 +1,6 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/core/Constants.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -8,16 +9,8 @@ namespace audioapi {
 AndroidAudioRecorder::AndroidAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(void)> &onError,
-    const std::function<void(void)> &onStatusChange,
-    const std::function<void(std::shared_ptr<AudioBus>, int, double)>
-        &onAudioReady)
-    : AudioRecorder(
-          sampleRate,
-          bufferLength,
-          onError,
-          onStatusChange,
-          onAudioReady) {
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry) {
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Exclusive)
       ->setDirection(Direction::Input)
@@ -65,7 +58,7 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
   auto when = static_cast<double>(
       oboeStream->getTimestamp(CLOCK_MONOTONIC).value().timestamp);
 
-  onAudioReady_(bus, numFrames, when);
+  invokeOnAudioReadyCallback(bus, numFrames, when);
 
   return DataCallbackResult::Continue;
 }

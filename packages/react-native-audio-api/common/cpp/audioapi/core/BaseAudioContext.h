@@ -26,10 +26,11 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioDecoder;
 class AnalyserNode;
+class AudioEventHandlerRegistry;
 
 class BaseAudioContext {
  public:
-  BaseAudioContext();
+  explicit BaseAudioContext(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -77,6 +78,11 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
+
+ protected:
+    friend class AudioScheduledSourceNode;
+
+    std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 
 } // namespace audioapi

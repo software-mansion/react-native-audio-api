@@ -68,8 +68,9 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
                        context:(void *)context
 {
   if ([keyPath isEqualToString:@"outputVolume"] && context == &VolumeObservationContext) {
-    NSNumber *volume = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
-    [self.audioAPIModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
+    NSDictionary *body = @{@"value" : [NSNumber numberWithFloat:[change[@"new"] floatValue]]};
+
+    [self.audioAPIModule invokeHandlerWithEventName:@"volumeChange" eventBody:body];
   }
 }
 
@@ -99,16 +100,22 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
+    NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
+
+    [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
     return;
   }
 
   if (interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
-    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
+    NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @true};
+
+    [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
     return;
   }
 
-  [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
+  NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @false};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -146,7 +153,9 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
       break;
   }
 
-  [self.audioAPIModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
+  NSDictionary *body = @{@"reason" : reasonStr};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"routeChange" eventBody:body];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification

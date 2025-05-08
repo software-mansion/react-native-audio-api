@@ -6,11 +6,12 @@ export default function useSystemVolume() {
 
   useEffect(() => {
     AudioManager.observeVolumeChanges(true);
-    const listener = AudioManager.enableRemoteEvent('volumeChange', (e) => {
+    const listener = AudioManager.enableSystemEvent('volumeChange', (e) => {
       setVolume(parseFloat(e.value.toFixed(2)));
     });
     return () => {
       listener?.remove();
+
       AudioManager.observeVolumeChanges(false);
     };
   }, []);

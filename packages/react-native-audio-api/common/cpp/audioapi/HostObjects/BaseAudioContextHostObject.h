@@ -71,7 +71,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION(createOscillator) {
     auto oscillator = context_->createOscillator();
     auto oscillatorHostObject =
-        std::make_shared<OscillatorNodeHostObject>(oscillator, callInvoker_);
+        std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   }
 
@@ -99,7 +99,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto pitchCorrection = args[0].asBool();
     auto bufferSource = context_->createBufferSource(pitchCorrection);
     auto bufferSourceHostObject =
-        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource, callInvoker_);
+        std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
