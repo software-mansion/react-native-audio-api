@@ -17,8 +17,6 @@ IOSAudioRecorder::IOSAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry)
 {
-  circularBuffer_ = std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
-
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
       auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
@@ -68,17 +66,6 @@ void IOSAudioRecorder::stop()
   [audioRecorder_ stop];
 
   sendRemainingData();
-}
-
-void IOSAudioRecorder::sendRemainingData()
-{
-  auto bus = std::make_shared<AudioBus>(circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
-  auto *outputChannel = bus->getChannel(0)->getData();
-  auto availableFrames = static_cast<int>(circularBuffer_->getNumberOfAvailableFrames());
-
-  circularBuffer_->pop_front(outputChannel, circularBuffer_->getNumberOfAvailableFrames());
-
-  invokeOnAudioReadyCallback(bus, availableFrames, 0);
 }
 
 } // namespace audioapi
