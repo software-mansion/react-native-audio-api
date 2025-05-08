@@ -1,7 +1,9 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <iostream>
 
 namespace audioapi {
 
@@ -282,31 +284,33 @@ void AudioParam::removeInputNode(AudioNode *node) {
   }
 }
 
-void AudioParam::processParamNoInput(
-    const std::shared_ptr<AudioBus> &outputBus,
+std::shared_ptr<AudioBus> AudioParam::processARateParam(
     int framesToProcess,
     double time,
     float sampleRate) {
-  for (size_t i = 0; i < framesToProcess; i++) {
-    auto sample = getValueAtTime(
-        dsp::timeToSampleFrame(time, sampleRate) + i / sampleRate);
-    // outputBus is a mono bus
-    (*outputBus->getChannel(0))[i] = sample;
-  }
-}
-
-std::shared_ptr<AudioArray>
-AudioParam::processParam(int framesToProcess, double time, float sampleRate) {
   auto processingBus = audioBus_;
   processingBus->zero();
-  if (inputNodes_.empty()) {
-    processParamNoInput(processingBus, framesToProcess, time, sampleRate);
-  } else {
+  if (!inputNodes_.empty()) {
     processInputs(processingBus, framesToProcess, true);
     mixInputsBuses(processingBus);
   }
+  for (size_t i = 0; i < framesToProcess; i++) {
+    auto sample = getValueAtTime(time + i / sampleRate);
+    processingBus->getChannel(0)->getData()[i] += sample;
+  }
   // processingBus is a mono bus
-  return std::make_shared<AudioArray>(processingBus->getChannel(0));
+  return processingBus;
+}
+
+float AudioParam::processKRateParam(double time, float sampleRate) {
+  auto processingBus = audioBus_;
+  processingBus->zero();
+  if (!inputNodes_.empty()) {
+    processInputs(processingBus, 1, true);
+    mixInputsBuses(processingBus);
+  }
+  // processingBus is a mono bus
+  return processingBus->getChannel(0)->getData()[0] + getValueAtTime(time);
 }
 
 double AudioParam::getQueueEndTime() {

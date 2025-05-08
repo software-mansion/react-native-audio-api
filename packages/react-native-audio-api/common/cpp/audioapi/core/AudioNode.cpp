@@ -1,4 +1,5 @@
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
@@ -38,8 +39,13 @@ std::string AudioNode::getChannelInterpretation() const {
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingConnection(
+  context_->getNodeManager()->addPendingNodeConnection(
       shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+}
+
+void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
+  context_->getNodeManager()->addPendingParamConnection(
+      shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
 }
 
 void AudioNode::disconnect() {
@@ -50,8 +56,13 @@ void AudioNode::disconnect() {
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingConnection(
+  context_->getNodeManager()->addPendingNodeConnection(
       shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+}
+
+void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
+  context_->getNodeManager()->addPendingParamConnection(
+      shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
 }
 
 bool AudioNode::isEnabled() const {
@@ -221,12 +232,30 @@ void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
   }
 }
 
+void AudioNode::connectParam(const std::shared_ptr<AudioParam> &param) {
+  auto position = outputParams_.find(param);
+
+  if (position == outputParams_.end()) {
+    outputParams_.insert(param);
+    param->addInputNode(this);
+  }
+}
+
 void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
   auto position = outputNodes_.find(node);
 
   if (position != outputNodes_.end()) {
     node->onInputDisconnected(this);
     outputNodes_.erase(node);
+  }
+}
+
+void AudioNode::disconnectParam(const std::shared_ptr<AudioParam> &param) {
+  auto position = outputParams_.find(param);
+
+  if (position != outputParams_.end()) {
+    param->removeInputNode(this);
+    outputParams_.erase(param);
   }
 }
 

@@ -8,6 +8,6 @@ export default class StereoPannerNode extends AudioNode {
 
   constructor(context: BaseAudioContext, pan: IStereoPannerNode) {
     super(context, pan);
-    this.pan = new AudioParam(pan.pan);
+    this.pan = new AudioParam(pan.pan, context);
   }
 }

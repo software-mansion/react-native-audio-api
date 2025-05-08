@@ -15,6 +15,7 @@ namespace audioapi {
 
 class AudioBus;
 class BaseAudioContext;
+class AudioParam;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
@@ -27,8 +28,10 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::string getChannelCountMode() const;
   std::string getChannelInterpretation() const;
   void connect(const std::shared_ptr<AudioNode> &node);
+  void connect(const std::shared_ptr<AudioParam> &param);
   void disconnect();
   void disconnect(const std::shared_ptr<AudioNode> &node);
+  void disconnect(const std::shared_ptr<AudioParam> &param);
   virtual std::shared_ptr<AudioBus> processAudio(const std::shared_ptr<AudioBus> &outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
 
   bool isEnabled() const;
@@ -51,6 +54,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   std::unordered_set<AudioNode *> inputNodes_ = {};
   std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
+  std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
 
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;
@@ -73,6 +77,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
   void disconnectNode(const std::shared_ptr<AudioNode> &node);
+  void connectParam(const std::shared_ptr<AudioParam> &param);
+  void disconnectParam(const std::shared_ptr<AudioParam> &param);
 
   void onInputEnabled();
   void onInputDisabled();

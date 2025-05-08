@@ -54,8 +54,8 @@ export interface IAudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  connect: (node: IAudioNode) => void;
-  disconnect: (node?: IAudioNode) => void;
+  connect: (destination: IAudioNode | IAudioParam) => void;
+  disconnect: (destination?: IAudioNode | IAudioParam) => void;
 }
 
 export interface IGainNode extends IAudioNode {

@@ -38,7 +38,8 @@ class AudioParam {
   void cancelAndHoldAtTime(double cancelTime);
   void addInputNode(AudioNode* node);
   void removeInputNode(AudioNode* node);
-  std::shared_ptr<AudioArray> processParam(int framesToProcess, double time, float sampleRate);
+  std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time, float sampleRate);
+  float processKRateParam(double time, float sampleRate);
 
  private:
   float value_;
@@ -62,7 +63,6 @@ class AudioParam {
   void updateQueue(ParamChangeEvent &event);
   void processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
   void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
-  void processParamNoInput(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, double time, float sampleRate);
 };
 
 } // namespace audioapi
