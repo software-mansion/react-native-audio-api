@@ -18,7 +18,8 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(
       float sampleRate,
       int bufferLength,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<AudioEventHandlerRegistry>
+          &audioEventHandlerRegistry);
 
   ~IOSAudioRecorder() override;
 
