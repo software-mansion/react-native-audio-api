@@ -2,6 +2,8 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
 
 namespace audioapi {
 
@@ -11,7 +13,11 @@ AudioRecorder::AudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
+  circularBuffer_ =
+      std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
+  isRunning_.store(false);
+}
 
 void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
   onAudioReadyCallbackId_ = callbackId;
@@ -32,6 +38,19 @@ void AudioRecorder::invokeOnAudioReadyCallback(
 
   audioEventHandlerRegistry_->invokeHandlerWithEventBody(
       "audioReady", onAudioReadyCallbackId_, body);
+}
+
+void AudioRecorder::sendRemainingData() {
+  auto bus = std::make_shared<AudioBus>(
+      circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
+  auto *outputChannel = bus->getChannel(0)->getData();
+  auto availableFrames =
+      static_cast<int>(circularBuffer_->getNumberOfAvailableFrames());
+
+  circularBuffer_->pop_front(
+      outputChannel, circularBuffer_->getNumberOfAvailableFrames());
+
+  invokeOnAudioReadyCallback(bus, availableFrames, 0);
 }
 
 } // namespace audioapi

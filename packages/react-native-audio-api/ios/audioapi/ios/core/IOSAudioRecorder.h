@@ -28,11 +28,6 @@ class IOSAudioRecorder : public AudioRecorder {
 
  private:
   NativeAudioRecorder *audioRecorder_;
-  std::atomic<bool> isRunning_;
-
-  std::shared_ptr<CircularAudioArray> circularBuffer_;
-
-  void sendRemainingData();
 };
 
 } // namespace audioapi
