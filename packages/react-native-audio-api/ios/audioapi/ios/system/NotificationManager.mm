@@ -1,31 +1,16 @@
-#import <audioapi/ios/AudioManagerModule.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
 
 @implementation NotificationManager
 
-static NotificationManager *_sharedInstance = nil;
+static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
-  });
-  return _sharedInstance;
-}
-
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[NotificationManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
   if (self = [super init]) {
-    self.audioManagerModule = audioManagerModule;
+    self.audioAPIModule = audioAPIModule;
     self.notificationCenter = [NSNotificationCenter defaultCenter];
     self.audioInterruptionsObserved = false;
 
@@ -59,6 +44,35 @@ static NotificationManager *_sharedInstance = nil;
   self.audioInterruptionsObserved = enabled;
 }
 
+// WARNING: this does not work in a simulator environment, test it on a real device
+- (void)observeVolumeChanges:(BOOL)enabled
+{
+  if (self.volumeChangesObserved == enabled) {
+    return;
+  }
+
+  if (enabled) {
+    [[AVAudioSession sharedInstance] addObserver:self
+                                      forKeyPath:@"outputVolume"
+                                         options:NSKeyValueObservingOptionNew
+                                         context:(void *)&VolumeObservationContext];
+  } else {
+    [[AVAudioSession sharedInstance] removeObserver:self forKeyPath:@"outputVolume" context:nil];
+  }
+  self.volumeChangesObserved = enabled;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+  if ([keyPath isEqualToString:@"outputVolume"] && context == &VolumeObservationContext) {
+    NSNumber *volume = [NSNumber numberWithFloat:[change[@"new"] floatValue]];
+    [self.audioAPIModule sendEventWithName:@"onVolumeChange" body:@{@"value" : volume}];
+  }
+}
+
 - (void)configureNotifications
 {
   [self.notificationCenter addObserver:self
@@ -85,17 +99,16 @@ static NotificationManager *_sharedInstance = nil;
   NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [self.audioManagerModule sendEventWithName:@"onInterruption"
-                                          body:@{@"type" : @"began", @"shouldResume" : @"false"}];
+    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"began", @"shouldResume" : @"false"}];
     return;
   }
 
   if (interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
-    [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
+    [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"true"}];
     return;
   }
 
-  [self.audioManagerModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
+  [self.audioAPIModule sendEventWithName:@"onInterruption" body:@{@"type" : @"ended", @"shouldResume" : @"false"}];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -133,14 +146,14 @@ static NotificationManager *_sharedInstance = nil;
       break;
   }
 
-  [self.audioManagerModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
+  [self.audioAPIModule sendEventWithName:@"onRouteChange" body:@{@"reason" : @"reasonStr"}];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
   NSLog(@"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *audioSessionManager = self.audioAPIModule.audioSessionManager;
 
   [self cleanup];
   [audioSessionManager configureAudioSession];
@@ -150,7 +163,7 @@ static NotificationManager *_sharedInstance = nil;
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (![audioEngine isRunning]) {
     NSLog(

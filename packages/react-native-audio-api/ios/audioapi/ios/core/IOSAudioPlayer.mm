@@ -9,14 +9,19 @@
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio, float sampleRate)
-    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0)
+    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0), isRunning_(false)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
 
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
-      renderAudio_(audioBus_, framesToProcess);
+
+      if (isRunning_.load()) {
+        renderAudio_(audioBus_, framesToProcess);
+      } else {
+        audioBus_->zero();
+      }
 
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
@@ -29,11 +34,11 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
     }
   };
 
-  audioPlayer_ = [[AudioPlayer alloc] initWithRenderAudio:renderAudioBlock
-                                               sampleRate:sampleRate
-                                             channelCount:channelCount_];
+  audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
+                                                     sampleRate:sampleRate
+                                                   channelCount:channelCount_];
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, getSampleRate());
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -48,27 +53,28 @@ IOSAudioPlayer::~IOSAudioPlayer()
 
 void IOSAudioPlayer::start()
 {
-  return [audioPlayer_ start];
-}
+  if (isRunning_.load()) {
+    return;
+  }
 
-void IOSAudioPlayer::stop()
-{
-  return [audioPlayer_ stop];
+  [audioPlayer_ start];
+  isRunning_.store(true);
 }
 
 void IOSAudioPlayer::resume()
 {
-  return [audioPlayer_ resume];
+  isRunning_.store(true);
 }
 
-void IOSAudioPlayer::suspend()
+void IOSAudioPlayer::stop()
 {
-  return [audioPlayer_ suspend];
+  isRunning_.store(false);
+  [audioPlayer_ stop];
 }
 
-float IOSAudioPlayer::getSampleRate() const
+void IOSAudioPlayer::pause()
 {
-  return [audioPlayer_ getSampleRate];
+  isRunning_.store(false);
 }
 
 } // namespace audioapi

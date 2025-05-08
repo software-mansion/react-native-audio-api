@@ -13,6 +13,7 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
+class CircularAudioArray;
 
 class AnalyserNode : public AudioNode {
  public:
@@ -49,9 +50,9 @@ class AnalyserNode : public AudioNode {
   WindowType windowType_;
   std::shared_ptr<AudioArray> windowData_;
 
-  std::unique_ptr<AudioArray> inputBuffer_;
+  std::unique_ptr<CircularAudioArray> inputBuffer_;
   std::unique_ptr<AudioBus> downMixBus_;
-  int vWriteIndex_;
+  std::unique_ptr<AudioArray> tempBuffer_;
 
   std::unique_ptr<dsp::FFT> fft_;
   std::vector<std::complex<float>> complexData_;

@@ -1,43 +1,56 @@
 <img src="./assets/react-native-audio-api-gh-cover.png?v0.0.1" alt="React Native Audio API" width="100%">
 
-### React Native Audio API
+### High-performance audio engine for React Native based on web audio api specification
+
+[![NPM latest](https://img.shields.io/npm/v/react-native-audio-api/latest)](https://www.npmjs.com/package/react-native-audio-api)
+[![NPM next](https://img.shields.io/npm/v/react-native-audio-api/next)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
+[![github ci](https://img.shields.io/github/actions/workflow/status/software-mansion/react-native-audio-api/ci.yml)](https://github.com/software-mansion/react-native-audio-api/actions)
 
 `react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
 allowing developers to generate and modify audio in exact same way it is possible in browsers.
 
 ## Installation
 
-1. Install `react-native-audio-api` library
+check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/fundamentals/getting-started) section of our documentation for detailed instructions!
 
-   ```bash
-   # using npm
-   npm install react-native-audio-api
+## Roadmap
 
-   # or using yarn
-   yarn add react-native-audio-api
-   ```
+- <sub>[![Released in 0.1.0](https://img.shields.io/badge/Released_in-0.1.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.1.0)</sub> **Sound synthesis and system audio** 🐣 <br />
+  Access to devices audio engines and threads, basic nodes for sound synthesis, simple effects and audio graph implementation
+  <br />
 
-## Usage with expo
+- <sub>[![Released in 0.2.0](https://img.shields.io/badge/Released_in-0.2.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.2.0)</sub> **Graph Processing** 🛎️ <br />
+  Support for multi-channel audio processing, audio-graph route optimizations, improved react-native layer for managing audio nodes
+  <br />
+- <sub>[![Released in 0.3.2](https://img.shields.io/badge/Released_in-0.3.2-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.3.2)</sub> **Audio Files** 🎸 <br />
+  Support for local and remote audio file resources: MP3, WAV, FLAC.
+  <br />
 
-`react-native-audio-api` contains native custom code and isn't part of the Expo Go application. In order to be available in expo managed builds, you have to use Expo development build. Simplest way on starting local expo dev builds, is to use:
+- <sub>[![Released in 0.4.0](https://img.shields.io/badge/Released_in-0.4.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.4.0)</sub> **Analyser Node** 🌊 <br />
+  Ability to draw, animate or simply debug audio data in time or frequency domain.
+  <br />
 
-  ```bash
-    # Build native iOS project
-    npx expo run:ios
-    # Build native Android project
-    npx expo run:android
-  ```
+- <sub>[![Released in 0.5.0](https://img.shields.io/badge/Released_in-0.5.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.5.0)</sub> **Pitch correction, extending the web** 💥 <br />
+  Ability to modify playback speed without affecting pitch of the sound
+  <br />
 
-To learn more about expo development builds, please check out [Development Builds Documentation](https://docs.expo.dev/develop/development-builds/introduction/).
+- <sub>![Coming in 0.6.0](https://img.shields.io/badge/Coming_in-0.6.0-blue)</sub> **System configuration** 🛠️ <br />
+  Full control of system audio settings, remote controls, lock screen integration and most importantly configurable background modes
+  <br />
 
-## Documentation
+- **Microphone support** 🎙️ <br />
+  Grab audio data from device microphone or connected device, connect it to the audio graph or stream through the internet
+  <br />
 
-Check out our dedicated documentation page for info about this library, API reference and more:
-[https://software-mansion.github.io/react-native-audio-api/](https://software-mansion.github.io/react-native-audio-api/)
+- **Connect audio param** 🤞 <br />
+  Ability to connect Audio nodes to audio params, which will allow for powerful and efficient modulation of audio parameters, creating effects like tremolo, vibrato or complex envelope followers.
+  <br />
 
-You can also check out [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for fully detailed description of the audio api.
+- **JS Audio Worklets** 🐎 <br />
+  Ability to run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
+  <br />
 
-## Coverage
+## Web Audio API Specification Coverage
 
 Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion.github.io/react-native-audio-api/other/web-audio-api-coverage).
 

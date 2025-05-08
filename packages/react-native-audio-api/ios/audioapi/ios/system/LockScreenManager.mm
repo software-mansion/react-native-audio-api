@@ -1,5 +1,5 @@
 #import <MediaPlayer/MediaPlayer.h>
-#import <audioapi/ios/AudioManagerModule.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 
 #define LOCK_SCREEN_INFO                                          \
@@ -14,30 +14,14 @@
 
 @implementation LockScreenManager
 
-static LockScreenManager *_sharedInstance = nil;
-
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
-  });
-  return _sharedInstance;
-}
-
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[LockScreenManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
   if (self = [super init]) {
-    self.audioManagerModule = audioManagerModule;
+    self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
+
   return self;
 }
 
@@ -218,77 +202,77 @@ static LockScreenManager *_sharedInstance = nil;
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemotePlay" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePause" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemotePause" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteStop" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackRate"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackRate"
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:nil];
+  [self.audioAPIModule sendEventWithName:@"onRemoteSeekForward" body:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSkipForward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteSkipForward"
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSkipBackward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteSkipBackward"
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackPosition"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
+  [self.audioAPIModule sendEventWithName:@"onRemoteChangePlaybackPosition"
+                                    body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

@@ -1,5 +1,10 @@
-import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
-import type { IAudioContext, IOfflineAudioContext } from './interfaces';
+import { NativeAudioAPIModule } from './specs';
+import { AudioRecorderOptions } from './types';
+import type {
+  IAudioContext,
+  IAudioRecorder,
+  IOfflineAudioContext,
+} from './interfaces';
 
 /* eslint-disable no-var */
 declare global {
@@ -9,12 +14,16 @@ declare global {
     length: number,
     sampleRate: number
   ) => IOfflineAudioContext;
+
+  var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 }
+
 /* eslint-disable no-var */
 
 if (
   global.createAudioContext == null ||
-  global.createOfflineAudioContext == null
+  global.createOfflineAudioContext == null ||
+  global.createAudioRecorder == null
 ) {
   if (!NativeAudioAPIModule) {
     throw new Error(
@@ -39,7 +48,9 @@ export { default as BiquadFilterNode } from './core/BiquadFilterNode';
 export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
+export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as AudioManager } from './system';
+export { default as useSystemVolume } from './hooks/useSytemVolume';
 
 export {
   OscillatorType,

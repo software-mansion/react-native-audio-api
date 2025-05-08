@@ -123,13 +123,13 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    AudioManager.enableRemoteCommand('play', true);
-    AudioManager.enableRemoteCommand('pause', true);
-    AudioManager.enableRemoteCommand('stop', true);
-    AudioManager.enableRemoteCommand('interruption', true, (e) => {
-      console.log('interruption event', e);
-    });
+    AudioManager.enableRemoteCommand('play');
+    AudioManager.enableRemoteCommand('pause');
+    AudioManager.enableRemoteCommand('stop');
 
+    AudioManager.enableRemoteEvent('interruption', (event) => {
+      console.log('Interruption event:', event);
+    });
     AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();

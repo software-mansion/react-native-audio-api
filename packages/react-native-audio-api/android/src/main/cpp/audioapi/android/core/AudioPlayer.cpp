@@ -27,11 +27,13 @@ AudioPlayer::AudioPlayer(
   isInitialized_ = true;
 }
 
-float AudioPlayer::getSampleRate() const {
-  return sampleRate_;
+void AudioPlayer::start() {
+  if (mStream_) {
+    mStream_->requestStart();
+  }
 }
 
-void AudioPlayer::start() {
+void AudioPlayer::resume() {
   if (mStream_) {
     mStream_->requestStart();
   }
@@ -47,13 +49,7 @@ void AudioPlayer::stop() {
   }
 }
 
-void AudioPlayer::resume() {
-  if (mStream_) {
-    mStream_->requestStart();
-  }
-}
-
-void AudioPlayer::suspend() {
+void AudioPlayer::pause() {
   if (mStream_) {
     mStream_->requestPause();
   }

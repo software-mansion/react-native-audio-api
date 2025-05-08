@@ -9,6 +9,7 @@ import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
 import SyncedAudioPlayer from './SyncedAudioPlayer';
+import Record from './Record/Record';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -20,6 +21,7 @@ type NavigationParamList = {
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   SyncedAudioPlayer: undefined;
+  Record: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -86,5 +88,11 @@ export const Examples: Example[] = [
     title: 'Synced audio player',
     subtitle: 'Plays multiple files in sync',
     screen: SyncedAudioPlayer,
+  },
+  {
+    key: 'Record',
+    title: 'Record',
+    subtitle: 'Record audio',
+    screen: Record,
   },
 ] as const;

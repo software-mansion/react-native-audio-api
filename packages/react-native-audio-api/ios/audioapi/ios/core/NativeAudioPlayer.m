@@ -1,7 +1,7 @@
-#import <audioapi/ios/core/AudioPlayer.h>
+#import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
 
-@implementation AudioPlayer
+@implementation NativeAudioPlayer
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
@@ -21,6 +21,7 @@
       }
 
       weakSelf.renderAudio(outputData, frameCount);
+
       return kAudioServicesNoError;
     };
 
@@ -31,51 +32,23 @@
   return self;
 }
 
-- (float)getSampleRate
-{
-  return self.sampleRate;
-}
-
 - (void)start
 {
   NSLog(@"[AudioPlayer] start");
+
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = true;
+  assert(audioEngine != nil);
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)stop
 {
   NSLog(@"[AudioPlayer] stop");
-  if (!self.isRunning) {
-    return;
-  }
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = false;
+  assert(audioEngine != nil);
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;
-}
-
-- (void)suspend
-{
-  NSLog(@"[AudioPlayer] suspend");
-  if (!self.isRunning) {
-    return;
-  }
-
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = false;
-  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
-  self.sourceNodeId = nil;
-}
-
-- (void)resume
-{
-  NSLog(@"[AudioPlayer] resume");
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  self.isRunning = true;
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
 - (void)cleanup

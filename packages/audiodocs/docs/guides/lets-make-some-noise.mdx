@@ -10,13 +10,15 @@ In this section, we will guide you through the basic concepts of Audio API. We a
 
 Let's start by bootstrapping a simple application with a play button and creating our first instance of `AudioContext` object.
 
-```jsx {1,5}
+```jsx
 import React from 'react';
 import { View, Button } from 'react-native';
+// highlight-next-line
 import { AudioContext } from 'react-native-audio-api';
 
 export default function App() {
   const handlePlay = async () => {
+    // highlight-next-line
     const audioContext = new AudioContext();
   };
 
@@ -34,7 +36,7 @@ export default function App() {
 
 Before we can play anything, we need to gain access to some audio data. For the purpose of this guide, we will first download it from a remote source using.
 
-```jsx {9-12}
+```jsx
 import React from 'react';
 import { View, Button } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
@@ -43,9 +45,11 @@ export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
 
+    // highlight-start
     const audioBuffer = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
+    // highlight-end
   };
 
   return (

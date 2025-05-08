@@ -3,20 +3,26 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-@class AudioManagerModule;
+@class AudioAPIModule;
 
 @interface NotificationManager : NSObject
 
-@property (nonatomic, weak) AudioManagerModule *audioManagerModule;
+@property (nonatomic, weak) AudioAPIModule *audioAPIModule;
 @property (nonatomic, weak) NSNotificationCenter *notificationCenter;
 
 @property (nonatomic, assign) bool isInterrupted;
 @property (nonatomic, assign) bool hadConfigurationChange;
-@property (nonatomic, assign) BOOL audioInterruptionsObserved;
+@property (nonatomic, assign) bool audioInterruptionsObserved;
+@property (nonatomic, assign) bool volumeChangesObserved;
 
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule;
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule;
 - (void)cleanup;
 
 - (void)observeAudioInterruptions:(BOOL)enabled;
+- (void)observeVolumeChanges:(BOOL)enabled;
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context;
 
 @end

@@ -2,34 +2,18 @@
 
 @implementation AudioSessionManager
 
-static AudioSessionManager *_sharedInstance = nil;
-
-+ (instancetype)sharedInstance
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivate];
-  });
-  return _sharedInstance;
-}
-
 - (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[AudioSessionManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivate
 {
   if (self = [super init]) {
     self.audioSession = [AVAudioSession sharedInstance];
 
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth;
-
-    [self configureAudioSession];
+    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay;
+    self.hasDirtySettings = true;
+    self.isActive = false;
   }
+
   return self;
 }
 
@@ -119,35 +103,59 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
-  bool hasDirtySettings = false;
-
   if (self.sessionCategory != sessionCategory) {
-    hasDirtySettings = true;
+    self.hasDirtySettings = true;
     self.sessionCategory = sessionCategory;
   }
 
   if (self.sessionMode != sessionMode) {
-    hasDirtySettings = true;
+    self.hasDirtySettings = true;
     self.sessionMode = sessionMode;
   }
 
   if (self.sessionOptions != sessionOptions) {
-    hasDirtySettings = true;
+    self.hasDirtySettings = true;
     self.sessionOptions = sessionOptions;
   }
 
-  if (hasDirtySettings) {
+  if (self.isActive) {
     [self configureAudioSession];
   }
 }
 
-- (bool)setActive:(bool)active error:(NSError **)error
+- (bool)setActive:(bool)active
 {
-  return [self.audioSession setActive:active error:error];
+  if (active == self.isActive) {
+    return true;
+  }
+
+  if (active) {
+    [self configureAudioSession];
+  }
+
+  NSError *error = nil;
+
+  bool success = [self.audioSession setActive:active error:&error];
+
+  if (success) {
+    self.isActive = active;
+  }
+
+  if (error != nil) {
+    NSLog(@"[AudioSessionManager] setting session as %@ failed", active ? @"ACTIVE" : @"INACTIVE");
+  } else {
+    NSLog(@"[AudioSessionManager] session is %@", active ? @"ACTIVE" : @"INACTIVE");
+  }
+
+  return success;
 }
 
 - (bool)configureAudioSession
 {
+  if (![self hasDirtySettings]) {
+    return true;
+  }
+
   NSLog(
       @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu",
       self.sessionCategory,
@@ -156,13 +164,6 @@ static AudioSessionManager *_sharedInstance = nil;
 
   NSError *error = nil;
 
-  [self.audioSession setPreferredIOBufferDuration:0.022 error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while setting preffered IO buffer duration: %@", [error debugDescription]);
-    return false;
-  }
-
   [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
 
   if (error != nil) {
@@ -170,14 +171,44 @@ static AudioSessionManager *_sharedInstance = nil;
     return false;
   }
 
-  [self setActive:true error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
-    return false;
-  }
-
+  self.hasDirtySettings = false;
   return true;
+}
+
+- (NSString *)requestRecordingPermissions
+{
+  [self.audioSession requestRecordPermission:^(BOOL granted){
+  }];
+  return [self checkRecordingPermissions];
+}
+
+- (NSString *)checkRecordingPermissions
+{
+  if (@available(iOS 17, *)) {
+    NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
+    switch (res) {
+      case AVAudioApplicationRecordPermissionUndetermined:
+        return @"Undetermined";
+      case AVAudioApplicationRecordPermissionGranted:
+        return @"Granted";
+      case AVAudioApplicationRecordPermissionDenied:
+        return @"Denied";
+      default:
+        return @"Undetermined";
+    }
+  } else {
+    NSInteger res = [self.audioSession recordPermission];
+    switch (res) {
+      case AVAudioSessionRecordPermissionUndetermined:
+        return @"Undetermined";
+      case AVAudioSessionRecordPermissionGranted:
+        return @"Granted";
+      case AVAudioSessionRecordPermissionDenied:
+        return @"Denied";
+      default:
+        return @"Undetermined";
+    }
+  }
 }
 
 @end
