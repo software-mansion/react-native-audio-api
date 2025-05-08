@@ -16,7 +16,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
  public:
     AndroidAudioRecorder(float sampleRate,
                          int bufferLength,
-                         const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady);
+                         const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
 
     ~AndroidAudioRecorder() override;
 

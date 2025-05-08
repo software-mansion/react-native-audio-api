@@ -1,37 +1,14 @@
-import {
-  IAudioRecorder,
-  IAudioReadyCallback,
-  IAudioBuffer,
-} from '../interfaces';
-import { AudioRecorderStatus, AudioRecorderOptions } from '../types';
+import { IAudioRecorder } from '../interfaces';
+import { AudioRecorderOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
-
-export type AudioReadyCallback = (
-  buffer: AudioBuffer,
-  numFrames: number,
-  when: number
-) => void;
-
-export type ErrorCallback = (error: Error) => void;
-
-export type StatusChangeCallback = (
-  status: AudioRecorderStatus,
-  previousStatus: AudioRecorderStatus
-) => void;
+import { OnAudioReadyEventType } from '../events/types';
+import { AudioEventEmitter } from '../events';
 
 export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
-  private onAudioReadyCallback: AudioReadyCallback | null = null;
-
-  private onAudioReadyInternal: IAudioReadyCallback = (
-    buffer: IAudioBuffer,
-    numFrames: number,
-    when: number
-  ) => {
-    if (this.onAudioReadyCallback) {
-      this.onAudioReadyCallback(new AudioBuffer(buffer), numFrames, when);
-    }
-  };
+  private readonly audioEventEmitter = new AudioEventEmitter(
+    global.AudioEventEmitter
+  );
 
   constructor(options: AudioRecorderOptions) {
     this.recorder = global.createAudioRecorder(options);
@@ -45,8 +22,20 @@ export default class AudioRecorder {
     this.recorder.stop();
   }
 
-  public onAudioReady(callback: AudioReadyCallback): void {
-    this.onAudioReadyCallback = callback;
-    this.recorder.onAudioReady(this.onAudioReadyInternal);
+  public onAudioReady(callback: (event: OnAudioReadyEventType) => void): void {
+    const onAudioReadyCallback = (event: OnAudioReadyEventType) => {
+      callback({
+        buffer: new AudioBuffer(event.buffer),
+        numFrames: event.numFrames,
+        when: event.when,
+      });
+    };
+
+    const subscription = this.audioEventEmitter.addAudioEventListener(
+      'audioReady',
+      onAudioReadyCallback
+    );
+
+    this.recorder.onAudioReady = subscription.subscriptionId;
   }
 }

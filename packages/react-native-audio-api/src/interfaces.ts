@@ -165,17 +165,11 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
-export type IAudioReadyCallback = (
-  buffer: IAudioBuffer,
-  numFrames: number,
-  when: number
-) => void;
-
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
 
-  onAudioReady: (callback: IAudioReadyCallback) => void;
+  onAudioReady: string;
 }
 
 export interface IAudioEventEmitter {

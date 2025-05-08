@@ -5,19 +5,24 @@
 
 namespace audioapi {
 class AudioBus;
+class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
   )
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      onAudioReady_(onAudioReady) {}
+      audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
 
   virtual ~AudioRecorder() = default;
+
+  void setOnAudioReadyCallbackId(uint64_t callbackId) {
+    onAudioReadyCallbackId_ = callbackId;
+  }
 
   virtual void start() = 0;
   virtual void stop() = 0;
@@ -26,7 +31,8 @@ class AudioRecorder {
   float sampleRate_;
   int bufferLength_;
 
-  std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
+  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  uint64_t onAudioReadyCallbackId_ = 0;
 };
 
 } // namespace audioapi

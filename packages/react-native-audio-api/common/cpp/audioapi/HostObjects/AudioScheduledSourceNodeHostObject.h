@@ -43,9 +43,5 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
     audioScheduleSourceNode->stop(time);
     return jsi::Value::undefined();
   }
-
- private:
-    std::shared_ptr<react::CallInvoker> callInvoker_;
-    std::unique_ptr<jsi::Function> onendedCallback_;
 };
 } // namespace audioapi

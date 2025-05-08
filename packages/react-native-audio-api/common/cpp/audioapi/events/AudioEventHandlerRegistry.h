@@ -10,7 +10,8 @@
 
 namespace audioapi {
 using namespace facebook;
-using Value = std::variant<int, float, double, std::string, bool>;
+
+using Value = std::variant<int, float, double, std::string, bool, std::shared_ptr<jsi::HostObject>>;
 
 class AudioEventHandlerRegistry {
  public:
@@ -24,21 +25,6 @@ class AudioEventHandlerRegistry {
 
   void invokeHandlerWithEventBody(const std::string &eventName, const std::unordered_map<std::string, Value> &body);
   void invokeHandlerWithEventBody(const std::string &eventName, uint64_t listenerId, const std::unordered_map<std::string, Value> &body);
-
-    template<typename... Args>
-    void invokeHandler(const std::string &eventName, Args&&... args) {
-        auto it = eventHandlers_.find(eventName);
-        if (it != eventHandlers_.end()) {
-            for (const auto &pair : it->second) {
-                auto handler = pair.second;
-                if (handler) {
-                    callInvoker_->invokeAsync([this, handler, args...]() {
-                        handler->call(*runtime_, args...);
-                    });
-                }
-            }
-        }
-    }
 
   template<typename... Args>
   void invokeHandler(const std::string &eventName, uint64_t listenerId, Args&&... args) {

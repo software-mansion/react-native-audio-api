@@ -1,3 +1,5 @@
+import AudioBuffer from '../core/AudioBuffer';
+
 interface EventEmptyType {}
 
 export interface EventTypeWithValue {
@@ -31,9 +33,15 @@ interface SystemEvents {
   routeChange: OnRouteChangeEventType;
 }
 
+export interface OnAudioReadyEventType {
+  buffer: AudioBuffer;
+  numFrames: number;
+  when: number;
+}
+
 interface AudioAPIEvents {
   ended: EventTypeWithValue;
-  audioReady: EventEmptyType; // to change
+  audioReady: OnAudioReadyEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
 }

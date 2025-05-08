@@ -71,7 +71,9 @@ const Record: FC = () => {
       return;
     }
 
-    recorderRef.current.onAudioReady((buffer, numFrames, when) => {
+    recorderRef.current.onAudioReady((event) => {
+      const { buffer, numFrames, when } = event;
+
       console.log(
         'Audio recorder buffer ready:',
         buffer.duration,

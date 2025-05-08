@@ -96,6 +96,9 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
       eventObject.setProperty(*runtime_, name, get<bool>(value));
     } else if (holds_alternative<std::string>(value)) {
       eventObject.setProperty(*runtime_, name, get<std::string>(value));
+    } else if (holds_alternative<std::shared_ptr<jsi::HostObject>>(value)) {
+      auto hostObject = jsi::Object::createFromHostObject(*runtime_, get<std::shared_ptr<jsi::HostObject>>(value));
+      eventObject.setProperty(*runtime_, name, hostObject);
     }
   }
 

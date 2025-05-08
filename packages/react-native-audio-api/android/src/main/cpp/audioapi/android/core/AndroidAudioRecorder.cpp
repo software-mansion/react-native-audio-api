@@ -2,15 +2,17 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/core/sources/AudioBuffer.h>
+#include <audioapi/HostObjects/AudioBufferHostObject.h>
 
 namespace audioapi {
 
 AndroidAudioRecorder::AndroidAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(std::shared_ptr<AudioBus>, int, double)>
-        &onAudioReady)
-    : AudioRecorder(sampleRate, bufferLength, onAudioReady) {
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry) {
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Exclusive)
       ->setDirection(Direction::Input)
@@ -58,7 +60,15 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
   auto when = static_cast<double>(
       oboeStream->getTimestamp(CLOCK_MONOTONIC).value().timestamp);
 
-  onAudioReady_(bus, numFrames, when);
+  auto audioBuffer = std::make_shared<AudioBuffer>(bus);
+  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
+
+  std::unordered_map<std::string, Value> body = {
+          {"buffer", audioBufferHostObject},
+          {"numFrames", numFrames},
+          {"when", when}};
+
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", onAudioReadyCallbackId_, body);
 
   return DataCallbackResult::Continue;
 }
