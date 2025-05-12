@@ -66,7 +66,7 @@ object MediaSessionManager {
 
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
-    reactContext: WeakReference<ReactApplicationContext>
+    reactContext: WeakReference<ReactApplicationContext>,
   ) {
     this.audioAPIModule = audioAPIModule
     this.reactContext = reactContext
@@ -79,7 +79,8 @@ object MediaSessionManager {
 
     this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
     this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
-    this.mediaReceiver = MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
+    this.mediaReceiver =
+      MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
     this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.lockScreenManager)))
 
     val filter = IntentFilter()
@@ -99,7 +100,8 @@ object MediaSessionManager {
       )
     }
 
-    this.audioFocusListener = AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
+    this.audioFocusListener =
+      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
     val myIntent = Intent(this.reactContext.get(), MediaNotificationManager.NotificationService::class.java)

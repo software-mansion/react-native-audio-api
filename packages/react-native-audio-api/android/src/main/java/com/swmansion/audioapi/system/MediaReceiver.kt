@@ -25,7 +25,7 @@ class MediaReceiver(
     if (MediaNotificationManager.REMOVE_NOTIFICATION == action) {
       if (!checkApp(intent)) return
 
-     mediaNotificationManager.get()?.hide()
+      mediaNotificationManager.get()?.hide()
       mediaSession.get()?.isActive = false
 
       audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("closeNotification", mapOf()) // add to ts events
@@ -36,7 +36,11 @@ class MediaReceiver(
       val keyEvent = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
       mediaSession.get()?.controller?.dispatchMediaButtonEvent(keyEvent)
     } else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == action) {
-      mediaSession.get()?.controller?.transportControls?.pause()
+      mediaSession
+        .get()
+        ?.controller
+        ?.transportControls
+        ?.pause()
     }
   }
 
