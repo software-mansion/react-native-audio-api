@@ -47,7 +47,9 @@ class MediaReceiver(
   private fun checkApp(intent: Intent): Boolean {
     if (intent.hasExtra(MediaNotificationManager.PACKAGE_NAME)) {
       val name = intent.getStringExtra(MediaNotificationManager.PACKAGE_NAME)
-      if (!reactContext.get()?.packageName.equals(name)) return false
+      if (!reactContext.get()?.packageName.equals(name)) {
+        return false
+      }
     }
     return true
   }
