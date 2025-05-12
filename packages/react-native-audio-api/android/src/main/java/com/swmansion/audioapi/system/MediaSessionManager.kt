@@ -25,13 +25,13 @@ import com.swmansion.audioapi.AudioAPIModule
 import java.lang.ref.WeakReference
 
 object MediaSessionManager {
-  lateinit var audioAPIModule: WeakReference<AudioAPIModule>
-  lateinit var reactContext: WeakReference<ReactApplicationContext>
+  private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
+  private lateinit var reactContext: WeakReference<ReactApplicationContext>
   const val NOTIFICATION_ID = 100
   const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
-  lateinit var mediaSession: MediaSessionCompat
+  private lateinit var mediaSession: MediaSessionCompat
   lateinit var mediaNotificationManager: MediaNotificationManager
   private lateinit var lockScreenManager: LockScreenManager
   private lateinit var audioFocusListener: AudioFocusListener
@@ -65,22 +65,22 @@ object MediaSessionManager {
     }
 
   fun initialize(
-    audioAPIModule: AudioAPIModule,
-    reactContext: ReactApplicationContext,
+    audioAPIModule: WeakReference<AudioAPIModule>,
+    reactContext: WeakReference<ReactApplicationContext>
   ) {
-    this.audioAPIModule = WeakReference(audioAPIModule)
-    this.reactContext = WeakReference(reactContext)
-    this.audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
+    this.audioAPIModule = audioAPIModule
+    this.reactContext = reactContext
+    this.audioManager = reactContext.get()?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    this.mediaSession = MediaSessionCompat(reactContext.get()!!, "MediaSessionManager")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
-    this.mediaNotificationManager = MediaNotificationManager(reactContext, NOTIFICATION_ID, CHANNEL_ID)
-    this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, CHANNEL_ID)
-    this.mediaReceiver = MediaReceiver(reactContext, this)
-    this.mediaSession.setCallback(MediaSessionCallback(audioAPIModule, lockScreenManager))
+    this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
+    this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
+    this.mediaReceiver = MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
+    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.lockScreenManager)))
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
@@ -89,29 +89,29 @@ object MediaSessionManager {
     filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      reactContext.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
+      this.reactContext.get()!!.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
     } else {
       ContextCompat.registerReceiver(
-        reactContext,
+        this.reactContext.get()!!,
         mediaReceiver,
         filter,
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     }
 
-    this.audioFocusListener = AudioFocusListener(audioManager, audioAPIModule, lockScreenManager)
-    this.volumeChangeListener = VolumeChangeListener(audioManager, audioAPIModule)
+    this.audioFocusListener = AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
+    this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
-    val myIntent = Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
+    val myIntent = Intent(this.reactContext.get(), MediaNotificationManager.NotificationService::class.java)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       try {
-        reactContext.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
+        this.reactContext.get()?.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
       } catch (ignored: Exception) {
-        ContextCompat.startForegroundService(reactContext, myIntent)
+        ContextCompat.startForegroundService(this.reactContext.get()!!, myIntent)
       }
     } else {
-      reactContext.startService(myIntent)
+      this.reactContext.get()?.startService(myIntent)
     }
   }
 
