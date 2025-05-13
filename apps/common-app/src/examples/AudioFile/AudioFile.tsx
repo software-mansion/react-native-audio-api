@@ -20,11 +20,25 @@ const INITIAL_DETUNE = 0;
 
 const labelWidth = 80;
 
+const CreateAudioBuffer = (context: AudioContext, buffer: AudioBuffer, playbackRate: number, detune: number) =>{
+  const audioBufferSourceNode = context.createBufferSource({
+    pitchCorrection: true,
+  });
+  audioBufferSourceNode.buffer = buffer;
+  audioBufferSourceNode.loop = true;
+  audioBufferSourceNode.loopStart = LOOP_START;
+  audioBufferSourceNode.loopEnd = LOOP_END;
+  audioBufferSourceNode.playbackRate.value = playbackRate;
+  audioBufferSourceNode.detune.value = detune;
+  return audioBufferSourceNode;
+}
+
+
 const AudioFile: FC = () => {
+  const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [offset, setOffset] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
 
@@ -49,12 +63,12 @@ const AudioFile: FC = () => {
     }
   };
 
-  const handlePress = () => {
+  const handlePress = (offset = 0) => {
     if (!audioContextRef.current) {
       return;
     }
 
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
       AudioManager.setLockScreenInfo({
         state: 'state_paused',
@@ -76,7 +90,7 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
       bufferSourceRef.current.onended = (event) => {
-        setOffset((_prev) => event.value || 0);
+        offset = event.value || 0;
       };
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
@@ -90,6 +104,7 @@ const AudioFile: FC = () => {
       );
     }
 
+    isPlayingRef.current = !isPlayingRef.current;
     setIsPlaying((prev) => !prev);
   };
 
@@ -124,24 +139,22 @@ const AudioFile: FC = () => {
     });
 
     const remotePlaySubscription = AudioManager.enableSystemEvent(
-      'remotePlay',
-      (event) => {
-        console.log('remotePlay event:', event);
-      }
+      'remotePlay', () => handlePress()
     );
 
     const remotePauseSubscription = AudioManager.enableSystemEvent(
-      'remotePause',
-      (event) => {
-        console.log('remotePause event:', event);
-      }
+      'remotePause', () => handlePress()
     );
 
     const remoteChangePlaybackPositionSubscription =
       AudioManager.enableSystemEvent(
         'remoteChangePlaybackPosition',
         (event) => {
-          console.log('remoteChangePlaybackPosition event:', event);
+          if (!audioContextRef.current) {
+            return;
+          }
+          bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
+          handlePress(event.value);
         }
       );
 
@@ -170,7 +183,7 @@ const AudioFile: FC = () => {
       {isLoading && <ActivityIndicator color="#FFFFFF" />}
       <Button
         title={isPlaying ? 'Stop' : 'Play'}
-        onPress={handlePress}
+        onPress={() => handlePress()}
         disabled={!audioBuffer}
       />
       <Spacer.Vertical size={49} />
