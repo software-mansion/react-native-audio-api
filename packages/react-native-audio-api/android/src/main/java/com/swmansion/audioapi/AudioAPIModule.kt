@@ -20,7 +20,7 @@ class AudioAPIModule(
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
 
-  public val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
+  val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
 
   private val mHybridData: HybridData
 
@@ -47,7 +47,7 @@ class AudioAPIModule(
   }
 
   override fun install(): Boolean {
-    MediaSessionManager.initialize(this, reactContext.get()!!)
+    MediaSessionManager.initialize(WeakReference(this), reactContext)
     injectJSIBindings()
 
     return true
