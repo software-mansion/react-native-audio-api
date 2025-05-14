@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo, FC } from 'react';
 import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
@@ -35,7 +35,6 @@ const CreateAudioBuffer = (context: AudioContext, buffer: AudioBuffer, playbackR
 
 
 const AudioFile: FC = () => {
-  const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,7 +43,6 @@ const AudioFile: FC = () => {
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const handlePlaybackRateChange = (newValue: number) => {
@@ -63,13 +61,12 @@ const AudioFile: FC = () => {
     }
   };
 
-  const handlePress = (offset = 0) => {
-    if (!audioContextRef.current) {
-      return;
-    }
+  const audioContext = useMemo(() => new AudioContext(), []);
 
-    if (isPlayingRef.current) {
-      bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
+  const handlePress = useCallback((offset = 0) => {
+
+    if (isPlaying) {
+      bufferSourceRef.current?.stop(audioContext.currentTime);
       AudioManager.setLockScreenInfo({
         state: 'state_paused',
       });
@@ -84,7 +81,7 @@ const AudioFile: FC = () => {
 
       AudioManager.observeAudioInterruptions(true);
 
-      bufferSourceRef.current = audioContextRef.current.createBufferSource({
+      bufferSourceRef.current = audioContext.createBufferSource({
         pitchCorrection: true,
       });
       bufferSourceRef.current.buffer = audioBuffer;
@@ -96,25 +93,26 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.playbackRate.value = playbackRate;
       bufferSourceRef.current.detune.value = detune;
-      bufferSourceRef.current.connect(audioContextRef.current.destination);
+      bufferSourceRef.current.connect(audioContext.destination);
+      console.log(bufferSourceRef.current);
 
       bufferSourceRef.current.start(
-        audioContextRef.current.currentTime,
+        audioContext.currentTime,
         offset
       );
     }
 
-    isPlayingRef.current = !isPlayingRef.current;
     setIsPlaying((prev) => !prev);
-  };
+  }, [isPlaying, audioBuffer, playbackRate, detune]);
 
   const fetchAudioBuffer = useCallback(async () => {
+    console.log('Fetching audio buffer...');
     setIsLoading(true);
 
     const buffer = await fetch(URL)
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) =>
-        audioContextRef.current!.decodeAudioData(arrayBuffer)
+        audioContext.decodeAudioData(arrayBuffer)
       )
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
@@ -127,8 +125,9 @@ const AudioFile: FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+    AudioManager.observeAudioInterruptions(true);
+    if (!audioBuffer) {
+      fetchAudioBuffer();
     }
 
     AudioManager.setLockScreenInfo({
@@ -137,6 +136,10 @@ const AudioFile: FC = () => {
       album: 'Audio API',
       duration: 10,
     });
+
+  }, [fetchAudioBuffer])
+
+  useEffect(() => {
 
     const remotePlaySubscription = AudioManager.enableSystemEvent(
       'remotePlay', () => handlePress()
@@ -150,11 +153,22 @@ const AudioFile: FC = () => {
       AudioManager.enableSystemEvent(
         'remoteChangePlaybackPosition',
         (event) => {
-          if (!audioContextRef.current) {
-            return;
-          }
-          bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
-          handlePress(event.value);
+          bufferSourceRef.current?.stop(audioContext.currentTime);
+          bufferSourceRef.current = audioContext.createBufferSource({
+            pitchCorrection: true,
+          });
+          bufferSourceRef.current.buffer = audioBuffer;
+          bufferSourceRef.current.loop = true;
+          bufferSourceRef.current.loopStart = LOOP_START;
+          bufferSourceRef.current.loopEnd = LOOP_END;
+          bufferSourceRef.current.playbackRate.value = playbackRate;
+          bufferSourceRef.current.detune.value = detune;
+          bufferSourceRef.current.connect(audioContext.destination);
+    
+          bufferSourceRef.current.start(
+            audioContext.currentTime,
+            event.value || 0
+          );
         }
       );
 
@@ -165,18 +179,14 @@ const AudioFile: FC = () => {
       }
     );
 
-    AudioManager.observeAudioInterruptions(true);
-
-    fetchAudioBuffer();
-
     return () => {
       remotePlaySubscription?.remove();
       remotePauseSubscription?.remove();
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
-      audioContextRef.current?.close();
+      audioContext.close();
     };
-  }, [fetchAudioBuffer]);
+  }, [handlePress]);
 
   return (
     <Container centered>
