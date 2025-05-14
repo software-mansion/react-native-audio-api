@@ -13,7 +13,7 @@ The goal of _Fundamentals_ is to guide you through the setup process of the Audi
 
 It takes only a few steps to add Audio API to your project:
 
-### Install the package
+### Step 1: Install the package
 
 Install the `react-native-audio-api` package from npm:
 
@@ -34,6 +34,23 @@ Install the `react-native-audio-api` package from npm:
 
   </TabItem>
 </Tabs>
+
+### Step 2: Wrap metro config with Audio API wrapper
+
+Wrap your existing Metro configuration in the `metro.config.js` file with the `wrapWithAudioAPIMetroConfig` function:
+
+```javascript
+// metro.config.js
+const {
+  wrapWithAudioAPIMetroConfig,
+} = require('react-native-audio-api/metro-config');
+
+const config = {
+  // Your existing Metro configuration options
+};
+
+module.exports = wrapWithAudioAPIMetroConfig(config);
+```
 
 ### Usage with expo
 
