@@ -10,16 +10,20 @@ namespace audioapi {
 
 BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
     : AudioNode(context) {
-  frequencyParam_ =
-      std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency());
+  frequencyParam_ = std::make_shared<AudioParam>(
+      350.0, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       0.0,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      context);
   QParam_ = std::make_shared<AudioParam>(
-      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT);
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      0.0, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT);
+      0.0,
+      MOST_NEGATIVE_SINGLE_FLOAT,
+      40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
+      context);
   type_ = BiquadFilterType::LOWPASS;
   isInitialized_ = true;
 }
@@ -304,48 +308,46 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
 void BiquadFilterNode::applyFilter() {
   double currentTime = context_->getCurrentTime();
 
-  float normalizedFrequency = frequencyParam_->getValueAtTime(currentTime) /
-      context_->getNyquistFrequency();
-  float detuneValue = detuneParam_->getValueAtTime(currentTime);
+  float frequencyParamValue =
+      frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  float normalizedFrequency =
+      frequencyParamValue / context_->getNyquistFrequency();
+
+  float detuneValue =
+      detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
 
   if (detuneValue != 0.0) {
     normalizedFrequency *= std::pow(2.0f, detuneValue / 1200.0f);
   }
 
+  auto qparamValue =
+      QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  auto gainParamValue =
+      gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   switch (type_) {
     case BiquadFilterType::LOWPASS:
-      setLowpassCoefficients(
-          normalizedFrequency, QParam_->getValueAtTime(currentTime));
+      setLowpassCoefficients(normalizedFrequency, qparamValue);
       break;
     case BiquadFilterType::HIGHPASS:
-      setHighpassCoefficients(
-          normalizedFrequency, QParam_->getValueAtTime(currentTime));
+      setHighpassCoefficients(normalizedFrequency, qparamValue);
       break;
     case BiquadFilterType::BANDPASS:
-      setBandpassCoefficients(
-          normalizedFrequency, QParam_->getValueAtTime(currentTime));
+      setBandpassCoefficients(normalizedFrequency, qparamValue);
       break;
     case BiquadFilterType::LOWSHELF:
-      setLowshelfCoefficients(
-          normalizedFrequency, gainParam_->getValueAtTime(currentTime));
+      setLowshelfCoefficients(normalizedFrequency, gainParamValue);
       break;
     case BiquadFilterType::HIGHSHELF:
-      setHighshelfCoefficients(
-          normalizedFrequency, gainParam_->getValueAtTime(currentTime));
+      setHighshelfCoefficients(normalizedFrequency, gainParamValue);
       break;
     case BiquadFilterType::PEAKING:
-      setPeakingCoefficients(
-          normalizedFrequency,
-          QParam_->getValueAtTime(currentTime),
-          gainParam_->getValueAtTime(currentTime));
+      setPeakingCoefficients(normalizedFrequency, qparamValue, gainParamValue);
       break;
     case BiquadFilterType::NOTCH:
-      setNotchCoefficients(
-          normalizedFrequency, QParam_->getValueAtTime(currentTime));
+      setNotchCoefficients(normalizedFrequency, qparamValue);
       break;
     case BiquadFilterType::ALLPASS:
-      setAllpassCoefficients(
-          normalizedFrequency, QParam_->getValueAtTime(currentTime));
+      setAllpassCoefficients(normalizedFrequency, qparamValue);
       break;
     default:
       break;

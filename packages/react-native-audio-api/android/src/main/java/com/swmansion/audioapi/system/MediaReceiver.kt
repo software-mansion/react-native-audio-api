@@ -4,12 +4,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import com.facebook.react.bridge.ReactApplicationContext
+import com.swmansion.audioapi.AudioAPIModule
+import java.lang.ref.WeakReference
 
 class MediaReceiver(
-  val reactContext: ReactApplicationContext,
-  private val mediaSessionManager: MediaSessionManager,
+  private val reactContext: WeakReference<ReactApplicationContext>,
+  private val mediaSession: WeakReference<MediaSessionCompat>,
+  private val mediaNotificationManager: WeakReference<MediaNotificationManager>,
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
 ) : BroadcastReceiver() {
   override fun onReceive(
     context: Context?,
@@ -20,26 +25,31 @@ class MediaReceiver(
     if (MediaNotificationManager.REMOVE_NOTIFICATION == action) {
       if (!checkApp(intent)) return
 
-      mediaSessionManager.mediaNotificationManager.hide()
-      mediaSessionManager.mediaSession.isActive = false
+      mediaNotificationManager.get()?.hide()
+      mediaSession.get()?.isActive = false
 
-      mediaSessionManager.audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("closeNotification", mapOf()) // add to ts events
+      audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("closeNotification", mapOf()) // add to ts events
     } else if (MediaNotificationManager.MEDIA_BUTTON == action || Intent.ACTION_MEDIA_BUTTON == action) {
       if (!intent.hasExtra(Intent.EXTRA_KEY_EVENT)) return
       if (!checkApp(intent)) return
 
       val keyEvent = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-      mediaSessionManager.mediaSession.controller.dispatchMediaButtonEvent(keyEvent)
+      mediaSession.get()?.controller?.dispatchMediaButtonEvent(keyEvent)
     } else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == action) {
-      mediaSessionManager.mediaSession.controller.transportControls
-        .pause()
+      mediaSession
+        .get()
+        ?.controller
+        ?.transportControls
+        ?.pause()
     }
   }
 
   private fun checkApp(intent: Intent): Boolean {
     if (intent.hasExtra(MediaNotificationManager.PACKAGE_NAME)) {
       val name = intent.getStringExtra(MediaNotificationManager.PACKAGE_NAME)
-      if (!reactContext.packageName.equals(name)) return false
+      if (!reactContext.get()?.packageName.equals(name)) {
+        return false
+      }
     }
     return true
   }

@@ -10,8 +10,8 @@ import java.lang.ref.WeakReference
 import java.util.HashMap
 
 class VolumeChangeListener(
-  private val audioManager: AudioManager,
-  audioAPIModule: AudioAPIModule,
+  private val audioManager: WeakReference<AudioManager>,
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
 ) : BroadcastReceiver() {
   private val audioAPIModule: WeakReference<AudioAPIModule> = WeakReference(audioAPIModule)
 
@@ -19,8 +19,8 @@ class VolumeChangeListener(
     context: Context?,
     intent: Intent?,
   ) {
-    val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toDouble()
-    val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toDouble()
+    val currentVolume = audioManager.get()?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toDouble()!!
+    val maxVolume = audioManager.get()?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.toDouble()!!
 
     val body = HashMap<String, Any>().apply { put("value", currentVolume / maxVolume) }
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("volumeChange", body)

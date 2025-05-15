@@ -32,6 +32,7 @@ class AudioParamHostObject : public JsiHostObject {
 
     addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
   }
+  friend class AudioNodeHostObject;
 
   JSI_PROPERTY_GETTER(value) {
     return {param_->getValue()};

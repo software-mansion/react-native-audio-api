@@ -1,4 +1,5 @@
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
@@ -9,13 +10,22 @@ AudioNodeManager::~AudioNodeManager() {
   cleanup();
 }
 
-void AudioNodeManager::addPendingConnection(
+void AudioNodeManager::addPendingNodeConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioNode> &to,
     ConnectionType type) {
   Locker lock(getGraphLock());
 
   audioNodesToConnect_.emplace_back(from, to, type);
+}
+
+void AudioNodeManager::addPendingParamConnection(
+    const std::shared_ptr<AudioNode> &from,
+    const std::shared_ptr<AudioParam> &to,
+    ConnectionType type) {
+  Locker lock(getGraphLock());
+
+  audioParamToConnect_.emplace_back(from, to, type);
 }
 
 void AudioNodeManager::preProcessGraph() {
@@ -41,6 +51,11 @@ void AudioNodeManager::addSourceNode(
   sourceNodes_.insert(node);
 }
 
+void AudioNodeManager::addAudioParam(const std::shared_ptr<AudioParam> &param) {
+  Locker lock(getGraphLock());
+  audioParams_.insert(param);
+}
+
 void AudioNodeManager::settlePendingConnections() {
   for (auto it = audioNodesToConnect_.begin(), end = audioNodesToConnect_.end();
        it != end;
@@ -60,6 +75,25 @@ void AudioNodeManager::settlePendingConnections() {
   }
 
   audioNodesToConnect_.clear();
+
+  for (auto it = audioParamToConnect_.begin(), end = audioParamToConnect_.end();
+       it != end;
+       ++it) {
+    std::shared_ptr<AudioNode> from = std::get<0>(*it);
+    std::shared_ptr<AudioParam> to = std::get<1>(*it);
+    ConnectionType type = std::get<2>(*it);
+
+    assert(from != nullptr);
+    assert(to != nullptr);
+
+    if (type == ConnectionType::CONNECT) {
+      from->connectParam(to);
+    } else {
+      from->disconnectParam(to);
+    }
+  }
+
+  audioParamToConnect_.clear();
 }
 
 void AudioNodeManager::cleanupNode(const std::shared_ptr<AudioNode> &node) {

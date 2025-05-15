@@ -54,8 +54,8 @@ export interface IAudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  connect: (node: IAudioNode) => void;
-  disconnect: (node?: IAudioNode) => void;
+  connect: (destination: IAudioNode | IAudioParam) => void;
+  disconnect: (destination?: IAudioNode | IAudioParam) => void;
 }
 
 export interface IGainNode extends IAudioNode {
@@ -85,6 +85,8 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onended: string;
 }
 
@@ -169,6 +171,7 @@ export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
 
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
 }
 

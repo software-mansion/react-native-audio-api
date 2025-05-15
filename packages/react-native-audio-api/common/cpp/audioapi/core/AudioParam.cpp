@@ -1,14 +1,27 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/VectorMath.h>
+#include <audioapi/utils/AudioArray.h>
+#include <iostream>
 
 namespace audioapi {
 
-AudioParam::AudioParam(float defaultValue, float minValue, float maxValue)
+AudioParam::AudioParam(
+    float defaultValue,
+    float minValue,
+    float maxValue,
+    BaseAudioContext *context)
     : value_(defaultValue),
       defaultValue_(defaultValue),
       minValue_(minValue),
-      maxValue_(maxValue) {
+      maxValue_(maxValue),
+      context_(context),
+      audioBus_(
+          std::make_shared<AudioBus>(
+              RENDER_QUANTUM_SIZE,
+              1,
+              context->getSampleRate())) {
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
@@ -256,6 +269,44 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   }
 }
 
+void AudioParam::addInputNode(AudioNode *node) {
+  auto position = inputNodes_.find(node);
+  if (position == inputNodes_.end()) {
+    inputNodes_.insert(node);
+  }
+}
+
+void AudioParam::removeInputNode(AudioNode *node) {
+  auto position = inputNodes_.find(node);
+
+  if (position != inputNodes_.end()) {
+    inputNodes_.erase(position);
+  }
+}
+
+std::shared_ptr<AudioBus> AudioParam::processARateParam(
+    int framesToProcess,
+    double time) {
+  auto processingBus = audioBus_;
+  processingBus->zero();
+  if (!inputNodes_.empty()) {
+    processInputs(processingBus, framesToProcess, true);
+    mixInputsBuses(processingBus);
+  }
+  for (size_t i = 0; i < framesToProcess; i++) {
+    auto sample = getValueAtTime(time + i / context_->getSampleRate());
+    processingBus->getChannel(0)->getData()[i] += sample;
+  }
+  // processingBus is a mono bus
+  return processingBus;
+}
+
+float AudioParam::processKRateParam(int framesToProcess, double time) {
+  auto processingBus = processARateParam(framesToProcess, time);
+  // processingBus is a mono bus
+  return processingBus->getChannel(0)->getData()[0];
+}
+
 double AudioParam::getQueueEndTime() {
   if (eventsQueue_.empty()) {
     return endTime_;
@@ -290,6 +341,37 @@ void AudioParam::updateQueue(ParamChangeEvent &event) {
   }
 
   eventsQueue_.push_back(event);
+}
+
+void AudioParam::processInputs(
+    const std::shared_ptr<AudioBus> &outputBus,
+    int framesToProcess,
+    bool checkIsAlreadyProcessed) {
+  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end;
+       ++it) {
+    auto inputNode = *it;
+    assert(inputNode != nullptr);
+
+    if (!inputNode->isEnabled()) {
+      continue;
+    }
+
+    auto inputBus = inputNode->processAudio(
+        outputBus, framesToProcess, checkIsAlreadyProcessed);
+    inputBuses_.push_back(inputBus);
+  }
+}
+
+void AudioParam::mixInputsBuses(
+    const std::shared_ptr<AudioBus> &processingBus) {
+  assert(processingBus != nullptr);
+
+  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end;
+       ++it) {
+    processingBus->sum(it->get(), ChannelInterpretation::SPEAKERS);
+  }
+
+  inputBuses_.clear();
 }
 
 } // namespace audioapi

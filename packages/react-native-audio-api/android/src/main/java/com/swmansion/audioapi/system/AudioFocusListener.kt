@@ -9,9 +9,9 @@ import java.lang.ref.WeakReference
 import java.util.HashMap
 
 class AudioFocusListener(
-  private val audioManager: AudioManager,
-  audioAPIModule: AudioAPIModule,
-  private val lockScreenManager: LockScreenManager,
+  private val audioManager: WeakReference<AudioManager>,
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
+  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : AudioManager.OnAudioFocusChangeListener {
   private var playOnAudioFocus = false
   private var focusRequest: AudioFocusRequest? = null
@@ -30,7 +30,7 @@ class AudioFocusListener(
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-        playOnAudioFocus = lockScreenManager.isPlaying
+        playOnAudioFocus = lockScreenManager.get()?.isPlaying == true
         val body =
           HashMap<String, Any>().apply {
             put("value", "began")
@@ -68,17 +68,17 @@ class AudioFocusListener(
           .setOnAudioFocusChangeListener(this)
           .build()
 
-      audioManager.requestAudioFocus(focusRequest!!)
+      audioManager.get()?.requestAudioFocus(focusRequest!!)
     } else {
-      audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
     }
   }
 
   fun abandonAudioFocus() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && this.focusRequest != null) {
-      audioManager.abandonAudioFocusRequest(focusRequest!!)
+      audioManager.get()?.abandonAudioFocusRequest(focusRequest!!)
     } else {
-      audioManager.abandonAudioFocus(this)
+      audioManager.get()?.abandonAudioFocus(this)
     }
   }
 }

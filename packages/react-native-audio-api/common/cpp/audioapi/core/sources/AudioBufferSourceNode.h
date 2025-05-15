@@ -81,7 +81,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
       size_t offsetLength,
       float playbackRate);
 
-  float getComputedPlaybackRateValue();
+  float getComputedPlaybackRateValue(int framesToProcess);
 
   double getVirtualStartFrame();
   double getVirtualEndFrame();

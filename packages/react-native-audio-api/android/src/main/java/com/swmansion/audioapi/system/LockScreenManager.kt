@@ -14,20 +14,20 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.Companion.instance
 import java.io.IOException
+import java.lang.ref.WeakReference
 import java.net.URL
 
 class LockScreenManager(
-  private val reactContext: ReactApplicationContext,
-  private val mediaSession: MediaSessionCompat,
-  private val mediaNotificationManager: MediaNotificationManager,
-  val channelId: String,
+  private val reactContext: WeakReference<ReactApplicationContext>,
+  private val mediaSession: WeakReference<MediaSessionCompat>,
+  private val mediaNotificationManager: WeakReference<MediaNotificationManager>,
 ) {
   private var pb: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
   private var state: PlaybackStateCompat = pb.build()
   private var controls: Long = 0
   var isPlaying: Boolean = false
 
-  private var nb: NotificationCompat.Builder = NotificationCompat.Builder(reactContext, channelId)
+  private var nb: NotificationCompat.Builder = NotificationCompat.Builder(reactContext.get()!!, MediaSessionManager.CHANNEL_ID)
 
   private var artworkThread: Thread? = null
 
@@ -49,7 +49,7 @@ class LockScreenManager(
 
     updateNotificationMediaStyle()
 
-    mediaNotificationManager.updateActions(controls)
+    mediaNotificationManager.get()?.updateActions(controls)
   }
 
   fun setLockScreenInfo(info: ReadableMap?) {
@@ -112,17 +112,17 @@ class LockScreenManager(
           try {
             val bitmap: Bitmap? = artwork?.let { loadArtwork(it, artworkLocal) }
 
-            val currentMetadata: MediaMetadataCompat = mediaSession.controller.metadata
+            val currentMetadata = mediaSession.get()?.controller?.metadata
             val newBuilder =
               MediaMetadataCompat.Builder(
                 currentMetadata,
               )
-            mediaSession.setMetadata(
+            mediaSession.get()?.setMetadata(
               newBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap).build(),
             )
 
             nb.setLargeIcon(bitmap)
-            mediaNotificationManager.show(nb, isPlaying)
+            mediaNotificationManager.get()?.show(nb, isPlaying)
 
             artworkThread = null
           } catch (ex: Exception) {
@@ -164,17 +164,17 @@ class LockScreenManager(
 
     updatePlaybackState(this.playbackState)
 
-    mediaSession.setMetadata(md.build())
-    mediaSession.setActive(true)
-    mediaNotificationManager.show(nb, isPlaying)
+    mediaSession.get()?.setMetadata(md.build())
+    mediaSession.get()?.setActive(true)
+    mediaNotificationManager.get()?.show(nb, isPlaying)
   }
 
   fun resetLockScreenInfo() {
     if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
     artworkThread = null
 
-    mediaNotificationManager.hide()
-    mediaSession.setActive(false)
+    mediaNotificationManager.get()?.hide()
+    mediaSession.get()?.setActive(false)
   }
 
   fun enableRemoteCommand(
@@ -189,7 +189,7 @@ class LockScreenManager(
       "remoteTogglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
       "remoteNextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
       "remotePreviousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-      "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD
       "remoteSkipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
       "remoteChangePlaybackPosition" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
     }
@@ -201,16 +201,16 @@ class LockScreenManager(
         controls and controlValue.inv()
       }
 
-    mediaNotificationManager.updateActions(controls)
+    mediaNotificationManager.get()?.updateActions(controls)
     pb.setActions(controls)
 
     state = pb.build()
-    mediaSession.setPlaybackState(state)
+    mediaSession.get()?.setPlaybackState(state)
 
     updateNotificationMediaStyle()
 
-    if (mediaSession.isActive) {
-      mediaNotificationManager.show(nb, isPlaying)
+    if (mediaSession.get()?.isActive == true) {
+      mediaNotificationManager.get()?.show(nb, isPlaying)
     }
   }
 
@@ -225,7 +225,7 @@ class LockScreenManager(
       if (local && !url.startsWith("http")) {
         // Gets the drawable from the RN's helper for local resources
         val helper = instance
-        val image = helper.getResourceDrawable(reactContext, url)
+        val image = helper.getResourceDrawable(reactContext.get()!!, url)
 
         bitmap =
           if (image is BitmapDrawable) {
@@ -256,14 +256,14 @@ class LockScreenManager(
     pb.setState(playbackState, elapsedTime, speed)
     pb.setActions(controls)
     state = pb.build()
-    mediaSession.setPlaybackState(state)
+    mediaSession.get()?.setPlaybackState(state)
   }
 
   private fun hasControl(control: Long): Boolean = (controls and control) == control
 
   private fun updateNotificationMediaStyle() {
     val style = MediaStyle()
-    style.setMediaSession(mediaSession.sessionToken)
+    style.setMediaSession(mediaSession.get()?.sessionToken)
     var controlCount = 0
     if (hasControl(PlaybackStateCompat.ACTION_PLAY) ||
       hasControl(PlaybackStateCompat.ACTION_PAUSE) ||
