@@ -2,24 +2,7 @@
 
 @implementation AudioSessionManager
 
-static AudioSessionManager *_sharedInstance = nil;
-
-+ (instancetype)sharedInstance
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivate];
-  });
-  return _sharedInstance;
-}
-
 - (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[AudioSessionManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivate
 {
   if (self = [super init]) {
     self.audioSession = [AVAudioSession sharedInstance];

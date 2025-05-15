@@ -9,11 +9,15 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency());
+      444.0,
+      -context_->getNyquistFrequency(),
+      context_->getNyquistFrequency(),
+      context);
   detuneParam_ = std::make_shared<AudioParam>(
       0.0,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT);
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      context);
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
 
@@ -56,15 +60,18 @@ void OscillatorNode::processNode(
     return;
   }
 
-  auto deltaTime = 1.0 / context_->getSampleRate();
-  auto time =
-      context_->getCurrentTime() + static_cast<double>(startOffset) * deltaTime;
+  auto time = context_->getCurrentTime() +
+      static_cast<double>(startOffset) * 1.0 / context_->getSampleRate();
+  auto detuneParamValues =
+      detuneParam_->processARateParam(framesToProcess, time);
+  auto frequencyParamValues =
+      frequencyParam_->processARateParam(framesToProcess, time);
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio =
-        std::pow(2.0f, detuneParam_->getValueAtTime(time) / 1200.0f);
+    auto detuneRatio = std::pow(
+        2.0f, detuneParamValues->getChannel(0)->getData()[i] / 1200.0f);
     auto detunedFrequency =
-        round(frequencyParam_->getValueAtTime(time) * detuneRatio);
+        frequencyParamValues->getChannel(0)->getData()[i] * detuneRatio;
     auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
 
     float sample =
@@ -79,8 +86,6 @@ void OscillatorNode::processNode(
         floor(
             phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
         static_cast<float>(periodicWave_->getPeriodicWaveSize());
-
-    time += deltaTime;
   }
 
   handleStopScheduled();

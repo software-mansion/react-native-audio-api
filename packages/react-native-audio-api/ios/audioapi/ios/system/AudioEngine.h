@@ -3,12 +3,17 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+@class AudioSessionManager;
+
 @interface AudioEngine : NSObject
 
 @property (nonatomic, strong) AVAudioEngine *audioEngine;
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
+@property (nonatomic, weak) AudioSessionManager *sessionManager;
+
+- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager;
 
 + (instancetype)sharedInstance;
 - (void)cleanup;

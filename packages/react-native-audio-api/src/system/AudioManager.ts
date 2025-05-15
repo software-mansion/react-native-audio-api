@@ -1,25 +1,34 @@
-import {
-  SessionOptions,
-  LockScreenInfo,
-  RemoteEventName,
-  RemoteEventCallback,
-  RemoteCommandName,
-  PermissionStatus,
-} from './types';
-import { AudioManagerModule, eventEmitter } from '../specs';
-import { EmitterSubscription } from 'react-native';
+import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
+import { SystemEventName, SystemEventCallback } from '../events/types';
+import { NativeAudioAPIModule } from '../specs';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
+
+if (global.AudioEventEmitter == null) {
+  if (!NativeAudioAPIModule) {
+    throw new Error(
+      `Failed to install react-native-audio-api: The native module could not be found.`
+    );
+  }
+
+  NativeAudioAPIModule.install();
+}
 
 class AudioManager {
+  private readonly audioEventEmitter: AudioEventEmitter;
+  constructor() {
+    this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
+  }
+
   setLockScreenInfo(info: LockScreenInfo) {
-    AudioManagerModule.setLockScreenInfo(info);
+    NativeAudioAPIModule!.setLockScreenInfo(info);
   }
 
   resetLockScreenInfo() {
-    AudioManagerModule.resetLockScreenInfo();
+    NativeAudioAPIModule!.resetLockScreenInfo();
   }
 
   setAudioSessionOptions(options: SessionOptions) {
-    AudioManagerModule.setAudioSessionOptions(
+    NativeAudioAPIModule!.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? []
@@ -27,54 +36,37 @@ class AudioManager {
   }
 
   getDevicePreferredSampleRate(): number {
-    return AudioManagerModule.getDevicePreferredSampleRate();
+    return NativeAudioAPIModule!.getDevicePreferredSampleRate();
   }
 
   observeAudioInterruptions(enabled: boolean) {
-    AudioManagerModule.observeAudioInterruptions(enabled);
+    NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
 
   observeVolumeChanges(enabled: boolean) {
-    AudioManagerModule.observeVolumeChanges(enabled);
+    NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }
 
-  enableRemoteCommand<Name extends RemoteCommandName>(name: Name): void {
-    AudioManagerModule.enableRemoteCommand(name, true);
-  }
-
-  enableRemoteEvent<Name extends RemoteEventName>(
+  enableSystemEvent<Name extends SystemEventName>(
     name: Name,
-    callback?: RemoteEventCallback<Name>
-  ): EmitterSubscription | null {
-    let subscription = null;
-    if (!callback) {
+    callback?: SystemEventCallback<Name>,
+    enabled = true
+  ): AudioEventSubscription | null {
+    NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
+
+    if (!enabled || !callback) {
       return null;
     }
-    switch (name) {
-      case 'interruption':
-        subscription = eventEmitter.addListener('onInterruption', callback);
-        break;
 
-      case 'routeChange':
-        subscription = eventEmitter.addListener('onRouteChange', callback);
-        break;
-
-      case 'volumeChange':
-        subscription = eventEmitter.addListener('onVolumeChange', callback);
-        break;
-
-      default:
-        console.error('Unsupported RemoteControl action:', name);
-    }
-    return subscription;
+    return this.audioEventEmitter.addAudioEventListener(name, callback);
   }
 
   async requestRecordingPermissions(): Promise<PermissionStatus> {
-    return AudioManagerModule.requestRecordingPermissions();
+    return NativeAudioAPIModule!.requestRecordingPermissions();
   }
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
-    return AudioManagerModule.checkRecordingPermissions();
+    return NativeAudioAPIModule!.checkRecordingPermissions();
   }
 }
 

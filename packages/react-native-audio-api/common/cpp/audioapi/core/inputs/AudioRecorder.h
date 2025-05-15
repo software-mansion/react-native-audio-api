@@ -1,27 +1,25 @@
 #pragma once
 
 #include <memory>
-#include <functional>
 
 namespace audioapi {
 class AudioBus;
+class CircularAudioArray;
+class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::function<void(void)> &onError,
-    const std::function<void(void)> &onStatusChange,
-    const std::function<void(std::shared_ptr<AudioBus>, int, double)> &onAudioReady
-  )
-    : sampleRate_(sampleRate),
-      bufferLength_(bufferLength),
-      onError_(onError),
-      onStatusChange_(onStatusChange),
-      onAudioReady_(onAudioReady) {}
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
+  );
 
   virtual ~AudioRecorder() = default;
+
+  void setOnAudioReadyCallbackId(uint64_t callbackId);
+  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames, double when);
+  void sendRemainingData();
 
   virtual void start() = 0;
   virtual void stop() = 0;
@@ -30,9 +28,11 @@ class AudioRecorder {
   float sampleRate_;
   int bufferLength_;
 
-  std::function<void(void)> onError_;
-  std::function<void(void)> onStatusChange_;
-  std::function<void(std::shared_ptr<AudioBus>, int, double)> onAudioReady_;
+  std::atomic<bool> isRunning_;
+  std::shared_ptr<CircularAudioArray> circularBuffer_;
+
+  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  uint64_t onAudioReadyCallbackId_ = 0;
 };
 
 } // namespace audioapi

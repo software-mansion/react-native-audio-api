@@ -1,11 +1,15 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
+import com.swmansion.audioapi.system.MediaSessionManager
+import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
 @ReactModule(name = AudioAPIModule.NAME)
@@ -16,6 +20,8 @@ class AudioAPIModule(
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
 
+  val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
+
   private val mHybridData: HybridData
 
   external fun initHybrid(
@@ -24,6 +30,11 @@ class AudioAPIModule(
   ): HybridData
 
   private external fun injectJSIBindings()
+
+  external fun invokeHandlerWithEventNameAndEventBody(
+    eventName: String,
+    eventBody: Map<String, Any>,
+  )
 
   init {
     try {
@@ -35,10 +46,53 @@ class AudioAPIModule(
     }
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
   override fun install(): Boolean {
+    MediaSessionManager.initialize(WeakReference(this), reactContext)
     injectJSIBindings()
 
     return true
+  }
+
+  override fun setLockScreenInfo(info: ReadableMap?) {
+    MediaSessionManager.setLockScreenInfo(info)
+  }
+
+  override fun resetLockScreenInfo() {
+    MediaSessionManager.resetLockScreenInfo()
+  }
+
+  override fun enableRemoteCommand(
+    name: String?,
+    enabled: Boolean,
+  ) {
+    MediaSessionManager.enableRemoteCommand(name!!, enabled)
+  }
+
+  override fun setAudioSessionOptions(
+    category: String?,
+    mode: String?,
+    options: ReadableArray?,
+  ) {
+    // noting to do here
+  }
+
+  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
+
+  override fun observeAudioInterruptions(enabled: Boolean) {
+    MediaSessionManager.observeAudioInterruptions(enabled)
+  }
+
+  override fun observeVolumeChanges(enabled: Boolean) {
+    MediaSessionManager.observeVolumeChanges(enabled)
+  }
+
+  override fun requestRecordingPermissions(promise: Promise?) {
+    val res = MediaSessionManager.requestRecordingPermissions(currentActivity)
+    promise!!.resolve(res)
+  }
+
+  override fun checkRecordingPermissions(promise: Promise?) {
+    val res = MediaSessionManager.checkRecordingPermissions()
+    promise!!.resolve(res)
   }
 }

@@ -7,7 +7,6 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <functional>
 
 namespace audioapi {
 
@@ -19,10 +18,8 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(
       float sampleRate,
       int bufferLength,
-      const std::function<void(void)> &onError,
-      const std::function<void(void)> &onStatusChange,
-      const std::function<void(std::shared_ptr<AudioBus>, int, double)>
-          &onAudioReady);
+      const std::shared_ptr<AudioEventHandlerRegistry>
+          &audioEventHandlerRegistry);
 
   ~IOSAudioRecorder() override;
 
@@ -31,11 +28,6 @@ class IOSAudioRecorder : public AudioRecorder {
 
  private:
   NativeAudioRecorder *audioRecorder_;
-  std::atomic<bool> isRunning_;
-
-  std::shared_ptr<CircularAudioArray> circularBuffer_;
-
-  void sendRemainingData();
 };
 
 } // namespace audioapi

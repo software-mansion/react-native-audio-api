@@ -14,7 +14,7 @@
 
     self.receiverBlock = [receiverBlock copy];
 
-    float devicePrefferedSampleRate = [[[AudioSessionManager sharedInstance] getDevicePreferredSampleRate] floatValue];
+    float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
 
     self.inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                         sampleRate:devicePrefferedSampleRate
@@ -91,12 +91,16 @@
 
 - (void)start
 {
-  [[AudioEngine sharedInstance] attachInputNode:self.sinkNode];
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine attachInputNode:self.sinkNode];
 }
 
 - (void)stop
 {
-  [[AudioEngine sharedInstance] detachInputNode];
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine detachInputNode];
 }
 
 - (void)cleanup

@@ -37,6 +37,7 @@
   NSLog(@"[AudioPlayer] start");
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
@@ -45,6 +46,7 @@
   NSLog(@"[AudioPlayer] stop");
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
   self.sourceNodeId = nil;
 }

@@ -13,10 +13,10 @@ export default class BiquadFilterNode extends AudioNode {
 
   constructor(context: BaseAudioContext, biquadFilter: IBiquadFilterNode) {
     super(context, biquadFilter);
-    this.frequency = new AudioParam(biquadFilter.frequency);
-    this.detune = new AudioParam(biquadFilter.detune);
-    this.Q = new AudioParam(biquadFilter.Q);
-    this.gain = new AudioParam(biquadFilter.gain);
+    this.frequency = new AudioParam(biquadFilter.frequency, context);
+    this.detune = new AudioParam(biquadFilter.detune, context);
+    this.Q = new AudioParam(biquadFilter.Q, context);
+    this.gain = new AudioParam(biquadFilter.gain, context);
   }
 
   public get type(): BiquadFilterType {

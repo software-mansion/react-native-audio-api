@@ -1,9 +1,10 @@
-import NativeAudioAPIModule from './specs/NativeAudioAPIModule';
+import { NativeAudioAPIModule } from './specs';
 import { AudioRecorderOptions } from './types';
 import type {
   IAudioContext,
   IAudioRecorder,
   IOfflineAudioContext,
+  IAudioEventEmitter,
 } from './interfaces';
 
 /* eslint-disable no-var */
@@ -16,14 +17,16 @@ declare global {
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
-}
 
+  var AudioEventEmitter: IAudioEventEmitter;
+}
 /* eslint-disable no-var */
 
 if (
   global.createAudioContext == null ||
   global.createOfflineAudioContext == null ||
-  global.createAudioRecorder == null
+  global.createAudioRecorder == null ||
+  global.AudioEventEmitter == null
 ) {
   if (!NativeAudioAPIModule) {
     throw new Error(

@@ -1,5 +1,5 @@
 #import <MediaPlayer/MediaPlayer.h>
-#import <audioapi/ios/AudioManagerModule.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 
 #define LOCK_SCREEN_INFO                                          \
@@ -14,30 +14,14 @@
 
 @implementation LockScreenManager
 
-static LockScreenManager *_sharedInstance = nil;
-
-+ (instancetype)sharedInstanceWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
-{
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    _sharedInstance = [[self alloc] initPrivateWithAudioManagerModule:audioManagerModule];
-  });
-  return _sharedInstance;
-}
-
-- (instancetype)init
-{
-  @throw [NSException exceptionWithName:@"Singleton" reason:@"Use +[LockScreenManager sharedInstance]" userInfo:nil];
-  return nil;
-}
-
-- (instancetype)initPrivateWithAudioManagerModule:(AudioManagerModule *)audioManagerModule
+- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
   if (self = [super init]) {
-    self.audioManagerModule = audioManagerModule;
+    self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   }
+
   return self;
 }
 
@@ -176,31 +160,31 @@ static LockScreenManager *_sharedInstance = nil;
 {
   MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-  if ([name isEqual:@"play"]) {
+  if ([name isEqual:@"remotePlay"]) {
     [self enableCommand:remoteCenter.playCommand withSelector:@selector(onPlay:) enabled:enabled];
-  } else if ([name isEqual:@"pause"]) {
+  } else if ([name isEqual:@"remotePause"]) {
     [self enableCommand:remoteCenter.pauseCommand withSelector:@selector(onPause:) enabled:enabled];
-  } else if ([name isEqual:@"stop"]) {
+  } else if ([name isEqual:@"remoteStop"]) {
     [self enableCommand:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:enabled];
-  } else if ([name isEqual:@"togglePlayPause"]) {
+  } else if ([name isEqual:@"remoteTogglePlayPause"]) {
     [self enableCommand:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
-  } else if ([name isEqual:@"changePlaybackRate"]) {
+  } else if ([name isEqual:@"remoteChangePlaybackRate"]) {
     [self enableCommand:remoteCenter.changePlaybackRateCommand
            withSelector:@selector(onChangePlaybackRate:)
                 enabled:enabled];
-  } else if ([name isEqual:@"nextTrack"]) {
+  } else if ([name isEqual:@"remoteNextTrack"]) {
     [self enableCommand:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:enabled];
-  } else if ([name isEqual:@"previousTrack"]) {
+  } else if ([name isEqual:@"remotePreviousTrack"]) {
     [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
-  } else if ([name isEqual:@"skipForward"]) {
+  } else if ([name isEqual:@"remoteSkipForward"]) {
     [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
-  } else if ([name isEqual:@"skipBackward"]) {
+  } else if ([name isEqual:@"remoteSkipBackward"]) {
     [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
-  } else if ([name isEqual:@"seekForward"]) {
+  } else if ([name isEqual:@"remoteSeekForward"]) {
     [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
-  } else if ([name isEqual:@"seekBackward"]) {
+  } else if ([name isEqual:@"remoteSeekBackward"]) {
     [self enableCommand:remoteCenter.seekBackwardCommand withSelector:@selector(onSeekBackward:) enabled:enabled];
-  } else if ([name isEqual:@"changePlaybackPosition"]) {
+  } else if ([name isEqual:@"remoteChangePlaybackPosition"]) {
     [self enableCommand:remoteCenter.changePlaybackPositionCommand
            withSelector:@selector(onChangePlaybackPosition:)
                 enabled:enabled];
@@ -218,77 +202,81 @@ static LockScreenManager *_sharedInstance = nil;
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePlay" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePlay" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePause" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePause" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteStop" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteStop" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteTogglePlayPause" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteTogglePlayPause" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackRate:(MPChangePlaybackRateCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackRate"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.playbackRate]}];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.playbackRate]};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackRate" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteNextTrack" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteNextTrack" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemotePreviousTrack" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remotePreviousTrack" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSeekForward" body:nil];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekForward" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSeekBackward" body:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSeekBackward" eventBody:nil];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSkipForward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.interval]};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipForward" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteSkipBackward"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.interval]}];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.interval]};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteSkipBackward" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
 {
-  [self.audioManagerModule sendEventWithName:@"onRemoteChangePlaybackPosition"
-                                        body:@{@"value" : [NSNumber numberWithDouble:event.positionTime]}];
+  NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.positionTime]};
+
+  [self.audioAPIModule invokeHandlerWithEventName:@"remoteChangePlaybackPosition" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

@@ -3,8 +3,8 @@
 
 const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
-const math = require('remark-math');
-const katex = require('rehype-katex');
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const webpack = require('webpack');
@@ -44,8 +44,8 @@ const config = {
           breadcrumbs: false,
           sidebarCollapsible: false,
           sidebarPath: require.resolve('./sidebars.js'),
-          remarkPlugins: [math],
-          rehypePlugins: [katex],
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
           editUrl:
             'https://github.com/software-mansion/react-native-audio-api/edit/main/packages/audiodocs/docs',
         },
@@ -109,6 +109,7 @@ const config = {
       copyright: `All trademarks and copyrights belong to their respective owners.`,
     },
     prism: {
+      additionalLanguages: ['bash'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
     },
@@ -127,26 +128,26 @@ const config = {
 
           const raf = require('raf');
           raf.polyfill();
-
+        
           return {
             mergeStrategy: {
               'resolve.extensions': 'prepend',
             },
             plugins: [
               new webpack.DefinePlugin({
-                ...processMock,
-                __DEV__: 'false',
-                setImmediate: () => {},
+              ...processMock,
+              __DEV__: 'false',
               }),
             ],
             module: {
               rules: [
                 {
-                  test: /\.txt/,
+                  test: /\.txt$/,
                   type: 'asset/source',
                 },
                 {
                   test: /\.tsx?$/,
+                  use: 'babel-loader',
                 },
               ],
             },

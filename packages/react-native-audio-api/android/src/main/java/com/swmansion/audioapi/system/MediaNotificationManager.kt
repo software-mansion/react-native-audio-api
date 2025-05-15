@@ -21,9 +21,7 @@ import com.swmansion.audioapi.R
 import java.lang.ref.WeakReference
 
 class MediaNotificationManager(
-  val reactContext: ReactApplicationContext,
-  val notificationId: Int,
-  val channelId: String,
+  private val reactContext: WeakReference<ReactApplicationContext>,
 ) {
   private var smallIcon: Int = R.drawable.play
   private var customIcon: Int = 0
@@ -80,12 +78,12 @@ class MediaNotificationManager(
 
     builder.setSmallIcon(if (customIcon != 0) customIcon else smallIcon)
 
-    val packageName: String = reactContext.packageName
-    val openApp: Intent? = reactContext.packageManager.getLaunchIntentForPackage(packageName)
+    val packageName: String? = reactContext.get()?.packageName
+    val openApp: Intent? = reactContext.get()?.packageManager?.getLaunchIntentForPackage(packageName!!)
     try {
       builder.setContentIntent(
         PendingIntent.getActivity(
-          reactContext,
+          reactContext.get(),
           0,
           openApp,
           PendingIntent.FLAG_IMMUTABLE,
@@ -96,10 +94,10 @@ class MediaNotificationManager(
     }
 
     val remove = Intent(REMOVE_NOTIFICATION)
-    remove.putExtra(PACKAGE_NAME, reactContext.applicationInfo.packageName)
+    remove.putExtra(PACKAGE_NAME, reactContext.get()?.applicationInfo?.packageName)
     builder.setDeleteIntent(
       PendingIntent.getBroadcast(
-        reactContext,
+        reactContext.get(),
         0,
         remove,
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -115,8 +113,8 @@ class MediaNotificationManager(
     builder: NotificationCompat.Builder?,
     isPlaying: Boolean,
   ) {
-    NotificationManagerCompat.from(reactContext).notify(
-      notificationId,
+    NotificationManagerCompat.from(reactContext.get()!!).notify(
+      MediaSessionManager.NOTIFICATION_ID,
       prepareNotification(
         builder!!,
         isPlaying,
@@ -125,15 +123,15 @@ class MediaNotificationManager(
   }
 
   fun hide() {
-    NotificationManagerCompat.from(reactContext).cancel(notificationId)
+    NotificationManagerCompat.from(reactContext.get()!!).cancel(MediaSessionManager.NOTIFICATION_ID)
 
     try {
       val myIntent =
         Intent(
-          reactContext,
+          reactContext.get(),
           NotificationService::class.java,
         )
-      reactContext.stopService(myIntent)
+      reactContext.get()?.stopService(myIntent)
     } catch (e: java.lang.Exception) {
       Log.w("AudioManagerModule", "Error stopping service: ${e.message}")
     }
@@ -188,9 +186,9 @@ class MediaNotificationManager(
       return oldAction
     }
 
-    val r: Resources = reactContext.resources
-    val packageName: String = reactContext.packageName
-    val icon = r.getIdentifier(iconName, "drawable", packageName)
+    val r: Resources? = reactContext.get()?.resources
+    val packageName: String? = reactContext.get()?.packageName
+    val icon = r?.getIdentifier(iconName, "drawable", packageName)
 
     val keyCode = PlaybackStateCompat.toKeyCode(action)
     val intent = Intent(MEDIA_BUTTON)
@@ -198,13 +196,13 @@ class MediaNotificationManager(
     intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, packageName)
     val i =
       PendingIntent.getBroadcast(
-        reactContext,
+        reactContext.get(),
         keyCode,
         intent,
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
 
-    return NotificationCompat.Action(icon, title, i)
+    return NotificationCompat.Action(icon!!, title, i)
   }
 
   class NotificationService : Service() {
@@ -232,8 +230,8 @@ class MediaNotificationManager(
         ContextCompat.startForegroundService(this, intent)
         notification =
           MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
-        startForeground(MediaSessionManager.notificationId, notification)
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
+        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
       }
     }
 
@@ -242,8 +240,8 @@ class MediaNotificationManager(
       try {
         notification =
           MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.channelId), false)
-        startForeground(MediaSessionManager.notificationId, notification)
+            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
+        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
       } catch (ex: Exception) {
         Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
       }

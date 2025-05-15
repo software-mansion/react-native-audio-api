@@ -15,9 +15,8 @@ using namespace facebook;
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit OscillatorNodeHostObject(
-          const std::shared_ptr<OscillatorNode> &node,
-          const std::shared_ptr<react::CallInvoker> &callInvoker)
-      : AudioScheduledSourceNodeHostObject(node, callInvoker) {
+          const std::shared_ptr<OscillatorNode> &node)
+      : AudioScheduledSourceNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
         JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),

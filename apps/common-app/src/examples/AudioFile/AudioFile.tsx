@@ -75,8 +75,8 @@ const AudioFile: FC = () => {
       });
       bufferSourceRef.current.buffer = audioBuffer;
       bufferSourceRef.current.loop = true;
-      bufferSourceRef.current.onended = (stopTime?: number) => {
-        setOffset((_prev) => stopTime || 0);
+      bufferSourceRef.current.onended = (event) => {
+        setOffset((_prev) => event.value || 0);
       };
       bufferSourceRef.current.loopStart = LOOP_START;
       bufferSourceRef.current.loopEnd = LOOP_END;
@@ -123,18 +123,44 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    AudioManager.enableRemoteCommand('play');
-    AudioManager.enableRemoteCommand('pause');
-    AudioManager.enableRemoteCommand('stop');
+    const remotePlaySubscription = AudioManager.enableSystemEvent(
+      'remotePlay',
+      (event) => {
+        console.log('remotePlay event:', event);
+      }
+    );
 
-    AudioManager.enableRemoteEvent('interruption', (event) => {
-      console.log('Interruption event:', event);
-    });
+    const remotePauseSubscription = AudioManager.enableSystemEvent(
+      'remotePause',
+      (event) => {
+        console.log('remotePause event:', event);
+      }
+    );
+
+    const remoteChangePlaybackPositionSubscription =
+      AudioManager.enableSystemEvent(
+        'remoteChangePlaybackPosition',
+        (event) => {
+          console.log('remoteChangePlaybackPosition event:', event);
+        }
+      );
+
+    const interruptionSubscription = AudioManager.enableSystemEvent(
+      'interruption',
+      (event) => {
+        console.log('Interruption event:', event);
+      }
+    );
+
     AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 
     return () => {
+      remotePlaySubscription?.remove();
+      remotePauseSubscription?.remove();
+      remoteChangePlaybackPositionSubscription?.remove();
+      interruptionSubscription?.remove();
       audioContextRef.current?.close();
     };
   }, [fetchAudioBuffer]);

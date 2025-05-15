@@ -21,17 +21,19 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.AudioAPIModule
+import java.lang.ref.WeakReference
 
 object MediaSessionManager {
-  lateinit var reactContext: ReactApplicationContext
-  val notificationId = 100
-  val channelId = "react-native-audio-api"
+  private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
+  private lateinit var reactContext: WeakReference<ReactApplicationContext>
+  const val NOTIFICATION_ID = 100
+  const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
-  lateinit var mediaSession: MediaSessionCompat
+  private lateinit var mediaSession: MediaSessionCompat
   lateinit var mediaNotificationManager: MediaNotificationManager
   private lateinit var lockScreenManager: LockScreenManager
-  lateinit var eventEmitter: MediaSessionEventEmitter
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
@@ -46,7 +48,7 @@ object MediaSessionManager {
         val binder = service as MediaNotificationManager.NotificationService.LocalBinder
         val notificationService = binder.getService()
         notificationService?.forceForeground()
-        reactContext.unbindService(this)
+        reactContext.get()?.unbindService(this)
       }
 
       override fun onServiceDisconnected(name: ComponentName) {
@@ -62,20 +64,24 @@ object MediaSessionManager {
       }
     }
 
-  fun initialize(reactContext: ReactApplicationContext) {
+  fun initialize(
+    audioAPIModule: WeakReference<AudioAPIModule>,
+    reactContext: WeakReference<ReactApplicationContext>,
+  ) {
+    this.audioAPIModule = audioAPIModule
     this.reactContext = reactContext
-    this.audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    this.mediaSession = MediaSessionCompat(reactContext, "MediaSessionManager")
+    this.audioManager = reactContext.get()?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    this.mediaSession = MediaSessionCompat(reactContext.get()!!, "MediaSessionManager")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
-    this.mediaNotificationManager = MediaNotificationManager(reactContext, notificationId, channelId)
-    this.lockScreenManager = LockScreenManager(reactContext, mediaSession, mediaNotificationManager, channelId)
-    this.eventEmitter = MediaSessionEventEmitter(reactContext, notificationId)
-    this.mediaReceiver = MediaReceiver(reactContext, this)
-    this.mediaSession.setCallback(MediaSessionCallback(eventEmitter, lockScreenManager))
+    this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
+    this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
+    this.mediaReceiver =
+      MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
+    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.lockScreenManager)))
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
@@ -84,29 +90,30 @@ object MediaSessionManager {
     filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      reactContext.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
+      this.reactContext.get()!!.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
     } else {
       ContextCompat.registerReceiver(
-        reactContext,
+        this.reactContext.get()!!,
         mediaReceiver,
         filter,
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     }
 
-    this.audioFocusListener = AudioFocusListener(audioManager, eventEmitter, lockScreenManager)
-    this.volumeChangeListener = VolumeChangeListener(audioManager, eventEmitter)
+    this.audioFocusListener =
+      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
+    this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
-    val myIntent = Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
+    val myIntent = Intent(this.reactContext.get(), MediaNotificationManager.NotificationService::class.java)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       try {
-        reactContext.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
+        this.reactContext.get()?.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
       } catch (ignored: Exception) {
-        ContextCompat.startForegroundService(reactContext, myIntent)
+        ContextCompat.startForegroundService(this.reactContext.get()!!, myIntent)
       }
     } else {
-      reactContext.startService(myIntent)
+      this.reactContext.get()?.startService(myIntent)
     }
   }
 
@@ -141,13 +148,13 @@ object MediaSessionManager {
   fun observeVolumeChanges(observe: Boolean) {
     if (observe) {
       ContextCompat.registerReceiver(
-        reactContext,
+        reactContext.get()!!,
         volumeChangeListener,
         volumeChangeListener.getIntentFilter(),
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     } else {
-      reactContext.unregisterReceiver(volumeChangeListener)
+      reactContext.get()?.unregisterReceiver(volumeChangeListener)
     }
   }
 
@@ -158,7 +165,7 @@ object MediaSessionManager {
 
   fun checkRecordingPermissions(): String =
     if (ContextCompat.checkSelfPermission(
-        reactContext,
+        reactContext.get()!!,
         Manifest.permission.RECORD_AUDIO,
       ) == PackageManager.PERMISSION_GRANTED
     ) {
@@ -170,10 +177,10 @@ object MediaSessionManager {
   @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {
     val notificationManager =
-      reactContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      reactContext.get()?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     val mChannel =
-      NotificationChannel(channelId, "Audio manager", NotificationManager.IMPORTANCE_LOW)
+      NotificationChannel(CHANNEL_ID, "Audio manager", NotificationManager.IMPORTANCE_LOW)
     mChannel.description = "Audio manager"
     mChannel.setShowBadge(false)
     mChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
