@@ -15,7 +15,6 @@ class AudioFocusListener(
 ) : AudioManager.OnAudioFocusChangeListener {
   private var playOnAudioFocus = false
   private var focusRequest: AudioFocusRequest? = null
-  private val audioAPIModule: WeakReference<AudioAPIModule> = WeakReference(audioAPIModule)
 
   override fun onAudioFocusChange(focusChange: Int) {
     Log.d("AudioFocusListener", "onAudioFocusChange: $focusChange")

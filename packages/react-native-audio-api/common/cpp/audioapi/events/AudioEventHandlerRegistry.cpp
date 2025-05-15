@@ -26,9 +26,9 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::shared_ptr<jsi::Function> &handler) {
   static uint64_t LISTENER_ID = 0;
 
-  eventHandlers_[eventName][LISTENER_ID++] = handler;
+  eventHandlers_[eventName][LISTENER_ID] = handler;
 
-  return LISTENER_ID;
+  return LISTENER_ID++;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(

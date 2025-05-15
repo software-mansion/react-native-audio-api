@@ -13,8 +13,6 @@ class VolumeChangeListener(
   private val audioManager: WeakReference<AudioManager>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
 ) : BroadcastReceiver() {
-  private val audioAPIModule: WeakReference<AudioAPIModule> = WeakReference(audioAPIModule)
-
   override fun onReceive(
     context: Context?,
     intent: Intent?,
