@@ -49,7 +49,7 @@ class AudioEventHandlerRegistry {
         "volumeChange",
     };
 
-    static constexpr std::array<std::string_view, 15> AUDIO_API_EVENT_NAMES = {
+    static constexpr std::array<std::string_view, 4> AUDIO_API_EVENT_NAMES = {
       "ended",
       "audioReady",
       "audioError",

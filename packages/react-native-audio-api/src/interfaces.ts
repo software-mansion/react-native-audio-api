@@ -85,6 +85,8 @@ export interface IAudioDestinationNode extends IAudioNode {}
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when?: number): void;
   stop: (when: number) => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onended: string;
 }
 
@@ -169,6 +171,7 @@ export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
 
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
 }
 

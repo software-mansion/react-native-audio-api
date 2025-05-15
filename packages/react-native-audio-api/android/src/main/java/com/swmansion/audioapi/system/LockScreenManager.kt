@@ -189,7 +189,7 @@ class LockScreenManager(
       "remoteTogglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
       "remoteNextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
       "remotePreviousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-      "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD
       "remoteSkipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
       "remoteChangePlaybackPosition" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
     }
