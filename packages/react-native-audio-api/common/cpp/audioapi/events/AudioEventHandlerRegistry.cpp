@@ -43,7 +43,7 @@ void AudioEventHandlerRegistry::unregisterHandler(
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
-    const std::unordered_map<std::string, Value> &body) {
+    const std::unordered_map<std::string, EventValue> &body) {
   auto it = eventHandlers_.find(eventName);
   if (it != eventHandlers_.end()) {
     for (const auto &pair : it->second) {
@@ -61,7 +61,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     uint64_t listenerId,
-    const std::unordered_map<std::string, Value> &body) {
+    const std::unordered_map<std::string, EventValue> &body) {
   auto it = eventHandlers_.find(eventName);
   if (it != eventHandlers_.end()) {
     auto handlersMap = it->second;
@@ -79,7 +79,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
 }
 
 jsi::Object AudioEventHandlerRegistry::createEventObject(
-    const std::unordered_map<std::string, Value> &body) {
+    const std::unordered_map<std::string, EventValue> &body) {
   auto eventObject = jsi::Object(*runtime_);
 
   for (const auto &pair : body) {

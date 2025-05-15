@@ -144,7 +144,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  std::unordered_map<std::string, Value> body = {{"value", getStopTime()}};
+  std::unordered_map<std::string, EventValue> body = {{"value", getStopTime()}};
 
   context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
       "ended", onEndedCallbackId_, body);

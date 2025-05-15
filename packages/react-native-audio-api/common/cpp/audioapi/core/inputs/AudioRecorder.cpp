@@ -25,7 +25,7 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   auto audioBufferHostObject =
       std::make_shared<AudioBufferHostObject>(audioBuffer);
 
-  std::unordered_map<std::string, Value> body = {};
+  std::unordered_map<std::string, EventValue> body = {};
   body.insert({"buffer", audioBufferHostObject});
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
