@@ -10,18 +10,16 @@ import java.lang.ref.WeakReference
 import java.util.HashMap
 
 class MediaSessionCallback(
-  audioAPIModule: AudioAPIModule,
-  private val lockScreenManager: LockScreenManager,
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
+  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : MediaSessionCompat.Callback() {
-  private val audioAPIModule: WeakReference<AudioAPIModule> = WeakReference(audioAPIModule)
-
   override fun onPlay() {
-    lockScreenManager.updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+    lockScreenManager.get()?.updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePlay", mapOf())
   }
 
   override fun onPause() {
-    lockScreenManager.updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+    lockScreenManager.get()?.updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePause", mapOf())
   }
 
