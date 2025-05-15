@@ -78,10 +78,6 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  override fun observeAudioInterruptions(enabled: Boolean) {
-    MediaSessionManager.observeAudioInterruptions(enabled)
-  }
-
   override fun observeVolumeChanges(enabled: Boolean) {
     MediaSessionManager.observeVolumeChanges(enabled)
   }
@@ -94,5 +90,13 @@ class AudioAPIModule(
   override fun checkRecordingPermissions(promise: Promise?) {
     val res = MediaSessionManager.checkRecordingPermissions()
     promise!!.resolve(res)
+  }
+
+  override fun requestAudioFocus(request: ReadableMap) {
+    MediaSessionManager.requestAudioFocus(request)
+  }
+
+  override fun abandonAudioFocus() {
+    MediaSessionManager.abandonAudioFocus()
   }
 }
