@@ -6,6 +6,11 @@ export interface EventTypeWithValue {
   value: number;
 }
 
+export interface EventTypeWithValueAndState {
+  value: number;
+  state: 'stopped' | 'ended';
+}
+
 interface OnInterruptionEventType {
   type: 'ended' | 'began';
   shouldResume: boolean;
@@ -40,7 +45,7 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: EventTypeWithValue;
+  ended: EventTypeWithValueAndState;
   audioReady: OnAudioReadyEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
