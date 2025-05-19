@@ -1,7 +1,7 @@
 import { IAudioScheduledSourceNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
-import { EventTypeWithValue } from '../events/types';
+import { EventTypeWithValueAndState } from '../events/types';
 import { AudioEventEmitter } from '../events';
 
 export default class AudioScheduledSourceNode extends AudioNode {
@@ -42,7 +42,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   // eslint-disable-next-line accessor-pairs
-  public set onended(callback: (event: EventTypeWithValue) => void) {
+  public set onended(callback: (event: EventTypeWithValueAndState) => void) {
     const subscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback
