@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo, FC } from 'react';
 import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
@@ -22,7 +22,6 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [offset, setOffset] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -96,7 +95,7 @@ const AudioFile: FC = () => {
     const buffer = await fetch(URL)
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) =>
-        audioContextRef.current!.decodeAudioData(arrayBuffer)
+        audioContext.decodeAudioData(arrayBuffer)
       )
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
@@ -109,8 +108,8 @@ const AudioFile: FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+    if (!audioBuffer) {
+      fetchAudioBuffer();
     }
 
     AudioManager.setLockScreenInfo({
@@ -120,18 +119,16 @@ const AudioFile: FC = () => {
       duration: TRACK_LENGTH,
     });
 
+  }, [fetchAudioBuffer])
+
+  useEffect(() => {
+
     const remotePlaySubscription = AudioManager.enableSystemEvent(
-      'remotePlay',
-      (event) => {
-        console.log('remotePlay event:', event);
-      }
+      'remotePlay', () => handlePress()
     );
 
     const remotePauseSubscription = AudioManager.enableSystemEvent(
-      'remotePause',
-      (event) => {
-        console.log('remotePause event:', event);
-      }
+      'remotePause', () => handlePress()
     );
 
     const remoteChangePlaybackPositionSubscription =
@@ -157,25 +154,20 @@ const AudioFile: FC = () => {
       }
     );
 
-    AudioManager.observeAudioInterruptions(true);
-
-    fetchAudioBuffer();
-
     return () => {
       remotePlaySubscription?.remove();
       remotePauseSubscription?.remove();
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
-      audioContextRef.current?.close();
     };
-  }, [fetchAudioBuffer]);
+  }, [handlePress]);
 
   return (
     <Container centered>
       {isLoading && <ActivityIndicator color="#FFFFFF" />}
       <Button
         title={isPlaying ? 'Stop' : 'Play'}
-        onPress={handlePress}
+        onPress={() => handlePress()}
         disabled={!audioBuffer}
       />
       <Spacer.Vertical size={49} />
