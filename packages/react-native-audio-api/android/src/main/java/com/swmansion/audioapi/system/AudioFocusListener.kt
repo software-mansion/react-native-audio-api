@@ -1,6 +1,5 @@
 package com.swmansion.audioapi.system
 
-import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
@@ -60,24 +59,11 @@ class AudioFocusListener(
     }
   }
 
-  fun requestAudioFocus(
-    focusRequestBuilder: AudioFocusRequest.Builder,
-    audioAttributesBuilder: AudioAttributes.Builder,
-    legacyStreamType: Int,
-    focusGain: Int,
-  ): Int =
+  fun requestAudioFocus(focusRequest: AudioFocusRequest): Int? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val focusRequest =
-        focusRequestBuilder
-          .setFocusGain(focusGain)
-          .setAudioAttributes(
-            audioAttributesBuilder
-              .setLegacyStreamType(legacyStreamType)
-              .build(),
-          ).build()
-      audioManager.requestAudioFocus(focusRequest)
+      audioManager.get()?.requestAudioFocus(focusRequest)
     } else {
-      audioManager.requestAudioFocus(this, legacyStreamType, focusGain)
+      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
     }
 
   fun abandonAudioFocus() {

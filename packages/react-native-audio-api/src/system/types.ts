@@ -78,14 +78,6 @@ type audioAttributeContentType =
   | 'content_type_speech'
   | 'content_type_unknown';
 
-type audioAttributeLegacyStreamType =
-  | 'stream_voice_call'
-  | 'stream_system'
-  | 'stream_ring'
-  | 'stream_music'
-  | 'stream_alarm'
-  | 'stream_notification';
-
 type focusGainType =
   | 'audiofocus_gain'
   | 'audiofocus_gain_transient'
@@ -101,7 +93,6 @@ export type AudioAttributeType = {
   flag?: 'flag_hw_av_sync' | 'flag_audibility_enforced';
   hapticChannelsMuted?: boolean;
   isContentSpatialized?: boolean;
-  legacyStreamType?: audioAttributeLegacyStreamType;
   spatializationBehavior?:
     | 'spatialization_behavior_auto'
     | 'spatialization_behavior_never';

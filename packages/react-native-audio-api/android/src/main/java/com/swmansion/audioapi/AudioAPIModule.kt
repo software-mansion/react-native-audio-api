@@ -1,5 +1,7 @@
 package com.swmansion.audioapi
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -92,8 +94,9 @@ class AudioAPIModule(
     promise!!.resolve(res)
   }
 
-  override fun requestAudioFocus(request: ReadableMap) {
-    MediaSessionManager.requestAudioFocus(request)
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun requestAudioFocus(options: ReadableMap) {
+    MediaSessionManager.requestAudioFocus(options)
   }
 
   override fun abandonAudioFocus() {

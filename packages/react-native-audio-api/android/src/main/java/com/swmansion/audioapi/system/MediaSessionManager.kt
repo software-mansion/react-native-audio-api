@@ -161,90 +161,152 @@ object MediaSessionManager {
     return checkRecordingPermissions()
   }
 
-  fun requestAudioFocus(request: ReadableMap) {
-    val afbd: AudioFocusRequest.Builder = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-    var focusGain: Int = AudioManager.AUDIOFOCUS_GAIN
-    val legacyStreamType: Int = AudioManager.STREAM_MUSIC
-    val aabd: AudioAttributes.Builder = AudioAttributes.Builder()
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      if (request.hasKey("focusGain")) {
-        when (request.getString("focusGain")) {
-          "audiofocus_gain" -> focusGain = AudioManager.AUDIOFOCUS_GAIN
-          "audiofocus_gain_transient" -> focusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-          "audiofocus_gain_transient_exclusive" ->
-            focusGain =
-              AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
-
-          "audiofocus_gain_transient_may_duck" ->
-            focusGain =
-              AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
-        }
-      }
-      if (request.hasKey("pauseWhenDucked")) {
-        when (request.getBoolean("pauseWhenDucked")) {
-          true -> afbd.setWillPauseWhenDucked(true)
-          false -> afbd.setWillPauseWhenDucked(false)
-        }
-      }
-      if (request.hasKey("acceptsDelayedFocusGain")) {
-        when (request.getBoolean("acceptsDelayedFocusGain")) {
-          true -> afbd.setAcceptsDelayedFocusGain(true)
-          false -> afbd.setAcceptsDelayedFocusGain(false)
-        }
-      }
-      if (request.hasKey("audioAttributes")) {
-        val audioAttributesMap = request.getMap("audioAttributes")
-        if (audioAttributesMap != null) {
-          if (audioAttributesMap.hasKey("allowedCapturePolicy")) {
-            when (audioAttributesMap.getString("allowedCapturePolicy")) {
-              "allow_capture_by_all" -> aabd.setAllowedCapturePolicy(AudioAttributes.ALLOW_CAPTURE_BY_ALL)
-              "allow_capture_by_system" -> aabd.setAllowedCapturePolicy(AudioAttributes.ALLOW_CAPTURE_BY_SYSTEM)
-              "allow_capture_by_none" -> aabd.setAllowedCapturePolicy(AudioAttributes.ALLOW_CAPTURE_BY_NONE)
-            }
-          }
-          if (audioAttributesMap.hasKey("contentType")) {
-            when (audioAttributesMap.getString("contentType")) {
-              "content_type_sonification" -> aabd.setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-              "content_type_music" -> aabd.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-              "content_type_movie" -> aabd.setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-              "content_type_speech" -> aabd.setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-              "content_type_unknown" -> aabd.setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
-            }
-          }
-          if (audioAttributesMap.hasKey("flag")) {
-            when (audioAttributesMap.getString("flag")) {
-              "flag_hw_av_sync" -> aabd.setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
-              "flag_audibility_enforced" -> aabd.setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
-            }
-          }
-          if (audioAttributesMap.hasKey("hapticChannelsMuted")) {
-            when (audioAttributesMap.getBoolean("hapticChannelsMuted")) {
-              true -> aabd.setHapticChannelsMuted(true)
-              false -> aabd.setHapticChannelsMuted(false)
-            }
-          }
-          if (audioAttributesMap.hasKey("isContentSpatialized")) {
-            when (audioAttributesMap.getBoolean("isContentSpatialized")) {
-              true -> aabd.setIsContentSpatialized(true)
-              false -> aabd.setIsContentSpatialized(false)
-            }
-          }
-          if (audioAttributesMap.hasKey("legacyStreamType")) {
-            when (audioAttributesMap.getString("legacyStreamType")) {
-              "stream_voice_call" -> aabd.setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
-              "stream_system" -> aabd.setLegacyStreamType(AudioManager.STREAM_SYSTEM)
-              "stream_ring" -> aabd.setLegacyStreamType(AudioManager.STREAM_RING)
-              "stream_music" -> aabd.setLegacyStreamType(AudioManager.STREAM_MUSIC)
-              "stream_alarm" -> aabd.setLegacyStreamType(AudioManager.STREAM_ALARM)
-              "stream_notification" -> aabd.setLegacyStreamType(AudioManager.STREAM_NOTIFICATION)
-            }
-          }
-          if (audioAttributesMap.hasKey("spatializationBehavior")) {
-          }
-        }
-        audioFocusListener.requestAudioFocus(afbd, aabd, legacyStreamType, focusGain)
+  fun parseAudioFocusOptionMap(request: ReadableMap): Map<String, Int> {
+    val audioFocusOptions = HashMap<String, Int>()
+    if (request.hasKey("focusGain")) {
+      when (request.getString("focusGain")) {
+        "audiofocus_gain" -> audioFocusOptions["focusGain"] = AudioManager.AUDIOFOCUS_GAIN
+        "audiofocus_gain_transient" -> audioFocusOptions["focusGain"] = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+        "audiofocus_gain_transient_exclusive" ->
+          audioFocusOptions["focusGain"] = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+        "audiofocus_gain_transient_may_duck" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
       }
     }
+    if (request.hasKey("acceptsDelayedFocusGain")) {
+      when (request.getBoolean("acceptsDelayedFocusGain")) {
+        true -> audioFocusOptions["acceptsDelayedFocusGain"] = 1
+        false -> audioFocusOptions["acceptsDelayedFocusGain"] = 0
+      }
+    }
+    if (request.hasKey("pauseWhenDucked")) {
+      audioFocusOptions["pauseWhenDucked"] = if (request.getBoolean("pauseWhenDucked")) 1 else 0
+    }
+    if (request.hasKey("audioAttributes")) {
+      val values: ReadableMap? = request.getMap("audioAttributes")
+      if (values?.hasKey("allowedCapturePolicy") == true) {
+        when (values.getString("allowedCapturePolicy")) {
+          "allow_capture_by_all" ->
+            audioFocusOptions["allowedCapturePolicy"] =
+              AudioAttributes.ALLOW_CAPTURE_BY_ALL
+
+          "allow_capture_by_system" ->
+            audioFocusOptions["allowedCapturePolicy"] =
+              AudioAttributes.ALLOW_CAPTURE_BY_SYSTEM
+
+          "allow_capture_by_none" ->
+            audioFocusOptions["allowedCapturePolicy"] =
+              AudioAttributes.ALLOW_CAPTURE_BY_NONE
+        }
+      }
+      if (values?.hasKey("contentType") == true) {
+        when (values.getString("contentType")) {
+          "content_type_movie" ->
+            audioFocusOptions["contentType"] =
+              AudioAttributes.CONTENT_TYPE_MOVIE
+
+          "content_type_music" ->
+            audioFocusOptions["contentType"] =
+              AudioAttributes.CONTENT_TYPE_MOVIE
+
+          "content_type_music" ->
+            audioFocusOptions["contentType"] =
+              AudioAttributes.CONTENT_TYPE_MUSIC
+
+          "content_type_speech" ->
+            audioFocusOptions["contentType"] =
+              AudioAttributes.CONTENT_TYPE_SPEECH
+
+          "content_type_unknown" ->
+            audioFocusOptions["contentType"] =
+              AudioAttributes.CONTENT_TYPE_UNKNOWN
+        }
+      }
+      if (values?.hasKey("flag") == true) {
+        when (values.getString("flag")) {
+          "flag_hw_av_sync" -> audioFocusOptions["flag"] = AudioAttributes.FLAG_HW_AV_SYNC
+          "flag_audibility_enforced" ->
+            audioFocusOptions["flag"] =
+              AudioAttributes.FLAG_AUDIBILITY_ENFORCED
+        }
+      }
+      if (values?.hasKey("hapticChannelsMuted") == true) {
+        audioFocusOptions["hapticChannelsMuted"] = if (values.getBoolean("hapticChannelsMuted")) 1 else 0
+      }
+      if (values?.hasKey("isContentSpatialized") == true) {
+        audioFocusOptions["isContentSpatialized"] = if (values.getBoolean("isContentSpatialized")) 1 else 0
+      }
+      if (values?.hasKey("spatializationBehavior") == true) {
+        when (values.getString("spatializationBehavior")) {
+          "spatialization_behavior_auto" ->
+            audioFocusOptions["spatializationBehavior"] =
+              AudioAttributes.SPATIALIZATION_BEHAVIOR_AUTO
+
+          "spatialization_behavior_never" ->
+            audioFocusOptions["spatializationBehavior"] =
+              AudioAttributes.SPATIALIZATION_BEHAVIOR_NEVER
+        }
+      }
+      if (values?.hasKey("usage") == true) {
+        when (values.getString("usage")) {
+          "usage_alarm" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ALARM
+          "usage_assistance_accessibility" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY
+          "usage_assistance_navigation_guidance" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
+          "usage_assistance_sonification" ->
+            audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANCE_SONIFICATION
+          "usage_assistant" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANT
+          "usage_game" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_GAME
+          "usage_media" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_MEDIA
+          "usage_notification" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_NOTIFICATION
+          "usage_notification_event" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_NOTIFICATION_EVENT
+          "usage_notification_ringtone" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_NOTIFICATION_RINGTONE
+          "usage_notification_communication_request" ->
+            audioFocusOptions["usage"] =
+              AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_REQUEST
+          "usage_notification_communication_instant" ->
+            audioFocusOptions["usage"] =
+              AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT
+          "usage_notification_communication_delayed" ->
+            audioFocusOptions["usage"] =
+              AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_DELAYED
+          "usage_unknown" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_UNKNOWN
+          "usage_voice_communication" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_VOICE_COMMUNICATION
+          "usage_voice_communication_signalling" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING
+        }
+      }
+    }
+
+    return audioFocusOptions
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun requestAudioFocus(options: ReadableMap) {
+    val parsedRequest = parseAudioFocusOptionMap(options)
+    val afbd = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+    val aabd = AudioAttributes.Builder()
+    if (parsedRequest.containsKey("pauseWhenDucked")) {
+      afbd.setWillPauseWhenDucked(parsedRequest["pauseWhenDucked"] == 1)
+    }
+    parsedRequest["focusGain"]?.let { afbd.setFocusGain(it) }
+    if (parsedRequest.containsKey("acceptsDelayedFocusGain")) {
+      afbd.setAcceptsDelayedFocusGain(parsedRequest["acceptsDelayedFocusGain"] == 1)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      parsedRequest["allowedCapturePolicy"]?.let { aabd.setAllowedCapturePolicy(it) }
+      parsedRequest["contentType"]?.let { aabd.setAllowedCapturePolicy(it) }
+      if (parsedRequest.containsKey("hapticChannelsMuted")) {
+        aabd.setHapticChannelsMuted(parsedRequest["hapticChannelsMuted"] == 1)
+      }
+    }
+    parsedRequest["flag"]?.let { aabd.setFlags(it) }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S_V2) {
+      parsedRequest["spatializationBehavior"]?.let { aabd.setSpatializationBehavior(it) }
+      if (parsedRequest.containsKey("isContentSpatialized")) {
+        aabd.setIsContentSpatialized(parsedRequest["isContentSpatialized"] == 1)
+      }
+    }
+    parsedRequest["usage"]?.let { aabd.setUsage(it) }
+    afbd.setAudioAttributes(aabd.build())
+    audioFocusListener.requestAudioFocus(afbd.build())
   }
 
   fun abandonAudioFocus() {
