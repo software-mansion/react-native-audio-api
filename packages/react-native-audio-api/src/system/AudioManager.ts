@@ -48,6 +48,10 @@ class AudioManager {
     NativeAudioAPIModule!.requestAudioFocus(request);
   }
 
+  abandonAudioFocus() {
+    NativeAudioAPIModule!.abandonAudioFocus();
+  }
+
   observeVolumeChanges(enabled: boolean) {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }

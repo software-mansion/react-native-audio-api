@@ -69,6 +69,7 @@ const AudioFile: FC = () => {
       });
 
       AudioManager.requestAudioFocus({});
+      // AudioManager.abandonAudioFocus();
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource({
         pitchCorrection: true,
