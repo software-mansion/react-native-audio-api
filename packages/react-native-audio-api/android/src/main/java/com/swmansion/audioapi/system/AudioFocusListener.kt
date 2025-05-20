@@ -59,9 +59,14 @@ class AudioFocusListener(
     }
   }
 
-  fun requestAudioFocus(focusRequest: AudioFocusRequest): Int? =
+  fun requestAudioFocus(
+    focusRequest: AudioFocusRequest.Builder,
+    observeAudioInterruptions: Boolean,
+  ): Int? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      audioManager.get()?.requestAudioFocus(focusRequest)
+      if (observeAudioInterruptions) focusRequest.setOnAudioFocusChangeListener(this)
+      this.focusRequest = focusRequest.build()
+      audioManager.get()?.requestAudioFocus(this.focusRequest!!)
     } else {
       audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
     }

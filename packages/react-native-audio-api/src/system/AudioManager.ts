@@ -44,8 +44,11 @@ class AudioManager {
     return NativeAudioAPIModule!.getDevicePreferredSampleRate();
   }
 
-  requestAudioFocus(request: RequestAudioFocusOptions) {
-    NativeAudioAPIModule!.requestAudioFocus(request);
+  requestAudioFocus(
+    request: RequestAudioFocusOptions,
+    observeAudioInterruption = true
+  ) {
+    NativeAudioAPIModule!.requestAudioFocus(request, observeAudioInterruption);
   }
 
   abandonAudioFocus() {

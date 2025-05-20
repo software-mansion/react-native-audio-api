@@ -110,10 +110,10 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];
 }
 
-// android-only function
-RCT_EXPORT_METHOD(requestAudioFocus : (NSDictionary *)options)
+// android-only support for options
+RCT_EXPORT_METHOD(requestAudioFocus : (NSDictionary *)options) : (BOOL)observeAudioInterruptions
 {
-  [self.notificationManager observeAudioInterruptions:true];
+  [self.notificationManager observeAudioInterruptions:observeAudioInterruptions];
 }
 
 RCT_EXPORT_METHOD(abandonAudioFocus)

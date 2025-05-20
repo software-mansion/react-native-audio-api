@@ -279,16 +279,23 @@ object MediaSessionManager {
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
-  fun requestAudioFocus(options: ReadableMap) {
+  fun requestAudioFocus(
+    options: ReadableMap,
+    observeAudioInterruptions: Boolean,
+  ) {
     val parsedRequest = parseAudioFocusOptionMap(options)
     val afbd = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
     val aabd = AudioAttributes.Builder()
+    var pauseWhenDucked = false
+    var acceptsDelayedFocusGain = false
     if (parsedRequest.containsKey("pauseWhenDucked")) {
-      afbd.setWillPauseWhenDucked(parsedRequest["pauseWhenDucked"] == 1)
+      pauseWhenDucked = parsedRequest["pauseWhenDucked"] == 1
+      afbd.setWillPauseWhenDucked(pauseWhenDucked)
     }
     parsedRequest["focusGain"]?.let { afbd.setFocusGain(it) }
     if (parsedRequest.containsKey("acceptsDelayedFocusGain")) {
-      afbd.setAcceptsDelayedFocusGain(parsedRequest["acceptsDelayedFocusGain"] == 1)
+      acceptsDelayedFocusGain = parsedRequest["acceptsDelayedFocusGain"] == 1
+      afbd.setAcceptsDelayedFocusGain(acceptsDelayedFocusGain)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       parsedRequest["allowedCapturePolicy"]?.let { aabd.setAllowedCapturePolicy(it) }
@@ -306,7 +313,14 @@ object MediaSessionManager {
     }
     parsedRequest["usage"]?.let { aabd.setUsage(it) }
     afbd.setAudioAttributes(aabd.build())
-    audioFocusListener.requestAudioFocus(afbd.build())
+    // according to docs: OnAudioFocusChangeListener is only required
+    // if you also specify willPauseWhenDucked(true) or setAcceptsDelayedFocusGain(true) in the request.
+    if ((pauseWhenDucked || acceptsDelayedFocusGain) && !observeAudioInterruptions) {
+      throw IllegalArgumentException(
+        "observeAudioInterruptions must be true when pauseWhenDucked or acceptsDelayedFocusGain is set to true",
+      )
+    }
+    audioFocusListener.requestAudioFocus(afbd, observeAudioInterruptions)
   }
 
   fun abandonAudioFocus() {
