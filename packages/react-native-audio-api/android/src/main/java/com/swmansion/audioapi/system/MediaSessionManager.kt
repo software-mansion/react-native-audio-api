@@ -161,7 +161,7 @@ object MediaSessionManager {
     return checkRecordingPermissions()
   }
 
-  fun parseAudioFocusOptionMap(request: ReadableMap): Map<String, Int> {
+  private fun parseAudioFocusOptionMap(request: ReadableMap): Map<String, Int> {
     val audioFocusOptions = HashMap<String, Int>()
     if (request.hasKey("focusGain")) {
       when (request.getString("focusGain")) {
@@ -183,7 +183,7 @@ object MediaSessionManager {
     }
     if (request.hasKey("audioAttributes")) {
       val values: ReadableMap? = request.getMap("audioAttributes")
-      if (values?.hasKey("allowedCapturePolicy") == true) {
+      if (values?.hasKey("allowedCapturePolicy") == true && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         when (values.getString("allowedCapturePolicy")) {
           "allow_capture_by_all" ->
             audioFocusOptions["allowedCapturePolicy"] =
@@ -208,9 +208,9 @@ object MediaSessionManager {
             audioFocusOptions["contentType"] =
               AudioAttributes.CONTENT_TYPE_MOVIE
 
-          "content_type_music" ->
+          "content_type_sonification" ->
             audioFocusOptions["contentType"] =
-              AudioAttributes.CONTENT_TYPE_MUSIC
+              AudioAttributes.CONTENT_TYPE_SONIFICATION
 
           "content_type_speech" ->
             audioFocusOptions["contentType"] =
@@ -235,7 +235,7 @@ object MediaSessionManager {
       if (values?.hasKey("isContentSpatialized") == true) {
         audioFocusOptions["isContentSpatialized"] = if (values.getBoolean("isContentSpatialized")) 1 else 0
       }
-      if (values?.hasKey("spatializationBehavior") == true) {
+      if (values?.hasKey("spatializationBehavior") == true && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S_V2) {
         when (values.getString("spatializationBehavior")) {
           "spatialization_behavior_auto" ->
             audioFocusOptions["spatializationBehavior"] =
@@ -253,7 +253,9 @@ object MediaSessionManager {
           "usage_assistance_navigation_guidance" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
           "usage_assistance_sonification" ->
             audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANCE_SONIFICATION
-          "usage_assistant" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANT
+          "usage_assistant" -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) audioFocusOptions["usage"] = AudioAttributes.USAGE_ASSISTANT
+          }
           "usage_game" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_GAME
           "usage_media" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_MEDIA
           "usage_notification" -> audioFocusOptions["usage"] = AudioAttributes.USAGE_NOTIFICATION
