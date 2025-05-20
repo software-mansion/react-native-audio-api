@@ -1,0 +1,151 @@
+---
+sidebar_position: 1
+---
+
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# AudioManager
+
+The `AudioManager` is a layer of an abstraction between user and a system. 
+It provides a set of system-specific functions that are invoked directly in native code, by related system.
+
+## Properties
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `audioEventEmitter` <ReadOnly /> | `AudioEventEmitter` | Custom event emmiter that allows to create listener, to events that are invoked from a system. |
+
+## Methods
+
+### `setLockScreenInfo`
+
+| Parameters | Type |
+| :---: | :---: |
+| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) |
+
+### `resetLockScreenInfo`
+
+Resets all of the lock screen data.
+
+### `setAudioSessionOptions`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| options `iOS` only | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for session |
+
+### `getDevicePreferredSampleRate`
+
+Returns preferred sample rate by the device.
+
+### `observeAudioInterruptions`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | Can be used to enable or disable observing audio interruptions |
+
+### `observeVolumeChanges`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | Can be used to enable or disable observing volume changes |
+
+### `enableSystemEvent`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `name` | [`Name`](/system/audio-manager#name) | Name of an event listener |
+| `callback` <Optional /> | [`SystemEventCallback<Name>`](/system/audio-manager#systemeventcallbackname) | Callback that will be invoked upon hearing an event |
+| `enabled` | `boolean` (default value is `true`)| Can be used to enable or disable emmiting system event | 
+
+### `requestRecordingPermissions`
+
+Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
+is directly requested, but sometimes it is better to ask beforehand.
+Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+### `checkRecordingPermissions`
+
+Allows to check if permissions were previously granted.
+Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+## Remarks
+
+### `LockScreenInfo`
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `title` <Optional /> | `string` | Title of the track |
+| `artwork` <Optional /> | `string` | Uri to the artwork |
+| `artist` <Optional /> | `string` | Name of the artist |
+| `album` <Optional /> | `string` | Name of the album |
+| `duration` <Optional /> | `number` | Duration of the song in seconds |
+| `description` <Optional /> `android` only | `string` | Description of the track |
+| `state` <Optional /> | `string` | `state_playing` if track is played, `state_paused` otherwise |
+| `speed` <Optional /> | `number` | Speed rate of playing |
+| `elapsedTime` <Optional /> | `number` | In seconds, how many time of audio has elapsed |
+
+### `SessionOptions`
+
+| Name | Type | Possible values |
+| :----: | :----: | :-------- |
+| `iosMode` <Optional /> | `string` | `default`, `gameChat`, `videoChat`, `voiceChat`, `measurement`, `voicePrompt`, `spokenAudio`, `moviePlayback`, `videoRecording`|
+| `iosOptions` <Optional /> | `string[]` | `duckOthers`, `allowAirPlay`, `mixWithOthers`, `allowBluetooth`, `defaultToSpeaker`, `allowBluetoothA2DP`, `overrideMutedMicrophoneInterruption`, `interruptSpokenAudioAndMixWithOthers`|
+| `iosCategory` <Optional /> | `string` | `record`, `ambient`, `playback`, `multiRoute`, `soloAmbient`, `playAndRecord`|
+
+
+### `Name`
+
+TODO: description of what each of the name does
+
+
+Available values:
+- `remotePlay`
+- `remotePause`
+- `remoteStop`
+- `remoteTogglePlayPause`
+- `remoteChangePlaybackRate`
+- `remoteNextTrack`
+- `remotePreviousTrack`
+- `remoteSkipForward`
+- `remoteSkipBackward`
+- `remoteSeekForward`
+- `remoteSeekBackward`
+- `remoteChangePlaybackPosition`
+- `volumeChange`
+- `interruption`
+- `routeChange`
+
+
+### `SystemEventCallback<Name>`
+
+It maps `Name` value to a corresponding type of callback.
+
+- `remotePlay`, `remotePause`, `remoteStop`, `remoteTogglePlayPause`, `remoteNextTrack`, `remoteSkipForward`, `remoteSkipBackward`
+
+`Empty` type
+
+- `remoteChangePlaybackRate`, `remoteSeekForward`, `remoteSeekBackward`, `remoteChangePlaybackPosition`, `volumeChange`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `value` | `number` | value from system described in [`Name`](/system/audio-manager#name) section
+
+- `interruption`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `type` | `string` | `began` or `ended` value that indicates if interruption event has started or ended |
+| `shouldResume` | `boolean` | if we should resume playing upon receiving event |
+
+- `routeChange`
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `reason` | `string` | cause of event emition |
+
+### `PermissionStatus`
+
+Available `string` values:
+- `Denied` -> Indicates that user did not grant permission.
+- `Granted` -> Indicates that user did grant permission.
+- `Undetermined` -> In rare cases, system can return "not granted, but not denied" f.e. when something interrupt an app while asking.
