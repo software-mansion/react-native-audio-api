@@ -4,6 +4,7 @@
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/AudioBufferStreamSourceNodeHostObject.h>
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
@@ -43,6 +44,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferStreamSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
@@ -102,6 +104,13 @@ class BaseAudioContextHostObject : public JsiHostObject {
         std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
+
+JSI_HOST_FUNCTION(createBufferStreamSource) {
+    auto bufferSource = context_->createBufferStreamSource();
+    auto bufferStreamSourceHostObject =
+            std::make_shared<AudioBufferStreamSourceNodeHostObject>(bufferSource);
+    return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
+}
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());

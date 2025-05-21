@@ -6,6 +6,7 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/sources/AudioBufferStreamSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
@@ -75,6 +76,13 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
     bool pitchCorrection) {
   auto bufferSource =
       std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+  nodeManager_->addSourceNode(bufferSource);
+  return bufferSource;
+}
+
+std::shared_ptr<AudioBufferStreamSourceNode>
+BaseAudioContext::createBufferStreamSource() {
+  auto bufferSource = std::make_shared<AudioBufferStreamSourceNode>(this);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }

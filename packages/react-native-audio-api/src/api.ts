@@ -39,6 +39,7 @@ if (
 
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
+export { default as AudioBufferStreamSourceNode } from './core/AudioBufferStreamSourceNode';
 export { default as AudioContext } from './core/AudioContext';
 export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';

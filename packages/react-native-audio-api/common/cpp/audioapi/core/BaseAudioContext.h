@@ -24,6 +24,7 @@ class AudioNodeManager;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
+class AudioBufferStreamSourceNode;
 class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
@@ -44,6 +45,7 @@ class BaseAudioContext {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
+  std::shared_ptr<AudioBufferStreamSourceNode> createBufferStreamSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
