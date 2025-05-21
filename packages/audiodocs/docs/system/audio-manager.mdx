@@ -39,9 +39,13 @@ function App() {
 | :---: | :---: | :-----: |
 | `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Info to be displayed on lock screen |
 
+#### Returns `undefined`
+
 ### `resetLockScreenInfo`
 
 Resets all of the lock screen data.
+
+#### Returns `undefined`
 
 ### `setAudioSessionOptions` <OnlyiOS />
 
@@ -49,9 +53,11 @@ Resets all of the lock screen data.
 | :---: | :---: | :---- |
 | options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for session |
 
+#### Returns `undefined`
+
 ### `getDevicePreferredSampleRate`
 
-Returns preferred sample rate by the device.
+#### Returns `number`.
 
 ### `observeAudioInterruptions`
 
@@ -59,11 +65,15 @@ Returns preferred sample rate by the device.
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | Can be used to enable or disable observing audio interruptions |
 
+#### Returns `undefined`
+
 ### `observeVolumeChanges`
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | Can be used to enable or disable observing volume changes |
+
+#### Returns `undefined`
 
 ### `enableSystemEvent`
 
@@ -73,16 +83,20 @@ Returns preferred sample rate by the device.
 | `callback` <Optional /> | [`SystemEventCallback<Name>`](/system/audio-manager#name-systemeventcallbackname) | Callback that will be invoked upon hearing an event |
 | `enabled` | `boolean` (default value is `true`)| Can be used to enable or disable emmiting system event | 
 
+#### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
+
 ### `requestRecordingPermissions`
 
 Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
-Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
 Allows to check if permissions were previously granted.
-Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ## Remarks
 
@@ -199,6 +213,38 @@ type SystemEventName = keyof SystemEvents;
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
 ) => void;
+```
+</details>
+
+
+### `AudioEventSubscription`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+class AudioEventSubscription {
+  private readonly audioEventEmitter: AudioEventEmitter;
+  private readonly eventName: AudioEventName;
+  /** @internal */
+  public readonly subscriptionId: string;
+
+  constructor(
+    subscriptionId: string,
+    eventName: AudioEventName,
+    audioEventEmitter: AudioEventEmitter
+  ) {
+    this.subscriptionId = subscriptionId;
+    this.eventName = eventName;
+    this.audioEventEmitter = audioEventEmitter;
+  }
+
+  public remove(): void {
+    this.audioEventEmitter.removeAudioEventListener(
+      this.eventName,
+      this.subscriptionId
+    );
+  }
+}
 ```
 </details>
 
