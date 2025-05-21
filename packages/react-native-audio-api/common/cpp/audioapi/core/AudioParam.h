@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_set>
 #include <cstddef>
+#include <mutex>
 
 namespace audioapi {
 
@@ -50,6 +51,7 @@ class AudioParam {
   std::deque<ParamChangeEvent> eventsQueue_;
   std::unordered_set<AudioNode *> inputNodes_;
   std::shared_ptr<AudioBus> audioBus_;
+  std::mutex queueLock_;
 
   double startTime_;
   double endTime_;
@@ -58,6 +60,7 @@ class AudioParam {
   std::function<float(double, double, float, float, double)> calculateValue_;
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
 
+  std::mutex &getQueueLock();
   double getQueueEndTime();
   float getQueueEndValue();
   void updateQueue(ParamChangeEvent &event);
