@@ -68,8 +68,7 @@ const AudioFile: FC = () => {
         state: 'state_playing',
       });
 
-      AudioManager.requestAudioFocus({});
-      // AudioManager.abandonAudioFocus();
+      AudioManager.observeAudioInterruptions(true);
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource({
         pitchCorrection: true,
@@ -153,7 +152,7 @@ const AudioFile: FC = () => {
       }
     );
 
-    AudioManager.requestAudioFocus({});
+    AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 

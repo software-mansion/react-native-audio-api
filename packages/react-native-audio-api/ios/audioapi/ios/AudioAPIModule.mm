@@ -107,7 +107,12 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 
 RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
 {
-  [self.notificationManager observeVolumeChanges:(BOOL)enabled];
+  [self.notificationManager observeVolumeChanges:enabled];
+}
+
+RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
+{
+  [self.notificationManager observeAudioInterruptions:enabled];
 }
 
 // android-only support for options

@@ -80,6 +80,11 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun observeAudioInterruptions(enabled: Boolean) {
+    MediaSessionManager.observeAudioInterruptions(enabled)
+  }
+
   override fun observeVolumeChanges(enabled: Boolean) {
     MediaSessionManager.observeVolumeChanges(enabled)
   }

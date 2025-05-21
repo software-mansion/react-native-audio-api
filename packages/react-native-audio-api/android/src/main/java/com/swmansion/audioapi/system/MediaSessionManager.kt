@@ -139,6 +139,15 @@ object MediaSessionManager {
     return sampleRate.toDouble()
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun observeAudioInterruptions(observe: Boolean) {
+    if (observe) {
+      audioFocusListener.requestAudioFocus(AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN), true)
+    } else {
+      audioFocusListener.abandonAudioFocus()
+    }
+  }
+
   fun observeVolumeChanges(observe: Boolean) {
     if (observe) {
       ContextCompat.registerReceiver(
