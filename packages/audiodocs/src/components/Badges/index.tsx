@@ -13,6 +13,10 @@ export function Overridden({ footnote }) {
   return <div className={styles.badge}>Overridden{footnote ? '*' : ''}</div>;
 }
 
+export function OnlyiOS({ footnote }) {
+  return <div className={styles.badge}>iOS only{footnote ? '*' : ''}</div>;
+}
+
 export function Experimental({ footnote }) {
   return <div className={`${styles.badge} ${styles.experimental}`}>Experimental{footnote ? '*' : ''}</div>;
 }

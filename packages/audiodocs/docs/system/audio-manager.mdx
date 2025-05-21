@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly, OnlyiOS } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -13,25 +13,41 @@ It provides a set of system-specific functions that are invoked directly in nati
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `audioEventEmitter` <ReadOnly /> | `AudioEventEmitter` | Custom event emmiter that allows to create listener, to events that are invoked from a system. |
+| `audioEventEmitter` <ReadOnly /> | `AudioEventEmitter` | Custom event emmiter that allows to create listener to events, that are invoked from a system. |
+
+## Example
+
+```tsx
+import { AudioManager } from 'react-native-audio-api';
+
+function App() {
+    // set info for track to be visible while device is locked
+    AudioManager.setLockScreenInfo({
+        title: 'Audio file',
+        artist: 'Software Mansion',
+        album: 'Audio API',
+        duration: 10,
+    });
+}
+```
 
 ## Methods
 
 ### `setLockScreenInfo`
 
-| Parameters | Type |
-| :---: | :---: |
-| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) |
+| Parameters | Type | Description |
+| :---: | :---: | :-----: |
+| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Info to be displayed on lock screen |
 
 ### `resetLockScreenInfo`
 
 Resets all of the lock screen data.
 
-### `setAudioSessionOptions`
+### `setAudioSessionOptions` <OnlyiOS />
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| options `iOS` only | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for session |
+| options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for session |
 
 ### `getDevicePreferredSampleRate`
 
@@ -53,8 +69,8 @@ Returns preferred sample rate by the device.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`Name`](/system/audio-manager#name) | Name of an event listener |
-| `callback` <Optional /> | [`SystemEventCallback<Name>`](/system/audio-manager#systemeventcallbackname) | Callback that will be invoked upon hearing an event |
+| `name` | [`Name`](/system/audio-manager#name-systemeventcallbackname) | Name of an event listener |
+| `callback` <Optional /> | [`SystemEventCallback<Name>`](/system/audio-manager#name-systemeventcallbackname) | Callback that will be invoked upon hearing an event |
 | `enabled` | `boolean` (default value is `true`)| Can be used to enable or disable emmiting system event | 
 
 ### `requestRecordingPermissions`
@@ -72,80 +88,125 @@ Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) 
 
 ### `LockScreenInfo`
 
-| Name | Type | Description |
-| :----: | :----: | :-------- |
-| `title` <Optional /> | `string` | Title of the track |
-| `artwork` <Optional /> | `string` | Uri to the artwork |
-| `artist` <Optional /> | `string` | Name of the artist |
-| `album` <Optional /> | `string` | Name of the album |
-| `duration` <Optional /> | `number` | Duration of the song in seconds |
-| `description` <Optional /> `android` only | `string` | Description of the track |
-| `state` <Optional /> | `string` | `state_playing` if track is played, `state_paused` otherwise |
-| `speed` <Optional /> | `number` | Speed rate of playing |
-| `elapsedTime` <Optional /> | `number` | In seconds, how many time of audio has elapsed |
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface BaseLockScreenInfo {
+  [key: string]: string | boolean | number | undefined;
+}
 
-### `SessionOptions`
+//state_playing if track is played, state_paused otherwise
+type MediaState = 'state_playing' | 'state_paused';
 
-| Name | Type | Possible values |
-| :----: | :----: | :-------- |
-| `iosMode` <Optional /> | `string` | `default`, `gameChat`, `videoChat`, `voiceChat`, `measurement`, `voicePrompt`, `spokenAudio`, `moviePlayback`, `videoRecording`|
-| `iosOptions` <Optional /> | `string[]` | `duckOthers`, `allowAirPlay`, `mixWithOthers`, `allowBluetooth`, `defaultToSpeaker`, `allowBluetoothA2DP`, `overrideMutedMicrophoneInterruption`, `interruptSpokenAudioAndMixWithOthers`|
-| `iosCategory` <Optional /> | `string` | `record`, `ambient`, `playback`, `multiRoute`, `soloAmbient`, `playAndRecord`|
+interface LockScreenInfo extends BaseLockScreenInfo {
+  title?: string; //title of the track
+  artwork?: string; //uri to the artwork
+  artist?: string; //name of the artist
+  album?: string; //name of the album
+  duration?: number; //duration in seconds
+  description?: string; // android only, description of the track
+  state?: MediaState;
+  speed?: number; //playback rate
+  elapsedTime?: number; //elapsed time of an audio in seconds
+}
+```
+</details>
+
+### `SessionOptions` 
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type IOSCategory =
+  | 'record'
+  | 'ambient'
+  | 'playback'
+  | 'multiRoute'
+  | 'soloAmbient'
+  | 'playAndRecord';
+
+type IOSMode =
+  | 'default'
+  | 'gameChat'
+  | 'videoChat'
+  | 'voiceChat'
+  | 'measurement'
+  | 'voicePrompt'
+  | 'spokenAudio'
+  | 'moviePlayback'
+  | 'videoRecording';
+
+type IOSOption =
+  | 'duckOthers'
+  | 'allowAirPlay'
+  | 'mixWithOthers'
+  | 'allowBluetooth'
+  | 'defaultToSpeaker'
+  | 'allowBluetoothA2DP'
+  | 'overrideMutedMicrophoneInterruption'
+  | 'interruptSpokenAudioAndMixWithOthers';
+
+interface SessionOptions {
+  iosMode?: IOSMode;
+  iosOptions?: IOSOption[];
+  iosCategory?: IOSCategory;
+}
+```
+</details>
 
 
-### `Name`
+### `Name` `SystemEventCallback<Name>`
 
-TODO: description of what each of the name does
+TODO: description of what each of the name means
 
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface EventEmptyType {}
 
-Available values:
-- `remotePlay`
-- `remotePause`
-- `remoteStop`
-- `remoteTogglePlayPause`
-- `remoteChangePlaybackRate`
-- `remoteNextTrack`
-- `remotePreviousTrack`
-- `remoteSkipForward`
-- `remoteSkipBackward`
-- `remoteSeekForward`
-- `remoteSeekBackward`
-- `remoteChangePlaybackPosition`
-- `volumeChange`
-- `interruption`
-- `routeChange`
+interface EventTypeWithValue {
+  value: number;
+}
 
+interface OnInterruptionEventType {
+  type: 'ended' | 'began'; //if interruption event has started or ended
+  shouldResume: boolean; //if we should resume playing after interruption
+}
 
-### `SystemEventCallback<Name>`
+interface OnRouteChangeEventType {
+  reason: string; //cause of event emmition
+}
 
-It maps `Name` value to a corresponding type of callback.
+interface SystemEvents {
+  remotePlay: EventEmptyType;
+  remotePause: EventEmptyType;
+  remoteStop: EventEmptyType;
+  remoteTogglePlayPause: EventEmptyType;
+  remoteChangePlaybackRate: EventTypeWithValue;
+  remoteNextTrack: EventEmptyType;
+  remotePreviousTrack: EventEmptyType;
+  remoteSkipForward: EventEmptyType;
+  remoteSkipBackward: EventEmptyType;
+  remoteSeekForward: EventTypeWithValue;
+  remoteSeekBackward: EventTypeWithValue;
+  remoteChangePlaybackPosition: EventTypeWithValue;
+  volumeChange: EventTypeWithValue;
+  interruption: OnInterruptionEventType;
+  routeChange: OnRouteChangeEventType;
+}
 
-- `remotePlay`, `remotePause`, `remoteStop`, `remoteTogglePlayPause`, `remoteNextTrack`, `remoteSkipForward`, `remoteSkipBackward`
-
-`Empty` type
-
-- `remoteChangePlaybackRate`, `remoteSeekForward`, `remoteSeekBackward`, `remoteChangePlaybackPosition`, `volumeChange`
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `value` | `number` | value from system described in [`Name`](/system/audio-manager#name) section
-
-- `interruption`
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `type` | `string` | `began` or `ended` value that indicates if interruption event has started or ended |
-| `shouldResume` | `boolean` | if we should resume playing upon receiving event |
-
-- `routeChange`
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `reason` | `string` | cause of event emition |
+type SystemEventName = keyof SystemEvents;
+type SystemEventCallback<Name extends SystemEventName> = (
+  event: SystemEvents[Name]
+) => void;
+```
+</details>
 
 ### `PermissionStatus`
 
-Available `string` values:
-- `Denied` -> Indicates that user did not grant permission.
-- `Granted` -> Indicates that user did grant permission.
-- `Undetermined` -> In rare cases, system can return "not granted, but not denied" f.e. when something interrupt an app while asking.
+<details>
+<summary>Type definitions</summary>
+```typescript
+type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
+```
+</details>
