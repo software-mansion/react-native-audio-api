@@ -46,7 +46,7 @@ class AudioBufferStreamSourceNode : public AudioScheduledSourceNode {
     // internal helper
     double vReadIndex_;
 
-    // User provided buffer
+    // User provided buffers
     std::queue<std::shared_ptr<AudioBuffer>> buffers_;
     bool isLastBuffer_ = false;
 

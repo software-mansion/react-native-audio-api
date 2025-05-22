@@ -112,20 +112,22 @@ void AudioBufferStreamSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  updatePlaybackInfo(
-      processingBus, framesToProcess, startOffset, offsetLength);
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
     return;
   }
 
-    auto framesNeededToStretch =
-            static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-  auto stretchedStartOffset = static_cast<size_t>(static_cast<float>(startOffset) * playbackRate);
-    auto stretchedOffsetLength = static_cast<size_t>(static_cast<float>(offsetLength) * playbackRate);
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto stretchedStartOffset =
+      static_cast<size_t>(static_cast<float>(startOffset) * playbackRate);
+  auto stretchedOffsetLength =
+      static_cast<size_t>(static_cast<float>(offsetLength) * playbackRate);
 
-  processWithoutInterpolation(playbackRateBus_, stretchedStartOffset, stretchedOffsetLength);
+  processWithoutInterpolation(
+      playbackRateBus_, stretchedStartOffset, stretchedOffsetLength);
 
   stretch_->process(
       playbackRateBus_.get()[0],
@@ -172,7 +174,7 @@ void AudioBufferStreamSourceNode::processWithoutInterpolation(
         readIndex = 0;
 
         if (isLastBuffer_) {
-            playbackState_ = PlaybackState::STOP_SCHEDULED;
+          playbackState_ = PlaybackState::STOP_SCHEDULED;
         }
         break;
       } else {

@@ -4,7 +4,6 @@ import {
   AudioBuffer,
   AudioContext,
   AudioBufferSourceNode,
-  AudioBufferStreamSourceNode,
   AudioManager,
 } from 'react-native-audio-api';
 
@@ -26,16 +25,13 @@ const AudioFile: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [offset, setOffset] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE * 1.5);
+  const [playbackRate, setPlaybackRate] = useState(INITIAL_RATE);
   const [detune, setDetune] = useState(INITIAL_DETUNE);
 
-  const [audioBuffers, setAudioBuffers] = useState<AudioBuffer[]>([]);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const bufferStreamSourceRef = useRef<AudioBufferStreamSourceNode | null>(
-    null
-  );
 
   const handlePlaybackRateChange = (newValue: number) => {
     setPlaybackRate(newValue);
@@ -59,28 +55,39 @@ const AudioFile: FC = () => {
     }
 
     if (isPlaying) {
-      bufferStreamSourceRef.current?.stop(audioContextRef.current.currentTime);
+      bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
       AudioManager.setLockScreenInfo({
         state: 'state_paused',
       });
     } else {
-      if (!audioBuffers) {
+      if (!audioBuffer) {
         fetchAudioBuffer();
       }
 
-      const now = audioContextRef.current.currentTime;
+      AudioManager.setLockScreenInfo({
+        state: 'state_playing',
+      });
 
-      bufferStreamSourceRef.current =
-        audioContextRef.current.createBufferStreamSource();
-      for (let i = 0; i < audioBuffers.length; i++) {
-        bufferStreamSourceRef.current.enqueueAudioBuffer(audioBuffers[i]);
-      }
+      AudioManager.observeAudioInterruptions(true);
 
-      bufferStreamSourceRef.current.connect(
-        audioContextRef.current.destination
+      bufferSourceRef.current = audioContextRef.current.createBufferSource({
+        pitchCorrection: true,
+      });
+      bufferSourceRef.current.buffer = audioBuffer;
+      bufferSourceRef.current.loop = true;
+      bufferSourceRef.current.onended = (event) => {
+        setOffset((_prev) => event.value || 0);
+      };
+      bufferSourceRef.current.loopStart = LOOP_START;
+      bufferSourceRef.current.loopEnd = LOOP_END;
+      bufferSourceRef.current.playbackRate.value = playbackRate;
+      bufferSourceRef.current.detune.value = detune;
+      bufferSourceRef.current.connect(audioContextRef.current.destination);
+
+      bufferSourceRef.current.start(
+        audioContextRef.current.currentTime,
+        offset
       );
-      bufferStreamSourceRef.current.playbackRate.value = playbackRate;
-      bufferStreamSourceRef.current.start(now);
     }
 
     setIsPlaying((prev) => !prev);
@@ -99,37 +106,7 @@ const AudioFile: FC = () => {
         return null;
       });
 
-    if (!buffer) {
-      setIsLoading(false);
-      return;
-    }
-
-    const data = buffer.getChannelData(0);
-    const buffers: AudioBuffer[] = [];
-
-    for (let i = 0; i < 25; i++) {
-      const buffer1 = audioContextRef.current!.createBuffer(
-        buffer.numberOfChannels,
-        buffer.sampleRate,
-        buffer.sampleRate
-      );
-
-      const channelData = buffer1.getChannelData(0);
-
-      for (let j = 0; j < buffer.sampleRate; j++) {
-        channelData[j] = data[j + i * buffer.sampleRate];
-      }
-
-      // if (i === 1) {
-      //   for (let j = 0; j < 1000; j++) {
-      //     console.log(channelData[j]);
-      //   }
-      // }
-
-      buffers.push(buffer1);
-    }
-
-    setAudioBuffers(buffers);
+    setAudioBuffer(buffer);
 
     setIsLoading(false);
   }, []);
@@ -194,7 +171,7 @@ const AudioFile: FC = () => {
       <Button
         title={isPlaying ? 'Stop' : 'Play'}
         onPress={handlePress}
-        disabled={audioBuffers.length === 0}
+        disabled={!audioBuffer}
       />
       <Spacer.Vertical size={49} />
       <Slider
