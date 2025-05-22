@@ -108,26 +108,28 @@ double AudioBufferQueueSourceNode::getStopTime() const {
       static_cast<int>(vReadIndex_), context_->getSampleRate());
 }
 
-void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-    onPositionChangedCallbackId_ = callbackId;
+void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(
+    uint64_t callbackId) {
+  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
-    if (onPositionChangedTime_ > onPositionChangedInterval_) {
-      std::unordered_map<std::string, EventValue> body = {
-              {"value", getStopTime()}, {"bufferId", bufferId_}};
+  if (onPositionChangedTime_ > onPositionChangedInterval_) {
+    std::unordered_map<std::string, EventValue> body = {
+        {"value", getStopTime()}, {"bufferId", bufferId_}};
 
-      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-              "positionChanged", onPositionChangedCallbackId_, body);
+    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "positionChanged", onPositionChangedCallbackId_, body);
 
-      onPositionChangedTime_ = 0;
-    }
+    onPositionChangedTime_ = 0;
+  }
 
-    onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
+  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
 }
 
 void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
-    onPositionChangedInterval_ = static_cast<int>(context_->getSampleRate() * 1000 / static_cast<float>(interval));
+  onPositionChangedInterval_ = static_cast<int>(
+      context_->getSampleRate() * 1000 / static_cast<float>(interval));
 }
 
 /**
