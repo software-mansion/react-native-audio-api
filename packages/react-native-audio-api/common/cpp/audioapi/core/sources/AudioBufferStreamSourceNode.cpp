@@ -51,10 +51,13 @@ void AudioBufferStreamSourceNode::start(double when, double offset) {
   vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
 }
 
-void AudioBufferStreamSourceNode::enqueueAudioBuffer(
-    const std::shared_ptr<AudioBuffer> &buffer) {
+void AudioBufferStreamSourceNode::enqueueBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
   buffers_.push(buffer);
+
+  isLastBuffer_ = isLastBuffer;
 }
 
 void AudioBufferStreamSourceNode::disable() {
@@ -165,6 +168,10 @@ void AudioBufferStreamSourceNode::processWithoutInterpolation(
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);
         readIndex = 0;
+
+        if (isLastBuffer_) {
+            playbackState_ = PlaybackState::STOP_SCHEDULED;
+        }
         break;
       } else {
         buffer = buffers_.front();

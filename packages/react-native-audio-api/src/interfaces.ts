@@ -115,7 +115,7 @@ export interface IAudioBufferStreamSourceNode
   detune: IAudioParam;
   playbackRate: IAudioParam;
 
-  enqueueAudioBuffer: (audioBuffer: IAudioBuffer) => void;
+  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
   start: (when?: number, offset?: number) => void;
 }
 

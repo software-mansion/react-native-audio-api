@@ -16,9 +16,13 @@ export default class AudioBufferStreamSourceNode extends AudioScheduledSourceNod
     this.playbackRate = new AudioParam(node.playbackRate, context);
   }
 
-  public enqueueAudioBuffer(buffer: AudioBuffer): void {
-    (this.node as IAudioBufferStreamSourceNode).enqueueAudioBuffer(
-      buffer.buffer
+  public enqueueBuffer(
+    buffer: AudioBuffer,
+    isLastBuffer: boolean = false
+  ): void {
+    (this.node as IAudioBufferStreamSourceNode).enqueueBuffer(
+      buffer.buffer,
+      isLastBuffer
     );
   }
 

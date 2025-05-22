@@ -24,7 +24,7 @@ class AudioBufferStreamSourceNode : public AudioScheduledSourceNode {
     [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
     void start(double when, double offset);
-    void enqueueAudioBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+    void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, bool isLastBuffer);
     void disable() override;
 
  protected:
@@ -37,18 +37,18 @@ class AudioBufferStreamSourceNode : public AudioScheduledSourceNode {
 
     // pitch correction
     std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+    std::shared_ptr<AudioBus> playbackRateBus_;
 
     // k-rate params
     std::shared_ptr<AudioParam> detuneParam_;
     std::shared_ptr<AudioParam> playbackRateParam_;
-
-    std::shared_ptr<AudioBus> playbackRateBus_;
 
     // internal helper
     double vReadIndex_;
 
     // User provided buffer
     std::queue<std::shared_ptr<AudioBuffer>> buffers_;
+    bool isLastBuffer_ = false;
 
     void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                     int framesToProcess);
