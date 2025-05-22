@@ -35,8 +35,7 @@ AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
   buffers_ = {};
 }
 
-std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getDetuneParam()
-    const {
+std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getDetuneParam() const {
   return detuneParam_;
 }
 

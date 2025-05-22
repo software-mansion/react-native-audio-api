@@ -5,8 +5,8 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
+#include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
