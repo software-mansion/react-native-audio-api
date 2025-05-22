@@ -4,6 +4,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
 import { InvalidStateError, RangeError } from '../errors';
+import { OnPositionChangedEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
@@ -18,10 +19,12 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
 
   public enqueueBuffer(
     buffer: AudioBuffer,
+    bufferId: number = 0,
     isLastBuffer: boolean = false
   ): void {
     (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
       buffer.buffer,
+      bufferId,
       isLastBuffer
     );
   }
@@ -45,5 +48,24 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
+  }
+
+  // eslint-disable-next-line accessor-pairs
+  public set onPositionChanged(
+    callback: (event: OnPositionChangedEventType) => void
+  ) {
+    const subscription = this.audioEventEmitter.addAudioEventListener(
+      'positionChanged',
+      callback
+    );
+
+    (this.node as IAudioBufferQueueSourceNode).onPositionChanged =
+      subscription.subscriptionId;
+  }
+
+  // eslint-disable-next-line accessor-pairs
+  public set onPositionChangedInterval(value: number) {
+    (this.node as IAudioBufferQueueSourceNode).onPositionChangedInterval =
+      value;
   }
 }

@@ -10,9 +10,9 @@ namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
     : AudioNode(context),
-      playbackState_(PlaybackState::UNSCHEDULED),
       startTime_(-1.0),
-      stopTime_(-1.0) {
+      stopTime_(-1.0),
+      playbackState_(PlaybackState::UNSCHEDULED) {
   numberOfInputs_ = 0;
 }
 
