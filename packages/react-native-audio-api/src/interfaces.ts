@@ -114,7 +114,11 @@ export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
 
-  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
+  enqueueBuffer: (
+    audioBuffer: IAudioBuffer,
+    bufferId: number,
+    isLastBuffer: boolean
+  ) => void;
   start: (when?: number, offset?: number) => void;
 }
 

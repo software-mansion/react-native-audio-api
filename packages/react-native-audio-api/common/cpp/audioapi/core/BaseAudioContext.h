@@ -81,9 +81,7 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
- protected:
-    friend class AudioScheduledSourceNode;
-
+ public:
     std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 

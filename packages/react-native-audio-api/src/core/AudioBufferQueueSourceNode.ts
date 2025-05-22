@@ -18,10 +18,12 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
 
   public enqueueBuffer(
     buffer: AudioBuffer,
+    bufferId: number = 0,
     isLastBuffer: boolean = false
   ): void {
     (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
       buffer.buffer,
+      bufferId,
       isLastBuffer
     );
   }

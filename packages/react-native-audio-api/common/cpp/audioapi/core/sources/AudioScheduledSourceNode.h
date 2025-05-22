@@ -43,6 +43,9 @@ class AudioScheduledSourceNode : public AudioNode {
   void disable() override;
 
  protected:
+  double startTime_;
+  double stopTime_;
+
   PlaybackState playbackState_;
 
   void updatePlaybackInfo(
@@ -53,11 +56,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void handleStopScheduled();
 
- private:
-  double startTime_;
-  double stopTime_;
-
-  uint64_t onEndedCallbackId_ = 0;
+    uint64_t onEndedCallbackId_ = 0;
 };
 
 } // namespace audioapi

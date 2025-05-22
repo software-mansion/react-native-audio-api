@@ -4,6 +4,7 @@
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -52,15 +53,29 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
+    int bufferId,
     bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
-  buffers_.push(buffer);
+  buffers_.emplace(bufferId, buffer);
 
   isLastBuffer_ = isLastBuffer;
 }
 
 void AudioBufferQueueSourceNode::disable() {
-  AudioScheduledSourceNode::disable();
+  audioapi::AudioNode::disable();
+
+  std::string state = "stopped";
+
+  // if it has not been stopped, it is ended
+  if (stopTime_ < 0) {
+    state = "ended";
+  }
+
+  std::unordered_map<std::string, EventValue> body = {
+      {"value", getStopTime()}, {"state", state}, {"bufferId", bufferId_}};
+
+  context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+      "ended", onEndedCallbackId_, body);
   buffers_ = {};
 }
 
@@ -146,7 +161,10 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto buffer = buffers_.front();
+  auto queueData = buffers_.front();
+  bufferId_ = queueData.first;
+  auto buffer = queueData.second;
+
   size_t framesLeft = offsetLength;
 
   while (framesLeft > 0) {
@@ -177,7 +195,10 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         }
         break;
       } else {
-        buffer = buffers_.front();
+        queueData = buffers_.front();
+        bufferId_ = queueData.first;
+        buffer = queueData.second;
+
         readIndex = 0;
       }
     }

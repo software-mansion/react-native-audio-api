@@ -6,9 +6,10 @@ export interface EventTypeWithValue {
   value: number;
 }
 
-export interface EventTypeWithValueAndState {
+export interface OnEndedEventType {
   value: number;
   state: 'stopped' | 'ended';
+  bufferId: number | undefined;
 }
 
 interface OnInterruptionEventType {
@@ -45,7 +46,7 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: EventTypeWithValueAndState;
+  ended: OnEndedEventType;
   audioReady: OnAudioReadyEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
