@@ -19,7 +19,7 @@ export interface IBaseAudioContext {
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
-  createBufferStreamSource: () => IAudioBufferStreamSourceNode;
+  createBufferQueueSource: () => IAudioBufferQueueSourceNode;
   createBuffer: (
     channels: number,
     length: number,
@@ -110,8 +110,7 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   start: (when?: number, offset?: number, duration?: number) => void;
 }
 
-export interface IAudioBufferStreamSourceNode
-  extends IAudioScheduledSourceNode {
+export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
 

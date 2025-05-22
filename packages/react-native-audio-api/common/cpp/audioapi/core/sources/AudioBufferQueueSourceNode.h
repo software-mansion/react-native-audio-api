@@ -15,10 +15,10 @@ namespace audioapi {
 class AudioBus;
 class AudioParam;
 
-class AudioBufferStreamSourceNode : public AudioScheduledSourceNode {
+class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
  public:
-    explicit AudioBufferStreamSourceNode(BaseAudioContext *context);
-    ~AudioBufferStreamSourceNode() override;
+    explicit AudioBufferQueueSourceNode(BaseAudioContext *context);
+    ~AudioBufferQueueSourceNode() override;
 
     [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
     [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;

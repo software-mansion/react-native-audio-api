@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
-#include <audioapi/core/sources/AudioBufferStreamSourceNode.h>
+#include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/AudioScheduledSourceNodeHostObject.h>
 
@@ -11,27 +11,27 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioBufferStreamSourceNodeHostObject
+class AudioBufferQueueSourceNodeHostObject
             : public AudioScheduledSourceNodeHostObject {
  public:
-    explicit AudioBufferStreamSourceNodeHostObject(
-            const std::shared_ptr<AudioBufferStreamSourceNode> &node)
+    explicit AudioBufferQueueSourceNodeHostObject(
+            const std::shared_ptr<AudioBufferQueueSourceNode> &node)
             : AudioScheduledSourceNodeHostObject(node) {
         addGetters(
-                JSI_EXPORT_PROPERTY_GETTER(AudioBufferStreamSourceNodeHostObject, detune),
-                JSI_EXPORT_PROPERTY_GETTER(AudioBufferStreamSourceNodeHostObject, playbackRate));
+                JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, detune),
+                JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, playbackRate));
 
         // start method is overridden in this class
         functions_->erase("start");
 
         addFunctions(
-                JSI_EXPORT_FUNCTION(AudioBufferStreamSourceNodeHostObject, start),
-                JSI_EXPORT_FUNCTION(AudioBufferStreamSourceNodeHostObject, enqueueBuffer));
+                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
+                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer));
     }
 
     JSI_PROPERTY_GETTER(detune) {
         auto audioBufferSourceNode =
-                std::static_pointer_cast<AudioBufferStreamSourceNode>(node_);
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
         auto detune = audioBufferSourceNode->getDetuneParam();
         auto detuneHostObject = std::make_shared<AudioParamHostObject>(detune);
         return jsi::Object::createFromHostObject(runtime, detuneHostObject);
@@ -39,7 +39,7 @@ class AudioBufferStreamSourceNodeHostObject
 
     JSI_PROPERTY_GETTER(playbackRate) {
         auto audioBufferSourceNode =
-                std::static_pointer_cast<AudioBufferStreamSourceNode>(node_);
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
         auto playbackRate = audioBufferSourceNode->getPlaybackRateParam();
         auto playbackRateHostObject =
                 std::make_shared<AudioParamHostObject>(playbackRate);
@@ -50,24 +50,24 @@ class AudioBufferStreamSourceNodeHostObject
         auto when = args[0].getNumber();
         auto offset = args[1].getNumber();
 
-        auto audioBufferStreamSourceNode =
-                std::static_pointer_cast<AudioBufferStreamSourceNode>(node_);
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-        audioBufferStreamSourceNode->start(when, offset);
+        audioBufferQueueSourceNode->start(when, offset);
 
         return jsi::Value::undefined();
     }
 
     JSI_HOST_FUNCTION(enqueueBuffer) {
-        auto audioBufferStreamSourceNode =
-                std::static_pointer_cast<AudioBufferStreamSourceNode>(node_);
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
         auto audioBufferHostObject =
                 args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
 
         auto isLastBuffer = args[1].asBool();
 
-        audioBufferStreamSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, isLastBuffer);
+        audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, isLastBuffer);
 
         return jsi::Value::undefined();
     }

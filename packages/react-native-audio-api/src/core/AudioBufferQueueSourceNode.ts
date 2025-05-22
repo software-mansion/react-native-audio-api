@@ -1,15 +1,15 @@
-import { IAudioBufferStreamSourceNode } from '../interfaces';
+import { IAudioBufferQueueSourceNode } from '../interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
 import { InvalidStateError, RangeError } from '../errors';
 
-export default class AudioBufferStreamSourceNode extends AudioScheduledSourceNode {
+export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, node: IAudioBufferStreamSourceNode) {
+  constructor(context: BaseAudioContext, node: IAudioBufferQueueSourceNode) {
     super(context, node);
 
     this.detune = new AudioParam(node.detune, context);
@@ -20,7 +20,7 @@ export default class AudioBufferStreamSourceNode extends AudioScheduledSourceNod
     buffer: AudioBuffer,
     isLastBuffer: boolean = false
   ): void {
-    (this.node as IAudioBufferStreamSourceNode).enqueueBuffer(
+    (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
       buffer.buffer,
       isLastBuffer
     );
@@ -44,6 +44,6 @@ export default class AudioBufferStreamSourceNode extends AudioScheduledSourceNod
     }
 
     this.hasBeenStarted = true;
-    (this.node as IAudioBufferStreamSourceNode).start(when, offset);
+    (this.node as IAudioBufferQueueSourceNode).start(when, offset);
   }
 }

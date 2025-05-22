@@ -35,7 +35,7 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
 
  private:
   friend class AudioBufferSourceNode;
-  friend class AudioBufferStreamSourceNode;
+  friend class AudioBufferQueueSourceNode;
 
   std::shared_ptr<AudioBus> bus_;
 };

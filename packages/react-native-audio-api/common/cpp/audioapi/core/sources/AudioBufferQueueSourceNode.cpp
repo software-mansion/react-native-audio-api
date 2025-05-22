@@ -1,7 +1,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/Constants.h>
-#include <audioapi/core/sources/AudioBufferStreamSourceNode.h>
+#include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.h>
@@ -9,7 +9,7 @@
 
 namespace audioapi {
 
-AudioBufferStreamSourceNode::AudioBufferStreamSourceNode(
+AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context)
     : AudioScheduledSourceNode(context), vReadIndex_(0.0) {
   buffers_ = {};
@@ -29,29 +29,29 @@ AudioBufferStreamSourceNode::AudioBufferStreamSourceNode(
   isInitialized_ = true;
 }
 
-AudioBufferStreamSourceNode::~AudioBufferStreamSourceNode() {
+AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
   Locker locker(getBufferLock());
 
   buffers_ = {};
 }
 
-std::shared_ptr<AudioParam> AudioBufferStreamSourceNode::getDetuneParam()
+std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getDetuneParam()
     const {
   return detuneParam_;
 }
 
-std::shared_ptr<AudioParam> AudioBufferStreamSourceNode::getPlaybackRateParam()
+std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getPlaybackRateParam()
     const {
   return playbackRateParam_;
 }
 
-void AudioBufferStreamSourceNode::start(double when, double offset) {
+void AudioBufferQueueSourceNode::start(double when, double offset) {
   AudioScheduledSourceNode::start(when);
 
   vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
 }
 
-void AudioBufferStreamSourceNode::enqueueBuffer(
+void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
@@ -60,16 +60,16 @@ void AudioBufferStreamSourceNode::enqueueBuffer(
   isLastBuffer_ = isLastBuffer;
 }
 
-void AudioBufferStreamSourceNode::disable() {
+void AudioBufferQueueSourceNode::disable() {
   AudioScheduledSourceNode::disable();
   buffers_ = {};
 }
 
-std::mutex &AudioBufferStreamSourceNode::getBufferLock() {
+std::mutex &AudioBufferQueueSourceNode::getBufferLock() {
   return bufferLock_;
 }
 
-void AudioBufferStreamSourceNode::processNode(
+void AudioBufferQueueSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
@@ -87,7 +87,7 @@ void AudioBufferStreamSourceNode::processNode(
   }
 }
 
-double AudioBufferStreamSourceNode::getStopTime() const {
+double AudioBufferQueueSourceNode::getStopTime() const {
   return dsp::sampleFrameToTime(
       static_cast<int>(vReadIndex_), context_->getSampleRate());
 }
@@ -96,7 +96,7 @@ double AudioBufferStreamSourceNode::getStopTime() const {
  * Helper functions
  */
 
-void AudioBufferStreamSourceNode::processWithPitchCorrection(
+void AudioBufferQueueSourceNode::processWithPitchCorrection(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
@@ -140,7 +140,7 @@ void AudioBufferStreamSourceNode::processWithPitchCorrection(
   }
 }
 
-void AudioBufferStreamSourceNode::processWithoutInterpolation(
+void AudioBufferQueueSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBus> &processingBus,
     size_t startOffset,
     size_t offsetLength) {
