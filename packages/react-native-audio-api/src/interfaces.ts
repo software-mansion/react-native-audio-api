@@ -120,6 +120,11 @@ export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
     isLastBuffer: boolean
   ) => void;
   start: (when?: number, offset?: number) => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onPositionChanged: string;
+  // set how often the onPositionChanged event is called
+  onPositionChangedInterval: number;
 }
 
 export interface IAudioBuffer {

@@ -12,6 +12,11 @@ export interface OnEndedEventType {
   bufferId: number | undefined;
 }
 
+export interface OnPositionChangedEventType {
+  value: number;
+  bufferId: number;
+}
+
 interface OnInterruptionEventType {
   type: 'ended' | 'began';
   shouldResume: boolean;
@@ -48,6 +53,7 @@ export interface OnAudioReadyEventType {
 interface AudioAPIEvents {
   ended: OnEndedEventType;
   audioReady: OnAudioReadyEventType;
+  positionChanged: OnPositionChangedEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
 }

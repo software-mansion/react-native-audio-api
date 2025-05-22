@@ -56,7 +56,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void handleStopScheduled();
 
-    uint64_t onEndedCallbackId_ = 0;
+  uint64_t onEndedCallbackId_ = 0;
 };
 
 } // namespace audioapi

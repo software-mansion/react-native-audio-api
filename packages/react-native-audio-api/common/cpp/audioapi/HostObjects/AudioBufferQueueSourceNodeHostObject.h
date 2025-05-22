@@ -21,6 +21,10 @@ class AudioBufferQueueSourceNodeHostObject
                 JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, detune),
                 JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, playbackRate));
 
+        addSetters(
+                JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChanged),
+                JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChangedInterval));
+
         // start method is overridden in this class
         functions_->erase("start");
 
@@ -44,6 +48,20 @@ class AudioBufferQueueSourceNodeHostObject
         auto playbackRateHostObject =
                 std::make_shared<AudioParamHostObject>(playbackRate);
         return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
+    }
+
+    JSI_PROPERTY_SETTER(onPositionChanged) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->setOnPositionChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+    }
+
+    JSI_PROPERTY_SETTER(onPositionChangedInterval) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->setOnPositionChangedInterval(value.getNumber());
     }
 
     JSI_HOST_FUNCTION(start) {

@@ -27,6 +27,8 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
       std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
   stretch_->presetDefault(channelCount_, context_->getSampleRate(), true);
 
+  onPositionChangedInterval_ = static_cast<int>(context_->getSampleRate() / 10);
+
   isInitialized_ = true;
 }
 
@@ -106,6 +108,28 @@ double AudioBufferQueueSourceNode::getStopTime() const {
       static_cast<int>(vReadIndex_), context_->getSampleRate());
 }
 
+void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
+    onPositionChangedCallbackId_ = callbackId;
+}
+
+void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
+    if (onPositionChangedTime_ > onPositionChangedInterval_) {
+      std::unordered_map<std::string, EventValue> body = {
+              {"value", getStopTime()}, {"bufferId", bufferId_}};
+
+      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+              "positionChanged", onPositionChangedCallbackId_, body);
+
+      onPositionChangedTime_ = 0;
+    }
+
+    onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
+}
+
+void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
+    onPositionChangedInterval_ = static_cast<int>(context_->getSampleRate() * 1000 / static_cast<float>(interval));
+}
+
 /**
  * Helper functions
  */
@@ -132,6 +156,9 @@ void AudioBufferQueueSourceNode::processWithPitchCorrection(
     processingBus->zero();
     return;
   }
+
+  // Send position changed event
+  sendOnPositionChangedEvent();
 
   auto framesNeededToStretch =
       static_cast<int>(playbackRate * static_cast<float>(framesToProcess));

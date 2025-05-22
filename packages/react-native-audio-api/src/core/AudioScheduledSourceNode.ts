@@ -6,7 +6,7 @@ import { AudioEventEmitter } from '../events';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
-  private readonly audioEventEmitter = new AudioEventEmitter(
+  protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
 
