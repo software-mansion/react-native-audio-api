@@ -112,18 +112,20 @@ void AudioBufferStreamSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  auto framesNeededToStretch =
-      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-
   updatePlaybackInfo(
-      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
+      processingBus, framesToProcess, startOffset, offsetLength);
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
     return;
   }
 
-  processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength);
+    auto framesNeededToStretch =
+            static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto stretchedStartOffset = static_cast<size_t>(static_cast<float>(startOffset) * playbackRate);
+    auto stretchedOffsetLength = static_cast<size_t>(static_cast<float>(offsetLength) * playbackRate);
+
+  processWithoutInterpolation(playbackRateBus_, stretchedStartOffset, stretchedOffsetLength);
 
   stretch_->process(
       playbackRateBus_.get()[0],
