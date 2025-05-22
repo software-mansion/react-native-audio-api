@@ -129,7 +129,7 @@ void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
 
 void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
   onPositionChangedInterval_ = static_cast<int>(
-      context_->getSampleRate() * 1000 / static_cast<float>(interval));
+      context_->getSampleRate() * static_cast<float>(interval) / 1000);
 }
 
 /**
