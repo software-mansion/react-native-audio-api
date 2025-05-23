@@ -1,5 +1,7 @@
 package com.swmansion.audioapi
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -78,6 +80,7 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
+  @RequiresApi(Build.VERSION_CODES.O)
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
@@ -94,5 +97,17 @@ class AudioAPIModule(
   override fun checkRecordingPermissions(promise: Promise?) {
     val res = MediaSessionManager.checkRecordingPermissions()
     promise!!.resolve(res)
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun requestAudioFocus(
+    options: ReadableMap,
+    observeAudioInterruptions: Boolean,
+  ) {
+    MediaSessionManager.requestAudioFocus(options, observeAudioInterruptions)
+  }
+
+  override fun abandonAudioFocus() {
+    MediaSessionManager.abandonAudioFocus()
   }
 }

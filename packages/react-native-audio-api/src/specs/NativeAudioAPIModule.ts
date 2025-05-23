@@ -1,7 +1,7 @@
 'use strict';
 import { TurboModuleRegistry } from 'react-native';
 import type { TurboModule } from 'react-native';
-import { PermissionStatus } from '../system/types';
+import { PermissionStatus, AudioAttributeType } from '../system/types';
 
 interface Spec extends TurboModule {
   install(): boolean;
@@ -18,6 +18,13 @@ interface Spec extends TurboModule {
   ): void;
   getDevicePreferredSampleRate(): number;
   observeAudioInterruptions(enabled: boolean): void;
+  requestAudioFocus(
+    options: {
+      [key: string]: string | boolean | number | AudioAttributeType | undefined;
+    },
+    observeAudioInterruptions: boolean
+  ): void;
+  abandonAudioFocus(): void;
   observeVolumeChanges(enabled: boolean): void;
   requestRecordingPermissions(): Promise<PermissionStatus>;
   checkRecordingPermissions(): Promise<PermissionStatus>;
