@@ -9,7 +9,7 @@
 
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = AVAudioSessionCategoryOptionAllowAirPlay;
+    self.sessionOptions = 0;
     self.hasDirtySettings = true;
     self.isActive = false;
   }

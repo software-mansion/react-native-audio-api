@@ -19,7 +19,10 @@
   if (self = [super init]) {
     self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    });
   }
 
   return self;
@@ -29,6 +32,10 @@
 {
   NSLog(@"[LockScreenManager] cleanup");
   [self resetLockScreenInfo];
+  
+  dispatch_async(dispatch_get_main_queue(), ^{
+      [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+  });
 }
 
 - (void)setLockScreenInfo:(NSDictionary *)info
