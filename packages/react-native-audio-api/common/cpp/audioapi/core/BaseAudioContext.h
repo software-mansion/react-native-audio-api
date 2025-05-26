@@ -62,6 +62,7 @@ class BaseAudioContext {
   AudioNodeManager *getNodeManager();
 
   [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
 
  protected:

@@ -21,9 +21,8 @@ class IOSAudioPlayer {
   ~IOSAudioPlayer();
 
   void start();
-  void resume();
   void stop();
-  void pause();
+  void cleanup();
 
  protected:
   std::shared_ptr<AudioBus> audioBus_;

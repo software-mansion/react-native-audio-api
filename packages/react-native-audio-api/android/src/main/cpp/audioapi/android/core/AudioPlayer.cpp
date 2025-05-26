@@ -33,25 +33,19 @@ void AudioPlayer::start() {
   }
 }
 
-void AudioPlayer::resume() {
+void AudioPlayer::stop() {
   if (mStream_) {
-    mStream_->requestStart();
+    mStream_->requestPause();
   }
 }
 
-void AudioPlayer::stop() {
+void AudioPlayer::cleanup() {
   isInitialized_ = false;
 
   if (mStream_) {
     mStream_->requestStop();
     mStream_->close();
     mStream_.reset();
-  }
-}
-
-void AudioPlayer::pause() {
-  if (mStream_) {
-    mStream_->requestPause();
   }
 }
 

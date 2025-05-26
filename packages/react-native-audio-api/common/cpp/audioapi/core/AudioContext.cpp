@@ -36,28 +36,28 @@ AudioContext::~AudioContext() {
 
 void AudioContext::close() {
   state_ = ContextState::CLOSED;
-  audioPlayer_->stop();
 
+  audioPlayer_->cleanup();
   nodeManager_->cleanup();
 }
 
 bool AudioContext::resume() {
-  if (isClosed()) {
+  if (isClosed() || isRunning()) {
     return false;
   }
 
   state_ = ContextState::RUNNING;
-  audioPlayer_->resume();
+  audioPlayer_->start();
   return true;
 }
 
 bool AudioContext::suspend() {
-  if (isClosed()) {
+  if (isClosed() || isSuspended()) {
     return false;
   }
 
   state_ = ContextState::SUSPENDED;
-  audioPlayer_->pause();
+  audioPlayer_->stop();
   return true;
 }
 
