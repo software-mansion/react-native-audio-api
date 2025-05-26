@@ -59,19 +59,17 @@ class AudioFocusListener(
     }
   }
 
-  fun requestAudioFocus() {
+  fun requestAudioFocus(
+    focusRequest: AudioFocusRequest.Builder,
+    observeAudioInterruptions: Boolean,
+  ): Int? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      this.focusRequest =
-        AudioFocusRequest
-          .Builder(AudioManager.AUDIOFOCUS_GAIN)
-          .setOnAudioFocusChangeListener(this)
-          .build()
-
-      audioManager.get()?.requestAudioFocus(focusRequest!!)
+      if (observeAudioInterruptions) focusRequest.setOnAudioFocusChangeListener(this)
+      this.focusRequest = focusRequest.build()
+      audioManager.get()?.requestAudioFocus(this.focusRequest!!)
     } else {
       audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
     }
-  }
 
   fun abandonAudioFocus() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && this.focusRequest != null) {

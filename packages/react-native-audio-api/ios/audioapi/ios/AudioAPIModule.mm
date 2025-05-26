@@ -105,14 +105,25 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
+RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
+{
+  [self.notificationManager observeVolumeChanges:enabled];
+}
+
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
 {
   [self.notificationManager observeAudioInterruptions:enabled];
 }
 
-RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
+// android-only support for options
+RCT_EXPORT_METHOD(requestAudioFocus : (NSDictionary *)options) : (BOOL)observeAudioInterruptions
 {
-  [self.notificationManager observeVolumeChanges:(BOOL)enabled];
+  [self.notificationManager observeAudioInterruptions:observeAudioInterruptions];
+}
+
+RCT_EXPORT_METHOD(abandonAudioFocus)
+{
+  [self.notificationManager observeAudioInterruptions:false];
 }
 
 RCT_EXPORT_METHOD(
