@@ -55,7 +55,10 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  override fun setAudioSessionActivity(enabled: Boolean, promise: Promise?) {
+  override fun setAudioSessionActivity(
+    enabled: Boolean,
+    promise: Promise?,
+  ) {
     // noting to do here
   }
 

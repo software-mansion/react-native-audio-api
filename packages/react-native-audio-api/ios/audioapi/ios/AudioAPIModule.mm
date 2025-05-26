@@ -85,14 +85,15 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve
-                 reject : (RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
+        reject)
 {
   if ([self.audioSessionManager setActive:enabled]) {
     resolve(@"true");
     return;
   }
-  
+
   resolve(@"false");
 }
 
