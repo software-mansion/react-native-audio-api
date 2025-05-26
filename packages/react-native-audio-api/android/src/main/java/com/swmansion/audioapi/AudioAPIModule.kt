@@ -53,6 +53,20 @@ class AudioAPIModule(
     return true
   }
 
+  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
+
+  override fun setAudioSessionActivity(enabled: Boolean, promise: Promise?) {
+    // noting to do here
+  }
+
+  override fun setAudioSessionOptions(
+    category: String?,
+    mode: String?,
+    options: ReadableArray?,
+  ) {
+    // noting to do here
+  }
+
   override fun setLockScreenInfo(info: ReadableMap?) {
     MediaSessionManager.setLockScreenInfo(info)
   }
@@ -67,16 +81,6 @@ class AudioAPIModule(
   ) {
     MediaSessionManager.enableRemoteCommand(name!!, enabled)
   }
-
-  override fun setAudioSessionOptions(
-    category: String?,
-    mode: String?,
-    options: ReadableArray?,
-  ) {
-    // noting to do here
-  }
-
-  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)

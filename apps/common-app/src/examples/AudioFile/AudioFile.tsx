@@ -49,10 +49,12 @@ const AudioFile: FC = () => {
     }
   };
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (!audioContextRef.current) {
       return;
     }
+
+    await audioContextRef.current.resume();
 
     if (isPlaying) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
@@ -116,6 +118,8 @@ const AudioFile: FC = () => {
       audioContextRef.current = new AudioContext();
     }
 
+    audioContextRef.current.suspend();
+
     AudioManager.setLockScreenInfo({
       title: 'Audio file',
       artist: 'Software Mansion',
@@ -123,14 +127,19 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    const remotePlaySubscription = AudioManager.enableSystemEvent(
+    AudioManager.enableRemoteCommand('remotePlay', true);
+    AudioManager.enableRemoteCommand('remotePause', true);
+    AudioManager.enableRemoteCommand('remoteChangePlaybackPosition', true);
+    AudioManager.observeAudioInterruptions(true);
+
+    const remotePlaySubscription = AudioManager.addSystemEventListener(
       'remotePlay',
       (event) => {
         console.log('remotePlay event:', event);
       }
     );
 
-    const remotePauseSubscription = AudioManager.enableSystemEvent(
+    const remotePauseSubscription = AudioManager.addSystemEventListener(
       'remotePause',
       (event) => {
         console.log('remotePause event:', event);
@@ -138,21 +147,19 @@ const AudioFile: FC = () => {
     );
 
     const remoteChangePlaybackPositionSubscription =
-      AudioManager.enableSystemEvent(
+      AudioManager.addSystemEventListener(
         'remoteChangePlaybackPosition',
         (event) => {
           console.log('remoteChangePlaybackPosition event:', event);
         }
       );
 
-    const interruptionSubscription = AudioManager.enableSystemEvent(
+    const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       (event) => {
         console.log('Interruption event:', event);
       }
     );
-
-    AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 

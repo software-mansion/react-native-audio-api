@@ -40,6 +40,8 @@
 
 - (void)setLockScreenInfo:(NSDictionary *)info
 {
+  self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
+  
   // now playing info(lock screen info)
   NSMutableDictionary *lockScreenInfoDict;
 
@@ -67,6 +69,8 @@
       self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStatePaused;
     }
   }
+  
+  self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStatePaused;
 
   // artwork
   NSString *artworkUrl = [self getArtworkUrl:[info objectForKey:@"artwork"]];
@@ -75,6 +79,7 @@
 
 - (void)resetLockScreenInfo
 {
+  self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
   self.playingInfoCenter.nowPlayingInfo = nil;
   self.artworkUrl = nil;
 }
