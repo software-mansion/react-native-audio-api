@@ -75,13 +75,33 @@ Resets all of the lock screen data.
 
 #### Returns `undefined`
 
-### `enableSystemEvent`
+### `enableRemoteCommand`
+
+Enables emmition of some system events.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`Name`](/system/audio-manager#name-systemeventcallbackname) | Name of an event listener |
-| `callback` <Optional /> | [`SystemEventCallback<Name>`](/system/audio-manager#name-systemeventcallbackname) | Callback that will be invoked upon hearing an event |
-| `enabled` | `boolean` (default value is `true`)| Can be used to enable or disable emmiting system event | 
+| `name` | [`RemoteCommandEventName`](/system/audio-manager#name--systemeventcallbackname--remotecommandeventname) | Name of an event |
+| `enabled` | `boolean` | Indicates the start or the end of event emmition |
+
+#### Returns `undefined`
+
+:::info
+
+If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/system/audio-manager#addsystemeventlistener)
+with proper parameters.
+
+:::
+
+
+### `addSystemEventListener`
+
+Adds callback to be invoked upon hearing an event.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `name` | [`Name`](/system/audio-manager#name--systemeventcallbackname--remotecommandeventname) | Name of an event listener |
+| `callback` | [`SystemEventCallback<Name>`](/system/audio-manager#name--systemeventcallbackname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
 
 #### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
 
@@ -169,9 +189,7 @@ interface SessionOptions {
 </details>
 
 
-### `Name` `SystemEventCallback<Name>`
-
-TODO: description of what each of the name means
+### `Name` | `SystemEventCallback<Name>` | `RemoteCommandEventName`
 
 <details>
 <summary>Type definitions</summary>
@@ -191,24 +209,30 @@ interface OnRouteChangeEventType {
   reason: string; //cause of event emmition
 }
 
-interface SystemEvents {
+// visit https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter?language=objc
+// for further info
+interface RemoteCommandEvents {
   remotePlay: EventEmptyType;
   remotePause: EventEmptyType;
   remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType;
+  remoteTogglePlayPause: EventEmptyType; // iOS only
   remoteChangePlaybackRate: EventTypeWithValue;
   remoteNextTrack: EventEmptyType;
   remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventEmptyType;
-  remoteSkipBackward: EventEmptyType;
-  remoteSeekForward: EventTypeWithValue;
-  remoteSeekBackward: EventTypeWithValue;
+  remoteSkipForward: EventTypeWithValue;
+  remoteSkipBackward: EventTypeWithValue; // iOS only
+  remoteSeekForward: EventEmptyType; // iOS only
+  remoteSeekBackward: EventEmptyType;
   remoteChangePlaybackPosition: EventTypeWithValue;
-  volumeChange: EventTypeWithValue;
-  interruption: OnInterruptionEventType;
-  routeChange: OnRouteChangeEventType;
 }
 
+type SystemEvents = RemoteCommandEvents & {
+  volumeChange: EventTypeWithValue; //triggered when volume level is changed
+  interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
+  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones
+};
+
+type RemoteCommandEventName = keyof RemoteCommandEvents;
 type SystemEventName = keyof SystemEvents;
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
