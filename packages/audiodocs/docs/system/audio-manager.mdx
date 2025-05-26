@@ -13,7 +13,7 @@ It provides a set of system-specific functions that are invoked directly in nati
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `audioEventEmitter` <ReadOnly /> | `AudioEventEmitter` | Custom event emmiter that allows to create listener to events, that are invoked from a system. |
+| `audioEventEmitter` <ReadOnly /> | `AudioEventEmitter` | Custom event emiter that allows to create listener to events, that are invoked from a system. |
 
 ## Example
 
@@ -77,12 +77,12 @@ Resets all of the lock screen data.
 
 ### `enableRemoteCommand`
 
-Enables emmition of some system events.
+Enables emition of some system events.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`RemoteCommandEventName`](/system/audio-manager#name--systemeventcallbackname--remotecommandeventname) | Name of an event |
-| `enabled` | `boolean` | Indicates the start or the end of event emmition |
+| `enabled` | `boolean` | Indicates the start or the end of event emition |
 
 #### Returns `undefined`
 
@@ -206,7 +206,7 @@ interface OnInterruptionEventType {
 }
 
 interface OnRouteChangeEventType {
-  reason: string; //cause of event emmition
+  reason: string; //cause of event emition
 }
 
 // visit https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter?language=objc
@@ -229,7 +229,7 @@ interface RemoteCommandEvents {
 type SystemEvents = RemoteCommandEvents & {
   volumeChange: EventTypeWithValue; //triggered when volume level is changed
   interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
-  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones
+  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
 };
 
 type RemoteCommandEventName = keyof RemoteCommandEvents;
