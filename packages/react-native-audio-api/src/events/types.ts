@@ -34,10 +34,10 @@ interface RemoteCommandEvents {
   remoteChangePlaybackRate: EventTypeWithValue;
   remoteNextTrack: EventEmptyType;
   remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventEmptyType;
-  remoteSkipBackward: EventEmptyType;
-  remoteSeekForward: EventTypeWithValue;
-  remoteSeekBackward: EventTypeWithValue;
+  remoteSkipForward: EventTypeWithValue;
+  remoteSkipBackward: EventTypeWithValue;
+  remoteSeekForward: EventEmptyType;
+  remoteSeekBackward: EventEmptyType;
   remoteChangePlaybackPosition: EventTypeWithValue;
 }
 
