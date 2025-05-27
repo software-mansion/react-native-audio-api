@@ -19,7 +19,10 @@
   if (self = [super init]) {
     self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    });
   }
 
   return self;
@@ -29,10 +32,16 @@
 {
   NSLog(@"[LockScreenManager] cleanup");
   [self resetLockScreenInfo];
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+  });
 }
 
 - (void)setLockScreenInfo:(NSDictionary *)info
 {
+  self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
+
   // now playing info(lock screen info)
   NSMutableDictionary *lockScreenInfoDict;
 
@@ -61,6 +70,8 @@
     }
   }
 
+  self.playingInfoCenter.playbackState = MPNowPlayingPlaybackStatePaused;
+
   // artwork
   NSString *artworkUrl = [self getArtworkUrl:[info objectForKey:@"artwork"]];
   [self updateArtworkIfNeeded:artworkUrl];
@@ -68,6 +79,7 @@
 
 - (void)resetLockScreenInfo
 {
+  self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
   self.playingInfoCenter.nowPlayingInfo = nil;
   self.artworkUrl = nil;
 }

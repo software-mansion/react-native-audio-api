@@ -113,6 +113,11 @@ const config = {
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
     },
+    algolia: {
+      appId: '7OKARNAQRP',
+      apiKey: 'f06db3d3f64e619012f52f9fb3edf349',
+      indexName: 'swmansion',
+    },
   },
 
   plugins: [

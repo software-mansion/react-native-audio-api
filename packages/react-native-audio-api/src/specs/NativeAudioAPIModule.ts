@@ -5,20 +5,28 @@ import { PermissionStatus } from '../system/types';
 
 interface Spec extends TurboModule {
   install(): boolean;
+  getDevicePreferredSampleRate(): number;
 
-  setLockScreenInfo(info: {
-    [key: string]: string | boolean | number | undefined;
-  }): void;
-  resetLockScreenInfo(): void;
-  enableRemoteCommand(name: string, enabled: boolean): void;
+  // AVAudioSession management
+  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
   setAudioSessionOptions(
     category: string,
     mode: string,
     options: Array<string>
   ): void;
-  getDevicePreferredSampleRate(): number;
+
+  // Lock Screen Info
+  setLockScreenInfo(info: {
+    [key: string]: string | boolean | number | undefined;
+  }): void;
+  resetLockScreenInfo(): void;
+
+  // Remote commands, system events and interruptions
+  enableRemoteCommand(name: string, enabled: boolean): void;
   observeAudioInterruptions(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
+
+  // Permissions
   requestRecordingPermissions(): Promise<PermissionStatus>;
   checkRecordingPermissions(): Promise<PermissionStatus>;
 }

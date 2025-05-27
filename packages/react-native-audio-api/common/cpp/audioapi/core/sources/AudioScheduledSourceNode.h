@@ -43,6 +43,9 @@ class AudioScheduledSourceNode : public AudioNode {
   void disable() override;
 
  protected:
+  double startTime_;
+  double stopTime_;
+
   PlaybackState playbackState_;
 
   void updatePlaybackInfo(
@@ -52,10 +55,6 @@ class AudioScheduledSourceNode : public AudioNode {
       size_t &nonSilentFramesToProcess);
 
   void handleStopScheduled();
-
- private:
-  double startTime_;
-  double stopTime_;
 
   uint64_t onEndedCallbackId_ = 0;
 };

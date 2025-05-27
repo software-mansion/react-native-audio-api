@@ -43,12 +43,7 @@ IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
-  stop();
-  [audioPlayer_ cleanup];
-
-  if (audioBus_) {
-    audioBus_ = nullptr;
-  }
+  cleanup();
 }
 
 void IOSAudioPlayer::start()
@@ -61,20 +56,20 @@ void IOSAudioPlayer::start()
   isRunning_.store(true);
 }
 
-void IOSAudioPlayer::resume()
-{
-  isRunning_.store(true);
-}
-
 void IOSAudioPlayer::stop()
 {
   isRunning_.store(false);
   [audioPlayer_ stop];
 }
 
-void IOSAudioPlayer::pause()
+void IOSAudioPlayer::cleanup()
 {
-  isRunning_.store(false);
+  stop();
+  [audioPlayer_ cleanup];
+
+  if (audioBus_) {
+    audioBus_ = nullptr;
+  }
 }
 
 } // namespace audioapi

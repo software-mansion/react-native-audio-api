@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo, FC } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  FC,
+} from 'react';
 import { ActivityIndicator } from 'react-native';
 import {
   AudioBuffer,
   AudioContext,
-  AudioBufferSourceNode,
   AudioManager,
 } from 'react-native-audio-api';
 import { AudioPlayer } from '../../utils/AudioPlayer';
@@ -40,7 +46,7 @@ const AudioFile: FC = () => {
     return () => {
       audioPlayer.stop();
       audioContext.close();
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -49,24 +55,23 @@ const AudioFile: FC = () => {
         setElapsedTime((prev) => prev + 1);
       }
     }, 1000 / playbackRate);
-    
+
     return () => clearTimeout(timerRef.current!);
   }, [isPlaying, playbackRate, elapsedTime]);
 
   useEffect(() => {
+    AudioManager.setLockScreenInfo({
+      elapsedTime: elapsedTime * 1000,
+    });
+    if (elapsedTime > TRACK_LENGTH) {
+      setElapsedTime(0);
+      setIsPlaying(false);
+      audioPlayer.stop();
       AudioManager.setLockScreenInfo({
-        elapsedTime: elapsedTime * 1000,
+        state: 'state_paused',
       });
-      if (elapsedTime > TRACK_LENGTH) {
-        setElapsedTime(0);
-        setIsPlaying(false);
-        audioPlayer.stop();
-        AudioManager.setLockScreenInfo({
-          state: 'state_paused',
-        });
-      }
-  }, [elapsedTime]);
-
+    }
+  }, [elapsedTime, audioPlayer]);
 
   const handlePress = useCallback(() => {
     if (isPlaying) {
@@ -80,23 +85,21 @@ const AudioFile: FC = () => {
       }
       AudioManager.setLockScreenInfo({
         state: 'state_playing',
-      })
+      });
       audioPlayer.buffer = audioBuffer!;
       audioPlayer.playbackRate = playbackRate;
       audioPlayer.play();
     }
 
     setIsPlaying((prev) => !prev);
-  }, [isPlaying, audioBuffer, playbackRate]);
+  }, [isPlaying, audioBuffer, playbackRate, audioPlayer]);
 
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
 
     const buffer = await fetch(URL)
       .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) =>
-        audioContext.decodeAudioData(arrayBuffer)
-      )
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
         return null;
@@ -112,34 +115,38 @@ const AudioFile: FC = () => {
       fetchAudioBuffer();
     }
 
+    audioContext.suspend();
+
     AudioManager.setLockScreenInfo({
       title: 'Audio file',
       artist: 'Software Mansion',
       album: 'Audio API',
       duration: TRACK_LENGTH,
     });
-
-  }, [fetchAudioBuffer])
+  }, [fetchAudioBuffer, audioBuffer]);
 
   useEffect(() => {
+    AudioManager.enableRemoteCommand('remotePlay', true);
+    AudioManager.enableRemoteCommand('remotePause', true);
+    AudioManager.enableRemoteCommand('remoteChangePlaybackPosition', true);
 
-    const remotePlaySubscription = AudioManager.enableSystemEvent(
-      'remotePlay', () => handlePress()
+    const remotePlaySubscription = AudioManager.addSystemEventListener(
+      'remotePlay',
+      () => handlePress()
     );
 
-    const remotePauseSubscription = AudioManager.enableSystemEvent(
-      'remotePause', () => handlePress()
+    const remotePauseSubscription = AudioManager.addSystemEventListener(
+      'remotePause',
+      () => handlePress()
     );
 
     const remoteChangePlaybackPositionSubscription =
-      AudioManager.enableSystemEvent(
+      AudioManager.addSystemEventListener(
         'remoteChangePlaybackPosition',
         (event) => {
           audioPlayer.stop();
           if (isPlaying) {
-            audioPlayer.play(
-              event.value || 0
-            );
+            audioPlayer.play(event.value || 0);
           } else {
             audioPlayer.offset = event.value || 0;
           }
@@ -147,7 +154,7 @@ const AudioFile: FC = () => {
         }
       );
 
-    const interruptionSubscription = AudioManager.enableSystemEvent(
+    const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       (event) => {
         console.log('Interruption event:', event);
@@ -160,7 +167,7 @@ const AudioFile: FC = () => {
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
     };
-  }, [handlePress]);
+  }, [handlePress, audioPlayer]);
 
   return (
     <Container centered>

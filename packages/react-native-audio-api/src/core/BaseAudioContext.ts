@@ -13,6 +13,7 @@ import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
+import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 
 export default class BaseAudioContext {
@@ -58,6 +59,13 @@ export default class BaseAudioContext {
     return new AudioBufferSourceNode(
       this,
       this.context.createBufferSource(pitchCorrection)
+    );
+  }
+
+  createBufferQueueSource(): AudioBufferQueueSourceNode {
+    return new AudioBufferQueueSourceNode(
+      this,
+      this.context.createBufferQueueSource()
     );
   }
 
