@@ -131,15 +131,13 @@ RCT_EXPORT_METHOD(
     requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
         reject)
 {
-  NSString *res = [self.audioSessionManager requestRecordingPermissions];
-  resolve(res);
+  [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(
     checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  NSString *res = [self.audioSessionManager checkRecordingPermissions];
-  resolve(res);
+  [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
