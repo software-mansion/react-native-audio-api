@@ -27,6 +27,52 @@ export type IOSOption =
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
 
+export type audioAttributeUsageType =
+  | 'usage_alarm'
+  | 'usage_assistance_accessibility'
+  | 'usage_assistance_navigation_guidance'
+  | 'usage_assistance_sonification'
+  | 'usage_assistant'
+  | 'usage_game'
+  | 'usage_media'
+  | 'usage_notification'
+  | 'usage_notification_event'
+  | 'usage_notification_ringtone'
+  | 'usage_notification_communication_request'
+  | 'usage_notification_communication_instant'
+  | 'usage_notification_communication_delayed'
+  | 'usage_unknown'
+  | 'usage_voice_communication'
+  | 'usage_voice_communication_signalling';
+
+export type audioAttributeContentType =
+  | 'content_type_movie'
+  | 'content_type_music'
+  | 'content_type_sonification'
+  | 'content_type_speech'
+  | 'content_type_unknown';
+
+export type focusGainType =
+  | 'audiofocus_gain'
+  | 'audiofocus_gain_transient'
+  | 'audiofocus_gain_transient_exclusive'
+  | 'audiofocus_gain_transient_may_duck';
+
+export type AudioAttributeType = {
+  allowedCapturePolicy?:
+    | 'allow_capture_by_all'
+    | 'allow_capture_by_system'
+    | 'allow_capture_by_none';
+  contentType?: audioAttributeContentType;
+  flag?: 'flag_hw_av_sync' | 'flag_audibility_enforced';
+  hapticChannelsMuted?: boolean;
+  isContentSpatialized?: boolean;
+  spatializationBehavior?:
+    | 'spatialization_behavior_auto'
+    | 'spatialization_behavior_never';
+  usage?: audioAttributeUsageType;
+};
+
 export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
@@ -53,57 +99,11 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
-type audioAttributeUsageType =
-  | 'usage_alarm'
-  | 'usage_assistance_accessibility'
-  | 'usage_assistance_navigation_guidance'
-  | 'usage_assistance_sonification'
-  | 'usage_assistant'
-  | 'usage_game'
-  | 'usage_media'
-  | 'usage_notification'
-  | 'usage_notification_event'
-  | 'usage_notification_ringtone'
-  | 'usage_notification_communication_request'
-  | 'usage_notification_communication_instant'
-  | 'usage_notification_communication_delayed'
-  | 'usage_unknown'
-  | 'usage_voice_communication'
-  | 'usage_voice_communication_signalling';
-
-type audioAttributeContentType =
-  | 'content_type_movie'
-  | 'content_type_music'
-  | 'content_type_sonification'
-  | 'content_type_speech'
-  | 'content_type_unknown';
-
-type focusGainType =
-  | 'audiofocus_gain'
-  | 'audiofocus_gain_transient'
-  | 'audiofocus_gain_transient_exclusive'
-  | 'audiofocus_gain_transient_may_duck';
-
-export type AudioAttributeType = {
-  allowedCapturePolicy?:
-    | 'allow_capture_by_all'
-    | 'allow_capture_by_system'
-    | 'allow_capture_by_none';
-  contentType?: audioAttributeContentType;
-  flag?: 'flag_hw_av_sync' | 'flag_audibility_enforced';
-  hapticChannelsMuted?: boolean;
-  isContentSpatialized?: boolean;
-  spatializationBehavior?:
-    | 'spatialization_behavior_auto'
-    | 'spatialization_behavior_never';
-  usage?: audioAttributeUsageType;
-};
-
-interface BaseRequestAudioFocusOptions {
+interface BaseAudioFocusOptions {
   [key: string]: string | boolean | number | AudioAttributeType | undefined;
 }
 
-export interface RequestAudioFocusOptions extends BaseRequestAudioFocusOptions {
+export interface AudioFocusOptions extends BaseAudioFocusOptions {
   acceptsDelayedFocusGain?: boolean;
   audioAttributes?: AudioAttributeType;
   focusGain?: focusGainType;

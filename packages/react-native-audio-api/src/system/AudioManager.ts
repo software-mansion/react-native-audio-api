@@ -2,7 +2,7 @@ import {
   SessionOptions,
   LockScreenInfo,
   PermissionStatus,
-  RequestAudioFocusOptions,
+  AudioFocusOptions,
 } from './types';
 import { SystemEventName, SystemEventCallback } from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
@@ -49,10 +49,10 @@ class AudioManager {
   }
 
   requestAudioFocus(
-    request: RequestAudioFocusOptions,
-    observeAudioInterruption = true
+    observeAudioInterruption = true,
+    options?: AudioFocusOptions
   ) {
-    NativeAudioAPIModule!.requestAudioFocus(request, observeAudioInterruption);
+    NativeAudioAPIModule!.requestAudioFocus(observeAudioInterruption, options);
   }
 
   abandonAudioFocus() {

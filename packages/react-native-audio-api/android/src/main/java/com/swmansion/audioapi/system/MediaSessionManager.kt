@@ -170,8 +170,11 @@ object MediaSessionManager {
     return checkRecordingPermissions()
   }
 
-  private fun parseAudioFocusOptionMap(request: ReadableMap): Map<String, Int> {
+  private fun parseAudioFocusOptionMap(request: ReadableMap?): Map<String, Int> {
     val audioFocusOptions = HashMap<String, Int>()
+    if (request == null) {
+      return audioFocusOptions
+    }
     if (request.hasKey("focusGain")) {
       when (request.getString("focusGain")) {
         "audiofocus_gain" -> audioFocusOptions["focusGain"] = AudioManager.AUDIOFOCUS_GAIN
@@ -291,8 +294,8 @@ object MediaSessionManager {
 
   @RequiresApi(Build.VERSION_CODES.O)
   fun requestAudioFocus(
-    options: ReadableMap,
     observeAudioInterruptions: Boolean,
+    options: ReadableMap?,
   ) {
     val parsedRequest = parseAudioFocusOptionMap(options)
     val afbd = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
@@ -348,6 +351,21 @@ object MediaSessionManager {
     } else {
       "Denied"
     }
+
+  fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray,
+  ): String {
+    if (requestCode == 420) {
+      return if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        "Granted"
+      } else {
+        "Denied"
+      }
+    }
+    return "Undetermined"
+  }
 
   @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {

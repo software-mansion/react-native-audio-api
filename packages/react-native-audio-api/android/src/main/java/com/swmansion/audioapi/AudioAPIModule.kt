@@ -101,10 +101,10 @@ class AudioAPIModule(
 
   @RequiresApi(Build.VERSION_CODES.O)
   override fun requestAudioFocus(
-    options: ReadableMap,
     observeAudioInterruptions: Boolean,
+    options: ReadableMap?,
   ) {
-    MediaSessionManager.requestAudioFocus(options, observeAudioInterruptions)
+    MediaSessionManager.requestAudioFocus(observeAudioInterruptions, options)
   }
 
   override fun abandonAudioFocus() {

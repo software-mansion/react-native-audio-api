@@ -116,7 +116,7 @@ RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
 }
 
 // android-only support for options
-RCT_EXPORT_METHOD(requestAudioFocus : (NSDictionary *)options) : (BOOL)observeAudioInterruptions
+RCT_EXPORT_METHOD(requestAudioFocus : (BOOL)observeAudioInterruptions : (NSDictionary *)options)
 {
   [self.notificationManager observeAudioInterruptions:observeAudioInterruptions];
 }
