@@ -71,7 +71,7 @@ const withAudioAPI: ConfigPlugin<{
     androidForegroundService = true,
     androidFSPermissions = [],
     androidFSTypes = [],
-  }
+  } = {}
 ) => {
   if (iosBackgroundMode) {
     config = withBackgroundAudio(config);
