@@ -154,7 +154,7 @@ class MediaNotificationManager(
 
     skipForward =
       createAction(
-        "skip_forward_5",
+        "skip_forward_10",
         "Skip Forward",
         mask,
         PlaybackStateCompat.ACTION_FAST_FORWARD,
@@ -163,7 +163,7 @@ class MediaNotificationManager(
 
     skipBackward =
       createAction(
-        "skip_backward_5",
+        "skip_backward_10",
         "Skip Backward",
         mask,
         PlaybackStateCompat.ACTION_REWIND,

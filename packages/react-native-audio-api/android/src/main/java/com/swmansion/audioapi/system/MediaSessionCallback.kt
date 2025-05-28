@@ -44,11 +44,13 @@ class MediaSessionCallback(
   }
 
   override fun onFastForward() {
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipForward", mapOf())
+    val body = HashMap<String, Any>().apply { put("value", 10) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipForward", body)
   }
 
   override fun onRewind() {
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipBackward", mapOf())
+    val body = HashMap<String, Any>().apply { put("value", 10) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipBackward", body)
   }
 
   override fun onSeekTo(pos: Long) {

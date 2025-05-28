@@ -35,7 +35,7 @@ class LockScreenManager(
   private var artist: String? = null
   private var album: String? = null
   private var description: String? = null
-  private var duration: Long = 0
+  private var duration: Long = 0L
   private var speed: Float = 1.0F
   private var elapsedTime: Long = 0L
   private var artwork: String? = null
@@ -144,7 +144,7 @@ class LockScreenManager(
 
     elapsedTime =
       if (info.hasKey("elapsedTime")) {
-        info.getDouble("elapsedTime").toLong()
+        (info.getDouble("elapsedTime") * 1000).toLong()
       } else {
         state.position
       }
