@@ -19,7 +19,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.modules.core.PermissionAwareActivity
+import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import java.lang.ref.WeakReference
 
 object MediaSessionManager {
@@ -156,9 +159,13 @@ object MediaSessionManager {
     }
   }
 
+  fun requestRecordingPermissions(permissionListener: PermissionListener) {
+    val permissionAwareActivity = reactContext.get()!!.currentActivity as PermissionAwareActivity
+    permissionAwareActivity.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), RECORDING_REQUEST_CODE, permissionListener)
+  }
+
   fun checkRecordingPermissions(): String =
-    if (ContextCompat.checkSelfPermission(
-        reactContext.get()!!,
+    if (reactContext.get()!!.checkSelfPermission(
         Manifest.permission.RECORD_AUDIO,
       ) == PackageManager.PERMISSION_GRANTED
     ) {

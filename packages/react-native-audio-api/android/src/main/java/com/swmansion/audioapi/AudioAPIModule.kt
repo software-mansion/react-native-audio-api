@@ -1,6 +1,5 @@
 package com.swmansion.audioapi
 
-import android.content.Intent
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -10,7 +9,7 @@ import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.MediaSessionManager
-import com.swmansion.audioapi.system.RecordingPermissionActivity
+import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
@@ -96,16 +95,11 @@ class AudioAPIModule(
   }
 
   override fun requestRecordingPermissions(promise: Promise) {
-    val context = reactContext.get()
-    RecordingPermissionActivity.onResult = { granted -> promise.resolve(granted) }
-
-    val intent = Intent(context, RecordingPermissionActivity::class.java)
-    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    context?.startActivity(intent)
+    val permissionRequestListener = PermissionRequestListener(promise)
+    MediaSessionManager.requestRecordingPermissions(permissionRequestListener)
   }
 
   override fun checkRecordingPermissions(promise: Promise) {
-    val res = MediaSessionManager.checkRecordingPermissions()
-    promise.resolve(res)
+    promise.resolve(MediaSessionManager.checkRecordingPermissions())
   }
 }
