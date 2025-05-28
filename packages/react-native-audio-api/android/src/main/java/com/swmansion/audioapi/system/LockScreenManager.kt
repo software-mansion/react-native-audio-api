@@ -142,6 +142,10 @@ class LockScreenManager(
         state.playbackSpeed
       }
 
+    if (isPlaying && speed == 0F) {
+      speed = 1F
+    }
+
     elapsedTime =
       if (info.hasKey("elapsedTime")) {
         (info.getDouble("elapsedTime") * 1000).toLong()
