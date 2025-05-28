@@ -21,12 +21,9 @@ const withBackgroundAudio: ConfigPlugin = (config) => {
 };
 
 const withAndroidPermissions: ConfigPlugin<{
-  androidFSPermissions: string[];
-}> = (config, { androidFSPermissions }) => {
-  return AndroidConfig.Permissions.withPermissions(
-    config,
-    androidFSPermissions
-  );
+  androidPermissions: string[];
+}> = (config, { androidPermissions }) => {
+  return AndroidConfig.Permissions.withPermissions(config, androidPermissions);
 };
 
 const withForegroundService: ConfigPlugin<{
@@ -61,25 +58,27 @@ const withForegroundService: ConfigPlugin<{
 
 const withAudioAPI: ConfigPlugin<{
   iosBackgroundMode?: boolean;
+  androidPermissions?: string[];
   androidForegroundService?: boolean;
-  androidFSPermissions?: string[];
   androidFSTypes?: string[];
 }> = (
   config,
   {
     iosBackgroundMode = true,
+    androidPermissions = [],
     androidForegroundService = true,
-    androidFSPermissions = [],
     androidFSTypes = [],
   } = {}
 ) => {
   if (iosBackgroundMode) {
     config = withBackgroundAudio(config);
   }
+
+  config = withAndroidPermissions(config, {
+    androidPermissions,
+  });
+
   if (androidForegroundService) {
-    config = withAndroidPermissions(config, {
-      androidFSPermissions,
-    });
     config = withForegroundService(config, {
       androidFSTypes,
     });

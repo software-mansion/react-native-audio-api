@@ -39,19 +39,21 @@ Install the `react-native-audio-api` package from npm:
 
 Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
 
+<details>
+<summary>app.json</summary>
 ```javascript
-// app.json
 {
   "plugins": [
     [
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
-        "androidForegroundService": true,
-        "androidFSPermissions" : [
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
           "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
         ],
+        "androidForegroundService": true,
         "androidFSTypes": [
           "mediaPlayback"
         ]
@@ -60,9 +62,11 @@ Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
   ]
 }
 ```
+</details>
 
+<details>
+<summary>app.config.js</summary>
 ```javascript
-// app.config.js
 export default {
   ...
   "plugins": [
@@ -70,11 +74,12 @@ export default {
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
-        "androidForegroundService": true,
-        "androidFSPermissions" : [
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
           "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
         ],
+        "androidForegroundService": true,
         "androidFSTypes": [
           "mediaPlayback"
         ]
@@ -83,13 +88,9 @@ export default {
   ]
 };
 ```
-
-<details>
-<summary>Why is it helpful?</summary>
-
-In short, this plugin allows to set specific permissions required by background mode, microphone etc.
-
 </details>
+
+Read more about plugin [here](/other/audio-api-plugin)!
 
 ### Step 3: Wrap metro config with Audio API wrapper (recommended)
 
