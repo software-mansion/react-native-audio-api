@@ -1,7 +1,6 @@
 package com.swmansion.audioapi.system
 
 import android.Manifest
-import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
@@ -16,12 +15,14 @@ import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.modules.core.PermissionAwareActivity
+import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import java.lang.ref.WeakReference
 
 object MediaSessionManager {
@@ -158,14 +159,13 @@ object MediaSessionManager {
     }
   }
 
-  fun requestRecordingPermissions(currentActivity: Activity?): String {
-    ActivityCompat.requestPermissions(currentActivity!!, arrayOf(Manifest.permission.RECORD_AUDIO), 200)
-    return checkRecordingPermissions()
+  fun requestRecordingPermissions(permissionListener: PermissionListener) {
+    val permissionAwareActivity = reactContext.get()!!.currentActivity as PermissionAwareActivity
+    permissionAwareActivity.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), RECORDING_REQUEST_CODE, permissionListener)
   }
 
   fun checkRecordingPermissions(): String =
-    if (ContextCompat.checkSelfPermission(
-        reactContext.get()!!,
+    if (reactContext.get()!!.checkSelfPermission(
         Manifest.permission.RECORD_AUDIO,
       ) == PackageManager.PERMISSION_GRANTED
     ) {

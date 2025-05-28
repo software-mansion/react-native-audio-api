@@ -2,6 +2,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <React/RCTBridgeModule.h>
 
 @interface AudioSessionManager : NSObject
 
@@ -20,7 +21,7 @@
 - (NSNumber *)getDevicePreferredSampleRate;
 - (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options;
 - (bool)setActive:(bool)active;
-- (NSString *)requestRecordingPermissions;
-- (NSString *)checkRecordingPermissions;
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 
 @end
