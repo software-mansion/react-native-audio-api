@@ -2,6 +2,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/ExternalAudioProcessor.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -144,6 +145,26 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
   assert(processingBus != nullptr);
   // Finally, process the node itself.
   processNode(processingBus, framesToProcess);
+
+  // Retrieve external audio processor from the global registry
+  auto processor = ExternalAudioProcessorRegistry::getInstance().getProcessor();
+
+  if (processor) {
+    int numChannels = processingBus->getNumberOfChannels();
+
+    // Dynamically allocate channel pointers to match the actual channel count
+    std::vector<float*> channelData(numChannels, nullptr);
+
+    for (int ch = 0; ch < numChannels; ++ch) {
+      auto channel = processingBus->getChannel(ch);
+      if (channel) {
+        channelData[ch] = channel->getData();
+      }
+    }
+
+    // Send audio buffers to the external processor for custom processing
+    processor->process(channelData.data(), numChannels, framesToProcess);
+  }
 
   return processingBus;
 }
