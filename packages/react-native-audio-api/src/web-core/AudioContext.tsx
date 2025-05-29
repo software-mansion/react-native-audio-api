@@ -24,7 +24,7 @@ export default class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor(options?: AudioContextOptions) {
+  constructor(options?: AudioContextOptions, _initSuspended: boolean = false) {
     if (options && (options.sampleRate < 8000 || options.sampleRate > 96000)) {
       throw new NotSupportedError(
         `The provided sampleRate is not supported: ${options.sampleRate}`

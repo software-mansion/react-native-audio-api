@@ -5,7 +5,7 @@ import { AudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
 
 export default class AudioContext extends BaseAudioContext {
-  constructor(options?: AudioContextOptions) {
+  constructor(options?: AudioContextOptions, _initSuspended: boolean = false) {
     if (options && (options.sampleRate < 8000 || options.sampleRate > 96000)) {
       throw new NotSupportedError(
         `The provided sampleRate is not supported: ${options.sampleRate}`
@@ -14,7 +14,8 @@ export default class AudioContext extends BaseAudioContext {
 
     super(
       global.createAudioContext(
-        options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
+        options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
+        _initSuspended
       )
     );
   }
