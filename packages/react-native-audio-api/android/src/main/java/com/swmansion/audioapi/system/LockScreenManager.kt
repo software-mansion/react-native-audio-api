@@ -254,7 +254,7 @@ class LockScreenManager(
     return bitmap
   }
 
-  fun updatePlaybackState(playbackState: Int) {
+  private fun updatePlaybackState(playbackState: Int) {
     isPlaying = playbackState == PlaybackStateCompat.STATE_PLAYING
 
     pb.setState(playbackState, elapsedTime, speed)
@@ -289,6 +289,11 @@ class LockScreenManager(
     if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
       controlCount += 1
     }
+
+    if (hasControl(PlaybackStateCompat.ACTION_SEEK_TO)) {
+      controlCount += 1
+    }
+
     val actions = IntArray(controlCount)
     for (i in actions.indices) {
       actions[i] = i
