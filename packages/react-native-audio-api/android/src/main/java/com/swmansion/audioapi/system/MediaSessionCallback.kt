@@ -9,7 +9,8 @@ import java.lang.ref.WeakReference
 import java.util.HashMap
 
 class MediaSessionCallback(
-  private val audioAPIModule: WeakReference<AudioAPIModule>) : MediaSessionCompat.Callback() {
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
+) : MediaSessionCompat.Callback() {
   override fun onPlay() {
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePlay", mapOf())
   }
