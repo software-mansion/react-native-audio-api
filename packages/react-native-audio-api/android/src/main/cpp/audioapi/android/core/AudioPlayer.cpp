@@ -40,15 +40,15 @@ void AudioPlayer::stop() {
 }
 
 void AudioPlayer::resume() {
-    if (mStream_) {
-        mStream_->requestStart();
-    }
+  if (mStream_) {
+    mStream_->requestStart();
+  }
 }
 
 void AudioPlayer::suspend() {
-    if (mStream_) {
-        mStream_->requestPause();
-    }
+  if (mStream_) {
+    mStream_->requestPause();
+  }
 }
 
 void AudioPlayer::cleanup() {
