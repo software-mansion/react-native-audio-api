@@ -20,6 +20,7 @@
 - (bool)rebuildAudioEngine;
 - (void)startEngine;
 - (void)stopEngine;
+- (void)pauseEngine;
 - (bool)isRunning;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;

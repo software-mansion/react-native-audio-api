@@ -35,15 +35,26 @@ void AudioPlayer::start() {
 
 void AudioPlayer::stop() {
   if (mStream_) {
-    mStream_->requestPause();
+    mStream_->requestStop();
   }
+}
+
+void AudioPlayer::resume() {
+    if (mStream_) {
+        mStream_->requestStart();
+    }
+}
+
+void AudioPlayer::suspend() {
+    if (mStream_) {
+        mStream_->requestPause();
+    }
 }
 
 void AudioPlayer::cleanup() {
   isInitialized_ = false;
 
   if (mStream_) {
-    mStream_->requestStop();
     mStream_->close();
     mStream_.reset();
   }

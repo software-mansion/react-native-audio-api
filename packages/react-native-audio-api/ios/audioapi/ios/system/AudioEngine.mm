@@ -20,7 +20,6 @@ static AudioEngine *_sharedInstance = nil;
     self.sourceFormats = [[NSMutableDictionary alloc] init];
 
     self.sessionManager = sessionManager;
-    [self.sessionManager setActive:true];
   }
 
   _sharedInstance = self;
@@ -76,6 +75,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   [self.audioEngine startAndReturnError:&error];
+  [self.sessionManager setActive:true];
 
   if (error != nil) {
     NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
@@ -90,6 +90,16 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   [self.audioEngine stop];
+}
+
+- (void)pauseEngine
+{
+  NSLog(@"[AudioEngine] pauseEngine");
+  if (![self.audioEngine isRunning]) {
+    return;
+  }
+
+  [self.audioEngine pause];
 }
 
 - (bool)isRunning

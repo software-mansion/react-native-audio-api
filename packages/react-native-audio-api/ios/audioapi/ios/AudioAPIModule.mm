@@ -171,7 +171,7 @@ RCT_EXPORT_METHOD(
         body[stdKey] = EventValue([value doubleValue]);
       } else if (strcmp(type, @encode(float)) == 0) {
         body[stdKey] = EventValue([value floatValue]);
-      } else if (strcmp(type, @encode(BOOL)) == 0) {
+      } else {
         body[stdKey] = EventValue([value boolValue]);
       }
     }

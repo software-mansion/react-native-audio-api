@@ -12,9 +12,6 @@ import { Container, Button, Spacer, Slider } from '../../components';
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
 
-const LOOP_START = 0;
-const LOOP_END = 10;
-
 const INITIAL_RATE = 1;
 const INITIAL_DETUNE = 0;
 
@@ -54,17 +51,21 @@ const AudioFile: FC = () => {
       return;
     }
 
-    await audioContextRef.current.resume();
-
     if (isPlaying) {
       bufferSourceRef.current?.stop(audioContextRef.current.currentTime);
       AudioManager.setLockScreenInfo({
         state: 'state_paused',
       });
+
+      setTimeout(async () => {
+        await audioContextRef.current?.suspend();
+      }, 5);
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
       }
+
+      await audioContextRef.current.resume();
 
       AudioManager.setLockScreenInfo({
         state: 'state_playing',
@@ -76,12 +77,9 @@ const AudioFile: FC = () => {
         pitchCorrection: true,
       });
       bufferSourceRef.current.buffer = audioBuffer;
-      bufferSourceRef.current.loop = true;
       bufferSourceRef.current.onended = (event) => {
         setOffset((_prev) => event.value || 0);
       };
-      bufferSourceRef.current.loopStart = LOOP_START;
-      bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.playbackRate.value = playbackRate;
       bufferSourceRef.current.detune.value = detune;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
@@ -115,10 +113,8 @@ const AudioFile: FC = () => {
 
   useEffect(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+      audioContextRef.current = new AudioContext(undefined, true);
     }
-
-    audioContextRef.current.suspend();
 
     AudioManager.setLockScreenInfo({
       title: 'Audio file',
@@ -169,6 +165,7 @@ const AudioFile: FC = () => {
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
       audioContextRef.current?.close();
+      AudioManager.resetLockScreenInfo();
     };
   }, [fetchAudioBuffer]);
 

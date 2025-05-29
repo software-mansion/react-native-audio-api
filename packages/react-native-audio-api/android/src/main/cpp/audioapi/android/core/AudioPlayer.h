@@ -20,6 +20,8 @@ class AudioPlayer : public AudioStreamDataCallback {
 
   void start();
   void stop();
+  void resume();
+  void suspend();
   void cleanup();
 
   DataCallbackResult onAudioReady(

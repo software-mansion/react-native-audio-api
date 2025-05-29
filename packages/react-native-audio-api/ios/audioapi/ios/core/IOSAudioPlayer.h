@@ -22,6 +22,8 @@ class IOSAudioPlayer {
 
   void start();
   void stop();
+  void resume();
+  void suspend();
   void cleanup();
 
  protected:
