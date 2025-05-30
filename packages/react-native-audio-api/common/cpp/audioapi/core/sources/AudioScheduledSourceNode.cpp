@@ -100,7 +100,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     assert(nonSilentFramesToProcess <= framesToProcess);
 
     // stop will happen in the same render quantum
-    if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+    if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
       processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     }

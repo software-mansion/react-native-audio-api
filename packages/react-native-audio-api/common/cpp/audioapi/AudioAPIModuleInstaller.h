@@ -45,7 +45,8 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
-          audioContext = std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry);
+          auto initSuspended = args[1].getBool();
+          audioContext = std::make_shared<AudioContext>(sampleRate, initSuspended, audioEventHandlerRegistry);
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               audioContext, &runtime, jsCallInvoker);

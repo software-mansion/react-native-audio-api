@@ -81,7 +81,7 @@ object MediaSessionManager {
     this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
     this.mediaReceiver =
       MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
-    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.lockScreenManager)))
+    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule))
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)

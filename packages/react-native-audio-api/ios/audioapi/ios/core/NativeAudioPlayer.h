@@ -23,6 +23,10 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 - (void)stop;
 
+- (void)resume;
+
+- (void)suspend;
+
 - (void)cleanup;
 
 @end

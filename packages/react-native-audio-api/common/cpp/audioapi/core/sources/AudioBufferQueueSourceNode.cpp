@@ -152,7 +152,11 @@ void AudioBufferQueueSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+
+  updatePlaybackInfo(
+      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
@@ -162,15 +166,7 @@ void AudioBufferQueueSourceNode::processWithPitchCorrection(
   // Send position changed event
   sendOnPositionChangedEvent();
 
-  auto framesNeededToStretch =
-      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-  auto stretchedStartOffset =
-      static_cast<size_t>(static_cast<float>(startOffset) * playbackRate);
-  auto stretchedOffsetLength =
-      static_cast<size_t>(static_cast<float>(offsetLength) * playbackRate);
-
-  processWithoutInterpolation(
-      playbackRateBus_, stretchedStartOffset, stretchedOffsetLength);
+  processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength);
 
   stretch_->process(
       playbackRateBus_.get()[0],

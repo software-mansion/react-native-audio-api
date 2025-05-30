@@ -9,7 +9,10 @@ import type {
 
 /* eslint-disable no-var */
 declare global {
-  var createAudioContext: (sampleRate?: number) => IAudioContext;
+  var createAudioContext: (
+    sampleRate: number,
+    initSuspended: boolean
+  ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
