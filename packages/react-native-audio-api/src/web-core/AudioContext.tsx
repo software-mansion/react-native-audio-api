@@ -25,13 +25,17 @@ export default class AudioContext implements BaseAudioContext {
   readonly sampleRate: number;
 
   constructor(options?: AudioContextOptions, _initSuspended: boolean = false) {
-    if (options && (options.sampleRate < 8000 || options.sampleRate > 96000)) {
+    if (
+      options &&
+      options.sampleRate &&
+      (options.sampleRate < 8000 || options.sampleRate > 96000)
+    ) {
       throw new NotSupportedError(
         `The provided sampleRate is not supported: ${options.sampleRate}`
       );
     }
 
-    this.context = new window.AudioContext(options);
+    this.context = new window.AudioContext({ sampleRate: options?.sampleRate });
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);

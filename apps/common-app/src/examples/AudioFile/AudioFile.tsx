@@ -113,7 +113,7 @@ const AudioFile: FC = () => {
 
   useEffect(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext(undefined, true);
+      audioContextRef.current = new AudioContext({ initSuspended: true });
     }
 
     AudioManager.setLockScreenInfo({
