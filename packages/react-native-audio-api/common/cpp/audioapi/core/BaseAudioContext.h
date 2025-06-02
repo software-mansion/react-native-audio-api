@@ -24,6 +24,7 @@ class AudioNodeManager;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
+class AudioBufferQueueSourceNode;
 class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
@@ -44,6 +45,7 @@ class BaseAudioContext {
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
+  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource();
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
@@ -60,6 +62,7 @@ class BaseAudioContext {
   AudioNodeManager *getNodeManager();
 
   [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
 
  protected:
@@ -79,9 +82,7 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
- protected:
-    friend class AudioScheduledSourceNode;
-
+ public:
     std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 

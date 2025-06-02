@@ -1,0 +1,73 @@
+---
+sidebar_position: 4
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# OscillatorNode
+
+The `OscillatorNode` is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
+Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If you want to play the same sound again you have to create a new one.
+
+#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createOscillator(options)`](/core/base-audio-context#createoscillator)
+
+## Example
+
+```tsx
+import React, { useEffect, useRef, FC } from 'react';
+import {
+  AudioContext,
+  OscillatorNode,
+} from 'react-native-audio-api';
+
+export default MyComponent: FC = () => {
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const oscillator = audioContextRef.current.createOscillator();
+      oscillator.connect(audioContextRef.current.destination);
+      oscillator.start(audioContextRef.current.currentTime);
+    }
+  )
+}
+```
+
+## Properties
+
+| Name | Type | Default value | Description |
+| :----: | :----: | :-------- | :------- |
+| `detune` <ReadOnly /> | [`AudioParam`](/core/audio-param) | 0 |[`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `frequency` <ReadOnly /> | [`AudioParam`](/core/audio-param) | 440 | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
+| `type` | [`OscillatorType`](/types/oscillator-type)| `sine` | String value represening type of wave. |
+
+## Methods
+
+### `setPeriodicWave`
+
+The above allows user to set any periodic wave.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `wave` | `PeriodicWave` | Data representing custom wave. [`See for reference`](/core/base-audio-context#createperiodicwave) |
+
+#### Returns `undefined`.
+
+## Remarks
+
+#### `detune`
+- Nominal range is: -∞ to ∞.
+- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
+
+#### `frequency`
+- 440 Hz is equivalent to piano note A4.
+- Nominal range is: -sampleRate/2 to sampleRate/2 (`sampleRate` value is taken from [`AudioContext`](/core/base-audio-context#properties))

@@ -35,6 +35,52 @@ Based on them we can obtain output's number of channels and mixing strategy.
 | `channelCountMode` | [`ChannelCountMode`](/types/channel-count-mode) | Enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. | <ReadOnly /> |
 | `channelInterpretation` | [`ChannelInterpretation`](/types/channel-interpretation) | Enumerated value that specifies how input channels are mapped to output channels when number of them is different. | <ReadOnly /> |
 
+## Examples
+
+### Connecting node to node
+
+```tsx
+import { OscillatorNode, GainNode, AudioContext } from 'react-native-audio-api';
+
+function App() {
+  const audioContext = new AudioContext();
+  const oscillatorNode = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  gainNode.gain.value = 0.5; //lower volume to 0.5
+  oscillatorNode.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillatorNode.start(audioContext.currentTime);
+}
+```
+
+### Connecting node to audio param (LFO-controlled parameter)
+
+```tsx
+import { OscillatorNode, GainNode, AudioContext } from 'react-native-audio-api';
+
+function App() {
+  const audioContext = new AudioContext();
+  const oscillatorNode = audioContext.createOscillator();
+  const lfo = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  gainNode.gain.value = 0.5; //lower volume to 0.5
+  lfo.frequency.value = 2; //low frequency oscillator with 2Hz
+
+  // by default oscillator wave values ranges from -1 to 1
+  // connecting lfo to gain param will cause the gain param to oscillate at 2Hz and its value will range from 0.5 - 1 to 0.5 + 1
+  // you can modulate amplitude by connecting lfo to another gain that would be responsible for this value
+  lfo.connect(gainNode.gain)
+
+  oscillatorNode.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillatorNode.start(audioContext.currentTime);
+  lfo.start(audioContext.currentTime);
+}
+```
+
+
 ## Methods
 
 ### `connect`
@@ -43,7 +89,7 @@ The above method lets you connect one of the node's outputs to a destination.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` | [`AudioNode`](/core/audio-node) | `AudioNode` to which to connect. |
+| `destination` | [`AudioNode`](/core/audio-node) or [`AudioParam`](/core/audio-param) | `AudioNode` or `AudioParam` to which to connect. |
 
 #### Errors:
 
@@ -59,7 +105,7 @@ The above method lets you disconnect one or more nodes from the node.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` <Optional /> | [`AudioNode`](/core/audio-node) | `AudioNode` to which to connect. |
+| `destination` <Optional /> | [`AudioNode`](/core/audio-node) or [`AudioParam`](/core/audio-param) | `AudioNode` or `AudioParam` from which to disconnect. |
 
 If no arguments provided node disconnects from all outgoing connections.
 

@@ -3,7 +3,6 @@ package com.swmansion.audioapi.system
 import android.content.Intent
 import android.os.Build
 import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationManagerCompat
 import com.swmansion.audioapi.AudioAPIModule
 import java.lang.ref.WeakReference
@@ -11,15 +10,12 @@ import java.util.HashMap
 
 class MediaSessionCallback(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
-  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : MediaSessionCompat.Callback() {
   override fun onPlay() {
-    lockScreenManager.get()?.updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePlay", mapOf())
   }
 
   override fun onPause() {
-    lockScreenManager.get()?.updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePause", mapOf())
   }
 
@@ -44,11 +40,13 @@ class MediaSessionCallback(
   }
 
   override fun onFastForward() {
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipForward", mapOf())
+    val body = HashMap<String, Any>().apply { put("value", 10) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipForward", body)
   }
 
   override fun onRewind() {
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipBackward", mapOf())
+    val body = HashMap<String, Any>().apply { put("value", 10) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteSkipBackward", body)
   }
 
   override fun onSeekTo(pos: Long) {

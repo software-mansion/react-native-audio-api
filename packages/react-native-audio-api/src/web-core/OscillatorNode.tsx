@@ -12,8 +12,8 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
   constructor(context: BaseAudioContext, node: globalThis.OscillatorNode) {
     super(context, node);
 
-    this.detune = new AudioParam(node.detune);
-    this.frequency = new AudioParam(node.frequency);
+    this.detune = new AudioParam(node.detune, context);
+    this.frequency = new AudioParam(node.frequency, context);
   }
 
   public get type(): OscillatorType {

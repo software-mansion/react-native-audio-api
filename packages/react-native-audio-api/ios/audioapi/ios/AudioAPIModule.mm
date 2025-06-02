@@ -80,6 +80,28 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   return @true;
 }
 
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
+{
+  return [self.audioSessionManager getDevicePreferredSampleRate];
+}
+
+RCT_EXPORT_METHOD(
+    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
+        reject)
+{
+  if ([self.audioSessionManager setActive:enabled]) {
+    resolve(@"true");
+    return;
+  }
+
+  resolve(@"false");
+}
+
+RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)options)
+{
+  [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
+}
+
 RCT_EXPORT_METHOD(setLockScreenInfo : (NSDictionary *)info)
 {
   [self.lockScreenManager setLockScreenInfo:info];
@@ -95,16 +117,6 @@ RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)options)
-{
-  [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options];
-}
-
-RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
-{
-  return [self.audioSessionManager getDevicePreferredSampleRate];
-}
-
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
 {
   [self.notificationManager observeAudioInterruptions:enabled];
@@ -115,18 +127,17 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];
 }
 
-RCT_EXPORT_METHOD(requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+        reject)
 {
-  NSString *res = [self.audioSessionManager requestRecordingPermissions];
-  resolve(res);
+  [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
 }
 
-RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  NSString *res = [self.audioSessionManager checkRecordingPermissions];
-  resolve(res);
+  [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
@@ -158,7 +169,7 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
         body[stdKey] = EventValue([value doubleValue]);
       } else if (strcmp(type, @encode(float)) == 0) {
         body[stdKey] = EventValue([value floatValue]);
-      } else if (strcmp(type, @encode(BOOL)) == 0) {
+      } else {
         body[stdKey] = EventValue([value boolValue]);
       }
     }

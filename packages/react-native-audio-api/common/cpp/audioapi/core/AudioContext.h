@@ -14,7 +14,7 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AudioContext() override;
 
   void close();
@@ -27,6 +27,7 @@ class AudioContext : public BaseAudioContext {
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
+  bool playerHasBeenStarted_;
 
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
 };

@@ -15,7 +15,6 @@ export default function NavbarWrapper(props) {
   return (
     <Navbar
       useLandingLogoDualVariant={true}
-      isAlgoliaActive={false}
       heroImages={heroImages}
       titleImages={titleImages}
       {...props}

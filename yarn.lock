@@ -1993,6 +1993,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo/config-types@npm:^53.0.4":
+  version: 53.0.4
+  resolution: "@expo/config-types@npm:53.0.4"
+  checksum: 10/536395517b132db489e3a046061f70065f4139bfff39116d129861c69b0d789e8089cca9f4a48b9ffc44991b9f12ae1cd03cc0707a9c4c0e3319c8a4c2b9fc8b
+  languageName: node
+  linkType: hard
+
 "@expo/json-file@npm:~9.1.1":
   version: 9.1.1
   resolution: "@expo/json-file@npm:9.1.1"
@@ -10779,6 +10786,7 @@ __metadata:
     "@commitlint/config-conventional": "npm:^17.0.2"
     "@evilmartians/lefthook": "npm:^1.5.0"
     "@expo/config-plugins": "npm:^9.0.0"
+    "@expo/config-types": "npm:^53.0.4"
     "@react-native/babel-preset": "npm:0.77.1"
     "@react-native/eslint-config": "npm:^0.77.1"
     "@react-native/metro-config": "npm:0.77.1"

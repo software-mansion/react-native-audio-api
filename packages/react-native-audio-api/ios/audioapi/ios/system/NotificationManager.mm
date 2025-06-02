@@ -149,7 +149,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
       reasonStr = @"NoSuitableRouteForCategory";
       break;
     default:
-      reasonStr = @"DoubleUnknown";
+      reasonStr = @"Unknown";
       break;
   }
 
