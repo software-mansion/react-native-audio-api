@@ -7,6 +7,6 @@ export default class StereoPannerNode extends AudioNode {
 
   constructor(context: BaseAudioContext, pan: globalThis.StereoPannerNode) {
     super(context, pan);
-    this.pan = new AudioParam(pan.pan);
+    this.pan = new AudioParam(pan.pan, context);
   }
 }

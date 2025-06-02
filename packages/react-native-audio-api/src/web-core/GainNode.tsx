@@ -7,6 +7,6 @@ export default class GainNode extends AudioNode {
 
   constructor(context: BaseAudioContext, gain: globalThis.GainNode) {
     super(context, gain);
-    this.gain = new AudioParam(gain.gain);
+    this.gain = new AudioParam(gain.gain, context);
   }
 }

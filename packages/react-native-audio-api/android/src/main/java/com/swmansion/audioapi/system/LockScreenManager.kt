@@ -35,7 +35,7 @@ class LockScreenManager(
   private var artist: String? = null
   private var album: String? = null
   private var description: String? = null
-  private var duration: Long = 0
+  private var duration: Long = 0L
   private var speed: Float = 1.0F
   private var elapsedTime: Long = 0L
   private var artwork: String? = null
@@ -142,9 +142,13 @@ class LockScreenManager(
         state.playbackSpeed
       }
 
+    if (isPlaying && speed == 0F) {
+      speed = 1F
+    }
+
     elapsedTime =
       if (info.hasKey("elapsedTime")) {
-        info.getDouble("elapsedTime").toLong()
+        (info.getDouble("elapsedTime") * 1000).toLong()
       } else {
         state.position
       }
@@ -250,7 +254,7 @@ class LockScreenManager(
     return bitmap
   }
 
-  fun updatePlaybackState(playbackState: Int) {
+  private fun updatePlaybackState(playbackState: Int) {
     isPlaying = playbackState == PlaybackStateCompat.STATE_PLAYING
 
     pb.setState(playbackState, elapsedTime, speed)
@@ -285,6 +289,11 @@ class LockScreenManager(
     if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
       controlCount += 1
     }
+
+    if (hasControl(PlaybackStateCompat.ACTION_SEEK_TO)) {
+      controlCount += 1
+    }
+
     val actions = IntArray(controlCount)
     for (i in actions.indices) {
       actions[i] = i

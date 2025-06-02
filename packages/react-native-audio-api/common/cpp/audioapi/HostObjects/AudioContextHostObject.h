@@ -46,12 +46,12 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
           auto result = audioContext->resume();
 
           if (!result) {
-            promise->reject("Failed to resume audio context, because it is already closed.");
-            return;
+              promise->reject("Failed to resume audio context because it is already closed.");
+              return;
           }
 
-          promise->resolve([](jsi::Runtime &runtime) {
-            return jsi::Value::undefined();
+          promise->resolve([result](jsi::Runtime &runtime) {
+            return jsi::Value(result);
           });
       }).detach();
     });
@@ -66,12 +66,12 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
           auto result = audioContext->suspend();
 
           if (!result) {
-            promise->reject("Failed to resume audio context, because it is already closed.");
+            promise->reject("Failed to suspend audio context because it is already closed.");
             return;
           }
 
-          promise->resolve([](jsi::Runtime &runtime) {
-            return jsi::Value::undefined();
+          promise->resolve([result](jsi::Runtime &runtime) {
+            return jsi::Value(result);
           });
       }).detach();
     });

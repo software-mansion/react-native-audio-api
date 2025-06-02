@@ -19,9 +19,10 @@ class AudioPlayer : public AudioStreamDataCallback {
       float sampleRate);
 
   void start();
-  void resume();
   void stop();
-  void pause();
+  void resume();
+  void suspend();
+  void cleanup();
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,
