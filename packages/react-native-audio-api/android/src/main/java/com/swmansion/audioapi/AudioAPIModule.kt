@@ -53,10 +53,8 @@ class AudioAPIModule(
     return true
   }
 
-  @Synchronized
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  @Synchronized
   override fun setAudioSessionActivity(
     enabled: Boolean,
     promise: Promise?,
@@ -64,7 +62,6 @@ class AudioAPIModule(
     // noting to do here
   }
 
-  @Synchronized
   override fun setAudioSessionOptions(
     category: String?,
     mode: String?,
@@ -73,17 +70,14 @@ class AudioAPIModule(
     // noting to do here
   }
 
-  @Synchronized
   override fun setLockScreenInfo(info: ReadableMap?) {
     MediaSessionManager.setLockScreenInfo(info)
   }
 
-  @Synchronized
   override fun resetLockScreenInfo() {
     MediaSessionManager.resetLockScreenInfo()
   }
 
-  @Synchronized
   override fun enableRemoteCommand(
     name: String?,
     enabled: Boolean,
@@ -91,23 +85,19 @@ class AudioAPIModule(
     MediaSessionManager.enableRemoteCommand(name!!, enabled)
   }
 
-  @Synchronized
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
 
-  @Synchronized
   override fun observeVolumeChanges(enabled: Boolean) {
     MediaSessionManager.observeVolumeChanges(enabled)
   }
 
-  @Synchronized
   override fun requestRecordingPermissions(promise: Promise?) {
     val res = MediaSessionManager.requestRecordingPermissions(currentActivity)
     promise!!.resolve(res)
   }
 
-  @Synchronized
   override fun checkRecordingPermissions(promise: Promise?) {
     val res = MediaSessionManager.checkRecordingPermissions()
     promise!!.resolve(res)
