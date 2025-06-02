@@ -99,7 +99,7 @@ static AudioEngine *_sharedInstance = nil;
   if (![self.audioEngine isRunning]) {
     return;
   }
-  
+
   [self.sourceStates setValue:@false forKey:sourceNodeId];
   [self pauseIfNecessary];
 }
@@ -196,10 +196,9 @@ static AudioEngine *_sharedInstance = nil;
       return;
     }
   }
-  
+
   NSLog(@"[AudioEngine] pauseEngine");
   [self.audioEngine pause];
 }
-
 
 @end
