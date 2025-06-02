@@ -10,6 +10,7 @@
 @property (nonatomic, strong) AVAudioEngine *audioEngine;
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
+@property (nonatomic, strong) NSMutableDictionary *sourceStates;
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
 
@@ -20,6 +21,7 @@
 - (bool)rebuildAudioEngine;
 - (void)startEngine;
 - (void)stopEngine;
+- (void)pauseEngine:(NSString *)sourceNodeId;
 - (bool)isRunning;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
@@ -27,8 +29,5 @@
 
 - (void)attachInputNode:(AVAudioSinkNode *)inputNode;
 - (void)detachInputNode;
-
-- (void)startIfNecessary;
-- (void)stopIfNecessary;
 
 @end

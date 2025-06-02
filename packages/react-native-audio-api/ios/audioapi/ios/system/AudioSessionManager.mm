@@ -175,11 +175,62 @@
   return true;
 }
 
-- (NSString *)requestRecordingPermissions
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-  [self.audioSession requestRecordPermission:^(BOOL granted){
-  }];
-  return [self checkRecordingPermissions];
+  if (@available(iOS 17, *)) {
+    [AVAudioSession.sharedInstance requestRecordPermission:^(BOOL granted) {
+      if (granted) {
+        resolve(@"Granted");
+      } else {
+        resolve(@"Denied");
+      }
+    }];
+  } else {
+    [self.audioSession requestRecordPermission:^(BOOL granted) {
+      if (granted) {
+        resolve(@"Granted");
+      } else {
+        resolve(@"Denied");
+      }
+    }];
+  }
+}
+
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (@available(iOS 17, *)) {
+    NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
+    switch (res) {
+      case AVAudioApplicationRecordPermissionUndetermined:
+        resolve(@"Undetermined");
+        break;
+      case AVAudioApplicationRecordPermissionGranted:
+        resolve(@"Granted");
+        break;
+      case AVAudioApplicationRecordPermissionDenied:
+        resolve(@"Denied");
+        break;
+      default:
+        resolve(@"Undetermined");
+        break;
+    }
+  } else {
+    NSInteger res = [self.audioSession recordPermission];
+    switch (res) {
+      case AVAudioSessionRecordPermissionUndetermined:
+        resolve(@"Undetermined");
+        break;
+      case AVAudioSessionRecordPermissionGranted:
+        resolve(@"Granted");
+        break;
+      case AVAudioSessionRecordPermissionDenied:
+        resolve(@"Denied");
+        break;
+      default:
+        resolve(@"Undetermined");
+        break;
+    }
+  }
 }
 
 - (NSString *)checkRecordingPermissions

@@ -210,7 +210,8 @@ export default class AudioBufferSourceNode<
           -1200,
           1200,
           0
-        )
+        ),
+        context
       );
 
       this.playbackRate = new AudioParam(
@@ -221,11 +222,15 @@ export default class AudioBufferSourceNode<
           0,
           Infinity,
           1
-        )
+        ),
+        context
       );
     } else {
-      this.detune = new AudioParam((node as DefaultSource).detune);
-      this.playbackRate = new AudioParam((node as DefaultSource).playbackRate);
+      this.detune = new AudioParam((node as DefaultSource).detune, context);
+      this.playbackRate = new AudioParam(
+        (node as DefaultSource).playbackRate,
+        context
+      );
     }
   }
 

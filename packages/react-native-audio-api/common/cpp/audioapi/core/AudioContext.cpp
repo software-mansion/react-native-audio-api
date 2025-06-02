@@ -12,6 +12,7 @@
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
+    bool initSuspended,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : BaseAudioContext(audioEventHandlerRegistry) {
 #ifdef ANDROID
@@ -24,8 +25,16 @@ AudioContext::AudioContext(
   sampleRate_ = sampleRate;
   audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate);
 
-  state_ = ContextState::RUNNING;
+  if (initSuspended) {
+    playerHasBeenStarted_ = false;
+    state_ = ContextState::SUSPENDED;
+
+    return;
+  }
+
+  playerHasBeenStarted_ = true;
   audioPlayer_->start();
+  state_ = ContextState::RUNNING;
 }
 
 AudioContext::~AudioContext() {
@@ -37,27 +46,43 @@ AudioContext::~AudioContext() {
 void AudioContext::close() {
   state_ = ContextState::CLOSED;
 
+  audioPlayer_->stop();
   audioPlayer_->cleanup();
   nodeManager_->cleanup();
 }
 
 bool AudioContext::resume() {
-  if (isClosed() || isRunning()) {
+  if (isClosed()) {
     return false;
   }
 
+  if (isRunning()) {
+    return true;
+  }
+
+  if (!playerHasBeenStarted_) {
+    playerHasBeenStarted_ = true;
+    audioPlayer_->start();
+  } else {
+    audioPlayer_->resume();
+  }
+
   state_ = ContextState::RUNNING;
-  audioPlayer_->start();
   return true;
 }
 
 bool AudioContext::suspend() {
-  if (isClosed() || isSuspended()) {
+  if (isClosed()) {
     return false;
   }
 
+  if (isSuspended()) {
+    return true;
+  }
+
+  audioPlayer_->suspend();
+
   state_ = ContextState::SUSPENDED;
-  audioPlayer_->stop();
   return true;
 }
 

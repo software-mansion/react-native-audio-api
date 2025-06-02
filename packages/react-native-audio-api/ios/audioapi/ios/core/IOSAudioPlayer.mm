@@ -62,6 +62,22 @@ void IOSAudioPlayer::stop()
   [audioPlayer_ stop];
 }
 
+void IOSAudioPlayer::resume()
+{
+  if (isRunning_.load()) {
+    return;
+  }
+
+  [audioPlayer_ resume];
+  isRunning_.store(true);
+}
+
+void IOSAudioPlayer::suspend()
+{
+  isRunning_.store(false);
+  [audioPlayer_ suspend];
+}
+
 void IOSAudioPlayer::cleanup()
 {
   stop();
