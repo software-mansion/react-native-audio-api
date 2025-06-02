@@ -18,6 +18,7 @@ static AudioEngine *_sharedInstance = nil;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
+    self.sourceStates = [[NSMutableDictionary alloc] init];
 
     self.sessionManager = sessionManager;
   }
@@ -37,6 +38,7 @@ static AudioEngine *_sharedInstance = nil;
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
+  self.sourceStates = nil;
   self.inputNode = nil;
 
   [self.sessionManager setActive:false];
@@ -74,8 +76,8 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine startAndReturnError:&error];
   [self.sessionManager setActive:true];
+  [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
     NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
@@ -92,14 +94,14 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine stop];
 }
 
-- (void)pauseEngine
+- (void)pauseEngine:(NSString *)sourceNodeId
 {
-  NSLog(@"[AudioEngine] pauseEngine");
   if (![self.audioEngine isRunning]) {
     return;
   }
-
-  [self.audioEngine pause];
+  
+  [self.sourceStates setValue:@false forKey:sourceNodeId];
+  [self pauseIfNecessary];
 }
 
 - (bool)isRunning
@@ -114,6 +116,7 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
   [self.sourceFormats setValue:format forKey:sourceNodeId];
+  [self.sourceStates setValue:@true forKey:sourceNodeId];
 
   [self.audioEngine attachNode:sourceNode];
   [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
@@ -133,6 +136,7 @@ static AudioEngine *_sharedInstance = nil;
 
     [self.sourceNodes removeObjectForKey:sourceNodeId];
     [self.sourceFormats removeObjectForKey:sourceNodeId];
+    [self.sourceStates removeObjectForKey:sourceNodeId];
   }
 
   [self stopIfNecessary];
@@ -179,5 +183,23 @@ static AudioEngine *_sharedInstance = nil;
     [self stopEngine];
   }
 }
+
+- (void)pauseIfNecessary
+{
+  if (![self isRunning]) {
+    return;
+  }
+
+  for (NSString *sourceId in self.sourceStates) {
+    if ([self.sourceStates[sourceId] boolValue]) {
+      NSLog(@"state %c", self.sourceStates[sourceId]);
+      return;
+    }
+  }
+  
+  NSLog(@"[AudioEngine] pauseEngine");
+  [self.audioEngine pause];
+}
+
 
 @end

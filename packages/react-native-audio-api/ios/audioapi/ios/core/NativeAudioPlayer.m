@@ -63,7 +63,7 @@
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
-  [audioEngine pauseEngine];
+  [audioEngine pauseEngine:self.sourceNodeId];
 }
 
 - (void)cleanup
