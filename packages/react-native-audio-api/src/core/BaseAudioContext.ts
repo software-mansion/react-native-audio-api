@@ -130,9 +130,17 @@ export default class BaseAudioContext {
     );
   }
 
-  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+  async decodeAudioData(data: ArrayBuffer | string): Promise<AudioBuffer> {
+    // pcm data in base64
+    if (typeof data === 'string') {
+      return new AudioBuffer(
+        await this.context.decodePCMAudioDataInBase64(data)
+      );
+    }
+
+    // data in array buffer
     return new AudioBuffer(
-      await this.context.decodeAudioData(new Uint8Array(arrayBuffer))
+      await this.context.decodeAudioData(new Uint8Array(data))
     );
   }
 }

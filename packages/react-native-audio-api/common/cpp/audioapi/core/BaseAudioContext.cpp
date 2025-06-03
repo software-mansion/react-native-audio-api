@@ -131,6 +131,17 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
   return std::make_shared<AudioBuffer>(audioBus);
 }
 
+std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
+    const std::string &data) {
+  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data);
+
+  if (!audioBus) {
+    return nullptr;
+  }
+
+  return std::make_shared<AudioBuffer>(audioBus);
+}
+
 AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
 }

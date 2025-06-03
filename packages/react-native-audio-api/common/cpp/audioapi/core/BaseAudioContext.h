@@ -56,6 +56,7 @@ class BaseAudioContext {
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
+  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

@@ -13,6 +13,7 @@ class AudioDecoder {
 
   [[nodiscard]] std::shared_ptr<AudioBus> decodeWithFilePath(const std::string &path) const;
   [[nodiscard]] std::shared_ptr<AudioBus> decodeWithMemoryBlock(const void *data, size_t size) const;
+  [[nodiscard]] std::shared_ptr<AudioBus> decodeWithPCMInBase64(const std::string &data) const;
 
  private:
   float sampleRate_;
