@@ -46,3 +46,5 @@ export type WindowType = 'blackman' | 'hann';
 export interface AudioBufferSourceNodeOptions {
   pitchCorrection: boolean;
 }
+
+export type UUID = string;
