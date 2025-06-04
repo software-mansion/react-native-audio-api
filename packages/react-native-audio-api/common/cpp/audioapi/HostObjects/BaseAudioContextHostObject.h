@@ -8,6 +8,7 @@
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/CustomProcessorNodeHostObject.h>
 #include <audioapi/HostObjects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
@@ -40,6 +41,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
     addFunctions(
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createCustomProcessor),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -75,6 +77,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto oscillatorHostObject =
         std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createCustomProcessor) {
+    auto customProcessor = context_->createCustomProcessor();
+    auto customProcessorHostObject = std::make_shared<CustomProcessorNodeHostObject>(customProcessor);
+    return jsi::Object::createFromHostObject(runtime, customProcessorHostObject);
   }
 
   JSI_HOST_FUNCTION(createGain) {
