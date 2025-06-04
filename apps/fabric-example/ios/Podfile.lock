@@ -1609,7 +1609,7 @@ PODS:
     - React-logger (= 0.77.1)
     - React-perflogger (= 0.77.1)
     - React-utils (= 0.77.1)
-  - RNAudioAPI (0.6.0):
+  - RNAudioAPI (0.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1629,9 +1629,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.6.0)
+    - RNAudioAPI/audioapi (= 0.6.1)
     - Yoga
-  - RNAudioAPI/audioapi (0.6.0):
+  - RNAudioAPI/audioapi (0.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1651,9 +1651,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.6.0)
+    - RNAudioAPI/audioapi/ios (= 0.6.1)
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.6.0):
+  - RNAudioAPI/audioapi/ios (0.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2161,7 +2161,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 41e9fb63606c32cce924653d2d410cb01ec81286
   ReactCodegen: 8cae67dac8144aa8d9d5bee12e55ead0fb73537f
   ReactCommon: 08f4808f02ff115884e870e5cfea689703ff759a
-  RNAudioAPI: a360b6e9626f23e8960baf015b3264dacaf28b1b
+  RNAudioAPI: 02f1de634ec4ab0cc8283cffedfe91a22da25127
   RNGestureHandler: 8b1080a6db0be82dbca18550d6212b885bfab6b2
   RNReanimated: afed763d6c0b1916bfef1dbde4271ec0947dd376
   RNScreens: 0d4cb9afe052607ad0aa71f645a88bb7c7f2e64c

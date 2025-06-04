@@ -139,6 +139,10 @@ bool BaseAudioContext::isRunning() const {
   return state_ == ContextState::RUNNING;
 }
 
+bool BaseAudioContext::isSuspended() const {
+  return state_ == ContextState::SUSPENDED;
+}
+
 bool BaseAudioContext::isClosed() const {
   return state_ == ContextState::CLOSED;
 }

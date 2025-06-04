@@ -45,5 +45,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Recrawl search index
+        run: | 
+          curl -X POST https://crawler.algolia.com/api/1/crawlers/${{ secrets.CRAWLER_ID }}/reindex \
+          -H "Content-Type: application/json" \
+          -u ${{ secrets.CRAWLER_USER_ID }}:${{ secrets.CRAWLER_API_KEY }}
+
       - name: Deploy to Github Pages
         uses: actions/deploy-pages@v4

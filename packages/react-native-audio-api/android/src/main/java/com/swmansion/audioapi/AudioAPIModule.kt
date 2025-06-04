@@ -9,6 +9,7 @@ import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.MediaSessionManager
+import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
@@ -53,6 +54,23 @@ class AudioAPIModule(
     return true
   }
 
+  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
+
+  override fun setAudioSessionActivity(
+    enabled: Boolean,
+    promise: Promise?,
+  ) {
+    // noting to do here
+  }
+
+  override fun setAudioSessionOptions(
+    category: String?,
+    mode: String?,
+    options: ReadableArray?,
+  ) {
+    // noting to do here
+  }
+
   override fun setLockScreenInfo(info: ReadableMap?) {
     MediaSessionManager.setLockScreenInfo(info)
   }
@@ -68,16 +86,6 @@ class AudioAPIModule(
     MediaSessionManager.enableRemoteCommand(name!!, enabled)
   }
 
-  override fun setAudioSessionOptions(
-    category: String?,
-    mode: String?,
-    options: ReadableArray?,
-  ) {
-    // noting to do here
-  }
-
-  override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
-
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
@@ -86,13 +94,12 @@ class AudioAPIModule(
     MediaSessionManager.observeVolumeChanges(enabled)
   }
 
-  override fun requestRecordingPermissions(promise: Promise?) {
-    val res = MediaSessionManager.requestRecordingPermissions(currentActivity)
-    promise!!.resolve(res)
+  override fun requestRecordingPermissions(promise: Promise) {
+    val permissionRequestListener = PermissionRequestListener(promise)
+    MediaSessionManager.requestRecordingPermissions(permissionRequestListener)
   }
 
-  override fun checkRecordingPermissions(promise: Promise?) {
-    val res = MediaSessionManager.checkRecordingPermissions()
-    promise!!.resolve(res)
+  override fun checkRecordingPermissions(promise: Promise) {
+    promise.resolve(MediaSessionManager.checkRecordingPermissions())
   }
 }

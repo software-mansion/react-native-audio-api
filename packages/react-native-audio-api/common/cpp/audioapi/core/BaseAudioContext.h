@@ -62,6 +62,7 @@ class BaseAudioContext {
   AudioNodeManager *getNodeManager();
 
   [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
 
  protected:
@@ -81,9 +82,7 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
- protected:
-    friend class AudioScheduledSourceNode;
-
+ public:
     std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 

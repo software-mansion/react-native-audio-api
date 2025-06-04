@@ -35,7 +35,64 @@ Install the `react-native-audio-api` package from npm:
   </TabItem>
 </Tabs>
 
-### Step 2: Wrap metro config with Audio API wrapper
+### Step 2: Add Audio API expo plugin (optional)
+
+Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
+
+<details>
+<summary>app.json</summary>
+```javascript
+{
+  "plugins": [
+    [
+      "react-native-audio-api",
+      {
+        "iosBackgroundMode": true,
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.FOREGROUND_SERVICE",
+          "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        ],
+        "androidForegroundService": true,
+        "androidFSTypes": [
+          "mediaPlayback"
+        ]
+      }
+    ]
+  ]
+}
+```
+</details>
+
+<details>
+<summary>app.config.js</summary>
+```javascript
+export default {
+  ...
+  "plugins": [
+    [
+      "react-native-audio-api",
+      {
+        "iosBackgroundMode": true,
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.FOREGROUND_SERVICE",
+          "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        ],
+        "androidForegroundService": true,
+        "androidFSTypes": [
+          "mediaPlayback"
+        ]
+      }
+    ]
+  ]
+};
+```
+</details>
+
+Read more about plugin [here](/other/audio-api-plugin)!
+
+### Step 3: Wrap metro config with Audio API wrapper (recommended)
 
 Wrap your existing Metro configuration in the `metro.config.js` file with the `wrapWithAudioAPIMetroConfig` function:
 

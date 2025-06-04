@@ -4,6 +4,7 @@
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -25,6 +26,8 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
   stretch_ =
       std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
   stretch_->presetDefault(channelCount_, context_->getSampleRate(), true);
+
+  onPositionChangedInterval_ = static_cast<int>(context_->getSampleRate() / 10);
 
   isInitialized_ = true;
 }
@@ -52,15 +55,29 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
+    int bufferId,
     bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
-  buffers_.push(buffer);
+  buffers_.emplace(bufferId, buffer);
 
   isLastBuffer_ = isLastBuffer;
 }
 
 void AudioBufferQueueSourceNode::disable() {
-  AudioScheduledSourceNode::disable();
+  audioapi::AudioNode::disable();
+
+  std::string state = "stopped";
+
+  // if it has not been stopped, it is ended
+  if (stopTime_ < 0) {
+    state = "ended";
+  }
+
+  std::unordered_map<std::string, EventValue> body = {
+      {"value", getStopTime()}, {"state", state}, {"bufferId", bufferId_}};
+
+  context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+      "ended", onEndedCallbackId_, body);
   buffers_ = {};
 }
 
@@ -91,6 +108,30 @@ double AudioBufferQueueSourceNode::getStopTime() const {
       static_cast<int>(vReadIndex_), context_->getSampleRate());
 }
 
+void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(
+    uint64_t callbackId) {
+  onPositionChangedCallbackId_ = callbackId;
+}
+
+void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
+  if (onPositionChangedTime_ > onPositionChangedInterval_) {
+    std::unordered_map<std::string, EventValue> body = {
+        {"value", getStopTime()}, {"bufferId", bufferId_}};
+
+    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "positionChanged", onPositionChangedCallbackId_, body);
+
+    onPositionChangedTime_ = 0;
+  }
+
+  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
+}
+
+void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
+  onPositionChangedInterval_ = static_cast<int>(
+      context_->getSampleRate() * static_cast<float>(interval) / 1000);
+}
+
 /**
  * Helper functions
  */
@@ -111,22 +152,21 @@ void AudioBufferQueueSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+
+  updatePlaybackInfo(
+      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
     return;
   }
 
-  auto framesNeededToStretch =
-      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-  auto stretchedStartOffset =
-      static_cast<size_t>(static_cast<float>(startOffset) * playbackRate);
-  auto stretchedOffsetLength =
-      static_cast<size_t>(static_cast<float>(offsetLength) * playbackRate);
+  // Send position changed event
+  sendOnPositionChangedEvent();
 
-  processWithoutInterpolation(
-      playbackRateBus_, stretchedStartOffset, stretchedOffsetLength);
+  processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength);
 
   stretch_->process(
       playbackRateBus_.get()[0],
@@ -146,7 +186,10 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto buffer = buffers_.front();
+  auto queueData = buffers_.front();
+  bufferId_ = queueData.first;
+  auto buffer = queueData.second;
+
   size_t framesLeft = offsetLength;
 
   while (framesLeft > 0) {
@@ -177,7 +220,10 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         }
         break;
       } else {
-        buffer = buffers_.front();
+        queueData = buffers_.front();
+        bufferId_ = queueData.first;
+        buffer = queueData.second;
+
         readIndex = 0;
       }
     }

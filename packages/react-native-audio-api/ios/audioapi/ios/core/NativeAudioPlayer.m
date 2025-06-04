@@ -51,6 +51,21 @@
   self.sourceNodeId = nil;
 }
 
+- (void)resume
+{
+  NSLog(@"[AudioPlayer] resume");
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine startEngine];
+}
+
+- (void)suspend
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+  [audioEngine pauseEngine:self.sourceNodeId];
+}
+
 - (void)cleanup
 {
   self.renderAudio = nil;

@@ -1,5 +1,9 @@
 import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
-import { SystemEventName, SystemEventCallback } from '../events/types';
+import {
+  SystemEventName,
+  SystemEventCallback,
+  RemoteCommandEventName,
+} from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
@@ -19,12 +23,12 @@ class AudioManager {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
-  setLockScreenInfo(info: LockScreenInfo) {
-    NativeAudioAPIModule!.setLockScreenInfo(info);
+  getDevicePreferredSampleRate(): number {
+    return NativeAudioAPIModule!.getDevicePreferredSampleRate();
   }
 
-  resetLockScreenInfo() {
-    NativeAudioAPIModule!.resetLockScreenInfo();
+  setAudioSessionActivity(enabled: boolean): Promise<boolean> {
+    return NativeAudioAPIModule!.setAudioSessionActivity(enabled);
   }
 
   setAudioSessionOptions(options: SessionOptions) {
@@ -35,8 +39,12 @@ class AudioManager {
     );
   }
 
-  getDevicePreferredSampleRate(): number {
-    return NativeAudioAPIModule!.getDevicePreferredSampleRate();
+  setLockScreenInfo(info: LockScreenInfo) {
+    NativeAudioAPIModule!.setLockScreenInfo(info);
+  }
+
+  resetLockScreenInfo() {
+    NativeAudioAPIModule!.resetLockScreenInfo();
   }
 
   observeAudioInterruptions(enabled: boolean) {
@@ -47,17 +55,14 @@ class AudioManager {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }
 
-  enableSystemEvent<Name extends SystemEventName>(
-    name: Name,
-    callback?: SystemEventCallback<Name>,
-    enabled = true
-  ): AudioEventSubscription | null {
+  enableRemoteCommand(name: RemoteCommandEventName, enabled: boolean) {
     NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
+  }
 
-    if (!enabled || !callback) {
-      return null;
-    }
-
+  addSystemEventListener<Name extends SystemEventName>(
+    name: Name,
+    callback: SystemEventCallback<Name>
+  ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(name, callback);
   }
 

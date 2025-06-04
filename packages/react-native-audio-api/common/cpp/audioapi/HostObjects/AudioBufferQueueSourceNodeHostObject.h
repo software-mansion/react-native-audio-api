@@ -21,6 +21,10 @@ class AudioBufferQueueSourceNodeHostObject
                 JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, detune),
                 JSI_EXPORT_PROPERTY_GETTER(AudioBufferQueueSourceNodeHostObject, playbackRate));
 
+        addSetters(
+                JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChanged),
+                JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChangedInterval));
+
         // start method is overridden in this class
         functions_->erase("start");
 
@@ -46,6 +50,20 @@ class AudioBufferQueueSourceNodeHostObject
         return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
     }
 
+    JSI_PROPERTY_SETTER(onPositionChanged) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->setOnPositionChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+    }
+
+    JSI_PROPERTY_SETTER(onPositionChangedInterval) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->setOnPositionChangedInterval(value.getNumber());
+    }
+
     JSI_HOST_FUNCTION(start) {
         auto when = args[0].getNumber();
         auto offset = args[1].getNumber();
@@ -64,10 +82,10 @@ class AudioBufferQueueSourceNodeHostObject
 
         auto audioBufferHostObject =
                 args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+        int bufferId = args[1].asNumber();
+        auto isLastBuffer = args[2].asBool();
 
-        auto isLastBuffer = args[1].asBool();
-
-        audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, isLastBuffer);
+        audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, bufferId, isLastBuffer);
 
         return jsi::Value::undefined();
     }

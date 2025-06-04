@@ -1,5 +1,6 @@
 import BaseAudioContext from './BaseAudioContext';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
+import AudioParam from './AudioParam';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;
@@ -21,12 +22,18 @@ export default class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(destination: AudioNode): AudioNode {
+  public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
     if (this.context !== destination.context) {
-      throw new Error('The AudioNodes are from different BaseAudioContexts');
+      throw new Error(
+        'Source and destination are from different BaseAudioContexts'
+      );
     }
 
-    this.node.connect(destination.node);
+    if (destination instanceof AudioParam) {
+      this.node.connect(destination.param);
+    } else {
+      this.node.connect(destination.node);
+    }
 
     return destination;
   }

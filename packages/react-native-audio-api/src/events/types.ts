@@ -6,9 +6,15 @@ export interface EventTypeWithValue {
   value: number;
 }
 
-export interface EventTypeWithValueAndState {
+export interface OnEndedEventType {
   value: number;
   state: 'stopped' | 'ended';
+  bufferId: number | undefined;
+}
+
+export interface OnPositionChangedEventType {
+  value: number;
+  bufferId: number;
 }
 
 interface OnInterruptionEventType {
@@ -17,10 +23,18 @@ interface OnInterruptionEventType {
 }
 
 interface OnRouteChangeEventType {
-  reason: string;
+  reason:
+    | 'Unknown'
+    | 'Override'
+    | 'CategoryChange'
+    | 'WakeFromSleep'
+    | 'NewDeviceAvailable'
+    | 'OldDeviceUnavailable'
+    | 'ConfigurationChange'
+    | 'NoSuitableRouteForCategory';
 }
 
-interface SystemEvents {
+interface RemoteCommandEvents {
   remotePlay: EventEmptyType;
   remotePause: EventEmptyType;
   remoteStop: EventEmptyType;
@@ -28,15 +42,18 @@ interface SystemEvents {
   remoteChangePlaybackRate: EventTypeWithValue;
   remoteNextTrack: EventEmptyType;
   remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventEmptyType;
-  remoteSkipBackward: EventEmptyType;
-  remoteSeekForward: EventTypeWithValue;
-  remoteSeekBackward: EventTypeWithValue;
+  remoteSkipForward: EventTypeWithValue;
+  remoteSkipBackward: EventTypeWithValue;
+  remoteSeekForward: EventEmptyType;
+  remoteSeekBackward: EventEmptyType;
   remoteChangePlaybackPosition: EventTypeWithValue;
+}
+
+type SystemEvents = RemoteCommandEvents & {
   volumeChange: EventTypeWithValue;
   interruption: OnInterruptionEventType;
   routeChange: OnRouteChangeEventType;
-}
+};
 
 export interface OnAudioReadyEventType {
   buffer: AudioBuffer;
@@ -45,13 +62,16 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: EventTypeWithValueAndState;
+  ended: OnEndedEventType;
   audioReady: OnAudioReadyEventType;
+  positionChanged: OnPositionChangedEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents;
+
+export type RemoteCommandEventName = keyof RemoteCommandEvents;
 
 export type SystemEventName = keyof SystemEvents;
 export type SystemEventCallback<Name extends SystemEventName> = (

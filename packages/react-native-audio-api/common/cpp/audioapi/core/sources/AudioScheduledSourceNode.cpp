@@ -10,9 +10,9 @@ namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
     : AudioNode(context),
-      playbackState_(PlaybackState::UNSCHEDULED),
       startTime_(-1.0),
-      stopTime_(-1.0) {
+      stopTime_(-1.0),
+      playbackState_(PlaybackState::UNSCHEDULED) {
   numberOfInputs_ = 0;
 }
 
@@ -100,7 +100,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     assert(nonSilentFramesToProcess <= framesToProcess);
 
     // stop will happen in the same render quantum
-    if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+    if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
       processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     }

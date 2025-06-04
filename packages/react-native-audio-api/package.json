@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
@@ -90,6 +90,7 @@
     "@commitlint/config-conventional": "^17.0.2",
     "@evilmartians/lefthook": "^1.5.0",
     "@expo/config-plugins": "^9.0.0",
+    "@expo/config-types": "^53.0.4",
     "@react-native/babel-preset": "0.77.1",
     "@react-native/eslint-config": "^0.77.1",
     "@react-native/metro-config": "0.77.1",

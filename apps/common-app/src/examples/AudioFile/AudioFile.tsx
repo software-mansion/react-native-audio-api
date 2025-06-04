@@ -12,9 +12,6 @@ import { Container, Button, Spacer, Slider } from '../../components';
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
 
-const LOOP_START = 0;
-const LOOP_END = 10;
-
 const INITIAL_RATE = 1;
 const INITIAL_DETUNE = 0;
 
@@ -49,7 +46,7 @@ const AudioFile: FC = () => {
     }
   };
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (!audioContextRef.current) {
       return;
     }
@@ -59,10 +56,16 @@ const AudioFile: FC = () => {
       AudioManager.setLockScreenInfo({
         state: 'state_paused',
       });
+
+      setTimeout(async () => {
+        await audioContextRef.current?.suspend();
+      }, 5);
     } else {
       if (!audioBuffer) {
         fetchAudioBuffer();
       }
+
+      await audioContextRef.current.resume();
 
       AudioManager.setLockScreenInfo({
         state: 'state_playing',
@@ -74,12 +77,9 @@ const AudioFile: FC = () => {
         pitchCorrection: true,
       });
       bufferSourceRef.current.buffer = audioBuffer;
-      bufferSourceRef.current.loop = true;
       bufferSourceRef.current.onended = (event) => {
         setOffset((_prev) => event.value || 0);
       };
-      bufferSourceRef.current.loopStart = LOOP_START;
-      bufferSourceRef.current.loopEnd = LOOP_END;
       bufferSourceRef.current.playbackRate.value = playbackRate;
       bufferSourceRef.current.detune.value = detune;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
@@ -113,7 +113,7 @@ const AudioFile: FC = () => {
 
   useEffect(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+      audioContextRef.current = new AudioContext({ initSuspended: true });
     }
 
     AudioManager.setLockScreenInfo({
@@ -123,14 +123,19 @@ const AudioFile: FC = () => {
       duration: 10,
     });
 
-    const remotePlaySubscription = AudioManager.enableSystemEvent(
+    AudioManager.enableRemoteCommand('remotePlay', true);
+    AudioManager.enableRemoteCommand('remotePause', true);
+    AudioManager.enableRemoteCommand('remoteChangePlaybackPosition', true);
+    AudioManager.observeAudioInterruptions(true);
+
+    const remotePlaySubscription = AudioManager.addSystemEventListener(
       'remotePlay',
       (event) => {
         console.log('remotePlay event:', event);
       }
     );
 
-    const remotePauseSubscription = AudioManager.enableSystemEvent(
+    const remotePauseSubscription = AudioManager.addSystemEventListener(
       'remotePause',
       (event) => {
         console.log('remotePause event:', event);
@@ -138,21 +143,19 @@ const AudioFile: FC = () => {
     );
 
     const remoteChangePlaybackPositionSubscription =
-      AudioManager.enableSystemEvent(
+      AudioManager.addSystemEventListener(
         'remoteChangePlaybackPosition',
         (event) => {
           console.log('remoteChangePlaybackPosition event:', event);
         }
       );
 
-    const interruptionSubscription = AudioManager.enableSystemEvent(
+    const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       (event) => {
         console.log('Interruption event:', event);
       }
     );
-
-    AudioManager.observeAudioInterruptions(true);
 
     fetchAudioBuffer();
 
@@ -162,6 +165,7 @@ const AudioFile: FC = () => {
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
       audioContextRef.current?.close();
+      AudioManager.resetLockScreenInfo();
     };
   }, [fetchAudioBuffer]);
 
