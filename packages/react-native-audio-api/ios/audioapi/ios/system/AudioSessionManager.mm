@@ -30,7 +30,10 @@
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
-- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options allowHaptics:(BOOL)allowHaptics
+- (void)setAudioSessionOptions:(NSString *)category
+                          mode:(NSString *)mode
+                       options:(NSArray *)options
+                  allowHaptics:(BOOL)allowHaptics
 {
   AVAudioSessionCategory sessionCategory = self.sessionCategory;
   AVAudioSessionMode sessionMode = self.sessionMode;
@@ -180,8 +183,9 @@
   }
 
   if (@available(iOS 13.0, *)) {
-    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSystemSoundsDuringRecording error:&error];
-    
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSystemSoundsDuringRecording
+                                                               error:&error];
+
     if (error != nil) {
       NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
     }

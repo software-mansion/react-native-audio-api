@@ -97,7 +97,9 @@ RCT_EXPORT_METHOD(
   resolve(@"false");
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)options allowHaptics : (BOOL)allowHaptics)
+RCT_EXPORT_METHOD(
+    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
+        options allowHaptics : (BOOL)allowHaptics)
 {
   [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options allowHaptics:allowHaptics];
 }

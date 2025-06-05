@@ -20,7 +20,10 @@
 - (bool)configureAudioSession;
 
 - (NSNumber *)getDevicePreferredSampleRate;
-- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options allowHaptics:(BOOL)allowHaptics;
+- (void)setAudioSessionOptions:(NSString *)category
+                          mode:(NSString *)mode
+                       options:(NSArray *)options
+                  allowHaptics:(BOOL)allowHaptics;
 - (bool)setActive:(bool)active;
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;

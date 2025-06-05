@@ -52,9 +52,7 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
   }
 
   // eslint-disable-next-line accessor-pairs
-  public set onPositionChanged(
-    callback: (event: EventTypeWithValue) => void
-  ) {
+  public set onPositionChanged(callback: (event: EventTypeWithValue) => void) {
     const subscription = this.audioEventEmitter.addAudioEventListener(
       'positionChanged',
       callback

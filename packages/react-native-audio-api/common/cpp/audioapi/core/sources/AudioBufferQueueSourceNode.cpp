@@ -48,8 +48,8 @@ std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getPlaybackRateParam()
 }
 
 void AudioBufferQueueSourceNode::start(double when) {
-    AudioScheduledSourceNode::start(when);
-    isPaused_ = false;
+  AudioScheduledSourceNode::start(when);
+  isPaused_ = false;
 }
 
 void AudioBufferQueueSourceNode::start(double when, double offset) {
@@ -59,8 +59,8 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
 }
 
 void AudioBufferQueueSourceNode::pause() {
-    AudioScheduledSourceNode::stop(0.0);
-    isPaused_ = true;
+  AudioScheduledSourceNode::stop(0.0);
+  isPaused_ = true;
 }
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
@@ -228,8 +228,8 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     framesLeft -= framesToCopy;
 
     if (readIndex >= buffer->getLength()) {
-       position_ += buffer->getDuration();
-       buffers_.pop();
+      position_ += buffer->getDuration();
+      buffers_.pop();
 
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);
