@@ -47,15 +47,12 @@ std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
-void AudioBufferQueueSourceNode::start(double when) {
-  AudioScheduledSourceNode::start(when);
-  isPaused_ = false;
-}
-
 void AudioBufferQueueSourceNode::start(double when, double offset) {
-  start(when);
+  AudioScheduledSourceNode::start(when);
 
-  vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
+  if (offset >= 0.0) {
+    vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
+  }
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {

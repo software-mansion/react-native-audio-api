@@ -23,7 +23,6 @@ class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
     [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
     [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
-    void start(double when) override;
     void start(double when, double offset);
     void stop(double when) override;
     void pause();

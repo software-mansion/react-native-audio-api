@@ -67,6 +67,7 @@ class AudioAPIModule(
     category: String?,
     mode: String?,
     options: ReadableArray?,
+    allowHaptics: Boolean,
   ) {
     // noting to do here
   }

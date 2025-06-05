@@ -71,12 +71,13 @@ class AudioBufferQueueSourceNodeHostObject
         auto audioBufferQueueSourceNode =
                 std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-        if (args[1].isUndefined()) {
-            audioBufferQueueSourceNode->start(when);
-        } else {
-            auto offset = args[1].asNumber();
-            audioBufferQueueSourceNode->start(when, offset);
+        double offset = -1.0;
+
+        if (args[1].isNumber()) {
+            offset = args[1].asNumber();
         }
+
+        audioBufferQueueSourceNode->start(when, offset);
 
         return jsi::Value::undefined();
     }
