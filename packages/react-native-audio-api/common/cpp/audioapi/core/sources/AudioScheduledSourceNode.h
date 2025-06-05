@@ -29,7 +29,7 @@ class AudioScheduledSourceNode : public AudioNode {
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
   virtual void start(double when);
-  void stop(double when);
+  virtual void stop(double when);
 
   bool isUnscheduled();
   bool isScheduled();

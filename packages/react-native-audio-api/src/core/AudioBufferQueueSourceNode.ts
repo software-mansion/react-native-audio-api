@@ -47,6 +47,16 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
   }
 
+  public override stop(when: number = 0): void {
+    if (when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+
+    (this.node as IAudioBufferQueueSourceNode).stop(when);
+  }
+
   public pause(): void {
     (this.node as IAudioBufferQueueSourceNode).pause();
   }

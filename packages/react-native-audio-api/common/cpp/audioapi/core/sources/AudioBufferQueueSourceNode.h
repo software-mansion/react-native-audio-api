@@ -25,6 +25,7 @@ class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
 
     void start(double when) override;
     void start(double when, double offset);
+    void stop(double when) override;
     void pause();
 
     void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, int bufferId, bool isLastBuffer);
@@ -63,7 +64,7 @@ class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
     uint64_t onPositionChangedCallbackId_ = 0;
     int onPositionChangedInterval_;
     int onPositionChangedTime_ = 0;
-    size_t position_ = 0;
+    double position_ = 0;
 
     void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                     int framesToProcess);
