@@ -23,7 +23,10 @@ class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
     [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
     [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
+    void start(double when) override;
     void start(double when, double offset);
+    void pause();
+
     void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, int bufferId, bool isLastBuffer);
     void disable() override;
 
@@ -54,11 +57,13 @@ class AudioBufferQueueSourceNode : public AudioScheduledSourceNode {
     std::queue<std::pair<int, std::shared_ptr<AudioBuffer>>> buffers_;
     int bufferId_ = 0;
     bool isLastBuffer_ = false;
+    bool isPaused_ = false;
 
     // positionChanged event props: callbackId, update interval in frames, time since last update in frames
     uint64_t onPositionChangedCallbackId_ = 0;
     int onPositionChangedInterval_;
     int onPositionChangedTime_ = 0;
+    size_t position_ = 0;
 
     void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                     int framesToProcess);

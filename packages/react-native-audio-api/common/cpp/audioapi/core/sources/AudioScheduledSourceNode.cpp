@@ -132,7 +132,6 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     handleStopScheduled();
-    playbackState_ = PlaybackState::FINISHED;
     return;
   }
 

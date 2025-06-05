@@ -47,10 +47,20 @@ std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
+void AudioBufferQueueSourceNode::start(double when) {
+    AudioScheduledSourceNode::start(when);
+    isPaused_ = false;
+}
+
 void AudioBufferQueueSourceNode::start(double when, double offset) {
-  AudioScheduledSourceNode::start(when);
+  start(when);
 
   vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
+}
+
+void AudioBufferQueueSourceNode::pause() {
+    AudioScheduledSourceNode::stop(0.0);
+    isPaused_ = true;
 }
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
@@ -64,6 +74,14 @@ void AudioBufferQueueSourceNode::enqueueBuffer(
 }
 
 void AudioBufferQueueSourceNode::disable() {
+  if (isPaused_) {
+    playbackState_ = PlaybackState::UNSCHEDULED;
+    startTime_ = -1.0;
+    stopTime_ = -1.0;
+
+    return;
+  }
+
   audioapi::AudioNode::disable();
 
   std::string state = "stopped";
@@ -78,6 +96,7 @@ void AudioBufferQueueSourceNode::disable() {
 
   context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
       "ended", onEndedCallbackId_, body);
+
   buffers_ = {};
 }
 
@@ -116,7 +135,7 @@ void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(
 void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {
-        {"value", getStopTime()}, {"bufferId", bufferId_}};
+        {"value", position_ + getStopTime()}};
 
     context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "positionChanged", onPositionChangedCallbackId_, body);
@@ -209,7 +228,8 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     framesLeft -= framesToCopy;
 
     if (readIndex >= buffer->getLength()) {
-      buffers_.pop();
+       position_ += buffer->getDuration();
+       buffers_.pop();
 
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);

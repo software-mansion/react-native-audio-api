@@ -30,7 +30,8 @@ class AudioBufferQueueSourceNodeHostObject
 
         addFunctions(
                 JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
-                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer));
+                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
+                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
     }
 
     JSI_PROPERTY_GETTER(detune) {
@@ -66,12 +67,25 @@ class AudioBufferQueueSourceNodeHostObject
 
     JSI_HOST_FUNCTION(start) {
         auto when = args[0].getNumber();
-        auto offset = args[1].getNumber();
 
         auto audioBufferQueueSourceNode =
                 std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-        audioBufferQueueSourceNode->start(when, offset);
+        if (args[1].isUndefined()) {
+            audioBufferQueueSourceNode->start(when);
+        } else {
+            auto offset = args[1].asNumber();
+            audioBufferQueueSourceNode->start(when, offset);
+        }
+
+        return jsi::Value::undefined();
+    }
+
+    JSI_HOST_FUNCTION(pause) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->pause();
 
         return jsi::Value::undefined();
     }

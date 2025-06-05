@@ -85,7 +85,7 @@ export interface IBiquadFilterNode extends IAudioNode {
 export interface IAudioDestinationNode extends IAudioNode {}
 
 export interface IAudioScheduledSourceNode extends IAudioNode {
-  start(when?: number): void;
+  start(when: number): void;
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
@@ -108,7 +108,7 @@ export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
 
-  start: (when?: number, offset?: number, duration?: number) => void;
+  start: (when: number, offset?: number, duration?: number) => void;
 }
 
 export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
@@ -120,7 +120,8 @@ export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
     bufferId: number,
     isLastBuffer: boolean
   ) => void;
-  start: (when?: number, offset?: number) => void;
+  start: (when: number, offset?: number) => void;
+  pause: () => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;

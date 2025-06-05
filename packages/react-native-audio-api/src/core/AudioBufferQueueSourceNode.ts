@@ -3,8 +3,8 @@ import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
-import { InvalidStateError, RangeError } from '../errors';
-import { OnPositionChangedEventType } from '../events/types';
+import { RangeError } from '../errors';
+import { EventTypeWithValue } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
@@ -29,30 +29,31 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
     );
   }
 
-  public start(when: number = 0, offset: number = 0): void {
+  public override start(when: number = 0, offset?: number): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
       );
     }
 
-    if (offset < 0) {
-      throw new RangeError(
-        `offset must be a finite non-negative number: ${offset}`
-      );
+    if (offset) {
+      if (offset < 0) {
+        throw new RangeError(
+          `offset must be a finite non-negative number: ${offset}`
+        );
+      }
     }
 
-    if (this.hasBeenStarted) {
-      throw new InvalidStateError('Cannot call start more than once');
-    }
-
-    this.hasBeenStarted = true;
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
+  }
+
+  public pause(): void {
+    (this.node as IAudioBufferQueueSourceNode).pause();
   }
 
   // eslint-disable-next-line accessor-pairs
   public set onPositionChanged(
-    callback: (event: OnPositionChangedEventType) => void
+    callback: (event: EventTypeWithValue) => void
   ) {
     const subscription = this.audioEventEmitter.addAudioEventListener(
       'positionChanged',
