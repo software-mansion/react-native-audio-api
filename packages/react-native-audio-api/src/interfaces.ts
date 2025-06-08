@@ -5,6 +5,7 @@ import {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
+  ProcessorMode,
   UUID,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
@@ -64,6 +65,7 @@ export interface IAudioNode {
 export interface ICustomProcessorNode extends IAudioNode {
   readonly customProcessor: IAudioParam;
   identifier: UUID;
+  processorMode: ProcessorMode;
 }
 
 export interface IGainNode extends IAudioNode {

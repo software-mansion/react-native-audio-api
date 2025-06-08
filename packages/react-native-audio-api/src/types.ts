@@ -47,4 +47,6 @@ export interface AudioBufferSourceNodeOptions {
   pitchCorrection: boolean;
 }
 
+export type ProcessorMode = "processInPlace" | "processThrough";
+
 export type UUID = string;
