@@ -1,9 +1,4 @@
-import {
-  SessionOptions,
-  LockScreenInfo,
-  PermissionStatus,
-  AudioFocusOptions,
-} from './types';
+import { AudioOptions, LockScreenInfo, PermissionStatus } from './types';
 import { SystemEventName, SystemEventCallback } from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
@@ -32,14 +27,6 @@ class AudioManager {
     NativeAudioAPIModule!.resetLockScreenInfo();
   }
 
-  setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioAPIModule!.setAudioSessionOptions(
-      options.iosCategory ?? '',
-      options.iosMode ?? '',
-      options.iosOptions ?? []
-    );
-  }
-
   getDevicePreferredSampleRate(): number {
     return NativeAudioAPIModule!.getDevicePreferredSampleRate();
   }
@@ -48,11 +35,8 @@ class AudioManager {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
 
-  requestAudioFocus(
-    observeAudioInterruption = true,
-    options?: AudioFocusOptions
-  ) {
-    NativeAudioAPIModule!.requestAudioFocus(observeAudioInterruption, options);
+  setAudioOptions(observeAudioInterruption = true, options?: AudioOptions) {
+    NativeAudioAPIModule!.setAudioOptions(observeAudioInterruption, options);
   }
 
   abandonAudioFocus() {
