@@ -73,12 +73,6 @@ export type AudioAttributeType = {
   usage?: audioAttributeUsageType;
 };
 
-export interface SessionOptions {
-  iosMode?: IOSMode;
-  iosOptions?: IOSOption[];
-  iosCategory?: IOSCategory;
-}
-
 export type MediaState = 'state_playing' | 'state_paused';
 
 interface BaseLockScreenInfo {
@@ -99,13 +93,22 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
-interface BaseAudioFocusOptions {
-  [key: string]: string | boolean | number | AudioAttributeType | undefined;
+interface BaseAudioOptions {
+  [key: string]:
+    | string
+    | string[]
+    | boolean
+    | number
+    | AudioAttributeType
+    | undefined;
 }
 
-export interface AudioFocusOptions extends BaseAudioFocusOptions {
-  acceptsDelayedFocusGain?: boolean;
-  audioAttributes?: AudioAttributeType;
-  focusGain?: focusGainType;
-  pauseWhenDucked?: boolean;
+export interface AudioOptions extends BaseAudioOptions {
+  androidAcceptsDelayedFocusGain?: boolean;
+  androidAudioAttributes?: AudioAttributeType;
+  androidFocusGain?: focusGainType;
+  androidPauseWhenDucked?: boolean;
+  iosMode?: IOSMode;
+  iosOptions?: IOSOption[];
+  iosCategory?: IOSCategory;
 }

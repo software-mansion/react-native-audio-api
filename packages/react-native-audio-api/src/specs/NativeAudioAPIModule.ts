@@ -18,10 +18,16 @@ interface Spec extends TurboModule {
   ): void;
   getDevicePreferredSampleRate(): number;
   observeAudioInterruptions(enabled: boolean): void;
-  requestAudioFocus(
+  setAudioOptions(
     observeAudioInterruptions: boolean,
     options?: {
-      [key: string]: string | boolean | number | AudioAttributeType | undefined;
+      [key: string]:
+        | string
+        | string[]
+        | boolean
+        | number
+        | AudioAttributeType
+        | undefined;
     }
   ): void;
   abandonAudioFocus(): void;
