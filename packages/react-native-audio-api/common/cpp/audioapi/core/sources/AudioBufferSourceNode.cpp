@@ -264,16 +264,20 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     float playbackRate) {
   size_t direction = playbackRate < 0.0f ? -1 : 1;
 
-  auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
+  size_t framesLeft = offsetLength;
+
+  auto readIndex = static_cast<size_t>(vReadIndex_);
 
   auto frameStart = static_cast<size_t>(getVirtualStartFrame());
   auto frameEnd = static_cast<size_t>(getVirtualEndFrame());
   size_t frameDelta = frameEnd - frameStart;
 
-  size_t framesLeft = offsetLength;
+  assert(frameStart <= frameEnd);
 
-  if (loop_ && (readIndex >= frameEnd || readIndex < frameStart)) {
+  if (readIndex < frameStart) {
+    readIndex = frameStart;
+  } else if (readIndex >= frameEnd && loop_) {
     readIndex = frameStart + (readIndex - frameStart) % frameDelta;
   }
 
