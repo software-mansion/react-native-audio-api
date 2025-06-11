@@ -143,32 +143,9 @@ class MediaNotificationManager(
     pause = createAction("pause", "Pause", mask, PlaybackStateCompat.ACTION_PAUSE, pause)
     stop = createAction("stop", "Stop", mask, PlaybackStateCompat.ACTION_STOP, stop)
     next = createAction("next", "Next", mask, PlaybackStateCompat.ACTION_SKIP_TO_NEXT, next)
-    previous =
-      createAction(
-        "previous",
-        "Previous",
-        mask,
-        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-        previous,
-      )
-
-    skipForward =
-      createAction(
-        "skip_forward_10",
-        "Skip Forward",
-        mask,
-        PlaybackStateCompat.ACTION_FAST_FORWARD,
-        skipForward,
-      )
-
-    skipBackward =
-      createAction(
-        "skip_backward_10",
-        "Skip Backward",
-        mask,
-        PlaybackStateCompat.ACTION_REWIND,
-        skipBackward,
-      )
+    previous = createAction("previous", "Previous", mask, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS, previous)
+    skipForward = createAction("skip_forward_10", "Skip Forward", mask, PlaybackStateCompat.ACTION_FAST_FORWARD, skipForward)
+    skipBackward = createAction("skip_backward_10", "Skip Backward", mask, PlaybackStateCompat.ACTION_REWIND, skipBackward)
   }
 
   private fun createAction(

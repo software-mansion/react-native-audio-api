@@ -130,9 +130,6 @@ class LockScreenManager(
           }
         }
       artworkThread!!.start()
-    } else {
-      md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null)
-      nb.setLargeIcon(null as Bitmap?)
     }
 
     speed =
