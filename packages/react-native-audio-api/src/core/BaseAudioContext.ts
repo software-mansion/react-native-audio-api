@@ -6,6 +6,7 @@ import {
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
+import CustomProcessorNode from "./CustomProcessorNode";
 import GainNode from './GainNode';
 import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -39,6 +40,10 @@ export default class BaseAudioContext {
     return new OscillatorNode(this, this.context.createOscillator());
   }
 
+  createCustomProcessor(): CustomProcessorNode {
+    return new CustomProcessorNode(this, this.context.createCustomProcessor());
+  }
+  
   createGain(): GainNode {
     return new GainNode(this, this.context.createGain());
   }
