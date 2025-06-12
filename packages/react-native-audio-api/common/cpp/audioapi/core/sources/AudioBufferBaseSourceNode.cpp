@@ -1,10 +1,10 @@
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/Constants.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/core/AudioParam.h>
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(BaseAudioContext *context)
@@ -12,14 +12,15 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(BaseAudioContext *context)
   onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);
 
   detuneParam_ = std::make_shared<AudioParam>(
-        0.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      0.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   playbackRateParam_ = std::make_shared<AudioParam>(
-        1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
 
   playbackRateBus_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
+      RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
-  stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+  stretch_ =
+      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -60,42 +61,44 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
-        const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) {
-    size_t startOffset = 0;
-    size_t offsetLength = 0;
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
 
-    auto time = context_->getCurrentTime();
-    auto playbackRate = std::clamp(
-            playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
-    auto detune = std::clamp(
-            detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
-            -12.0f,
-            12.0f);
+  auto time = context_->getCurrentTime();
+  auto playbackRate = std::clamp(
+      playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
+  auto detune = std::clamp(
+      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
+      -12.0f,
+      12.0f);
 
-    playbackRateBus_->zero();
+  playbackRateBus_->zero();
 
-    auto framesNeededToStretch =
-            static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
-    updatePlaybackInfo(
-            playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
+  updatePlaybackInfo(
+      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
 
-    if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-        processingBus->zero();
-        return;
-    }
+  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
+    processingBus->zero();
+    return;
+  }
 
-    processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength, playbackRate);
+  processWithoutInterpolation(
+      playbackRateBus_, startOffset, offsetLength, playbackRate);
 
-    stretch_->process(
-            playbackRateBus_.get()[0],
-            framesNeededToStretch,
-            processingBus.get()[0],
-            framesToProcess);
+  stretch_->process(
+      playbackRateBus_.get()[0],
+      framesNeededToStretch,
+      processingBus.get()[0],
+      framesToProcess);
 
-    if (detune != 0.0f) {
-        stretch_->setTransposeSemitones(detune);
-    }
+  if (detune != 0.0f) {
+    stretch_->setTransposeSemitones(detune);
+  }
 }
 
 } // namespace audioapi
