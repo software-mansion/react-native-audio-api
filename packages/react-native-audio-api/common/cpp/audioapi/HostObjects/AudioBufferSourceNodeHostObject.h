@@ -2,8 +2,7 @@
 
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/HostObjects/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
 #include <vector>
@@ -12,28 +11,24 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioBufferSourceNodeHostObject
-    : public AudioScheduledSourceNodeHostObject {
+    : public AudioBufferBaseSourceNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
       const std::shared_ptr<AudioBufferSourceNode> &node)
-      : AudioScheduledSourceNodeHostObject(node) {
+      : AudioBufferBaseSourceNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, detune),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, playbackRate));
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onPositionChanged),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onPositionChangedInterval));
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
     // start method is overridden in this class
     functions_->erase("start");
@@ -83,23 +78,6 @@ class AudioBufferSourceNodeHostObject
     return {loopEnd};
   }
 
-  JSI_PROPERTY_GETTER(detune) {
-    auto audioBufferSourceNode =
-        std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    auto detune = audioBufferSourceNode->getDetuneParam();
-    auto detuneHostObject = std::make_shared<AudioParamHostObject>(detune);
-    return jsi::Object::createFromHostObject(runtime, detuneHostObject);
-  }
-
-  JSI_PROPERTY_GETTER(playbackRate) {
-    auto audioBufferSourceNode =
-        std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    auto playbackRate = audioBufferSourceNode->getPlaybackRateParam();
-    auto playbackRateHostObject =
-        std::make_shared<AudioParamHostObject>(playbackRate);
-    return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
-  }
-
   JSI_PROPERTY_SETTER(loop) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
@@ -135,20 +113,6 @@ class AudioBufferSourceNodeHostObject
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     audioBufferSourceNode->setLoopEnd(value.getNumber());
-  }
-
-  JSI_PROPERTY_SETTER(onPositionChanged) {
-    auto audioBufferSourceNode =
-            std::static_pointer_cast<AudioBufferSourceNode>(node_);
-
-    audioBufferSourceNode->setOnPositionChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
-  }
-
-  JSI_PROPERTY_SETTER(onPositionChangedInterval) {
-      auto audioBufferSourceNode =
-              std::static_pointer_cast<AudioBufferSourceNode>(node_);
-
-      audioBufferSourceNode->setOnPositionChangedInterval(value.getNumber());
   }
 
   JSI_HOST_FUNCTION(start) {

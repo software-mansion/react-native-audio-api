@@ -1,15 +1,9 @@
 import AudioBuffer from '../core/AudioBuffer';
 
-interface EventEmptyType {}
+export interface EventEmptyType {}
 
 export interface EventTypeWithValue {
   value: number;
-}
-
-export interface OnEndedEventType {
-  value: number;
-  state: 'stopped' | 'ended';
-  bufferId: number | undefined;
 }
 
 interface OnInterruptionEventType {
@@ -57,7 +51,7 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: OnEndedEventType;
+  ended: EventEmptyType;
   audioReady: OnAudioReadyEventType;
   positionChanged: EventTypeWithValue;
   audioError: EventEmptyType; // to change

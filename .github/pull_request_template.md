@@ -2,6 +2,12 @@
 
 Closes #
 
+## ⚠️ Breaking changes ⚠️
+
+<!-- A brief description of the breaking changes -->
+
+-
+
 ## Introduced changes
 
 <!-- A brief description of the changes -->

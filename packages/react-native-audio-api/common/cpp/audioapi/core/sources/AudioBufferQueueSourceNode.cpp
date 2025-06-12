@@ -12,22 +12,9 @@ namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context)
-    : AudioScheduledSourceNode(context), vReadIndex_(0.0) {
+    : AudioBufferBaseSourceNode(context) {
   buffers_ = {};
-
-  detuneParam_ = std::make_shared<AudioParam>(
-      0.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  playbackRateParam_ = std::make_shared<AudioParam>(
-      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-
-  playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
-
-  stretch_ =
-      std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
   stretch_->presetDefault(channelCount_, context_->getSampleRate(), true);
-
-  onPositionChangedInterval_ = static_cast<int>(context_->getSampleRate() / 10);
 
   isInitialized_ = true;
 }
@@ -36,23 +23,6 @@ AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
   Locker locker(getBufferLock());
 
   buffers_ = {};
-}
-
-std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getDetuneParam() const {
-  return detuneParam_;
-}
-
-std::shared_ptr<AudioParam> AudioBufferQueueSourceNode::getPlaybackRateParam()
-    const {
-  return playbackRateParam_;
-}
-
-void AudioBufferQueueSourceNode::start(double when, double offset) {
-  AudioScheduledSourceNode::start(when);
-
-  if (offset >= 0.0) {
-    vReadIndex_ = static_cast<double>(context_->getSampleRate() * offset);
-  }
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {
@@ -67,10 +37,9 @@ void AudioBufferQueueSourceNode::pause() {
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    int bufferId,
     bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
-  buffers_.emplace(bufferId, buffer);
+  buffers_.emplace(buffer);
 
   isLastBuffer_ = isLastBuffer;
 }
@@ -84,26 +53,8 @@ void AudioBufferQueueSourceNode::disable() {
     return;
   }
 
-  audioapi::AudioNode::disable();
-
-  std::string state = "stopped";
-
-  // if it has not been stopped, it is ended
-  if (stopTime_ < 0) {
-    state = "ended";
-  }
-
-  std::unordered_map<std::string, EventValue> body = {
-      {"value", getStopTime()}, {"state", state}, {"bufferId", bufferId_}};
-
-  context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      "ended", onEndedCallbackId_, body);
-
+  AudioScheduledSourceNode::disable();
   buffers_ = {};
-}
-
-std::mutex &AudioBufferQueueSourceNode::getBufferLock() {
-  return bufferLock_;
 }
 
 void AudioBufferQueueSourceNode::processNode(
@@ -119,97 +70,31 @@ void AudioBufferQueueSourceNode::processNode(
     processWithPitchCorrection(processingBus, framesToProcess);
 
     handleStopScheduled();
+    sendOnPositionChangedEvent();
   } else {
     processingBus->zero();
   }
 }
 
-double AudioBufferQueueSourceNode::getStopTime() const {
+double AudioBufferQueueSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(
-      static_cast<int>(vReadIndex_), context_->getSampleRate());
-}
-
-void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(
-    uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedTime_ > onPositionChangedInterval_) {
-    std::unordered_map<std::string, EventValue> body = {
-        {"value", position_ + getStopTime()}};
-
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId_, body);
-
-    onPositionChangedTime_ = 0;
-  }
-
-  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
-}
-
-void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedInterval_ = static_cast<int>(
-      context_->getSampleRate() * static_cast<float>(interval) / 1000);
+             static_cast<int>(vReadIndex_), context_->getSampleRate()) +
+      playedBuffersDuration_;
 }
 
 /**
  * Helper functions
  */
 
-void AudioBufferQueueSourceNode::processWithPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-
-  auto time = context_->getCurrentTime();
-  auto playbackRate = std::clamp(
-      playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
-  auto detune = std::clamp(
-      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
-      -12.0f,
-      12.0f);
-
-  playbackRateBus_->zero();
-
-  auto framesNeededToStretch =
-      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-
-  updatePlaybackInfo(
-      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
-
-  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
-    return;
-  }
-
-  // Send position changed event
-  sendOnPositionChangedEvent();
-
-  processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength);
-
-  stretch_->process(
-      playbackRateBus_.get()[0],
-      framesNeededToStretch,
-      processingBus.get()[0],
-      framesToProcess);
-
-  if (detune != 0.0f) {
-    stretch_->setTransposeSemitones(detune);
-  }
-}
-
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBus> &processingBus,
     size_t startOffset,
-    size_t offsetLength) {
+    size_t offsetLength,
+    float playbackRate) {
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto queueData = buffers_.front();
-  bufferId_ = queueData.first;
-  auto buffer = queueData.second;
+  auto buffer = buffers_.front();
 
   size_t framesLeft = offsetLength;
 
@@ -230,7 +115,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     framesLeft -= framesToCopy;
 
     if (readIndex >= buffer->getLength()) {
-      position_ += buffer->getDuration();
+      playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
       if (buffers_.empty()) {
@@ -242,9 +127,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         }
         break;
       } else {
-        queueData = buffers_.front();
-        bufferId_ = queueData.first;
-        buffer = queueData.second;
+        buffer = buffers_.front();
 
         readIndex = 0;
       }

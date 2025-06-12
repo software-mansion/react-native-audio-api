@@ -41,14 +41,16 @@ class AudioPlayer {
     });
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
-    this.sourceNode.onended = (event) => {
-      this.offset = event.value;
-    };
+
     this.sourceNode.connect(this.audioContext.destination);
     if (this.seekOffset !== 0) {
       this.offset = Math.max(this.seekOffset + this.offset, 0);
       this.seekOffset = 0;
     }
+    this.sourceNode.onPositionChanged = (event) => {
+      this.offset = event.value;
+    };
+
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
     AudioManager.setLockScreenInfo({
@@ -104,11 +106,12 @@ class AudioPlayer {
 
   reset = () => {
     this.audioBuffer = null;
-    this.sourceNode?.disconnect();
+    this.sourceNode?.stop(this.audioContext.currentTime);
     this.sourceNode = null;
     this.offset = 0;
     this.seekOffset = 0;
     this.playbackRate = 1;
+    this.isPlaying = false;
   };
 }
 

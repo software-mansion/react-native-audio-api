@@ -39,7 +39,6 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void setOnEndedCallbackId(uint64_t callbackId);
 
-  virtual double getStopTime() const = 0;
   void disable() override;
 
  protected:
@@ -48,6 +47,8 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
+  uint64_t onEndedCallbackId_ = 0;
+
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,
       int framesToProcess,
@@ -55,8 +56,6 @@ class AudioScheduledSourceNode : public AudioNode {
       size_t &nonSilentFramesToProcess);
 
   void handleStopScheduled();
-
-  uint64_t onEndedCallbackId_ = 0;
 };
 
 } // namespace audioapi

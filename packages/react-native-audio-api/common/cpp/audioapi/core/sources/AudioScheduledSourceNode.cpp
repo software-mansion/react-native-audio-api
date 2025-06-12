@@ -143,18 +143,8 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  std::string state = "stopped";
-
-  // if it has not been stopped, it is ended
-  if (stopTime_ < 0) {
-    state = "ended";
-  }
-
-  std::unordered_map<std::string, EventValue> body = {
-      {"value", getStopTime()}, {"state", state}};
-
   context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      "ended", onEndedCallbackId_, body);
+      "ended", onEndedCallbackId_, {});
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

@@ -89,6 +89,7 @@ const AudioFile: FC = () => {
       remoteSkipBackwardSubscription?.remove();
       interruptionSubscription?.remove();
       AudioManager.resetLockScreenInfo();
+      AudioPlayer.reset();
     };
   }, [fetchAudioBuffer]);
 

@@ -25,7 +25,6 @@ class OscillatorNode : public AudioScheduledSourceNode {
 
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-  double getStopTime() const override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;

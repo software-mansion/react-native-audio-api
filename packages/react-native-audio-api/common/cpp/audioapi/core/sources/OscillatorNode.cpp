@@ -91,9 +91,4 @@ void OscillatorNode::processNode(
   handleStopScheduled();
 }
 
-double OscillatorNode::getStopTime() const {
-  return dsp::sampleFrameToTime(
-      static_cast<int>(phase_), context_->getSampleRate());
-}
-
 } // namespace audioapi
