@@ -19,6 +19,7 @@ class AudioBufferSourceNodeHostObject
       : AudioScheduledSourceNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd),
@@ -27,9 +28,12 @@ class AudioBufferSourceNodeHostObject
 
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onPositionChanged),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onPositionChangedInterval));
 
     // start method is overridden in this class
     functions_->erase("start");
@@ -43,6 +47,13 @@ class AudioBufferSourceNodeHostObject
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     auto loop = audioBufferSourceNode->getLoop();
     return {loop};
+  }
+
+  JSI_PROPERTY_GETTER(loopSkip) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    auto loopSkip = audioBufferSourceNode->getLoopSkip();
+    return {loopSkip};
   }
 
   JSI_PROPERTY_GETTER(buffer) {
@@ -95,6 +106,12 @@ class AudioBufferSourceNodeHostObject
     audioBufferSourceNode->setLoop(value.getBool());
   }
 
+  JSI_PROPERTY_SETTER(loopSkip) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    audioBufferSourceNode->setLoopSkip(value.getBool());
+  }
+
   JSI_PROPERTY_SETTER(buffer) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
@@ -118,6 +135,20 @@ class AudioBufferSourceNodeHostObject
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     audioBufferSourceNode->setLoopEnd(value.getNumber());
+  }
+
+  JSI_PROPERTY_SETTER(onPositionChanged) {
+    auto audioBufferSourceNode =
+            std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+    audioBufferSourceNode->setOnPositionChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+  }
+
+  JSI_PROPERTY_SETTER(onPositionChangedInterval) {
+      auto audioBufferSourceNode =
+              std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+      audioBufferSourceNode->setOnPositionChangedInterval(value.getNumber());
   }
 
   JSI_HOST_FUNCTION(start) {

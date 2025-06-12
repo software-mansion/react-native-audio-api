@@ -20,6 +20,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
+  [[nodiscard]] bool getLoopSkip() const;
   [[nodiscard]] double getLoopStart() const;
   [[nodiscard]] double getLoopEnd() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
@@ -27,12 +28,17 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
 
   void setLoop(bool loop);
+  void setLoopSkip(bool loopSkip);
   void setLoopStart(double loopStart);
   void setLoopEnd(double loopEnd);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
   void start(double when, double offset, double duration = -1);
   void disable() override;
+
+  void setOnPositionChangedCallbackId(uint64_t callbackId);
+  void setOnPositionChangedInterval(int interval);
+  void sendOnPositionChangedEvent();
 
  protected:
   std::mutex &getBufferLock();
@@ -42,6 +48,7 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
  private:
   // Looping related properties
   bool loop_;
+  bool loopSkip_;
   double loopStart_;
   double loopEnd_;
   std::mutex bufferLock_;
@@ -62,6 +69,11 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
+
+    // positionChanged event props: callbackId, update interval in frames, time since last update in frames
+    uint64_t onPositionChangedCallbackId_ = 0;
+    int onPositionChangedInterval_;
+    int onPositionChangedTime_ = 0;
 
   void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                      int framesToProcess);

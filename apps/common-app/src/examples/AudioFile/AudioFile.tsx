@@ -8,6 +8,7 @@ import {
 } from 'react-native-audio-api';
 
 import { Container, Button, Spacer, Slider } from '../../components';
+import { EventTypeWithValue } from 'react-native-audio-api/lib/typescript/events/types';
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
@@ -83,7 +84,10 @@ const AudioFile: FC = () => {
       bufferSourceRef.current.playbackRate.value = playbackRate;
       bufferSourceRef.current.detune.value = detune;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
-
+      bufferSourceRef.current.onPositionChanged = (event: EventTypeWithValue) => {
+        console.log('onPositionChanged event:', event);
+      };
+      // bufferSourceRef.current.onPositionChangedInterval = 200;
       bufferSourceRef.current.start(
         audioContextRef.current.currentTime,
         offset
@@ -165,7 +169,6 @@ const AudioFile: FC = () => {
       remoteChangePlaybackPositionSubscription?.remove();
       interruptionSubscription?.remove();
       audioContextRef.current?.close();
-      AudioManager.resetLockScreenInfo();
     };
   }, [fetchAudioBuffer]);
 

@@ -4,7 +4,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioBuffer from './AudioBuffer';
 import AudioParam from './AudioParam';
 import { RangeError } from '../errors';
-import { EventTypeWithValue } from '../events/types';
+import { OnQueuePositionChangedEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
@@ -62,9 +62,11 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
   }
 
   // eslint-disable-next-line accessor-pairs
-  public set onPositionChanged(callback: (event: EventTypeWithValue) => void) {
+  public set onPositionChanged(
+    callback: (event: OnQueuePositionChangedEventType) => void
+  ) {
     const subscription = this.audioEventEmitter.addAudioEventListener(
-      'positionChanged',
+      'queuePositionChanged',
       callback
     );
 
