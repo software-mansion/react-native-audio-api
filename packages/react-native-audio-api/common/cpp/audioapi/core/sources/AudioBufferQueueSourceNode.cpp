@@ -37,10 +37,9 @@ void AudioBufferQueueSourceNode::pause() {
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    int bufferId,
     bool isLastBuffer) {
   auto locker = Locker(getBufferLock());
-  buffers_.emplace(bufferId, buffer);
+  buffers_.emplace(buffer);
 
   isLastBuffer_ = isLastBuffer;
 }
@@ -80,7 +79,7 @@ void AudioBufferQueueSourceNode::processNode(
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(
              static_cast<int>(vReadIndex_), context_->getSampleRate()) +
-      position_;
+      playedBuffersDuration_;
 }
 
 /**
@@ -95,9 +94,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto queueData = buffers_.front();
-  bufferId_ = queueData.first;
-  auto buffer = queueData.second;
+  auto buffer = buffers_.front();
 
   size_t framesLeft = offsetLength;
 
@@ -118,7 +115,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     framesLeft -= framesToCopy;
 
     if (readIndex >= buffer->getLength()) {
-      position_ += buffer->getDuration();
+      playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
       if (buffers_.empty()) {
@@ -130,9 +127,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         }
         break;
       } else {
-        queueData = buffers_.front();
-        bufferId_ = queueData.first;
-        buffer = queueData.second;
+        buffer = buffers_.front();
 
         readIndex = 0;
       }
