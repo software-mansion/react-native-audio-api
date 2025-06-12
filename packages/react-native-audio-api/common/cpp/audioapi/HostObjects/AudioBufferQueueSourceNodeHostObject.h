@@ -25,11 +25,8 @@ class AudioBufferQueueSourceNodeHostObject
                 JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChanged),
                 JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onPositionChangedInterval));
 
-        // start method is overridden in this class
-        functions_->erase("start");
 
         addFunctions(
-                JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
                 JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
                 JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
     }
@@ -62,24 +59,7 @@ class AudioBufferQueueSourceNodeHostObject
         auto audioBufferQueueSourceNode =
                 std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-        audioBufferQueueSourceNode->setOnPositionChangedInterval(value.getNumber());
-    }
-
-    JSI_HOST_FUNCTION(start) {
-        auto when = args[0].getNumber();
-
-        auto audioBufferQueueSourceNode =
-                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
-
-        double offset = -1.0;
-
-        if (args[1].isNumber()) {
-            offset = args[1].asNumber();
-        }
-
-        audioBufferQueueSourceNode->start(when, offset);
-
-        return jsi::Value::undefined();
+        audioBufferQueueSourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
     }
 
     JSI_HOST_FUNCTION(pause) {
