@@ -173,8 +173,8 @@ void AudioBufferSourceNode::processNode(
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
-    return dsp::sampleFrameToTime(
-        static_cast<int>(vReadIndex_), buffer_->getSampleRate());
+  return dsp::sampleFrameToTime(
+      static_cast<int>(vReadIndex_), buffer_->getSampleRate());
 }
 
 /**

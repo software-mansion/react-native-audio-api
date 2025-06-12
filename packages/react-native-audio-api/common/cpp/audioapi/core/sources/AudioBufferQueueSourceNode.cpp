@@ -84,7 +84,7 @@ void AudioBufferQueueSourceNode::disable() {
     return;
   }
 
- AudioScheduledSourceNode::disable();
+  AudioScheduledSourceNode::disable();
   buffers_ = {};
 }
 
@@ -112,8 +112,9 @@ void AudioBufferQueueSourceNode::processNode(
 }
 
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
-    return dsp::sampleFrameToTime(
-            static_cast<int>(vReadIndex_), context_->getSampleRate()) + position_;
+  return dsp::sampleFrameToTime(
+             static_cast<int>(vReadIndex_), context_->getSampleRate()) +
+      position_;
 }
 
 /**
