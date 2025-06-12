@@ -92,6 +92,16 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   onended: string;
 }
 
+export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
+  detune: IAudioParam;
+  playbackRate: IAudioParam;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onPositionChanged: string;
+  // set how often the onPositionChanged event is called
+  onPositionChangedInterval: number;
+}
+
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
   readonly frequency: IAudioParam;
   readonly detune: IAudioParam;
@@ -100,39 +110,24 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
-export interface IAudioBufferSourceNode extends IAudioScheduledSourceNode {
+export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   buffer: IAudioBuffer | null;
   loop: boolean;
   loopSkip: boolean;
   loopStart: number;
   loopEnd: number;
-  detune: IAudioParam;
-  playbackRate: IAudioParam;
 
   start: (when?: number, offset?: number, duration?: number) => void;
-
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  // set how often the onPositionChanged event is called
-  onPositionChangedInterval: number;
 }
 
-export interface IAudioBufferQueueSourceNode extends IAudioScheduledSourceNode {
-  detune: IAudioParam;
-  playbackRate: IAudioParam;
-
+export interface IAudioBufferQueueSourceNode
+  extends IAudioBufferBaseSourceNode {
   enqueueBuffer: (
     audioBuffer: IAudioBuffer,
     bufferId: number,
     isLastBuffer: boolean
   ) => void;
-  start: (when: number, offset?: number) => void;
   pause: () => void;
-
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  // set how often the onPositionChanged event is called
-  onPositionChangedInterval: number;
 }
 
 export interface IAudioBuffer {

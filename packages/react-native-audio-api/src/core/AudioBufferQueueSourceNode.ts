@@ -1,22 +1,9 @@
 import { IAudioBufferQueueSourceNode } from '../interfaces';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import BaseAudioContext from './BaseAudioContext';
+import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
-import AudioParam from './AudioParam';
 import { RangeError } from '../errors';
-import { EventTypeWithValue } from '../events/types';
 
-export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode {
-  readonly playbackRate: AudioParam;
-  readonly detune: AudioParam;
-
-  constructor(context: BaseAudioContext, node: IAudioBufferQueueSourceNode) {
-    super(context, node);
-
-    this.detune = new AudioParam(node.detune, context);
-    this.playbackRate = new AudioParam(node.playbackRate, context);
-  }
-
+export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
   public enqueueBuffer(
     buffer: AudioBuffer,
     bufferId: number = 0,
@@ -44,7 +31,7 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
       }
     }
 
-    (this.node as IAudioBufferQueueSourceNode).start(when, offset);
+    (this.node as IAudioBufferQueueSourceNode).start(when);
   }
 
   public override stop(when: number = 0): void {
@@ -59,22 +46,5 @@ export default class AudioBufferQueueSourceNode extends AudioScheduledSourceNode
 
   public pause(): void {
     (this.node as IAudioBufferQueueSourceNode).pause();
-  }
-
-  // eslint-disable-next-line accessor-pairs
-  public set onPositionChanged(callback: (event: EventTypeWithValue) => void) {
-    const subscription = this.audioEventEmitter.addAudioEventListener(
-      'positionChanged',
-      callback
-    );
-
-    (this.node as IAudioBufferQueueSourceNode).onPositionChanged =
-      subscription.subscriptionId;
-  }
-
-  // eslint-disable-next-line accessor-pairs
-  public set onPositionChangedInterval(value: number) {
-    (this.node as IAudioBufferQueueSourceNode).onPositionChangedInterval =
-      value;
   }
 }

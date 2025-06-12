@@ -1,22 +1,9 @@
 import { IAudioBufferSourceNode } from '../interfaces';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import BaseAudioContext from './BaseAudioContext';
+import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
-import AudioParam from './AudioParam';
 import { InvalidStateError, RangeError } from '../errors';
-import { EventTypeWithValue } from '../events/types';
 
-export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
-  readonly playbackRate: AudioParam;
-  readonly detune: AudioParam;
-
-  constructor(context: BaseAudioContext, node: IAudioBufferSourceNode) {
-    super(context, node);
-
-    this.detune = new AudioParam(node.detune, context);
-    this.playbackRate = new AudioParam(node.playbackRate, context);
-  }
-
+export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   public get buffer(): AudioBuffer | null {
     const buffer = (this.node as IAudioBufferSourceNode).buffer;
     if (!buffer) {
@@ -91,21 +78,5 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
-  }
-
-  // eslint-disable-next-line accessor-pairs
-  public set onPositionChanged(callback: (event: EventTypeWithValue) => void) {
-    const subscription = this.audioEventEmitter.addAudioEventListener(
-      'positionChanged',
-      callback
-    );
-
-    (this.node as IAudioBufferSourceNode).onPositionChanged =
-      subscription.subscriptionId;
-  }
-
-  // eslint-disable-next-line accessor-pairs
-  public set onPositionChangedInterval(value: number) {
-    (this.node as IAudioBufferSourceNode).onPositionChangedInterval = value;
   }
 }
