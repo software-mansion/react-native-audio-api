@@ -12,7 +12,7 @@ namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context)
-    : AudioScheduledSourceNode(context), vReadIndex_(0.0) {
+    : AudioBufferBaseSourceNode(context), vReadIndex_(0.0) {
   buffers_ = {};
 
   detuneParam_ = std::make_shared<AudioParam>(
@@ -84,21 +84,7 @@ void AudioBufferQueueSourceNode::disable() {
     return;
   }
 
-  audioapi::AudioNode::disable();
-
-  std::string state = "stopped";
-
-  // if it has not been stopped, it is ended
-  if (stopTime_ < 0) {
-    state = "ended";
-  }
-
-  std::unordered_map<std::string, EventValue> body = {
-      {"value", getStopTime()}, {"state", state}, {"bufferId", bufferId_}};
-
-  context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      "ended", onEndedCallbackId_, body);
-
+ AudioScheduledSourceNode::disable();
   buffers_ = {};
 }
 
@@ -119,38 +105,15 @@ void AudioBufferQueueSourceNode::processNode(
     processWithPitchCorrection(processingBus, framesToProcess);
 
     handleStopScheduled();
+    sendOnPositionChangedEvent();
   } else {
     processingBus->zero();
   }
 }
 
-double AudioBufferQueueSourceNode::getStopTime() const {
-  return dsp::sampleFrameToTime(
-      static_cast<int>(vReadIndex_), context_->getSampleRate());
-}
-
-void AudioBufferQueueSourceNode::setOnPositionChangedCallbackId(
-    uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioBufferQueueSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedTime_ > onPositionChangedInterval_) {
-    std::unordered_map<std::string, EventValue> body = {
-        {"value", position_ + getStopTime()}};
-
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId_, body);
-
-    onPositionChangedTime_ = 0;
-  }
-
-  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
-}
-
-void AudioBufferQueueSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedInterval_ = static_cast<int>(
-      context_->getSampleRate() * static_cast<float>(interval) / 1000);
+double AudioBufferQueueSourceNode::getCurrentPosition() const {
+    return dsp::sampleFrameToTime(
+            static_cast<int>(vReadIndex_), context_->getSampleRate()) + position_;
 }
 
 /**
@@ -183,9 +146,6 @@ void AudioBufferQueueSourceNode::processWithPitchCorrection(
     processingBus->zero();
     return;
   }
-
-  // Send position changed event
-  sendOnPositionChangedEvent();
 
   processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength);
 

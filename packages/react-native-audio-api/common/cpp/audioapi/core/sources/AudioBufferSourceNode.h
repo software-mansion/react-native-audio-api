@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 #include <memory>
@@ -14,7 +14,7 @@ namespace audioapi {
 class AudioBus;
 class AudioParam;
 
-class AudioBufferSourceNode : public AudioScheduledSourceNode {
+class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
   explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
   ~AudioBufferSourceNode() override;
@@ -36,14 +36,10 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   void start(double when, double offset, double duration = -1);
   void disable() override;
 
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-  void setOnPositionChangedInterval(int interval);
-  void sendOnPositionChangedEvent();
-
  protected:
   std::mutex &getBufferLock();
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-  double getStopTime() const override;
+  double getCurrentPosition() const override;
 
  private:
   // Looping related properties
@@ -69,11 +65,6 @@ class AudioBufferSourceNode : public AudioScheduledSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
-
-    // positionChanged event props: callbackId, update interval in frames, time since last update in frames
-    uint64_t onPositionChangedCallbackId_ = 0;
-    int onPositionChangedInterval_;
-    int onPositionChangedTime_ = 0;
 
   void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                      int framesToProcess);
