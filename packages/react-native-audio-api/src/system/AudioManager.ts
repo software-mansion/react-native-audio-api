@@ -35,6 +35,13 @@ class AudioManager {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
 
+  /**
+   * Used to set various system options for android and iOS
+   *
+   * @param observeAudioInterruption - If true, the module will observe audio
+   *   interruptions and emit events accordingly (true by default).
+   * @param options - Additional audio options to configure the audio session.
+   */
   setAudioOptions(observeAudioInterruption = true, options?: AudioOptions) {
     NativeAudioAPIModule!.setAudioOptions(observeAudioInterruption, options);
   }
