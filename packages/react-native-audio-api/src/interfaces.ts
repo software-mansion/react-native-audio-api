@@ -33,6 +33,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
+  createConvolver: () => IConvolverNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
   decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
   decodePCMAudioDataInBase64: (b64: string) => Promise<IAudioBuffer>;
@@ -135,6 +136,11 @@ export interface IAudioBufferQueueSourceNode
   extends IAudioBufferBaseSourceNode {
   enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
   pause: () => void;
+}
+
+export interface IConvolverNode extends IAudioNode {
+  buffer: IAudioBuffer | null;
+  normalize: boolean;
 }
 
 export interface IAudioBuffer {

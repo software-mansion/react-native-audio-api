@@ -29,6 +29,7 @@ class AudioBufferQueueSourceNode;
 class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
+class ConvolverNode;
 
 class BaseAudioContext {
  public:
@@ -55,6 +56,7 @@ class BaseAudioContext {
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
+  std::shared_ptr<ConvolverNode> createConvolver();
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
