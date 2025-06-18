@@ -54,10 +54,19 @@ public:
 class CustomProcessorNode : public AudioNode {
 public:
   /**
-   * @brief Constructs a new CustomProcessorNode attached to a given context.
-   * @param context Audio context this node belongs to.
+   * @brief Enumerates supported audio processing modes.
    */
-  explicit CustomProcessorNode(BaseAudioContext* context);
+  enum class ProcessorMode {
+    ProcessInPlace,
+    ProcessThrough
+  };
+
+  /**
+   * @brief Constructs a new CustomProcessorNode attached to a given context with a processor identifier.
+   * @param context Audio context this node belongs to.
+   * @param identifier The identifier of the processor to instantiate and bind.
+   */
+  CustomProcessorNode(BaseAudioContext* context, const std::string& identifier);
 
   /**
    * @brief Destroys the node and removes it from active tracking.
@@ -71,28 +80,16 @@ public:
   std::shared_ptr<AudioParam> getCustomProcessorParam() const;
 
   /**
-   * @brief Gets the identifier for the currently bound processor.
-   * @return Processor identifier string.
+   * @brief Gets the processor mode.
+   * @return The current processing mode as an enum.
    */
-  std::string getIdentifier() const;
-
-  /**
-   * @brief Sets the processor identifier and binds the associated processor.
-   * @param identifier The unique processor identifier to use.
-   */
-  void setIdentifier(const std::string& identifier);
-
-  /**
-   * @brief Gets the processor mode: "processInPlace" or "processThrough".
-   * @return A string representing the current mode.
-   */
-  std::string getProcessorMode() const;
+  ProcessorMode getProcessorMode() const;
 
   /**
    * @brief Sets the processor mode.
-   * @param processorMode Must be either "processInPlace" or "processThrough".
+   * @param processorMode Processing mode to apply.
    */
-  void setProcessorMode(const std::string& processorMode);
+  void setProcessorMode(ProcessorMode processorMode);
 
   /**
    * @brief Registers a factory for creating processors for a given identifier.
@@ -165,15 +162,24 @@ private:
    */
   void processThrough(const std::shared_ptr<AudioBus>& bus, int frames);
 
+  /**
+   * @brief Ensures that preallocated output buffers match the required frame and channel dimensions.
+   * This avoids real-time heap allocations.
+   */
+  void ensurePreallocatedBuffers(int numChannels, int numFrames);
+
   std::shared_ptr<AudioParam> customProcessorParam_; ///< Optional real-time modifiable parameter.
-  std::string identifier_; ///< Processor identifier used to bind factories and handlers.
-  std::string processorMode_ = "processInPlace"; ///< Determines processing style.
+  ProcessorMode processorMode_ = ProcessorMode::ProcessInPlace; ///< Determines processing style.
   std::shared_ptr<CustomAudioProcessor> processor_; ///< Processor instance.
+
+  std::vector<std::vector<float>> preallocatedOutputBuffers_; ///< Storage for preallocated channel data.
+  std::vector<float*> preallocatedOutputPointers_; ///< Pointers to preallocatedOutputBuffers_ for processor API.
+
+  static void notifyProcessorChanged(const std::string& identifier); ///< Notify and update all nodes with given identifier.
 
   static std::map<std::string, std::function<std::shared_ptr<CustomAudioProcessor>()>> s_processorFactoriesByIdentifier; ///< Global registry of processor factories.
   static std::unordered_map<std::string, GenericControlHandler> s_controlHandlersByIdentifier; ///< Global registry of control handlers.
-  static void notifyProcessorChanged(const std::string& identifier); ///< Rebinds processors for matching nodes.
-  static std::vector<CustomProcessorNode*> activeNodes; ///< Tracks all live CustomProcessorNode instances.
+  static std::unordered_map<std::string, std::vector<CustomProcessorNode*>> s_activeNodes; ///< Tracks active node instances by identifier.
 };
 
 } // namespace audioapi

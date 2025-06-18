@@ -40,8 +40,11 @@ export default class BaseAudioContext {
     return new OscillatorNode(this, this.context.createOscillator());
   }
 
-  createCustomProcessor(): CustomProcessorNode {
-    return new CustomProcessorNode(this, this.context.createCustomProcessor());
+  createCustomProcessor(identifier: string): CustomProcessorNode {
+    return new CustomProcessorNode(
+      this,
+      this.context.createCustomProcessor(identifier)
+    );
   }
   
   createGain(): GainNode {

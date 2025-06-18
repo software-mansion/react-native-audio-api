@@ -1,5 +1,5 @@
 import { ICustomProcessorNode } from "../interfaces";
-import { UUID, ProcessorMode } from "../types";
+import { ProcessorMode } from "../types";
 import AudioNode from "./AudioNode";
 import AudioParam from "./AudioParam";
 import BaseAudioContext from "./BaseAudioContext";
@@ -16,14 +16,6 @@ export default class CustomProcessorNode extends AudioNode {
       customProcessor.customProcessor,
       context
     );
-  }
-
-  public get identifier(): UUID {
-    return (this.node as ICustomProcessorNode).identifier;
-  }
-
-  public set identifier(value: UUID) {
-    (this.node as ICustomProcessorNode).identifier = value;
   }
 
   public get processorMode(): ProcessorMode {

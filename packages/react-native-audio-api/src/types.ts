@@ -48,5 +48,3 @@ export interface AudioBufferSourceNodeOptions {
 }
 
 export type ProcessorMode = "processInPlace" | "processThrough";
-
-export type UUID = string;

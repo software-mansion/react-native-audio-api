@@ -80,7 +80,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(createCustomProcessor) {
-    auto customProcessor = context_->createCustomProcessor();
+    auto identifier = args[0].getString(runtime).utf8(runtime);
+    auto customProcessor = context_->createCustomProcessor(identifier);
     auto customProcessorHostObject = std::make_shared<CustomProcessorNodeHostObject>(customProcessor);
     return jsi::Object::createFromHostObject(runtime, customProcessorHostObject);
   }

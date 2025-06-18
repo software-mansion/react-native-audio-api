@@ -17,11 +17,9 @@ class CustomProcessorNodeHostObject : public AudioNodeHostObject {
       : AudioNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(CustomProcessorNodeHostObject, customProcessor),
-        JSI_EXPORT_PROPERTY_GETTER(CustomProcessorNodeHostObject, identifier),
         JSI_EXPORT_PROPERTY_GETTER(CustomProcessorNodeHostObject, processorMode));
 
     addSetters(
-        JSI_EXPORT_PROPERTY_SETTER(CustomProcessorNodeHostObject, identifier),
         JSI_EXPORT_PROPERTY_SETTER(CustomProcessorNodeHostObject, processorMode));
   }
 
@@ -32,24 +30,24 @@ class CustomProcessorNodeHostObject : public AudioNodeHostObject {
     return jsi::Object::createFromHostObject(runtime, customProcessorParam);
   }
 
-  JSI_PROPERTY_GETTER(identifier) {
-    auto customProcessorNode = std::static_pointer_cast<CustomProcessorNode>(node_);
-    return jsi::String::createFromUtf8(runtime, customProcessorNode->getIdentifier());
-  }
-
-  JSI_PROPERTY_SETTER(identifier) {
-    auto customProcessorNode = std::static_pointer_cast<CustomProcessorNode>(node_);
-    customProcessorNode->setIdentifier(value.getString(runtime).utf8(runtime));
-  }
-
   JSI_PROPERTY_GETTER(processorMode) {
     auto customProcessorNode = std::static_pointer_cast<CustomProcessorNode>(node_);
-    return jsi::String::createFromUtf8(runtime, customProcessorNode->getProcessorMode());
+    auto mode = customProcessorNode->getProcessorMode();
+    std::string modeStr = (mode == CustomProcessorNode::ProcessorMode::ProcessThrough)
+                            ? "processThrough"
+                            : "processInPlace";
+    return jsi::String::createFromUtf8(runtime, modeStr);
   }
 
   JSI_PROPERTY_SETTER(processorMode) {
     auto customProcessorNode = std::static_pointer_cast<CustomProcessorNode>(node_);
-    customProcessorNode->setProcessorMode(value.getString(runtime).utf8(runtime));
+    std::string modeStr = value.getString(runtime).utf8(runtime);
+
+    if (modeStr == "processThrough") {
+      customProcessorNode->setProcessorMode(CustomProcessorNode::ProcessorMode::ProcessThrough);
+    } else {
+      customProcessorNode->setProcessorMode(CustomProcessorNode::ProcessorMode::ProcessInPlace);
+    }
   }
 };
 

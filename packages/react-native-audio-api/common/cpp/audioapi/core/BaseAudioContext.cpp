@@ -55,8 +55,9 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   return oscillator;
 }
 
-std::shared_ptr<CustomProcessorNode> BaseAudioContext::createCustomProcessor() {
-  auto customProcessor = std::make_shared<CustomProcessorNode>(this);
+std::shared_ptr<CustomProcessorNode> BaseAudioContext::createCustomProcessor(
+    const std::string& identifier) {
+  auto customProcessor = std::make_shared<CustomProcessorNode>(this, identifier);
   nodeManager_->addProcessingNode(customProcessor);
   return customProcessor;
 }
