@@ -1,8 +1,8 @@
-import { ICustomProcessorNode } from "../interfaces";
-import { ProcessorMode } from "../types";
-import AudioNode from "./AudioNode";
-import AudioParam from "./AudioParam";
-import BaseAudioContext from "./BaseAudioContext";
+import { ICustomProcessorNode } from '../interfaces';
+import { ProcessorMode } from '../types';
+import AudioNode from './AudioNode';
+import AudioParam from './AudioParam';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class CustomProcessorNode extends AudioNode {
   readonly customProcessor: AudioParam;

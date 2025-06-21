@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "react": "18.3.1",
-    "react-native": "0.77.1"
+    "react": "19.1.0",
+    "react-native": "0.80.0"
   },
   "devDependencies": {
-    "@react-native-community/cli": "15.0.1",
-    "@react-native-community/cli-platform-android": "15.0.1",
-    "@react-native-community/cli-platform-ios": "15.0.1"
+    "@react-native-community/cli": "19.0.0",
+    "@react-native-community/cli-platform-android": "19.0.0",
+    "@react-native-community/cli-platform-ios": "19.0.0"
   },
   "engines": {
     "node": ">=18"
