@@ -59,12 +59,23 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
 
-  [self.audioEngine attachNode:self.inputNode];
-  [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
+  if (self.inputNode) {
+    [self.audioEngine attachNode:self.inputNode];
+    [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
+  }
 
-  [self startEngine];
+  [self startIfNecessary];
 
   return true;
+}
+
+- (bool)restartAudioEngine
+{
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+  self.audioEngine = [[AVAudioEngine alloc] init];
+  return [self rebuildAudioEngine];
 }
 
 - (void)startEngine

@@ -195,6 +195,16 @@
   return true;
 }
 
+- (bool)reconfigureAudioSession
+{
+  self.hasDirtySettings = true;
+  if (self.isActive) {
+    self.isActive = false;
+    return [self setActive:true];
+  }
+  return true;
+}
+
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   if (@available(iOS 17, *)) {
