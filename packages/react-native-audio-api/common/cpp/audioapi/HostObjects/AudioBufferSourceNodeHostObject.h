@@ -34,7 +34,7 @@ class AudioBufferSourceNodeHostObject
 
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
-        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, set_buffer));
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
     }
 
   JSI_PROPERTY_GETTER(loop) {
