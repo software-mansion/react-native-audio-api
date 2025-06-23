@@ -58,7 +58,7 @@ class AudioPlayer {
     });
   };
 
-  pause = () => {
+  pause = async () => {
     if (!this.isPlaying) {
       console.warn('Audio is not playing');
       return;
@@ -70,9 +70,7 @@ class AudioPlayer {
       state: 'state_paused',
     });
 
-    setTimeout(async () => {
-      await this.audioContext.suspend();
-    }, 10);
+    await this.audioContext.suspend();
 
     this.isPlaying = false;
   };
