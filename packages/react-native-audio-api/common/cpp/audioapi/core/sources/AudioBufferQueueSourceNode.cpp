@@ -70,7 +70,6 @@ void AudioBufferQueueSourceNode::processNode(
     processWithPitchCorrection(processingBus, framesToProcess);
 
     handleStopScheduled();
-    sendOnPositionChangedEvent();
   } else {
     processingBus->zero();
   }

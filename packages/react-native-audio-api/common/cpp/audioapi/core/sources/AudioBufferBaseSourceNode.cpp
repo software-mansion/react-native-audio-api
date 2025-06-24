@@ -99,6 +99,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);
   }
+
+  sendOnPositionChangedEvent();
 }
 
 } // namespace audioapi

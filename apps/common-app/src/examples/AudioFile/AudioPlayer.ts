@@ -48,7 +48,9 @@ class AudioPlayer {
       this.seekOffset = 0;
     }
     this.sourceNode.onPositionChanged = (event) => {
-      this.offset = event.value;
+      if (this.isPlaying) {
+        this.offset = event.value;
+      }
     };
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
