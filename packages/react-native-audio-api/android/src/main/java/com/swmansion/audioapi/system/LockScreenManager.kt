@@ -12,7 +12,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
-import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
+import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.instance
 import java.io.IOException
 import java.lang.ref.WeakReference
 import java.net.URL
@@ -225,7 +225,7 @@ class LockScreenManager(
       // If we are running the app in debug mode, the "local" image will be served from htt://localhost:8080, so we need to check for this case and load those images from URL
       if (local && !url.startsWith("http")) {
         // Gets the drawable from the RN's helper for local resources
-        val helper = ResourceDrawableIdHelper
+        val helper = instance
         val image = helper.getResourceDrawable(reactContext.get()!!, url)
 
         bitmap =
