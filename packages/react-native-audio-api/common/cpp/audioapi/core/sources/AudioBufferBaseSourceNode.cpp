@@ -47,7 +47,8 @@ std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedTime_ > onPositionChangedInterval_) {
+  if (onPositionChangedCallbackId_ != 0 &&
+      onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {
         {"value", getCurrentPosition()}};
 

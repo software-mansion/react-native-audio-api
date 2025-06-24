@@ -2,13 +2,15 @@ import { IAudioScheduledSourceNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';
-import { AudioEventEmitter } from '../events';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
+
+  private onendedSubscription?: AudioEventSubscription;
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -42,13 +44,18 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   // eslint-disable-next-line accessor-pairs
-  public set onended(callback: (event: EventEmptyType) => void) {
-    const subscription = this.audioEventEmitter.addAudioEventListener(
+  public set onended(callback: ((event: EventEmptyType) => void) | null) {
+    if (!callback) {
+      this.onendedSubscription?.remove();
+      this.onendedSubscription = undefined;
+      return;
+    }
+    this.onendedSubscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback
     );
 
     (this.node as IAudioScheduledSourceNode).onended =
-      subscription.subscriptionId;
+      this.onendedSubscription.subscriptionId;
   }
 }
