@@ -51,6 +51,10 @@ class AudioPlayer {
       this.offset = event.value;
     };
 
+    this.sourceNode.onended = (event) => {
+      console.log("ended");
+    }
+
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
     AudioManager.setLockScreenInfo({
@@ -58,7 +62,7 @@ class AudioPlayer {
     });
   };
 
-  pause = () => {
+  pause = async () => {
     if (!this.isPlaying) {
       console.warn('Audio is not playing');
       return;
@@ -70,9 +74,7 @@ class AudioPlayer {
       state: 'state_paused',
     });
 
-    setTimeout(async () => {
-      await this.audioContext.suspend();
-    }, 10);
+    await this.audioContext.suspend();
 
     this.isPlaying = false;
   };
@@ -105,8 +107,12 @@ class AudioPlayer {
   };
 
   reset = () => {
+    if (this.sourceNode) {
+      this.sourceNode.onended = null;
+      this.sourceNode.onPositionChanged = null;
+      this.sourceNode.stop(this.audioContext.currentTime);
+    }
     this.audioBuffer = null;
-    this.sourceNode?.stop(this.audioContext.currentTime);
     this.sourceNode = null;
     this.offset = 0;
     this.seekOffset = 0;

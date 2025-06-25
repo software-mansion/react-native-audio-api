@@ -26,7 +26,6 @@ class AudioBufferSourceNodeHostObject
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
@@ -34,7 +33,8 @@ class AudioBufferSourceNodeHostObject
     functions_->erase("start");
 
     addFunctions(
-        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start));
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
     }
 
   JSI_PROPERTY_GETTER(loop) {
@@ -90,19 +90,6 @@ class AudioBufferSourceNodeHostObject
     audioBufferSourceNode->setLoopSkip(value.getBool());
   }
 
-  JSI_PROPERTY_SETTER(buffer) {
-    auto audioBufferSourceNode =
-        std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    if (value.isNull()) {
-      audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
-      return;
-    }
-
-    auto bufferHostObject =
-        value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
-  }
-
   JSI_PROPERTY_SETTER(loopStart) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
@@ -131,6 +118,25 @@ class AudioBufferSourceNodeHostObject
     auto duration = args[2].getNumber();
     audioBufferSourceNode->start(when, offset, duration);
 
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(setBuffer) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+    auto audioBufferSourceNodeJsiObject = args[0].getObject(runtime);
+
+    if (args[1].isNull()) {
+      audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
+      return jsi::Value::undefined();
+    }
+
+    auto bufferHostObject =
+        args[1].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    audioBufferSourceNodeJsiObject.setExternalMemoryPressure(runtime,
+        bufferHostObject->getSizeInBytes() + 16);
+    audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
     return jsi::Value::undefined();
   }
 };

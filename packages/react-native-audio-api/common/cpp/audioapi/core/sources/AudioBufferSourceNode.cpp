@@ -141,7 +141,6 @@ void AudioBufferSourceNode::processNode(
     }
 
     handleStopScheduled();
-    sendOnPositionChangedEvent();
   } else {
     processingBus->zero();
   }
@@ -177,6 +176,8 @@ void AudioBufferSourceNode::processWithoutPitchCorrection(
     processWithInterpolation(
         processingBus, startOffset, offsetLength, computedPlaybackRate);
   }
+
+  sendOnPositionChangedEvent();
 }
 
 void AudioBufferSourceNode::processWithoutInterpolation(

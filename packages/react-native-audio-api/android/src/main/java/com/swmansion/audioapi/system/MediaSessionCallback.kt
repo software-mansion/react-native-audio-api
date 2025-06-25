@@ -2,7 +2,9 @@ package com.swmansion.audioapi.system
 
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
+import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.swmansion.audioapi.AudioAPIModule
 import java.lang.ref.WeakReference
@@ -52,5 +54,16 @@ class MediaSessionCallback(
   override fun onSeekTo(pos: Long) {
     val body = HashMap<String, Any>().apply { put("value", (pos.toDouble() / 1000)) }
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteChangePlaybackPosition", body)
+  }
+
+  override fun onCustomAction(
+    action: String?,
+    extras: Bundle?,
+  ) {
+    when (action) {
+      "SkipForward" -> onFastForward()
+      "SkipBackward" -> onRewind()
+      else -> Log.w("MediaSessionCallback", "Unknown custom action: $action")
+    }
   }
 }

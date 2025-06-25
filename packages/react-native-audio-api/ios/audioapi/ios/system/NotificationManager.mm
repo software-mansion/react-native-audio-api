@@ -164,10 +164,8 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *audioSessionManager = self.audioAPIModule.audioSessionManager;
 
-  [self cleanup];
-  [audioSessionManager configureAudioSession];
-  [self configureNotifications];
-  [audioEngine rebuildAudioEngine];
+  [audioSessionManager reconfigureAudioSession];
+  [audioEngine restartAudioEngine];
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification

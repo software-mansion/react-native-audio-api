@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include <any>
+#include <utility>
 
 namespace audioapi {
 
@@ -19,7 +20,7 @@ class AudioBus;
  * @brief Interface for defining custom audio processors that can be attached to nodes.
  */
 class CustomAudioProcessor {
-public:
+ public:
   virtual ~CustomAudioProcessor() = default;
 
   /**
@@ -52,7 +53,7 @@ public:
  * @brief Audio node that wraps a user-defined processor for custom audio processing.
  */
 class CustomProcessorNode : public AudioNode {
-public:
+ public:
   /**
    * @brief Enumerates supported audio processing modes.
    */
@@ -139,7 +140,7 @@ public:
     }
   }
 
-protected:
+ protected:
   /**
    * @brief Core audio processing callback invoked each render cycle.
    * @param processingBus The audio bus containing buffers.
@@ -147,7 +148,7 @@ protected:
    */
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
-private:
+ private:
   /**
    * @brief In-place audio processing.
    * @param bus The shared audio bus buffer.

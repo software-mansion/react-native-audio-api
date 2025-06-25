@@ -13,7 +13,7 @@ const AudioFile: FC = () => {
 
   const togglePlayPause = async () => {
     if (isPlaying) {
-      AudioPlayer.pause();
+      await AudioPlayer.pause();
     } else {
       await AudioPlayer.play();
 

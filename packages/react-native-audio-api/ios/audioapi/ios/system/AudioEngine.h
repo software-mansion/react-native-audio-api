@@ -19,6 +19,7 @@
 + (instancetype)sharedInstance;
 - (void)cleanup;
 - (bool)rebuildAudioEngine;
+- (bool)restartAudioEngine;
 - (void)startEngine;
 - (void)stopEngine;
 - (void)pauseEngine:(NSString *)sourceNodeId;

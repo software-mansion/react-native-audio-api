@@ -18,6 +18,7 @@
 - (instancetype)init;
 - (void)cleanup;
 - (bool)configureAudioSession;
+- (bool)reconfigureAudioSession;
 
 - (NSNumber *)getDevicePreferredSampleRate;
 - (void)setAudioSessionOptions:(NSString *)category
