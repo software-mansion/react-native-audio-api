@@ -51,10 +51,6 @@ class AudioPlayer {
       this.offset = event.value;
     };
 
-    this.sourceNode.onended = (event) => {
-      console.log("ended");
-    }
-
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
     AudioManager.setLockScreenInfo({
