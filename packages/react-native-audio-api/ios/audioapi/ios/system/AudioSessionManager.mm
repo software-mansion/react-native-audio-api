@@ -10,6 +10,7 @@
     self.sessionCategory = AVAudioSessionCategoryPlayback;
     self.sessionMode = AVAudioSessionModeDefault;
     self.sessionOptions = 0;
+    self.allowHapticsAndSystemSoundsDuringRecording = false;
     self.hasDirtySettings = true;
     self.isActive = false;
   }
@@ -29,11 +30,15 @@
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
-- (void)setAudioSessionOptions:(NSString *)category mode:(NSString *)mode options:(NSArray *)options
+- (void)setAudioSessionOptions:(NSString *)category
+                          mode:(NSString *)mode
+                       options:(NSArray *)options
+                  allowHaptics:(BOOL)allowHaptics
 {
   AVAudioSessionCategory sessionCategory = self.sessionCategory;
   AVAudioSessionMode sessionMode = self.sessionMode;
   AVAudioSessionCategoryOptions sessionOptions = 0;
+  bool allowHapticsAndSystemSoundsDuringRecording = allowHaptics;
 
   if ([category isEqualToString:@"record"]) {
     sessionCategory = AVAudioSessionCategoryRecord;
@@ -118,6 +123,11 @@
     self.sessionOptions = sessionOptions;
   }
 
+  if (self.allowHapticsAndSystemSoundsDuringRecording != allowHapticsAndSystemSoundsDuringRecording) {
+    self.hasDirtySettings = true;
+    self.allowHapticsAndSystemSoundsDuringRecording = allowHapticsAndSystemSoundsDuringRecording;
+  }
+
   if (self.isActive) {
     [self configureAudioSession];
   }
@@ -157,10 +167,11 @@
   }
 
   NSLog(
-      @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu",
+      @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu, allowHaptics: %@",
       self.sessionCategory,
       self.sessionMode,
-      (unsigned long)self.sessionOptions);
+      (unsigned long)self.sessionOptions,
+      self.allowHapticsAndSystemSoundsDuringRecording ? @"YES" : @"NO");
 
   NSError *error = nil;
 
@@ -171,7 +182,26 @@
     return false;
   }
 
+  if (@available(iOS 13.0, *)) {
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSystemSoundsDuringRecording
+                                                               error:&error];
+
+    if (error != nil) {
+      NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
+    }
+  }
+
   self.hasDirtySettings = false;
+  return true;
+}
+
+- (bool)reconfigureAudioSession
+{
+  self.hasDirtySettings = true;
+  if (self.isActive) {
+    self.isActive = false;
+    return [self setActive:true];
+  }
   return true;
 }
 

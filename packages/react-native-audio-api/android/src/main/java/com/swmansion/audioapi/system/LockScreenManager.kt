@@ -12,7 +12,8 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
-import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.Companion.instance
+import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.instance
+import com.swmansion.audioapi.R
 import java.io.IOException
 import java.lang.ref.WeakReference
 import java.net.URL
@@ -130,9 +131,6 @@ class LockScreenManager(
           }
         }
       artworkThread!!.start()
-    } else {
-      md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null)
-      nb.setLargeIcon(null as Bitmap?)
     }
 
     speed =
@@ -185,6 +183,7 @@ class LockScreenManager(
     name: String,
     enabled: Boolean,
   ) {
+    pb = PlaybackStateCompat.Builder()
     var controlValue = 0L
     when (name) {
       "remotePlay" -> controlValue = PlaybackStateCompat.ACTION_PLAY
@@ -206,7 +205,30 @@ class LockScreenManager(
       }
 
     mediaNotificationManager.get()?.updateActions(controls)
+
+    if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
+      pb.addCustomAction(
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "SkipBackward",
+            "Skip Backward",
+            R.drawable.skip_backward_10,
+          ).build(),
+      )
+    }
+
     pb.setActions(controls)
+
+    if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
+      pb.addCustomAction(
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "SkipForward",
+            "Skip Forward",
+            R.drawable.skip_forward_10,
+          ).build(),
+      )
+    }
 
     state = pb.build()
     mediaSession.get()?.setPlaybackState(state)

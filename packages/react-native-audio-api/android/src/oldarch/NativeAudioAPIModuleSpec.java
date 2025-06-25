@@ -48,7 +48,7 @@
 
    @ReactMethod
    @DoNotStrip
-   public abstract void setAudioSessionOptions(String category, String mode, ReadableArray options);
+   public abstract void setAudioSessionOptions(String category, String mode, ReadableArray options, boolean allowHaptics);
 
    @ReactMethod
    @DoNotStrip

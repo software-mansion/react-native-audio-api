@@ -1,0 +1,90 @@
+---
+sidebar_position: 4
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# AudioRecorder
+
+## Constructor
+
+[`AudioRecorder(options)`](/inputs/audio-recorder#audiorecorderoptions)
+
+## Example
+
+```tsx
+import { AudioRecorder } from 'react-native-audio-api';
+
+function App() {
+  const recorder = new AudioRecorder({
+      sampleRate: 16000,
+      bufferLengthInSamples: 16000,
+    });
+
+  recorder.onAudioReady((event) => {
+      const { buffer, numFrames, when } = event;
+
+      console.log(
+        'Audio recorder buffer ready:',
+        buffer.duration,
+        numFrames,
+        when
+      );
+    });
+  
+  recorder.start();
+}
+```
+
+## Methods
+
+### `start`
+
+The above starts recording.
+
+#### Returns `undefined`.
+
+### `stop`
+
+The above stops recording.
+
+#### Returns `undefined`.
+
+
+### `onAudioReady`
+
+The above allows user to set a callback after every portion of data deliverance.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `callback` | [(OnAudioReadyEventType => void)](/inputs/audio-recorder#onaudioreadyeventtype) | callback that will be invoked |
+
+#### Returns `undefined`.
+
+## Remarks
+
+### `AudioRecorderOptions`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface AudioRecorderOptions {
+  sampleRate: number;
+  bufferLengthInSamples: number; //how many samples to be put in the buffer
+}
+```
+</details>
+
+### `OnAudioReadyEventType`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface OnAudioReadyEventType {
+  buffer: AudioBuffer;
+  numFrames: number; //number of frames in a buffer
+  when: number; //timestamp
+}
+```
+</details>

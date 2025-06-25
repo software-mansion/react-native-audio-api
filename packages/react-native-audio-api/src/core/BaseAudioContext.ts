@@ -6,6 +6,7 @@ import {
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
+import CustomProcessorNode from './CustomProcessorNode';
 import GainNode from './GainNode';
 import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -37,6 +38,13 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this, this.context.createOscillator());
+  }
+
+  createCustomProcessor(identifier: string): CustomProcessorNode {
+    return new CustomProcessorNode(
+      this,
+      this.context.createCustomProcessor(identifier)
+    );
   }
 
   createGain(): GainNode {
@@ -130,9 +138,17 @@ export default class BaseAudioContext {
     );
   }
 
-  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+  async decodeAudioData(data: ArrayBuffer | string): Promise<AudioBuffer> {
+    // pcm data in base64
+    if (typeof data === 'string') {
+      return new AudioBuffer(
+        await this.context.decodePCMAudioDataInBase64(data)
+      );
+    }
+
+    // data in array buffer
     return new AudioBuffer(
-      await this.context.decodeAudioData(new Uint8Array(arrayBuffer))
+      await this.context.decodeAudioData(new Uint8Array(data))
     );
   }
 }

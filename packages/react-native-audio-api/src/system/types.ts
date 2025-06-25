@@ -31,6 +31,7 @@ export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
+  iosAllowHaptics?: boolean;
 }
 
 export type MediaState = 'state_playing' | 'state_paused';

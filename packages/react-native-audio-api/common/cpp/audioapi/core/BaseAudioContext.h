@@ -15,6 +15,7 @@
 namespace audioapi {
 
 class AudioBus;
+class CustomProcessorNode;
 class GainNode;
 class AudioBuffer;
 class PeriodicWave;
@@ -41,6 +42,7 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<CustomProcessorNode> createCustomProcessor(const std::string& identifier);
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
@@ -56,6 +58,7 @@ class BaseAudioContext {
 
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
+  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

@@ -28,6 +28,7 @@ However, this node is very inexpensive to create, and what is crucial you can re
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
 | `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
+| `loopSkip` | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
 | `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
 | `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |

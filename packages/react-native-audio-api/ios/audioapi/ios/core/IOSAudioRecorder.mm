@@ -40,8 +40,6 @@ IOSAudioRecorder::IOSAudioRecorder(
 
 IOSAudioRecorder::~IOSAudioRecorder()
 {
-  AudioRecorder::~AudioRecorder();
-
   stop();
   [audioRecorder_ cleanup];
 }

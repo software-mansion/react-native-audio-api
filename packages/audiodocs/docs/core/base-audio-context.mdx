@@ -42,7 +42,7 @@ Concept of system-level audio callback does not apply to `OfflineAudioContext`.
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
 | `destination` | `AudioDestinationNode` | Final output destination associated with the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](/types/context-state) | Enumerated value represents the current state of the context. | <ReadOnly /> |
+| `state` | [`ContextState`](/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
 ## Methods
 
@@ -84,7 +84,7 @@ The above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/types/audio-buffer-source-node-options) | Dictionary object that specifies if pitch correction has to be available. |
+| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/core/base-audio-context#audiobuffersourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
@@ -108,7 +108,7 @@ The above method lets you create `PeriodicWave`.
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/types/periodic-wave-constraints) | An object that specifies if normalization is disabled. |
+| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. |
 
 #### Errors
 
@@ -149,3 +149,48 @@ The above method lets you decode audio data file. It saves file in the device fi
 #### `currentTime`
 
 - Timer starts when context is created, stops when context is suspended.
+
+### `ContextState`
+
+<details>
+
+**Acceptable values:**
+  - `suspended`
+
+  The audio context has been suspended (with one of [`suspend`](/core/audio-context#suspend) or `OfflineAudioContext.suspend`).
+
+  - `running`
+
+  The audio context is running normally.
+
+  - `closed`
+
+  The audio context has been closed (with [`close`](/core/audio-context#close) method).
+</details>
+
+### `AudioBufferSourceNodeOptions`
+
+<details>
+
+`AudioBufferSourceNodeOptions` is a dictionary object specifies if pitch correction algorithm has to be available.
+
+```jsx
+interface AudioBufferSourceNodeOptions {
+  pitchCorrection: boolean
+}
+```
+</details>
+
+### `PeriodicWaveConstraints`
+
+<details>
+
+`PeriodicWaveConstraints` is a dictionary object specifies whether normalization should be disabled during creating periodic wave. If not specified normalization is enabled.
+If normalized, periodic wave will have maximum peak value of 1 and minimum peak value of -1.
+
+```jsx
+interface PeriodicWaveConstraints {
+  disableNormalization: boolean;
+}
+```
+</details>

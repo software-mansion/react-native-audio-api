@@ -98,7 +98,7 @@ void AudioNodeManager::settlePendingConnections() {
 
 void AudioNodeManager::cleanupNode(const std::shared_ptr<AudioNode> &node) {
   nodeDeconstructor_.addNodeForDeconstruction(node);
-  node.get()->cleanup();
+  node->cleanup();
 }
 
 void AudioNodeManager::prepareNodesForDestruction() {

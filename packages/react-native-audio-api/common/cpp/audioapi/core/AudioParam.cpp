@@ -284,15 +284,21 @@ void AudioParam::removeInputNode(AudioNode *node) {
   }
 }
 
-std::shared_ptr<AudioBus> AudioParam::processARateParam(
-    int framesToProcess,
-    double time) {
-  auto processingBus = audioBus_;
+std::shared_ptr<AudioBus> AudioParam::calculateInputs(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
   processingBus->zero();
   if (!inputNodes_.empty()) {
     processInputs(processingBus, framesToProcess, true);
     mixInputsBuses(processingBus);
   }
+  return processingBus;
+}
+
+std::shared_ptr<AudioBus> AudioParam::processARateParam(
+    int framesToProcess,
+    double time) {
+  auto processingBus = calculateInputs(audioBus_, framesToProcess);
   for (size_t i = 0; i < framesToProcess; i++) {
     auto sample = getValueAtTime(time + i / context_->getSampleRate());
     processingBus->getChannel(0)->getData()[i] += sample;
@@ -302,9 +308,8 @@ std::shared_ptr<AudioBus> AudioParam::processARateParam(
 }
 
 float AudioParam::processKRateParam(int framesToProcess, double time) {
-  auto processingBus = processARateParam(framesToProcess, time);
-  // processingBus is a mono bus
-  return processingBus->getChannel(0)->getData()[0];
+  auto processingBus = calculateInputs(audioBus_, framesToProcess);
+  return processingBus->getChannel(0)->getData()[0] + getValueAtTime(time);
 }
 
 double AudioParam::getQueueEndTime() {

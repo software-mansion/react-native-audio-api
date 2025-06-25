@@ -1,21 +1,9 @@
 import { IAudioBufferSourceNode } from '../interfaces';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import BaseAudioContext from './BaseAudioContext';
+import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
-import AudioParam from './AudioParam';
 import { InvalidStateError, RangeError } from '../errors';
 
-export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
-  readonly playbackRate: AudioParam;
-  readonly detune: AudioParam;
-
-  constructor(context: BaseAudioContext, node: IAudioBufferSourceNode) {
-    super(context, node);
-
-    this.detune = new AudioParam(node.detune, context);
-    this.playbackRate = new AudioParam(node.playbackRate, context);
-  }
-
+export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   public get buffer(): AudioBuffer | null {
     const buffer = (this.node as IAudioBufferSourceNode).buffer;
     if (!buffer) {
@@ -26,11 +14,25 @@ export default class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
   public set buffer(buffer: AudioBuffer | null) {
     if (!buffer) {
-      (this.node as IAudioBufferSourceNode).buffer = null;
+      (this.node as IAudioBufferSourceNode).setBuffer(
+        this.node as IAudioBufferSourceNode,
+        null
+      );
       return;
     }
 
-    (this.node as IAudioBufferSourceNode).buffer = buffer.buffer;
+    (this.node as IAudioBufferSourceNode).setBuffer(
+      this.node as IAudioBufferSourceNode,
+      buffer.buffer
+    );
+  }
+
+  public get loopSkip(): boolean {
+    return (this.node as IAudioBufferSourceNode).loopSkip;
+  }
+
+  public set loopSkip(value: boolean) {
+    (this.node as IAudioBufferSourceNode).loopSkip = value;
   }
 
   public get loop(): boolean {

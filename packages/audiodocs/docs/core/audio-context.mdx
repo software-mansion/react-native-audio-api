@@ -11,7 +11,7 @@ It is responsible for supervising and managing audio-processing graph.
 
 `new AudioContext()`
 
-[`new AudioContext(options: AudioContextOptions)`](/types/audio-context-options)
+[`new AudioContext(options: AudioContextOptions)`](/core/audio-context#audiocontextoptions)
 
 #### Errors
 
@@ -39,3 +39,19 @@ It is useful when your application will not use audio for a while.
 The above method lets resume time progression in audio context that previously has been suspended.
 
 #### Returns `Promise<undefined>`.
+
+
+## Remarks
+
+### `AudioContextOptions`
+
+<details>
+
+`AudioContextOptions` is a dictionary object specifies sample rate for the new context.
+
+```jsx
+interface AudioContextOptions {
+  sampleRate: number;
+}
+```
+</details>

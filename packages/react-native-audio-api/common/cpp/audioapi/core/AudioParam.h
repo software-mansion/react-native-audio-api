@@ -63,6 +63,7 @@ class AudioParam {
   void updateQueue(ParamChangeEvent &event);
   void processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
   void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
+  std::shared_ptr<AudioBus> calculateInputs(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess);
 };
 
 } // namespace audioapi

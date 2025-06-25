@@ -12,7 +12,8 @@ interface Spec extends TurboModule {
   setAudioSessionOptions(
     category: string,
     mode: string,
-    options: Array<string>
+    options: Array<string>,
+    allowHaptics: boolean
   ): void;
 
   // Lock Screen Info

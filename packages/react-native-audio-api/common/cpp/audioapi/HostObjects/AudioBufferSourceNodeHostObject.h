@@ -2,8 +2,7 @@
 
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/HostObjects/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
 #include <vector>
@@ -12,22 +11,21 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioBufferSourceNodeHostObject
-    : public AudioScheduledSourceNodeHostObject {
+    : public AudioBufferBaseSourceNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
       const std::shared_ptr<AudioBufferSourceNode> &node)
-      : AudioScheduledSourceNodeHostObject(node) {
+      : AudioBufferBaseSourceNodeHostObject(node) {
     addGetters(
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),
         JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, detune),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, playbackRate));
+        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
     addSetters(
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, buffer),
+        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
         JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
 
@@ -35,7 +33,8 @@ class AudioBufferSourceNodeHostObject
     functions_->erase("start");
 
     addFunctions(
-        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start));
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
+        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
     }
 
   JSI_PROPERTY_GETTER(loop) {
@@ -43,6 +42,13 @@ class AudioBufferSourceNodeHostObject
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     auto loop = audioBufferSourceNode->getLoop();
     return {loop};
+  }
+
+  JSI_PROPERTY_GETTER(loopSkip) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+    auto loopSkip = audioBufferSourceNode->getLoopSkip();
+    return {loopSkip};
   }
 
   JSI_PROPERTY_GETTER(buffer) {
@@ -72,40 +78,16 @@ class AudioBufferSourceNodeHostObject
     return {loopEnd};
   }
 
-  JSI_PROPERTY_GETTER(detune) {
-    auto audioBufferSourceNode =
-        std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    auto detune = audioBufferSourceNode->getDetuneParam();
-    auto detuneHostObject = std::make_shared<AudioParamHostObject>(detune);
-    return jsi::Object::createFromHostObject(runtime, detuneHostObject);
-  }
-
-  JSI_PROPERTY_GETTER(playbackRate) {
-    auto audioBufferSourceNode =
-        std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    auto playbackRate = audioBufferSourceNode->getPlaybackRateParam();
-    auto playbackRateHostObject =
-        std::make_shared<AudioParamHostObject>(playbackRate);
-    return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
-  }
-
   JSI_PROPERTY_SETTER(loop) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
     audioBufferSourceNode->setLoop(value.getBool());
   }
 
-  JSI_PROPERTY_SETTER(buffer) {
+  JSI_PROPERTY_SETTER(loopSkip) {
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
-    if (value.isNull()) {
-      audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
-      return;
-    }
-
-    auto bufferHostObject =
-        value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
+    audioBufferSourceNode->setLoopSkip(value.getBool());
   }
 
   JSI_PROPERTY_SETTER(loopStart) {
@@ -136,6 +118,25 @@ class AudioBufferSourceNodeHostObject
     auto duration = args[2].getNumber();
     audioBufferSourceNode->start(when, offset, duration);
 
+    return jsi::Value::undefined();
+  }
+
+  JSI_HOST_FUNCTION(setBuffer) {
+    auto audioBufferSourceNode =
+        std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+    auto audioBufferSourceNodeJsiObject = args[0].getObject(runtime);
+
+    if (args[1].isNull()) {
+      audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
+      return jsi::Value::undefined();
+    }
+
+    auto bufferHostObject =
+        args[1].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    audioBufferSourceNodeJsiObject.setExternalMemoryPressure(runtime,
+        bufferHostObject->getSizeInBytes() + 16);
+    audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
     return jsi::Value::undefined();
   }
 };

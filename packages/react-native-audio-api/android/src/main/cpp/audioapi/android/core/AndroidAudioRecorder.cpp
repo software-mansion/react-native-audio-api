@@ -26,8 +26,6 @@ AndroidAudioRecorder::AndroidAudioRecorder(
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
-  AudioRecorder::~AudioRecorder();
-
   if (mStream_) {
     mStream_->requestStop();
     mStream_->close();

@@ -35,7 +35,8 @@ class AudioManager {
     NativeAudioAPIModule!.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
-      options.iosOptions ?? []
+      options.iosOptions ?? [],
+      options.iosAllowHaptics ?? false
     );
   }
 
