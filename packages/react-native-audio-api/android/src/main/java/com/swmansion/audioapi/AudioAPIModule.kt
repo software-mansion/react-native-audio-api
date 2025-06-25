@@ -60,7 +60,7 @@ class AudioAPIModule(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    // noting to do here
+    promise?.resolve(true)
   }
 
   override fun setAudioSessionOptions(
