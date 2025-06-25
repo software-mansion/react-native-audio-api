@@ -1,0 +1,48 @@
+---
+sidebar_position: 4
+---
+
+import { Optional, Experimental } from '@site/src/components/Badges';
+
+# AudioBufferBaseSourceNode
+
+The `AudioBufferBaseSourceNode` interface is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which aggregates behavior of nodes that requires [`AudioBuffer`](/sources/audio-buffer).
+
+Child classes:
+ - [`AudioBufferSourceNode`](/sources/audio-buffer-source-node)
+ - [`AudioBufferQueueSourceNode`](/sources/audio-buffer-queue-source-node)
+
+## Events
+
+### `onPositionChanged` <Experimental />
+
+Allow to set (or remove) callback that will be fired after processing certain part of an audio.
+Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+
+### `onPositionChangedInterval` <Experimental />
+
+Allow to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+
+```ts
+import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
+
+function App() {
+    const ctx = new AudioContext();
+    const audioBufferBaseSourceNode = ctx.createBufferSource();
+    audioBufferBaseSourceNode.buffer = null; //set your buffer
+    let offset = 0;
+
+    audioBufferSourceNode.onPositionChanged = (event) => { //setting callback
+        this.offset = event.value;
+    };
+
+    audioBufferSourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+
+    audioBufferSourceNode.onPositionChanged = null; //removing callback
+    audioBufferBaseSourceNode.start();
+}
+```
+
+:::caution
+Tested only on Android and iOS.
+:::

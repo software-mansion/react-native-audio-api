@@ -1,0 +1,51 @@
+---
+sidebar_position: 3
+---
+
+import { Optional, Experimental } from '@site/src/components/Badges';
+
+# AudioBufferQueueSourceNode
+
+The `AudioBufferQueueSourceNode` is an [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node) which represents player that consists of many short buffers.
+
+## Constructor
+
+[`BaseAudioContext.createBufferQueueSource()`](/core/base-audio-context#createbuffersource)
+
+## Example
+
+```tsx
+import React, { useRef } from 'react';
+import {
+  AudioContext,
+  AudioBufferQueueSourceNode,
+} from 'react-native-audio-api';
+
+function App() {
+    const audioContextRef = useRef<AudioContext | null>(null);
+    if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+    }
+    const audioBufferQueue = audioContextRef.current.createBufferQueueSource();
+    const buffer1 = ...; // Load your audio buffer here
+    const buffer2 = ...; // Load another audio buffer if needed
+    audioBufferQueue.enqueueBuffer(buffer1, false);
+    audioBufferQueue.enqueueBuffer(buffer2, true); // Last buffer should be marked as is
+    audioBufferQueue.connect(audioContextRef.current.destination);
+    audioBufferQueue.start(audioContextRef.current.currentTime);
+}
+```
+
+## Methods
+
+### `enqueueBuffer`
+
+The above method lets you add another buffer to queue.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Buffer with next data. |
+| `isLastBuffer` | `boolean` | Boolean indicating if it is a last buffer. Default value is `false` |
+
+#### Returns `undefined`.
+
