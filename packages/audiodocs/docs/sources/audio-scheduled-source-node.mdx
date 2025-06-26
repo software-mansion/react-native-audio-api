@@ -53,18 +53,11 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-### `onended` <Experimental />
+Allow to set (or remove) callback that will be fired when source node has stopped playing. You can remove callback by passing `null`.
 
-Allow to set (or remove) callback that will be fired when source node has stopped playing.
 
 ```ts
 audioBufferSourceNode.onended = () => { //setting callback
   console.log("audio ended");
 };
-
-audioBufferSourceNode.onended = null; //removing callback
 ```
-
-:::caution
-Tested only on Android and iOS.
-:::

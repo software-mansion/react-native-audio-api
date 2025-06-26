@@ -8,6 +8,10 @@ import { Optional, Experimental } from '@site/src/components/Badges';
 
 The `AudioBufferQueueSourceNode` is an [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node) which represents player that consists of many short buffers.
 
+:::info
+Mobile only.
+:::
+
 ## Constructor
 
 [`BaseAudioContext.createBufferQueueSource()`](/core/base-audio-context#createbuffersource)
@@ -45,7 +49,7 @@ The above method lets you add another buffer to queue.
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Buffer with next data. |
-| `isLastBuffer` | `boolean` | Boolean indicating if it is a last buffer. Default value is `false` |
+| `isLastBuffer` | `boolean` | Boolean indicating if it is a last buffer. Default value is `false`. Queue will stop after buffer marked as `last` will end. |
 
 #### Returns `undefined`.
 

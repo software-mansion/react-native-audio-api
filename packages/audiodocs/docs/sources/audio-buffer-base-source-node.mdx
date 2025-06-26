@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-import { Optional, Experimental } from '@site/src/components/Badges';
+import { Optional } from '@site/src/components/Badges';
 
 # AudioBufferBaseSourceNode
 
@@ -12,14 +12,27 @@ Child classes:
  - [`AudioBufferSourceNode`](/sources/audio-buffer-source-node)
  - [`AudioBufferQueueSourceNode`](/sources/audio-buffer-queue-source-node)
 
+## Properties
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+
+
 ## Events
 
-### `onPositionChanged` <Experimental />
+:::info
+Mobile only.
+:::
+
+### `onPositionChanged`
 
 Allow to set (or remove) callback that will be fired after processing certain part of an audio.
 Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+You can remove callback by passing `null`.
 
-### `onPositionChangedInterval` <Experimental />
+### `onPositionChangedInterval`
 
 Allow to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
 
@@ -28,21 +41,16 @@ import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
 
 function App() {
     const ctx = new AudioContext();
-    const audioBufferBaseSourceNode = ctx.createBufferSource();
-    audioBufferBaseSourceNode.buffer = null; //set your buffer
+    const sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = null; //set your buffer
     let offset = 0;
 
-    audioBufferSourceNode.onPositionChanged = (event) => { //setting callback
+    sourceNode.onPositionChanged = (event) => { //setting callback
         this.offset = event.value;
     };
 
-    audioBufferSourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
 
-    audioBufferSourceNode.onPositionChanged = null; //removing callback
-    audioBufferBaseSourceNode.start();
+    sourceNode.start();
 }
 ```
-
-:::caution
-Tested only on Android and iOS.
-:::
