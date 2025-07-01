@@ -3,7 +3,8 @@
 /**
 
 TODO:
- - consider running register handler and unregister handler only on the main thread
+ - consider running register handler and unregister handler only on the main
+thread
  - LISTENER_ID should be an static atomic variable
 
 */
@@ -75,7 +76,6 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         // If the handler is not valid, we can skip it
         continue;
       }
-
 
       auto eventObject = createEventObject(body);
       handler->call(*runtime_, eventObject);

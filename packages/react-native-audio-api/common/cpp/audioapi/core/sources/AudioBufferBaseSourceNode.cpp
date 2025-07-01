@@ -24,7 +24,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(BaseAudioContext *context)
 }
 
 AudioBufferBaseSourceNode::~AudioBufferBaseSourceNode() {
-  if (onPositionChangedCallbackId_ != 0 && context_->audioEventHandlerRegistry_ != nullptr) {
+  if (onPositionChangedCallbackId_ != 0 &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
     context_->audioEventHandlerRegistry_->unregisterHandler(
         "positionChanged", onPositionChangedCallbackId_);
     onPositionChangedCallbackId_ = 0;
@@ -60,7 +61,8 @@ std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedCallbackId_ != 0 &&
-      onPositionChangedTime_ > onPositionChangedInterval_ && context_->audioEventHandlerRegistry_ != nullptr) {
+      onPositionChangedTime_ > onPositionChangedInterval_ &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
     std::unordered_map<std::string, EventValue> body = {
         {"value", getCurrentPosition()}};
 

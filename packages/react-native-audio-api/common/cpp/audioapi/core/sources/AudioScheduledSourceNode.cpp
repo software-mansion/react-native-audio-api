@@ -17,7 +17,8 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 }
 
 AudioScheduledSourceNode::~AudioScheduledSourceNode() {
-  if (onEndedCallbackId_ != 0 && context_->audioEventHandlerRegistry_ != nullptr) {
+  if (onEndedCallbackId_ != 0 &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
     context_->audioEventHandlerRegistry_->unregisterHandler(
         "ended", onEndedCallbackId_);
     onEndedCallbackId_ = 0;
