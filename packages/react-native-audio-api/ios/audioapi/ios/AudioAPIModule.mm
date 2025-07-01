@@ -177,7 +177,9 @@ RCT_EXPORT_METHOD(
     }
   }
 
-  _eventHandler->invokeHandlerWithEventBody(name, body);
+  if (_eventHandler != nullptr) {
+    _eventHandler->invokeHandlerWithEventBody(name, body);
+  }
 }
 
 @end

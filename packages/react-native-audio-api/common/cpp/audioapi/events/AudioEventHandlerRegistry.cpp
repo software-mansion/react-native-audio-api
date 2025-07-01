@@ -1,5 +1,13 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
+/**
+
+TODO:
+ - consider running register handler and unregister handler only on the main thread
+ - LISTENER_ID should be an static atomic variable
+
+*/
+
 namespace audioapi {
 
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
@@ -43,38 +51,66 @@ void AudioEventHandlerRegistry::unregisterHandler(
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     const std::unordered_map<std::string, EventValue> &body) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    for (const auto &pair : it->second) {
-      auto handler = pair.second;
-      if (handler) {
-        callInvoker_->invokeAsync([this, handler, body]() {
-          auto eventObject = createEventObject(body);
-          handler->call(*runtime_, eventObject);
-        });
-      }
-    }
+  // callInvoker_ and runtime_ must be valid to invoke handlers
+  // this might happen when react-native is reloaded or the app is closed
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    return;
   }
+
+  // Do any logic regarding triggering the event on the main RN thread
+  callInvoker_->invokeAsync([this, eventName, body]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it == eventHandlers_.end()) {
+      // If the event name is not registered, we can skip invoking handlers
+      return;
+    }
+
+    auto handlersMap = it->second;
+
+    for (const auto &pair : handlersMap) {
+      auto handler = pair.second;
+
+      if (!handler || !handler->isFunction()) {
+        // If the handler is not valid, we can skip it
+        continue;
+      }
+
+
+      auto eventObject = createEventObject(body);
+      handler->call(*runtime_, eventObject);
+    }
+  });
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     uint64_t listenerId,
     const std::unordered_map<std::string, EventValue> &body) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    auto handlersMap = it->second;
-    auto handlerIt = handlersMap.find(listenerId);
-    if (handlerIt != handlersMap.end()) {
-      auto handler = handlerIt->second;
-      if (handler) {
-        callInvoker_->invokeAsync([this, handler, body]() {
-          auto eventObject = createEventObject(body);
-          handler->call(*runtime_, eventObject);
-        });
-      }
-    }
+  // callInvoker_ and runtime_ must be valid to invoke handlers
+  // this might happen when react-native is reloaded or the app is closed
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    return;
   }
+
+  callInvoker_->invokeAsync([this, eventName, listenerId, body]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it == eventHandlers_.end()) {
+      // If the event name is not registered, we can skip invoking handlers
+      return;
+    }
+
+    const handlerIt = it->second.find(listenerId);
+
+    if (handlerIt == it->second.end()) {
+      // If the listener ID is not registered, we can skip invoking handlers
+      return;
+    }
+
+    auto eventObject = createEventObject(body);
+    handlerIt->second->call(*runtime_, eventObject);
+  });
 }
 
 jsi::Object AudioEventHandlerRegistry::createEventObject(
