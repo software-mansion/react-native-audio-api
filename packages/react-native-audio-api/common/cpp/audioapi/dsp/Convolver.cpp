@@ -34,18 +34,6 @@ void Convolver::reset() {
   _inputBuffer.zero();
 }
 
-float calculateNyquistComponent(float *data, size_t size) {
-  float component = 0.0f;
-  for (size_t i = 0; i < size; ++i) {
-    if (i % 2 == 0) {
-      component += data[i];
-    } else {
-      component -= data[i];
-    }
-  }
-  return component;
-}
-
 bool Convolver::init(
     size_t blockSize,
     const audioapi::AudioArray &ir,
@@ -94,11 +82,6 @@ bool Convolver::init(
         _blockSize * sizeof(float));
     memset(_fftBuffer.getData() + _blockSize, 0, _blockSize * sizeof(float));
     _fft->doFFT(_fftBuffer.getData(), segment);
-    segment[0].imag(0.0f); // DC component should be real
-    // Nyquist component
-    segment[_fftComplexSize - 1].imag(0.0f);
-    segment[_fftComplexSize - 1].real(
-        calculateNyquistComponent(_fftBuffer.getData(), _blockSize));
     _segmentsIR.push_back(segment);
   }
 
@@ -143,11 +126,16 @@ void Convolver::process(
   // result is stored in the first FDL slot.
   // _current marks first FDL slot, which is the current input block.
   _fft->doFFT(_inputBuffer.getData(), _segments[_current]);
-  _segments[_current][0].imag(0.0f); // DC component should be real
-  // Nyquist component
-  _segments[_current][_fftComplexSize - 1].imag(0.0f);
-  _segments[_current][_fftComplexSize - 1].real(
-      calculateNyquistComponent(_inputBuffer.getData(), _blockSize));
+  _fft->doInverseFFT(_segments[_current], _fftBuffer.getData());
+  for (int i = 0; i < _segSize; ++i) {
+    if (verbose) {
+      printf(
+          "fft[%d]: %f %f\n",
+          i,
+          _inputBuffer.getData()[i],
+          _fftBuffer.getData()[i]);
+    }
+  }
 
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
