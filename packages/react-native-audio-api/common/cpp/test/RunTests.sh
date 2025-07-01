@@ -1,7 +1,15 @@
 #!/bin/bash
 
+set -e
+
+cleanup() {
+    echo "Cleaning up..."
+    rm -rf build/
+}
+
+trap cleanup EXIT
 # Step 1: Move to the script's directory
-cd "$(dirname "$0")"
+cd packages/react-native-audio-api/common/cpp/test
 
 # Step 2: Configure CMake project
 cmake -S . -B build
