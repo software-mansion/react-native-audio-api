@@ -4,7 +4,8 @@ namespace audioapi {
 
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : IAudioEventHandlerRegistry() {
   runtime_ = runtime;
   callInvoker_ = callInvoker;
 
