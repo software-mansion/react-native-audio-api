@@ -1,0 +1,33 @@
+name: Run Tests on PR comment
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/run-tests')
+    steps:
+      - name: check user
+        uses: tspascoal/get-user-teams-membership@v2
+        id: teamAffiliation
+        with:
+          GITHUB_TOKEN: ${{ secrets.TEAM_TOKEN }}
+          username: ${{ inputs.USER_NAME }}
+          team: ${{ inputs.TEAM_NAME }}\
+    
+      - name: Check if user is a member of the team
+        if: ${{ steps.teamAffiliation.outputs.isTeamMember == 'false' }}
+        run: |
+          echo "No rights"
+          exit 1
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run tests
+        run: yarn test

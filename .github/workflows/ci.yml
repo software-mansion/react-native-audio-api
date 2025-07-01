@@ -36,15 +36,3 @@ jobs:
 
       - name: Build package
         run: yarn build
-
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Run tests
-        run: yarn test
