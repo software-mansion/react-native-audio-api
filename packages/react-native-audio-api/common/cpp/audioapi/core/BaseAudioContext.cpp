@@ -117,9 +117,9 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   return analyser;
 }
 
-#ifndef TESTING
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
+#ifndef AUDIO_API_TEST_SUITE
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
 
   if (!audioBus) {
@@ -127,11 +127,13 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
+#endif // AUDIO_API_TEST_SUITE
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
     const void *data,
     size_t size) {
+#ifndef AUDIO_API_TEST_SUITE
   auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
 
   if (!audioBus) {
@@ -139,10 +141,12 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
+#endif // AUDIO_API_TEST_SUITE
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
     const std::string &data) {
+#ifndef AUDIO_API_TEST_SUITE
   auto audioBus = audioDecoder_->decodeWithPCMInBase64(data);
 
   if (!audioBus) {
@@ -150,8 +154,8 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
+#endif // AUDIO_API_TEST_SUITE
 }
-#endif // TESTING
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();

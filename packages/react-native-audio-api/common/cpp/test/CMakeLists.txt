@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "Using C++ compiler: ${CMAKE_CXX_COMPILER}")
 
 enable_testing()
-add_compile_definitions(TESTING)
+add_compile_definitions(AUDIO_API_TEST_SUITE)
 
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
