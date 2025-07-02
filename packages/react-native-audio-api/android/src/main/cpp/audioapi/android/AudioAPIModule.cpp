@@ -68,7 +68,9 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
     }
   }
 
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      eventName->toStdString(), body);
+  if (audioEventHandlerRegistry_ != nullptr) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        eventName->toStdString(), body);
+  }
 }
 } // namespace audioapi

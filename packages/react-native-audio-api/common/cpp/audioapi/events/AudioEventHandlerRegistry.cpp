@@ -25,57 +25,107 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
 uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::string &eventName,
     const std::shared_ptr<jsi::Function> &handler) {
-  static uint64_t LISTENER_ID = 1;
+  uint64_t listenerId = listenerIdCounter_++;
 
-  eventHandlers_[eventName][LISTENER_ID] = handler;
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    // If callInvoker or runtime is not valid, we cannot register the handler
+    return 0;
+  }
 
-  return LISTENER_ID++;
+  // Modify the eventHandlers_ map only on the main RN thread
+  callInvoker_->invokeAsync([this, eventName, listenerId, handler]() {
+    eventHandlers_[eventName][listenerId] = handler;
+  });
+
+  return listenerId;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(
     const std::string &eventName,
     uint64_t listenerId) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    it->second.erase(listenerId);
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    // If callInvoker or runtime is not valid, we cannot unregister the handler
+    return;
   }
+
+  callInvoker_->invokeAsync([this, eventName, listenerId]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it == eventHandlers_.end()) {
+      return;
+    }
+
+    auto &handlersMap = it->second;
+    auto handlerIt = handlersMap.find(listenerId);
+
+    if (handlerIt != handlersMap.end()) {
+      handlersMap.erase(handlerIt);
+    }
+  });
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     const std::unordered_map<std::string, EventValue> &body) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    for (const auto &pair : it->second) {
-      auto handler = pair.second;
-      if (handler) {
-        callInvoker_->invokeAsync([this, handler, body]() {
-          auto eventObject = createEventObject(body);
-          handler->call(*runtime_, eventObject);
-        });
-      }
-    }
+  // callInvoker_ and runtime_ must be valid to invoke handlers
+  // this might happen when react-native is reloaded or the app is closed
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    return;
   }
+
+  // Do any logic regarding triggering the event on the main RN thread
+  callInvoker_->invokeAsync([this, eventName, body]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it == eventHandlers_.end()) {
+      // If the event name is not registered, we can skip invoking handlers
+      return;
+    }
+
+    auto handlersMap = it->second;
+
+    for (const auto &pair : handlersMap) {
+      auto handler = pair.second;
+
+      if (!handler || !handler->isFunction(*runtime_)) {
+        // If the handler is not valid, we can skip it
+        continue;
+      }
+
+      auto eventObject = createEventObject(body);
+      handler->call(*runtime_, eventObject);
+    }
+  });
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     const std::string &eventName,
     uint64_t listenerId,
     const std::unordered_map<std::string, EventValue> &body) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    auto handlersMap = it->second;
-    auto handlerIt = handlersMap.find(listenerId);
-    if (handlerIt != handlersMap.end()) {
-      auto handler = handlerIt->second;
-      if (handler) {
-        callInvoker_->invokeAsync([this, handler, body]() {
-          auto eventObject = createEventObject(body);
-          handler->call(*runtime_, eventObject);
-        });
-      }
-    }
+  // callInvoker_ and runtime_ must be valid to invoke handlers
+  // this might happen when react-native is reloaded or the app is closed
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    return;
   }
+
+  callInvoker_->invokeAsync([this, eventName, listenerId, body]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it == eventHandlers_.end()) {
+      // If the event name is not registered, we can skip invoking handlers
+      return;
+    }
+
+    auto handlerIt = it->second.find(listenerId);
+
+    if (handlerIt == it->second.end()) {
+      // If the listener ID is not registered, we can skip invoking handlers
+      return;
+    }
+
+    auto eventObject = createEventObject(body);
+    handlerIt->second->call(*runtime_, eventObject);
+  });
 }
 
 jsi::Object AudioEventHandlerRegistry::createEventObject(

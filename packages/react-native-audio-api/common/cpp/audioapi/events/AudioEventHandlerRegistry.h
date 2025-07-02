@@ -8,6 +8,7 @@
 #include <array>
 #include <string>
 #include <variant>
+#include <atomic>
 
 namespace audioapi {
 using namespace facebook;
@@ -28,6 +29,8 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
   void invokeHandlerWithEventBody(const std::string &eventName, uint64_t listenerId, const std::unordered_map<std::string, EventValue> &body) override;
 
  private:
+    std::atomic<uint64_t> listenerIdCounter_{1}; // Atomic counter for listener IDs
+
     std::shared_ptr<react::CallInvoker> callInvoker_;
     jsi::Runtime *runtime_;
     std::unordered_map<std::string, std::unordered_map<uint64_t, std::shared_ptr<jsi::Function>>> eventHandlers_;
