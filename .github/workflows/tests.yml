@@ -14,8 +14,8 @@ jobs:
         id: teamAffiliation
         with:
           GITHUB_TOKEN: ${{ secrets.TEAM_TOKEN }}
-          username: ${{ inputs.USER_NAME }}
-          team: ${{ inputs.TEAM_NAME }}\
+          username: ${{ github.event.comment.user.login }}
+          team: software-mansion/react-native-open-source
     
       - name: Check if user is a member of the team
         if: ${{ steps.teamAffiliation.outputs.isTeamMember == 'false' }}
