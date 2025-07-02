@@ -11,17 +11,18 @@ jobs:
     if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/run-tests')
     steps:
       - name: check user
-        uses: tspascoal/get-user-teams-membership@v2
+        uses: tspascoal/get-user-teams-membership@v3
         id: teamAffiliation
         with:
           GITHUB_TOKEN: ${{ secrets.TEAM_TOKEN }}
           username: ${{ github.event.comment.user.login }}
-          team: software-mansion/react-native-open-source
-    
-      - name: Check if user is a member of the team
+          organization: "software-mansion"
+          team: "react-native-open-source"
+
+      - name: Stop workflow if user is no member
         if: ${{ steps.teamAffiliation.outputs.isTeamMember == 'false' }}
         run: |
-          echo "No rights"
+          echo "You have no rights to trigger this job."
           exit 1
       
       - name: Checkout

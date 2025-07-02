@@ -1,0 +1,52 @@
+---
+sidebar_position: 3
+---
+
+import { MobileOnly } from '@site/src/components/Badges';
+
+# AudioBufferBaseSourceNode
+
+The `AudioBufferBaseSourceNode` interface is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which aggregates behavior of nodes that requires [`AudioBuffer`](/sources/audio-buffer).
+
+Child classes:
+ - [`AudioBufferSourceNode`](/sources/audio-buffer-source-node)
+ - [`AudioBufferQueueSourceNode`](/sources/audio-buffer-queue-source-node)
+
+## Properties
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+
+
+## Events
+
+### `onPositionChanged` <MobileOnly />
+
+Allow to set (or remove) callback that will be fired after processing certain part of an audio.
+Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+You can remove callback by passing `null`.
+
+### `onPositionChangedInterval` <MobileOnly /> 
+
+Allow to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+
+```ts
+import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
+
+function App() {
+    const ctx = new AudioContext();
+    const sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = null; //set your buffer
+    let offset = 0;
+
+    sourceNode.onPositionChanged = (event) => { //setting callback
+        this.offset = event.value;
+    };
+
+    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+
+    sourceNode.start();
+}
+```

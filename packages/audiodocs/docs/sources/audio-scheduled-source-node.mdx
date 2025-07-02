@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 import { Optional, Experimental } from '@site/src/components/Badges';
@@ -8,6 +8,10 @@ import { Optional, Experimental } from '@site/src/components/Badges';
 
 The `AudioScheduledSourceNode` interface is an [`AudioNode`](/core/audio-node) which serves as a parent interface for several types of audio source nodes.
 It provides ability to start and stop audio playback.
+
+Child classes:
+ - [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node)
+ - [`OscillatorNode`](/sources/oscillator-node)
 
 ## Methods
 
@@ -49,23 +53,13 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-### `onended` <Experimental />
+Allows to set (or remove) callback that will be fired when source node has stopped playing,
+either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
+You can remove callback by passing `null`.
 
-Above callback is fired when source node has stopped playing.
-By setting this callback you can achieve pause functionality.
 
 ```ts
-const [offset, setOffset] = useState(0);
-
-/* ... */
-
-audioBufferSourceNode.onended = (stopTime?: number) => {
-  setOffset((_prev) => stopTime || 0);
+audioBufferSourceNode.onended = () => { //setting callback
+  console.log("audio ended");
 };
-
-source.start(context.currentTime, offset)
 ```
-
-:::caution
-Tested only on Android and iOS.
-:::

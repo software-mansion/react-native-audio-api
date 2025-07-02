@@ -4,6 +4,7 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 #include <memory>
+#include <mutex>
 
 namespace audioapi {
 

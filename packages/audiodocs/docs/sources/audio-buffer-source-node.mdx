@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
@@ -7,7 +7,7 @@ import { Optional, Overridden } from '@site/src/components/Badges';
 
 # AudioBufferSourceNode
 
-The `AudioBufferSourceNode` is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which represents audio source with in-memory audio data, stored in `AudioBuffer`.
+The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in `AudioBuffer`.
 You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
@@ -21,17 +21,37 @@ However, this node is very inexpensive to create, and what is crucial you can re
 
 [`BaseAudioContext.createBufferSource(options)`](/core/base-audio-context#createbuffersource)
 
+## Example
+
+```tsx
+import React, { useEffect, useRef, FC } from 'react';
+import {
+  AudioContext,
+  AudioBufferSourceNode,
+} from 'react-native-audio-api';
+
+function App() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContext();
+  }
+  const audioBufferSource = audioContextRef.current.createBufferSource();
+  const buffer = ...; // Load your audio buffer here
+  audioBufferSource.buffer = buffer;
+  audioBufferSource.connect(audioContextRef.current.destination);
+  audioBufferSource.start(audioContextRef.current.currentTime);
+}
+```
+
 ## Properties
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
-| `detune` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
 | `loopSkip` | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
 | `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
-| `playbackRate` | [`AudioParam`](/core/audio-param) | [`k-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
 
 ## Methods
 

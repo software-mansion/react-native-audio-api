@@ -15,7 +15,7 @@ runs:
     - name: Setup Cmake
       uses: jwlawson/actions-setup-cmake@v2
       with:
-        cmake-version: '3.12.x'
+        cmake-version: '4.0.x'
 
     - name: Install cpplint
       shell: bash

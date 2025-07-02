@@ -1,8 +1,8 @@
 ---
-sidebar_position: 4
+sidebar_position: 1
 ---
 
-import { Optional, ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # BaseAudioContext
 
@@ -87,6 +87,12 @@ The above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer
 | `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/core/base-audio-context#audiobuffersourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
+
+### `createBufferQueueSource` <MobileOnly />
+
+The above method lets you create [`AudioBufferQueueSourceNode`](/sources/audio-buffer-queue-source-node).
+
+#### Returns `AudioBufferQueueSourceNode`.
 
 ### `createGain`
 

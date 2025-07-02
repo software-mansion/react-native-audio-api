@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(rnaudioapi_test)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
@@ -18,6 +18,8 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+message(STATUS "Using C++ compiler: ${CMAKE_CXX_COMPILER}")
 
 enable_testing()
 add_compile_definitions(TESTING)
