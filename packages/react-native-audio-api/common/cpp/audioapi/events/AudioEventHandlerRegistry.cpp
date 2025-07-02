@@ -50,7 +50,7 @@ void AudioEventHandlerRegistry::unregisterHandler(
   callInvoker_->invokeAsync([this, eventName, listenerId]() {
     auto it = eventHandlers_.find(eventName);
 
-    if (it != eventHandlers_.end()) {
+    if (it == eventHandlers_.end()) {
       return;
     }
 
