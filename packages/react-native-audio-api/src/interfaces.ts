@@ -125,6 +125,10 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   loopEnd: number;
 
   start: (when?: number, offset?: number, duration?: number) => void;
+  setBuffer: (
+    audioBufferSourceNode: IAudioBufferSourceNode,
+    audioBuffer: IAudioBuffer | null
+  ) => void;
 }
 
 export interface IAudioBufferQueueSourceNode

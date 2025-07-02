@@ -34,7 +34,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
     // internal helper
     double vReadIndex_;
 
-    uint64_t onPositionChangedCallbackId_ = 0;
+    uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
     int onPositionChangedInterval_;
     int onPositionChangedTime_ = 0;
 

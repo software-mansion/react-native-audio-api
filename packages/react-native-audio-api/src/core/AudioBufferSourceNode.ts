@@ -14,11 +14,17 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
   public set buffer(buffer: AudioBuffer | null) {
     if (!buffer) {
-      (this.node as IAudioBufferSourceNode).buffer = null;
+      (this.node as IAudioBufferSourceNode).setBuffer(
+        this.node as IAudioBufferSourceNode,
+        null
+      );
       return;
     }
 
-    (this.node as IAudioBufferSourceNode).buffer = buffer.buffer;
+    (this.node as IAudioBufferSourceNode).setBuffer(
+      this.node as IAudioBufferSourceNode,
+      buffer.buffer
+    );
   }
 
   public get loopSkip(): boolean {

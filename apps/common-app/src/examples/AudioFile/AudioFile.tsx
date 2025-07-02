@@ -75,8 +75,11 @@ const AudioFile: FC = () => {
 
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
-      (event) => {
-        console.log('Interruption event:', event);
+      async (event) => {
+        if (event.type === 'began') {
+          await AudioPlayer.pause();
+          setIsPlaying(false);
+        }
       }
     );
 

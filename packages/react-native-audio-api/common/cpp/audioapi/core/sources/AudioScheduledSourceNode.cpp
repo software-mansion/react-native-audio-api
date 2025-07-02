@@ -73,7 +73,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
       ? std::numeric_limits<size_t>::max()
       : dsp::timeToSampleFrame(stopTime_, sampleRate);
 
-  if (isUnscheduled() || isFinished()) {
+  if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
     return;
@@ -132,6 +132,12 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     handleStopScheduled();
+    return;
+  }
+
+  if (isUnscheduled()) {
+    startOffset = 0;
+    nonSilentFramesToProcess = 0;
     return;
   }
 

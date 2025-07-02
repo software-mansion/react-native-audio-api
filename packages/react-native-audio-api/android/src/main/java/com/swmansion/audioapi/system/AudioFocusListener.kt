@@ -13,7 +13,7 @@ class AudioFocusListener(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
   private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : AudioManager.OnAudioFocusChangeListener {
-  private var playOnAudioFocus = false
+  private var playOnAudioFocus: Boolean = false
   private var focusRequest: AudioFocusRequest? = null
 
   override fun onAudioFocusChange(focusChange: Int) {
@@ -23,7 +23,7 @@ class AudioFocusListener(
         playOnAudioFocus = false
         val body =
           HashMap<String, Any>().apply {
-            put("value", "began")
+            put("type", "began")
             put("shouldResume", false)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
@@ -32,7 +32,7 @@ class AudioFocusListener(
         playOnAudioFocus = lockScreenManager.get()?.isPlaying == true
         val body =
           HashMap<String, Any>().apply {
-            put("value", "began")
+            put("type", "began")
             put("shouldResume", playOnAudioFocus)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
@@ -41,14 +41,14 @@ class AudioFocusListener(
         if (playOnAudioFocus) {
           val body =
             HashMap<String, Any>().apply {
-              put("value", "ended")
+              put("type", "ended")
               put("shouldResume", true)
             }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
         } else {
           val body =
             HashMap<String, Any>().apply {
-              put("value", "ended")
+              put("type", "ended")
               put("shouldResume", false)
             }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
