@@ -3,6 +3,7 @@ name: Run Tests on PR comment
 on:
   issue_comment:
     types: [created, edited]
+  workflow_dispatch:
 
 jobs:
   tests:
