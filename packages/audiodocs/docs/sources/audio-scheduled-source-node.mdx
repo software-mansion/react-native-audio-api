@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 2
 ---
 
 import { Optional, Experimental } from '@site/src/components/Badges';
@@ -53,7 +53,9 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-Allow to set (or remove) callback that will be fired when source node has stopped playing. You can remove callback by passing `null`.
+Allows to set (or remove) callback that will be fired when source node has stopped playing,
+either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
+You can remove callback by passing `null`.
 
 
 ```ts

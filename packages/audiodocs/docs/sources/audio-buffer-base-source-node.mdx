@@ -1,8 +1,8 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 ---
 
-import { Optional } from '@site/src/components/Badges';
+import { MobileOnly } from '@site/src/components/Badges';
 
 # AudioBufferBaseSourceNode
 
@@ -22,17 +22,13 @@ Child classes:
 
 ## Events
 
-:::info
-Mobile only.
-:::
-
-### `onPositionChanged`
+### `onPositionChanged` <MobileOnly />
 
 Allow to set (or remove) callback that will be fired after processing certain part of an audio.
 Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
 You can remove callback by passing `null`.
 
-### `onPositionChangedInterval`
+### `onPositionChangedInterval` <MobileOnly /> 
 
 Allow to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
 
