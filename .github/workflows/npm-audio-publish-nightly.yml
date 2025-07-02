@@ -38,19 +38,10 @@ jobs:
       - name: Install monorepo dependencies
         run: yarn install --immutable
 
-      - name: Bump version
-        working-directory: ${{ env.AUDIO_API_DIR }}
-        run: |
-          VERSION=${{ env.AUDIO_API_VERSION }}
-          MAJOR=$(echo $VERSION | awk -F. '{print $1}')
-          MINOR=$(echo $VERSION | awk -F. '{print $2}')
-          NEW_VERSION="$MAJOR.$(($MINOR + 1)).0"
-          node ./scripts/set-audio-api-version.js $NEW_VERSION
-
       - name: Build package
         id: build
         working-directory: ${{ env.AUDIO_API_DIR }}
-        run: ./create-npm-package.sh
+        run: ./scripts/create-package.sh generate_nightly_version
 
       - name: Check if any node_modules were packed
         id: check_node_modules
