@@ -12,6 +12,11 @@ runs:
     - name: Setup Python
       uses: actions/setup-python@v1
 
+    - name: Setup Cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.12.x'
+
     - name: Install cpplint
       shell: bash
       run: pip install 'cpplint==2.0.0'

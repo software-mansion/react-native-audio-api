@@ -19,7 +19,7 @@
 namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
-    const std::shared_ptr<AudioEventHandlerRegistry>
+    const std::shared_ptr<IAudioEventHandlerRegistry>
         &audioEventHandlerRegistry) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
@@ -117,6 +117,7 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   return analyser;
 }
 
+#ifndef TESTING
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
@@ -150,6 +151,7 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
 
   return std::make_shared<AudioBuffer>(audioBus);
 }
+#endif // TESTING
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
