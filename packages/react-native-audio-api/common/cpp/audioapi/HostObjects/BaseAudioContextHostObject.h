@@ -14,6 +14,7 @@
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
+#include <audioapi/HostObjects/ConvolverNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -50,6 +51,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioData),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodePCMAudioDataInBase64));
@@ -165,6 +167,13 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
     auto analyser = context_->createAnalyser();
     auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
     return jsi::Object::createFromHostObject(runtime, analyserHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createConvolver) {
+    auto convolver = context_->createConvolver();
+    auto convolverHostObject =
+        std::make_shared<ConvolverNodeHostObject>(convolver);
+    return jsi::Object::createFromHostObject(runtime, convolverHostObject);
   }
 
   JSI_HOST_FUNCTION(decodeAudioDataSource) {

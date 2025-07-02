@@ -2,6 +2,7 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/CustomProcessorNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
@@ -15,6 +16,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <iostream>
 
 namespace audioapi {
 
@@ -115,6 +117,12 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
+}
+
+std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver() {
+  auto convolver = std::make_shared<ConvolverNode>(this);
+  nodeManager_->addProcessingNode(convolver);
+  return convolver;
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(

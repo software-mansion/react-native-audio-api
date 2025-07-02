@@ -1,12 +1,12 @@
 import React, { useRef, useState, useEffect, FC } from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Image } from 'react-native';
 import {
   AudioContext,
   GainNode,
   OscillatorNode,
   StereoPannerNode,
 } from 'react-native-audio-api';
-import type { OscillatorType } from 'react-native-audio-api';
+import type { OscillatorType, AudioBuffer, ConvolverNode } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
 import { layout, colors } from '../../styles';
@@ -31,6 +31,35 @@ const Oscillator: FC = () => {
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
+  const convolverRef = useRef<ConvolverNode | null>(null);
+
+  useEffect(() => {
+    const fetchImpulseResponse = async () => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+
+        const length = audioContextRef.current.sampleRate * 2; // 2 seconds
+        const impulse = audioContextRef.current.createBuffer(2, length, audioContextRef.current.sampleRate);
+        
+        for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+          const channelData = impulse.getChannelData(channel);
+          for (let i = 0; i < length; i++) {
+            // Exponentially decay the impulse
+            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+          }
+        }
+
+        convolverRef.current = audioContextRef.current?.createConvolver();
+        convolverRef.current.buffer = impulse;
+      }
+
+    fetchImpulseResponse();
+
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
 
   const setup = () => {
     if (!audioContextRef.current) {
@@ -50,7 +79,12 @@ const Oscillator: FC = () => {
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
-    panRef.current.connect(audioContextRef.current.destination);
+    if (convolverRef.current) {
+      panRef.current.connect(convolverRef.current);
+      convolverRef.current.connect(audioContextRef.current.destination);
+    } else {
+      panRef.current.connect(audioContextRef.current.destination);
+    }
   };
 
   const handleGainChange = (newValue: number) => {
@@ -91,6 +125,7 @@ const Oscillator: FC = () => {
     } else {
       setup();
       oscillatorRef.current?.start(0);
+      oscillatorRef.current?.stop(audioContextRef.current?.currentTime!! + 2);
     }
 
     setIsPlaying((prev) => !prev);
@@ -102,16 +137,6 @@ const Oscillator: FC = () => {
       oscillatorRef.current.type = type;
     }
   };
-
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
 
   return (
     <Container centered>

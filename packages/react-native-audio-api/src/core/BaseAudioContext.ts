@@ -16,6 +16,7 @@ import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import ConvolverNode from './ConvolverNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -125,6 +126,10 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createConvolver(): ConvolverNode {
+    return new ConvolverNode(this, this.context.createConvolver());
   }
 
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {

@@ -20,11 +20,11 @@ void FFT::doFFT(float *in, std::vector<std::complex<float>> &out) {
       work_,
       PFFFT_FORWARD);
 
-  dsp::multiplyByScalar(
-      reinterpret_cast<float *>(&out[0]),
-      0.5f,
-      reinterpret_cast<float *>(&out[0]),
-      size_ * 2);
+  // dsp::multiplyByScalar(
+  //     reinterpret_cast<float *>(&out[0]),
+  //     0.5f,
+  //     reinterpret_cast<float *>(&out[0]),
+  //     size_ * 2);
 }
 
 void FFT::doInverseFFT(std::vector<std::complex<float>> &in, float *out) {
