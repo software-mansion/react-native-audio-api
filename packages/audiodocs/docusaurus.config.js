@@ -90,12 +90,6 @@ const config = {
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
-          position: 'left',
-          label: 'Guides',
-        },
-        {
           'href':
             'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
@@ -133,7 +127,7 @@ const config = {
 
           const raf = require('raf');
           raf.polyfill();
-        
+
           return {
             mergeStrategy: {
               'resolve.extensions': 'prepend',
