@@ -1,14 +1,5 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
-/**
-
-TODO:
- - consider running register handler and unregister handler only on the main
-thread
- - LISTENER_ID should be an static atomic variable
-
-*/
-
 namespace audioapi {
 
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
