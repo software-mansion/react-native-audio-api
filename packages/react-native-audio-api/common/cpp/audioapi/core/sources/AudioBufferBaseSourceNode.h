@@ -13,7 +13,7 @@ class AudioParam;
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(BaseAudioContext *context);
-  ~AudioBufferBaseSourceNode();
+  virtual ~AudioBufferBaseSourceNode();
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
