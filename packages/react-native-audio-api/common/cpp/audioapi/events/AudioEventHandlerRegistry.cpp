@@ -33,20 +33,43 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
 uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::string &eventName,
     const std::shared_ptr<jsi::Function> &handler) {
-  static uint64_t LISTENER_ID = 1;
+  uint64_t listenerId = listenerIdCounter_++;
 
-  eventHandlers_[eventName][LISTENER_ID] = handler;
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    // If callInvoker or runtime is not valid, we cannot register the handler
+    return 0;
+  }
 
-  return LISTENER_ID++;
+  // Modify the eventHandlers_ map only on the main RN thread
+  callInvoker_->invokeAsync([this, eventName, listenerId, handler]() {
+    eventHandlers_[eventName][listenerId] = handler;
+  });
+
+  return listenerId;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(
     const std::string &eventName,
     uint64_t listenerId) {
-  auto it = eventHandlers_.find(eventName);
-  if (it != eventHandlers_.end()) {
-    it->second.erase(listenerId);
+  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+    // If callInvoker or runtime is not valid, we cannot unregister the handler
+    return;
   }
+
+  callInvoker_->invokeAsync([this, eventName, listenerId]() {
+    auto it = eventHandlers_.find(eventName);
+
+    if (it != eventHandlers_.end()) {
+      return;
+    }
+
+    auto &handlersMap = it->second;
+    auto handlerIt = handlersMap.find(listenerId);
+
+    if (handlerIt != handlersMap.end()) {
+      handlersMap.erase(handlerIt);
+    }
+  });
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
@@ -72,7 +95,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     for (const auto &pair : handlersMap) {
       auto handler = pair.second;
 
-      if (!handler || !handler->isFunction()) {
+      if (!handler || !handler->isFunction(*runtime_)) {
         // If the handler is not valid, we can skip it
         continue;
       }
@@ -101,7 +124,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       return;
     }
 
-    const handlerIt = it->second.find(listenerId);
+    auto handlerIt = it->second.find(listenerId);
 
     if (handlerIt == it->second.end()) {
       // If the listener ID is not registered, we can skip invoking handlers
