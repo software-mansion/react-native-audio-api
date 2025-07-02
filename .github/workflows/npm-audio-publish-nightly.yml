@@ -3,6 +3,7 @@ name: Build nightly and publish to npm
 on:
   schedule:
     - cron: '32 23 * * *' # Every day at 23:32 UTC
+  workflow_dispatch:
 jobs:
   build:
     if: github.repository == 'software-mansion/react-native-audio-api'
