@@ -66,6 +66,7 @@ target_include_directories(rnaudioapi_libs PUBLIC
 add_executable(
   tests
   OscillatorTest.cpp
+  GainTest.cpp
 )
 
 target_link_libraries(tests
