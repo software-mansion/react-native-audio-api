@@ -8,7 +8,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/run-tests')
+    if: (github.event.issue.pull_request != null && contains(github.event.comment.body, '/run-tests')) || github.event_name == 'workflow_dispatch'
     steps:
       - name: check user
         uses: tspascoal/get-user-teams-membership@v3
