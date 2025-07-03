@@ -1,9 +1,9 @@
-name: Build nightly and publish to npm
+name: Build and publish to npm
 
 on:
-  schedule:
-    - cron: '32 23 * * *' # Every day at 23:32 UTC
+  workflow_call:
   workflow_dispatch:
+
 jobs:
   build:
     if: github.repository == 'software-mansion/react-native-audio-api'
@@ -15,7 +15,7 @@ jobs:
       AUDIO_API_DIR: packages/react-native-audio-api
       AUDIO_API_VERSION: PLACEHOLDER
       PACKAGE_NAME: PLACEHOLDER
-      TAG: audio-api-nightly # TODO: consider using workflows also for main releases
+      TAG: PLACEHOLDER
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,10 +40,27 @@ jobs:
       - name: Install monorepo dependencies
         run: yarn install --immutable
 
+      - name: Set tag
+        run: |
+          if [[ "${{ inputs.nightly-build }}" == "true" ]]; then
+            echo "TAG=audio-api-nightly" >> $GITHUB_ENV
+          else
+            echo "TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Assert tag
+        if: ${{ env.TAG == 'PLACEHOLDER' }}
+        run: exit 1 # this should never happen
+
       - name: Build package
         id: build
         working-directory: ${{ env.AUDIO_API_DIR }}
-        run: ./scripts/create-package.sh generate_nightly_version
+        run: |
+          if [[ "${{ inputs.nightly-build }}" == "true" ]]; then
+            ./scripts/create-package.sh generate_nightly_version
+          else
+            ./scripts/create-package.sh
+          fi
 
       - name: Check if any node_modules were packed
         id: check_node_modules

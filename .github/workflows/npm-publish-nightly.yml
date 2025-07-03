@@ -1,0 +1,12 @@
+name: Publish nightly version to npm
+
+on:
+  schedule:
+    - cron: '32 23 * * *' # Every day at 23:32 UTC
+  workflow_dispatch:
+
+jobs:
+  publish-nightly:
+    uses: ./.github/workflows/npm-audio-package-build.yml
+    with:
+      nightly-build: true
