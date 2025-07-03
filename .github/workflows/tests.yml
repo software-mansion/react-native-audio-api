@@ -1,30 +1,14 @@
 name: Tests
 
 on:
-  issue_comment:
-    types: [created, edited]
+  pull_request:
   workflow_dispatch:
 
 jobs:
   tests:
     runs-on: ubuntu-latest
-    if: (github.event.issue.pull_request != null && contains(github.event.comment.body, '/run-tests')) || github.event_name == 'workflow_dispatch'
     steps:
-      - name: check user
-        uses: tspascoal/get-user-teams-membership@v3
-        id: teamAffiliation
-        with:
-          GITHUB_TOKEN: ${{ secrets.TEAM_TOKEN }}
-          username: ${{ github.event.comment.user.login }}
-          organization: "software-mansion"
-          team: "react-native-open-source"
 
-      - name: Stop workflow if user is no member
-        if: ${{ steps.teamAffiliation.outputs.isTeamMember == 'false' }}
-        run: |
-          echo "You have no rights to trigger this job."
-          exit 1
-      
       - name: Checkout
         uses: actions/checkout@v4
 
