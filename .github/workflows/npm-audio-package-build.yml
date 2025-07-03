@@ -2,6 +2,10 @@ name: Build and publish to npm
 
 on:
   workflow_call:
+    inputs:
+      nightly-build:
+        required: true
+        type: boolean
   workflow_dispatch:
 
 jobs:
