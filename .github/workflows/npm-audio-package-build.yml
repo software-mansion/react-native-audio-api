@@ -1,4 +1,4 @@
-name: Build and publish to npm
+name: NPM Build and publish to npm
 
 on:
   workflow_call:

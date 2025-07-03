@@ -1,4 +1,4 @@
-name: Publish nightly version to npm
+name: NPM-NIGHTLY Build and publish to npm
 
 on:
   schedule:

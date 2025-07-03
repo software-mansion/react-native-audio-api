@@ -1,4 +1,4 @@
-name: build audio api docs
+name: DOCS Build and publish audio api docs
 
 on:
   workflow_dispatch:

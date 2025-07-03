@@ -1,4 +1,4 @@
-name: Run Tests on PR comment
+name: Tests
 
 on:
   issue_comment:
