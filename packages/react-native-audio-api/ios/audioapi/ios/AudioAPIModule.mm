@@ -139,6 +139,12 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
   [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
 }
 
+RCT_EXPORT_METHOD(getDevicesInfo:(nonnull RCTPromiseResolveBlock)resolve
+                              reject:(nonnull RCTPromiseRejectBlock)reject)
+{
+  [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+}
+
 #ifdef RCT_NEW_ARCH_ENABLED
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params

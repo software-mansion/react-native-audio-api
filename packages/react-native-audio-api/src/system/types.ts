@@ -53,3 +53,19 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
+
+export type AudioDeviceType = 'input' | 'output';
+
+export interface AudioDeviceInfo {
+  name: string;
+  category: string; // TODO: consider using an enum
+}
+
+export type AudioDeviceList = AudioDeviceInfo[];
+
+export interface AudioDevicesInfo {
+  availableInputs: AudioDeviceList;
+  currentInputs: AudioDeviceList;
+  currentOutputs: AudioDeviceList;
+  availableOutputs: AudioDeviceList;
+}
