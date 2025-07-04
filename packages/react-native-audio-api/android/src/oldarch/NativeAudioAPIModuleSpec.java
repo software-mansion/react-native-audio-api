@@ -79,6 +79,6 @@
    public abstract void checkRecordingPermissions(Promise promise);
 
    @ReactMethod
-    @DoNotStrip
-    public abstract void getDevicesInfo(Promise promise);
+   @DoNotStrip
+   public abstract void getDevicesInfo(Promise promise);
  }

@@ -17,6 +17,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
@@ -65,6 +66,7 @@ object MediaSessionManager {
       }
     }
 
+  @RequiresApi(Build.VERSION_CODES.CUPCAKE)
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
     reactContext: WeakReference<ReactApplicationContext>,
@@ -133,6 +135,7 @@ object MediaSessionManager {
     lockScreenManager.enableRemoteCommand(name, enabled)
   }
 
+  @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
   fun getDevicePreferredSampleRate(): Double {
     val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
     return sampleRate.toDouble()
@@ -185,5 +188,35 @@ object MediaSessionManager {
     mChannel.setShowBadge(false)
     mChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
     notificationManager.createNotificationChannel(mChannel)
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun getDevicesInfo(): ReadableMap {
+    val availableInputs = Arguments.makeNativeArray()
+    val availableOutputs = Arguments.makeNatieArray()
+
+    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+      val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("name", device.productName)
+      deviceInfo.putString("type", device.type.toString())
+
+      availableInputs.pushMap(deviceInfo)
+    }
+
+    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+      val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("name", device.productName)
+      deviceInfo.putString("type", device.type.toString())
+
+      availableOutputs.pushMap(deviceInfo)
+    }
+
+    val devicesInfo = Arguments.createMap()
+    devicesInfo.putArray("currentInputs", Arguments.createArray())
+    devicesInfo.putArray("currentOutputs", Arguments.createArray())
+    devicesInfo.putArray("availableInputs", availableInputs)
+    devicesInfo.putArray("availableOutputs", availableOutputs)
+
+    return devicesInfo
   }
 }

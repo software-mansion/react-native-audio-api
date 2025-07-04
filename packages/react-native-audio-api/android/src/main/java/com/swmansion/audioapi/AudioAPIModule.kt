@@ -103,4 +103,8 @@ class AudioAPIModule(
   override fun checkRecordingPermissions(promise: Promise) {
     promise.resolve(MediaSessionManager.checkRecordingPermissions())
   }
+
+  override fun getDevicesInfo(promise: Promise) {
+    promise.resolve(MediaSessionManager.getDevicesInfo())
+  }
 }
