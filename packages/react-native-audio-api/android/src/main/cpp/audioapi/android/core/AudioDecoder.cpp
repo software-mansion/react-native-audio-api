@@ -127,7 +127,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
         static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]);
   }
 
-  changePlaybackSpeedIfNeeded(buffer, framesDecoded, playbackSpeed);
+  changePlaybackSpeedIfNeeded(buffer, framesDecoded, 1, playbackSpeed);
   auto outputFrames = buffer.size();
 
   auto audioBus =

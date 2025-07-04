@@ -12,9 +12,6 @@ class AudioBus;
 class AudioDecoder {
  public:
   explicit AudioDecoder(float sampleRate): sampleRate_(sampleRate) {}
-  ~AudioDecoder() {
-    stretch_deinit(stretcher_);
-  }
 
   [[nodiscard]] std::shared_ptr<AudioBus> decodeWithFilePath(const std::string &path) const;
   [[nodiscard]] std::shared_ptr<AudioBus> decodeWithMemoryBlock(const void *data, size_t size) const;
@@ -23,31 +20,31 @@ class AudioDecoder {
  private:
   float sampleRate_;
   int numChannels_ = 2;
-  StretchHandle stretcher_ =
-          stretch_init(static_cast<int>(sampleRate_ / 333.0f), static_cast<int>(sampleRate_ / 55.0f), 1,  0x1);
 
-  void changePlaybackSpeedIfNeeded(std::vector<int16_t> &buffer, size_t framesDecoded, float playbackSpeed) const {
+  void changePlaybackSpeedIfNeeded(std::vector<int16_t> &buffer, size_t framesDecoded, int numChannels, float playbackSpeed) const {
       if (playbackSpeed == 1.0f) {
           return;
       }
 
-      int maxOutputFrames = stretch_output_capacity(stretcher_, static_cast<int>(framesDecoded), 1 / playbackSpeed);
+      auto stretcher = stretch_init(static_cast<int>(sampleRate_ / 333.0f), static_cast<int>(sampleRate_ / 55.0f), numChannels,  0x1);
+
+      int maxOutputFrames = stretch_output_capacity(stretcher, static_cast<int>(framesDecoded), 1 / playbackSpeed);
       std::vector<int16_t> stretchedBuffer(maxOutputFrames);
 
       int outputFrames = stretch_samples(
-              stretcher_,
+              stretcher,
               buffer.data(),
               static_cast<int>(framesDecoded),
               stretchedBuffer.data(),
               1 / playbackSpeed
       );
 
-      outputFrames += stretch_flush(stretcher_, stretchedBuffer.data() + (outputFrames));
+      outputFrames += stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
       stretchedBuffer.resize(outputFrames);
 
       buffer = stretchedBuffer;
 
-      stretch_reset(stretcher_);
+      stretch_deinit(stretcher);
   }
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
