@@ -130,7 +130,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
   changePlaybackSpeedIfNeeded(buffer, framesDecoded, 1, playbackSpeed);
   auto outputFrames = buffer.size();
 
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
+  auto audioBus =
+      std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
   auto leftChannelData = audioBus->getChannel(0)->getData();
   auto rightChannelData = audioBus->getChannel(1)->getData();
 
