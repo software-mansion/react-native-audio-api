@@ -4,4 +4,124 @@ sidebar_label: Audio API Expo plugin
 sidebar_position: 3
 ---
 
-# 🚧 Audio API Expo plugin 🚧
+# Audio API Expo plugin
+
+## What is Audio API Expo plugin
+
+The Audio API Expo plugin allows to set certain permissions and
+background audio related settings in developer friendly way.
+
+<details>
+<summary>Type definitions</summary>
+
+```typescript
+interface Options {
+  iosBackgroundMode: boolean;
+  androidPermissions: string[];
+  androidForegroundService: boolean;
+  androidFSTypes: string[];
+}
+```
+
+</details>
+
+## How to use it?
+
+Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
+
+<details>
+<summary>app.json</summary>
+```javascript
+{
+  "plugins": [
+    [
+      "react-native-audio-api",
+      {
+        "iosBackgroundMode": true,
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.FOREGROUND_SERVICE",
+          "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        ],
+        "androidForegroundService": true,
+        "androidFSTypes": [
+          "mediaPlayback"
+        ]
+      }
+    ]
+  ]
+}
+```
+</details>
+
+<details>
+<summary>app.config.js</summary>
+```javascript
+export default {
+  ...
+  "plugins": [
+    [
+      "react-native-audio-api",
+      {
+        "iosBackgroundMode": true,
+        "androidPermissions" : [
+          "android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.FOREGROUND_SERVICE",
+          "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        ],
+        "androidForegroundService": true,
+        "androidFSTypes": [
+          "mediaPlayback"
+        ]
+      }
+    ]
+  ]
+};
+```
+</details>
+
+## Options
+
+### iosBackgroundMode
+
+Defaults to `true`.
+
+Allows app to play audio in the background on iOS.
+
+### androidPermissions
+
+Defaults to
+
+```
+[
+  'android.permission.FOREGROUND_SERVICE',
+  'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'
+]
+```
+
+Allows to specify certain android app permissions to apply.
+
+##### Permissions:
+
+- `android.permission.FOREGROUND_SERVICE` - Allows an app to run a Foreground Service
+
+- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - Allows an app to run a Foreground Service specifically for playing audio or video.
+
+- `android.permission.MODIFY_AUDIO_SETTINGS` - Allows an app to modify global audio settings.
+
+- `android.permission.INTERNET` - Allows applications to open network sockets.
+
+### androidForegroundService
+
+Defaults to true
+
+Allows app to use Foreground Service options specified by user,
+it permits app to play audio in the background on Android.
+
+### androidFSTypes
+
+Allows user to specify appropriate Foreground Service type.
+
+##### Types description
+
+- `mediaPlayback` - Continue audio or video playback from the background.

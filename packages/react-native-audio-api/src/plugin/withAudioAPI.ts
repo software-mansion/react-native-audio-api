@@ -19,7 +19,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     iosBackgroundMode: true,
     androidPermissions: [
       'android.permission.FOREGROUND_SERVICE',
-      'android.permission.WAKE_LOCK',
+      'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
     ],
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
