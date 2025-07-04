@@ -35,7 +35,10 @@ export interface IBaseAudioContext {
   createAnalyser: () => IAnalyserNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
   decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
-  decodePCMAudioDataInBase64: (b64: string) => Promise<IAudioBuffer>;
+  decodePCMAudioDataInBase64: (
+    b64: string,
+    playbackRate: number
+  ) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
