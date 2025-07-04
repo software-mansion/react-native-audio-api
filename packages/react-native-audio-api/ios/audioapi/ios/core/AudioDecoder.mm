@@ -3,6 +3,7 @@
 
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/base64/base64.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -12,7 +13,7 @@ namespace audioapi {
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
   ma_decoder decoder;
-  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 2, sampleRate_);
+  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
@@ -25,29 +26,27 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
   ma_uint64 totalFrameCount;
   ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
 
-  auto audioBus = std::make_shared<AudioBus>(static_cast<int>(totalFrameCount), 2, sampleRate_);
-  auto *buffer = new float[totalFrameCount * 2];
+  std::vector<int16_t> buffer(totalFrameCount * numChannels_);
 
   ma_uint64 framesDecoded;
-  ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
+  ma_decoder_read_pcm_frames(&decoder, buffer.data(), totalFrameCount, &framesDecoded);
   if (framesDecoded == 0) {
     NSLog(@"Failed to decode");
 
-    delete[] buffer;
     ma_decoder_uninit(&decoder);
-
     return nullptr;
   }
 
-  for (int i = 0; i < decoder.outputChannels; ++i) {
-    float *channelData = audioBus->getChannel(i)->getData();
+  auto outputFrames = buffer.size() / numChannels_;
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
 
-    for (ma_uint64 j = 0; j < framesDecoded; ++j) {
-      channelData[j] = buffer[j * decoder.outputChannels + i];
+  for (int i = 0; i < numChannels_; ++i) {
+    auto channelData = audioBus->getChannel(i)->getData();
+    for (int j = 0; j < outputFrames; ++j) {
+      channelData[j] = int16ToFloat(buffer[j * numChannels_ + i]);
     }
   }
 
-  delete[] buffer;
   ma_decoder_uninit(&decoder);
 
   return audioBus;
@@ -56,7 +55,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
 {
   ma_decoder decoder;
-  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 2, sampleRate_);
+  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_memory(data, size, &config, &decoder);
   if (result != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for memory block");
@@ -69,50 +68,54 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, 
   ma_uint64 totalFrameCount;
   ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
 
-  auto audioBus = std::make_shared<AudioBus>(static_cast<int>(totalFrameCount), 2, sampleRate_);
-  auto *buffer = new float[totalFrameCount * 2];
+  std::vector<int16_t> buffer(totalFrameCount * numChannels_);
 
   ma_uint64 framesDecoded;
-  ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
+  ma_decoder_read_pcm_frames(&decoder, buffer.data(), totalFrameCount, &framesDecoded);
+
   if (framesDecoded == 0) {
     NSLog(@"Failed to decode");
 
-    delete[] buffer;
     ma_decoder_uninit(&decoder);
-
     return nullptr;
   }
 
-  for (int i = 0; i < decoder.outputChannels; ++i) {
-    float *channelData = audioBus->getChannel(i)->getData();
+  auto outputFrames = buffer.size() / numChannels_;
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
 
-    for (ma_uint64 j = 0; j < framesDecoded; ++j) {
-      channelData[j] = buffer[j * decoder.outputChannels + i];
+  for (int i = 0; i < numChannels_; ++i) {
+    auto channelData = audioBus->getChannel(i)->getData();
+    for (int j = 0; j < outputFrames; ++j) {
+      channelData[j] = int16ToFloat(buffer[j * numChannels_ + i]);
     }
   }
 
-  delete[] buffer;
   ma_decoder_uninit(&decoder);
 
   return audioBus;
 }
 
-std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(const std::string &data) const
+std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(const std::string &data, float playbackSpeed) const
 {
   auto decodedData = base64_decode(data, false);
 
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
-  size_t frameCount = decodedData.size() / 2;
+  size_t framesDecoded = decodedData.size() / 2;
 
-  auto audioBus = std::make_shared<AudioBus>(frameCount, 1, sampleRate_);
-  auto channelData = audioBus->getChannel(0)->getData();
-
-  for (size_t i = 0; i < frameCount; ++i) {
-    auto sample = static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]);
-    channelData[i] = static_cast<float>(sample);
+  std::vector<int16_t> buffer(framesDecoded);
+  for (size_t i = 0; i < framesDecoded; ++i) {
+    buffer[i] = static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]);
   }
 
-  dsp::multiplyByScalar(channelData, 1.0f / 32768.0f, channelData, frameCount);
+  changePlaybackSpeedIfNeeded(buffer, framesDecoded, playbackSpeed);
+  auto outputFrames = buffer.size();
+
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
+  auto channelData = audioBus->getChannel(0)->getData();
+
+  for (size_t i = 0; i < outputFrames; ++i) {
+    channelData[i] = int16ToFloat(buffer[i]);
+  }
 
   return audioBus;
 }
