@@ -130,11 +130,14 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
   changePlaybackSpeedIfNeeded(buffer, framesDecoded, 1, playbackSpeed);
   auto outputFrames = buffer.size();
 
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, 1, sampleRate_);
-  auto channelData = audioBus->getChannel(0)->getData();
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
+  auto leftChannelData = audioBus->getChannel(0)->getData();
+  auto rightChannelData = audioBus->getChannel(1)->getData();
 
   for (size_t i = 0; i < outputFrames; ++i) {
-    channelData[i] = int16ToFloat(buffer[i]);
+    auto sample = int16ToFloat(buffer[i]);
+    leftChannelData[i] = sample;
+    rightChannelData[i] = sample;
   }
 
   return audioBus;
