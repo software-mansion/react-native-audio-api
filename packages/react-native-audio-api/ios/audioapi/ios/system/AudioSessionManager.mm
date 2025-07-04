@@ -295,26 +295,26 @@
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   NSMutableDictionary *devicesInfo = [[NSMutableDictionary alloc] init];
-  
+
   [devicesInfo setValue:[self parseDeviceList:[self.audioSession availableInputs]] forKey:@"availableInputs"];
   [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] inputs]] forKey:@"currentInputs"];
   [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"availableOutputs"];
   [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"currentOutputs"];
-  
+
   resolve(devicesInfo);
 }
 
-- (NSArray<NSDictionary*> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription*> *)devices
+- (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices
 {
-  NSMutableArray<NSDictionary*> *deviceList = [[NSMutableArray alloc] init];
-  
+  NSMutableArray<NSDictionary *> *deviceList = [[NSMutableArray alloc] init];
+
   for (AVAudioSessionPortDescription *device in devices) {
     [deviceList addObject:@{
-      @"name": device.portName,
-      @"category": device.portType,
+      @"name" : device.portName,
+      @"category" : device.portType,
     }];
   }
-  
+
   return deviceList;
 }
 
