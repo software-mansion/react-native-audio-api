@@ -85,8 +85,9 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
-RCT_EXPORT_METHOD(setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
-                      resolve reject : (RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
+        reject)
 {
   if ([self.audioSessionManager setActive:enabled]) {
     resolve(@"true");
@@ -96,8 +97,9 @@ RCT_EXPORT_METHOD(setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseR
   resolve(@"false");
 }
 
-RCT_EXPORT_METHOD(setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-                      options allowHaptics : (BOOL)allowHaptics)
+RCT_EXPORT_METHOD(
+    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
+        options allowHaptics : (BOOL)allowHaptics)
 {
   [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options allowHaptics:allowHaptics];
 }
@@ -127,14 +129,15 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];
 }
 
-RCT_EXPORT_METHOD(requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+        reject)
 {
   [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
 }
 
-RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-                      resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(
+    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
 }
