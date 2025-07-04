@@ -36,8 +36,10 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
 
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      "audioReady", onAudioReadyCallbackId_, body);
+  if (audioEventHandlerRegistry_ != nullptr) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "audioReady", onAudioReadyCallbackId_, body);
+  }
 }
 
 void AudioRecorder::sendRemainingData() {

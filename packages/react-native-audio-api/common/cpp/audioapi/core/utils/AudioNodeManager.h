@@ -20,8 +20,6 @@ class AudioNodeManager {
   AudioNodeManager() = default;
   ~AudioNodeManager();
 
-  std::mutex &getGraphLock();
-
   void preProcessGraph();
 
   void addPendingNodeConnection(
@@ -62,6 +60,7 @@ class AudioNodeManager {
       ConnectionType>>
       audioParamToConnect_;
 
+  std::mutex &getGraphLock();
   void settlePendingConnections();
   void cleanupNode(const std::shared_ptr<AudioNode> &node);
   void prepareNodesForDestruction();

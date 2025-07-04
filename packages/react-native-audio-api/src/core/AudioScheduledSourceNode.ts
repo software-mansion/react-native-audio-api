@@ -11,6 +11,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
   );
 
   private onendedSubscription?: AudioEventSubscription;
+  private onEndedCallback?: (event: EventEmptyType) => void;
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -43,13 +44,20 @@ export default class AudioScheduledSourceNode extends AudioNode {
     (this.node as IAudioScheduledSourceNode).stop(when);
   }
 
-  // eslint-disable-next-line accessor-pairs
+  public get onended(): ((event: EventEmptyType) => void) | undefined {
+    return this.onEndedCallback;
+  }
+
   public set onended(callback: ((event: EventEmptyType) => void) | null) {
     if (!callback) {
+      (this.node as IAudioScheduledSourceNode).onended = '0';
       this.onendedSubscription?.remove();
       this.onendedSubscription = undefined;
+      this.onEndedCallback = undefined;
       return;
     }
+
+    this.onEndedCallback = callback;
     this.onendedSubscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback

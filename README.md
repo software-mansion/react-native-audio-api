@@ -4,7 +4,10 @@
 
 [![NPM latest](https://img.shields.io/npm/v/react-native-audio-api/latest)](https://www.npmjs.com/package/react-native-audio-api)
 [![NPM next](https://img.shields.io/npm/v/react-native-audio-api/next)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
-[![github ci](https://img.shields.io/github/actions/workflow/status/software-mansion/react-native-audio-api/ci.yml)](https://github.com/software-mansion/react-native-audio-api/actions)
+[![NPM nightly](https://img.shields.io/npm/v/react-native-audio-api/audio-api-nightly)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
+[![github ci](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml)
+[![NPM Audio Api publish nightly](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml)
+[![Audio Api tests](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml)
 
 `react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
 allowing developers to generate and modify audio in exact same way it is possible in browsers.

@@ -1,5 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
@@ -17,11 +18,10 @@ AudioParam::AudioParam(
       minValue_(minValue),
       maxValue_(maxValue),
       context_(context),
-      audioBus_(
-          std::make_shared<AudioBus>(
-              RENDER_QUANTUM_SIZE,
-              1,
-              context->getSampleRate())) {
+      audioBus_(std::make_shared<AudioBus>(
+          RENDER_QUANTUM_SIZE,
+          1,
+          context->getSampleRate())) {
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
@@ -47,11 +47,16 @@ float AudioParam::getMaxValue() const {
   return maxValue_;
 }
 
+std::mutex &AudioParam::getQueueLock() {
+  return queueLock_;
+}
+
 void AudioParam::setValue(float value) {
   value_ = std::clamp(value, minValue_, maxValue_);
 }
 
 float AudioParam::getValueAtTime(double time) {
+  Locker lock(getQueueLock());
   if (endTime_ < time && !eventsQueue_.empty()) {
     auto event = eventsQueue_.front();
     startTime_ = event.getStartTime();
@@ -84,6 +89,7 @@ void AudioParam::setValueAtTime(float value, double startTime) {
     return endValue;
   };
 
+  Locker lock(getQueueLock());
   auto event = ParamChangeEvent(
       startTime,
       startTime,
@@ -117,6 +123,7 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
     return endValue;
   };
 
+  Locker lock(getQueueLock());
   auto event = ParamChangeEvent(
       getQueueEndTime(),
       endTime,
@@ -151,6 +158,7 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
     return endValue;
   };
 
+  Locker lock(getQueueLock());
   auto event = ParamChangeEvent(
       getQueueEndTime(),
       endTime,
@@ -181,6 +189,7 @@ void AudioParam::setTargetAtTime(
             (startValue - target) * exp(-(time - startTime) / timeConstant));
       };
 
+  Locker lock(getQueueLock());
   auto event = ParamChangeEvent(
       startTime,
       startTime,
@@ -225,6 +234,7 @@ void AudioParam::setValueCurveAtTime(
     return endValue;
   };
 
+  Locker lock(getQueueLock());
   auto event = ParamChangeEvent(
       startTime,
       startTime + duration,
@@ -236,6 +246,7 @@ void AudioParam::setValueCurveAtTime(
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
+  Locker lock(getQueueLock());
   auto it = eventsQueue_.rbegin();
   while (it->getEndTime() >= cancelTime) {
     if (it->getStartTime() >= cancelTime ||
@@ -248,6 +259,7 @@ void AudioParam::cancelScheduledValues(double cancelTime) {
 }
 
 void AudioParam::cancelAndHoldAtTime(double cancelTime) {
+  Locker lock(getQueueLock());
   auto it = eventsQueue_.rbegin();
   while (it->getEndTime() >= cancelTime) {
     if (it->getStartTime() >= cancelTime) {

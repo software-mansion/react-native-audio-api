@@ -4,6 +4,7 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
 #include <memory>
+#include <mutex>
 
 namespace audioapi {
 
@@ -13,12 +14,14 @@ class AudioParam;
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(BaseAudioContext *context);
+  virtual ~AudioBufferBaseSourceNode();
 
-    [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
-    [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
+  [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
-    void setOnPositionChangedCallbackId(uint64_t callbackId);
-    void setOnPositionChangedInterval(int interval);
+  void setOnPositionChangedCallbackId(uint64_t callbackId);
+  void setOnPositionChangedInterval(int interval);
+  [[nodiscard]] int getOnPositionChangedInterval();
 
  protected:
     std::mutex bufferLock_;
