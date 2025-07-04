@@ -96,7 +96,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onended: string;
+  onEnded: string;
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {

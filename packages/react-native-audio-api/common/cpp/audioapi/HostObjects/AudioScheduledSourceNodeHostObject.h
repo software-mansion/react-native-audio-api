@@ -15,13 +15,13 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
       const std::shared_ptr<AudioScheduledSourceNode> &node)
       : AudioNodeHostObject(node) {
     addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onended));
+      JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
         JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
   }
 
-  JSI_PROPERTY_SETTER(onended) {
+  JSI_PROPERTY_SETTER(onEnded) {
     auto audioScheduleSourceNode =
             std::static_pointer_cast<AudioScheduledSourceNode>(node_);
 
