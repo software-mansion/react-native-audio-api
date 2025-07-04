@@ -18,6 +18,20 @@ const AudioFile: FC = () => {
       await AudioPlayer.play();
 
       AudioManager.observeAudioInterruptions(true);
+
+      AudioManager.getDevicesInfo().then(console.log);
+
+      // AudioManager.getCurrentInput().then((input) => {
+      //   console.log('Current input device:', input);
+      // });
+
+      // AudioManager.getAvailableInputs().then((inputs) => {
+      //   console.log('Available input devices:', inputs);
+      // });
+
+      // AudioManager.getCurrentOutput().then((output) => {
+      //   console.log('Current output device:', output);
+      // });
     }
 
     setIsPlaying((prev) => !prev);
