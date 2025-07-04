@@ -44,13 +44,13 @@ export default class AudioScheduledSourceNode extends AudioNode {
     (this.node as IAudioScheduledSourceNode).stop(when);
   }
 
-  public get onended(): ((event: EventEmptyType) => void) | undefined {
+  public get onEnded(): ((event: EventEmptyType) => void) | undefined {
     return this.onEndedCallback;
   }
 
-  public set onended(callback: ((event: EventEmptyType) => void) | null) {
+  public set onEnded(callback: ((event: EventEmptyType) => void) | null) {
     if (!callback) {
-      (this.node as IAudioScheduledSourceNode).onended = '0';
+      (this.node as IAudioScheduledSourceNode).onEnded = '0';
       this.onendedSubscription?.remove();
       this.onendedSubscription = undefined;
       this.onEndedCallback = undefined;
@@ -63,7 +63,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
       callback
     );
 
-    (this.node as IAudioScheduledSourceNode).onended =
+    (this.node as IAudioScheduledSourceNode).onEnded =
       this.onendedSubscription.subscriptionId;
   }
 }
