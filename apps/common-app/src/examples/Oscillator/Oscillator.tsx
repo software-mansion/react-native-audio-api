@@ -29,6 +29,7 @@ const Oscillator: FC = () => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const oscillatorRef2 = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
   const convolverRef = useRef<ConvolverNode | null>(null);
@@ -61,13 +62,15 @@ const Oscillator: FC = () => {
     };
   }, []);
 
-  const setup = () => {
+  const setup = (reverb: boolean) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
 
     oscillatorRef.current = audioContextRef.current.createOscillator();
+    oscillatorRef2.current = audioContextRef.current.createOscillator();
     oscillatorRef.current.frequency.value = frequency;
+    oscillatorRef2.current.frequency.value = frequency;
     oscillatorRef.current.detune.value = detune;
     oscillatorRef.current.type = oscillatorType;
 
@@ -79,7 +82,7 @@ const Oscillator: FC = () => {
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
-    if (convolverRef.current) {
+    if (convolverRef.current && reverb) {
       panRef.current.connect(convolverRef.current);
       convolverRef.current.connect(audioContextRef.current.destination);
     } else {
@@ -119,13 +122,17 @@ const Oscillator: FC = () => {
     }
   };
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (reverb: boolean) => {
     if (isPlaying) {
       oscillatorRef.current?.stop(0);
     } else {
-      setup();
+      setup(reverb);
       oscillatorRef.current?.start(0);
       oscillatorRef.current?.stop(audioContextRef.current?.currentTime!! + 2);
+      gainRef.current?.gain.setValueAtTime(0, audioContextRef.current?.currentTime!! + 2);
+      oscillatorRef2.current?.start(audioContextRef.current?.currentTime!! + 2);
+      oscillatorRef2.current?.connect(gainRef.current!);
+      oscillatorRef2.current?.stop(audioContextRef.current?.currentTime!! + 3);
     }
 
     setIsPlaying((prev) => !prev);
@@ -140,7 +147,8 @@ const Oscillator: FC = () => {
 
   return (
     <Container centered>
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
+      <Button onPress={() => handlePlayPause(false)} title={isPlaying ? 'Pause' : 'Play without reverb'} />
+      <Button onPress={() => handlePlayPause(true)} title={isPlaying ? 'Pause' : 'Play reverb'} />
       <Spacer.Vertical size={49} />
       <Slider
         label="Gain"
