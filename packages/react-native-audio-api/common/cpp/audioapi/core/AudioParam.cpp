@@ -18,10 +18,11 @@ AudioParam::AudioParam(
       minValue_(minValue),
       maxValue_(maxValue),
       context_(context),
-      audioBus_(std::make_shared<AudioBus>(
-          RENDER_QUANTUM_SIZE,
-          1,
-          context->getSampleRate())) {
+      audioBus_(
+          std::make_shared<AudioBus>(
+              RENDER_QUANTUM_SIZE,
+              1,
+              context->getSampleRate())) {
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
