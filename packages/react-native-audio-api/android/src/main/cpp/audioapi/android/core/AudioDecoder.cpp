@@ -115,7 +115,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
     const std::string &data,
-    const float playbackSpeed) const {
+    float playbackSpeed) const {
   auto decodedData = base64_decode(data, false);
 
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
