@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
@@ -66,7 +67,6 @@ object MediaSessionManager {
       }
     }
 
-  @RequiresApi(Build.VERSION_CODES.CUPCAKE)
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
     reactContext: WeakReference<ReactApplicationContext>,
@@ -135,7 +135,6 @@ object MediaSessionManager {
     lockScreenManager.enableRemoteCommand(name, enabled)
   }
 
-  @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
   fun getDevicePreferredSampleRate(): Double {
     val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
     return sampleRate.toDouble()
@@ -192,26 +191,27 @@ object MediaSessionManager {
 
   @RequiresApi(Build.VERSION_CODES.O)
   fun getDevicesInfo(): ReadableMap {
-    val availableInputs = Arguments.makeNativeArray()
-    val availableOutputs = Arguments.makeNatieArray()
+    val availableInputs = Arguments.createArray()
+    val availableOutputs = Arguments.createArray()
 
     for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
       val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("name", device.productName)
-      deviceInfo.putString("type", device.type.toString())
+      deviceInfo.putString("name", inputDevice.productName.toString())
+      deviceInfo.putString("type", parseDeviceType(inputDevice))
 
       availableInputs.pushMap(deviceInfo)
     }
 
-    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+    for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
       val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("name", device.productName)
-      deviceInfo.putString("type", device.type.toString())
+      deviceInfo.putString("name", outputDevice.productName.toString())
+      deviceInfo.putString("type", parseDeviceType(outputDevice))
 
       availableOutputs.pushMap(deviceInfo)
     }
 
     val devicesInfo = Arguments.createMap()
+
     devicesInfo.putArray("currentInputs", Arguments.createArray())
     devicesInfo.putArray("currentOutputs", Arguments.createArray())
     devicesInfo.putArray("availableInputs", availableInputs)
@@ -219,4 +219,17 @@ object MediaSessionManager {
 
     return devicesInfo
   }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun parseDeviceType(device: AudioDeviceInfo): String =
+    when (device.type) {
+      AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
+      AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Built-in Earpiece"
+      AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Built-in Speaker"
+      AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
+      AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
+      AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
+      AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      else -> "Other (${device.type})"
+    }
 }

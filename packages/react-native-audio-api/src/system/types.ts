@@ -58,7 +58,7 @@ export type AudioDeviceType = 'input' | 'output';
 
 export interface AudioDeviceInfo {
   name: string;
-  category: string; // TODO: consider using an enum
+  category: string;
 }
 
 export type AudioDeviceList = AudioDeviceInfo[];
