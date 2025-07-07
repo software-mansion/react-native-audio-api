@@ -221,10 +221,11 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
 
   JSI_HOST_FUNCTION(decodePCMAudioDataInBase64) {
     auto b64 = args[0].getString(runtime).utf8(runtime);
+    auto playbackSpeed = static_cast<float>(args[1].getNumber());
 
-      auto promise = promiseVendor_->createPromise([this, b64](std::shared_ptr<Promise> promise) {
-          std::thread([this, b64, promise = std::move(promise)]() {
-              auto results = context_->decodeWithPCMInBase64(b64);
+      auto promise = promiseVendor_->createPromise([this, b64, playbackSpeed](std::shared_ptr<Promise> promise) {
+          std::thread([this, b64, playbackSpeed, promise = std::move(promise)]() {
+              auto results = context_->decodeWithPCMInBase64(b64, playbackSpeed);
 
               if (!results) {
                   promise->reject("Failed to decode audio data source.");

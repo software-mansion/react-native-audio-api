@@ -145,9 +145,10 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
-    const std::string &data) {
+    const std::string &data,
+    float playbackSpeed) {
 #ifndef AUDIO_API_TEST_SUITE
-  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data);
+  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data, playbackSpeed);
 
   if (!audioBus) {
     return nullptr;
