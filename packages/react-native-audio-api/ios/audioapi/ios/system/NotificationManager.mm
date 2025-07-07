@@ -173,7 +173,8 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (![audioEngine isRunning]) {
-    NSLog(@"[NotificationManager] detected engine configuration change when engine is not running, marking for rebuild");
+    NSLog(
+        @"[NotificationManager] detected engine configuration change when engine is not running, marking for rebuild");
     [audioEngine setRebuildNeeded:true];
     return;
   }
