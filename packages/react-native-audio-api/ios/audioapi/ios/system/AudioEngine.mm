@@ -180,7 +180,12 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
-    [self startEngine];
+    if (self.needsRebuild) {
+      [self restartAudioEngine];
+      self.needsRebuild = false;
+    } else {
+      [self startEngine];
+    }
   }
 }
 
@@ -210,6 +215,11 @@ static AudioEngine *_sharedInstance = nil;
 
   NSLog(@"[AudioEngine] pauseEngine");
   [self.audioEngine pause];
+}
+
+- (void)setRebuildNeeded:(bool)needed
+{
+  self.needsRebuild = needed;
 }
 
 @end

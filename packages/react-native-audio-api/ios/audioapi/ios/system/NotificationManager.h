@@ -11,9 +11,8 @@
 @property (nonatomic, weak) NSNotificationCenter *notificationCenter;
 
 @property (nonatomic, assign) bool isInterrupted;
-@property (nonatomic, assign) bool hadConfigurationChange;
-@property (nonatomic, assign) bool audioInterruptionsObserved;
 @property (nonatomic, assign) bool volumeChangesObserved;
+@property (nonatomic, assign) bool audioInterruptionsObserved;
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule;
 - (void)cleanup;
