@@ -7,16 +7,16 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # OscillatorNode
 
-The `OscillatorNode` is an [`AudioScheduledSourceNode`](/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
+The `OscillatorNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
 Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If you want to play the same sound again you have to create a new one.
 
-#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
 ## Constructor
 
-[`BaseAudioContext.createOscillator(options)`](/core/base-audio-context#createoscillator)
+[`BaseAudioContext.createOscillator(options)`](/docs/core/base-audio-context#createoscillator)
 
 ## Example
 
@@ -42,9 +42,9 @@ function App() {
 
 | Name | Type | Default value | Description |
 | :----: | :----: | :-------- | :------- |
-| `detune` <ReadOnly /> | [`AudioParam`](/core/audio-param) | 0 |[`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
-| `frequency` <ReadOnly /> | [`AudioParam`](/core/audio-param) | 440 | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
-| `type` | [`OscillatorType`](/types/oscillator-type)| `sine` | String value represening type of wave. |
+| `detune` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 0 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `frequency` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 440 | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
+| `type` | [`OscillatorType`](/docs/types/oscillator-type)| `sine` | String value represening type of wave. |
 
 ## Methods
 
@@ -54,7 +54,7 @@ The above allows user to set any periodic wave.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `wave` | `PeriodicWave` | Data representing custom wave. [`See for reference`](/core/base-audio-context#createperiodicwave) |
+| `wave` | `PeriodicWave` | Data representing custom wave. [`See for reference`](/docs/core/base-audio-context#createperiodicwave) |
 
 #### Returns `undefined`.
 
@@ -66,4 +66,4 @@ The above allows user to set any periodic wave.
 
 #### `frequency`
 - 440 Hz is equivalent to piano note A4.
-- Nominal range is: -sampleRate/2 to sampleRate/2 (`sampleRate` value is taken from [`AudioContext`](/core/base-audio-context#properties))
+- Nominal range is: -sampleRate/2 to sampleRate/2 (`sampleRate` value is taken from [`AudioContext`](/docs/core/base-audio-context#properties))
