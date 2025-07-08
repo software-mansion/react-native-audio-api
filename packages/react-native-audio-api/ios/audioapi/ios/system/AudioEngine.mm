@@ -72,7 +72,7 @@ static AudioEngine *_sharedInstance = nil;
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
-  
+
   self.audioEngine = [[AVAudioEngine alloc] init];
   return [self rebuildAudioEngine];
 }

@@ -172,7 +172,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 {
   dispatch_async(dispatch_get_main_queue(), ^{
     AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-    
+
     NSLog(@"HEHEHEHEHE: %d", [audioEngine isRunning]);
 
     if (![audioEngine isRunning]) {
@@ -187,7 +187,7 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
       [audioEngine setRebuildNeeded:true];
       return;
     }
-    
+
     [audioEngine rebuildAndStart];
   });
 }
