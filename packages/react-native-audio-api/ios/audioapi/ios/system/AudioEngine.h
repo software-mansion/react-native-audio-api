@@ -27,6 +27,7 @@
 - (void)pauseEngine:(NSString *)sourceNodeId;
 - (bool)isRunning;
 - (void)setRebuildNeeded:(bool)needed;
+- (void)rebuildAndStart;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;

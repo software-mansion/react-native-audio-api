@@ -170,23 +170,25 @@ static NSString *VolumeObservationContext = @"VolumeObservationContext";
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-
-  if (![audioEngine isRunning]) {
-    NSLog(
-        @"[NotificationManager] detected engine configuration change when engine is not running, marking for rebuild");
-    [audioEngine setRebuildNeeded:true];
-    return;
-  }
-
-  if (self.isInterrupted) {
-    NSLog(@"[NotificationManager] detected engine configuration change during interruption, marking for rebuild");
-    [audioEngine setRebuildNeeded:true];
-    return;
-  }
-
   dispatch_async(dispatch_get_main_queue(), ^{
-    [audioEngine rebuildAudioEngine];
+    AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+    
+    NSLog(@"HEHEHEHEHE: %d", [audioEngine isRunning]);
+
+    if (![audioEngine isRunning]) {
+      NSLog(
+          @"[NotificationManager] detected engine configuration change when engine is not running, marking for rebuild");
+      [audioEngine setRebuildNeeded:true];
+      return;
+    }
+
+    if (self.isInterrupted) {
+      NSLog(@"[NotificationManager] detected engine configuration change during interruption, marking for rebuild");
+      [audioEngine setRebuildNeeded:true];
+      return;
+    }
+    
+    [audioEngine rebuildAndStart];
   });
 }
 

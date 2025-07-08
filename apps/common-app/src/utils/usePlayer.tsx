@@ -32,6 +32,7 @@ function getPlayingInstruments(
 function r<T>(ref: React.MutableRefObject<T>) {
   return ref.current;
 }
+const audioContext = new AudioContext({ initSuspended: true });
 
 export default function usePlayer(options: PlayerOptions) {
   const { bpm, patterns, notesPerBeat, numBeats, setup } = options;
@@ -60,8 +61,6 @@ export default function usePlayer(options: PlayerOptions) {
   }, [bpm, patterns, isPlaying, notesPerBeat, numBeats]);
 
   useLayoutEffect(() => {
-    const audioContext = new AudioContext();
-
     const { playNote } = setup(audioContext);
 
     let frameCount = 0;
@@ -114,6 +113,9 @@ export default function usePlayer(options: PlayerOptions) {
     }
 
     if (isPlaying) {
+      audioContext.suspend();
+      audioContext.resume();
+
       requestAnimationFrame(() => {
         frameCount = 0;
         averageFrameTime = 0;
@@ -138,7 +140,6 @@ export default function usePlayer(options: PlayerOptions) {
 
     return () => {
       playingInstruments.value = getPlayingInstruments();
-      audioContext.close();
     };
 
     // \/ Shared values are not necessary in deps array

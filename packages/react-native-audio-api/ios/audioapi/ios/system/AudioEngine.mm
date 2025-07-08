@@ -64,8 +64,6 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
   }
 
-  [self startIfNecessary];
-
   return true;
 }
 
@@ -74,6 +72,7 @@ static AudioEngine *_sharedInstance = nil;
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
+  
   self.audioEngine = [[AVAudioEngine alloc] init];
   return [self rebuildAudioEngine];
 }
@@ -181,11 +180,11 @@ static AudioEngine *_sharedInstance = nil;
 
   if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
     if (self.needsRebuild) {
-      [self restartAudioEngine];
       self.needsRebuild = false;
-    } else {
-      [self startEngine];
+      [self restartAudioEngine];
     }
+
+    [self startEngine];
   }
 }
 
@@ -208,7 +207,7 @@ static AudioEngine *_sharedInstance = nil;
 
   for (NSString *sourceId in self.sourceStates) {
     if ([self.sourceStates[sourceId] boolValue]) {
-      NSLog(@"state %c", self.sourceStates[sourceId]);
+      NSLog(@"state %@", self.sourceStates[sourceId]);
       return;
     }
   }
@@ -220,6 +219,12 @@ static AudioEngine *_sharedInstance = nil;
 - (void)setRebuildNeeded:(bool)needed
 {
   self.needsRebuild = needed;
+}
+
+- (void)rebuildAndStart
+{
+  [self rebuildAudioEngine];
+  [self startIfNecessary];
 }
 
 @end
