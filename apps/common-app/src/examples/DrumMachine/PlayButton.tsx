@@ -6,10 +6,10 @@ import Animated, {
 import React, { memo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { Icon } from '../../components';
 import { colors } from '../../styles';
 import type { PlayingInstruments, XYWHRect } from '../../types';
 import { size } from './constants';
+import PlayPauseIcon from '../../components/icons/PlayPauseIcon';
 
 interface PlayButtonProps {
   isPlaying?: boolean;
@@ -46,11 +46,7 @@ const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
 
   return (
     <Animated.View style={[styles.playButtonInner, containerStyle]}>
-      <Icon
-        size={40}
-        color={colors.white}
-        name={isPlaying ? 'pause' : 'play'}
-      />
+      <PlayPauseIcon size={48} isPlaying={isPlaying ?? false} color={colors.white} />
     </Animated.View>
   );
 };
