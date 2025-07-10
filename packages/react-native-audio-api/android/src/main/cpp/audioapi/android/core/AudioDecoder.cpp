@@ -7,8 +7,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
-#include <android/log.h>
-
 namespace audioapi {
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
@@ -18,11 +16,6 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
       ma_decoder_config_init(ma_format_f32, 2, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for file: %s",
-        path.c_str());
 
     ma_decoder_uninit(&decoder);
 
@@ -40,7 +33,6 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
 
   if (framesDecoded == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
 
     delete[] buffer;
     ma_decoder_uninit(&decoder);
@@ -70,10 +62,6 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
       ma_decoder_config_init(ma_format_f32, 2, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_memory(data, size, &config, &decoder);
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for memory block");
 
     ma_decoder_uninit(&decoder);
 
@@ -90,8 +78,6 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
   ma_uint64 framesDecoded;
   ma_decoder_read_pcm_frames(&decoder, buffer, totalFrameCount, &framesDecoded);
   if (framesDecoded == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
-
     delete[] buffer;
     ma_decoder_uninit(&decoder);
 
