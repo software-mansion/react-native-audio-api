@@ -19,7 +19,7 @@ const Record: FC = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
-      iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
+      iosOptions: ['allowBluetoothHFP', 'defaultToSpeaker'],
     });
 
     recorderRef.current = new AudioRecorder({
