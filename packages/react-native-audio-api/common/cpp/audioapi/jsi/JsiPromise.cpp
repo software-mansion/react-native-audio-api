@@ -1,4 +1,5 @@
 #include <audioapi/jsi/JsiPromise.h>
+#include <stdexcept>
 
 namespace audioapi {
 
