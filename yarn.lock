@@ -2547,24 +2547,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-community/cli-tools@npm:^17.0.0":
-  version: 17.0.0
-  resolution: "@react-native-community/cli-tools@npm:17.0.0"
-  dependencies:
-    "@vscode/sudo-prompt": "npm:^9.0.0"
-    appdirsjs: "npm:^1.2.4"
-    chalk: "npm:^4.1.2"
-    execa: "npm:^5.0.0"
-    find-up: "npm:^5.0.0"
-    launch-editor: "npm:^2.9.1"
-    mime: "npm:^2.4.1"
-    ora: "npm:^5.4.1"
-    prompts: "npm:^2.4.2"
-    semver: "npm:^7.5.2"
-  checksum: 10/674bfc0bd7b818f568e898eef17b81ed5842b1372dddda092cb1cc5c1c26f24126937e204fac16d3f86c1e33c619e09a497a20d13444925999fdb465d2143366
-  languageName: node
-  linkType: hard
-
 "@react-native-community/cli-types@npm:19.0.0":
   version: 19.0.0
   resolution: "@react-native-community/cli-types@npm:19.0.0"
@@ -2596,50 +2578,6 @@ __metadata:
   bin:
     rnc-cli: build/bin.js
   checksum: 10/e1af922cbe5126b70387fa7ad599aac6aa999886eb946943ec9f2869b2b8b64da3ec14f2658f82f6a28c9404be6c231c909d0c336b5ece5139123f62d03c1e6c
-  languageName: node
-  linkType: hard
-
-"@react-native-vector-icons/ant-design@npm:^12.0.1":
-  version: 12.0.1
-  resolution: "@react-native-vector-icons/ant-design@npm:12.0.1"
-  dependencies:
-    "@react-native-vector-icons/common": "npm:^12.0.1"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/b3bd079806260baa865b2bd751a3d6df60785ce5e253a57d0538a1ca3915f3cef9bee00d5b9ef063761878ffa35ed69d8ae68a2a2c3f3aa1bcad896c6a6639a2
-  languageName: node
-  linkType: hard
-
-"@react-native-vector-icons/common@npm:^12.0.1":
-  version: 12.0.1
-  resolution: "@react-native-vector-icons/common@npm:12.0.1"
-  dependencies:
-    "@react-native-community/cli-tools": "npm:^17.0.0"
-    picocolors: "npm:^1.1.1"
-    plist: "npm:^3.1.0"
-  peerDependencies:
-    "@react-native-vector-icons/get-image": ^12.0.1
-    react: "*"
-    react-native: "*"
-  peerDependenciesMeta:
-    "@react-native-vector-icons/get-image":
-      optional: true
-  bin:
-    rnvi-update-plist: lib/commonjs/scripts/updatePlist.js
-  checksum: 10/a2005e9668b35ec7df923e10b907236a5cc1577e3d6e57df526cd2efad5fb2f841fccf95ad86d2e2e67d87a51085baf6a63e6e2b36e6b6ff81174b0013f03a5a
-  languageName: node
-  linkType: hard
-
-"@react-native-vector-icons/ionicons@npm:^12.0.1":
-  version: 12.0.1
-  resolution: "@react-native-vector-icons/ionicons@npm:12.0.1"
-  dependencies:
-    "@react-native-vector-icons/common": "npm:^12.0.1"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/74eaa82687c3f1ca29a27121f7a0ccdb4733a5fd6682d6b8f3ff8a3bb47c4a7cdab6856001148775d3f0c37b431fd67b020d6744f431083245e12b1e74272d12
   languageName: node
   linkType: hard
 
@@ -4596,17 +4534,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cliui@npm:^7.0.2":
-  version: 7.0.4
-  resolution: "cliui@npm:7.0.4"
-  dependencies:
-    string-width: "npm:^4.2.0"
-    strip-ansi: "npm:^6.0.0"
-    wrap-ansi: "npm:^7.0.0"
-  checksum: 10/db858c49af9d59a32d603987e6fddaca2ce716cd4602ba5a2bb3a5af1351eebe82aba8dff3ef3e1b331f7fa9d40ca66e67bdf8e7c327ce0ea959747ead65c0ef
-  languageName: node
-  linkType: hard
-
 "cliui@npm:^8.0.1":
   version: 8.0.1
   resolution: "cliui@npm:8.0.1"
@@ -4759,7 +4686,6 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.2"
     "@babel/runtime": "npm:^7.25.0"
-    "@react-native-vector-icons/ionicons": "npm:^12.0.1"
     "@react-native/babel-preset": "npm:0.80.0"
     "@react-native/eslint-config": "npm:0.80.0"
     "@react-native/metro-config": "npm:0.80.0"
@@ -4782,7 +4708,7 @@ __metadata:
     react-native-reanimated: "npm:3.18.0"
     react-native-safe-area-context: "npm:5.4.1"
     react-native-screens: "npm:4.11.1"
-    react-native-vector-icons: "npm:^10.2.0"
+    react-native-svg: "npm:^15.12.0"
     react-test-renderer: "npm:19.1.0"
     typescript: "npm:~5.3.0"
   peerDependencies:
@@ -6320,12 +6246,9 @@ __metadata:
     "@react-native-community/cli": "npm:19.0.0"
     "@react-native-community/cli-platform-android": "npm:19.0.0"
     "@react-native-community/cli-platform-ios": "npm:19.0.0"
-    "@react-native-vector-icons/ant-design": "npm:^12.0.1"
-    "@react-native-vector-icons/ionicons": "npm:^12.0.1"
     common-app: "workspace:*"
     react: "npm:19.1.0"
     react-native: "npm:0.80.0"
-    react-native-svg: "npm:^15.12.0"
   languageName: unknown
   linkType: soft
 
@@ -10346,7 +10269,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picocolors@npm:^1.0.0, picocolors@npm:^1.1.0, picocolors@npm:^1.1.1":
+"picocolors@npm:^1.0.0, picocolors@npm:^1.1.0":
   version: 1.1.1
   resolution: "picocolors@npm:1.1.1"
   checksum: 10/e1cf46bf84886c79055fdfa9dcb3e4711ad259949e3565154b004b260cd356c5d54b31a1437ce9782624bf766272fe6b0154f5f0c744fb7af5d454d2b60db045
@@ -10392,7 +10315,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"plist@npm:^3.0.5, plist@npm:^3.1.0":
+"plist@npm:^3.0.5":
   version: 3.1.0
   resolution: "plist@npm:3.1.0"
   dependencies:
@@ -10514,7 +10437,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
+"prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -10870,21 +10793,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/e7df04154fcb76a5a7b0b4e376395f44cc4b90ca6df9d04cff8835546b0a501acf31c2d468742f4accf9ba6fe9e5efd8e5880133d518ad6fc1f3164d79674c8f
-  languageName: node
-  linkType: hard
-
-"react-native-vector-icons@npm:^10.2.0":
-  version: 10.2.0
-  resolution: "react-native-vector-icons@npm:10.2.0"
-  dependencies:
-    prop-types: "npm:^15.7.2"
-    yargs: "npm:^16.1.1"
-  bin:
-    fa-upgrade.sh: bin/fa-upgrade.sh
-    fa5-upgrade: bin/fa5-upgrade.sh
-    fa6-upgrade: bin/fa6-upgrade.sh
-    generate-icon: bin/generate-icon.js
-  checksum: 10/ac3b05bb353807d0ed94256bd6de4291e8261afb320ce69c06270fba3be2ed3c7b3a81ecbda29191cfe906e89bf853d4b4f016465b6b56a428315c7b6630eff1
   languageName: node
   linkType: hard
 
@@ -13125,7 +13033,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs-parser@npm:^20.2.2, yargs-parser@npm:^20.2.3, yargs-parser@npm:^20.2.9":
+"yargs-parser@npm:^20.2.3, yargs-parser@npm:^20.2.9":
   version: 20.2.9
   resolution: "yargs-parser@npm:20.2.9"
   checksum: 10/0188f430a0f496551d09df6719a9132a3469e47fe2747208b1dd0ab2bb0c512a95d0b081628bbca5400fb20dbf2fabe63d22badb346cecadffdd948b049f3fcc
@@ -13155,21 +13063,6 @@ __metadata:
     y18n: "npm:^4.0.0"
     yargs-parser: "npm:^18.1.2"
   checksum: 10/bbcc82222996c0982905b668644ca363eebe6ffd6a572fbb52f0c0e8146661d8ce5af2a7df546968779bb03d1e4186f3ad3d55dfaadd1c4f0d5187c0e3a5ba16
-  languageName: node
-  linkType: hard
-
-"yargs@npm:^16.1.1":
-  version: 16.2.0
-  resolution: "yargs@npm:16.2.0"
-  dependencies:
-    cliui: "npm:^7.0.2"
-    escalade: "npm:^3.1.1"
-    get-caller-file: "npm:^2.0.5"
-    require-directory: "npm:^2.1.1"
-    string-width: "npm:^4.2.0"
-    y18n: "npm:^5.0.5"
-    yargs-parser: "npm:^20.2.2"
-  checksum: 10/807fa21211d2117135d557f95fcd3c3d390530cda2eca0c840f1d95f0f40209dcfeb5ec18c785a1f3425896e623e3b2681e8bb7b6600060eda1c3f4804e7957e
   languageName: node
   linkType: hard
 
