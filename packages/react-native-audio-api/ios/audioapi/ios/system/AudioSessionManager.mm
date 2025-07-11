@@ -87,8 +87,12 @@
       sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
     }
 
-    if ([option isEqualToString:@"allowBluetooth"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
+    if ([option isEqualToString:@"allowBluetoothHFP"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothHFP;
+    }
+
+    if ([option isEqualToString:@"bluetoothHighQualityRecording"]) {
+      sessionOptions |= AVAudioSessionCategoryOptionBluetoothHighQualityRecording;
     }
 
     if ([option isEqualToString:@"defaultToSpeaker"]) {
