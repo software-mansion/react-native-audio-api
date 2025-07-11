@@ -14,6 +14,8 @@
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
 
+@property (nonatomic, assign) bool needsRebuild;
+
 - (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager;
 
 + (instancetype)sharedInstance;
@@ -24,6 +26,8 @@
 - (void)stopEngine;
 - (void)pauseEngine:(NSString *)sourceNodeId;
 - (bool)isRunning;
+- (void)setRebuildNeeded:(bool)needed;
+- (void)rebuildAndStart;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
