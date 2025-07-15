@@ -164,19 +164,20 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
     const auto name = pair.first.data();
     const auto &value = pair.second;
 
-    if (holds_alternative<int>(value)) {
-      eventObject.setProperty(*runtime_, name, get<int>(value));
-    } else if (holds_alternative<double>(value)) {
-      eventObject.setProperty(*runtime_, name, get<double>(value));
-    } else if (holds_alternative<float>(value)) {
-      eventObject.setProperty(*runtime_, name, get<float>(value));
-    } else if (holds_alternative<bool>(value)) {
-      eventObject.setProperty(*runtime_, name, get<bool>(value));
-    } else if (holds_alternative<std::string>(value)) {
-      eventObject.setProperty(*runtime_, name, get<std::string>(value));
-    } else if (holds_alternative<std::shared_ptr<jsi::HostObject>>(value)) {
+    if (std::holds_alternative<int>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<int>(value));
+    } else if (std::holds_alternative<double>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<double>(value));
+    } else if (std::holds_alternative<float>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<float>(value));
+    } else if (std::holds_alternative<bool>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<bool>(value));
+    } else if (std::holds_alternative<std::string>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<std::string>(value));
+    } else if (std::holds_alternative<std::shared_ptr<jsi::HostObject>>(
+                   value)) {
       auto hostObject = jsi::Object::createFromHostObject(
-          *runtime_, get<std::shared_ptr<jsi::HostObject>>(value));
+          *runtime_, std::get<std::shared_ptr<jsi::HostObject>>(value));
       eventObject.setProperty(*runtime_, name, hostObject);
     }
   }
