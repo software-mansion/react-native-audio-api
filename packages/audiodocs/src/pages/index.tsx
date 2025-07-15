@@ -4,6 +4,7 @@ import { HireUsSection } from '@swmansion/t-rex-ui';
 import Layout from '@theme/Layout';
 import Hero from '@site/src/components/Hero';
 import Testimonials from '@site/src/components/Testimonials';
+import LandingFeatures from '@site/src/components/LandingFeatures';
 import FooterBackground from '@site/src/components/FooterBackground';
 // import HomepageStartScreen from '@site/src/components/Hero/StartScreen';
 // import LandingBackground from '@site/src/components/Hero/LandingBackground';
@@ -24,6 +25,7 @@ function Home() {
       <Spacer.V size="4rem" />
 
       <div className={styles.container}>
+        <LandingFeatures />
         {/* <LandingExamples /> */}
       </div>
 
