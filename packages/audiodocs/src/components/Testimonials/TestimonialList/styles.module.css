@@ -35,7 +35,7 @@
   cursor: pointer;
   height: 12px;
   width: 12px;
-  background-color: var(--swm-purple-light-20);
+  background-color: var(--swm-navy-light-20);
   border-radius: 50%;
   display: inline-block;
   transition: background-color 0.4s ease;
@@ -43,7 +43,7 @@
 
 .activeDot,
 .dot:hover {
-  background-color: var(--swm-purple-light-100);
+  background-color: var(--swm-red-light-100);
 }
 
 @media (max-width: 996px) {

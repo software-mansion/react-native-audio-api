@@ -1,13 +1,13 @@
 .testimonialItem {
-  background-color: var(--swm-blue-light-20);
-  box-shadow: -12px 12px 0px var(--swm-blue-light-60);
+  background-color: var(--swm-red-light-20);
+  box-shadow: -12px 12px 0px var(--swm-red-light-100);
   padding: 1.5em;
   position: relative;
   width: 100%;
   display: flex;
   gap: 1rem;
   flex-direction: column;
-  max-width: calc(50% - 3.5rem / 2);
+  /* max-width: calc(50% - 3.5rem / 2); */
   transition: 0.2s ease-in-out;
 }
 
@@ -19,8 +19,8 @@
 }
 .testimonialItem:hover {
   text-decoration: none;
-  background-color: var(--swm-blue-light-40);
-  box-shadow: -12px 12px 0px var(--swm-blue-light-80);
+  background-color: var(--swm-red-light-40);
+  box-shadow: -12px 12px 0px var(--swm-red-light-80);
 }
 
 .testimonialItem:hover .testimonialAuthorPhoto {
@@ -49,17 +49,17 @@
 }
 
 [data-theme='dark'] .testimonialItem {
-  background-color: var(--swm-purple-dark-40);
-  box-shadow: -12px 12px 0px var(--swm-purple-dark-140);
+  background-color: var(--swm-red-dark-140);
+  box-shadow: -12px 12px 0px var(--swm-red-light-100);
 }
 [data-theme='dark'] .testimonialItem:hover {
-  background-color: var(--swm-purple-dark-60);
-  box-shadow: -12px 12px 0px var(--swm-purple-dark-140);
+  background-color: var(--swm-red-dark-120);
+  box-shadow: -12px 12px 0px var(--swm-red-light-100);
 }
 
 [data-theme='dark'] .testimonialAuthorName,
 [data-theme='dark'] .testimonialBody {
-  color: var(--swm-navy-light-100);
+  color: var(--swm-off-white);
 }
 
 .testimonialAuthor {
@@ -103,6 +103,10 @@
   font-size: 14px;
   color: var(--swm-navy-light-60);
   text-transform: uppercase;
+}
+
+[data-theme='dark'] .testimonialCompany {
+  color: var(--swm-navy-light-20);
 }
 
 @media (max-width: 420px) {

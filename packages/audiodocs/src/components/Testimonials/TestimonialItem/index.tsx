@@ -22,8 +22,8 @@ const TestimonialItem = ({ author, company, image, link, children }: Props) => {
         className={styles.quoteIcon}
         color={
           useColorMode().colorMode === 'dark'
-            ? 'var(--swm-purple-dark-120)'
-            : 'var(--swm-purple-light-100)'
+            ? 'var(--swm-red-dark-100)'
+            : 'var(--swm-red-light-100)'
         }
       />
       <div className={styles.testimonialAuthor}>

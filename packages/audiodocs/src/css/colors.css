@@ -254,7 +254,7 @@
   --swm-landing-feature-item-shadow: var(--swm-red-light-100);
   --swm-landing-sponsors-color: var(--ifm-font-color-base);
   --swm-landing-logo-color: var(--swm-navy-light-100);
-  --swm-landing-button-red-light: var(--swm-red-light-100);
+  --swm-landing-button-red-light: var(--swm-red-light-80);
 
   /* Hire Us Section */
 
@@ -432,10 +432,10 @@
 
   /* Hire Us Section */
   --swm-hire-us-section-title: var(--swm-red-light-80);
-  --swm-hire-us-section: var(--swm-blue-dark-100);
+  --swm-hire-us-section: var(--swm-off-white);
   --swm-hire-us-section-color: var(--black);
-  --swm-hire-us-toc: var(--swm-blue-light-80);
-  --swm-hire-us-toc-color: var(--swm-off-white);
+  --swm-hire-us-toc: var(--swm-off-white);
+  --swm-hire-us-toc-color: var(--swm-navy-dark-100);
   --swm-hire-us-toc-color-hover: var(--swm-navy-light-40);
   --swm-hire-us-toc-border-hover: var(--swm-navy-light-40);
 

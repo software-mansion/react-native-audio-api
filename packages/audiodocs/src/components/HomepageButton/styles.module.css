@@ -14,8 +14,9 @@
 }
 
 [data-theme='dark'] .homepageButton {
-  background-color: var(--swm-purple-light-100);
-  border-color: var(--swm-purple-light-100);
+  color: var(--swm-navy-dark-100);
+  background-color: var(--swm-red-dark-100);
+  border-color: var(--swm-red-dark-100);
 }
 
 a.homepageButtonLink:hover {
@@ -86,25 +87,29 @@ a.homepageButtonLink:hover {
 
 /* Button - red light styling */
 
-.buttonPurpleStyling {
+.buttonRedStyling {
   background-color: var(--swm-landing-button-red-light);
   color: var(--swm-off-white);
 }
 
-.buttonPurpleStyling svg {
+.buttonRedStyling svg {
   stroke: var(--swm-off-white);
 }
 
-.buttonPurpleStyling:hover {
+[data-theme='dark'] .buttonRedStyling svg {
+  stroke: var(--swm-navy-dark-100);
+}
+
+.buttonRedStyling:hover {
   background-color: transparent;
   color: var(--swm-landing-button-red-light);
 }
 
-.buttonPurpleStyling:hover svg {
+.buttonRedStyling:hover svg {
   stroke: var(--swm-landing-button-red-light);
 }
 
-.buttonPurpleBorderStyling {
+.buttonRedBorderStyling {
   border: 1px solid var(--swm-landing-button-red-light);
 }
 

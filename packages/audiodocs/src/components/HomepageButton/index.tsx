@@ -7,11 +7,11 @@ import clsx from 'clsx';
 export const ButtonStyling = {
   TO_PURPLE: styles.buttonTransparentStyling,
   TO_WHITE: styles.buttonWhiteStyling,
-  TO_TRANSPARENT: styles.buttonPurpleStyling,
+  TO_TRANSPARENT: styles.buttonRedStyling,
 };
 
 export const BorderStyling = {
-  PURPLE: styles.buttonPurpleBorderStyling,
+  PURPLE: styles.buttonRedBorderStyling,
 };
 
 const HomepageButton: React.FC<{
