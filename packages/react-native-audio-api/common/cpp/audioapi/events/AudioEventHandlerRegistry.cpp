@@ -92,8 +92,18 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         continue;
       }
 
-      auto eventObject = createEventObject(body);
-      handler->call(*runtime_, eventObject);
+      try {
+        auto eventObject = createEventObject(body);
+        handler->call(*runtime_, eventObject);
+      } catch (const std::exception &e) {
+        // re-throw the exception to be handled by the caller
+        // std::exception is safe to parse by the rn bridge
+        throw e;
+      } catch (...) {
+        printf(
+            "Unknown exception occurred while invoking handler for event: %s\n",
+            eventName.c_str());
+      }
     }
   });
 }
@@ -123,8 +133,26 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       return;
     }
 
-    auto eventObject = createEventObject(body);
-    handlerIt->second->call(*runtime_, eventObject);
+    // Depending on how the AudioBufferSourceNode is handled on the JS side,
+    // it sometimes might enter race condition where the ABSN is deleted on JS
+    // side, but it is still processed on the audio thread, leading to a crash
+    // when f.e. `positionChanged` event is triggered.
+
+    // In case of debugging this, please increment the hours spent counter
+
+    // Hours spent on this: 5
+    try {
+      auto eventObject = createEventObject(body);
+      handler->call(*runtime_, eventObject);
+    } catch (const std::exception &e) {
+      // re-throw the exception to be handled by the caller
+      // std::exception is safe to parse by the rn bridge
+      throw e;
+    } catch (...) {
+      printf(
+          "Unknown exception occurred while invoking handler for event: %s\n",
+          eventName.c_str());
+    }
   });
 }
 

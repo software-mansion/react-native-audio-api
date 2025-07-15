@@ -41,80 +41,91 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
-void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
-    uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedInterval_ = static_cast<int>(
-      context_->getSampleRate() * static_cast<float>(interval) / 1000);
-}
-
-int AudioBufferBaseSourceNode::getOnPositionChangedInterval() {
-  return onPositionChangedInterval_;
-}
-
-std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
-  return bufferLock_;
-}
-
-void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedCallbackId_ != 0 &&
-      onPositionChangedTime_ > onPositionChangedInterval_ &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
-    std::unordered_map<std::string, EventValue> body = {
-        {"value", getCurrentPosition()}};
-
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId_, body);
-
-    onPositionChangedTime_ = 0;
-  }
-
-  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
-}
-
-void AudioBufferBaseSourceNode::processWithPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-
-  auto time = context_->getCurrentTime();
-  auto playbackRate = std::clamp(
-      playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
-  auto detune = std::clamp(
-      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
-      -12.0f,
-      12.0f);
-
-  playbackRateBus_->zero();
-
-  auto framesNeededToStretch =
-      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
-
-  updatePlaybackInfo(
-      playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
-
-  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
+void AudioBufferBaseSourceNode::clearOnPositionChangedCallback() {
+  if (onPositionChangedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
     return;
   }
 
-  processWithoutInterpolation(
-      playbackRateBus_, startOffset, offsetLength, playbackRate);
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "positionChanged", onPositionChangedCallbackId_);
+  onPositionChangedCallbackId_ = 0;
 
-  stretch_->process(
-      playbackRateBus_.get()[0],
-      framesNeededToStretch,
-      processingBus.get()[0],
-      framesToProcess);
-
-  if (detune != 0.0f) {
-    stretch_->setTransposeSemitones(detune);
+  void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
+      uint64_t callbackId) {
+    onPositionChangedCallbackId_ = callbackId;
   }
-  sendOnPositionChangedEvent();
-}
+
+  void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
+    onPositionChangedInterval_ = static_cast<int>(
+        context_->getSampleRate() * static_cast<float>(interval) / 1000);
+  }
+
+  int AudioBufferBaseSourceNode::getOnPositionChangedInterval() {
+    return onPositionChangedInterval_;
+  }
+
+  std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
+    return bufferLock_;
+  }
+
+  void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
+    if (onPositionChangedCallbackId_ != 0 &&
+        onPositionChangedTime_ > onPositionChangedInterval_ &&
+        context_->audioEventHandlerRegistry_ != nullptr) {
+      std::unordered_map<std::string, EventValue> body = {
+          {"value", getCurrentPosition()}};
+
+      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+          "positionChanged", onPositionChangedCallbackId_, body);
+
+      onPositionChangedTime_ = 0;
+    }
+
+    onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
+  }
+
+  void AudioBufferBaseSourceNode::processWithPitchCorrection(
+      const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) {
+    size_t startOffset = 0;
+    size_t offsetLength = 0;
+
+    auto time = context_->getCurrentTime();
+    auto playbackRate = std::clamp(
+        playbackRateParam_->processKRateParam(framesToProcess, time),
+        0.0f,
+        3.0f);
+    auto detune = std::clamp(
+        detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
+        -12.0f,
+        12.0f);
+
+    playbackRateBus_->zero();
+
+    auto framesNeededToStretch =
+        static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+
+    updatePlaybackInfo(
+        playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
+
+    if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
+      processingBus->zero();
+      return;
+    }
+
+    processWithoutInterpolation(
+        playbackRateBus_, startOffset, offsetLength, playbackRate);
+
+    stretch_->process(
+        playbackRateBus_.get()[0],
+        framesNeededToStretch,
+        processingBus.get()[0],
+        framesToProcess);
+
+    if (detune != 0.0f) {
+      stretch_->setTransposeSemitones(detune);
+    }
+    sendOnPositionChangedEvent();
+  }
 
 } // namespace audioapi

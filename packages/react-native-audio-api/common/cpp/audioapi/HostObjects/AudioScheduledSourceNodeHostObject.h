@@ -21,6 +21,15 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
         JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
   }
 
+  ~AudioScheduledSourceNodeHostObject() {
+    auto audioScheduledSourceNode =
+        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+
+    // When JSI object is garbage collected (together with the eventual callback),
+    // underlying source node might still be active and try to call the non-existing callback.
+    audioScheduledSourceNode->clearOnEndedCallback();
+  }
+
   JSI_PROPERTY_SETTER(onEnded) {
     auto audioScheduleSourceNode =
             std::static_pointer_cast<AudioScheduledSourceNode>(node_);
