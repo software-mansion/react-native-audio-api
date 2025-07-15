@@ -143,7 +143,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     // Hours spent on this: 5
     try {
       auto eventObject = createEventObject(body);
-      handler->call(*runtime_, eventObject);
+      handlerIt->second->call(*runtime_, eventObject);
     } catch (const std::exception &e) {
       // re-throw the exception to be handled by the caller
       // std::exception is safe to parse by the rn bridge

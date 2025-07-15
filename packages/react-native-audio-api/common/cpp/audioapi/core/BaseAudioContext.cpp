@@ -127,6 +127,8 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
+#else
+  return nullptr;
 #endif // AUDIO_API_TEST_SUITE
 }
 
@@ -141,6 +143,8 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
+#else
+  return nullptr;
 #endif // AUDIO_API_TEST_SUITE
 }
 
