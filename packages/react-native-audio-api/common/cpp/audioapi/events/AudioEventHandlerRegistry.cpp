@@ -98,7 +98,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       } catch (const std::exception &e) {
         // re-throw the exception to be handled by the caller
         // std::exception is safe to parse by the rn bridge
-        throw e;
+        throw;
       } catch (...) {
         printf(
             "Unknown exception occurred while invoking handler for event: %s\n",
