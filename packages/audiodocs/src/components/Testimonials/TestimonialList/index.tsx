@@ -28,7 +28,7 @@ const items: Testimonial[] = [
   {
     author: 'Jakiś Gerwim',
     company: 'Companicus Anonymus',
-    body: `We have implemented react-native-audio-api in our app because we need a performant solution with millisecond precision timing when playing multiple tracks. The expert team of react-native-audio-api / Software Mansion (pick your favourite) are a delight to work with.`,
+    body: `We have implemented react-native-audio-api in our app because we need a performant solution with millisecond precision timing when playing multiple tracks. The expert team of Software Mansion are a delight to work with.`,
     image: {
       alt: 'Jakiś Gerwim',
       src: 'https://s.ciekawostkihistoryczne.pl/uploads/2017/12/Gall-Anonim-340x340.jpg',
