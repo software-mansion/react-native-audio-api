@@ -3,15 +3,14 @@ import { HireUsSection } from '@swmansion/t-rex-ui';
 
 import Layout from '@theme/Layout';
 import Hero from '@site/src/components/Hero';
+import { Spacer } from '@site/src/components/Layout';
+import LandingBlog from '@site/src/components/LandingBlog';
+import LandingExamples from '../components/LandingExamples';
 import Testimonials from '@site/src/components/Testimonials';
 import LandingFeatures from '@site/src/components/LandingFeatures';
 import FooterBackground from '@site/src/components/FooterBackground';
-// import HomepageStartScreen from '@site/src/components/Hero/StartScreen';
-// import LandingBackground from '@site/src/components/Hero/LandingBackground';
-import { Spacer } from '@site/src/components/Layout';
 
 import styles from './styles.module.css';
-// import LandingExamples from '@site/src/components/LandingExamples';
 
 function Home() {
   return (
@@ -26,7 +25,8 @@ function Home() {
 
       <div className={styles.container}>
         <LandingFeatures />
-        {/* <LandingExamples /> */}
+        <LandingBlog />
+        <LandingExamples />
       </div>
 
       <Spacer.V size="4rem" />

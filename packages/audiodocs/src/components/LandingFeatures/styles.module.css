@@ -16,17 +16,25 @@
   color: var(--swm-navy-light-100);
 }
 
+[data-theme="dark"] .subtitle {
+  color: var(--swm-off-white);
+}
+
+
 .features {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
-
 }
 
 .feature {
   width: calc(50% - 0.75rem);
   background: var(--swm-red-light-20);
   padding: 1.5rem;
+}
+
+[data-theme="dark"] .feature {
+  background: var(--swm-red-dark-140);
 }
 
 .featureIconContainer {
@@ -52,6 +60,10 @@
   line-height: 1.6;
   color: var(--swm-navy-light-100);
   margin: 0;
+}
+
+[data-theme="dark"] .featureDescription {
+  color: var(--swm-off-white);
 }
 
 @media (max-width: 420px) {

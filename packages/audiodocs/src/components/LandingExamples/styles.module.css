@@ -1,20 +1,10 @@
 
 .container {
-  flex-direction: row;
-  gap: 80px;
+
 }
 
-.containerInverted {
-  flex-direction: row-reverse;
-  gap: 80px;
-}
+.header {
 
-.content {
-  width: 50%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 20rem;
 }
 
 .title {
@@ -22,23 +12,28 @@
   font-size: 32px;
   line-height: 1.15;
   letter-spacing: 2%;
+  margin-bottom: 1.5rem;
 }
 
 .description {
   font-weight: 400;
   font-size: 20px;
   line-height: 1.6;
-  letter-spacing: 0;
-}
-
-.example {
-  display: flex;
-  width: 50%;
-  background-color: var(--swm-red-light-40);
-  border-radius: 16px;
-  padding: 1.5rem;
-  align-items: center;
-  justify-content: center;
+  letter-spacing: 0%;
+  max-width: 60%;
+  margin: 0;
+  color: var(--swm-navy-light-100);
 }
 
 
+@media (max-width: 420px) {
+  .title {
+    font-size: 24px;
+    letter-spacing: 1%;
+  }
+
+  .description {
+    max-width: 100%;
+    font-size: 18px;
+  }
+}

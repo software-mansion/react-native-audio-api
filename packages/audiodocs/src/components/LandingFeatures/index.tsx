@@ -4,6 +4,13 @@ import LandingFeature from "./LandingFeature";
 import styles from "./styles.module.css";
 import { Spacer } from "../Layout";
 
+import Clock from '@site/static/icons/clock-forward.svg';
+import Devices from '@site/static/icons/devices.svg';
+import Equalizer from '@site/static/icons/equalizer.svg';
+import SoundWave from '@site/static/icons/soundwave.svg';
+import Speaker from '@site/static/icons/speaker.svg';
+import WaveSawtooth from '@site/static/icons/wave-sawtooth.svg';
+
 interface LandingFeature {
   title: string;
   description: string;
@@ -14,32 +21,32 @@ const features: LandingFeature[] = [
   {
     title: "Shape sound exactly how you want",
     description: "Gain full control over audio signals, effects, and routing with a Web Audio API–like interface built for React Native.",
-    icon: <i className="icon-mobile" />,
+    icon: <SoundWave />,
   },
   {
     title: "Build once, run anywhere",
     description: "With React Native Audio API, you can offer consistent audio behavior across iOS, Android, and web without rewriting logic.",
-    icon: <i className="icon-audio" />,
+    icon: <Devices />,
   },
   {
     title: "Work with audio in real-time",
     description: "Introduce changes instantly and effortlessly. Adjust volume, filters, or playback with no background processing delays.",
-    icon: <i className="icon-code" />,
+    icon: <Clock />,
   },
   {
     title: "Design rich audio chains",
     description: "Use modular wave nodes to create everything from simple playback to advanced audio visualizations or custom audio rooms.",
-    icon: <i className="icon-mobile" />,
+    icon: <WaveSawtooth />,
   },
   {
     title: "Control multiple sounds simultaneously",
     description: "Easily manage multiple audio streams – play, stop, and synchronize with precision.",
-    icon: <i className="icon-audio" />,
+    icon: <Speaker />,
   },
   {
     title: "Visualize audio in a few steps",
     description: "Let users see what they hear with waveform animations and audio visualizers powered by analyzer nodes.",
-    icon: <i className="icon-code" />,
+    icon: <Equalizer />,
   },
 ];
 
