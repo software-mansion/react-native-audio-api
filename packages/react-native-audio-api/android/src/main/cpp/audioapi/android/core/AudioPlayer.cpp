@@ -1,16 +1,19 @@
+#include <android/log.h>
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <android/log.h>
 
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-    float sampleRate)
-    : renderAudio_(renderAudio), channelCount_(2), sampleRate_(sampleRate) {
+    float sampleRate,
+    int channelCount)
+    : renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount) {
   isInitialized_ = openAudioStream();
 }
 

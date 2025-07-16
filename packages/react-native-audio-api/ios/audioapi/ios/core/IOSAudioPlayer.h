@@ -17,7 +17,8 @@ class IOSAudioPlayer {
  public:
   IOSAudioPlayer(
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-      float sampleRate);
+      float sampleRate,
+      int channelCount);
   ~IOSAudioPlayer();
 
   void start();

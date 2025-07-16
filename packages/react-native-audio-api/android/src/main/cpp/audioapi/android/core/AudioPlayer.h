@@ -1,9 +1,9 @@
 #pragma once
 
 #include <oboe/Oboe.h>
+#include <cassert>
 #include <functional>
 #include <memory>
-#include <cassert>
 
 namespace audioapi {
 
@@ -16,7 +16,8 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
   AudioPlayer(
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-      float sampleRate);
+      float sampleRate,
+      int channelCount);
 
   void start();
   void stop();
@@ -29,7 +30,8 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
       void *audioData,
       int32_t numFrames) override;
 
-  void onErrorAfterClose(AudioStream* /* audioStream */, Result /* error */) override;
+  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */)
+      override;
 
  private:
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
