@@ -5,7 +5,6 @@ import {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
-  ProcessorMode,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
 
@@ -16,7 +15,6 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
 
   createOscillator(): IOscillatorNode;
-  createCustomProcessor(identifier: string): ICustomProcessorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -60,11 +58,6 @@ export interface IAudioNode {
 
   connect: (destination: IAudioNode | IAudioParam) => void;
   disconnect: (destination?: IAudioNode | IAudioParam) => void;
-}
-
-export interface ICustomProcessorNode extends IAudioNode {
-  readonly customProcessor: IAudioParam;
-  processorMode: ProcessorMode;
 }
 
 export interface IGainNode extends IAudioNode {

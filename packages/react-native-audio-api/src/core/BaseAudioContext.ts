@@ -6,7 +6,6 @@ import {
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
-import CustomProcessorNode from './CustomProcessorNode';
 import GainNode from './GainNode';
 import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -17,7 +16,7 @@ import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 
-export default class BaseAudioContext {
+export default class xBaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
   protected readonly context: IBaseAudioContext;
@@ -38,13 +37,6 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this, this.context.createOscillator());
-  }
-
-  createCustomProcessor(identifier: string): CustomProcessorNode {
-    return new CustomProcessorNode(
-      this,
-      this.context.createCustomProcessor(identifier)
-    );
   }
 
   createGain(): GainNode {

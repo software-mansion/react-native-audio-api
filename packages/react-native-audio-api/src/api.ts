@@ -52,7 +52,6 @@ export { default as AudioParam } from './core/AudioParam';
 export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
 export { default as BaseAudioContext } from './core/BaseAudioContext';
 export { default as BiquadFilterNode } from './core/BiquadFilterNode';
-export { default as CustomProcessorNode } from './core/CustomProcessorNode';
 export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
