@@ -16,7 +16,7 @@ import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 
-export default class xBaseAudioContext {
+export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
   protected readonly context: IBaseAudioContext;
