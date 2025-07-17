@@ -41,6 +41,17 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
+void AudioBufferBaseSourceNode::clearOnPositionChangedCallback() {
+  if (onPositionChangedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "positionChanged", onPositionChangedCallbackId_);
+  onPositionChangedCallbackId_ = 0;
+}
+
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
     uint64_t callbackId) {
   onPositionChangedCallbackId_ = callbackId;

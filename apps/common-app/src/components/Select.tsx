@@ -5,7 +5,9 @@ import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import withSeparators from '../utils/withSeparators';
 import { colors } from '../styles';
 import Spacer from './Spacer';
-import Icon from './Icon';
+import MenuIcon from './icons/MenuIcon';
+import CheckCircleIcon from './icons/CheckedCircleIcon';
+
 
 interface SelectProps<T extends string> {
   value: T;
@@ -30,11 +32,7 @@ function Select<T extends string>(props: SelectProps<T>) {
       }}
     >
       <View style={styles.optionRow}>
-        <Icon
-          size={24}
-          color={colors.white}
-          name={option === value ? 'check-circle' : 'circle'}
-        />
+        <CheckCircleIcon selected={option === value} color={colors.white} />
         <Spacer.Horizontal size={12} />
         <Text style={styles.selectText}>{option}</Text>
       </View>
@@ -46,7 +44,7 @@ function Select<T extends string>(props: SelectProps<T>) {
       <Pressable onPress={() => setModalOpen(true)}>
         <View style={styles.selectBox}>
           <Text style={styles.selectText}>{value}</Text>
-          <Icon size={24} name="menu-hamburger" color={colors.white} />
+          <MenuIcon size={24} color={colors.white} />
         </View>
       </Pressable>
       <Modal visible={isModalOpen} animationType="fade" transparent>

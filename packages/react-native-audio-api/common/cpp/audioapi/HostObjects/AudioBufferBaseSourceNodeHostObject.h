@@ -26,6 +26,15 @@ class AudioBufferBaseSourceNodeHostObject
                 JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
     }
 
+    ~AudioBufferBaseSourceNodeHostObject() {
+        auto sourceNode =
+                std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+
+      // When JSI object is garbage collected (together with the eventual callback),
+      // underlying source node might still be active and try to call the non-existing callback.
+      sourceNode->clearOnPositionChangedCallback();
+    }
+
     JSI_PROPERTY_GETTER(detune) {
         auto sourceNode =
                 std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);

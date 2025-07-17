@@ -7,7 +7,7 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
-#include <android/log.h>
+// #include <android/log.h>
 
 namespace audioapi {
 
@@ -18,12 +18,11 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for file: %s",
-        path.c_str());
-
+    // __android_log_print(
+    //   ANDROID_LOG_ERROR,
+    //   "AudioDecoder",
+    //   "Failed to initialize decoder for file: %s",
+    //   path.c_str());
     ma_decoder_uninit(&decoder);
 
     return nullptr;
@@ -39,7 +38,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
       &decoder, buffer.data(), totalFrameCount, &framesDecoded);
 
   if (framesDecoded == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
+    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
 
     ma_decoder_uninit(&decoder);
     return nullptr;
@@ -70,11 +69,10 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
   ma_result result = ma_decoder_init_memory(data, size, &config, &decoder);
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for memory block");
-
+    // __android_log_print(
+    //   ANDROID_LOG_ERROR,
+    //   "AudioDecoder",
+    //   "Failed to initialize decoder for memory block");
     ma_decoder_uninit(&decoder);
 
     return nullptr;
@@ -90,7 +88,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
       &decoder, buffer.data(), totalFrameCount, &framesDecoded);
 
   if (framesDecoded == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
+    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
 
     ma_decoder_uninit(&decoder);
     return nullptr;

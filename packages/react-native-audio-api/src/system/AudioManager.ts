@@ -1,4 +1,9 @@
-import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
+import {
+  SessionOptions,
+  LockScreenInfo,
+  PermissionStatus,
+  AudioDevicesInfo,
+} from './types';
 import {
   SystemEventName,
   SystemEventCallback,
@@ -73,6 +78,10 @@ class AudioManager {
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
     return NativeAudioAPIModule!.checkRecordingPermissions();
+  }
+
+  async getDevicesInfo(): Promise<AudioDevicesInfo> {
+    return NativeAudioAPIModule!.getDevicesInfo();
   }
 }
 

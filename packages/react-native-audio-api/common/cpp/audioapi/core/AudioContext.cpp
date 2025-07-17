@@ -17,10 +17,11 @@ AudioContext::AudioContext(
         &audioEventHandlerRegistry)
     : BaseAudioContext(audioEventHandlerRegistry) {
 #ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(this->renderAudio(), sampleRate);
+  audioPlayer_ = std::make_shared<AudioPlayer>(
+      this->renderAudio(), sampleRate, destination_->getChannelCount());
 #else
-  audioPlayer_ =
-      std::make_shared<IOSAudioPlayer>(this->renderAudio(), sampleRate);
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
+      this->renderAudio(), sampleRate, destination_->getChannelCount());
 #endif
 
   sampleRate_ = sampleRate;

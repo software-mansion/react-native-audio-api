@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
@@ -17,6 +18,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
@@ -186,4 +188,48 @@ object MediaSessionManager {
     mChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
     notificationManager.createNotificationChannel(mChannel)
   }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun getDevicesInfo(): ReadableMap {
+    val availableInputs = Arguments.createArray()
+    val availableOutputs = Arguments.createArray()
+
+    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+      val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("name", inputDevice.productName.toString())
+      deviceInfo.putString("type", parseDeviceType(inputDevice))
+
+      availableInputs.pushMap(deviceInfo)
+    }
+
+    for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+      val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("name", outputDevice.productName.toString())
+      deviceInfo.putString("type", parseDeviceType(outputDevice))
+
+      availableOutputs.pushMap(deviceInfo)
+    }
+
+    val devicesInfo = Arguments.createMap()
+
+    devicesInfo.putArray("currentInputs", Arguments.createArray())
+    devicesInfo.putArray("currentOutputs", Arguments.createArray())
+    devicesInfo.putArray("availableInputs", availableInputs)
+    devicesInfo.putArray("availableOutputs", availableOutputs)
+
+    return devicesInfo
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun parseDeviceType(device: AudioDeviceInfo): String =
+    when (device.type) {
+      AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
+      AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Built-in Earpiece"
+      AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Built-in Speaker"
+      AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
+      AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
+      AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
+      AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      else -> "Other (${device.type})"
+    }
 }

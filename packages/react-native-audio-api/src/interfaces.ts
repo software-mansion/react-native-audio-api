@@ -99,7 +99,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onended: string;
+  onEnded: string;
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
@@ -128,10 +128,7 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   loopEnd: number;
 
   start: (when?: number, offset?: number, duration?: number) => void;
-  setBuffer: (
-    audioBufferSourceNode: IAudioBufferSourceNode,
-    audioBuffer: IAudioBuffer | null
-  ) => void;
+  setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 
 export interface IAudioBufferQueueSourceNode

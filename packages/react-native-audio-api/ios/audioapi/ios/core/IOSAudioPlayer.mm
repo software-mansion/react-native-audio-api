@@ -8,8 +8,11 @@
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio, float sampleRate)
-    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0), isRunning_(false)
+IOSAudioPlayer::IOSAudioPlayer(
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    float sampleRate,
+    int channelCount)
+    : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;

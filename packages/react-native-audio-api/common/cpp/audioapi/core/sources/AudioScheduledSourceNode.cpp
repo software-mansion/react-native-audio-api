@@ -54,6 +54,17 @@ bool AudioScheduledSourceNode::isStopScheduled() {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
 }
 
+void AudioScheduledSourceNode::clearOnEndedCallback() {
+  if (onEndedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "ended", onEndedCallbackId_);
+  onEndedCallbackId_ = 0;
+}
+
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
   onEndedCallbackId_ = callbackId;
 }
