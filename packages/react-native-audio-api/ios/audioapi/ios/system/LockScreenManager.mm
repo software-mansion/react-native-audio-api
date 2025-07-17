@@ -189,10 +189,10 @@
   } else if ([name isEqual:@"remotePreviousTrack"]) {
     [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
   } else if ([name isEqual:@"remoteSkipForward"]) {
-    remoteCenter.skipForwardCommand.preferredIntervals = @[@15];
+    remoteCenter.skipForwardCommand.preferredIntervals = @[ @15 ];
     [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
   } else if ([name isEqual:@"remoteSkipBackward"]) {
-    remoteCenter.skipBackwardCommand.preferredIntervals = @[@15];
+    remoteCenter.skipBackwardCommand.preferredIntervals = @[ @15 ];
     [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
   } else if ([name isEqual:@"remoteSeekForward"]) {
     [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
