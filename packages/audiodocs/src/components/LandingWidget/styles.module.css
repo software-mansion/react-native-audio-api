@@ -1,0 +1,70 @@
+
+.container {
+  position: relative;
+}
+
+.toolbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toolbarButtonsSingle {
+  background-color: var(--swm-red-light-20);
+}
+
+.toolbarButtonsGroup {
+  background-color: var(--swm-red-light-20);
+}
+
+.muteButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  height: 56px;
+  width: 56px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.muteButton svg {
+  width: 28px;
+  height: 28px;
+}
+
+.toolbarButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0%;
+  color: var(--swm-navy-light-100);
+  height: 56px;
+  padding: 0 8px;
+}
+
+.toolbarButton:first-child {
+  padding-left: 16px;
+}
+
+.toolbarButton:last-child {
+  padding-right: 16px;
+}
+
+.spectrogramContainer {
+
+}
+
+.spectrogramCanvasWrapper {
+
+}
+
+.spectrogramCanvas {
+  width: 100%;
+}

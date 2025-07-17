@@ -17,7 +17,7 @@ const examples: Example[] = [
   },
   {
     title: "Build once, run anywhere",
-    description: "With React Native Audio API, you can offer consistent audio behavior across iOS, Android, and web without rewriting logic.",
+    description: "With React Native Audio API, you can offer consistent audio behavior across iOS, Android and Web without rewriting logic.",
     Component: () => <div />,
   },
 ];

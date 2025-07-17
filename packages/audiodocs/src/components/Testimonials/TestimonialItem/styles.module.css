@@ -41,7 +41,7 @@
   transform: translate(10%, -20%);
 }
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
   .quoteIcon {
     scale: 0.8;
     transform: translate(30%, -40%);
@@ -109,7 +109,7 @@
   color: var(--swm-navy-light-20);
 }
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
   .featureTitle {
     font-size: 20px;
   }

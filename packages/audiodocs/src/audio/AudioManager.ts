@@ -80,15 +80,20 @@ class AudioManager {
     return tNow;
   }
 
-  stopSound(uniqueId: string) {
-    const source = this.activeSounds.get(uniqueId);
+  async stopSound(uniqueId: string) {
+    return new Promise<void>((resolve) => {
+      const source = this.activeSounds.get(uniqueId);
+      source.onended = () => {
+        resolve();
+      };
 
-    if (source) {
-      source.stop();
-      this.activeSounds.delete(uniqueId);
-    } else {
-      console.warn(`No sound found with ID: ${uniqueId}`);
-    }
+      if (source) {
+        source.stop();
+        this.activeSounds.delete(uniqueId);
+      } else {
+        console.warn(`No sound found with ID: ${uniqueId}`);
+      }
+    });
   }
 
   async loadSound(url: string): Promise<BufferMetadata> {
@@ -108,6 +113,17 @@ class AudioManager {
 
   setVolume(volume: number) {
     this.output.gain.value = volume;
+  }
+
+  clear() {
+    this.loadedBuffers.clear();
+
+    this.activeSounds.forEach((source) => {
+      source.stop();
+    });
+
+    this.activeSounds.clear();
+    this.isPlaying = false;
   }
 }
 

@@ -30,7 +30,7 @@
 }
 
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
   .title {
     font-size: 24px;
     letter-spacing: 1%;
@@ -53,7 +53,7 @@
   flex-direction: row-reverse;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
    .exampleRow {
     flex-direction: column;
     gap: 24px;

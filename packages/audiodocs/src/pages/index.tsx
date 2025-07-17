@@ -1,18 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HireUsSection } from '@swmansion/t-rex-ui';
 
+// @ts-expect-error
 import Layout from '@theme/Layout';
+
 import Hero from '@site/src/components/Hero';
 import { Spacer } from '@site/src/components/Layout';
 import LandingBlog from '@site/src/components/LandingBlog';
-import LandingExamples from '../components/LandingExamples';
 import Testimonials from '@site/src/components/Testimonials';
+import LandingWidget from '@site/src/components/LandingWidget';
 import LandingFeatures from '@site/src/components/LandingFeatures';
+import LandingExamples from '@site/src/components/LandingExamples';
 import FooterBackground from '@site/src/components/FooterBackground';
 
 import styles from './styles.module.css';
+import AudioManager from '../audio/AudioManager';
 
 function Home() {
+
+  useEffect(() => {
+    return () => {
+      AudioManager.clear();
+    }
+  }, [])
   return (
     <Layout
       title={`React Native Audio API`}
@@ -21,9 +31,18 @@ function Home() {
         <Hero />
       </div>
 
-      <Spacer.V size="4rem" />
+      <Spacer.V size="120px" />
 
       <div className={styles.container}>
+        <LandingWidget />
+      </div>
+
+      <Spacer.V size="120px" />
+
+      <div className={styles.container}>
+      {/* <StartScreen />
+      <LandingExamples2 /> */}
+
         <LandingFeatures />
         <LandingBlog />
         <LandingExamples />

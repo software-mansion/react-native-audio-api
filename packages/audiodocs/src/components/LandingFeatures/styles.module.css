@@ -66,7 +66,7 @@
   color: var(--swm-off-white);
 }
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
   .subtitle {
     font-size: 18px;
   }
