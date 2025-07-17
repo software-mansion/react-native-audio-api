@@ -8,7 +8,6 @@
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
-#include <audioapi/HostObjects/CustomProcessorNodeHostObject.h>
 #include <audioapi/HostObjects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
@@ -41,7 +40,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
     addFunctions(
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createCustomProcessor),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -54,6 +52,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodePCMAudioDataInBase64));
   }
+
+  ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER(destination) {
     auto destination = std::make_shared<AudioDestinationNodeHostObject>(
@@ -78,13 +78,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto oscillatorHostObject =
         std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
-  }
-
-  JSI_HOST_FUNCTION(createCustomProcessor) {
-    auto identifier = args[0].getString(runtime).utf8(runtime);
-    auto customProcessor = context_->createCustomProcessor(identifier);
-    auto customProcessorHostObject = std::make_shared<CustomProcessorNodeHostObject>(customProcessor);
-    return jsi::Object::createFromHostObject(runtime, customProcessorHostObject);
   }
 
   JSI_HOST_FUNCTION(createGain) {
@@ -243,9 +236,9 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
 
       return promise;
   }
+  std::shared_ptr<BaseAudioContext> context_;
 
  protected:
-  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 };
