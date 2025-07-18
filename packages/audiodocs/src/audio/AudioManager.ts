@@ -85,8 +85,15 @@ class AudioManager {
   async stopSound(uniqueId: string) {
     return new Promise<void>((resolve) => {
       const source = this.activeSounds.get(uniqueId);
+
+      if (!source) {
+        resolve();
+        return;
+      }
+
       source.onended = () => {
         resolve();
+        this.isPlaying = false;
       };
 
       if (source) {

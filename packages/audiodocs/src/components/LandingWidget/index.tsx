@@ -87,6 +87,7 @@ const LandingWidget: React.FC = () => {
     if (selectCount >= 10) {
       if (!isMuted) {
         setIsMuted(true);
+
         if (selectedAudio === 'guitar') {
           AudioManager.disconnectMicrophone();
         } else {
@@ -95,7 +96,26 @@ const LandingWidget: React.FC = () => {
             AudioManager.stopSound(currentSound.id);
           }
         }
+      } else {
+        setIsMuted(false);
+
+        if (selectedAudio === 'guitar') {
+          onSelectGuitar();
+          return;
+        }
+
+        const currentSound = availableSounds[selectedAudio];
+
+        if (!currentSound) {
+          return;
+        }
+
+        AudioManager.playSound(currentSound.id, 0, () => {
+          setIsMuted(true);
+        });
+        return;
       }
+
       return;
     }
 
@@ -138,20 +158,6 @@ const LandingWidget: React.FC = () => {
     setSelectedAudio(audioType);
 
     if (isMuted) {
-      return;
-    }
-
-    // If we've reached 10 selections, mute and go to undefined state
-    if (selectCount + 1 >= 10) {
-      setIsMuted(true);
-      if (selectedAudio === 'guitar') {
-        AudioManager.disconnectMicrophone();
-      } else {
-        const currentSound = availableSounds[selectedAudio];
-        if (currentSound && currentSound.id) {
-          await AudioManager.stopSound(currentSound.id);
-        }
-      }
       return;
     }
 
@@ -247,21 +253,11 @@ const LandingWidget: React.FC = () => {
 
       // Get microphone access
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(device => device.kind === 'audioinput');
-
-      const usbDevice = audioInputs.find(device =>
-        device.label && (
-          device.label.toLowerCase().includes('usb') ||
-          device.label.toLowerCase().includes('interface') ||
-          device.label.toLowerCase().includes('audio') ||
-          device.label.toLowerCase().includes('guitar') ||
-          device.label.toLowerCase().includes('amp')
-        )
-      );
+      const audioInputs = devices.find(device => device.kind === 'audioinput');
 
       const constraints = {
         audio: {
-          deviceId: usbDevice ? { exact: usbDevice.deviceId } : undefined,
+          deviceId: audioInputs ? { exact: audioInputs.deviceId } : undefined,
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,

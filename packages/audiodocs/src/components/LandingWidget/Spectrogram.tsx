@@ -63,7 +63,7 @@ const Spectrogram: React.FC<SpectrogramProps> = ({ selectedAudio }) => {
 
       if (!AudioManager.isPlaying) {
         // Animate slow sine wave
-        slowPhase += 0.00025;
+        slowPhase += 0.00040;
         slowBuckets = slowBuckets.map((_, i) => {
           // Sine wave, slow phase
           return 2 * (60 + 40 * Math.sin(slowPhase + i * 0.05) * slowBucketsSeeds[i]);
