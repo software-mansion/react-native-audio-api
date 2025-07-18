@@ -1,4 +1,5 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useColorMode } from '@docusaurus/theme-common';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 import AudioManager from '@site/src/audio/AudioManager';
 import { downSampleLog } from '@site/src/audio/utils';
@@ -15,6 +16,7 @@ const Spectrogram: React.FC<SpectrogramProps> = ({ selectedAudio }) => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
+  const { colorMode} = useColorMode();
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -80,8 +82,15 @@ const Spectrogram: React.FC<SpectrogramProps> = ({ selectedAudio }) => {
 
         // Create gradient for each bar
         const gradient = ctx.createLinearGradient(0, offset + height, 0, offset);
-        gradient.addColorStop(0, '#FF6259');
-        gradient.addColorStop(0.85, '#FFD2D7');
+
+        if (colorMode === 'dark') {
+
+          gradient.addColorStop(0, '#FF6259');
+          gradient.addColorStop(0.85, '#232736');
+        } else {
+          gradient.addColorStop(0, '#FF6259');
+          gradient.addColorStop(0.85, '#FFD2D7');
+        }
 
         ctx.fillStyle = gradient;
         ctx.fillRect(x, offset, barWidth, height);
@@ -89,7 +98,7 @@ const Spectrogram: React.FC<SpectrogramProps> = ({ selectedAudio }) => {
     }
 
     draw();
-  }, [width, selectedAudio]);
+  }, [width, selectedAudio, colorMode]);
 
   useLayoutEffect(() => {
     const updateWidth = () => {

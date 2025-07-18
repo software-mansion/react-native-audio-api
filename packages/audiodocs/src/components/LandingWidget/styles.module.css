@@ -27,6 +27,14 @@
   background-color: var(--swm-red-light-20);
 }
 
+[data-theme='dark'] .toolbarButtonsSingle {
+  background-color: var(--swm-red-dark-140);
+}
+
+[data-theme='dark'] .toolbarButtonsGroup {
+  background-color: var(--swm-red-dark-140);
+}
+
 .muteButton {
   cursor: pointer;
   background: none;
@@ -55,6 +63,11 @@
   color: var(--swm-navy-light-100);
   height: 56px;
   padding: 0 8px;
+}
+
+
+[data-theme='dark'] .toolbarButton {
+  color: var(--swm-off-white);
 }
 
 .toolbarButton:first-child {

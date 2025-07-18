@@ -1,3 +1,4 @@
+import { useColorMode } from '@docusaurus/theme-common';
 import React, { useState, useEffect, useCallback } from "react";
 
 import { Spacer } from '@site/src/components/Layout';
@@ -18,6 +19,8 @@ const sounds: Record<AudioType, string | null> = {
 };
 
 const LandingWidget: React.FC = () => {
+  const { colorMode } = useColorMode();
+
   const [isMuted, setIsMuted] = useState(true);
   const [selectCount, setSelectCount] = useState(0);
   const [selectedAudio, setSelectedAudio] = useState<AudioType>('music');
@@ -327,7 +330,7 @@ const LandingWidget: React.FC = () => {
       <div className={styles.toolbar}>
         <div className={styles.toolbarButtonsSingle}>
           <button className={styles.muteButton} onClick={onToggleSpeaker}>
-            {isMuted ? <SpeakerCrossed /> : <Speaker />}
+            {isMuted ? <SpeakerCrossed color={colorMode === 'dark' ? 'var(--swm-red-dark-100)' : 'var(--swm-red-light-100)'} /> : <Speaker color={colorMode === 'dark' ? 'var(--swm-blue-dark-100)' : 'var(--swm-blue-light-100)'} />}
           </button>
         </div>
         <Spacer.H size="12px" />
