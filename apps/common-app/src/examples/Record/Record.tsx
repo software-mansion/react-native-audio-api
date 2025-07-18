@@ -1,19 +1,18 @@
-import React, { useRef, FC, useEffect } from 'react';
+import React, { useRef, FC, useEffect, act } from 'react';
 import {
-  AudioBuffer,
   AudioContext,
   AudioManager,
   AudioRecorder,
-  AudioBufferSourceNode,
+  RecorderAdapterNode
 } from 'react-native-audio-api';
 
 import { Container, Button } from '../../components';
 
 const Record: FC = () => {
   const recorderRef = useRef<AudioRecorder | null>(null);
-  const audioBuffersRef = useRef<AudioBuffer[]>([]);
-  const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const aCtxRef = useRef<AudioContext | null>(null);
+  const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
+
 
   useEffect(() => {
     AudioManager.setAudioSessionOptions({
@@ -22,78 +21,61 @@ const Record: FC = () => {
       iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
     });
 
-    recorderRef.current = new AudioRecorder({
-      sampleRate: 16000,
-      bufferLengthInSamples: 16000,
-    });
+    if (!aCtxRef.current) {
+      aCtxRef.current = new AudioContext({ sampleRate: 16000 });
+    }
+    if (!recorderRef.current) {
+      recorderRef.current = new AudioRecorder({
+        sampleRate: 16000,
+        bufferLengthInSamples: 16000,
+      });
+    }
+    
+    /// Create the recorder adapter and connect it to the audio context
+    if (!recorderAdapterRef.current) {
+      recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
+    }
+    recorderAdapterRef.current.setRecorder(recorderRef.current);
+    recorderAdapterRef.current.connect(aCtxRef.current.destination);
+    console.log('Recorder adapter connected to audio context');
+    
+    if (aCtxRef.current.state === 'suspended') {
+      console.log('Resuming audio context');
+      aCtxRef.current.resume();
+    }
+
   }, []);
 
-  const onReplay = () => {
-    const aCtx = new AudioContext({ sampleRate: 16000 });
-    aCtxRef.current = aCtx;
 
-    if (aCtx.state === 'suspended') {
-      aCtx.resume();
-    }
-
-    const tNow = aCtx.currentTime;
-    let nextStartAt = tNow + 1;
-    const buffers = audioBuffersRef.current;
-
-    console.log(tNow, nextStartAt, buffers.length);
-
-    for (let i = 0; i < buffers.length; i++) {
-      const source = aCtx.createBufferSource();
-      source.buffer = buffers[i];
-
-      source.connect(aCtx.destination);
-      source.onended = () => {
-        console.log('Audio buffer source ended');
-      };
-      sourcesRef.current.push(source);
-
-      source.start(nextStartAt);
-      nextStartAt += buffers[i].duration;
-    }
-
-    setTimeout(
-      () => {
-        console.log('clearing data');
-        audioBuffersRef.current = [];
-        sourcesRef.current = [];
-      },
-      (nextStartAt - tNow) * 1000
-    );
-  };
-
-  const onRecord = () => {
-    if (!recorderRef.current) {
+  const start = () => {
+    if (!aCtxRef.current || !recorderRef.current) {
+      console.error('AudioContext or AudioRecorder is not initialized');
       return;
     }
-
-    recorderRef.current.onAudioReady((event) => {
-      const { buffer, numFrames, when } = event;
-
-      console.log(
-        'Audio recorder buffer ready:',
-        buffer.duration,
-        numFrames,
-        when
-      );
-      audioBuffersRef.current.push(buffer);
-    });
-
+    
     recorderRef.current.start();
+    console.log('Recording started'); 
+    console.log('Audio context state:', aCtxRef.current.state);
+    if (aCtxRef.current.state === 'suspended') {
+      console.log('Resuming audio context');
+      aCtxRef.current.resume();
+    }
+  }
 
-    setTimeout(() => {
-      recorderRef.current?.stop();
-    }, 3000);
-  };
+  /// This stops only the recording, not the audio context
+  const stopRecorder = () => {
+    if (!recorderRef.current) {
+      console.error('AudioRecorder is not initialized');
+      return;
+    }
+    recorderRef.current.stop();
+    console.log('Recording stopped');
+  }
 
   return (
     <Container centered>
-      <Button title="Record" onPress={onRecord} />
-      <Button title="Replay" onPress={onReplay} />
+      <Button title="Start Recording" onPress={start} />
+      <Button title="Stop Recording" onPress={stopRecorder} />
     </Container>
   );
 };

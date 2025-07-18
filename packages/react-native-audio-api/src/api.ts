@@ -40,6 +40,7 @@ if (
   NativeAudioAPIModule.install();
 }
 
+export { default as RecorderAdapterNode } from './core/RecorderAdapterNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioBufferQueueSourceNode } from './core/AudioBufferQueueSourceNode';

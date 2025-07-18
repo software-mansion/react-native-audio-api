@@ -5,7 +5,8 @@ import { OnAudioReadyEventType } from '../events/types';
 import { AudioEventEmitter } from '../events';
 
 export default class AudioRecorder {
-  protected readonly recorder: IAudioRecorder;
+  public readonly recorder: IAudioRecorder;
+
   private readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );

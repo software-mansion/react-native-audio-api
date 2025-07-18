@@ -16,6 +16,7 @@ import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import RecorderAdapterNode from './RecorderAdapterNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -34,6 +35,10 @@ export default class BaseAudioContext {
 
   public get state(): ContextState {
     return this.context.state;
+  }
+
+  createRecorderAdapter(): RecorderAdapterNode {
+    return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
   }
 
   createOscillator(): OscillatorNode {

@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 namespace audioapi {
 
@@ -66,6 +67,7 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
   if (isRunning_.load()) {
     auto *inputChannel = static_cast<float *>(audioData);
     circularBuffer_->push_back(inputChannel, numFrames);
+    adapterBuffer_->write(inputChannel, numFrames);
   }
 
   while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {

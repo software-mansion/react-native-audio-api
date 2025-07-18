@@ -15,6 +15,7 @@ export interface IBaseAudioContext {
   readonly sampleRate: number;
   readonly currentTime: number;
 
+  createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(): IOscillatorNode;
   createCustomProcessor(identifier: string): ICustomProcessorNode;
   createGain(): IGainNode;
@@ -212,4 +213,8 @@ export interface IAudioEventEmitter {
     name: Name,
     subscriptionId: string
   ): void;
+}
+
+export interface IRecorderAdapterNode extends IAudioNode {
+  setRecorder: (recorder: IAudioRecorder) => void;
 }
