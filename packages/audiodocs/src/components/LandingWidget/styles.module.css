@@ -11,6 +11,14 @@
   align-items: center;
 }
 
+.hiddenToolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+}
+
 .toolbarButtonsSingle {
   background-color: var(--swm-red-light-20);
 }

@@ -10,7 +10,7 @@ import LandingBlog from '@site/src/components/LandingBlog';
 import Testimonials from '@site/src/components/Testimonials';
 import LandingWidget from '@site/src/components/LandingWidget';
 import LandingFeatures from '@site/src/components/LandingFeatures';
-import LandingExamples from '@site/src/components/LandingExamples';
+// import LandingExamples from '@site/src/components/LandingExamples';
 import FooterBackground from '@site/src/components/FooterBackground';
 
 import styles from './styles.module.css';
@@ -45,7 +45,7 @@ function Home() {
 
         <LandingFeatures />
         <LandingBlog />
-        <LandingExamples />
+        {/* <LandingExamples /> */}
       </div>
 
       <Spacer.V size="4rem" />

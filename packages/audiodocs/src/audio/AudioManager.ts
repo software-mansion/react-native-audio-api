@@ -35,6 +35,8 @@ class AudioManager {
   isPlaying: boolean;
   loadedBuffers: Map<string, AudioBuffer> = new Map();
   activeSounds: Map<string, AudioBufferSourceNode> = new Map();
+  microphoneSource: MediaStreamAudioSourceNode | null = null;
+  microphoneEffects: AudioNode[] = [];
 
   constructor() {
     this.isPlaying = false;
@@ -115,6 +117,46 @@ class AudioManager {
     this.output.gain.value = volume;
   }
 
+  connectMicrophone(stream: MediaStream, effectsMap?: Map<string, AudioNode>) {
+    // Disconnect any existing microphone
+    this.disconnectMicrophone();
+
+    // Create microphone source
+    this.microphoneSource = this.aCtx.createMediaStreamSource(stream);
+
+    let currentNode: AudioNode = this.microphoneSource;
+
+    // Apply effects if provided
+    if (effectsMap) {
+      const effects = Array.from(effectsMap.values());
+      this.microphoneEffects = effects;
+
+      effects.forEach(effect => {
+        currentNode.connect(effect);
+        currentNode = effect;
+      });
+    }
+
+    // Connect to output
+    currentNode.connect(this.output);
+    this.isPlaying = true;
+  }
+
+  disconnectMicrophone() {
+    if (this.microphoneSource) {
+      this.microphoneSource.disconnect();
+      this.microphoneSource = null;
+    }
+
+    // Disconnect effects
+    this.microphoneEffects.forEach(effect => {
+      effect.disconnect();
+    });
+    this.microphoneEffects = [];
+
+    this.isPlaying = false;
+  }
+
   clear() {
     this.loadedBuffers.clear();
 
@@ -123,6 +165,7 @@ class AudioManager {
     });
 
     this.activeSounds.clear();
+    this.disconnectMicrophone();
     this.isPlaying = false;
   }
 }
