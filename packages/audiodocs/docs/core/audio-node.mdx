@@ -21,19 +21,19 @@ We usually represent the channels with the standard abbreviations detailed in th
 #### Mixing
 
 When node has more then one input or number of inputs channels differs from output up-mixing or down-mixing must be conducted.
-There are three properties involved in mixing process: `channelCount`, [`ChannelCountMode`](/types/channel-count-mode), [`ChannelInterpretation`](/types/channel-interpretation).
+There are three properties involved in mixing process: `channelCount`, [`ChannelCountMode`](/docs/types/channel-count-mode), [`ChannelInterpretation`](/docs/types/channel-interpretation).
 Based on them we can obtain output's number of channels and mixing strategy.
 
 ## Properties
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `context` | [`BaseAudioContext`](/core/base-audio-context) | Associated context. | <ReadOnly /> |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | Associated context. | <ReadOnly /> |
 | `numberOfInputs` | `number` | Integer value representing the number of input connections for the node. | <ReadOnly /> |
 | `numberOfOutputs` | `number` | Integer value representing the number of output connections for the node. | <ReadOnly /> |
 | `channelCount` | `number` | Integer used to determine how many channels are used when up-mixing or down-mixing node's inputs. | <ReadOnly /> |
-| `channelCountMode` | [`ChannelCountMode`](/types/channel-count-mode) | Enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. | <ReadOnly /> |
-| `channelInterpretation` | [`ChannelInterpretation`](/types/channel-interpretation) | Enumerated value that specifies how input channels are mapped to output channels when number of them is different. | <ReadOnly /> |
+| `channelCountMode` | [`ChannelCountMode`](/docs/types/channel-count-mode) | Enumerated value that specifies the method by which channels are mixed between the node's inputs and outputs. | <ReadOnly /> |
+| `channelInterpretation` | [`ChannelInterpretation`](/docs/types/channel-interpretation) | Enumerated value that specifies how input channels are mapped to output channels when number of them is different. | <ReadOnly /> |
 
 ## Examples
 
@@ -89,7 +89,7 @@ The above method lets you connect one of the node's outputs to a destination.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` | [`AudioNode`](/core/audio-node) or [`AudioParam`](/core/audio-param) | `AudioNode` or `AudioParam` to which to connect. |
+| `destination` | [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param) | `AudioNode` or `AudioParam` to which to connect. |
 
 #### Errors:
 
@@ -105,7 +105,7 @@ The above method lets you disconnect one or more nodes from the node.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `destination` <Optional /> | [`AudioNode`](/core/audio-node) or [`AudioParam`](/core/audio-param) | `AudioNode` or `AudioParam` from which to disconnect. |
+| `destination` <Optional /> | [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param) | `AudioNode` or `AudioParam` from which to disconnect. |
 
 If no arguments provided node disconnects from all outgoing connections.
 

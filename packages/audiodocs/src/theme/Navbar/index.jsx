@@ -18,6 +18,10 @@ export default function NavbarWrapper(props) {
       heroImages={heroImages}
       titleImages={titleImages}
       {...props}
-    />
+    >
+      <button type='button' className='navbar__toggle' aria-label='Toggle navigation'>
+        <span className='navbar__toggle-icon' />
+      </button>
+    </Navbar>
   );
 }

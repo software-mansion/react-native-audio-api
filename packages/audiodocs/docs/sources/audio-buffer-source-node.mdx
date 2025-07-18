@@ -7,19 +7,19 @@ import { Optional, Overridden } from '@site/src/components/Badges';
 
 # AudioBufferSourceNode
 
-The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in `AudioBuffer`.
+The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in `AudioBuffer`.
 You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
-However, this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](/sources/audio-buffer).
+However, this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](/docs/sources/audio-buffer).
 
-#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={"defined by associated buffer"} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
 ## Constructor
 
-[`BaseAudioContext.createBufferSource(options)`](/core/base-audio-context#createbuffersource)
+[`BaseAudioContext.createBufferSource(options)`](/docs/core/base-audio-context#createbuffersource)
 
 ## Example
 
@@ -47,7 +47,7 @@ function App() {
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
+| `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Associated `AudioBuffer`. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
 | `loopSkip` | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
