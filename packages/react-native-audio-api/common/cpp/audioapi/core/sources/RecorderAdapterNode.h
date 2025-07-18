@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <memory>
@@ -15,7 +15,7 @@ class AudioBus;
 /// It is used to connect native audio recording APIs with Audio API.
 ///
 /// @note it will push silence if it is not connected to any Recorder
-class RecorderAdapterNode : public AudioScheduledSourceNode {
+class RecorderAdapterNode : public AudioNode{
  public:
     explicit RecorderAdapterNode(BaseAudioContext *context);
     void setRecorder(const std::shared_ptr<AudioRecorder> &recorder);

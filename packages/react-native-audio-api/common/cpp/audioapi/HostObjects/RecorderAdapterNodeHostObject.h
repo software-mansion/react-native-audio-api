@@ -1,8 +1,8 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/HostObjects/AudioRecorderHostObject.h>
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
 
 #include <memory>
 #include <string>
@@ -11,11 +11,11 @@
 namespace audioapi {
 using namespace facebook;
 
-class RecorderAdapterNodeHostObject : public AudioScheduledSourceNodeHostObject {
+class RecorderAdapterNodeHostObject : public AudioNodeHostObject {
  public:
     explicit RecorderAdapterNodeHostObject(
         const std::shared_ptr<RecorderAdapterNode> &node)
-        : AudioScheduledSourceNodeHostObject(node) {
+        : AudioNodeHostObject(node) {
         addFunctions(
             JSI_EXPORT_FUNCTION(RecorderAdapterNodeHostObject, setRecorder));
         }

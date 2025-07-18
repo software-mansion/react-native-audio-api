@@ -212,6 +212,6 @@ export interface IAudioEventEmitter {
   ): void;
 }
 
-export interface IRecorderAdapterNode extends IAudioScheduledSourceNode {
+export interface IRecorderAdapterNode extends IAudioNode {
   setRecorder: (recorder: IAudioRecorder) => void;
 }

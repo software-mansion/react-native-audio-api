@@ -1,8 +1,8 @@
 import { IRecorderAdapterNode } from '../interfaces';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import AudioNode from './AudioNode';
 import AudioRecorder from './AudioRecorder';
 
-export default class RecorderAdapterNode extends AudioScheduledSourceNode {
+export default class RecorderAdapterNode extends AudioNode {
   setRecorder(recorder: AudioRecorder): void {
     return (this.node as IRecorderAdapterNode).setRecorder(recorder.recorder);
   }

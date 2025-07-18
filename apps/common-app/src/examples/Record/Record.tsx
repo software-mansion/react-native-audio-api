@@ -21,10 +21,6 @@ const Record: FC = () => {
       iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
     });
 
-  }, []);
-
-
-  const start = () => {
     if (!aCtxRef.current) {
       aCtxRef.current = new AudioContext({ sampleRate: 16000 });
     }
@@ -34,17 +30,28 @@ const Record: FC = () => {
         bufferLengthInSamples: 16000,
       });
     }
-
+    
     /// Create the recorder adapter and connect it to the audio context
-    recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
+    if (!recorderAdapterRef.current) {
+      recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
+    }
     recorderAdapterRef.current.setRecorder(recorderRef.current);
     recorderAdapterRef.current.connect(aCtxRef.current.destination);
-    recorderAdapterRef.current.start();
+    console.log('Recorder adapter connected to audio context');
+    
+    if (aCtxRef.current.state === 'suspended') {
+      console.log('Resuming audio context');
+      aCtxRef.current.resume();
+    }
 
-    // recorderRef.current.onAudioReady((event) => {
-    //   const { buffer, numFrames, when } = event;
-    //   console.log('Audio recorder buffer ready:', buffer.duration, numFrames, when);
-    // });
+  }, []);
+
+
+  const start = () => {
+    if (!aCtxRef.current || !recorderRef.current) {
+      console.error('AudioContext or AudioRecorder is not initialized');
+      return;
+    }
     
     recorderRef.current.start();
     console.log('Recording started'); 
@@ -55,9 +62,20 @@ const Record: FC = () => {
     }
   }
 
+  /// This stops only the recording, not the audio context
+  const stopRecorder = () => {
+    if (!recorderRef.current) {
+      console.error('AudioRecorder is not initialized');
+      return;
+    }
+    recorderRef.current.stop();
+    console.log('Recording stopped');
+  }
+
   return (
     <Container centered>
       <Button title="Start Recording" onPress={start} />
+      <Button title="Stop Recording" onPress={stopRecorder} />
     </Container>
   );
 };
