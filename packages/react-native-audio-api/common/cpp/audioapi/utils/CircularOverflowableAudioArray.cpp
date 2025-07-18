@@ -10,7 +10,7 @@ void CircularOverflowableAudioArray::write(const float *data, size_t size) {
 
   /// Advances the read index if there is not enough space
   readLock_.lock();
-  size_t availableSpace = (vReadIndex_ - writeIndex - 1 + size_) % size_;
+  size_t availableSpace = (size_ + vReadIndex_ - writeIndex - 1) % size_;
   if (size > availableSpace) {
     vReadIndex_ = (writeIndex + size + 1) % size_;
   }
@@ -44,7 +44,7 @@ size_t CircularOverflowableAudioArray::read(float *output, size_t size) {
 }
 
 size_t CircularOverflowableAudioArray::getAvailableSpace() const {
-  return (vWriteIndex_.load(std::memory_order_relaxed) - vReadIndex_ + size_) %
+  return (size_ + vWriteIndex_.load(std::memory_order_relaxed) - vReadIndex_) %
       size_;
 }
 

@@ -11,6 +11,7 @@ RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context)
 void RecorderAdapterNode::setRecorder(
     const std::shared_ptr<AudioRecorder> &recorder) {
   recorder_ = recorder;
+  isInitialized_ = true;
 }
 
 void RecorderAdapterNode::processNode(
@@ -34,7 +35,8 @@ void RecorderAdapterNode::processNode(
   recorder_->readFrames(outputChannel, framesToProcess);
 
   for (int i = 1; i < processingBus->getNumberOfChannels(); i++) {
-    processingBus->getChannel(i)->zero();
+    processingBus->getChannel(i)->copy(
+        processingBus->getChannel(0), 0, framesToProcess);
   }
 
   handleStopScheduled();

@@ -1,4 +1,3 @@
-#include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/core/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -65,12 +64,10 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     oboe::AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
-  __android_log_print(
-      ANDROID_LOG_ERROR, "AudioRecorder", "Recorded %d frames", numFrames);
   if (isRunning_.load()) {
     auto *inputChannel = static_cast<float *>(audioData);
     circularBuffer_->push_back(inputChannel, numFrames);
-    // adapterBuffer_->write(inputChannel, numFrames);
+    adapterBuffer_->write(inputChannel, numFrames);
   }
 
   while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
