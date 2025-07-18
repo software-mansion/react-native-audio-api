@@ -66,5 +66,6 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
+  friend class RecorderAdapterNodeHostObject;
 };
 } // namespace audioapi

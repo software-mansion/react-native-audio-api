@@ -6,6 +6,7 @@
 namespace audioapi {
 class AudioBus;
 class CircularAudioArray;
+class CircularOverflowableAudioArray;
 class AudioEventHandlerRegistry;
 
 class AudioRecorder {
@@ -31,9 +32,19 @@ class AudioRecorder {
 
   std::atomic<bool> isRunning_;
   std::shared_ptr<CircularAudioArray> circularBuffer_;
+  std::shared_ptr<CircularOverflowableAudioArray> adapterBuffer_;
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
+
+ private:
+  /// @brief Read audio frames from the recorder's internal adapterBuffer.
+  /// @note If `framesToRead` is greater than the number of available frames, it will fill empty space with silence.
+  /// @param output Pointer to the output buffer.
+  /// @param framesToRead Number of frames to read.
+  void readFrames(float *output, size_t framesToRead);
+
+  friend class RecorderAdapterNode;
 };
 
 } // namespace audioapi

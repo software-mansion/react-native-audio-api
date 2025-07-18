@@ -4,6 +4,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 namespace audioapi {
 
@@ -16,6 +17,8 @@ AudioRecorder::AudioRecorder(
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
   circularBuffer_ =
       std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
+  adapterBuffer_ = std::make_shared<CircularOverflowableAudioArray>(
+      std::max(2 * bufferLength, 2048));
   isRunning_.store(false);
 }
 
@@ -53,6 +56,15 @@ void AudioRecorder::sendRemainingData() {
       outputChannel, circularBuffer_->getNumberOfAvailableFrames());
 
   invokeOnAudioReadyCallback(bus, availableFrames, 0);
+}
+
+void AudioRecorder::readFrames(float *output, size_t framesToRead) {
+  size_t readFrames = adapterBuffer_->read(output, framesToRead);
+
+  if (readFrames < framesToRead) {
+    // Fill the rest with silence
+    memset(output + readFrames, 0, (framesToRead - readFrames) * sizeof(float));
+  }
 }
 
 } // namespace audioapi
