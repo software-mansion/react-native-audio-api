@@ -29,12 +29,12 @@ class CircularOverflowableAudioArray : public AudioArray {
   /// @param output Pointer to the output buffer.
   /// @param size Number of frames to read.
   /// @return The number of frames actually read.
-  size_t read(float *output, size_t size);
+  size_t read(float *output, size_t size) const;
 
  private:
   std::atomic<size_t> vWriteIndex_ = { 0 };
-  size_t vReadIndex_ = 0; // it is only used after acquiring readLock_
-  std::mutex readLock_;
+  mutable size_t vReadIndex_ = 0; // it is only used after acquiring readLock_
+  mutable std::mutex readLock_;
 
   [[nodiscard]] size_t getAvailableSpace() const;
 };

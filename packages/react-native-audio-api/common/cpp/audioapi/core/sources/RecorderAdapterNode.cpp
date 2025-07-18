@@ -2,10 +2,14 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <type_traits>
 
 namespace audioapi {
 
-RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context)
+RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context) noexcept(
+    std::is_nothrow_constructible<
+        AudioScheduledSourceNode,
+        BaseAudioContext *>::value)
     : AudioScheduledSourceNode(context), recorder_(nullptr) {}
 
 void RecorderAdapterNode::setRecorder(
@@ -25,7 +29,7 @@ void RecorderAdapterNode::processNode(
     return;
   }
 
-  if (!recorder_) {
+  if (recorder_ == nullptr) {
     processingBus->zero();
     return;
   }

@@ -1,11 +1,16 @@
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <type_traits>
 
 namespace audioapi {
 
-CircularOverflowableAudioArray::CircularOverflowableAudioArray(size_t size)
+CircularOverflowableAudioArray::CircularOverflowableAudioArray(
+    size_t
+        size) noexcept(std::is_nothrow_constructible<AudioArray, size_t>::value)
     : AudioArray(size) {}
 
-void CircularOverflowableAudioArray::write(const float *data, size_t size) {
+void CircularOverflowableAudioArray::write(
+    const float *data,
+    const size_t size) {
   size_t writeIndex = vWriteIndex_.load(std::memory_order_relaxed);
 
   /// Advances the read index if there is not enough space
@@ -18,25 +23,26 @@ void CircularOverflowableAudioArray::write(const float *data, size_t size) {
 
   size_t partSize = size_ - writeIndex;
   if (size > partSize) {
-    memcpy(data_ + writeIndex, data, partSize * sizeof(float));
-    memcpy(data_, data + partSize, (size - partSize) * sizeof(float));
+    std::memcpy(data_ + writeIndex, data, partSize * sizeof(float));
+    std::memcpy(data_, data + partSize, (size - partSize) * sizeof(float));
   } else {
-    memcpy(data_ + writeIndex, data, size * sizeof(float));
+    std::memcpy(data_ + writeIndex, data, size * sizeof(float));
   }
   vWriteIndex_.store((writeIndex + size) % size_, std::memory_order_relaxed);
 }
 
-size_t CircularOverflowableAudioArray::read(float *output, size_t size) {
+size_t CircularOverflowableAudioArray::read(float *output, size_t size) const {
   readLock_.lock();
   size_t availableSpace = getAvailableSpace();
   size_t readSize = std::min(size, availableSpace);
 
   size_t partSize = size_ - vReadIndex_;
   if (readSize > partSize) {
-    memcpy(output, data_ + vReadIndex_, partSize * sizeof(float));
-    memcpy(output + partSize, data_, (readSize - partSize) * sizeof(float));
+    std::memcpy(output, data_ + vReadIndex_, partSize * sizeof(float));
+    std::memcpy(
+        output + partSize, data_, (readSize - partSize) * sizeof(float));
   } else {
-    memcpy(output, data_ + vReadIndex_, readSize * sizeof(float));
+    std::memcpy(output, data_ + vReadIndex_, readSize * sizeof(float));
   }
   vReadIndex_ = (vReadIndex_ + readSize) % size_;
   readLock_.unlock();
