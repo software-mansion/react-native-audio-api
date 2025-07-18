@@ -111,6 +111,7 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
+
   if (frequency <= 0.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -155,11 +156,13 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
   Q = std::max(0.0f, Q);
 
+  // frequency == 1 jak w reszcie funkcji
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
+  // Q == 0? Q nigdy nie jest ujemne
   if (Q <= 0.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -167,10 +170,10 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
 
   float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
-  float k = std::cos(w0);
+  float cosW = std::cos(w0);
 
   setNormalizedCoefficients(
-      alpha, 0.0f, -alpha, 1.0f + alpha, -2 * k, 1.0f - alpha);
+      alpha, 0.0f, -alpha, 1.0f + alpha, -2 * cosW, 1.0f - alpha);
 }
 
 void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
@@ -188,18 +191,17 @@ void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
   }
 
   float w0 = PI * frequency;
-  float alpha =
-      0.5f * std::sin(w0) * std::sqrt((A + 1 / A) * (1 / 1.0f - 1) + 2);
-  float k = std::cos(w0);
-  float k2 = 2.0f * std::sqrt(A) * alpha;
+  float alpha = 0.5f * std::sin(w0) * std::sqrt(2.0f);
+  float cosW = std::cos(w0);
+  float gamma = 2.0f * std::sqrt(A) * alpha;
 
   setNormalizedCoefficients(
-      A * (A + 1 - (A - 1) * k + k2),
-      2.0f * A * (A - 1 - (A + 1) * k),
-      A * (A + 1 - (A - 1) * k - k2),
-      A + 1 + (A - 1) * k + k2,
-      -2.0f * (A - 1 + (A + 1) * k),
-      A + 1 + (A - 1) * k - k2);
+      A * (A + 1 - (A - 1) * cosW + gamma),
+      2.0f * A * (A - 1 - (A + 1) * cosW),
+      A * (A + 1 - (A - 1) * cosW - gamma),
+      A + 1 + (A - 1) * cosW + gamma,
+      -2.0f * (A - 1 + (A + 1) * cosW),
+      A + 1 + (A - 1) * cosW - gamma);
 }
 
 void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
@@ -217,18 +219,19 @@ void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
   }
 
   float w0 = PI * frequency;
-  float alpha =
-      0.5f * std::sin(w0) * std::sqrt((A + 1 / A) * (1 / 1.0f - 1) + 2);
-  float k = std::cos(w0);
-  float k2 = 2.0f * std::sqrt(A) * alpha;
+  // w oryginalnym wzorze: sqrt((A + 1/A) * (1/S - 1) + 2), ale przyjmujemy
+  // maksymalna wartosc S=1, wiec wychodzi 0+2 pod pierwiastkiem
+  float alpha = 0.5f * std::sin(w0) * std::sqrt(2.0f);
+  float cosW = std::cos(w0);
+  float gamma = 2.0f * std::sqrt(A) * alpha;
 
   setNormalizedCoefficients(
-      A * (A + 1 + (A - 1) * k + k2),
-      -2.0f * A * (A - 1 + (A + 1) * k),
-      A * (A + 1 + (A - 1) * k - k2),
-      A + 1 - (A - 1) * k + k2,
-      2.0f * (A - 1 - (A + 1) * k),
-      A + 1 - (A - 1) * k - k2);
+      A * (A + 1 + (A - 1) * cosW + gamma),
+      -2.0f * A * (A - 1 + (A + 1) * cosW),
+      A * (A + 1 + (A - 1) * cosW - gamma),
+      A + 1 - (A - 1) * cosW + gamma,
+      2.0f * (A - 1 - (A + 1) * cosW),
+      A + 1 - (A - 1) * cosW - gamma);
 }
 
 void BiquadFilterNode::setPeakingCoefficients(
@@ -251,14 +254,14 @@ void BiquadFilterNode::setPeakingCoefficients(
 
   float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
-  float k = std::cos(w0);
+  float cosW = std::cos(w0);
 
   setNormalizedCoefficients(
       1 + alpha * A,
-      -2 * k,
+      -2 * cosW,
       1 - alpha * A,
       1 + alpha / A,
-      -2 * k,
+      -2 * cosW,
       1 - alpha / A);
 }
 
@@ -278,9 +281,10 @@ void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
 
   float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
-  float k = std::cos(w0);
+  float cosW = std::cos(w0);
 
-  setNormalizedCoefficients(1.0f, -2 * k, 1.0f, 1 + alpha, -2 * k, 1 - alpha);
+  setNormalizedCoefficients(
+      1.0f, -2 * cosW, 1.0f, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
@@ -299,10 +303,10 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
 
   float w0 = PI * frequency;
   float alpha = std::sin(w0) / (2 * Q);
-  float k = std::cos(w0);
+  float cosW = std::cos(w0);
 
   setNormalizedCoefficients(
-      1 - alpha, -2 * k, 1 + alpha, 1 + alpha, -2 * k, 1 - alpha);
+      1 - alpha, -2 * cosW, 1 + alpha, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 void BiquadFilterNode::applyFilter() {
@@ -360,7 +364,7 @@ void BiquadFilterNode::processNode(
   resetCoefficients();
   applyFilter();
 
-  for (int c = 0; c < processingBus->getNumberOfChannels(); c += 1) {
+  for (int c = 0; c < processingBus->getNumberOfChannels(); c++) {
     float x1 = x1_;
     float x2 = x2_;
     float y1 = y1_;
@@ -372,7 +376,7 @@ void BiquadFilterNode::processNode(
     float a1 = a1_;
     float a2 = a2_;
 
-    for (int i = 0; i < framesToProcess; i += 1) {
+    for (int i = 0; i < framesToProcess; i++) {
       float input = (*processingBus->getChannel(c))[i];
       float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
