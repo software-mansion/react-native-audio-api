@@ -309,49 +309,40 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
       1 - alpha, -2 * cosW, 1 + alpha, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
-void BiquadFilterNode::applyFilter() {
-  double currentTime = context_->getCurrentTime();
-
-  float frequencyParamValue =
-      frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-  float normalizedFrequency =
-      frequencyParamValue / context_->getNyquistFrequency();
-
-  float detuneValue =
-      detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-
-  if (detuneValue != 0.0) {
-    normalizedFrequency *= std::pow(2.0f, detuneValue / 1200.0f);
+void BiquadFilterNode::updateCoefficientsForFrame(
+    float frequency,
+    float detune,
+    float Q,
+    float gain) {
+  float normalizedFrequency = frequency / context_->getNyquistFrequency();
+  if (detune != 0.0f) {
+    normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
   }
 
-  auto qparamValue =
-      QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-  auto gainParamValue =
-      gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   switch (type_) {
     case BiquadFilterType::LOWPASS:
-      setLowpassCoefficients(normalizedFrequency, qparamValue);
+      setLowpassCoefficients(normalizedFrequency, Q);
       break;
     case BiquadFilterType::HIGHPASS:
-      setHighpassCoefficients(normalizedFrequency, qparamValue);
+      setHighpassCoefficients(normalizedFrequency, Q);
       break;
     case BiquadFilterType::BANDPASS:
-      setBandpassCoefficients(normalizedFrequency, qparamValue);
+      setBandpassCoefficients(normalizedFrequency, Q);
       break;
     case BiquadFilterType::LOWSHELF:
-      setLowshelfCoefficients(normalizedFrequency, gainParamValue);
+      setLowshelfCoefficients(normalizedFrequency, gain);
       break;
     case BiquadFilterType::HIGHSHELF:
-      setHighshelfCoefficients(normalizedFrequency, gainParamValue);
+      setHighshelfCoefficients(normalizedFrequency, gain);
       break;
     case BiquadFilterType::PEAKING:
-      setPeakingCoefficients(normalizedFrequency, qparamValue, gainParamValue);
+      setPeakingCoefficients(normalizedFrequency, Q, gain);
       break;
     case BiquadFilterType::NOTCH:
-      setNotchCoefficients(normalizedFrequency, qparamValue);
+      setNotchCoefficients(normalizedFrequency, Q);
       break;
     case BiquadFilterType::ALLPASS:
-      setAllpassCoefficients(normalizedFrequency, qparamValue);
+      setAllpassCoefficients(normalizedFrequency, Q);
       break;
     default:
       break;
@@ -362,7 +353,22 @@ void BiquadFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   resetCoefficients();
-  applyFilter();
+
+  double currentTime = context_->getCurrentTime();
+  auto frequencyValues =
+      frequencyParam_->processARateParam(framesToProcess, currentTime)
+          ->getChannel(0)
+          ->getData();
+  auto detuneValues =
+      detuneParam_->processARateParam(framesToProcess, currentTime)
+          ->getChannel(0)
+          ->getData();
+  auto qValues = QParam_->processARateParam(framesToProcess, currentTime)
+                     ->getChannel(0)
+                     ->getData();
+  auto gainValues = gainParam_->processARateParam(framesToProcess, currentTime)
+                        ->getChannel(0)
+                        ->getData();
 
   for (int c = 0; c < processingBus->getNumberOfChannels(); c++) {
     float x1 = x1_;
@@ -370,15 +376,12 @@ void BiquadFilterNode::processNode(
     float y1 = y1_;
     float y2 = y2_;
 
-    float b0 = b0_;
-    float b1 = b1_;
-    float b2 = b2_;
-    float a1 = a1_;
-    float a2 = a2_;
-
     for (int i = 0; i < framesToProcess; i++) {
+      updateCoefficientsForFrame(
+          frequencyValues[i], detuneValues[i], qValues[i], gainValues[i]);
+
       float input = (*processingBus->getChannel(c))[i];
-      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+      float output = b0_ * input + b1_ * x1 + b2_ * x2 - a1_ * y1 - a2_ * y2;
 
       (*processingBus->getChannel(c))[i] = output;
 

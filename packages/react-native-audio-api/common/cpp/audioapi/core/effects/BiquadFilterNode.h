@@ -119,7 +119,7 @@ class BiquadFilterNode : public AudioNode {
   void setPeakingCoefficients(float frequency, float Q, float gain);
   void setNotchCoefficients(float frequency, float Q);
   void setAllpassCoefficients(float frequency, float Q);
-  void applyFilter();
+  void updateCoefficientsForFrame();
 };
 
 } // namespace audioapi
