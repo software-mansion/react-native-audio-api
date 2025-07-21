@@ -1,3 +1,4 @@
+#include <android/log.h>
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/Constants.h>
@@ -8,23 +9,40 @@ namespace audioapi {
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-    float sampleRate)
-    : renderAudio_(renderAudio), channelCount_(2) {
+    float sampleRate,
+    int channelCount)
+    : renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount) {
+  isInitialized_ = openAudioStream();
+}
+
+bool AudioPlayer::openAudioStream() {
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(PerformanceMode::None)
-      ->setChannelCount(2)
+      ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
-      ->setSampleRate(static_cast<int>(sampleRate))
-      ->openStream(mStream_);
+      ->setSampleRate(static_cast<int>(sampleRate_))
+      ->setErrorCallback(this);
 
-  sampleRate_ = sampleRate;
-  mBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 2, sampleRate_);
-  isInitialized_ = true;
+  auto result = builder.openStream(mStream_);
+  if (result != oboe::Result::OK || mStream_ == nullptr) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioPlayer",
+        "Failed to open stream: %s",
+        oboe::convertToText(result));
+    return false;
+  }
+
+  mBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  return true;
 }
 
 void AudioPlayer::start() {
@@ -90,6 +108,18 @@ DataCallbackResult AudioPlayer::onAudioReady(
   }
 
   return DataCallbackResult::Continue;
+}
+
+void AudioPlayer::onErrorAfterClose(
+    oboe::AudioStream *stream,
+    oboe::Result error) {
+  if (error == oboe::Result::ErrorDisconnected) {
+    cleanup();
+    if (openAudioStream()) {
+      isInitialized_ = true;
+      resume();
+    }
+  }
 }
 
 } // namespace audioapi
