@@ -42,7 +42,7 @@ class AudioRecorder {
   /// @note If `framesToRead` is greater than the number of available frames, it will fill empty space with silence.
   /// @param output Pointer to the output buffer.
   /// @param framesToRead Number of frames to read.
-  void readFrames(float *output, const size_t framesToRead);
+  void readFrames(float *output, size_t framesToRead);
 
   friend class RecorderAdapterNode;
 };

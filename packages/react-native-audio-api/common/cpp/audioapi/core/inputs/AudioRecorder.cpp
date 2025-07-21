@@ -15,7 +15,7 @@ AudioRecorder::AudioRecorder(
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
-  constexpr int minRingBufferSize = 2048;
+  constexpr int minRingBufferSize = 8192;
   const int ringBufferSize = std::max(2 * bufferLength, minRingBufferSize);
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize);
   adapterBuffer_ =

@@ -20,24 +20,16 @@ const Record: FC = () => {
       iosMode: 'spokenAudio',
       iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
     });
-    AudioManager.requestRecordingPermissions()
-      .then(() => {
-
-    if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext({ sampleRate: 48000 });
-    }
-    if (!recorderRef.current) {
-      recorderRef.current = new AudioRecorder({
-        sampleRate: 48000,
-        bufferLengthInSamples: 48000,
-      });
-    }
     
-    /// Create the recorder adapter and connect it to the audio context
-    if (!recorderAdapterRef.current) {
-      recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
-    }
+    recorderRef.current = new AudioRecorder({
+      sampleRate: 16000,
+      bufferLengthInSamples: 16000,
+    });
+    aCtxRef.current = new AudioContext({ sampleRate: 16000 });
+    recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
+    
     recorderAdapterRef.current.setRecorder(recorderRef.current);
+    // recorderRef.current.connect(recorderAdapterRef.current); // TODO this would be desired flow
     recorderAdapterRef.current.connect(aCtxRef.current.destination);
     console.log('Recorder adapter connected to audio context');
     
@@ -45,8 +37,6 @@ const Record: FC = () => {
       console.log('Resuming audio context');
       aCtxRef.current.resume();
     }
-
-      });
   }, []);
 
 
