@@ -8,28 +8,36 @@ namespace audioapi {
 
 RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context) noexcept(
     std::is_nothrow_constructible<AudioNode, BaseAudioContext *>::value)
-    : AudioNode(context), recorder_(nullptr) {}
+    : AudioNode(context) {
+  // It should be marked as initialized only after it is connected to the
+  // recorder. Internall buffer size is based on the recorder's buffer length.
+  isInitialized_ = false;
+}
 
-void RecorderAdapterNode::setRecorder(
-    const std::shared_ptr<AudioRecorder> &recorder) {
-  recorder_ = recorder;
+void RecorderAdapterNode::init(size_t bufferSize) {
   isInitialized_ = true;
+  buff_ = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
 }
 
 void RecorderAdapterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (recorder_ == nullptr) {
-    processingBus->zero();
-    return;
-  }
-
   float *outputChannel = processingBus->getChannel(0)->getData();
-  recorder_->readFrames(outputChannel, framesToProcess);
+  readFrames(outputChannel, framesToProcess);
 
   for (int i = 1; i < processingBus->getNumberOfChannels(); i++) {
     processingBus->getChannel(i)->copy(
         processingBus->getChannel(0), 0, framesToProcess);
+  }
+}
+
+void RecorderAdapterNode::readFrames(float *output, const size_t framesToRead) {
+  size_t readFrames = buff_->read(output, framesToRead);
+
+  if (readFrames < framesToRead) {
+    // Fill the rest with silence
+    std::memset(
+        output + readFrames, 0, (framesToRead - readFrames) * sizeof(float));
   }
 }
 

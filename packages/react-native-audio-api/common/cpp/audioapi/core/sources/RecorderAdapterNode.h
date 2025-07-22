@@ -4,6 +4,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
 
 namespace audioapi {
@@ -15,15 +16,23 @@ class AudioBus;
 /// It is used to connect native audio recording APIs with Audio API.
 ///
 /// @note it will push silence if it is not connected to any Recorder
-class RecorderAdapterNode : public AudioNode{
+class RecorderAdapterNode : public AudioNode {
  public:
     explicit RecorderAdapterNode(BaseAudioContext *context);
-    void setRecorder(const std::shared_ptr<AudioRecorder> &recorder);
+    void init(size_t bufferSize);
 
  protected:
     void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+    std::shared_ptr<CircularOverflowableAudioArray> buff_;
+
  private:
-    std::shared_ptr<AudioRecorder> recorder_;
+    /// @brief Read audio frames from the recorder's internal adapterBuffer.
+    /// @note If `framesToRead` is greater than the number of available frames, it will fill empty space with silence.
+    /// @param output Pointer to the output buffer.
+    /// @param framesToRead Number of frames to read.
+    void readFrames(float *output, size_t framesToRead);
+
+    friend class AudioRecorder;
 };
 
 } // namespace audioapi

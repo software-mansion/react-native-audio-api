@@ -193,9 +193,12 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
+export interface IRecorderAdapterNode extends IAudioNode {}
+
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
+  connect: (node: IRecorderAdapterNode) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
@@ -210,8 +213,4 @@ export interface IAudioEventEmitter {
     name: Name,
     subscriptionId: string
   ): void;
-}
-
-export interface IRecorderAdapterNode extends IAudioNode {
-  setRecorder: (recorder: IAudioRecorder) => void;
 }

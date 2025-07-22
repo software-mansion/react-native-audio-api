@@ -5,6 +5,7 @@
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
@@ -45,7 +46,15 @@ class AudioRecorderHostObject : public JsiHostObject {
 
     addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect));
+  }
+
+  JSI_HOST_FUNCTION(connect) {
+    auto adapterNodeHostObject = args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(runtime);
+    audioRecorder_->connect(
+        std::static_pointer_cast<RecorderAdapterNode>(adapterNodeHostObject->node_));
+    return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(start) {
@@ -66,6 +75,5 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  friend class RecorderAdapterNodeHostObject;
 };
 } // namespace audioapi

@@ -3,6 +3,7 @@ import { AudioRecorderOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
 import { OnAudioReadyEventType } from '../events/types';
 import { AudioEventEmitter } from '../events';
+import RecorderAdapterNode from './RecorderAdapterNode';
 
 export default class AudioRecorder {
   public readonly recorder: IAudioRecorder;
@@ -21,6 +22,10 @@ export default class AudioRecorder {
 
   public stop(): void {
     this.recorder.stop();
+  }
+
+  public connect(node: RecorderAdapterNode): void {
+    this.recorder.connect(node.getNode());
   }
 
   public onAudioReady(callback: (event: OnAudioReadyEventType) => void): void {

@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/sources/AudioBuffer.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -14,12 +15,11 @@ AudioRecorder::AudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
+      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      adapterNode_(nullptr) {
   constexpr int minRingBufferSize = 8192;
-  const int ringBufferSize = std::max(2 * bufferLength, minRingBufferSize);
-  circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize);
-  adapterBuffer_ =
-      std::make_shared<CircularOverflowableAudioArray>(ringBufferSize);
+  ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
+  circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
   isRunning_.store(false);
 }
 
@@ -59,14 +59,16 @@ void AudioRecorder::sendRemainingData() {
   invokeOnAudioReadyCallback(bus, availableFrames, 0);
 }
 
-void AudioRecorder::readFrames(float *output, const size_t framesToRead) {
-  size_t readFrames = adapterBuffer_->read(output, framesToRead);
+void AudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
+  node->init(ringBufferSize_);
+  adapterNode_ = node;
+}
 
-  if (readFrames < framesToRead) {
-    // Fill the rest with silence
-    std::memset(
-        output + readFrames, 0, (framesToRead - readFrames) * sizeof(float));
+void AudioRecorder::writeToBuffers(const float *data, int numFrames) {
+  if (adapterNode_ != nullptr) {
+    adapterNode_->buff_->write(data, numFrames);
   }
+  circularBuffer_->push_back(data, numFrames);
 }
 
 } // namespace audioapi
