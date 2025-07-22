@@ -26,7 +26,7 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
       context);
   type_ = BiquadFilterType::LOWPASS;
   isInitialized_ = true;
-  // channelCountMode_ = ChannelCountMode::MAX; ?
+  channelCountMode_ = ChannelCountMode::MAX;
 }
 
 std::string BiquadFilterNode::getType() {
@@ -57,18 +57,26 @@ std::shared_ptr<AudioParam> BiquadFilterNode::getGainParam() const {
 // https://www.dsprelated.com/freebooks/filters/Frequency_Response_Analysis.html
 // https://www.dsprelated.com/freebooks/filters/Transfer_Function_Analysis.html
 //
-// frequency response -  H(z) = (b0 + b1*z^(-1) + b2*z^(-2))/(1 + a1*z^(-1) +
-// a2*z^(-2)) = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2) phase response -
-// angle of the frequency response
+// frequency response -  H(z)
+//          b0 + b1 * z^(-1) + b2 * z^(-2)
+//  H(z) = -------------------------------
+//           1 + a1 * z^(-1) + a2 * z^(-2)
+//
+//         b0 + (b1 + b2 * z1) * z1
+//     =  --------------------------
+//         (1 + (a1 + a2 * z1) * z1
+//
+// where z1 = 1/z and z = e^(j * pi * frequency)
+// z1 = e^(-j * pi * frequency)
+//
+// phase response - angle of the frequency response
+//
 
 void BiquadFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
     const int length) {
-  // TODO: check if array lengths match?
-  // why do we need applyFilter?
-  // applyFilter();
 
   // Local copies for micro-optimization
   float b0 = b0_;
@@ -78,12 +86,17 @@ void BiquadFilterNode::getFrequencyResponse(
   float a2 = a2_;
 
   for (size_t i = 0; i < length; i++) {
-    auto omega = PI * frequencyArray[i] / context_->getNyquistFrequency();
+    if (frequencyArray[i] < 0.0 || frequencyArray[i] > 1.0) {
+      magResponseOutput[i] = std::nanf("");
+      phaseResponseOutput[i] = std::nanf("");
+      continue;
+    }
+
+    auto omega = -PI * frequencyArray[i];
     auto z = std::complex<float>(cos(omega), sin(omega));
-    // TODO: check the formula below
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
-    magResponseOutput[i] = static_cast<float>(abs(response));
+    magResponseOutput[i] = static_cast<float>(std::abs(response));
     phaseResponseOutput[i] =
         static_cast<float>(atan2(imag(response), real(response)));
   }
@@ -112,7 +125,7 @@ void BiquadFilterNode::setNormalizedCoefficients(
 }
 
 void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  // Limit frequency to [0, 1] range
   if (frequency >= 1.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -136,7 +149,6 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
   if (frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -159,14 +171,13 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
-  Q = std::max(0.0f, Q);
-
+  // Limit frequency to [0, 1] range
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
+  // Limit Q to positive values
   if (Q <= 0.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -181,7 +192,6 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
   float A = std::pow(10.0f, gain / 40.0f);
 
   if (frequency >= 1.0) {
@@ -209,7 +219,6 @@ void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
 }
 
 void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
   float A = std::pow(10.0f, gain / 40.0f);
 
   if (frequency >= 1.0) {
@@ -242,8 +251,6 @@ void BiquadFilterNode::setPeakingCoefficients(
     float frequency,
     float Q,
     float gain) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
-  Q = std::max(0.0f, Q);
   float A = std::pow(10.0f, gain / 40.0f);
 
   if (frequency <= 0.0 || frequency >= 1.0) {
@@ -270,9 +277,6 @@ void BiquadFilterNode::setPeakingCoefficients(
 }
 
 void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
-  Q = std::max(0.0f, Q);
-
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -292,9 +296,6 @@ void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
-  Q = std::max(0.0f, Q);
-
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -319,6 +320,7 @@ void BiquadFilterNode::updateCoefficientsForFrame(
     float Q,
     float gain) {
   float normalizedFrequency = frequency / context_->getNyquistFrequency();
+
   if (detune != 0.0f) {
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
   }
@@ -356,8 +358,6 @@ void BiquadFilterNode::updateCoefficientsForFrame(
 void BiquadFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  resetCoefficients();
-
   double currentTime = context_->getCurrentTime();
   auto frequencyValues =
       frequencyParam_->processARateParam(framesToProcess, currentTime)
@@ -374,13 +374,6 @@ void BiquadFilterNode::processNode(
                         ->getChannel(0)
                         ->getData();
 
-  // Local copies for micro-optimization
-  float b0 = b0_;
-  float b1 = b1_;
-  float b2 = b2_;
-  float a1 = a1_;
-  float a2 = a2_;
-
   for (int c = 0; c < processingBus->getNumberOfChannels(); c++) {
     float x1 = x1_;
     float x2 = x2_;
@@ -392,7 +385,7 @@ void BiquadFilterNode::processNode(
           frequencyValues[i], detuneValues[i], qValues[i], gainValues[i]);
 
       float input = (*processingBus->getChannel(c))[i];
-      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+      float output = b0_ * input + b1_ * x1 + b2_ * x2 - a1_ * y1 - a2_ * y2;
 
       (*processingBus->getChannel(c))[i] = output;
 
@@ -401,6 +394,10 @@ void BiquadFilterNode::processNode(
       y2 = y1;
       y1 = output;
     }
+    x1_ = x1;
+    x2_ = x2;
+    y1_ = y1;
+    y2_ = y2;
   }
 }
 
