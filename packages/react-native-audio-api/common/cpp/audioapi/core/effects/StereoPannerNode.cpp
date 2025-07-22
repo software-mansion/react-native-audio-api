@@ -10,7 +10,7 @@ namespace audioapi {
 
 StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
     : AudioNode(context) {
-  channelCountMode_ = ChannelCountMode::EXPLICIT;
+  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   panParam_ = std::make_shared<AudioParam>(0.0, -1.0f, 1.0f, context);
   isInitialized_ = true;
 }
@@ -34,7 +34,7 @@ void StereoPannerNode::processNode(
   // Input is mono
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < framesToProcess; i++) {
-      auto pan =std::clamp(panParamValues[i], -1.0f, 1.0f);
+      auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       auto x = (pan + 1) / 2;
 
       auto gainL = static_cast<float>(cos(x * PI / 2));

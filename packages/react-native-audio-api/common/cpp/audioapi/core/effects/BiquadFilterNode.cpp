@@ -70,7 +70,6 @@ void BiquadFilterNode::getFrequencyResponse(
   // why do we need applyFilter?
   // applyFilter();
 
-  // Is it necessary?
   // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
@@ -81,7 +80,7 @@ void BiquadFilterNode::getFrequencyResponse(
   for (size_t i = 0; i < length; i++) {
     auto omega = PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
-    // TODO: check if this is correct
+    // TODO: check the formula below
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
     magResponseOutput[i] = static_cast<float>(abs(response));
@@ -114,7 +113,7 @@ void BiquadFilterNode::setNormalizedCoefficients(
 
 void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
-  if (frequency == 1.0) {
+  if (frequency >= 1.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -138,7 +137,7 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
 
 void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
-  if (frequency == 1.0) {
+  if (frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -163,13 +162,11 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
   Q = std::max(0.0f, Q);
 
-  // frequency == 1? as in the rest of the functions
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  // Q == 0? Q is never negative
   if (Q <= 0.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -187,7 +184,7 @@ void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
   float A = std::pow(10.0f, gain / 40.0f);
 
-  if (frequency == 1.0) {
+  if (frequency >= 1.0) {
     setNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -215,7 +212,7 @@ void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
   float A = std::pow(10.0f, gain / 40.0f);
 
-  if (frequency == 1.0) {
+  if (frequency >= 1.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -377,6 +374,13 @@ void BiquadFilterNode::processNode(
                         ->getChannel(0)
                         ->getData();
 
+  // Local copies for micro-optimization
+  float b0 = b0_;
+  float b1 = b1_;
+  float b2 = b2_;
+  float a1 = a1_;
+  float a2 = a2_;
+
   for (int c = 0; c < processingBus->getNumberOfChannels(); c++) {
     float x1 = x1_;
     float x2 = x2_;
@@ -388,7 +392,7 @@ void BiquadFilterNode::processNode(
           frequencyValues[i], detuneValues[i], qValues[i], gainValues[i]);
 
       float input = (*processingBus->getChannel(c))[i];
-      float output = b0_ * input + b1_ * x1 + b2_ * x2 - a1_ * y1 - a2_ * y2;
+      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
       (*processingBus->getChannel(c))[i] = output;
 
