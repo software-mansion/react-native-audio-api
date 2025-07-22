@@ -19,7 +19,11 @@ Only parts that will be needed by you, are:
 - writing native specific code to compile those files
 
 ```bash
-node packages/custom-node-generator/bin/cli.js create -o #path where you want files to be generated, usually same height as android/ and ios/
+yarn add rn-audioapi-custom-node-generator
+```
+
+```bash
+npx rn-audioapi-custom-node-generator create -o #path where you want files to be generated, usually same height as android/ and ios/
 ```
 
 ## Analyzing generated files
@@ -160,40 +164,28 @@ cmake_minimum_required(VERSION 3.13)
 project(appmodules)
 
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
+set(AUDIO_API_DIR ${ROOT}/node_modules/react-native-audio-api)
 
 include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
 
-file(GLOB_RECURSE RNAUDIOAPI_SRC
-  CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/*.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AudioDecoder.cpp"
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  ${ROOT}/shared/NativeAudioProcessingModule.cpp
+  ${ROOT}/shared/MyProcessorNode.cpp
+  ${ROOT}/shared/MyProcessorNodeHostObject.cpp
 )
 
-list(REMOVE_ITEM RNAUDIOAPI_SRC "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp")
-
-file(GLOB_RECURSE RNAUDIOAPI_LIBS
-  CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${ROOT}/shared
+    ${AUDIO_API_DIR}/common/cpp
 )
 
-add_library(rnaudioapi_c SHARED ${RNAUDIOAPI_LIBS})
-
-target_include_directories(rnaudioapi_c PUBLIC
-  ${ROOT}/node_modules/react-native-audio-api/common/cpp
+add_library(react-native-audio-api SHARED IMPORTED)
+string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_LOWER)
+# we need to find where original library was built
+set_target_properties(react-native-audio-api PROPERTIES IMPORTED_LOCATION
+        ${AUDIO_API_DIR}/android/build/intermediates/merged_native_libs/${BUILD_TYPE_LOWER}/merge${CMAKE_BUILD_TYPE}NativeLibs/out/lib/${CMAKE_ANDROID_ARCH_ABI}/libreact-native-audio-api.so
 )
-
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -frtti)
-
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${ROOT}/shared/NativeAudioProcessingModule.cpp
-    ${ROOT}/shared/MyProcessorNode.cpp
-    ${ROOT}/shared/MyProcessorNodeHostObject.cpp
-    ${RNAUDIOAPI_SRC})
-
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${ROOT}/shared
-    ${ROOT}/node_modules/react-native-audio-api/common/cpp)
-
-target_link_libraries(${CMAKE_PROJECT_NAME} rnaudioapi_c android log)
+target_link_libraries(${CMAKE_PROJECT_NAME} react-native-audio-api android log)
 ```
 
 ## Final touches
@@ -251,6 +243,8 @@ function App() {
   oscillator.start(audioContextRef.current.currentTime);
 }
 ```
+
+**If that's not satisfactory for you, check out fully working [demo app](https://github.com/software-mansion-labs/custom-processor-node-example)**
 
 ## What's next?
 

@@ -3,7 +3,6 @@
 ### High-performance audio engine for React Native based on web audio api specification
 
 [![NPM latest](https://img.shields.io/npm/v/react-native-audio-api/latest)](https://www.npmjs.com/package/react-native-audio-api)
-[![NPM next](https://img.shields.io/npm/v/react-native-audio-api/next)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
 [![NPM nightly](https://img.shields.io/npm/v/react-native-audio-api/audio-api-nightly)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
 [![github ci](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml)
 [![NPM Audio Api publish nightly](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml)

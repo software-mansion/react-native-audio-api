@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const { program } = require('commander');
 const chalk = require('chalk');
 const { generate } = require('../lib/generator');
@@ -5,7 +7,7 @@ const { generate } = require('../lib/generator');
 program
   .name('audio-api-node-generator')
   .description('Generate template files for custom processor using react-native-audio-api.')
-  .version('1.0.0');
+  .version('0.0.2');
 
 
 program
@@ -24,9 +26,5 @@ program
       process.exit(1);
     }
   });
-
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-}
 
 program.parse();
