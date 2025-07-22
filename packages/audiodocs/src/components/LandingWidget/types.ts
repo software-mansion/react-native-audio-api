@@ -1,2 +1,2 @@
 
-export type AudioType = 'music' | 'speech' | 'audio' | 'guitar';
+export type AudioType = 'music' | 'speech' | 'bgm' | 'efx' | 'guitar';

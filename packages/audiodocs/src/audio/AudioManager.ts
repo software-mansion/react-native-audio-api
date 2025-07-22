@@ -32,6 +32,9 @@ class AudioManager {
   analyser: AnalyserNode;
   output: GainNode;
 
+  // Individual gain nodes for each audio type
+  gainNodes: Map<string, GainNode> = new Map();
+
   isPlaying: boolean;
   loadedBuffers: Map<string, AudioBuffer> = new Map();
   activeSounds: Map<string, AudioBufferSourceNode> = new Map();
@@ -51,32 +54,85 @@ class AudioManager {
 
     this.output.connect(this.analyser);
     this.analyser.connect(this.aCtx.destination);
+
+    // Initialize gain nodes for each audio type
+    this.initializeGainNodes();
+  }
+
+  initializeGainNodes() {
+    const audioTypes = ['music', 'speech', 'bgm', 'efx', 'guitar'];
+    const gainLevels = {
+      music: 0.7,
+      speech: 0.8,
+      bgm: 0.5,
+      guitar: 0.6
+    };
+
+    audioTypes.forEach(type => {
+      const gainNode = this.aCtx.createGain();
+      gainNode.gain.value = gainLevels[type] || 0.7;
+      gainNode.connect(this.output);
+      this.gainNodes.set(type, gainNode);
+    });
+  }
+
+  getGainNode(audioType: string): GainNode {
+    let gainNode = this.gainNodes.get(audioType);
+    if (!gainNode) {
+      gainNode = this.aCtx.createGain();
+      gainNode.gain.value = 0.7;
+      gainNode.connect(this.output);
+      this.gainNodes.set(audioType, gainNode);
+    }
+    return gainNode;
+  }
+
+  setGain(audioType: string, gain: number) {
+    const gainNode = this.getGainNode(audioType);
+    gainNode.gain.setValueAtTime(gain, this.aCtx.currentTime);
+  }
+
+  isActive(id: string): boolean {
+    return this.activeSounds.has(id);
+  }
+
+  onSoundEnded(id: string, onEnded?: () => void) {
+    const source = this.activeSounds.get(id);
+    this.activeSounds.delete(id);
+
+    if (this.activeSounds.size === 0 && !this.microphoneSource) {
+      this.isPlaying = false;
+    }
+
+    if (onEnded) {
+      onEnded();
+    }
   }
 
 
-  playSound(id: string, startFrom: number = 0, onEnded?: () => void): number {
+  playSound(id: string, audioType: string, startFrom: number = 0, onEnded?: () => void, loop: boolean = false): number {
     if (!this.loadedBuffers.has(id)) {
       console.warn(`No sound found with ID: ${id}`);
+      return;
+    }
+
+    if (this.activeSounds.has(id)) {
       return;
     }
 
     const tNow = this.aCtx.currentTime;
     const source = this.aCtx.createBufferSource();
     source.buffer = this.loadedBuffers.get(id);
-    // source.buffer = buffer;
-    source.connect(this.output);
+    source.loop = loop;
+
+    // Connect to the specific gain node for this audio type
+    const gainNode = this.getGainNode(audioType);
+    source.connect(gainNode);
+
     source.start(0, startFrom);
     this.isPlaying = true;
 
-    source.onended = () => {
-      this.isPlaying = false;
-      this.activeSounds.delete(id);
-
-      if (onEnded) {
-        onEnded();
-      }
-    };
-
+    source.onended = this.onSoundEnded.bind(this, id, onEnded);
     this.activeSounds.set(id, source);
 
     return tNow;
@@ -144,8 +200,9 @@ class AudioManager {
       });
     }
 
-    // Connect to output
-    currentNode.connect(this.output);
+    // Connect to guitar gain node
+    const guitarGain = this.getGainNode('guitar');
+    currentNode.connect(guitarGain);
     this.isPlaying = true;
   }
 

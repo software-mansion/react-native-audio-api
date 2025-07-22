@@ -1,10 +1,10 @@
 import { useColorMode } from '@docusaurus/theme-common';
 import React, { useState, useEffect, useCallback } from "react";
 
-import { Spacer } from '@site/src/components/Layout';
-import Speaker from '@site/static/icons/speaker.svg';
+// import { Spacer } from '@site/src/components/Layout';
+// import Speaker from '@site/static/icons/speaker.svg';
 import AudioManager, { BufferMetadata } from "@site/src/audio/AudioManager";
-import SpeakerCrossed from '@site/static/icons/speaker-crossed.svg';
+// import SpeakerCrossed from '@site/static/icons/speaker-crossed.svg';
 import { presetEffects } from "@site/src/audio/effects";
 
 import { AudioType } from "./types";
@@ -12,9 +12,10 @@ import Spectrogram from "./Spectrogram";
 import styles from "./styles.module.css";
 
 const sounds: Record<AudioType, string | null> = {
-  music: '/react-native-audio-api/audio/music/example-music-02.mp3',
-  speech: '/react-native-audio-api/audio/music/example-music-02.mp3',
-  audio: '/react-native-audio-api/audio/music/example-music-02.mp3',
+  music: '/react-native-audio-api/audio/music/example-music-05.wav',
+  speech: '/react-native-audio-api/audio/voice/voice-sample-landing.mp3',
+  bgm: '/react-native-audio-api/audio/bgm/bgm-01.wav',
+  efx: '/react-native-audio-api/audio/efx/efx-01.wav',
   guitar: null,
 };
 
@@ -24,10 +25,13 @@ const LandingWidget: React.FC = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [selectCount, setSelectCount] = useState(0);
   const [selectedAudio, setSelectedAudio] = useState<AudioType>('music');
+  const [availableInputs, setAvailableInputs] = useState<MediaDeviceInfo[]>([]);
+  const [selectedInput, setSelectedInput] = useState<string | null>(null);
   const [availableSounds, setAvailableSounds] = useState<Record<AudioType, BufferMetadata | null>>({
     music: null,
     speech: null,
-    audio: null,
+    bgm: null,
+    efx: null,
     guitar: null,
   });
 
@@ -35,29 +39,16 @@ const LandingWidget: React.FC = () => {
     setSelectedAudio('guitar');
 
     try {
-      if (!isMuted) {
-        const currentSound = availableSounds[selectedAudio];
-        if (currentSound && currentSound.id) {
-          await AudioManager.stopSound(currentSound.id);
-        }
+      if (selectedAudio === 'guitar') {
+        AudioManager.disconnectMicrophone();
       }
 
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(device => device.kind === 'audioinput');
 
-      const usbDevice = audioInputs.find(device =>
-        device.label && (
-          device.label.toLowerCase().includes('usb') ||
-          device.label.toLowerCase().includes('interface') ||
-          device.label.toLowerCase().includes('audio') ||
-          device.label.toLowerCase().includes('guitar') ||
-          device.label.toLowerCase().includes('amp')
-        )
-      );
+      const device = availableInputs.find(input => (input.label || input.deviceId) === selectedInput);
 
       const constraints = {
         audio: {
-          deviceId: usbDevice ? { exact: usbDevice.deviceId } : undefined,
+          deviceId: device ? { exact: device.deviceId } : undefined,
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,
@@ -83,138 +74,116 @@ const LandingWidget: React.FC = () => {
     } catch (error) {
       console.error('Failed to access microphone:', error);
     }
-  }, [selectedAudio, availableSounds, isMuted]);
+  }, [selectedAudio, selectedInput, availableInputs]);
 
-  const onToggleSpeaker = useCallback(() => {
-    // If we're in the hidden toolbar state (selectCount >= 10), only allow muting
-    if (selectCount >= 10) {
-      if (!isMuted) {
-        setIsMuted(true);
+  // const onToggleSpeaker = useCallback(() => {
+  //   // If we're in the hidden toolbar state (selectCount >= 10), only allow muting
+  //   if (selectCount >= 10) {
+  //     if (!isMuted) {
+  //       setIsMuted(true);
 
-        if (selectedAudio === 'guitar') {
-          AudioManager.disconnectMicrophone();
-        } else {
-          const currentSound = availableSounds[selectedAudio];
-          if (currentSound && currentSound.id) {
-            AudioManager.stopSound(currentSound.id);
-          }
-        }
-      } else {
-        setIsMuted(false);
+  //       if (selectedAudio === 'guitar') {
+  //         AudioManager.disconnectMicrophone();
+  //       } else {
+  //         const currentSound = availableSounds[selectedAudio];
+  //         if (currentSound && currentSound.id) {
+  //           AudioManager.stopSound(currentSound.id);
+  //         }
+  //       }
+  //     } else {
+  //       setIsMuted(false);
 
-        if (selectedAudio === 'guitar') {
-          onSelectGuitar();
-          return;
-        }
+  //       if (selectedAudio === 'guitar') {
+  //         onSelectGuitar();
+  //         return;
+  //       }
 
-        const currentSound = availableSounds[selectedAudio];
+  //       const currentSound = availableSounds[selectedAudio];
 
-        if (!currentSound) {
-          return;
-        }
+  //       if (!currentSound) {
+  //         return;
+  //       }
 
-        AudioManager.playSound(currentSound.id, 0, () => {
-          setIsMuted(true);
-        });
-        return;
-      }
+  //       AudioManager.playSound(currentSound.id, 0, () => {
+  //         setIsMuted(true);
+  //       });
+  //       return;
+  //     }
 
-      return;
-    }
+  //     return;
+  //   }
 
-    if (isMuted) {
-      setIsMuted(false);
+  //   if (isMuted) {
+  //     setIsMuted(false);
 
-      if (selectedAudio === 'guitar') {
-        onSelectGuitar();
-        return;
-      }
+  //     if (selectedAudio === 'guitar') {
+  //       onSelectGuitar();
+  //       return;
+  //     }
 
-      const currentSound = availableSounds[selectedAudio];
+  //     const currentSound = availableSounds[selectedAudio];
 
-      if (!currentSound) {
-        return;
-      }
+  //     if (!currentSound) {
+  //       return;
+  //     }
 
-      AudioManager.playSound(currentSound.id, 0, () => {
-        setIsMuted(true);
-      });
+  //     AudioManager.playSound(currentSound.id, 0, () => {
+  //       setIsMuted(true);
+  //     });
 
-      return;
-    }
+  //     return;
+  //   }
 
-    setIsMuted(true);
+  //   setIsMuted(true);
 
-    if (selectedAudio === 'guitar') {
-      AudioManager.disconnectMicrophone();
-      return;
-    }
+  //   if (selectedAudio === 'guitar') {
+  //     AudioManager.disconnectMicrophone();
+  //     return;
+  //   }
 
-    const currentSound = availableSounds[selectedAudio];
-    if (currentSound && currentSound.id) {
-      AudioManager.stopSound(currentSound.id);
-    }
-  }, [isMuted, selectedAudio, availableSounds, onSelectGuitar, selectCount]);
+  //   const currentSound = availableSounds[selectedAudio];
+  //   if (currentSound && currentSound.id) {
+  //     AudioManager.stopSound(currentSound.id);
+  //   }
+  // }, [isMuted, selectedAudio, availableSounds, onSelectGuitar, selectCount]);
 
   const onSelectAudio = useCallback(async (audioType: AudioType) => {
     setSelectCount(prev => prev + 1);
     setSelectedAudio(audioType);
 
-    if (isMuted) {
-      return;
-    }
-
-    if (selectedAudio === 'guitar') {
-      AudioManager.disconnectMicrophone();
-    } else {
-      const currentSound = availableSounds[selectedAudio];
-      if (currentSound && currentSound.id) {
-        await AudioManager.stopSound(currentSound.id);
-      }
-    }
+    setIsMuted(false);
 
     if (audioType === 'guitar') {
       await onSelectGuitar();
-    } else {
-      const newSound = availableSounds[audioType];
-      if (newSound) {
-        AudioManager.playSound(newSound.id, 0, () => {
-          setIsMuted(true);
-        });
-      }
+      return;
     }
-  }, [availableSounds, selectedAudio, isMuted, onSelectGuitar, selectCount]);
+
+    const sound = availableSounds[audioType];
+
+    if (!sound || !sound.id) {
+      console.warn(`No sound available for type: ${audioType}`);
+      return;
+    }
+
+    if (AudioManager.isActive(sound.id)) {
+      AudioManager.stopSound(sound.id);
+      return;
+    } else {
+      AudioManager.playSound(sound.id, audioType, 0, null, audioType === 'bgm');
+    }
+  }, [availableSounds, onSelectGuitar]);
 
   const onSelectClean = useCallback(async () => {
-
     try {
-      // Stop any current audio
       if (selectedAudio === 'guitar') {
         AudioManager.disconnectMicrophone();
-      } else {
-        const currentSound = availableSounds[selectedAudio];
-        if (currentSound && currentSound.id && AudioManager.isPlaying && !isMuted) {
-          await AudioManager.stopSound(currentSound.id);
-        }
       }
 
-      // Get microphone access
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(device => device.kind === 'audioinput');
-
-      const usbDevice = audioInputs.find(device =>
-        device.label && (
-          device.label.toLowerCase().includes('usb') ||
-          device.label.toLowerCase().includes('interface') ||
-          device.label.toLowerCase().includes('audio') ||
-          device.label.toLowerCase().includes('guitar') ||
-          device.label.toLowerCase().includes('amp')
-        )
-      );
+      const device = availableInputs.find(input => (input.label || input.deviceId) === selectedInput);
 
       const constraints = {
         audio: {
-          deviceId: usbDevice ? { exact: usbDevice.deviceId } : undefined,
+          deviceId: device ? { exact: device.deviceId } : undefined,
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,
@@ -238,20 +207,13 @@ const LandingWidget: React.FC = () => {
     } catch (error) {
       console.error('Failed to access microphone for clean sound:', error);
     }
-  }, [selectedAudio, availableSounds, isMuted]);
+  }, [selectedAudio, selectedInput, availableInputs]);
 
   const onSelectDistorted = useCallback(async () => {
-    setSelectedAudio('guitar');
-
     try {
-      // Stop any current audio
+      // Stop any current microphone audio
       if (selectedAudio === 'guitar') {
         AudioManager.disconnectMicrophone();
-      } else {
-        const currentSound = availableSounds[selectedAudio];
-        if (currentSound && currentSound.id && AudioManager.isPlaying && !isMuted) {
-          await AudioManager.stopSound(currentSound.id);
-        }
       }
 
       // Get microphone access
@@ -279,11 +241,31 @@ const LandingWidget: React.FC = () => {
       const distortedEffects = presetEffects.distorted();
       AudioManager.connectMicrophone(stream, distortedEffects);
 
+      setSelectedAudio('guitar');
       setIsMuted(false);
     } catch (error) {
       console.error('Failed to access microphone for distorted sound:', error);
     }
-  }, [selectedAudio, availableSounds, isMuted]);
+  }, [selectedAudio]);
+
+  useEffect(() => {
+    async function fetchAudioInputs() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+        setAvailableInputs(audioInputs);
+
+        if (audioInputs.length > 0) {
+          setSelectedInput(audioInputs[0].label || audioInputs[0].deviceId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch audio inputs:', error);
+      }
+    }
+
+    fetchAudioInputs();
+  }, []);
 
   useEffect(() => {
     function loadSounds() {
@@ -300,7 +282,8 @@ const LandingWidget: React.FC = () => {
           const soundsMap: Record<AudioType, BufferMetadata | null> = {
             music: null,
             speech: null,
-            audio: null,
+            bgm: null,
+            efx: null,
             guitar: null,
           };
 
@@ -328,15 +311,17 @@ const LandingWidget: React.FC = () => {
         </div>
       )}
       <div className={styles.toolbar}>
-        <div className={styles.toolbarButtonsSingle}>
+        {/* <div className={styles.toolbarButtonsSingle}>
           <button className={styles.muteButton} onClick={onToggleSpeaker}>
             {isMuted ? <SpeakerCrossed color={colorMode === 'dark' ? 'var(--swm-red-dark-100)' : 'var(--swm-red-light-100)'} /> : <Speaker color={colorMode === 'dark' ? 'var(--swm-blue-dark-100)' : 'var(--swm-blue-light-100)'} />}
           </button>
         </div>
-        <Spacer.H size="12px" />
+        <Spacer.H size="12px" /> */}
         <div className={styles.toolbarButtonsGroup}>
           <button className={styles.toolbarButton} onClick={() => onSelectAudio('music')}>Music</button>
           <button className={styles.toolbarButton} onClick={() => onSelectAudio('speech')}>Speech</button>
+          <button className={styles.toolbarButton} onClick={() => onSelectAudio('bgm')}>BGM</button>
+          <button className={styles.toolbarButton} onClick={() => onSelectAudio('efx')}>efx</button>
         </div>
       </div>
       <Spectrogram selectedAudio={selectedAudio} />
