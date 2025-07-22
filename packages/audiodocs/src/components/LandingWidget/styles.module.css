@@ -52,7 +52,7 @@
   height: 28px;
 }
 
-.toolbarButton {
+.widgetToolbarButton {
   cursor: pointer;
   background: none;
   border: none;
@@ -65,28 +65,41 @@
   padding: 0 8px;
 }
 
-.toolbarButton:hover {
+.widgetToolbarButton:hover {
   text-decoration: underline;
 }
 
-.toolbarButtonActive {
+.widgetToolbarButtonActive {
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0%;
+  height: 56px;
+  padding: 0 8px;
   color: var(--swm-red-light-100);
 }
 
 
-[data-theme='dark'] .toolbarButton {
+.widgetToolbarButtonActive:hover {
+  text-decoration: underline;
+}
+
+[data-theme='dark'] .widgetToolbarButton {
   color: var(--swm-off-white);
 }
 
-[data-theme='dark'] .toolbarButtonActive {
+[data-theme='dark'] .widgetToolbarButtonActive {
   color: var(--swm-red-dark-100);
 }
 
-.toolbarButton:first-child {
+.widgetToolbarButton:first-child {
   padding-left: 16px;
 }
 
-.toolbarButton:last-child {
+.widgetToolbarButton:last-child {
   padding-right: 16px;
 }
 

@@ -27,6 +27,7 @@ const LandingWidget: React.FC = () => {
 
   const [isMuted, setIsMuted] = useState(true);
   const [selectCount, setSelectCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeSources, setActiveSources] = useState<Record<AudioType, boolean>>({
     music: false,
     speech: false,
@@ -331,6 +332,7 @@ const LandingWidget: React.FC = () => {
           });
 
           setAvailableSounds(soundsMap);
+          setIsLoading(false);
         });
     }
 
@@ -342,8 +344,8 @@ const LandingWidget: React.FC = () => {
       {selectCount >= showAmpToolbarThreshold && (
         <div className={styles.hiddenToolbar}>
           <div className={styles.toolbarButtonsGroup}>
-            <button className={styles.toolbarButton} onClick={onSelectClean}>Clean</button>
-            <button className={styles.toolbarButton} onClick={onSelectDistorted}>Distorted</button>
+            <button className={styles.widgetToolbarButton} onClick={onSelectClean}>Clean</button>
+            <button className={styles.widgetToolbarButton} onClick={onSelectDistorted}>Distorted</button>
 
           </div>
         </div>
@@ -355,12 +357,14 @@ const LandingWidget: React.FC = () => {
           </button>
         </div>
         <Spacer.H size="12px" /> */}
-        <div className={styles.toolbarButtonsGroup}>
-          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.music })} onClick={() => onSelectAudio('music')}>Music</button>
-          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.speech })} onClick={() => onSelectAudio('speech')}>Speech</button>
-          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.bgm })} onClick={() => onSelectAudio('bgm')}>BGM</button>
-          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.efx })} onClick={() => onSelectAudio('efx')}>efx</button>
-        </div>
+        {!isLoading && (
+          <div className={styles.toolbarButtonsGroup}>
+            <button className={!activeSources.music ? styles.widgetToolbarButton : styles.widgetToolbarButtonActive} onClick={() => onSelectAudio('music')}>Music</button>
+            <button className={!activeSources.speech ? styles.widgetToolbarButton : styles.widgetToolbarButtonActive} onClick={() => onSelectAudio('speech')}>Speech</button>
+            <button className={!activeSources.bgm ? styles.widgetToolbarButton : styles.widgetToolbarButtonActive} onClick={() => onSelectAudio('bgm')}>BGM</button>
+            <button className={!activeSources.efx ? styles.widgetToolbarButton : styles.widgetToolbarButtonActive} onClick={() => onSelectAudio('efx')}>efx</button>
+          </div>
+        )}
       </div>
       <Spectrogram selectedAudio={selectedAudio} />
     </div>
