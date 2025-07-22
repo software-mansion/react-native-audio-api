@@ -38,13 +38,9 @@ Version 2:
 | `gain` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) | <ReadOnly /> |
 | `type` | `string` | — | Defines the kind of filtering algorithm the node applies | — |
 
-
-Filter parameters behave differently depending on the chosen filter type.
-TODO: detune
-
 #### BiquadFilterType enumeration description
 | `type` | Description | `frequency` | `Q` | `gain` |
-|--------|-------------|-------------|-----|--------|
+|:------:|:-----------:|:-----------:|:---:|:------:|
 | `lowpass` | Second-order resonant lowpass filter with 12dB/octave rolloff. Frequencies below the cutoff pass through; higher frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak. | Not used |
 | `highpass` | Second-order resonant highpass filter with 12dB/octave rolloff. Frequencies above the cutoff pass through; lower frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak.  | Not used |
 | `bandpass` | Second-order bandpass filter. Frequencies within a given range pass through; others are attenuated. | The center of the frequency band. | Controls the bandwidth. Higher values result in a narrower band. | Not used |

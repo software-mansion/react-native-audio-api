@@ -34,7 +34,7 @@ void StereoPannerNode::processNode(
   // Input is mono
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < framesToProcess; i++) {
-      auto pan = clamp(panParamValues[i], -1.0, 1.0);
+      auto pan =std::clamp(panParamValues[i], -1.0f, 1.0f);
       auto x = (pan + 1) / 2;
 
       auto gainL = static_cast<float>(cos(x * PI / 2));
@@ -48,7 +48,7 @@ void StereoPannerNode::processNode(
     }
   } else { // Input is stereo
     for (int i = 0; i < framesToProcess; i++) {
-      auto pan = clamp(panParamValues[i], -1.0, 1.0);
+      auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       auto x = (pan <= 0 ? pan + 1 : pan);
 
       auto gainL = static_cast<float>(cos(x * PI / 2));
