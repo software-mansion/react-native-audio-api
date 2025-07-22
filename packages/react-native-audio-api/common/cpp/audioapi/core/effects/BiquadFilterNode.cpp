@@ -26,6 +26,7 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
       context);
   type_ = BiquadFilterType::LOWPASS;
   isInitialized_ = true;
+  // channelCountMode_ = ChannelCountMode::MAX; ?
 }
 
 std::string BiquadFilterNode::getType() {
@@ -65,8 +66,12 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const int length) {
-  applyFilter();
+  // TODO: check if array lengths match?
+  // why do we need applyFilter?
+  // applyFilter();
 
+  // Is it necessary?
+  // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
   float b2 = b2_;
@@ -76,7 +81,9 @@ void BiquadFilterNode::getFrequencyResponse(
   for (size_t i = 0; i < length; i++) {
     auto omega = PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
-    auto response = ((b0 * z + b1) * z + b2) / ((z + a1) * z + a2);
+    // TODO: check if this is correct
+    auto response = (b0 + (b1 + b2 * z) * z) /
+        (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
     magResponseOutput[i] = static_cast<float>(abs(response));
     phaseResponseOutput[i] =
         static_cast<float>(atan2(imag(response), real(response)));
@@ -156,13 +163,13 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
   frequency = std::clamp(frequency, 0.0f, 1.0f);
   Q = std::max(0.0f, Q);
 
-  // frequency == 1 jak w reszcie funkcji
+  // frequency == 1? as in the rest of the functions
   if (frequency <= 0.0 || frequency >= 1.0) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  // Q == 0? Q nigdy nie jest ujemne
+  // Q == 0? Q is never negative
   if (Q <= 0.0) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
@@ -219,8 +226,8 @@ void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
   }
 
   float w0 = PI * frequency;
-  // w oryginalnym wzorze: sqrt((A + 1/A) * (1/S - 1) + 2), ale przyjmujemy
-  // maksymalna wartosc S=1, wiec wychodzi 0+2 pod pierwiastkiem
+  // In the original formula: sqrt((A + 1/A) * (1/S - 1) + 2), but we assume
+  // the maximum value S = 1, so it becomes 0 + 2 under the square root
   float alpha = 0.5f * std::sin(w0) * std::sqrt(2.0f);
   float cosW = std::cos(w0);
   float gamma = 2.0f * std::sqrt(A) * alpha;
