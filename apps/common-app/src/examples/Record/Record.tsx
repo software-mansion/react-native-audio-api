@@ -18,14 +18,14 @@ const Record: FC = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
-      iosOptions: ['allowBluetooth', 'defaultToSpeaker'],
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
     
     recorderRef.current = new AudioRecorder({
-      sampleRate: 16000,
-      bufferLengthInSamples: 16000,
+      sampleRate: 48000,
+      bufferLengthInSamples: 48000,
     });
-    aCtxRef.current = new AudioContext({ sampleRate: 16000 });
+    aCtxRef.current = new AudioContext({ sampleRate: 48000 });
     recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
     
     recorderRef.current.connect(recorderAdapterRef.current); // TODO this would be desired flow
