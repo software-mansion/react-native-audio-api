@@ -65,9 +65,21 @@
   padding: 0 8px;
 }
 
+.toolbarButton:hover {
+  text-decoration: underline;
+}
+
+.toolbarButtonActive {
+  color: var(--swm-red-light-100);
+}
+
 
 [data-theme='dark'] .toolbarButton {
   color: var(--swm-off-white);
+}
+
+[data-theme='dark'] .toolbarButtonActive {
+  color: var(--swm-red-dark-100);
 }
 
 .toolbarButton:first-child {

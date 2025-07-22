@@ -65,6 +65,7 @@ class AudioManager {
       music: 0.7,
       speech: 0.8,
       bgm: 0.5,
+      efx: 0.9,
       guitar: 0.6
     };
 
@@ -149,7 +150,10 @@ class AudioManager {
 
       source.onended = () => {
         resolve();
-        this.isPlaying = false;
+
+        if (this.activeSounds.size === 0 && !this.microphoneSource) {
+          this.isPlaying = false;
+        }
       };
 
       if (source) {

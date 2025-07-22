@@ -10,6 +10,7 @@ import { presetEffects } from "@site/src/audio/effects";
 import { AudioType } from "./types";
 import Spectrogram from "./Spectrogram";
 import styles from "./styles.module.css";
+import clsx from 'clsx';
 
 const sounds: Record<AudioType, string | null> = {
   music: '/react-native-audio-api/audio/music/example-music-05.wav',
@@ -19,14 +20,23 @@ const sounds: Record<AudioType, string | null> = {
   guitar: null,
 };
 
+const showAmpToolbarThreshold = 30;
+
 const LandingWidget: React.FC = () => {
   const { colorMode } = useColorMode();
 
   const [isMuted, setIsMuted] = useState(true);
   const [selectCount, setSelectCount] = useState(0);
+  const [activeSources, setActiveSources] = useState<Record<AudioType, boolean>>({
+    music: false,
+    speech: false,
+    bgm: false,
+    efx: false,
+    guitar: false,
+  });
   const [selectedAudio, setSelectedAudio] = useState<AudioType>('music');
-  const [availableInputs, setAvailableInputs] = useState<MediaDeviceInfo[]>([]);
   const [selectedInput, setSelectedInput] = useState<string | null>(null);
+  const [availableInputs, setAvailableInputs] = useState<MediaDeviceInfo[]>([]);
   const [availableSounds, setAvailableSounds] = useState<Record<AudioType, BufferMetadata | null>>({
     music: null,
     speech: null,
@@ -37,6 +47,13 @@ const LandingWidget: React.FC = () => {
 
   const onSelectGuitar = useCallback(async () => {
     setSelectedAudio('guitar');
+    setActiveSources(({
+      music: false,
+      speech: false,
+      bgm: false,
+      efx: false,
+      guitar: true,
+    }));
 
     try {
       if (selectedAudio === 'guitar') {
@@ -151,6 +168,11 @@ const LandingWidget: React.FC = () => {
     setSelectCount(prev => prev + 1);
     setSelectedAudio(audioType);
 
+    setActiveSources((prev) => ({
+      ...prev,
+      [audioType]: true,
+    }));
+
     setIsMuted(false);
 
     if (audioType === 'guitar') {
@@ -167,9 +189,18 @@ const LandingWidget: React.FC = () => {
 
     if (AudioManager.isActive(sound.id)) {
       AudioManager.stopSound(sound.id);
+      setActiveSources((prev) => ({
+        ...prev,
+        [audioType]: false,
+      }));
       return;
     } else {
-      AudioManager.playSound(sound.id, audioType, 0, null, audioType === 'bgm');
+      AudioManager.playSound(sound.id, audioType, 0, () => {
+        setActiveSources((prev) => ({
+          ...prev,
+          [audioType]: false,
+        }));
+      }, audioType === 'bgm');
     }
   }, [availableSounds, onSelectGuitar]);
 
@@ -203,6 +234,13 @@ const LandingWidget: React.FC = () => {
       AudioManager.connectMicrophone(stream, cleanEffects);
 
       setSelectedAudio('guitar');
+      setActiveSources(({
+        music: false,
+        speech: false,
+        bgm: false,
+        efx: false,
+        guitar: true,
+      }));
       setIsMuted(false);
     } catch (error) {
       console.error('Failed to access microphone for clean sound:', error);
@@ -301,7 +339,7 @@ const LandingWidget: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {selectCount >= 10 && (
+      {selectCount >= showAmpToolbarThreshold && (
         <div className={styles.hiddenToolbar}>
           <div className={styles.toolbarButtonsGroup}>
             <button className={styles.toolbarButton} onClick={onSelectClean}>Clean</button>
@@ -318,10 +356,10 @@ const LandingWidget: React.FC = () => {
         </div>
         <Spacer.H size="12px" /> */}
         <div className={styles.toolbarButtonsGroup}>
-          <button className={styles.toolbarButton} onClick={() => onSelectAudio('music')}>Music</button>
-          <button className={styles.toolbarButton} onClick={() => onSelectAudio('speech')}>Speech</button>
-          <button className={styles.toolbarButton} onClick={() => onSelectAudio('bgm')}>BGM</button>
-          <button className={styles.toolbarButton} onClick={() => onSelectAudio('efx')}>efx</button>
+          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.music })} onClick={() => onSelectAudio('music')}>Music</button>
+          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.speech })} onClick={() => onSelectAudio('speech')}>Speech</button>
+          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.bgm })} onClick={() => onSelectAudio('bgm')}>BGM</button>
+          <button className={clsx(styles.toolbarButton, { [styles.toolbarButtonActive]: activeSources.efx })} onClick={() => onSelectAudio('efx')}>efx</button>
         </div>
       </div>
       <Spectrogram selectedAudio={selectedAudio} />
