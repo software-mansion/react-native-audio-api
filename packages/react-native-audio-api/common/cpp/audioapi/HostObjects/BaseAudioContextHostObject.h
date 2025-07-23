@@ -106,12 +106,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
-JSI_HOST_FUNCTION(createBufferQueueSource) {
-    auto bufferSource = context_->createBufferQueueSource();
-    auto bufferStreamSourceHostObject =
-            std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
-    return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
-}
+  JSI_HOST_FUNCTION(createBufferQueueSource) {
+      auto bufferSource = context_->createBufferQueueSource();
+      auto bufferStreamSourceHostObject =
+              std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
+      return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
+  }
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());
@@ -236,8 +236,7 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
         return promise;
     }
 
- protected:
-  std::shared_ptr<BaseAudioContext> context_;
+    std::shared_ptr<BaseAudioContext> context_;
 
  protected:
   std::shared_ptr<PromiseVendor> promiseVendor_;

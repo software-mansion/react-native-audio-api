@@ -19,7 +19,7 @@ import { InvalidAccessError, NotSupportedError } from '../errors';
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  protected readonly context: IBaseAudioContext;
+  readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
