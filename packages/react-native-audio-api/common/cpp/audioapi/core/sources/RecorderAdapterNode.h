@@ -19,6 +19,11 @@ class AudioBus;
 class RecorderAdapterNode : public AudioNode {
  public:
     explicit RecorderAdapterNode(BaseAudioContext *context);
+
+    /// @brief Initialize the RecorderAdapterNode with a buffer size.
+    /// @note This method should be called ONLY ONCE when the buffer size is known.
+    /// @throws std::runtime_error if the node is already initialized.
+    /// @param bufferSize The size of the buffer to be used.
     void init(size_t bufferSize);
 
  protected:

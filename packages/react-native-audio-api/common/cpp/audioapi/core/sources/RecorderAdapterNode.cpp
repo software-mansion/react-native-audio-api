@@ -15,6 +15,10 @@ RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context) noexcept(
 }
 
 void RecorderAdapterNode::init(size_t bufferSize) {
+  if (isInitialized_) {
+    throw std::runtime_error(
+        "RecorderAdapterNode should not be initialized more than once. Just create a new instance.");
+  }
   isInitialized_ = true;
   buff_ = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
 }

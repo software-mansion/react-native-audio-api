@@ -15,8 +15,7 @@ AudioRecorder::AudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      adapterNode_(nullptr) {
+      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
   constexpr int minRingBufferSize = 8192;
   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
@@ -61,12 +60,23 @@ void AudioRecorder::sendRemainingData() {
 
 void AudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
   node->init(ringBufferSize_);
+  adapterNodeLock_.lock();
   adapterNode_ = node;
+  adapterNodeLock_.unlock();
+}
+
+void AudioRecorder::disconnect() {
+  adapterNodeLock_.lock();
+  adapterNode_ = nullptr;
+  adapterNodeLock_.unlock();
 }
 
 void AudioRecorder::writeToBuffers(const float *data, int numFrames) {
-  if (adapterNode_ != nullptr) {
-    adapterNode_->buff_->write(data, numFrames);
+  if (adapterNodeLock_.try_lock()) {
+    if (adapterNode_ != nullptr) {
+      adapterNode_->buff_->write(data, numFrames);
+    }
+    adapterNodeLock_.unlock();
   }
   circularBuffer_->push_back(data, numFrames);
 }

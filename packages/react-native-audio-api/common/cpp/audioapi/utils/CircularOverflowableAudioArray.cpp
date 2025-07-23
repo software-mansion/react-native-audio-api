@@ -13,6 +13,10 @@ void CircularOverflowableAudioArray::write(
     const size_t size) {
   size_t writeIndex = vWriteIndex_.load(std::memory_order_relaxed);
 
+  if (size > size_) {
+    return; // Ignore write if size exceeds buffer size
+  }
+
   /// Advances the read index if there is not enough space
   readLock_.lock();
   size_t availableSpace = (size_ + vReadIndex_ - writeIndex - 1) % size_;

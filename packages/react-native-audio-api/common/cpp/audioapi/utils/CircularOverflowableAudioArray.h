@@ -20,7 +20,7 @@ class CircularOverflowableAudioArray : public AudioArray {
   ~CircularOverflowableAudioArray() = default;
 
   /// @brief Writes data to the circular buffer.
-  /// @note Might wait for read opeartion to finish if it is in progress.
+  /// @note Might wait for read operation to finish if it is in progress. It ignores writes that exceed the buffer size.
   /// @param data Pointer to the input buffer.
   /// @param size Number of frames to write.
   void write(const float *data, size_t size);
