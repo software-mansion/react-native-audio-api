@@ -1,0 +1,64 @@
+---
+sidebar_position: 1
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# BiquadFilterNode
+
+The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
+Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
+
+
+#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createBiquadFilter()`](/core/base-audio-context#createbiquadfilter)
+
+## Properties
+
+| Name | Type |  Rate  | Description |
+| :--: | :--: | :----------: | :-- |
+| `frequency` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz) |
+| `detune` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents |
+| `Q` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
+| `gain` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) |
+| `type` | `string` | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
+
+#### BiquadFilterType enumeration description
+| `type` | Description | `frequency` | `Q` | `gain` |
+|:------:|:-----------:|:-----------:|:---:|:------:|
+| `lowpass` | Second-order resonant lowpass filter with 12dB/octave rolloff. Frequencies below the cutoff pass through; higher frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak. | Not used |
+| `highpass` | Second-order resonant highpass filter with 12dB/octave rolloff. Frequencies above the cutoff pass through; lower frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak.  | Not used |
+| `bandpass` | Second-order bandpass filter. Frequencies within a given range pass through; others are attenuated. | The center of the frequency band. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
+| `lowshelf` | Second-order lowshelf filter. Frequencies below the cutoff are boosted or attenuated; others remain unchanged. | The upper limit of the frequencies where the boost (or attenuation) is applied. | Not used | The boost (in dB) to be applied. Negative values attenuate the frequencies.|
+| `highshelf` | Second-order highshelf filter. Frequencies above the cutoff are boosted or attenuated; others remain unchanged. | The lower limit of the frequencies where the boost (or attenuation) is applied. | Not used | The boost (in dB) to be applied. Negative values attenuate the frequencies. |
+| `peaking` | Frequencies around a center frequency are boosted or attenuated; others remain unchanged. | The center of the frequency range where the boost (or an attenuation) is applied. | Controls the bandwidth. Higher values result in a narrower band. | The boost (in dB) to be applied. Negative values attenuate the frequencies. |
+| `notch` | Notch (band-stop) filter. Opposite of a bandpass filter: frequencies around the center are attenuated; others remain unchanged. | The center of the frequency range where the notch is applied. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
+| `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
+
+## Methods
+
+### `getFrequencyResponse`
+
+| Parameters | Type | Description |
+| :--------: | :--: | :---------- |
+| `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
+| `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, sampleRate / 2], the corresponding results are NaN. |
+| `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, sampleRate / 2], the corresponding results are NaN. |
+| `length` | `number` | The number of frequency values to process. It should match the length of all input and output arrays. |
+
+#### Returns `undefined`.
+
+## Remarks
+#### `frequency`
+- float, default value is 350.
+#### `detune`
+- float, default value is 0.
+#### `Q`
+- float, default value is 1.
+#### `gain`
+- [`BiquadFilterType`](#biquadfiltertype-enumeration-description), default is "lowpass".

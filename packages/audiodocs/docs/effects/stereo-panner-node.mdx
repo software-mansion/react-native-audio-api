@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
@@ -11,7 +11,7 @@ The `StereoPannerNode` interface represents the change in ratio between two outp
 
 #### [`AudioNode`](/core/audio-node#read-only-properties) properties
 
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"explicit"} channelInterpretation={"speakers"} />
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"clamped-max"} channelInterpretation={"speakers"} />
 
 ## Constructor
 
@@ -19,11 +19,12 @@ The `StereoPannerNode` interface represents the change in ratio between two outp
 
 ## Properties
 
-| Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------ |
-| `pan` | [`AudioParam`](/core/audio-param) <ReadOnly /> | 0 | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing value of pan to apply. | 
+| Name | Type | Description |
+| :--: | :--: | :---------- |
+| `pan` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing how the audio signal is distributed between the left and right channels. |
 
 ## Remarks
 
 #### `pan`
+- Default value is 0
 - Nominal range is -1 (only left channel) to 1 (only right channel).
