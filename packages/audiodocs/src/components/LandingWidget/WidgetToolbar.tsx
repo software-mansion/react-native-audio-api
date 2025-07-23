@@ -21,13 +21,9 @@ const WidgetToolbar: React.FC<WidgetToolbarProps> = (props) => {
     setShowSettings((prev) => !prev);
   };
 
-  if (isLoading) {
-    return null;
-  }
-
   return (
     <>
-      <div className={styles.toolbarButtonsGroup}>
+      <div className={styles.toolbarButtonsGroup} style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s ease-in-out' }}>
         {buttons.map((button) => (
           <WidgetButton
             id={button.id}

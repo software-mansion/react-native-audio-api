@@ -93,7 +93,7 @@ const LandingWidget: React.FC = () => {
   }, []);
 
   const buttons = useMemo(() => {
-    return Object.entries(sounds).map(([key, sound]) => {
+    const buttonList = Object.entries(sounds).map(([key, sound]) => {
       if (!sound || !sound.id) {
         return null;
       }
@@ -106,6 +106,8 @@ const LandingWidget: React.FC = () => {
         onPlaySound,
       };
     });
+
+    return buttonList.filter(Boolean);
   }, [sounds, onPlaySound, activeSounds]);
 
   useEffect(() => {
