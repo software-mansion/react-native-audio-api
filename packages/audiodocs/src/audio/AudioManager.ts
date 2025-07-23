@@ -1,241 +1,296 @@
+import MockAudioContext from "./MockAudioContext";
 
-export interface BufferMetadata {
-  id: string; // unique identifier for the buffer
-  duration: number; // in seconds
-}
+import { BufferMetadata, PlaySoundOptions, PlaySoundReturnValue, ActiveSound, LoadedBuffer, AudioManagerEventType, AudioManagerEvent, AudioManagerUpdatePayload } from "./types";
+import Equalizer from "./Equalizer";
 
-const MockAudioContext = {
-  createAnalyser: () => ({
-    fftSize: 2048,
-    smoothingTimeConstant: 0.8,
-    connect: () => {},
-  }),
-  createGain: () => ({
-    gain: { value: 1 },
-    connect: () => {},
-  }),
-  createBufferSource: () => ({
-    buffer: null,
-    connect: () => {},
-    start: () => {},
-    stop: () => {},
-    onended: null,
-  }),
-  currentTime: 0,
-  decodeAudioData: (data: ArrayBuffer) => Promise.resolve({
-    duration: 0,
-  } as AudioBuffer),
-} as unknown as AudioContext;
+const fftSize = 2048;
+const smoothingTimeConstant = 0.8;
+
 
 class AudioManager {
+  output: GainNode;
   aCtx: AudioContext;
   analyser: AnalyserNode;
-  output: GainNode;
+  equalizer: Equalizer;
 
-  // Individual gain nodes for each audio type
-  gainNodes: Map<string, GainNode> = new Map();
-
-  isPlaying: boolean;
-  loadedBuffers: Map<string, AudioBuffer> = new Map();
-  activeSounds: Map<string, AudioBufferSourceNode> = new Map();
-  microphoneSource: MediaStreamAudioSourceNode | null = null;
-  microphoneEffects: AudioNode[] = [];
+  isPlaying: boolean = false;
+  loadedBuffers: Map<string, LoadedBuffer> = new Map();
+  activeSounds: Map<string, ActiveSound> = new Map();
+  eventListeners: Map<AudioManagerEventType, ((event: AudioManagerEvent) => void)[]> = new Map();
+  updateListeners: Map<string, ((event: AudioManagerUpdatePayload) => void)[]> = new Map();
 
   constructor() {
-    this.isPlaying = false;
     this.aCtx = typeof window !== 'undefined' ? new AudioContext() : MockAudioContext;
 
+    this.equalizer = new Equalizer(this.aCtx);
+
     this.analyser = this.aCtx.createAnalyser();
-    this.analyser.fftSize = 2048;
-    this.analyser.smoothingTimeConstant = 0.8;
+    this.analyser.fftSize = fftSize;
+    this.analyser.smoothingTimeConstant = smoothingTimeConstant;
 
     this.output = this.aCtx.createGain();
     this.output.gain.value = 1;
 
-    this.output.connect(this.analyser);
+    this.output.connect(this.equalizer.getInputNode());
+    this.equalizer.connect(this.analyser);
     this.analyser.connect(this.aCtx.destination);
 
-    // Initialize gain nodes for each audio type
-    this.initializeGainNodes();
+    this.isPlaying = false;
   }
 
-  initializeGainNodes() {
-    const audioTypes = ['music', 'speech', 'bgm', 'efx', 'guitar'];
-    const gainLevels = {
-      music: 0.7,
-      speech: 0.8,
-      bgm: 0.5,
-      efx: 0.9,
-      guitar: 0.6
-    };
-
-    audioTypes.forEach(type => {
-      const gainNode = this.aCtx.createGain();
-      gainNode.gain.value = gainLevels[type] || 0.7;
-      gainNode.connect(this.output);
-      this.gainNodes.set(type, gainNode);
+  clear() {
+    this.activeSounds.forEach(sound => {
+      sound.sourceNode.stop();
     });
+
+    this.activeSounds.clear();
+    this.loadedBuffers.clear();
+    this.isPlaying = false;
   }
 
-  getGainNode(audioType: string): GainNode {
-    let gainNode = this.gainNodes.get(audioType);
-    if (!gainNode) {
-      gainNode = this.aCtx.createGain();
-      gainNode.gain.value = 0.7;
-      gainNode.connect(this.output);
-      this.gainNodes.set(audioType, gainNode);
+  setOutputVolume(volume: number) {
+    this.output.gain.setValueAtTime(volume, this.aCtx.currentTime);
+  }
+
+
+  // ------------
+  // Event handling methods
+  // ------------
+
+  addEventListener<T extends AudioManagerEventType>(type: T, listener: (event: AudioManagerEvent<T>) => void) {
+    if (!this.eventListeners.has(type)) {
+      this.eventListeners.set(type, []);
     }
-    return gainNode;
+    this.eventListeners.get(type)?.push(listener);
   }
 
-  setGain(audioType: string, gain: number) {
-    const gainNode = this.getGainNode(audioType);
-    gainNode.gain.setValueAtTime(gain, this.aCtx.currentTime);
+  addUpdateEventListener(id: string, listener: (event: AudioManagerUpdatePayload) => void) {
+    if (!this.updateListeners.has(id)) {
+      this.updateListeners.set(id, []);
+    }
+
+    this.updateListeners.get(id)!.push(listener);
   }
 
-  isActive(id: string): boolean {
-    return this.activeSounds.has(id);
+  removeEventListener<T extends AudioManagerEventType>(type: T, listener: (event: AudioManagerEvent<T>) => void) {
+    const listeners = this.eventListeners.get(type);
+    if (listeners) {
+      this.eventListeners.set(type, listeners.filter(l => l !== listener));
+    }
   }
 
-  onSoundEnded(id: string, onEnded?: () => void) {
-    const source = this.activeSounds.get(id);
+  removeUpdateEventListener(id: string, listener: (event: AudioManagerUpdatePayload) => void) {
+    const listeners = this.updateListeners.get(id);
+
+    if (listeners) {
+      this.updateListeners.set(id, listeners.filter(l => l !== listener));
+    }
+  }
+
+  dispatchEvent<T extends AudioManagerEventType>(event: AudioManagerEvent<T>) {
+    const listeners = this.eventListeners.get(event.type);
+    if (listeners) {
+      listeners.forEach(listener => listener(event));
+    }
+  }
+
+  onSoundStarted() {
+    if (this.isPlaying) {
+      return;
+    }
+
+    this.isPlaying = true;
+    this.dispatchEvent({ type: 'playing', payload: {} });
+
+    this.updateLoop();
+  }
+
+  onSoundEnded({ id, onEnded }: { id: string; onEnded?: () => void }) {
+    const activeSound = this.activeSounds.get(id);
+
+    if (!activeSound) {
+      onEnded?.();
+      return;
+    }
+
+    this.updateListeners.get(activeSound.bufferId)?.forEach(listener => {
+      listener({ progress: 0 });
+    });
+
     this.activeSounds.delete(id);
 
-    if (this.activeSounds.size === 0 && !this.microphoneSource) {
+    if (this.activeSounds.size == 0) {
       this.isPlaying = false;
+      this.dispatchEvent({ type: 'stopped', payload: {} });
     }
 
-    if (onEnded) {
-      onEnded();
-    }
+    onEnded?.();
   }
 
+  // ------------
+  // Update loop
+  // ------------
 
-  playSound(id: string, audioType: string, startFrom: number = 0, onEnded?: () => void, loop: boolean = false): number {
-    if (!this.loadedBuffers.has(id)) {
-      console.warn(`No sound found with ID: ${id}`);
+  updateLoop() {
+    if (!this.isPlaying) {
       return;
     }
 
-    if (this.activeSounds.has(id)) {
-      return;
-    }
+    const currentTime = this.aCtx.currentTime;
 
-    const tNow = this.aCtx.currentTime;
-    const source = this.aCtx.createBufferSource();
-    source.buffer = this.loadedBuffers.get(id);
-    source.loop = loop;
+    this.activeSounds.forEach((sound => {
+      const duration = sound.sourceNode.buffer?.duration || 1;
+      const elapsed = (currentTime - sound.startedAt) % duration;
+      const progress = elapsed / duration;
 
-    // Connect to the specific gain node for this audio type
-    const gainNode = this.getGainNode(audioType);
-    source.connect(gainNode);
+      // Dispatch update event for each active sound
+      this.updateListeners.get(sound.bufferId)?.forEach(listener => {
+        listener({ progress });
+      });
+    }));
 
-    source.start(0, startFrom);
-    this.isPlaying = true;
-
-    source.onended = this.onSoundEnded.bind(this, id, onEnded);
-    this.activeSounds.set(id, source);
-
-    return tNow;
+    setTimeout(() => {
+      requestAnimationFrame(() => this.updateLoop());
+    }, 1000 / 60); // 60 FPS
   }
 
-  async stopSound(uniqueId: string) {
-    return new Promise<void>((resolve) => {
-      const source = this.activeSounds.get(uniqueId);
-
-      if (!source) {
-        resolve();
-        return;
-      }
-
-      source.onended = () => {
-        resolve();
-
-        if (this.activeSounds.size === 0 && !this.microphoneSource) {
-          this.isPlaying = false;
-        }
-      };
-
-      if (source) {
-        source.stop();
-        this.activeSounds.delete(uniqueId);
-      } else {
-        console.warn(`No sound found with ID: ${uniqueId}`);
-      }
-    });
-  }
+  // ------------
+  // Audio management methods
+  // ------------
 
   async loadSound(url: string): Promise<BufferMetadata> {
     const id = crypto.randomUUID();
 
     const buffer = await fetch(url)
       .then(response => response.arrayBuffer())
-      .then(data => this.aCtx.decodeAudioData(data))
+      .then(data => this.aCtx.decodeAudioData(data));
 
-    this.loadedBuffers.set(id, buffer);
+    this.loadedBuffers.set(id, { id, buffer });
+    return { id, duration: buffer.duration };
+  }
+
+  playSound(bufferId: string, options: PlaySoundOptions = {}): PlaySoundReturnValue {
+    const { loop = false, startFrom = 0, unique, volume = 1, onEnded } = options;
+
+    if (!this.loadedBuffers.has(bufferId)) {
+      console.warn(`No sound found with ID: ${bufferId}`);
+      return false;
+    }
+
+    if (unique) {
+      const existingSound = Array.from(this.activeSounds.values()).find(sound => sound.bufferId === bufferId);
+
+      if (existingSound) {
+        return false;
+      }
+    }
+
+    const id = crypto.randomUUID();
+
+    // We are already sure the buffer exists at this point
+    const buffer = this.loadedBuffers.get(bufferId)!.buffer;
+
+    const tNow = this.aCtx.currentTime;
+    const source = this.aCtx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = loop;
+
+    source.onended = this.onSoundEnded.bind(this, { id, onEnded });
+
+    const gainNode = this.aCtx.createGain();
+    gainNode.gain.value = volume;
+
+    source.connect(gainNode);
+    gainNode.connect(this.output);
+
+    source.start(tNow, startFrom);
+    this.onSoundStarted();
+
+    this.activeSounds.set(id, {
+      id,
+      bufferId,
+      startedAt: tNow,
+      sourceNode: source,
+    });
 
     return {
       id,
-      duration: buffer.duration,
+      startedAt: tNow
     };
   }
 
-  setVolume(volume: number) {
-    this.output.gain.value = volume;
-  }
+  stopSound(id: string): Promise<void> {
+    return new Promise((resolve) => {
+      const source = this.activeSounds.get(id);
 
-  connectMicrophone(stream: MediaStream, effectsMap?: Map<string, AudioNode>) {
-    // Disconnect any existing microphone
-    this.disconnectMicrophone();
+      if (!source) {
+        resolve();
+        return;
+      }
 
-    // Create microphone source
-    this.microphoneSource = this.aCtx.createMediaStreamSource(stream);
-
-    let currentNode: AudioNode = this.microphoneSource;
-
-    // Apply effects if provided
-    if (effectsMap) {
-      const effects = Array.from(effectsMap.values());
-      this.microphoneEffects = effects;
-
-      effects.forEach(effect => {
-        currentNode.connect(effect);
-        currentNode = effect;
+      source.sourceNode.onended = this.onSoundEnded.bind(this, {
+        id,
+        onEnded: () => { resolve(); },
       });
-    }
 
-    // Connect to guitar gain node
-    const guitarGain = this.getGainNode('guitar');
-    currentNode.connect(guitarGain);
-    this.isPlaying = true;
+      this.updateListeners.get(source.bufferId)?.forEach(listener => {
+        listener({ progress: 0 });
+      });
+
+      source.sourceNode.stop();
+    });
   }
 
-  disconnectMicrophone() {
-    if (this.microphoneSource) {
-      this.microphoneSource.disconnect();
-      this.microphoneSource = null;
-    }
-
-    // Disconnect effects
-    this.microphoneEffects.forEach(effect => {
-      effect.disconnect();
-    });
-    this.microphoneEffects = [];
-
-    this.isPlaying = false;
-  }
-
-  clear() {
-    this.loadedBuffers.clear();
-
-    this.activeSounds.forEach((source) => {
-      source.stop();
-    });
-
-    this.activeSounds.clear();
-    this.disconnectMicrophone();
-    this.isPlaying = false;
+  isSoundActive(id: string): boolean {
+    return this.activeSounds.has(id);
   }
 }
 
 export default new AudioManager();
+
+
+// class AudioManager {
+//   microphoneSource: MediaStreamAudioSourceNode | null = null;
+//   microphoneEffects: AudioNode[] = [];
+
+//   connectMicrophone(stream: MediaStream, effectsMap?: Map<string, AudioNode>) {
+//     // Disconnect any existing microphone
+//     this.disconnectMicrophone();
+
+//     // Create microphone source
+//     this.microphoneSource = this.aCtx.createMediaStreamSource(stream);
+
+//     let currentNode: AudioNode = this.microphoneSource;
+
+//     // Apply effects if provided
+//     if (effectsMap) {
+//       const effects = Array.from(effectsMap.values());
+//       this.microphoneEffects = effects;
+
+//       effects.forEach(effect => {
+//         currentNode.connect(effect);
+//         currentNode = effect;
+//       });
+//     }
+
+//     // Connect to guitar gain node
+//     const guitarGain = this.getGainNode('guitar');
+//     currentNode.connect(guitarGain);
+//     this.isPlaying = true;
+//   }
+
+//   disconnectMicrophone() {
+//     if (this.microphoneSource) {
+//       this.microphoneSource.disconnect();
+//       this.microphoneSource = null;
+//     }
+
+//     // Disconnect effects
+//     this.microphoneEffects.forEach(effect => {
+//       effect.disconnect();
+//     });
+//     this.microphoneEffects = [];
+
+//     this.isPlaying = false;
+//   }
+// }

@@ -53,46 +53,60 @@
 }
 
 .widgetToolbarButton {
+  display: inline-flex;
   cursor: pointer;
+  position: relative;
   background: none;
   border: none;
   font-weight: 400;
   font-size: 16px;
   line-height: 1.6;
-  letter-spacing: 0%;
+  letter-spacing: 0;
   color: var(--swm-navy-light-100);
-  height: 56px;
-  padding: 0 8px;
+  padding: 16px 8px;
+  align-items: center;
 }
 
 .widgetToolbarButton:hover {
-  text-decoration: underline;
+  color: var(--swm-navy-light-40);
 }
 
 .widgetToolbarButtonActive {
+  display: inline-flex;
   cursor: pointer;
+  position: relative;
   background: none;
   border: none;
   font-weight: 400;
   font-size: 16px;
   line-height: 1.6;
-  letter-spacing: 0%;
-  height: 56px;
-  padding: 0 8px;
+  letter-spacing: 0;
+  /* height: 56px; */
+  padding: 16px 8px;
   color: var(--swm-red-light-100);
+  align-items: center;
 }
 
+.widgetToolbarButtonName {}
 
 .widgetToolbarButtonActive:hover {
-  text-decoration: underline;
+  color: var(--swm-navy-light-40);
 }
 
 [data-theme='dark'] .widgetToolbarButton {
   color: var(--swm-off-white);
 }
 
+[data-theme='dark'] .widgetToolbarButton:hover {
+  color: var(--swm-navy-dark-20);
+}
+
 [data-theme='dark'] .widgetToolbarButtonActive {
   color: var(--swm-red-dark-100);
+}
+
+[data-theme='dark'] .widgetToolbarButtonActive:hover {
+  color: var(--swm-navy-dark-20);
 }
 
 .widgetToolbarButton:first-child {
@@ -100,6 +114,14 @@
 }
 
 .widgetToolbarButton:last-child {
+  padding-right: 16px;
+}
+
+.widgetToolbarButtonActive:first-child {
+  padding-left: 16px;
+}
+
+.widgetToolbarButtonActive:last-child {
   padding-right: 16px;
 }
 
@@ -113,4 +135,48 @@
 
 .spectrogramCanvas {
   width: 100%;
+}
+
+.widgetToolbarButtonProgressContainer {
+  position: absolute;
+  bottom: 16px;
+  left: 8px;
+  right: 8px;
+  display: inline-block;
+  height: 2px;
+  overflow: hidden;
+}
+
+.widgetToolbarButton:first-child .widgetToolbarButtonProgressContainer {
+  left: 16px;
+}
+
+.widgetToolbarButton:last-child .widgetToolbarButtonProgressContainer {
+  right: 16px;
+}
+
+.widgetToolbarButtonActive:first-child .widgetToolbarButtonProgressContainer {
+  left: 16px;
+}
+
+.widgetToolbarButtonActive:last-child .widgetToolbarButtonProgressContainer {
+  right: 16px;
+}
+
+.widgetToolbarButtonProgressInner {
+  display: block;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: var(--swm-red-light-40);
+}
+
+.settingsPanel {
+  position: absolute;
+  top: 61px;
+  right: 0;
+  background: var(--swm-red-light-20);
+  /* width: 100%; */
+  padding: 16px;
+  z-index: 10;
 }

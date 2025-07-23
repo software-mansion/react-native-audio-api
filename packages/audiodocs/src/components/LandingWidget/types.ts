@@ -1,2 +1,10 @@
+export type AudioMode = 'player' | 'amplifier';
 
-export type AudioType = 'music' | 'speech' | 'bgm' | 'efx' | 'guitar';
+export type AudioSource = 'music' | 'speech' | 'bgm' | 'efx';
+
+export type SourceRecord<T> = Record<AudioSource, T>;
+
+export interface AudioSourceMetadata {
+  id: string;
+  sourceName: AudioSource;
+}
