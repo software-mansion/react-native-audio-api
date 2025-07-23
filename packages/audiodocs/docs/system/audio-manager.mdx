@@ -20,7 +20,7 @@ function App() {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
-      iosOptions: ['allowBluetooth', 'allowAirPlay'],
+      iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
     })
 
     // set info for track to be visible while device is locked
@@ -230,7 +230,8 @@ type IOSOption =
   | 'duckOthers'
   | 'allowAirPlay'
   | 'mixWithOthers'
-  | 'allowBluetooth'
+  | 'allowBluetoothHFP'
+  | 'bluetoothHighQualityRecording'
   | 'defaultToSpeaker'
   | 'allowBluetoothA2DP'
   | 'overrideMutedMicrophoneInterruption'
