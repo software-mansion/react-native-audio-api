@@ -142,8 +142,8 @@ RCT_EXPORT_METHOD(
   [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
 }
 
-RCT_EXPORT_METHOD(
-    getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+                      reject)
 {
   [self.audioSessionManager getDevicesInfo:resolve reject:reject];
 }

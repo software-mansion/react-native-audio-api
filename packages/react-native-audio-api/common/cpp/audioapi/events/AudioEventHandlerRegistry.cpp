@@ -92,8 +92,18 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         continue;
       }
 
-      auto eventObject = createEventObject(body);
-      handler->call(*runtime_, eventObject);
+      try {
+        auto eventObject = createEventObject(body);
+        handler->call(*runtime_, eventObject);
+      } catch (const std::exception &e) {
+        // re-throw the exception to be handled by the caller
+        // std::exception is safe to parse by the rn bridge
+        throw;
+      } catch (...) {
+        printf(
+            "Unknown exception occurred while invoking handler for event: %s\n",
+            eventName.c_str());
+      }
     }
   });
 }
@@ -123,8 +133,26 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       return;
     }
 
-    auto eventObject = createEventObject(body);
-    handlerIt->second->call(*runtime_, eventObject);
+    // Depending on how the AudioBufferSourceNode is handled on the JS side,
+    // it sometimes might enter race condition where the ABSN is deleted on JS
+    // side, but it is still processed on the audio thread, leading to a crash
+    // when f.e. `positionChanged` event is triggered.
+
+    // In case of debugging this, please increment the hours spent counter
+
+    // Hours spent on this: 5
+    try {
+      auto eventObject = createEventObject(body);
+      handlerIt->second->call(*runtime_, eventObject);
+    } catch (const std::exception &e) {
+      // re-throw the exception to be handled by the caller
+      // std::exception is safe to parse by the rn bridge
+      throw;
+    } catch (...) {
+      printf(
+          "Unknown exception occurred while invoking handler for event: %s\n",
+          eventName.c_str());
+    }
   });
 }
 
@@ -136,19 +164,20 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
     const auto name = pair.first.data();
     const auto &value = pair.second;
 
-    if (holds_alternative<int>(value)) {
-      eventObject.setProperty(*runtime_, name, get<int>(value));
-    } else if (holds_alternative<double>(value)) {
-      eventObject.setProperty(*runtime_, name, get<double>(value));
-    } else if (holds_alternative<float>(value)) {
-      eventObject.setProperty(*runtime_, name, get<float>(value));
-    } else if (holds_alternative<bool>(value)) {
-      eventObject.setProperty(*runtime_, name, get<bool>(value));
-    } else if (holds_alternative<std::string>(value)) {
-      eventObject.setProperty(*runtime_, name, get<std::string>(value));
-    } else if (holds_alternative<std::shared_ptr<jsi::HostObject>>(value)) {
+    if (std::holds_alternative<int>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<int>(value));
+    } else if (std::holds_alternative<double>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<double>(value));
+    } else if (std::holds_alternative<float>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<float>(value));
+    } else if (std::holds_alternative<bool>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<bool>(value));
+    } else if (std::holds_alternative<std::string>(value)) {
+      eventObject.setProperty(*runtime_, name, std::get<std::string>(value));
+    } else if (std::holds_alternative<std::shared_ptr<jsi::HostObject>>(
+                   value)) {
       auto hostObject = jsi::Object::createFromHostObject(
-          *runtime_, get<std::shared_ptr<jsi::HostObject>>(value));
+          *runtime_, std::get<std::shared_ptr<jsi::HostObject>>(value));
       eventObject.setProperty(*runtime_, name, hostObject);
     }
   }

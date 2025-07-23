@@ -7,46 +7,29 @@ set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
-include(CMakePrintHelpers)
-cmake_print_variables(ROOT)
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/c67de117379f4d1c889c7581a0a76aa0979c2083.zip
+  URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-message(STATUS "Using C++ compiler: ${CMAKE_CXX_COMPILER}")
-
 enable_testing()
-add_compile_definitions(AUDIO_API_TEST_SUITE)
 
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/AudioNode.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/AudioParam.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/BaseAudioContext.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/OfflineAudioContext.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/analysis/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/destinations/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/effects/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/inputs/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/sources/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/types/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/core/utils/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/dsp/*.cpp"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/utils/*.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/*.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AudioDecoder.cpp"
 )
+
+list(REMOVE_ITEM RNAUDIOAPI_SRC "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp")
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
   CONFIGURE_DEPENDS
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/libs/base64/*.h"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/libs/miniaudio/*.h"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/libs/pffft/*.c"
-  "${ROOT}/packages/react-native-audio-api/common/cpp/audioapi/libs/signalsmith-stretch/*.h"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
 )
 
 add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})

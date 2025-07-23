@@ -14,6 +14,7 @@ class AudioPlayer {
   private offset: number = 0;
   private seekOffset: number = 0;
   private playbackRate: number = 1;
+  private onPositionChanged: ((offset: number) => void) | null = null;
 
   constructor() {
     this.audioContext = new AudioContext({ initSuspended: true });
@@ -49,6 +50,10 @@ class AudioPlayer {
     }
     this.sourceNode.onPositionChanged = (event) => {
       this.offset = event.value;
+
+      if (this.onPositionChanged) {
+        this.onPositionChanged(this.offset / this.audioBuffer!.duration);
+      }
     };
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
@@ -104,7 +109,7 @@ class AudioPlayer {
 
   reset = () => {
     if (this.sourceNode) {
-      this.sourceNode.onended = null;
+      this.sourceNode.onEnded = null;
       this.sourceNode.onPositionChanged = null;
       this.sourceNode.stop(this.audioContext.currentTime);
     }
@@ -114,6 +119,12 @@ class AudioPlayer {
     this.seekOffset = 0;
     this.playbackRate = 1;
     this.isPlaying = false;
+  };
+
+  setOnPositionChanged = (
+    callback: null | ((offset: number) => void) = null
+  ) => {
+    this.onPositionChanged = callback;
   };
 }
 
