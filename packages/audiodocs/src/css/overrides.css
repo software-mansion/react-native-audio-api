@@ -9,10 +9,6 @@
   background-color: var(--ifm-navbar-background-color);
 }
 
-[class*='navbarHideable'] {
-  background-color: var(--ifm-navbar-background-color) !important;
-}
-
 .navbar__title {
   display: flex;
   align-items: center;

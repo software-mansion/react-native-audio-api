@@ -6,7 +6,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AudioParam
 
-The `AudioParam` interface represents audio-related parameter (such as `gain` property of [GainNode`](/effects/gain-node)).
+The `AudioParam` interface represents audio-related parameter (such as `gain` property of [GainNode`](/docs/effects/gain-node)).
 It can be set to specific value or schedule value change to happen at specific time, and following specific pattern.
 
 #### a-rate vs k-rate
@@ -86,7 +86,7 @@ The change begins at the time designated for the previous event. It follows a ex
 ### `setTargetAtTime`
 
 The above method schedules a gradual change to the new value at the start time.
-This method is useful for decay or release portions of [ADSR envelopes](/effects/gain-node#envelope---adsr).
+This method is useful for decay or release portions of [ADSR envelopes](/docs/effects/gain-node#envelope---adsr).
 
 ![](/img/setTargetAtTime.png)
 
@@ -159,4 +159,4 @@ The above method cancels all scheduled changes after given cancel time, but hold
 
 ## Remarks
 
-All time parameters should be in the same time coordinate system as [`BaseAudioContext.currentTime`](/core/base-audio-context).
+All time parameters should be in the same time coordinate system as [`BaseAudioContext.currentTime`](/docs/core/base-audio-context).
