@@ -24,17 +24,9 @@ const recorder = new AudioRecorder({
 const audioContext = new AudioContext({ sampleRate: 48000 });
 const recorderAdapterNode = aCtxRef.current.createRecorderAdapter();
 
-// Connecting adapter to recorder
 recorder.connect(recorderAdapterNode);
-// Connecting adapter to destination
 recorderAdapterNode.connect(audioContext.destination)
 ```
-
-## Properties
-None
-
-## Methods
-None
 
 ## Remarks
 - Adapter without the recorder will produce silence

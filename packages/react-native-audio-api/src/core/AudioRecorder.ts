@@ -6,7 +6,7 @@ import { AudioEventEmitter } from '../events';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
 export default class AudioRecorder {
-  public readonly recorder: IAudioRecorder;
+  protected readonly recorder: IAudioRecorder;
 
   private readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
