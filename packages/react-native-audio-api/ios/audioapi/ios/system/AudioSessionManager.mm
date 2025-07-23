@@ -91,7 +91,7 @@
       sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothHFP;
     }
 
-    if ([option isEqualToString:@"bluetoothHighQualityRecording"]) {
+    if (@available(iOS 26.0, *) && [option isEqualToString:@"bluetoothHighQualityRecording"]) {
       sessionOptions |= AVAudioSessionCategoryOptionBluetoothHighQualityRecording;
     }
 

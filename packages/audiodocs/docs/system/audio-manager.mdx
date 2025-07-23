@@ -16,22 +16,23 @@ import { AudioManager } from 'react-native-audio-api';
 import { useEffect } from 'react';
 
 function App() {
-  // set AVAudioSession example options (iOS only)
-  AudioManager.setAudioSessionOptions({
-    iosCategory: 'playback',
-    iosMode: 'default',
-    iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
-  });
+    // set AVAudioSession example options (iOS only)
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playback',
+      iosMode: 'default',
+      iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
+    })
 
-  // set info for track to be visible while device is locked
-  AudioManager.setLockScreenInfo({
-    title: 'Audio file',
-    artist: 'Software Mansion',
-    album: 'Audio API',
-    duration: 10,
-  });
+    // set info for track to be visible while device is locked
+    AudioManager.setLockScreenInfo({
+        title: 'Audio file',
+        artist: 'Software Mansion',
+        album: 'Audio API',
+        duration: 10,
+    });
 
   useEffect(() => {
+
     // enabling emission of events
     AudioManager.enableRemoteCommand('remotePlay', true);
     AudioManager.enableRemoteCommand('remotePause', true);
@@ -76,9 +77,9 @@ function App() {
 
 ### `setLockScreenInfo`
 
-| Parameters |                           Type                           |                  Description                   |
-| :--------: | :------------------------------------------------------: | :--------------------------------------------: |
-|   `info`   | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
+| Parameters | Type | Description |
+| :---: | :---: | :-----: |
+| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
 
 #### Returns `undefined`
 
@@ -90,17 +91,17 @@ Resets all of the lock screen data.
 
 ### `setAudioSessionOptions` <OnlyiOS />
 
-| Parameters |                           Type                           | Description                          |
-| :--------: | :------------------------------------------------------: | :----------------------------------- |
-|  options   | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
 
 #### Returns `undefined`
 
 ### `setAudioSessionActivity` <OnlyiOS />
 
-| Parameters |   Type    | Description                                     |
-| :--------: | :-------: | :---------------------------------------------- |
-|  enabled   | `boolean` | It is used to set/unset AVAudioSession activity |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| enabled | `boolean` | It is used to set/unset AVAudioSession activity |
 
 #### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.
 
@@ -110,17 +111,17 @@ Resets all of the lock screen data.
 
 ### `observeAudioInterruptions`
 
-| Parameters |   Type    | Description                                                |
-| :--------: | :-------: | :--------------------------------------------------------- |
-| `enabled`  | `boolean` | It is used to enable/disable observing audio interruptions |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable observing audio interruptions |
 
 #### Returns `undefined`
 
 ### `observeVolumeChanges`
 
-| Parameters |   Type    | Description                                           |
-| :--------: | :-------: | :---------------------------------------------------- |
-| `enabled`  | `boolean` | It is used to enable/disable observing volume changes |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable observing volume changes |
 
 #### Returns `undefined`
 
@@ -128,10 +129,10 @@ Resets all of the lock screen data.
 
 Enables emition of some system events.
 
-| Parameters |                                           Type                                            | Description                                      |
-| :--------: | :---------------------------------------------------------------------------------------: | :----------------------------------------------- |
-|   `name`   | [`RemoteCommandEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event                                 |
-| `enabled`  |                                         `boolean`                                         | Indicates the start or the end of event emission |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `name` | [`RemoteCommandEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
+| `enabled` | `boolean` | Indicates the start or the end of event emission |
 
 #### Returns `undefined`
 
@@ -142,13 +143,14 @@ with proper parameters.
 
 :::
 
+
 ### `addSystemEventListener`
 
 Adds callback to be invoked upon hearing an event.
 
-| Parameters |                                          Type                                          | Description                                         |
-| :--------: | :------------------------------------------------------------------------------------: | :-------------------------------------------------- |
-|   `name`   |   [`SystemEventName`](/system/audio-manager#systemeventname--remotecommandeventname)   | Name of an event listener                           |
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `name` | [`SystemEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
 | `callback` | [`SystemEventCallback`](/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
 
 #### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
@@ -187,18 +189,17 @@ interface BaseLockScreenInfo {
 type MediaState = 'state_playing' | 'state_paused';
 
 interface LockScreenInfo extends BaseLockScreenInfo {
-title?: string; //title of the track
-artwork?: string; //uri to the artwork
-artist?: string; //name of the artist
-album?: string; //name of the album
-duration?: number; //duration in seconds
-description?: string; // android only, description of the track
-state?: MediaState;
-speed?: number; //playback rate
-elapsedTime?: number; //elapsed time of an audio in seconds
+  title?: string; //title of the track
+  artwork?: string; //uri to the artwork
+  artist?: string; //name of the artist
+  album?: string; //name of the album
+  duration?: number; //duration in seconds
+  description?: string; // android only, description of the track
+  state?: MediaState;
+  speed?: number; //playback rate
+  elapsedTime?: number; //elapsed time of an audio in seconds
 }
-
-````
+```
 </details>
 
 ### `SessionOptions`
@@ -241,9 +242,9 @@ interface SessionOptions {
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
 }
-````
-
+```
 </details>
+
 
 ### `SystemEventName` | `RemoteCommandEventName`
 
@@ -253,56 +254,55 @@ interface SessionOptions {
 interface EventEmptyType {}
 
 interface EventTypeWithValue {
-value: number;
+  value: number;
 }
 
 interface OnInterruptionEventType {
-type: 'ended' | 'began'; //if interruption event has started or ended
-shouldResume: boolean; //if we should resume playing after interruption
+  type: 'ended' | 'began'; //if interruption event has started or ended
+  shouldResume: boolean; //if we should resume playing after interruption
 }
 
 interface OnRouteChangeEventType {
-reason:
-| 'Unknown'
-| 'Override'
-| 'CategoryChange'
-| 'WakeFromSleep'
-| 'NewDeviceAvailable'
-| 'OldDeviceUnavailable'
-| 'ConfigurationChange'
-| 'NoSuitableRouteForCategory';
+  reason:
+    | 'Unknown'
+    | 'Override'
+    | 'CategoryChange'
+    | 'WakeFromSleep'
+    | 'NewDeviceAvailable'
+    | 'OldDeviceUnavailable'
+    | 'ConfigurationChange'
+    | 'NoSuitableRouteForCategory';
 }
 
 // visit https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter?language=objc
 // for further info
 interface RemoteCommandEvents {
-remotePlay: EventEmptyType;
-remotePause: EventEmptyType;
-remoteStop: EventEmptyType;
-remoteTogglePlayPause: EventEmptyType; // iOS only
-remoteChangePlaybackRate: EventTypeWithValue;
-remoteNextTrack: EventEmptyType;
-remotePreviousTrack: EventEmptyType;
-remoteSkipForward: EventTypeWithValue;
-remoteSkipBackward: EventTypeWithValue; // iOS only
-remoteSeekForward: EventEmptyType; // iOS only
-remoteSeekBackward: EventEmptyType;
-remoteChangePlaybackPosition: EventTypeWithValue;
+  remotePlay: EventEmptyType;
+  remotePause: EventEmptyType;
+  remoteStop: EventEmptyType;
+  remoteTogglePlayPause: EventEmptyType; // iOS only
+  remoteChangePlaybackRate: EventTypeWithValue;
+  remoteNextTrack: EventEmptyType;
+  remotePreviousTrack: EventEmptyType;
+  remoteSkipForward: EventTypeWithValue;
+  remoteSkipBackward: EventTypeWithValue; // iOS only
+  remoteSeekForward: EventEmptyType; // iOS only
+  remoteSeekBackward: EventEmptyType;
+  remoteChangePlaybackPosition: EventTypeWithValue;
 }
 
 type SystemEvents = RemoteCommandEvents & {
-volumeChange: EventTypeWithValue; //triggered when volume level is changed
-interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
-routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
+  volumeChange: EventTypeWithValue; //triggered when volume level is changed
+  interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
+  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
 };
 
 type RemoteCommandEventName = keyof RemoteCommandEvents;
 type SystemEventName = keyof SystemEvents;
 type SystemEventCallback<Name extends SystemEventName> = (
-event: SystemEvents[Name]
+  event: SystemEvents[Name]
 ) => void;
-
-````
+```
 </details>
 
 
@@ -334,16 +334,16 @@ class AudioEventSubscription {
     );
   }
 }
-````
-
+```
 </details>
 
 ### `PermissionStatus`
 
 <details>
-  <summary>Type definitions</summary>
-  ```typescript type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
-  ```
+<summary>Type definitions</summary>
+```typescript
+type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
+```
 </details>
 
 ### `AudioDevicesInfo`
