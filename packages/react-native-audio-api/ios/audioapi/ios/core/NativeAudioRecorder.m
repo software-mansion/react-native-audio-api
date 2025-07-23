@@ -15,7 +15,7 @@
     self.receiverBlock = [receiverBlock copy];
 
     float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
-    NSLog(@"Device sample rate: %f, requested: %f", devicePrefferedSampleRate, sampleRate);
+
     if (!devicePrefferedSampleRate) {
       NSError *error;
       devicePrefferedSampleRate = sampleRate;

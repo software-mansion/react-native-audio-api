@@ -20,7 +20,6 @@ IOSAudioRecorder::IOSAudioRecorder(
 {
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
-      // NSLog(@"Received audio data with %d frames at time: %@", numFrames, when);
       auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
       writeToBuffers(inputChannel, numFrames);
     }

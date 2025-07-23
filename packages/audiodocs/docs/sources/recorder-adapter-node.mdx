@@ -17,17 +17,17 @@ It lets you compose audio input from recorder into an audio graph.
 ## Example
 
 ```tsx
-recorderRef.current = new AudioRecorder({
+const recorder = new AudioRecorder({
     sampleRate: 48000,
     bufferLengthInSamples: 48000,
 });
-aCtxRef.current = new AudioContext({ sampleRate: 48000 });
-recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
+const audioContext = new AudioContext({ sampleRate: 48000 });
+const recorderAdapterNode = aCtxRef.current.createRecorderAdapter();
 
 // Connecting adapter to recorder
-recorderRef.current.connect(recorderAdapterRef.current);
+recorder.connect(recorderAdapterNode);
 // Connecting adapter to destination
-recorderAdapterRef.current.connect(aCtxRef.current.destination)
+recorderAdapterNode.connect(audioContext.destination)
 ```
 
 ## Properties
@@ -39,4 +39,4 @@ None
 ## Remarks
 - Adapter without the recorder will produce silence
 - Adapter that is connected only to the recorder will work fine and keep small buffer of recorded Data
-- Adapter that is connected only to the recorder will not be garbage collected
+- Adapter node will not be garbage collected until he is connected to either some destination or recorder 
