@@ -19,20 +19,20 @@ Only parts that will be needed by you, are:
 - writing native specific code to compile those files
 
 ```bash
-npx rn-audioapi-custom-node-generator create -o #path where you want files to be generated, usually same height as android/ and ios/
+npx rn-audioapi-custom-node-generator create -o # path where you want files to be generated, usually same level as android/ and ios/
 ```
 
 ## Analyzing generated files
 
 You should see two directories:
-- `shared/` - it contains c++ files (source code for custom effect and jsi layer - host objects, needed to communicate with JavaScript)
+- `shared/` - it contains c++ files (source code for custom effect and JSI layer - Host Objects, needed to communicate with JavaScript)
 - `specs/` - defines typescript interface that will invoke c++ code in JavaScript
 
 :::caution
 Name of the file in `specs/` has to start with `Native` to be seen by codegen.
 :::
 
-The most important file is `MyProcessorNode.cpp`, because it contains main processing part that directly manipulates raw data. 
+The most important file is `MyProcessorNode.cpp`, it contains main processing part that directly manipulates raw data. 
 
 In this guide, we will edit files in order to achieve [`GainNode`](/effects/gain-node) functionality. 
 For the sake of a simplicity, we will use value as a raw `double` type, not wrapped in [`AudioParam`](/core/audio-param).
@@ -219,7 +219,6 @@ declare global {
 ## Example
 
 ```tsx
-import React, { useRef } from 'react';
 import {
   AudioContext,
   OscillatorNode,
@@ -227,20 +226,17 @@ import {
 import { MyProcessorNode } from './types';
 
 function App() {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  if (!audioContextRef.current) {
-    audioContextRef.current = new AudioContext();
-  }
-  const oscillator = audioContextRef.current.createOscillator();
+  const audioContext = new AudioContext();
+  const oscillator = audioContext.createOscillator();
   // constructor is put in global scope
-  const processor = new MyProcessorNode(audioContextRef.current, global.createCustomProcessorNode(audioContextRef.current.context));
+  const processor = new MyProcessorNode(audioContext, global.createCustomProcessorNode(audioContext.context));
   oscillator.connect(processor);
-  processor.connect(audioContextRef.current.destination);
-  oscillator.start(audioContextRef.current.currentTime);
+  processor.connect(audioContext.destination);
+  oscillator.start(audioContext.currentTime);
 }
 ```
 
-**If that's not satisfactory for you, check out fully working [demo app](https://github.com/software-mansion-labs/custom-processor-node-example)**
+**Check out fully working [demo app](https://github.com/software-mansion-labs/custom-processor-node-example)**
 
 ## What's next?
 

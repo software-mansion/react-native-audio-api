@@ -1,11 +1,8 @@
 {
     "name": "rn-audioapi-custom-node-generator",
-    "version": "0.0.2",
+    "version": "0.0.4",
     "description": "A cli generator for custom node used by react-native-audio-api",
     "main": "lib/generator.js",
-    "bin": {
-      "my-generator": "./bin/cli.js"
-    },
     "author": "michal.dydek@swmansion.com",
     "license": "MIT",
     "dependencies": {
@@ -17,6 +14,16 @@
       "bin",
       "lib",
       "templates"
+    ],
+    "keywords": [
+      "react-native",
+      "audio",
+      "audio api",
+      "web audio api",
+      "custom",
+      "custom node",
+      "generator",
+      "react-native-audio-api"
     ],
     "engines": {
       "node": ">=12.0.0"
