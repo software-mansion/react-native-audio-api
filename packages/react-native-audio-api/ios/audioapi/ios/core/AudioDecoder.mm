@@ -1,6 +1,9 @@
 #define MINIAUDIO_IMPLEMENTATION
 #import <audioapi/libs/miniaudio/miniaudio.h>
 
+#include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
+#include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
+
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
@@ -12,14 +15,17 @@ namespace audioapi {
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
+  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  config.ppCustomBackendVTables = customBackends;
+  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
+
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
-
     ma_decoder_uninit(&decoder);
-
     return nullptr;
   }
 
@@ -32,7 +38,6 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
   ma_decoder_read_pcm_frames(&decoder, buffer.data(), totalFrameCount, &framesDecoded);
   if (framesDecoded == 0) {
     NSLog(@"Failed to decode");
-
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
