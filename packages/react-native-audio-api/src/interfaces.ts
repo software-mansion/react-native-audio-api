@@ -199,6 +199,7 @@ export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
   connect: (node: IRecorderAdapterNode) => void;
+  disconnect: () => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;

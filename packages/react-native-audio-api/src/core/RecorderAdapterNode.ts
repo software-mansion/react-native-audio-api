@@ -3,7 +3,7 @@ import AudioNode from './AudioNode';
 
 export default class RecorderAdapterNode extends AudioNode {
   /** @internal */
-  public isInitialized: boolean = false;
+  public wasConnected: boolean = false;
 
   /** @internal */
   public getNode(): IRecorderAdapterNode {

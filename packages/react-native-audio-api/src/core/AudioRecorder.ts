@@ -25,13 +25,17 @@ export default class AudioRecorder {
   }
 
   public connect(node: RecorderAdapterNode): void {
-    if (node.isInitialized) {
+    if (node.wasConnected) {
       throw new Error(
         'RecorderAdapterNode cannot be connected more than once. Refer to the documentation for more details.'
       );
     }
-    node.isInitialized = true;
+    node.wasConnected = true;
     this.recorder.connect(node.getNode());
+  }
+
+  public disconnect(): void {
+    this.recorder.disconnect();
   }
 
   public onAudioReady(callback: (event: OnAudioReadyEventType) => void): void {
