@@ -24,8 +24,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
   }
 
-  ~AudioContextHostObject() override;
-
   JSI_HOST_FUNCTION(close) {
     auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
       std::thread([this, promise = std::move(promise)]() {

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <functional>
 #include <memory>
-#include <audioapi/HostObjects/AudioContextHostObject.h>
+#include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 #include "MyProcessorNode.h"
 
 namespace facebook::react {
@@ -23,7 +23,7 @@ jsi::Function NativeAudioProcessingModule::createInstaller(jsi::Runtime &runtime
       0,
       [](jsi::Runtime &runtime, const jsi::Value &thisVal, const jsi::Value *args, size_t count) {
         auto object = args[0].getObject(runtime);
-        auto context = object.getHostObject<audioapi::AudioContextHostObject>(runtime);
+        auto context = object.getHostObject<audioapi::BaseAudioContextHostObject>(runtime);
         if (context != nullptr) {
           auto node = std::make_shared<audioapi::MyProcessorNode>(context->context_.get());
           auto nodeHostObject = std::make_shared<audioapi::MyProcessorNodeHostObject>(node);

@@ -41,3 +41,4 @@ audiodocs
 Doxygen
 mjs
 UMD
+audioapi
