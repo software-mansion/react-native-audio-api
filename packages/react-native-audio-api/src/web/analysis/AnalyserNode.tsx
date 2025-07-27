@@ -20,13 +20,12 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public get window(): WindowType {
+    console.warn('React Native Audio API: window prop is not supported on web');
     return 'blackman';
   }
 
   public set window(value: WindowType) {
-    console.log(
-      'React Native Audio API: setting window is not supported on web'
-    );
+    console.warn('React Native Audio API: window prop is not supported on web');
   }
 
   public getByteFrequencyData(array: Uint8Array): void {
