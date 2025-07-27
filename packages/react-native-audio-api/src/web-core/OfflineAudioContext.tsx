@@ -1,28 +1,12 @@
-import {
-  ContextState,
-  PeriodicWaveConstraints,
-  OfflineAudioContextOptions,
-  AudioBufferSourceNodeOptions,
-} from '../types';
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import { OfflineAudioContextOptions } from '../types';
+import { NotSupportedError, InvalidStateError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
-import AnalyserNode from './AnalyserNode';
-import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import GainNode from './GainNode';
-import OscillatorNode from './OscillatorNode';
-import PeriodicWave from './PeriodicWave';
-import StereoPannerNode from './StereoPannerNode';
 
-import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
-
-export default class OfflineAudioContext implements BaseAudioContext {
-  readonly context: globalThis.OfflineAudioContext;
-
-  readonly destination: AudioDestinationNode;
-  readonly sampleRate: number;
+export default class OfflineAudioContext extends BaseAudioContext {
+  private isSuspended: boolean;
+  private isRendering: boolean;
+  private duration: number;
 
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
@@ -32,132 +16,78 @@ export default class OfflineAudioContext implements BaseAudioContext {
     arg2?: number
   ) {
     if (typeof arg0 === 'object') {
-      this.context = new window.OfflineAudioContext(arg0);
+      const { numberOfChannels, length, sampleRate } = arg0;
+      super(
+        new window.OfflineAudioContext(numberOfChannels, length, sampleRate)
+      );
+
+      this.duration = length / sampleRate;
     } else if (
       typeof arg0 === 'number' &&
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
-      this.context = new window.OfflineAudioContext(arg0, arg1, arg2);
+      super(new window.OfflineAudioContext(arg0, arg1, arg2));
+      this.duration = arg1 / arg2;
     } else {
       throw new NotSupportedError('Invalid constructor arguments');
     }
 
-    this.sampleRate = this.context.sampleRate;
-    this.destination = new AudioDestinationNode(this, this.context.destination);
+    this.isSuspended = false;
+    this.isRendering = false;
   }
 
-  public get currentTime(): number {
-    return this.context.currentTime;
-  }
-
-  public get state(): ContextState {
-    return this.context.state as ContextState;
-  }
-
-  createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
-  }
-
-  createGain(): GainNode {
-    return new GainNode(this, this.context.createGain());
-  }
-
-  createStereoPanner(): StereoPannerNode {
-    return new StereoPannerNode(this, this.context.createStereoPanner());
-  }
-
-  createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
-  }
-
-  async createBufferSource(
-    options?: AudioBufferSourceNodeOptions
-  ): Promise<AudioBufferSourceNode> {
-    if (!options || !options.pitchCorrection) {
-      return new AudioBufferSourceNode(
-        this,
-        this.context.createBufferSource(),
-        false
+  async resume(): Promise<undefined> {
+    if (!this.isRendering) {
+      throw new InvalidStateError(
+        'Cannot resume an OfflineAudioContext while rendering'
       );
     }
 
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new AudioBufferSourceNode(this, wasmStretch, true);
-  }
-
-  createBuffer(
-    numOfChannels: number,
-    length: number,
-    sampleRate: number
-  ): AudioBuffer {
-    if (numOfChannels < 1 || numOfChannels >= 32) {
-      throw new NotSupportedError(
-        `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
+    if (!this.isSuspended) {
+      throw new InvalidStateError(
+        'Cannot resume an OfflineAudioContext that is not suspended'
       );
     }
 
-    if (length <= 0) {
-      throw new NotSupportedError(
-        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
+    this.isSuspended = false;
+
+    await (this.context as globalThis.OfflineAudioContext).resume();
+  }
+
+  async suspend(suspendTime: number): Promise<undefined> {
+    if (suspendTime < 0) {
+      throw new InvalidStateError('suspendTime must be a non-negative number');
+    }
+
+    if (suspendTime < this.context.currentTime) {
+      throw new InvalidStateError(
+        `suspendTime must be greater than the current time: ${suspendTime}`
       );
     }
 
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
+    if (suspendTime > this.duration) {
+      throw new InvalidStateError(
+        `suspendTime must be less than the duration of the context: ${suspendTime}`
       );
     }
 
-    return new AudioBuffer(
-      this.context.createBuffer(numOfChannels, length, sampleRate)
-    );
-  }
+    this.isSuspended = true;
 
-  createPeriodicWave(
-    real: Float32Array,
-    imag: Float32Array,
-    constraints?: PeriodicWaveConstraints
-  ): PeriodicWave {
-    if (real.length !== imag.length) {
-      throw new InvalidAccessError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
-      );
-    }
-
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, constraints)
-    );
-  }
-
-  createAnalyser(): AnalyserNode {
-    return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
-    const arrayBuffer = await fetch(source).then((response) =>
-      response.arrayBuffer()
-    );
-
-    return this.decodeAudioData(arrayBuffer);
-  }
-
-  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
-    return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
+    await (this.context as globalThis.OfflineAudioContext).suspend(suspendTime);
   }
 
   async startRendering(): Promise<AudioBuffer> {
-    return new AudioBuffer(await this.context.startRendering());
-  }
+    if (this.isRendering) {
+      throw new InvalidStateError('OfflineAudioContext is already rendering');
+    }
 
-  async resume(): Promise<void> {
-    await this.context.resume();
-  }
+    this.isRendering = true;
 
-  async suspend(suspendTime: number): Promise<void> {
-    await this.context.suspend(suspendTime);
+    const audioBuffer = await (
+      this.context as globalThis.OfflineAudioContext
+    ).startRendering();
+
+    return new AudioBuffer(audioBuffer);
   }
 }
