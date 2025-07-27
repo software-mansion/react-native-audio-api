@@ -5,7 +5,7 @@ import type {
   IAudioRecorder,
   IOfflineAudioContext,
   IAudioEventEmitter,
-} from './interfaces';
+} from './mobile/interfaces';
 
 /* eslint-disable no-var */
 declare global {
@@ -40,25 +40,25 @@ if (
   NativeAudioAPIModule.install();
 }
 
-export { default as AudioBuffer } from './core/AudioBuffer';
-export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
-export { default as AudioBufferQueueSourceNode } from './core/AudioBufferQueueSourceNode';
-export { default as AudioContext } from './core/AudioContext';
-export { default as OfflineAudioContext } from './core/OfflineAudioContext';
-export { default as AudioDestinationNode } from './core/AudioDestinationNode';
-export { default as AudioNode } from './core/AudioNode';
-export { default as AnalyserNode } from './core/AnalyserNode';
-export { default as AudioParam } from './core/AudioParam';
-export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
-export { default as BaseAudioContext } from './core/BaseAudioContext';
-export { default as BiquadFilterNode } from './core/BiquadFilterNode';
-export { default as CustomProcessorNode } from './core/CustomProcessorNode';
-export { default as GainNode } from './core/GainNode';
-export { default as OscillatorNode } from './core/OscillatorNode';
-export { default as StereoPannerNode } from './core/StereoPannerNode';
-export { default as AudioRecorder } from './core/AudioRecorder';
-export { default as AudioManager } from './system';
-export { default as useSystemVolume } from './hooks/useSytemVolume';
+export { default as AudioBuffer } from './mobile/sources/AudioBuffer';
+export { default as AudioBufferSourceNode } from './mobile/sources/AudioBufferSourceNode';
+export { default as AudioBufferQueueSourceNode } from './mobile/sources/AudioBufferQueueSourceNode';
+export { default as AudioContext } from './mobile/core/AudioContext';
+export { default as OfflineAudioContext } from './mobile/core/OfflineAudioContext';
+export { default as AudioDestinationNode } from './mobile/destinations/AudioDestinationNode';
+export { default as AudioNode } from './mobile/core/AudioNode';
+export { default as AnalyserNode } from './mobile/analysis/AnalyserNode';
+export { default as AudioParam } from './mobile/core/AudioParam';
+export { default as AudioScheduledSourceNode } from './mobile/sources/AudioScheduledSourceNode';
+export { default as BaseAudioContext } from './mobile/core/BaseAudioContext';
+export { default as BiquadFilterNode } from './mobile/effects/BiquadFilterNode';
+export { default as CustomProcessorNode } from './mobile/effects/CustomProcessorNode';
+export { default as GainNode } from './mobile/effects/GainNode';
+export { default as OscillatorNode } from './mobile/sources/OscillatorNode';
+export { default as StereoPannerNode } from './mobile/effects/StereoPannerNode';
+export { default as AudioRecorder } from './mobile/inputs/AudioRecorder';
+export { default as AudioManager } from './mobile/system';
+export { default as useSystemVolume } from './mobile/hooks/useSystemVolume';
 
 export {
   OscillatorType,
