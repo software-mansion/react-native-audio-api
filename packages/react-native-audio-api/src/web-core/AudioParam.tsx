@@ -7,22 +7,22 @@ export default class AudioParam {
   readonly maxValue: number;
   readonly context: BaseAudioContext;
 
-  readonly param: globalThis.AudioParam;
+  readonly audioParam: globalThis.AudioParam;
 
-  constructor(param: globalThis.AudioParam, context: BaseAudioContext) {
-    this.param = param;
-    this.defaultValue = param.defaultValue;
-    this.minValue = param.minValue;
-    this.maxValue = param.maxValue;
+  constructor(audioParam: globalThis.AudioParam, context: BaseAudioContext) {
+    this.audioParam = audioParam;
+    this.defaultValue = audioParam.defaultValue;
+    this.minValue = audioParam.minValue;
+    this.maxValue = audioParam.maxValue;
     this.context = context;
   }
 
   public get value(): number {
-    return this.param.value;
+    return this.audioParam.value;
   }
 
   public set value(value: number) {
-    this.param.value = value;
+    this.audioParam.value = value;
   }
 
   public setValueAtTime(value: number, startTime: number): AudioParam {
@@ -32,7 +32,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.setValueAtTime(value, startTime);
+    this.audioParam.setValueAtTime(value, startTime);
 
     return this;
   }
@@ -44,7 +44,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.linearRampToValueAtTime(value, endTime);
+    this.audioParam.linearRampToValueAtTime(value, endTime);
 
     return this;
   }
@@ -59,7 +59,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.exponentialRampToValueAtTime(value, endTime);
+    this.audioParam.exponentialRampToValueAtTime(value, endTime);
 
     return this;
   }
@@ -81,7 +81,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.setTargetAtTime(target, startTime, timeConstant);
+    this.audioParam.setTargetAtTime(target, startTime, timeConstant);
 
     return this;
   }
@@ -107,7 +107,7 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
-    this.param.setValueCurveAtTime(values, startTime, duration);
+    this.audioParam.setValueCurveAtTime(values, startTime, duration);
 
     return this;
   }
@@ -119,7 +119,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.cancelScheduledValues(cancelTime);
+    this.audioParam.cancelScheduledValues(cancelTime);
 
     return this;
   }
@@ -131,7 +131,7 @@ export default class AudioParam {
       );
     }
 
-    this.param.cancelAndHoldAtTime(cancelTime);
+    this.audioParam.cancelAndHoldAtTime(cancelTime);
 
     return this;
   }
