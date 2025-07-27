@@ -26,7 +26,7 @@ interface IStretcherNode extends globalThis.AudioNode {
   numberOfInputs: number;
   numberOfOutputs: number;
 
-  onended:
+  onEnded:
     | ((this: globalThis.AudioScheduledSourceNode, ev: Event) => unknown)
     | null;
   addEventListener: (
@@ -193,6 +193,7 @@ export default class AudioBufferSourceNode<
   private _loop: boolean = false;
   private _loopStart: number = -1;
   private _loopEnd: number = -1;
+  private _loopSkip: boolean = false;
 
   private _buffer: AudioBuffer | null = null;
 
@@ -317,6 +318,24 @@ export default class AudioBufferSourceNode<
     }
 
     return this.asBufferSource().loop;
+  }
+
+  public set loopSkip(value: boolean) {
+    console.warn('loopSkip does not work on web');
+
+    if (this.isStretcherNode()) {
+      this._loop = value;
+    }
+  }
+
+  public get loopSkip(): boolean {
+    console.warn('loopSkip does not work on web');
+
+    if (this.isStretcherNode()) {
+      return this._loopSkip;
+    }
+
+    return false;
   }
 
   public set loop(value: boolean) {

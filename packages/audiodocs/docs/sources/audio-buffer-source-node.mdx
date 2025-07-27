@@ -3,7 +3,7 @@ sidebar_position: 4
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { Optional, Overridden } from '@site/src/components/Badges';
+import { Optional, Overridden, MobileOnly } from '@site/src/components/Badges';
 
 # AudioBufferSourceNode
 
@@ -49,7 +49,7 @@ function App() {
 | :----: | :----: | :-------- |
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Associated `AudioBuffer`. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
-| `loopSkip` | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
+| `loopSkip` <MobileOnly /> | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
 | `loopEnd` | `number` | Float value indicating the time, in seconds, at which playback of the audio must end and loop back to `loopStart`, if loop is true. |
 
