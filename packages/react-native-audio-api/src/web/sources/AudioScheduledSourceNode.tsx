@@ -4,6 +4,8 @@ import { RangeError, InvalidStateError } from '../../errors';
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
 
+  private onEndedCallback?: () => void;
+
   public start(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
@@ -35,8 +37,18 @@ export default class AudioScheduledSourceNode extends AudioNode {
     (this.node as globalThis.AudioScheduledSourceNode).stop(when);
   }
 
-  // eslint-disable-next-line accessor-pairs
-  public set onended(callback: () => void) {
+  public get onEnded(): (() => void) | undefined {
+    return this.onEndedCallback;
+  }
+
+  public set onEnded(callback: (() => void) | null) {
+    if (!callback) {
+      (this.node as globalThis.AudioScheduledSourceNode).onended = null;
+      this.onEndedCallback = undefined;
+      return;
+    }
+
+    this.onEndedCallback = callback;
     (this.node as globalThis.AudioScheduledSourceNode).onended = callback;
   }
 }
