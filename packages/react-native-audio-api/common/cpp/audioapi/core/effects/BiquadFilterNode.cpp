@@ -77,7 +77,6 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const int length) {
-
   // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
