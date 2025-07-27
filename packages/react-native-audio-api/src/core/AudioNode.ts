@@ -42,8 +42,10 @@ export default class AudioNode {
   public disconnect(destination?: AudioNode | AudioParam): void {
     if (destination instanceof AudioParam) {
       this.node.disconnect(destination.audioParam);
+    } else if (destination instanceof AudioNode) {
+      this.node.disconnect(destination.node);
     } else {
-      this.node.disconnect(destination?.node);
+      this.node.disconnect();
     }
   }
 }
