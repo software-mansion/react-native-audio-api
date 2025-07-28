@@ -15,6 +15,7 @@ export interface IBaseAudioContext {
   readonly sampleRate: number;
   readonly currentTime: number;
 
+  createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(): IOscillatorNode;
   createCustomProcessor(identifier: string): ICustomProcessorNode;
   createGain(): IGainNode;
@@ -195,9 +196,13 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
+export interface IRecorderAdapterNode extends IAudioNode {}
+
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
+  connect: (node: IRecorderAdapterNode) => void;
+  disconnect: () => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
