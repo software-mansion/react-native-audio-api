@@ -1,0 +1,52 @@
+@PACKAGE_INIT@
+
+# Ported from CMakeFindDependencyMacro.cmake (finding configs and using pkgconfig as fallback)
+set(cmake_quiet_arg)
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+  set(cmake_quiet_arg QUIET)
+endif()
+set(cmake_required_arg)
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED)
+  set(cmake_required_arg REQUIRED)
+endif()
+
+find_package(Ogg CONFIG ${cmake_quiet_arg})
+if(NOT TARGET Ogg::ogg)
+  find_package(PkgConfig REQUIRED ${cmake_quiet_arg})
+  pkg_check_modules(Ogg ${cmake_required_arg} ${cmake_quiet_arg} IMPORTED_TARGET ogg)
+  set_target_properties(PkgConfig::Ogg PROPERTIES IMPORTED_GLOBAL TRUE)
+  add_library(Ogg::ogg ALIAS PkgConfig::Ogg)
+endif()
+
+if (NOT TARGET Ogg::ogg)
+  set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE "${CMAKE_FIND_PACKAGE_NAME} could not be found because dependency Ogg could not be found.")
+  set(${CMAKE_FIND_PACKAGE_NAME}_FOUND False)
+  return()
+endif()
+
+find_package(Opus CONFIG ${cmake_quiet_arg})
+if(NOT TARGET Opus::opus)
+  find_package(PkgConfig REQUIRED ${cmake_quiet_arg})
+  pkg_check_modules(Opus ${cmake_required_arg} ${cmake_quiet_arg} IMPORTED_TARGET opus)
+  set_target_properties(PkgConfig::Opus PROPERTIES IMPORTED_GLOBAL TRUE)
+  add_library(Opus::opus ALIAS PkgConfig::Opus)
+endif()
+
+if (NOT TARGET Opus::opus)
+  set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE "${CMAKE_FIND_PACKAGE_NAME} could not be found because dependency Opus could not be found.")
+  set(${CMAKE_FIND_PACKAGE_NAME}_FOUND False)
+  return()
+endif()
+
+set(cmake_fd_required_arg)
+set(cmake_fd_quiet_arg)
+
+if (NOT @OP_DISABLE_HTTP@)
+  include(CMakeFindDependencyMacro)
+  find_dependency(OpenSSL)
+endif()
+
+# Including targets of opusfile
+include("${CMAKE_CURRENT_LIST_DIR}/OpusFileTargets.cmake")
+
+check_required_components(OpusFile)

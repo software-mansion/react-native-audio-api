@@ -1,0 +1,48 @@
+default:
+  tags:
+    - docker
+  # Image from https://hub.docker.com/_/gcc/ based on Debian
+  image: gcc:9
+
+autotools:
+  stage: build
+  before_script:
+    - apt-get update &&
+      apt-get install -y libopus-dev libogg-dev libssl-dev
+        zip
+  script:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make distcheck
+
+cmake:
+  stage: build
+  before_script:
+    - apt-get update &&
+      apt-get install -y libopus-dev libogg-dev libssl-dev
+        doxygen
+  script:
+    - curl -O https://cmake.org/files/v3.16/cmake-3.16.9-Linux-x86_64.tar.gz
+    - tar xzf cmake-3.16.9-Linux-x86_64.tar.gz
+    - cmake-3.16.9-Linux-x86_64/bin/cmake -Bbuild -H.
+    - cmake-3.16.9-Linux-x86_64/bin/cmake --build build
+  tags:
+    - docker
+
+makefile:
+  stage: build
+  before_script:
+    - apt-get update &&
+      apt-get install -y libopus-dev libogg-dev libssl-dev
+  script:
+    - make -C unix
+    - make -C unix check
+
+doc:
+  stage: build
+  before_script:
+    - apt-get update &&
+      apt-get install -y doxygen graphviz
+  script:
+    - make -C doc

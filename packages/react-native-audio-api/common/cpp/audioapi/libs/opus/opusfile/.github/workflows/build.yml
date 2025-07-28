@@ -1,0 +1,99 @@
+name: GitHub CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        name:
+          [
+            ubuntu-autotools,
+            ubuntu-cmake,
+            ubuntu-makefile,
+            macos-autotools,
+            macos-cmake,
+            macos-makefile,
+          ]
+        include:
+
+          - name: ubuntu-autotools
+            os: ubuntu-latest
+            build-system: autotools
+
+          - name: ubuntu-cmake
+            os: ubuntu-latest
+            build-system: cmake
+
+          - name: ubuntu-makefile
+            os: ubuntu-latest
+            build-system: makefile
+
+          - name: macos-autotools
+            os: macos-latest
+            build-system: autotools
+
+          - name: macos-cmake
+            os: macos-latest
+            build-system: cmake
+
+          - name: macos-makefile
+            os: macos-latest
+            build-system: makefile
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      BUILD: _build
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopus-dev libogg-dev libssl-dev
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Install macOS dependencies
+        if: startsWith(matrix.os,'macos')
+        run: |
+          brew bundle
+
+      - name: Build with Autotools
+        if: startsWith(matrix.build-system,'autotools')
+        run: |
+          ./autogen.sh
+          ./configure
+          make
+          make check
+
+      - name: distcheck with Autotools
+        if: startsWith(matrix.build-system,'autotools')
+        run: |
+          make distcheck
+
+      - name: Build with Makefile
+        if: startsWith(matrix.build-system,'makefile')
+        run: |
+          make -C unix
+          make -C unix check
+
+      - name: Build Documentation
+        if: ${{ ! startsWith(matrix.build-system,'cmake') }}
+        run: |
+          make -C doc
+
+      - name: Build with CMake
+        if: startsWith(matrix.build-system,'cmake')
+        run: |
+          cmake -S . -B ${{ env.BUILD }}
+          cmake --build ${{ env.BUILD }}
+          ctest --test-dir ${{ env.BUILD }} -V -C Debug
