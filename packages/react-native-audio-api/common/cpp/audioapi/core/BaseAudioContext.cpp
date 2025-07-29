@@ -28,7 +28,15 @@ BaseAudioContext::BaseAudioContext(
 }
 
 std::string BaseAudioContext::getState() {
-  return BaseAudioContext::toString(state_);
+  if (isDriverRunning()) {
+    return BaseAudioContext::toString(state_);
+  }
+
+  if (state_ == ContextState::CLOSED) {
+    return BaseAudioContext::toString(ContextState::CLOSED);
+  }
+
+  return BaseAudioContext::toString(ContextState::SUSPENDED);
 }
 
 float BaseAudioContext::getSampleRate() const {
@@ -155,11 +163,11 @@ AudioNodeManager *BaseAudioContext::getNodeManager() {
 }
 
 bool BaseAudioContext::isRunning() const {
-  return state_ == ContextState::RUNNING;
+  return state_ == ContextState::RUNNING && isDriverRunning();
 }
 
 bool BaseAudioContext::isSuspended() const {
-  return state_ == ContextState::SUSPENDED;
+  return state_ == ContextState::SUSPENDED || !isDriverRunning();
 }
 
 bool BaseAudioContext::isClosed() const {

@@ -32,13 +32,15 @@
   return self;
 }
 
-- (void)start
+- (BOOL)start
 {
   NSLog(@"[AudioPlayer] start");
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
+
+  return [audioEngine startIfNecessary];
 }
 
 - (void)stop
@@ -48,15 +50,18 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
+  [audioEngine stopIfNecessary];
   self.sourceNodeId = nil;
 }
 
-- (void)resume
+- (bool)resume
 {
   NSLog(@"[AudioPlayer] resume");
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine startEngine];
+
+  return [audioEngine startEngine];
 }
 
 - (void)suspend

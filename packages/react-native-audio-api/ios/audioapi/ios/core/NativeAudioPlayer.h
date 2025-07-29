@@ -19,11 +19,11 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
                          sampleRate:(float)sampleRate
                        channelCount:(int)channelCount;
 
-- (void)start;
+- (bool)start;
 
 - (void)stop;
 
-- (void)resume;
+- (bool)resume;
 
 - (void)suspend;
 
