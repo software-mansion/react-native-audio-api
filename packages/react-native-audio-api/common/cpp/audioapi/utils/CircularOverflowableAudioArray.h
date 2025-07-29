@@ -16,7 +16,7 @@ namespace audioapi {
 class CircularOverflowableAudioArray : public AudioArray {
  public:
   explicit CircularOverflowableAudioArray(size_t size);
-  CircularOverflowableAudioArray(const CircularOverflowableAudioArray &other) = default;
+  CircularOverflowableAudioArray(const CircularOverflowableAudioArray &other) = delete;
   ~CircularOverflowableAudioArray() = default;
 
   /// @brief Writes data to the circular buffer.
