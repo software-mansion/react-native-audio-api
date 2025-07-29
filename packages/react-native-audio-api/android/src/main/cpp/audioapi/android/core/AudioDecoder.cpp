@@ -38,7 +38,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
       &decoder, buffer.data(), totalFrameCount, &framesDecoded);
 
   if (framesDecoded == 0) {
-    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
+    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
+    // decode");
 
     ma_decoder_uninit(&decoder);
     return nullptr;
@@ -88,7 +89,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
       &decoder, buffer.data(), totalFrameCount, &framesDecoded);
 
   if (framesDecoded == 0) {
-    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
+    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
+    // decode");
 
     ma_decoder_uninit(&decoder);
     return nullptr;
