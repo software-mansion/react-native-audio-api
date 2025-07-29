@@ -13,6 +13,7 @@
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
+#include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -39,6 +40,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
     addFunctions(
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
@@ -71,6 +73,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
   JSI_PROPERTY_GETTER(currentTime) {
     return {context_->getCurrentTime()};
+  }
+
+  JSI_HOST_FUNCTION(createRecorderAdapter) {
+    auto recorderAdapter = context_->createRecorderAdapter();
+    auto recorderAdapterHostObject = std::make_shared<RecorderAdapterNodeHostObject>(recorderAdapter);
+    return jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
   }
 
   JSI_HOST_FUNCTION(createOscillator) {

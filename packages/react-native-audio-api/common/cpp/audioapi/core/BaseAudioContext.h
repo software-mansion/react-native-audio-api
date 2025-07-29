@@ -3,6 +3,7 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -29,6 +30,7 @@ class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
+class RecorderAdapterNode;
 
 class BaseAudioContext {
  public:
@@ -41,6 +43,7 @@ class BaseAudioContext {
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
   std::shared_ptr<AudioDestinationNode> getDestination();
 
+  std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();

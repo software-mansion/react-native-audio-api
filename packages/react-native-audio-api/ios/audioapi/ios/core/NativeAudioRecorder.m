@@ -16,6 +16,13 @@
 
     float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
 
+    if (!devicePrefferedSampleRate) {
+      NSError *error;
+      devicePrefferedSampleRate = sampleRate;
+
+      [[AVAudioSession sharedInstance] setPreferredSampleRate:sampleRate error:&error];
+    }
+
     self.inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                         sampleRate:devicePrefferedSampleRate
                                                           channels:1

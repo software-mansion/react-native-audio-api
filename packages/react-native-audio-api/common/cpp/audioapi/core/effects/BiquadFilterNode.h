@@ -33,7 +33,9 @@ class BiquadFilterNode : public AudioNode {
       int length);
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  void processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
@@ -119,7 +121,11 @@ class BiquadFilterNode : public AudioNode {
   void setPeakingCoefficients(float frequency, float Q, float gain);
   void setNotchCoefficients(float frequency, float Q);
   void setAllpassCoefficients(float frequency, float Q);
-  void applyFilter();
+  void updateCoefficientsForFrame(
+      float frequency,
+      float detune,
+      float q,
+      float gain);
 };
 
 } // namespace audioapi

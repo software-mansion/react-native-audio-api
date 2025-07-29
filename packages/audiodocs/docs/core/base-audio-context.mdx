@@ -52,6 +52,12 @@ The above method lets you create [`AnalyserNode`](/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
+### `createRecorderAdapter`
+
+The above method lets you create [`RecorderAdapterNode`](/sources/recorder-adapter-node).
+
+#### Returns `RecorderAdapterNode`
+
 ### `createBiquadFilter`
 
 The above method lets you create `BiquadFilterNode`.
@@ -130,7 +136,35 @@ The above method lets you create `StereoPannerNode`.
 
 #### Returns [`StereoPannerNode`](/effects/stereo-panner-node).
 
+### `createBiquadFilter
+
+The above method lets you create `BiquadFilterNode`.
+
+#### Returns [`BiquadFilterNode`](/effects/biquad-filter-node).
+
+:::caution
+Supported file formats:
+- mp3
+- wav
+- flac
+:::
+
 ### `decodeAudioData`
+
+<details>
+<summary>Example</summary>
+```tsx
+const url = ... // url to an audio
+
+const buffer = await fetch(url)
+  .then((response) => response.arrayBuffer())
+  .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
+  .catch((error) => {
+    console.error('Error decoding audio data source:', error);
+    return null;
+  });
+```
+</details>
 
 The above method lets you decode audio data. It decodes with in memory audio data block.
 
@@ -142,7 +176,23 @@ The above method lets you decode audio data. It decodes with in memory audio dat
 
 ### `decodeAudioDataSource`
 
-The above method lets you decode audio data file. It saves file in the device file system.
+<details>
+<summary>Example using expo-asset library</summary>
+```tsx
+import { Asset } from 'expo-asset';
+
+const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
+    .downloadAsync()
+    .then((asset) =>  {
+      if (!asset.localUri) {
+        throw new Error('Failed to load audio asset');
+      }
+      return this.audioContext.decodeAudioDataSource(asset.localUri);
+    })
+```
+</details>
+
+The above method lets you decode audio data file.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -152,11 +202,20 @@ The above method lets you decode audio data file. It saves file in the device fi
 
 ### `decodePCMInBase64Data` <MobileOnly />
 
+<details>
+<summary>Example</summary>
+```tsx
+const data = ... // data encoded in base64 string
+const buffer = await this.audioContext.decodePCMInBase64Data(data);
+```
+</details>
+
 The above method lets you decode audio data. It decodes with PCM data in Base64.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `base64` | `string` | Base64 string with audio data. |
+| `playbackRate` <Optional /> | `number` | Number that represents audio speed, which will be applied during decoding. |
 
 #### Returns `Promise<AudioBuffer>`.
 
