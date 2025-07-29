@@ -27,6 +27,13 @@ const initialSounds: SourceRecord<AudioSourceMetadata | null> = {
   efx: null,
 };
 
+const labels: Record<AudioSource, string> = {
+  music: 'Music',
+  speech: 'Speech',
+  bgm: 'BGM',
+  efx: 'EFX'
+};
+
 const LandingWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<AudioMode>('player');
@@ -100,7 +107,7 @@ const LandingWidget: React.FC = () => {
 
       return {
         id: sound.id,
-        name: key.charAt(0).toUpperCase() + key.slice(1),
+        name: labels[key as AudioSource],
         type: key as AudioSource,
         isActive: activeSounds.some(s => s.type === key),
         onPlaySound,

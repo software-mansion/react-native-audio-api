@@ -176,7 +176,10 @@
   top: 61px;
   right: 0;
   background: var(--swm-red-light-20);
-  /* width: 100%; */
-  padding: 16px;
   z-index: 10;
+}
+
+
+[data-theme='dark'] .settingsPanel {
+  background: var(--swm-red-dark-140);
 }

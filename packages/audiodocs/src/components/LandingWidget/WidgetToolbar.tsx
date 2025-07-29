@@ -5,6 +5,7 @@ import styles from "./styles.module.css";
 import WidgetButton, { WidgetButtonProps } from './WidgetButton';
 import AudioManager from '@site/src/audio/AudioManager';
 import { vocalPreset } from '@site/src/audio/Equalizer';
+import Equalizer from '@site/src/components/Equalizer';
 
 interface WidgetToolbarProps {
   isLoading: boolean;
@@ -16,6 +17,11 @@ const WidgetToolbar: React.FC<WidgetToolbarProps> = (props) => {
   const [showSettings, setShowSettings] = useState(false);
   const { isLoading, onPlaySound, buttons } = props;
   const [eqBands, setEqBands] = useState<number[]>([...vocalPreset]);
+
+  const onUpdateEqBands = (newBands: number[]) => {
+    setEqBands(newBands);
+    AudioManager.equalizer.setGains(newBands);
+  };
 
   const onToggleSettings = () => {
     setShowSettings((prev) => !prev);
@@ -40,30 +46,7 @@ const WidgetToolbar: React.FC<WidgetToolbarProps> = (props) => {
       </div>
       {showSettings && (
         <div className={styles.settingsPanel}>
-          {/* <h3>Settings</h3> */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {eqBands.map((gain, index) => (
-              <div key={index}>
-                <input
-                  type="range"
-                  min={-15}
-                  step={0.1}
-                  max={15}
-                  value={gain}
-                  onChange={(e) => {
-                    const newBands = [...eqBands];
-                    newBands[index] = Number(e.target.value);
-                    setEqBands(newBands);
-                    AudioManager.equalizer.setGains(newBands);
-                  }}
-                  style={{
-                    writingMode: 'vertical-lr',
-                    transform: 'rotate(180deg)',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+          <Equalizer eqBands={eqBands} setEqBands={onUpdateEqBands} />
         </div>
       )}
     </>

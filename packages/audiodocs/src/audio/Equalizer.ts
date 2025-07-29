@@ -1,8 +1,6 @@
+export const initialFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
-
-export const initialFrequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-
-export const vocalPreset = [-12, -6, -3, -3, 0, 2, 3, 2, 3, 2];
+export const vocalPreset = [-6, -4, -2, -2, 0, 2, 3, 2, 3, 2];
 
 export default class Equalizer {
   private audioContext: AudioContext;

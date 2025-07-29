@@ -50,7 +50,7 @@ const Spectrogram: React.FC = () => {
         80
       );
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+      ctx.fillStyle = '#fcfcff';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const bucketsToDraw = bucketCount;
@@ -84,7 +84,7 @@ const Spectrogram: React.FC = () => {
           gradient.addColorStop(0.85, '#232736');
         } else {
           gradient.addColorStop(0, '#FF6259');
-          gradient.addColorStop(0.85, '#FFD2D7');
+          gradient.addColorStop(0.85, '#fcfcff');
         }
 
         ctx.fillStyle = gradient;
