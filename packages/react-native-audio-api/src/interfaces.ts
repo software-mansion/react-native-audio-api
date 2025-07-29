@@ -41,9 +41,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<boolean>;
+  resume(): Promise<boolean>;
+  suspend(): Promise<boolean>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {

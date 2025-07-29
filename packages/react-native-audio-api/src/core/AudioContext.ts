@@ -24,15 +24,15 @@ export default class AudioContext extends BaseAudioContext {
     );
   }
 
-  async close(): Promise<undefined> {
-    await (this.context as IAudioContext).close();
+  async close(): Promise<boolean> {
+    return (this.context as IAudioContext).close();
   }
 
-  async resume(): Promise<undefined> {
-    await (this.context as IAudioContext).resume();
+  async resume(): Promise<boolean> {
+    return (this.context as IAudioContext).resume();
   }
 
-  async suspend(): Promise<undefined> {
-    await (this.context as IAudioContext).suspend();
+  async suspend(): Promise<boolean> {
+    return (this.context as IAudioContext).suspend();
   }
 }
