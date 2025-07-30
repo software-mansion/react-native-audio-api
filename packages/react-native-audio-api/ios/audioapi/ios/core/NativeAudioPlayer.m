@@ -32,7 +32,7 @@
   return self;
 }
 
-- (BOOL)start
+- (bool)start
 {
   NSLog(@"[AudioPlayer] start");
 
