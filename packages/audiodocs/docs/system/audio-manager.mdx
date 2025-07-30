@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, OnlyiOS } from '@site/src/components/Badges';
+import { Optional, ReadOnly, OnlyiOS, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -116,6 +116,24 @@ Resets all of the lock screen data.
 | `enabled` | `boolean` | It is used to enable/disable observing audio interruptions |
 
 #### Returns `undefined`
+
+### `activelyReclaimSession` <OnlyiOS /> <Experimental />
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable session spoofing |
+
+#### Returns `undefined`
+
+More aggressively try to reactivate the audio session during interruptions.
+
+In some cases (depends on app session settings and other apps using audio) system may never
+send the `interruption ended` event. This method will check if any other audio is playing
+and try to reactivate the audio session, as soon as there is "silence".
+Although this might change the expected behavior.
+
+Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+interval polling to check if other audio is playing.
 
 ### `observeVolumeChanges`
 

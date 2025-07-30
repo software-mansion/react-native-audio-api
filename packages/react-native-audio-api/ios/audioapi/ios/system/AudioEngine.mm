@@ -49,10 +49,6 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)rebuildAudioEngine
 {
-  if ([self.audioEngine isRunning]) {
-    return true;
-  }
-
   for (id sourceNodeId in self.sourceNodes) {
     AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
     AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
@@ -242,7 +238,7 @@ static AudioEngine *_sharedInstance = nil;
 
   for (NSString *sourceId in self.sourceStates) {
     if ([self.sourceStates[sourceId] boolValue]) {
-      NSLog(@"state %c", self.sourceStates[sourceId]);
+      NSLog(@"state %@", self.sourceStates[sourceId]);
       return;
     }
   }

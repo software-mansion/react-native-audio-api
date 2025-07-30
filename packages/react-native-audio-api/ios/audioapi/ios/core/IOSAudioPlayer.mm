@@ -3,6 +3,7 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
+#include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -66,6 +67,7 @@ void IOSAudioPlayer::stop()
   [audioPlayer_ stop];
 }
 
+bool IOSAudioPlayer::resume()
 {
   if (isRunning()) {
     return true;

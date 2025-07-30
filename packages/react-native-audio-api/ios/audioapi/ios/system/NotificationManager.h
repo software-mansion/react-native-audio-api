@@ -21,6 +21,7 @@
 - (void)cleanup;
 
 - (void)observeAudioInterruptions:(BOOL)enabled;
+- (void)activelyReclaimSession:(BOOL)enabled;
 - (void)observeVolumeChanges:(BOOL)enabled;
 - (void)observeValueForKeyPath:(NSString *)keyPath
                       ofObject:(id)object

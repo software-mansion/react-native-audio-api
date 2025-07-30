@@ -122,6 +122,11 @@ RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
   [self.notificationManager observeAudioInterruptions:enabled];
 }
 
+RCT_EXPORT_METHOD(activelyReclaimSession : (BOOL)enabled)
+{
+  [self.notificationManager activelyReclaimSession:enabled];
+}
+
 RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
 {
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];

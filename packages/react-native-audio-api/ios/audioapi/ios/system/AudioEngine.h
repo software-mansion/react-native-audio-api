@@ -20,7 +20,6 @@
 
 + (instancetype)sharedInstance;
 - (void)cleanup;
-- (void)rebuildAudioEngine;
 - (bool)rebuildAudioEngineAndStartIfNecessary;
 - (bool)restartAudioEngine;
 - (bool)startEngine;

@@ -32,6 +32,23 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   self.audioInterruptionsObserved = enabled;
 }
 
+- (void)activelyReclaimSession:(BOOL)enabled
+{
+  if (!enabled) {
+    [self stopPollingSecondaryAudioHint];
+
+    [self.notificationCenter removeObserver:self name:AVAudioSessionSilenceSecondaryAudioHintNotification object:nil];
+    return;
+  }
+
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleSecondaryAudio:)
+                                  name:AVAudioSessionSilenceSecondaryAudioHintNotification
+                                object:nil];
+
+  [self startPollingSecondaryAudioHint];
+}
+
 // WARNING: this does not work in a simulator environment, test it on a real device
 - (void)observeVolumeChanges:(BOOL)enabled
 {
@@ -69,13 +86,6 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
                               selector:@selector(handleInterruption:)
                                   name:AVAudioSessionInterruptionNotification
                                 object:nil];
-
-  [self.notificationCenter addObserver:self
-                              selector:@selector(handleSecondaryAudio:)
-                                  name:AVAudioSessionSilenceSecondaryAudioHintNotification
-                                object:nil];
-
-  [self startPollingSecondaryAudioHint];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -227,7 +237,7 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
   dispatch_async(dispatch_get_main_queue(), ^{
     [sessionManager markSettingsAsDirty];
-    [audioEngine rebuildAudioEngine];
+    [audioEngine rebuildAudioEngineAndStartIfNecessary];
   });
 }
 
