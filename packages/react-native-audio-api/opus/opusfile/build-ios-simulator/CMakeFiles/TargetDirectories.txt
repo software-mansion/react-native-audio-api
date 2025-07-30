@@ -1,0 +1,8 @@
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/opusfile.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/doxygen.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/edit_cache.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/rebuild_cache.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/list_install_components.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/install.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/install/local.dir
+/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/CMakeFiles/install/strip.dir

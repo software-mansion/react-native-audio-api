@@ -39,11 +39,17 @@ Pod::Spec.new do |s|
     "USE_HEADERMAP" => "YES",
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\" \"$(PODS_TARGET_SRCROOT)/ios\"",
+    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\" \"$(PODS_TARGET_SRCROOT)/ios\" \"$(PODS_TARGET_SRCROOT)/opus/ogg/include\" \"$(PODS_TARGET_SRCROOT)/opus/opus/include\"",
     'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+  }
+
+  s.user_target_xcconfig = {
+    'OTHER_LDFLAGS' => "$(inherited) -force_load \"$(SRCROOT)/../../../packages/react-native-audio-api/opus/opusfile/build-ios-simulator/libopusfile.a\ -force_load \"$(SRCROOT)/../../../packages/react-native-audio-api/opus/opus/build-ios-simulator/libopus.a\ -force_load \"$(SRCROOT)/../../../packages/react-native-audio-api/opus/ogg/build-ios-simulator/libogg.a\""
   }
 
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   install_modules_dependencies(s)
 end
+
+

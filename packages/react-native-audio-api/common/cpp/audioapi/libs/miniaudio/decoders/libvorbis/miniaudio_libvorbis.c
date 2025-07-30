@@ -3,6 +3,8 @@
 
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 
+# define MA_NO_LIBVORBIS
+
 #if !defined(MA_NO_LIBVORBIS)
 #ifndef OV_EXCLUDE_STATIC_CALLBACKS
 #define OV_EXCLUDE_STATIC_CALLBACKS

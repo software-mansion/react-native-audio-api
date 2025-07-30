@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/alicja/react-native-audio-api/packages/react-native-audio-api/opus/opusfile/build-ios-simulator/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

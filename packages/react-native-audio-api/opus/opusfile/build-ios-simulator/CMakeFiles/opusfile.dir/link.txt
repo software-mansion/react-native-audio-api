@@ -1,0 +1,2 @@
+/usr/bin/ar qc libopusfile.a CMakeFiles/opusfile.dir/src/info.c.o CMakeFiles/opusfile.dir/src/internal.c.o CMakeFiles/opusfile.dir/src/opusfile.c.o CMakeFiles/opusfile.dir/src/stream.c.o
+/usr/bin/ranlib libopusfile.a
