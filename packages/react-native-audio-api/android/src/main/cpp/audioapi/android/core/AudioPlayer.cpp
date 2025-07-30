@@ -47,8 +47,8 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   if (mStream_) {
-    mStream_->requestStart();
-    return true;
+    auto result = mStream_->requestStart();
+    return result == oboe::Result::OK;
   }
 
   return false;
@@ -62,8 +62,8 @@ void AudioPlayer::stop() {
 
 bool AudioPlayer::resume() {
   if (mStream_) {
-    mStream_->requestStart();
-    return true;
+    auto result = mStream_->requestStart();
+    return result == oboe::Result::OK;
   }
 
   return false;
