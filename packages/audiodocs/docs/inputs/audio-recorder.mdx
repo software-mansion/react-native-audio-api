@@ -51,6 +51,20 @@ The above stops recording.
 
 #### Returns `undefined`.
 
+### `connect`
+
+The above method connects recorder to the adapter. If the recorder is already connected it will change its adapter (it is equivalent of calling disconnect() previously).
+Be carefull `RecorderAdapterNode` can be connected only once. You can't connect same adapter twice (even to different recorders).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `node` | [RecorderAdapterNode](/sources/recorder-adapter-node) | Adapter that we want to connect to. |
+
+#### Returns `undefined`
+
+### `disconnect`
+
+The above method disconnects recorder from the currently connected adapter. It does not need to be called before connect.
 
 ### `onAudioReady`
 

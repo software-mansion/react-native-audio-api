@@ -9,6 +9,7 @@
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -47,6 +48,12 @@ double BaseAudioContext::getCurrentTime() const {
 
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
   return destination_;
+}
+
+std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
+  auto recorderAdapter = std::make_shared<RecorderAdapterNode>(this);
+  nodeManager_->addProcessingNode(recorderAdapter);
+  return recorderAdapter;
 }
 
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {

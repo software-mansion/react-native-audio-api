@@ -1,0 +1,34 @@
+---
+sidebar_position: 6
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# RecorderAdapterNode
+
+The `RecorderAdapterNode` is an [`AudioNode`](/core/audio-node) which is an adapter for [`AudioRecorder`](/inputs/audio-recorder).
+It lets you compose audio input from recorder into an audio graph.
+
+## Constructor
+
+[`BaseAudioContext.createRecorderAdapter()`](/core/base-audio-context#createrecorderadapter)
+
+## Example
+
+```tsx
+const recorder = new AudioRecorder({
+    sampleRate: 48000,
+    bufferLengthInSamples: 48000,
+});
+const audioContext = new AudioContext({ sampleRate: 48000 });
+const recorderAdapterNode = aCtxRef.current.createRecorderAdapter();
+
+recorder.connect(recorderAdapterNode);
+recorderAdapterNode.connect(audioContext.destination)
+```
+
+## Remarks
+- Adapter without the recorder will produce silence
+- Adapter that is connected only to the recorder will work fine and keep small buffer of recorded Data
+- Adapter node will not be garbage collected until he is connected to either some destination or recorder 
