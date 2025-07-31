@@ -16,7 +16,6 @@
 namespace audioapi {
 
 class AudioBus;
-class CustomProcessorNode;
 class GainNode;
 class AudioBuffer;
 class PeriodicWave;
@@ -46,7 +45,6 @@ class BaseAudioContext {
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<OscillatorNode> createOscillator();
-  std::shared_ptr<CustomProcessorNode> createCustomProcessor(const std::string& identifier);
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();

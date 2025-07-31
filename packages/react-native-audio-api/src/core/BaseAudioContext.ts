@@ -6,7 +6,6 @@ import {
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
-import CustomProcessorNode from './CustomProcessorNode';
 import GainNode from './GainNode';
 import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -21,7 +20,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  protected readonly context: IBaseAudioContext;
+  readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
@@ -43,13 +42,6 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this, this.context.createOscillator());
-  }
-
-  createCustomProcessor(identifier: string): CustomProcessorNode {
-    return new CustomProcessorNode(
-      this,
-      this.context.createCustomProcessor(identifier)
-    );
   }
 
   createGain(): GainNode {

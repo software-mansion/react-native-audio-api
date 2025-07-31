@@ -2,7 +2,6 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
-#include <audioapi/core/effects/CustomProcessorNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -60,14 +59,6 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   auto oscillator = std::make_shared<OscillatorNode>(this);
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
-}
-
-std::shared_ptr<CustomProcessorNode> BaseAudioContext::createCustomProcessor(
-    const std::string &identifier) {
-  auto customProcessor =
-      std::make_shared<CustomProcessorNode>(this, identifier);
-  nodeManager_->addProcessingNode(customProcessor);
-  return customProcessor;
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
@@ -148,7 +139,8 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
-    const std::string &data, float playbackSpeed) {
+    const std::string &data,
+    float playbackSpeed) {
   auto audioBus = audioDecoder_->decodeWithPCMInBase64(data, playbackSpeed);
 
   if (!audioBus) {

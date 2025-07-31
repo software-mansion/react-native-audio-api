@@ -8,7 +8,6 @@
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
-#include <audioapi/HostObjects/CustomProcessorNodeHostObject.h>
 #include <audioapi/HostObjects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
@@ -43,7 +42,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
     addFunctions(
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createCustomProcessor),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -56,6 +54,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodePCMAudioDataInBase64));
   }
+
+  ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER(destination) {
     auto destination = std::make_shared<AudioDestinationNodeHostObject>(
@@ -88,13 +88,6 @@ class BaseAudioContextHostObject : public JsiHostObject {
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   }
 
-  JSI_HOST_FUNCTION(createCustomProcessor) {
-    auto identifier = args[0].getString(runtime).utf8(runtime);
-    auto customProcessor = context_->createCustomProcessor(identifier);
-    auto customProcessorHostObject = std::make_shared<CustomProcessorNodeHostObject>(customProcessor);
-    return jsi::Object::createFromHostObject(runtime, customProcessorHostObject);
-  }
-
   JSI_HOST_FUNCTION(createGain) {
     auto gain = context_->createGain();
     auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
@@ -123,12 +116,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
-JSI_HOST_FUNCTION(createBufferQueueSource) {
-    auto bufferSource = context_->createBufferQueueSource();
-    auto bufferStreamSourceHostObject =
-            std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
-    return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
-}
+  JSI_HOST_FUNCTION(createBufferQueueSource) {
+      auto bufferSource = context_->createBufferQueueSource();
+      auto bufferStreamSourceHostObject =
+              std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
+      return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
+  }
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());
@@ -253,8 +246,9 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
         return promise;
     }
 
+    std::shared_ptr<BaseAudioContext> context_;
+
  protected:
-  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 };

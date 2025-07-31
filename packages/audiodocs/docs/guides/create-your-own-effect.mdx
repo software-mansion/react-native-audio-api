@@ -1,0 +1,243 @@
+---
+sidebar_position: 6
+---
+
+# Create your own effect
+
+In this section, we will create our own [`pure C++ turbo-module`](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules) and use it to create custom processing node that can change sound whatever you want.
+
+### Prerequisites 
+
+We highly encourage you to get familiar with [this guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules), since we will be using many similar concepts that are explained here.
+
+## Generate files
+
+We prepared a script that generates all of the boiler plate code for you. 
+Only parts that will be needed by you, are:
+- customizing processor to your tasks
+- configuring [`codegen`](https://reactnative.dev/docs/the-new-architecture/what-is-codegen) with your project
+- writing native specific code to compile those files
+
+```bash
+npx rn-audioapi-custom-node-generator create -o # path where you want files to be generated, usually same level as android/ and ios/
+```
+
+## Analyzing generated files
+
+You should see two directories:
+- `shared/` - it contains c++ files (source code for custom effect and JSI layer - Host Objects, needed to communicate with JavaScript)
+- `specs/` - defines typescript interface that will invoke c++ code in JavaScript
+
+:::caution
+Name of the file in `specs/` has to start with `Native` to be seen by codegen.
+:::
+
+The most important file is `MyProcessorNode.cpp`, it contains main processing part that directly manipulates raw data. 
+
+In this guide, we will edit files in order to achieve [`GainNode`](/effects/gain-node) functionality. 
+For the sake of a simplicity, we will use value as a raw `double` type, not wrapped in [`AudioParam`](/core/audio-param).
+
+<details>
+<summary>MyProcessorNode.h</summary>
+
+```cpp
+#pragma once
+#include <audioapi/core/AudioNode.h>
+
+namespace audioapi {
+    class AudioBus;
+
+    class MyProcessorNode : public AudioNode {
+    public:
+      explicit MyProcessorNode(BaseAudioContext *context);
+
+    protected:
+      void processNode(const std::shared_ptr<AudioBus> &bus,
+                    int framesToProcess) override;
+
+    // highlight-start
+    private:
+      double gain; // value responsible for gain value
+    // highlight-end
+    };
+} // namespace audioapi
+```
+</details>
+
+<details>
+<summary>MyProcessorNode.cpp</summary>
+
+```cpp
+#include "MyProcessorNode.h"
+#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.h>
+
+namespace audioapi {
+    MyProcessorNode::MyProcessorNode(BaseAudioContext *context)
+        //highlight-next-line
+        : AudioNode(context), gain(0.5) {
+        isInitialized_ = true;
+    }
+
+    void MyProcessorNode::processNode(const std::shared_ptr<AudioBus> &bus,
+                                    int framesToProcess) {
+      // highlight-start
+      for (int channel = 0; channel < bus->getNumberOfChannels(); ++channel) {
+        auto *audioArray = bus->getChannel(channel);
+        for (size_t i = 0; i < framesToProcess; ++i) {
+          // Apply gain to each sample in the audio array
+          (*audioArray)[i] *= gain;
+        }
+      }
+      // highlight-end
+    }
+} // namespace audioapi
+```
+</details>
+
+<details>
+<summary>MyProcessorNodeHostObject.h</summary>
+
+```cpp
+#pragma once
+
+#include "MyProcessorNode.h"
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
+
+#include <memory>
+#include <vector>
+
+namespace audioapi {
+using namespace facebook;
+
+class MyProcessorNodeHostObject : public AudioNodeHostObject {
+public:
+  explicit MyProcessorNodeHostObject(
+      const std::shared_ptr<MyProcessorNode> &node)
+      : AudioNodeHostObject(node) {
+    // highlight-start
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(MyProcessorNodeHostObject, getter));
+    addSetters(JSI_EXPORT_PROPERTY_SETTER(MyProcessorNodeHostObject, setter));
+    // highlight-end
+  }
+
+  // highlight-start
+  JSI_PROPERTY_GETTER(getter) {
+     auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
+     return {processorNode->someGetter()};
+  }
+  // highlight-end
+
+  // highlight-start
+  JSI_PROPERTY_SETTER(setter) {
+     auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
+     processorNode->someSetter(value.getNumber());
+  }
+  // highlight-end
+};
+} // namespace audioapi
+```
+</details>
+
+## Codegen
+
+Onboarding codegen doesn't require anything special in regards to basic [react-native tutorial](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#2-configure-codegen)
+
+## Native files
+
+### iOS
+
+When it comes to iOS there is also nothing more than following [react-native tutorial](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#ios)
+
+### Android
+
+Case with android is much different, because of the way android is compiled we need to compile our library with whole turbo-module. 
+Firstly, follow [the guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#android), but replace `CmakeLists.txt` with this content:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+
+project(appmodules)
+
+set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
+set(AUDIO_API_DIR ${ROOT}/node_modules/react-native-audio-api)
+
+include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
+
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  ${ROOT}/shared/NativeAudioProcessingModule.cpp
+  ${ROOT}/shared/MyProcessorNode.cpp
+  ${ROOT}/shared/MyProcessorNodeHostObject.cpp
+)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${ROOT}/shared
+    ${AUDIO_API_DIR}/common/cpp
+)
+
+add_library(react-native-audio-api SHARED IMPORTED)
+string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_LOWER)
+# we need to find where original library was built
+set_target_properties(react-native-audio-api PROPERTIES IMPORTED_LOCATION
+        ${AUDIO_API_DIR}/android/build/intermediates/merged_native_libs/${BUILD_TYPE_LOWER}/merge${CMAKE_BUILD_TYPE}NativeLibs/out/lib/${CMAKE_ANDROID_ARCH_ABI}/libreact-native-audio-api.so
+)
+target_link_libraries(${CMAKE_PROJECT_NAME} react-native-audio-api android log)
+```
+
+## Final touches
+
+Last part is to finally onboard your custom module to your app, by creating typescript interface that would map c++ layer.
+
+```typescript
+// types.ts
+import { AudioNode, BaseAudioContext } from "react-native-audio-api";
+import { IAudioNode, IBaseAudioContext } from "react-native-audio-api/lib/typescript/interfaces";
+
+export interface IMyProcessorNode extends IAudioNode {
+    gain: number;
+}
+
+export class MyProcessorNode extends AudioNode {
+    constructor(context: BaseAudioContext, node: IMyProcessorNode) {
+        super(context, node);
+    }
+
+    public set gain(value: number) {
+        (this.node as IMyProcessorNode).gain = value;
+    }
+
+    public get gain(): number {
+        return (this.node as IMyProcessorNode).gain;
+    }
+}
+
+declare global {
+    var createCustomProcessorNode: (context: IBaseAudioContext) => IMyProcessorNode;
+}
+```
+
+## Example
+
+```tsx
+import {
+  AudioContext,
+  OscillatorNode,
+} from 'react-native-audio-api';
+import { MyProcessorNode } from './types';
+
+function App() {
+  const audioContext = new AudioContext();
+  const oscillator = audioContext.createOscillator();
+  // constructor is put in global scope
+  const processor = new MyProcessorNode(audioContext, global.createCustomProcessorNode(audioContext.context));
+  oscillator.connect(processor);
+  processor.connect(audioContext.destination);
+  oscillator.start(audioContext.currentTime);
+}
+```
+
+**Check out fully working [demo app](https://github.com/software-mansion-labs/custom-processor-node-example)**
+
+## What's next?
+
+I’m not sure, but give yourself a pat on the back – you’ve earned it! More guides are on the way, so stay tuned! 🎼

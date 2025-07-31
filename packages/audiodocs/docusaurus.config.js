@@ -103,7 +103,7 @@ const config = {
       copyright: `All trademarks and copyrights belong to their respective owners.`,
     },
     prism: {
-      additionalLanguages: ['bash'],
+      additionalLanguages: ['bash', 'cmake'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
     },
