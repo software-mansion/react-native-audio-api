@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-set(ANDROID_CPP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
@@ -39,6 +37,7 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/ogg/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/ogg/build-android/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/opus/include"
 )
 
