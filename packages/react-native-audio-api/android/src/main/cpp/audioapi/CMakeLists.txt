@@ -2,21 +2,29 @@ cmake_minimum_required(VERSION 3.12.0)
 
 set(ANDROID_CPP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(OGG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../common/cpp/audioapi/libs/opus/ogg)
-set(OPUS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../common/cpp/audioapi/libs/opus/opus)
-set(OPUSFILE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../common/cpp/audioapi/libs/opus/opusfile)
-
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
-file(GLOB_RECURSE OGG_SRC "${OGG_DIR}/src/*.c")
-file(GLOB_RECURSE OPUS_SRC "${OPUS_DIR}/src/*.c")
-file(GLOB_RECURSE OPUSFILE_SRC "${OPUSFILE_DIR}/src/*.c")
+set(OPUS_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/opus/build-android)
+set(OPUSFILE_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/opusfile/build-android)
+set(OGG_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/ogg/build-android)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
-add_library(ogg STATIC ${OGG_SRC})
-add_library(opus STATIC ${OPUS_SRC})
-add_library(opusfile STATIC ${OPUSFILE_SRC})
+
+link_directories(
+  ${OPUS_BUILD_DIR}
+  ${OPUSFILE_BUILD_DIR}
+  ${OGG_BUILD_DIR}
+)
+
+add_library(opus STATIC IMPORTED)
+set_target_properties(opus PROPERTIES IMPORTED_LOCATION ${OPUS_BUILD_DIR}/libopus.a)
+
+add_library(opusfile STATIC IMPORTED)
+set_target_properties(opusfile PROPERTIES IMPORTED_LOCATION ${OPUSFILE_BUILD_DIR}/libopusfile.a)
+
+add_library(ogg STATIC IMPORTED)
+set_target_properties(ogg PROPERTIES IMPORTED_LOCATION ${OGG_BUILD_DIR}/libogg.a)
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -30,6 +38,8 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/ogg/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../opus/opus/include"
 )
 
 set(LINK_LIBRARIES
