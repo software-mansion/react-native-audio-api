@@ -13,6 +13,45 @@
 
 namespace audioapi {
 
+// Decoding audio in fixed-size chunks because total frame count can't be
+// determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
+// returns 0 for Vorbis decoders.
+std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int numChannels, ma_uint64 &outFramesRead)
+    const
+{
+  std::vector<int16_t> buffer;
+  int16_t temp[4096 * numChannels];
+  outFramesRead = 0;
+
+  while (true) {
+    ma_uint64 tempFramesDecoded = 0;
+    ma_decoder_read_pcm_frames(&decoder, temp, 4096, &tempFramesDecoded);
+    if (tempFramesDecoded == 0) {
+      break;
+    }
+
+    buffer.insert(buffer.end(), temp, temp + tempFramesDecoded * numChannels);
+    outFramesRead += tempFramesDecoded;
+  }
+
+  return buffer;
+}
+
+std::shared_ptr<AudioBus>
+AudioDecoder::makeAudioBusFromInt16Buffer(const std::vector<int16_t> &buffer, int numChannels, float sampleRate) const
+{
+  auto outputFrames = buffer.size() / numChannels;
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels, sampleRate);
+
+  for (int ch = 0; ch < numChannels; ++ch) {
+    auto channelData = audioBus->getChannel(ch)->getData();
+    for (int i = 0; i < outputFrames; ++i) {
+      channelData[i] = int16ToFloat(buffer[i * numChannels + ch]);
+    }
+  }
+  return audioBus;
+}
+
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
   ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
@@ -22,39 +61,22 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-  ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
-  if (result != MA_SUCCESS) {
+  if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
-  ma_uint64 totalFrameCount;
-  ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
-
-  std::vector<int16_t> buffer(totalFrameCount * numChannels_);
-
-  ma_uint64 framesDecoded;
-  ma_decoder_read_pcm_frames(&decoder, buffer.data(), totalFrameCount, &framesDecoded);
-  if (framesDecoded == 0) {
+  ma_uint64 framesRead = 0;
+  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  if (framesRead == 0) {
     NSLog(@"Failed to decode");
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
-  auto outputFrames = buffer.size() / numChannels_;
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
-
-  for (int i = 0; i < numChannels_; ++i) {
-    auto channelData = audioBus->getChannel(i)->getData();
-    for (int j = 0; j < outputFrames; ++j) {
-      channelData[j] = int16ToFloat(buffer[j * numChannels_ + i]);
-    }
-  }
-
   ma_decoder_uninit(&decoder);
-
-  return audioBus;
+  return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
@@ -66,43 +88,22 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-  ma_result result = ma_decoder_init_memory(data, size, &config, &decoder);
-  if (result != MA_SUCCESS) {
+  if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for memory block");
-
     ma_decoder_uninit(&decoder);
-
     return nullptr;
   }
 
-  ma_uint64 totalFrameCount;
-  ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrameCount);
-
-  std::vector<int16_t> buffer(totalFrameCount * numChannels_);
-
-  ma_uint64 framesDecoded;
-  ma_decoder_read_pcm_frames(&decoder, buffer.data(), totalFrameCount, &framesDecoded);
-
-  if (framesDecoded == 0) {
+  ma_uint64 framesRead = 0;
+  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  if (framesRead == 0) {
     NSLog(@"Failed to decode");
-
     ma_decoder_uninit(&decoder);
     return nullptr;
-  }
-
-  auto outputFrames = buffer.size() / numChannels_;
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
-
-  for (int i = 0; i < numChannels_; ++i) {
-    auto channelData = audioBus->getChannel(i)->getData();
-    for (int j = 0; j < outputFrames; ++j) {
-      channelData[j] = int16ToFloat(buffer[j * numChannels_ + i]);
-    }
   }
 
   ma_decoder_uninit(&decoder);
-
-  return audioBus;
+  return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(const std::string &data, float playbackSpeed) const

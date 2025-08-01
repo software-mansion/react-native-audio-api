@@ -4,7 +4,7 @@
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 
 #if !defined(MA_NO_LIBOPUS)
-#include "../../opus/opusfile/include/opusfile.h"
+#include "../../libs/opusfile/include/opusfile.h"
 #endif
 
 #include <assert.h>
