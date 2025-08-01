@@ -45,6 +45,11 @@
   justify-content: center;
   background-color: var(--swm-red-light-80);
   margin-bottom: 1.5rem;
+  color: var(--swm-navy-light-100);
+}
+
+[data-theme="dark"] .featureIconContainer {
+  color: var(--swm-navy-dark-100);
 }
 
 .featureTitle {

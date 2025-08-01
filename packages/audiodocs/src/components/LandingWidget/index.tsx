@@ -14,10 +14,10 @@ import { AudioMode, AudioSource, AudioSourceMetadata, SourceRecord } from './typ
 const showAmpToolbarThreshold = 30;
 
 const soundSources: SourceRecord<string> = {
-  music: '/react-native-audio-api/audio/music/example-music-05.wav',
+  music: '/react-native-audio-api/audio/music/example-music-05.mp3',
   speech: '/react-native-audio-api/audio/voice/voice-sample-landing.mp3',
-  bgm: '/react-native-audio-api/audio/bgm/bgm-01.wav',
-  efx: '/react-native-audio-api/audio/efx/efx-01.wav',
+  bgm: '/react-native-audio-api/audio/bgm/bgm-01.mp3',
+  efx: '/react-native-audio-api/audio/efx/efx-01.mp3',
 };
 
 const initialSounds: SourceRecord<AudioSourceMetadata | null> = {

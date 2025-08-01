@@ -1,118 +1,128 @@
-import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+
+import TestimonialItem from '../TestimonialItem';
+import testimonials from './testimonials';
 import styles from './styles.module.css';
-import TestimonialItem from '@site/src/components/Testimonials/TestimonialItem';
-
-interface Testimonial {
-  author: string;
-  company: string;
-  body: string;
-  link?: string;
-  image: {
-    alt: string;
-    src: string;
-  };
-}
-
-const items: Testimonial[] = [
-  {
-    author: 'Matt McGuiness',
-    company: 'Perch',
-    body: 'Perch has been using react-native-audio-api for streaming generated audio in our app and it’s been fantastic. The audio quality is crisp and features like variable playback speed work seamlessly without any hiccups. We’ve replaced all other audio libraries we were using with it.',
-    // link: 'https://twitter.com/mrousavy/status/1754909520571019756',
-    image: {
-      alt: 'Matt McGuiness',
-      src: 'https://perch-app-prod.s3.us-east-1.amazonaws.com/media/matt-mcguiness.png',
-    },
-  },
-  {
-    author: 'Jakiś Gerwim',
-    company: 'Companicus Anonymus',
-    body: `We have implemented react-native-audio-api in our app because we need a performant solution with millisecond precision timing when playing multiple tracks. The expert team of Software Mansion are a delight to work with.`,
-    image: {
-      alt: 'Jakiś Gerwim',
-      src: 'https://s.ciekawostkihistoryczne.pl/uploads/2017/12/Gall-Anonim-340x340.jpg',
-    },
-
-  }
-];
+import { Testimonial } from './types';
+import useDrag from './useDrag';
 
 const TestimonialList = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const testimonialListRef = useRef<HTMLDivElement>(null);
+
+  const onSetActiveSlide = useCallback((index: number) => {
+    let offsetX = 0;
+
+    testimonials.forEach((_t, i) => {
+      const testimonialContainer = document.querySelector<HTMLElement>(`.testimonialContainer-${i}`);
+
+      if (testimonialContainer && i < index) {
+        offsetX += testimonialContainer.offsetWidth;
+      }
+    });
+
+
+    setActiveIndex(index);
+    setCurrentOffset(offsetX);
+  }, []);
+
+  const renderTestimonial = useCallback((testimonial: Testimonial, index: number) => (
+    <div key={index} className={`testimonialContainer-${index}`} style={{ padding: '20px' }}>
+      <TestimonialItem
+        key={index}
+        author={testimonial.author}
+        company={testimonial.company}
+        image={testimonial.image}
+        link={testimonial.link}
+      >
+        {testimonial.body}
+      </TestimonialItem>
+    </div>
+  ), []);
 
   useEffect(() => {
-    const updateHeight = () => {
-      const testimonialContainer = document.querySelector<HTMLElement>(
-        `.testimonialContainer-${activeIndex}`
-      );
-      const testimonialSlides =
-        document.querySelector<HTMLElement>('.testimonialSlides');
-      if (
-        testimonialContainer.childElementCount === 1 &&
-        testimonialSlides.offsetHeight > testimonialContainer.offsetHeight
-      ) {
+    function handleResize() {
+      if (!testimonialListRef.current) {
         return;
       }
-      testimonialSlides.style.height = `${testimonialContainer.offsetHeight}px`;
-    };
 
-    updateHeight();
+      const { offsetWidth } = testimonialListRef.current;
 
-    window.addEventListener('resize', updateHeight);
+      let offsetX = 0;
+
+
+      testimonials.forEach((_t, index) => {
+        const testimonialContainer = document.querySelector<HTMLElement>(`.testimonialContainer-${index}`);
+
+        if (testimonialContainer) {
+          testimonialContainer.style.width = `${offsetWidth}px`;
+        }
+
+        if (index < activeIndex) {
+          offsetX += testimonialContainer ? testimonialContainer.offsetWidth : 0;
+        }
+      })
+
+      setCurrentOffset(offsetX);
+
+      const activeSlide = document.querySelector<HTMLElement>(`.testimonialContainer-${activeIndex}`);
+
+      if (!activeSlide) {
+        return;
+      }
+
+      testimonialListRef.current.style.height = `${activeSlide.offsetHeight + 50}px`;
+    }
+
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
     return () => {
-      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener('resize', handleResize);
     };
   }, [activeIndex]);
 
-  const handleDotClick = (index) => {
-    setActiveIndex(index);
-  };
+  const dragHandlers = useDrag(currentOffset, setCurrentOffset, activeIndex, onSetActiveSlide);
 
-  const renderedItems = [];
-  for (let i = 0; i < items.length; i += 1) {
-    renderedItems.push(
-      <div
-        className={clsx(
-          `testimonialContainer-${i}`,
-          styles.testimonialPair
-        )}
-        key={i}>
-        <TestimonialItem
-          company={items[i].company}
-          image={items[i].image}
-          link={items[i].link}
-          author={items[i].author}>
-          {items[i].body}
-        </TestimonialItem>
-      </div>
-    );
-  }
+  console.log('TestimonialList rendered with activeIndex:', activeIndex, 'currentOffset:', currentOffset);
 
   return (
-    <div className={styles.testimonialSlides}>
-      <div className="testimonialSlides">
-        {renderedItems.map((item, idx) => (
-          <div
-            key={idx}
-            className={clsx(
-              styles.testimonialSlide,
-              activeIndex === idx ? styles.activeTestimonialSlide : ''
-            )}>
-            {item}
-          </div>
-        ))}
+    <div>
+      <div ref={testimonialListRef} className={styles.testimonialList}>
+        <div {...dragHandlers} style={{
+            transform: `translateX(-${currentOffset}px)`,
+            display: 'flex',
+            flexDirection: 'row',
+            position: 'absolute',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-start',
+            transition: 'transform 300ms ease-out',
+          }}
+        >
+          {testimonials.map(renderTestimonial)}
+        </div>
       </div>
-      <div className={styles.dotsContainer}>
-        {renderedItems.map((_, idx) => (
-          <span
-            key={idx}
-            className={clsx(
-              styles.dot,
-              idx === activeIndex && styles.activeDot
-            )}
-            onClick={() => handleDotClick(idx)}
-          />
-        ))}
+      <div>
+        <div className={styles.dotsContainer}>
+          {testimonials.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => onSetActiveSlide(index)}
+              className={styles.dotButton}
+            >
+              <span
+                className={clsx(
+                  styles.dot,
+                  index === activeIndex && styles.activeDot
+                )}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

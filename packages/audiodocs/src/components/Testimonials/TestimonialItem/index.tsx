@@ -35,7 +35,7 @@ const TestimonialItem = ({ author, company, image, link, children }: Props) => {
           <span className={styles.testimonialCompany}>{company}</span>
         </div>
       </div>
-      <p className={styles.testimonialBody}>“{children}”</p>
+      <p className={styles.testimonialBody}>{children}</p>
     </a>
   );
 };
