@@ -40,9 +40,12 @@ function Home() {
         <LandingBlog />
         {/* <LandingExamples /> */}
       </div>
-      <Spacer.V size="4rem" />
+      <Spacer.V size="10rem" />
       <div className={styles.container}>
         <Testimonials />
+      </div>
+      <Spacer.V size="12rem" />
+      <div className={styles.container}>
         <HireUsSection
           href={
             'https://swmansion.com/contact/projects?utm_source=gesture-handler&utm_medium=docs'
