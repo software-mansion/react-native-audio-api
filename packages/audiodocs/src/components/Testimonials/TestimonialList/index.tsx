@@ -87,8 +87,6 @@ const TestimonialList = () => {
 
   const dragHandlers = useDrag(currentOffset, setCurrentOffset, activeIndex, onSetActiveSlide);
 
-  console.log('TestimonialList rendered with activeIndex:', activeIndex, 'currentOffset:', currentOffset);
-
   return (
     <div>
       <div ref={testimonialListRef} className={styles.testimonialList}>

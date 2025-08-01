@@ -77,7 +77,6 @@ export default function useDrag(currentOffset: number, setCurrentOffset: (offset
     if (newIndex !== activeIndex) {
       onSetActiveSlide(newIndex);
     } else {
-      console.log('No change in active index', initialOffset, currentOffset);
       setCurrentOffset(initialOffset);
     }
 

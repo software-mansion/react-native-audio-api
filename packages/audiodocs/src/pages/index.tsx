@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-// @ts-expect-error
+// @ts-ignore
 import Layout from '@theme/Layout';
 
 import Hero from '@site/src/components/Hero';
@@ -25,7 +25,7 @@ function Home() {
   }, [])
   return (
     <Layout
-      title={`React Native Audio API`}
+      title="React Native Audio API"
       description="Declarative API exposing platform native touch and gesture system to React Native.">
       <div className={styles.container}>
         <Hero />

@@ -318,7 +318,7 @@
   --ifm-navbar-background-color: var(--swm-background);
   --ifm-navbar-link-color: var(--swm-off-white);
 
-  --swm-landing-background: var(--black);
+  --swm-landing-background: var(--swm-background);
 
   /* Color Mode */
   --swm-color-mode-enabled: var(--swm-off-navy);
