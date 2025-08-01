@@ -7,15 +7,25 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+#include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
+#include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
+
 // #include <android/log.h>
 
 namespace audioapi {
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
+  ma_decoding_backend_vtable *customBackends[] = {
+      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  config.ppCustomBackendVTables = customBackends;
+  config.customBackendCount =
+      sizeof(customBackends) / sizeof(customBackends[0]);
+
   ma_result result = ma_decoder_init_file(path.c_str(), &config, &decoder);
   if (result != MA_SUCCESS) {
     // __android_log_print(
@@ -65,9 +75,16 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     const void *data,
     size_t size) const {
+  ma_decoding_backend_vtable *customBackends[] = {
+      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  config.ppCustomBackendVTables = customBackends;
+  config.customBackendCount =
+      sizeof(customBackends) / sizeof(customBackends[0]);
+
   ma_result result = ma_decoder_init_memory(data, size, &config, &decoder);
   if (result != MA_SUCCESS) {
     // __android_log_print(
