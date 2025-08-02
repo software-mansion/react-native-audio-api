@@ -282,7 +282,10 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
   // Helper function to find which point is being clicked
   const findPointIndex = (mouseX: number, mouseY: number): number | null => {
     const canvas = canvasRef.current;
-    if (!canvas) return null;
+
+    if (!canvas) {
+      return null;
+    }
 
     const width = canvas.width;
     const height = canvas.height;
@@ -304,7 +307,10 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
   // Helper function to update band value based on mouse position
   const updateBandValue = (pointIndex: number, mouseY: number) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+
+    if (!canvas) {
+      return;
+    }
 
     const height = canvas.height;
     const yRange = height - padding * 2;
@@ -326,7 +332,10 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+
+    if (!canvas) {
+      return;
+    }
 
     const mousePos = getMousePos(canvas, e);
     const pointIndex = findPointIndex(mousePos.x, mousePos.y);
@@ -339,7 +348,10 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+
+    if (!canvas) {
+      return;
+    }
 
     const mousePos = getMousePos(canvas, e);
 
@@ -354,7 +366,10 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
 
   const handleMouseUp = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+
+    if (!canvas) {
+      return;
+    }
 
     isDraggingRef.current = null;
     canvas.style.cursor = 'default';
@@ -362,19 +377,23 @@ const Equalizer: React.FC<EqualizerProps> = (props) => {
 
   const handleMouseLeave = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+
+    if (!canvas) {
+      return;
+    }
 
     isDraggingRef.current = null;
     canvas.style.cursor = 'default';
   };
 
-  // Touch event handlers
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    const touch = e.touches[0];
+    if (!canvas) {
+      return;
+    }
+
     const touchPos = getTouchPos(canvas, e.nativeEvent);
     const pointIndex = findPointIndex(touchPos.x, touchPos.y);
 

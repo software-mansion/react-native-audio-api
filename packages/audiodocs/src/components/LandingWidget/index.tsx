@@ -1,5 +1,3 @@
-import clsx from 'clsx';
-import { useColorMode } from '@docusaurus/theme-common';
 import React, { useState, useEffect, useCallback, useMemo, act } from "react";
 
 import { Spacer } from '@site/src/components/Layout';
@@ -8,7 +6,7 @@ import { presetEffects } from "@site/src/audio/effects";
 
 import WidgetToolbar from './WidgetToolbar';
 import styles from "./styles.module.css";
-import Spectrogram from "./Spectrogram";
+import Spectrogram from "../Spectrogram";
 import { AudioMode, AudioSource, AudioSourceMetadata, SourceRecord } from './types';
 
 const showAmpToolbarThreshold = 30;

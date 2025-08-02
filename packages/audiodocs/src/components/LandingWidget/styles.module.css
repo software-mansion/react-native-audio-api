@@ -125,18 +125,6 @@
   padding-right: 16px;
 }
 
-.spectrogramContainer {
-
-}
-
-.spectrogramCanvasWrapper {
-
-}
-
-.spectrogramCanvas {
-  width: 100%;
-}
-
 .widgetToolbarButtonProgressContainer {
   position: absolute;
   bottom: 16px;

@@ -39,13 +39,21 @@ const Spectrogram: React.FC = () => {
     let slowBuckets = new Array(bucketCount).fill(0);
     let slowBucketsSeeds = new Array(bucketCount).fill(0).map(() => Math.random());
 
+    let barSpacing = 8.45;
+    let barWidth = Math.max(20, canvas.width / (bucketCount))
+    barWidth = canvas.width / Math.floor(canvas.width / (barWidth + barSpacing)) - barSpacing;
+    const totalBarHeight = canvas.height;
+
+    const finalBucketCount = Math.floor(canvas.width / (barWidth + barSpacing));
+    const bucketShift = 4;
+
     function draw() {
       requestAnimationFrame(draw);
       analyser.getByteFrequencyData(fftOutput);
 
       const drawingBuckets = downSampleLog(
         fftOutput,
-        bucketCount,
+        finalBucketCount + 2 * bucketShift,
         AudioManager.aCtx.sampleRate,
         80
       );
@@ -53,30 +61,23 @@ const Spectrogram: React.FC = () => {
       ctx.fillStyle = '#fcfcff';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const bucketsToDraw = bucketCount;
-      const barWidth = Math.max(20, canvas.width / (bucketsToDraw))
-      const totalBarHeight = canvas.height;
-
       let barsToDraw = drawingBuckets;
 
       if (!isPlaying) {
-        // Animate slow sine wave
-        slowPhase += 0.0007;
+        slowPhase += 0.01;
         slowBuckets = slowBuckets.map((_, i) => {
-          // Sine wave, slow phase
           return 2 * (60 + 40 * Math.sin(slowPhase + i * 0.05) * slowBucketsSeeds[i]);
         });
 
         barsToDraw = slowBuckets;
       }
 
-      for (let i = 0; i < bucketsToDraw; i += 1) {
-        const value = barsToDraw[i + bucketCount / 4] || 0;
+      for (let i = bucketShift; i < finalBucketCount + bucketShift; i += 1) {
+        const value = barsToDraw[i] || 0;
         const height = Math.max((value / 255) * totalBarHeight, 2);
         const offset = canvas.height - height;
-        const x =  (barWidth + 8.45) * (i);
+        const x =  (barWidth + barSpacing) * (i - bucketShift);
 
-        // Create gradient for each bar
         const gradient = ctx.createLinearGradient(0, offset + height, 0, offset);
 
         if (colorMode === 'dark') {

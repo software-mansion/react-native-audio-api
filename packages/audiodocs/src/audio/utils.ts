@@ -7,32 +7,30 @@ export function downSampleLog(
 ): number[] {
     const nyquist = sampleRate / 2;
     const binCount = fft.length;
-
     const maxFreq = nyquist;
 
     const buckets = new Array<number>(targetBucketCount).fill(0);
     const bucketCounts = new Array<number>(targetBucketCount).fill(0);
 
-    for (let i = 0; i < binCount; i++) {
+    for (let i = 0; i < binCount; i += 1) {
         const freq = (i / binCount) * nyquist;
-
-        if (freq < minFreq) continue; // skip sub-audible bins
-
-        const norm = Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
-        const band = Math.min(
-            targetBucketCount - 1,
-            Math.floor(norm * targetBucketCount)
+        const safeFreq = Math.max(freq, minFreq);
+        const norm = Math.log(safeFreq / minFreq) / Math.log(maxFreq / minFreq);
+        const band = Math.max(
+            0,
+            Math.min(targetBucketCount - 1, Math.round(norm * (targetBucketCount - 1)))
         );
 
         buckets[band] += fft[i];
-        bucketCounts[band]++;
+        bucketCounts[band] += 1;
     }
 
-    // Normalize by count
-    for (let i = 0; i < targetBucketCount; i++) {
-        if (bucketCounts[i] > 0) {
-            buckets[i] /= bucketCounts[i];
-        }
+    for (let i = 0; i < targetBucketCount; i += 1) {
+      if (bucketCounts[i] > 0) {
+          buckets[i] /= bucketCounts[i];
+      } else {
+          buckets[i] = buckets[Math.max(0, i - 1)];
+      }
     }
 
     return buckets;
