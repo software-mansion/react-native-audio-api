@@ -1,20 +1,21 @@
-export const initialFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-
-export const vocalPreset = [-6, -4, -2, -2, 0, 2, 3, 2, 3, 2];
+export const frequencies: Array<{ frequency: number; type: BiquadFilterType }> = [
+  { frequency: 60, type: 'lowshelf'},
+  { frequency: 250, type: 'peaking' },
+  { frequency: 1000, type: 'peaking' },
+  { frequency: 4000, type: 'peaking' },
+  { frequency: 12000, type: 'highshelf' },
+];
 
 export default class Equalizer {
-  private audioContext: AudioContext;
-  private bands: BiquadFilterNode[];
+  bands: BiquadFilterNode[];
 
-  constructor(audioContext: AudioContext, size: number = 10) {
-    this.audioContext = audioContext;
-
+  constructor(audioContext: AudioContext, size: number = frequencies.length) {
     this.bands = Array.from({ length: size }, (_, i) => {
       const filter = audioContext.createBiquadFilter();
-      filter.type = "peaking";
-      filter.frequency.value = initialFrequencies[i] || 1000;
-      filter.Q.value = 1;
-      filter.gain.value = vocalPreset[i] || 0;
+      filter.type = frequencies[i].type;
+      filter.frequency.value = frequencies[i].frequency;
+      // filter.Q.value = 1;
+      filter.gain.value = 0;
       return filter;
     });
 

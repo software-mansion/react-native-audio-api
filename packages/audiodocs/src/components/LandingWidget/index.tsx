@@ -1,42 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo, act } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 
-import { Spacer } from '@site/src/components/Layout';
 import AudioManager from "@site/src/audio/AudioManager";
-import { presetEffects } from "@site/src/audio/effects";
 
-import WidgetToolbar from './WidgetToolbar';
-import styles from "./styles.module.css";
 import Spectrogram from "../Spectrogram";
-import { AudioMode, AudioSource, AudioSourceMetadata, SourceRecord } from './types';
+import Equalizer from "../Equalizer";
 
-const showAmpToolbarThreshold = 30;
-
-const soundSources: SourceRecord<string> = {
-  music: '/react-native-audio-api/audio/music/example-music-05.mp3',
-  speech: '/react-native-audio-api/audio/voice/voice-sample-landing.mp3',
-  bgm: '/react-native-audio-api/audio/bgm/bgm-01.mp3',
-  efx: '/react-native-audio-api/audio/efx/efx-01.mp3',
-};
-
-const initialSounds: SourceRecord<AudioSourceMetadata | null> = {
-  music: null,
-  speech: null,
-  bgm: null,
-  efx: null,
-};
-
-const labels: Record<AudioSource, string> = {
-  music: 'Music',
-  speech: 'Speech',
-  bgm: 'BGM',
-  efx: 'EFX'
-};
+import { AudioMode, AudioSource, AudioSourceMetadata, DisplayType, SourceRecord } from './types';
+import { initialSounds, soundSources, labels } from './constants';
+import styles from "./styles.module.css";
+import Toolbar from './Toolbar';
 
 const LandingWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<AudioMode>('player');
   const [sounds, setSounds] = useState<SourceRecord<AudioSourceMetadata | null>>(initialSounds);
   const [activeSounds, setActiveSounds] = useState<Array<{ id: string, type: AudioSource, startedAt: number }>>([]);
+  const [displayType, setDisplayType] = useState<DisplayType>('equalizer');
 
   const onPlaySound = useCallback(async (soundId: string, source: AudioSource) => {
     if (mode === 'amplifier') {
@@ -97,37 +76,35 @@ const LandingWidget: React.FC = () => {
     loadSounds();
   }, []);
 
-  const buttons = useMemo(() => {
-    const buttonList = Object.entries(sounds).map(([key, sound]) => {
-      if (!sound || !sound.id) {
-        return null;
-      }
-
-      return {
-        id: sound.id,
-        name: labels[key as AudioSource],
-        type: key as AudioSource,
-        isActive: activeSounds.some(s => s.type === key),
-        onPlaySound,
-      };
-    });
-
-    return buttonList.filter(Boolean);
-  }, [sounds, onPlaySound, activeSounds]);
+  const buttons = useMemo(() => Object.entries(labels).map(([key, label]) => ({
+    id: sounds[key as AudioSource]?.id || '',
+    name: label,
+    type: key as AudioSource,
+    isActive: activeSounds.some(s => s.type === key),
+    onPlaySound,
+  })), [sounds, onPlaySound, activeSounds]);
 
   useEffect(() => {
     return () => {
       AudioManager.clear();
     };
-  }, [])
+  }, []);
 
   return (
     <div className={styles.container}>
-      <div className={styles.toolbar}>
-        <Spacer.H size="12px" />
-        <WidgetToolbar isLoading={isLoading} onPlaySound={onPlaySound} buttons={buttons} />
-      </div>
-      <Spectrogram />
+      <Toolbar
+        isLoading={isLoading}
+        soundButtons={buttons}
+        onPlaySound={onPlaySound}
+        displayType={displayType}
+        onSetDisplayType={setDisplayType}
+      />
+
+      {displayType === 'equalizer' ? (
+        <Equalizer />
+      ) : (
+        <Spectrogram />
+      )}
     </div>
   );
 }

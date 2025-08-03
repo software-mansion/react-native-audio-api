@@ -8,3 +8,14 @@ export interface AudioSourceMetadata {
   id: string;
   sourceName: AudioSource;
 }
+
+export interface SoundButtonProps {
+  id: string;
+  name: string;
+  type: AudioSource;
+  isActive?: boolean;
+  onPlaySound?: (id: string, source: AudioSource) => void;
+}
+
+
+export type DisplayType = 'spectrogram' | 'equalizer';

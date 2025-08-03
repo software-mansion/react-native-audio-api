@@ -1,36 +1,32 @@
+import React, { useCallback } from 'react';
 import { useColorMode } from '@docusaurus/theme-common';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import AudioManager from '@site/src/audio/AudioManager';
+import Canvas, { CanvasContext } from '@site/src/components/Canvas';
 import { downSampleLog } from '@site/src/audio/utils';
-import styles from './styles.module.css';
+import AudioManager from '@site/src/audio/AudioManager';
 import { drawSpectroLines, getBarWidth, clearCanvas } from '@site/src/canvasUtils';
+import useIsPlaying from '@site/src/audio/useIsPlaying';
 
 const barSpacing = 8.45;
 const minFrequency = 80;
 
+interface SpectrogramRenderingContext {
+  analyser: AnalyserNode;
+  fftOutput: Uint8Array;
+  barWidth: number;
+  bucketCount: number;
+  totalBarHeight: number;
+  slowPhase: number;
+  slowBuckets: number[];
+  slowBucketsSeeds: number[];
+}
+
+
 const Spectrogram: React.FC = () => {
   const { colorMode } = useColorMode();
+  const isPlaying = useIsPlaying();
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasWrapperRef = useRef<HTMLDivElement>(null);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [width, setWidth] = useState(0);
-
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-
-    if (!canvas || canvas.width === 0) {
-      return;
-    }
-
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      return;
-    }
-
+  const prepareRenderingContext = useCallback(({ canvas, ctx }: CanvasContext): SpectrogramRenderingContext => {
     const analyser = AudioManager.analyser;
     const fftOutput = new Uint8Array(analyser.frequencyBinCount);
     const bucketCount = 64;
@@ -45,80 +41,59 @@ const Spectrogram: React.FC = () => {
     let slowBuckets = new Array(finalBucketCount + 2 * bucketShift).fill(0);
     let slowBucketsSeeds = new Array(finalBucketCount + 2 * bucketShift).fill(0).map(() => Math.random());
 
-    function draw() {
-      requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(fftOutput);
+    return {
+      analyser,
+      fftOutput,
+      bucketCount: finalBucketCount,
+      totalBarHeight,
+      barWidth,
+      slowPhase,
+      slowBuckets,
+      slowBucketsSeeds,
+    };
+  }, []);
 
-      const drawingBuckets = downSampleLog(
-        fftOutput,
-        finalBucketCount + 2 * bucketShift,
-        AudioManager.aCtx.sampleRate,
-        minFrequency
-      );
+  const onDraw = useCallback(({ canvas, ctx }: CanvasContext, renderingContext: SpectrogramRenderingContext) => {
+    const { analyser, fftOutput, bucketCount, totalBarHeight, barWidth, slowPhase, slowBuckets, slowBucketsSeeds } = renderingContext;
 
-      clearCanvas(canvas, ctx);
-      let barsToDraw = drawingBuckets;
+    analyser.getByteFrequencyData(fftOutput);
 
-      if (!isPlaying) {
-        slowPhase += 0.01;
-        slowBuckets = slowBuckets.map((_, i) => {
-          return 2 * (60 + 40 * Math.sin(slowPhase + i * 0.05) * slowBucketsSeeds[i]);
-        });
+    const drawingBuckets = downSampleLog(
+      fftOutput,
+      bucketCount + 2 * 4,
+      AudioManager.aCtx.sampleRate,
+      minFrequency
+    );
 
-        barsToDraw = slowBuckets;
-      }
+    clearCanvas(canvas, ctx);
+    let barsToDraw = drawingBuckets;
 
-      drawSpectroLines(
-        ctx,
-        barsToDraw,
-        finalBucketCount,
-        bucketShift,
-        totalBarHeight,
-        barWidth,
-        barSpacing,
-        colorMode,
-      );
+    if (!isPlaying) {
+      renderingContext.slowPhase += 0.01;
+      renderingContext.slowBuckets.forEach((_, i) => {
+        renderingContext.slowBuckets[i] = 2 * (60 + 40 * Math.sin(renderingContext.slowPhase + i * 0.05) * slowBucketsSeeds[i]);
+      });
+
+      barsToDraw = slowBuckets;
     }
 
-    draw();
-  }, [width, isPlaying, colorMode]);
-
-  useLayoutEffect(() => {
-    const updateWidth = () => {
-      if (canvasWrapperRef.current) {
-        setWidth(canvasWrapperRef.current.clientWidth);
-      }
-    };
-
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-
-    return () => {
-      window.removeEventListener('resize', updateWidth);
-    };
-  }, []);
-
-  useEffect(() => {
-    AudioManager.addEventListener('playing', () => {
-      setIsPlaying(true);
-    });
-
-    AudioManager.addEventListener('stopped', () => {
-      setIsPlaying(false);
-    });
-
-    return () => {
-      AudioManager.removeEventListener('playing', () => setIsPlaying(true));
-      AudioManager.removeEventListener('stopped', () => setIsPlaying(false));
-    };
-  }, []);
+    drawSpectroLines(
+      ctx,
+      barsToDraw,
+      bucketCount,
+      4,
+      totalBarHeight,
+      barWidth,
+      barSpacing,
+      colorMode,
+    );
+  }, [isPlaying, colorMode]);
 
   return (
-    <div>
-      <div ref={canvasWrapperRef}>
-        <canvas className={styles.canvas} ref={canvasRef} width={width} height={250}></canvas>
-      </div>
-    </div>
+    <Canvas<SpectrogramRenderingContext>
+      onDraw={onDraw}
+      prepareRenderingContext={prepareRenderingContext}
+    />
   );
 }
 
