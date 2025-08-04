@@ -46,7 +46,9 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
                                   name:AVAudioSessionSilenceSecondaryAudioHintNotification
                                 object:nil];
 
-  [self startPollingSecondaryAudioHint];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self startPollingSecondaryAudioHint];
+  });
 }
 
 // WARNING: this does not work in a simulator environment, test it on a real device
