@@ -75,7 +75,7 @@ function drawColumnLabels(ctx: CanvasRenderingContext2D, columns: GridColumn[], 
     const textWidth = ctx.measureText(column.label).width;
 
     const colX = x + index * columnWidth;
-    const textX = colX - (textWidth) / 2;
+    const textX = colX;
     ctx.fillText(column.label, textX, y + height + 20);
   });
 }
@@ -94,7 +94,7 @@ function drawRowLabels(ctx: CanvasRenderingContext2D, rows: GridRow[], x: number
     const textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
 
     const rowY = y + index * rowHeight;
-    ctx.fillText(row.label, width + 8, rowY + textHeight / 2);
+    ctx.fillText(row.label, width + 16, rowY);
   });
 }
 

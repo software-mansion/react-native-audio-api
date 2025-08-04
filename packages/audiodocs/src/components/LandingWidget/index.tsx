@@ -15,7 +15,7 @@ const LandingWidget: React.FC = () => {
   const [mode, setMode] = useState<AudioMode>('player');
   const [sounds, setSounds] = useState<SourceRecord<AudioSourceMetadata | null>>(initialSounds);
   const [activeSounds, setActiveSounds] = useState<Array<{ id: string, type: AudioSource, startedAt: number }>>([]);
-  const [displayType, setDisplayType] = useState<DisplayType>('equalizer');
+  const [displayType, setDisplayType] = useState<DisplayType>('spectrogram');
 
   const onPlaySound = useCallback(async (soundId: string, source: AudioSource) => {
     if (mode === 'amplifier') {
