@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-import { Optional, Experimental } from '@site/src/components/Badges';
+import { Optional, Experimental, Overridden } from '@site/src/components/Badges';
 
 # AudioBufferQueueSourceNode
 
@@ -44,12 +44,29 @@ function App() {
 
 ### `enqueueBuffer`
 
-The above method lets you add another buffer to queue.
+The above method lets you add another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Buffer with next data. |
-| `isLastBuffer` | `boolean` | Boolean indicating if it is a last buffer. Default value is `false`. Queue will stop after buffer marked as `last` will end. |
 
-#### Returns `undefined`.
+#### Returns `string`.
 
+## Events
+
+### `onEnded` <Overridden />
+
+Allows to set (or remove) callback that will be fired when queue source node has stopped playing with payload `event.bufferId = undefined`
+or when a specific buffer has ended with payload `event.bufferId = <bufferId>`.
+
+You can remove callback by passing `null`.
+
+```ts
+audioBufferSourceNode.onEnded = (event) => { //setting callback
+  if (event.bufferId === undefined) {
+    console.log('queue source node has been stopped');
+  } else {
+    console.log(`buffer with id {event.bufferId} ended`);
+  }
+};
+```
