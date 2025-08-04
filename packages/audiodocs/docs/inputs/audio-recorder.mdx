@@ -9,7 +9,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 ## Constructor
 
-[`AudioRecorder(options)`](/inputs/audio-recorder#audiorecorderoptions)
+[`AudioRecorder(options)`](/docs/inputs/audio-recorder#audiorecorderoptions)
 
 ## Example
 
@@ -32,7 +32,7 @@ function App() {
         when
       );
     });
-  
+
   recorder.start();
 }
 ```
@@ -58,7 +58,7 @@ Be carefull `RecorderAdapterNode` can be connected only once. You can't connect 
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `node` | [RecorderAdapterNode](/sources/recorder-adapter-node) | Adapter that we want to connect to. |
+| `node` | [RecorderAdapterNode](/docs/sources/recorder-adapter-node) | Adapter that we want to connect to. |
 
 #### Returns `undefined`
 
@@ -72,7 +72,7 @@ The above allows user to set a callback after every portion of data deliverance.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `callback` | [(OnAudioReadyEventType => void)](/inputs/audio-recorder#onaudioreadyeventtype) | callback that will be invoked |
+| `callback` | [(OnAudioReadyEventType => void)](/docs/inputs/audio-recorder#onaudioreadyeventtype) | callback that will be invoked |
 
 #### Returns `undefined`.
 

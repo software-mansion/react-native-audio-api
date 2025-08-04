@@ -79,7 +79,7 @@ function App() {
 
 | Parameters | Type | Description |
 | :---: | :---: | :-----: |
-| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
+| `info` | [`LockScreenInfo`](/docs/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
 
 #### Returns `undefined`
 
@@ -93,7 +93,7 @@ Resets all of the lock screen data.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
+| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
 
 #### Returns `undefined`
 
@@ -149,14 +149,14 @@ Enables emition of some system events.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`RemoteCommandEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
+| `name` | [`RemoteCommandEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
 | `enabled` | `boolean` | Indicates the start or the end of event emission |
 
 #### Returns `undefined`
 
 :::info
 
-If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/system/audio-manager#addsystemeventlistener)
+If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/docs/system/audio-manager#addsystemeventlistener)
 with proper parameters.
 
 :::
@@ -168,29 +168,29 @@ Adds callback to be invoked upon hearing an event.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`SystemEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
-| `callback` | [`SystemEventCallback`](/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
+| `name` | [`SystemEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
+| `callback` | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
 
-#### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
 
 ### `requestRecordingPermissions`
 
 Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
 Allows to check if permissions were previously granted.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `getDevicesInfo`
 
 Allows to check currently used and available devices.
 
-#### Returns promise of [`AudioDevicesInfo`](/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 
 ## Remarks
 
