@@ -7,6 +7,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <unordered_map>
 
 namespace audioapi {
@@ -20,7 +21,7 @@ IOSAudioRecorder::IOSAudioRecorder(
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {
       auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
-      circularBuffer_->push_back(inputChannel, numFrames);
+      writeToBuffers(inputChannel, numFrames);
     }
 
     while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {

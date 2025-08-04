@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, OnlyiOS } from '@site/src/components/Badges';
+import { Optional, ReadOnly, OnlyiOS, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -62,6 +62,7 @@ function App() {
       }
     );
 
+    AudioManager.getDevicesInfo().then(console.log);
 
     return () => {
       remotePlaySubscription?.remove();
@@ -116,6 +117,24 @@ Resets all of the lock screen data.
 
 #### Returns `undefined`
 
+### `activelyReclaimSession` <OnlyiOS /> <Experimental />
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable session spoofing |
+
+#### Returns `undefined`
+
+More aggressively try to reactivate the audio session during interruptions.
+
+In some cases (depends on app session settings and other apps using audio) system may never
+send the `interruption ended` event. This method will check if any other audio is playing
+and try to reactivate the audio session, as soon as there is "silence".
+Although this might change the expected behavior.
+
+Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+interval polling to check if other audio is playing.
+
 ### `observeVolumeChanges`
 
 | Parameters | Type | Description |
@@ -166,6 +185,12 @@ is directly requested, but sometimes it is better to ask beforehand.
 Allows to check if permissions were previously granted.
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+### `getDevicesInfo`
+
+Allows to check currently used and available devices.
+
+#### Returns promise of [`AudioDevicesInfo`](/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 
 ## Remarks
 
@@ -335,5 +360,26 @@ class AudioEventSubscription {
 <summary>Type definitions</summary>
 ```typescript
 type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
+```
+</details>
+
+### `AudioDevicesInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+export interface AudioDeviceInfo {
+  name: string;
+  category: string;
+}
+
+export type AudioDeviceList = AudioDeviceInfo[];
+
+export interface AudioDevicesInfo {
+  availableInputs: AudioDeviceList;
+  availableOutputs: AudioDeviceList;
+  currentInputs: AudioDeviceList; // iOS only
+  currentOutputs: AudioDeviceList; // iOS only
+}
 ```
 </details>

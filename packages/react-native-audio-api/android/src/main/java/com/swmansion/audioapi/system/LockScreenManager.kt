@@ -211,7 +211,7 @@ class LockScreenManager(
           .Builder(
             "SkipBackward",
             "Skip Backward",
-            R.drawable.skip_backward_10,
+            R.drawable.skip_backward_15,
           ).build(),
       )
     }
@@ -224,7 +224,7 @@ class LockScreenManager(
           .Builder(
             "SkipForward",
             "Skip Forward",
-            R.drawable.skip_forward_10,
+            R.drawable.skip_forward_15,
           ).build(),
       )
     }

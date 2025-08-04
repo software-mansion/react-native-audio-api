@@ -68,6 +68,10 @@
 
    @ReactMethod
    @DoNotStrip
+   public abstract void activelyReclaimSession(boolean enabled);
+
+   @ReactMethod
+   @DoNotStrip
    public abstract void observeVolumeChanges(boolean enabled);
 
    @ReactMethod
@@ -77,4 +81,8 @@
    @ReactMethod
    @DoNotStrip
    public abstract void checkRecordingPermissions(Promise promise);
+
+   @ReactMethod
+   @DoNotStrip
+   public abstract void getDevicesInfo(Promise promise);
  }

@@ -8,12 +8,12 @@
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
-#include <audioapi/HostObjects/CustomProcessorNodeHostObject.h>
 #include <audioapi/HostObjects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
+#include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -40,8 +40,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
     addFunctions(
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createCustomProcessor),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -54,6 +54,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodePCMAudioDataInBase64));
   }
+
+  ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER(destination) {
     auto destination = std::make_shared<AudioDestinationNodeHostObject>(
@@ -73,18 +75,17 @@ class BaseAudioContextHostObject : public JsiHostObject {
     return {context_->getCurrentTime()};
   }
 
+  JSI_HOST_FUNCTION(createRecorderAdapter) {
+    auto recorderAdapter = context_->createRecorderAdapter();
+    auto recorderAdapterHostObject = std::make_shared<RecorderAdapterNodeHostObject>(recorderAdapter);
+    return jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
+  }
+
   JSI_HOST_FUNCTION(createOscillator) {
     auto oscillator = context_->createOscillator();
     auto oscillatorHostObject =
         std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
-  }
-
-  JSI_HOST_FUNCTION(createCustomProcessor) {
-    auto identifier = args[0].getString(runtime).utf8(runtime);
-    auto customProcessor = context_->createCustomProcessor(identifier);
-    auto customProcessorHostObject = std::make_shared<CustomProcessorNodeHostObject>(customProcessor);
-    return jsi::Object::createFromHostObject(runtime, customProcessorHostObject);
   }
 
   JSI_HOST_FUNCTION(createGain) {
@@ -115,12 +116,12 @@ class BaseAudioContextHostObject : public JsiHostObject {
     return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
   }
 
-JSI_HOST_FUNCTION(createBufferQueueSource) {
-    auto bufferSource = context_->createBufferQueueSource();
-    auto bufferStreamSourceHostObject =
-            std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
-    return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
-}
+  JSI_HOST_FUNCTION(createBufferQueueSource) {
+      auto bufferSource = context_->createBufferQueueSource();
+      auto bufferStreamSourceHostObject =
+              std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
+      return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
+  }
 
   JSI_HOST_FUNCTION(createBuffer) {
     auto numberOfChannels = static_cast<int>(args[0].getNumber());
@@ -219,33 +220,35 @@ JSI_HOST_FUNCTION(createBufferQueueSource) {
       return promise;
     }
 
-  JSI_HOST_FUNCTION(decodePCMAudioDataInBase64) {
-    auto b64 = args[0].getString(runtime).utf8(runtime);
+    JSI_HOST_FUNCTION(decodePCMAudioDataInBase64) {
+        auto b64 = args[0].getString(runtime).utf8(runtime);
+        auto playbackSpeed = static_cast<float>(args[1].getNumber());
 
-      auto promise = promiseVendor_->createPromise([this, b64](std::shared_ptr<Promise> promise) {
-          std::thread([this, b64, promise = std::move(promise)]() {
-              auto results = context_->decodeWithPCMInBase64(b64);
+        auto promise = promiseVendor_->createPromise([this, b64, playbackSpeed](std::shared_ptr<Promise> promise) {
+            std::thread([this, b64, playbackSpeed, promise = std::move(promise)]() {
+                auto results = context_->decodeWithPCMInBase64(b64, playbackSpeed);
 
-              if (!results) {
-                  promise->reject("Failed to decode audio data source.");
-                  return;
-              }
+                if (!results) {
+                    promise->reject("Failed to decode audio data source.");
+                    return;
+                }
 
-              auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+                auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
 
-              promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-                  auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-                  jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-                  return jsiObject;
-              });
-          }).detach();
-      });
+                promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
+                    auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+                    jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
+                    return jsiObject;
+                });
+            }).detach();
+        });
 
-      return promise;
-  }
+        return promise;
+    }
+
+    std::shared_ptr<BaseAudioContext> context_;
 
  protected:
-  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 };

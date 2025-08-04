@@ -122,6 +122,11 @@ RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
   [self.notificationManager observeAudioInterruptions:enabled];
 }
 
+RCT_EXPORT_METHOD(activelyReclaimSession : (BOOL)enabled)
+{
+  [self.notificationManager activelyReclaimSession:enabled];
+}
+
 RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
 {
   [self.notificationManager observeVolumeChanges:(BOOL)enabled];
@@ -137,6 +142,12 @@ RCT_EXPORT_METHOD(checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
                       resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+                      reject)
+{
+  [self.audioSessionManager getDevicesInfo:resolve reject:reject];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED

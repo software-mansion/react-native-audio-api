@@ -6,7 +6,6 @@ import {
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
-import CustomProcessorNode from './CustomProcessorNode';
 import GainNode from './GainNode';
 import StereoPannerNode from './StereoPannerNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -16,11 +15,12 @@ import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import RecorderAdapterNode from './RecorderAdapterNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  protected readonly context: IBaseAudioContext;
+  readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
@@ -36,15 +36,12 @@ export default class BaseAudioContext {
     return this.context.state;
   }
 
-  createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+  createRecorderAdapter(): RecorderAdapterNode {
+    return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
   }
 
-  createCustomProcessor(identifier: string): CustomProcessorNode {
-    return new CustomProcessorNode(
-      this,
-      this.context.createCustomProcessor(identifier)
-    );
+  createOscillator(): OscillatorNode {
+    return new OscillatorNode(this, this.context.createOscillator());
   }
 
   createGain(): GainNode {
@@ -127,6 +124,7 @@ export default class BaseAudioContext {
     return new AnalyserNode(this, this.context.createAnalyser());
   }
 
+  /** Decodes audio data from a local file path. */
   async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
     // Remove the file:// prefix if it exists
     if (sourcePath.startsWith('file://')) {
@@ -138,17 +136,19 @@ export default class BaseAudioContext {
     );
   }
 
-  async decodeAudioData(data: ArrayBuffer | string): Promise<AudioBuffer> {
-    // pcm data in base64
-    if (typeof data === 'string') {
-      return new AudioBuffer(
-        await this.context.decodePCMAudioDataInBase64(data)
-      );
-    }
-
-    // data in array buffer
+  /** Decodes audio data from an ArrayBuffer. */
+  async decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer> {
     return new AudioBuffer(
       await this.context.decodeAudioData(new Uint8Array(data))
+    );
+  }
+
+  async decodePCMInBase64Data(
+    base64: string,
+    playbackRate: number = 1.0
+  ): Promise<AudioBuffer> {
+    return new AudioBuffer(
+      await this.context.decodePCMAudioDataInBase64(base64, playbackRate)
     );
   }
 }

@@ -26,6 +26,8 @@ class AudioNodeHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(AudioNodeHostObject, disconnect));
   }
 
+  ~AudioNodeHostObject() override;
+
   JSI_PROPERTY_GETTER(numberOfInputs) {
     return {node_->getNumberOfInputs()};
   }

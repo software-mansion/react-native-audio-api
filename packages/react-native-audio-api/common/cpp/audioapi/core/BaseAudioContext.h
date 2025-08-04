@@ -3,6 +3,7 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -15,7 +16,6 @@
 namespace audioapi {
 
 class AudioBus;
-class CustomProcessorNode;
 class GainNode;
 class AudioBuffer;
 class PeriodicWave;
@@ -30,6 +30,7 @@ class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
+class RecorderAdapterNode;
 
 class BaseAudioContext {
  public:
@@ -42,8 +43,8 @@ class BaseAudioContext {
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
   std::shared_ptr<AudioDestinationNode> getDestination();
 
+  std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<OscillatorNode> createOscillator();
-  std::shared_ptr<CustomProcessorNode> createCustomProcessor(const std::string& identifier);
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
@@ -57,11 +58,9 @@ class BaseAudioContext {
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
 
-  #ifndef TESTING
   std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
   std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
-  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data);
-  #endif //TESTING
+  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data, float playbackSpeed);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;
@@ -87,6 +86,8 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
+
+  virtual bool isDriverRunning() const = 0;
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;

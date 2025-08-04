@@ -2,13 +2,13 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
-#include <audioapi/core/effects/CustomProcessorNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -28,7 +28,15 @@ BaseAudioContext::BaseAudioContext(
 }
 
 std::string BaseAudioContext::getState() {
-  return BaseAudioContext::toString(state_);
+  if (isDriverRunning()) {
+    return BaseAudioContext::toString(state_);
+  }
+
+  if (state_ == ContextState::CLOSED) {
+    return BaseAudioContext::toString(ContextState::CLOSED);
+  }
+
+  return BaseAudioContext::toString(ContextState::SUSPENDED);
 }
 
 float BaseAudioContext::getSampleRate() const {
@@ -49,18 +57,16 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
   return destination_;
 }
 
+std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
+  auto recorderAdapter = std::make_shared<RecorderAdapterNode>(this);
+  nodeManager_->addProcessingNode(recorderAdapter);
+  return recorderAdapter;
+}
+
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   auto oscillator = std::make_shared<OscillatorNode>(this);
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
-}
-
-std::shared_ptr<CustomProcessorNode> BaseAudioContext::createCustomProcessor(
-    const std::string &identifier) {
-  auto customProcessor =
-      std::make_shared<CustomProcessorNode>(this, identifier);
-  nodeManager_->addProcessingNode(customProcessor);
-  return customProcessor;
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
@@ -119,7 +125,6 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
     const std::string &path) {
-#ifndef AUDIO_API_TEST_SUITE
   auto audioBus = audioDecoder_->decodeWithFilePath(path);
 
   if (!audioBus) {
@@ -127,13 +132,11 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
-#endif // AUDIO_API_TEST_SUITE
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
     const void *data,
     size_t size) {
-#ifndef AUDIO_API_TEST_SUITE
   auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
 
   if (!audioBus) {
@@ -141,20 +144,18 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
-#endif // AUDIO_API_TEST_SUITE
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
-    const std::string &data) {
-#ifndef AUDIO_API_TEST_SUITE
-  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data);
+    const std::string &data,
+    float playbackSpeed) {
+  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data, playbackSpeed);
 
   if (!audioBus) {
     return nullptr;
   }
 
   return std::make_shared<AudioBuffer>(audioBus);
-#endif // AUDIO_API_TEST_SUITE
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
@@ -162,11 +163,11 @@ AudioNodeManager *BaseAudioContext::getNodeManager() {
 }
 
 bool BaseAudioContext::isRunning() const {
-  return state_ == ContextState::RUNNING;
+  return state_ == ContextState::RUNNING && isDriverRunning();
 }
 
 bool BaseAudioContext::isSuspended() const {
-  return state_ == ContextState::SUSPENDED;
+  return state_ == ContextState::SUSPENDED || !isDriverRunning();
 }
 
 bool BaseAudioContext::isClosed() const {

@@ -3,13 +3,17 @@
 #include <audioapi/core/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
+#include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
-IOSAudioPlayer::IOSAudioPlayer(const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio, float sampleRate)
-    : channelCount_(2), renderAudio_(renderAudio), audioBus_(0), isRunning_(false)
+IOSAudioPlayer::IOSAudioPlayer(
+    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    float sampleRate,
+    int channelCount)
+    : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -46,14 +50,15 @@ IOSAudioPlayer::~IOSAudioPlayer()
   cleanup();
 }
 
-void IOSAudioPlayer::start()
+bool IOSAudioPlayer::start()
 {
-  if (isRunning_.load()) {
-    return;
+  if (isRunning()) {
+    return true;
   }
 
-  [audioPlayer_ start];
-  isRunning_.store(true);
+  bool success = [audioPlayer_ start];
+  isRunning_.store(success);
+  return success;
 }
 
 void IOSAudioPlayer::stop()
@@ -62,20 +67,28 @@ void IOSAudioPlayer::stop()
   [audioPlayer_ stop];
 }
 
-void IOSAudioPlayer::resume()
+bool IOSAudioPlayer::resume()
 {
-  if (isRunning_.load()) {
-    return;
+  if (isRunning()) {
+    return true;
   }
 
-  [audioPlayer_ resume];
-  isRunning_.store(true);
+  bool success = [audioPlayer_ resume];
+  isRunning_.store(success);
+  return success;
 }
 
 void IOSAudioPlayer::suspend()
 {
   isRunning_.store(false);
   [audioPlayer_ suspend];
+}
+
+bool IOSAudioPlayer::isRunning() const
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+
+  return isRunning_.load() && [audioEngine isRunning];
 }
 
 void IOSAudioPlayer::cleanup()
