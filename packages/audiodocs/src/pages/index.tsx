@@ -30,21 +30,24 @@ function Home() {
       <div className={styles.container}>
         <Hero />
       </div>
-      <Spacer.V size="120px" />
+      <Spacer.V size="120px" className={styles.hideOnMobile} />
       <div className={styles.container}>
         <LandingWidget />
       </div>
-      <Spacer.V size="120px" />
+      <Spacer.V size="120px" className={styles.hideOnMobile}  />
+      <Spacer.V size="56px" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
         <LandingFeatures />
         <LandingBlog />
         {/* <LandingExamples /> */}
       </div>
-      <Spacer.V size="10rem" />
+      <Spacer.V size="10rem" className={styles.hideOnMobile}  />
+      <Spacer.V size="6rem" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
         <Testimonials />
       </div>
-      <Spacer.V size="12rem" />
+      <Spacer.V size="12rem" className={styles.hideOnMobile}  />
+      <Spacer.V size="6rem" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
         <HireUsSection
           href={

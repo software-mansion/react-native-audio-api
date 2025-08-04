@@ -4,11 +4,14 @@
   display: flex;
   flex-direction: column;
   gap: 3rem;
-  /* position: relative; */
 }
 
 .waveContainer {
   position: relative;
+}
+
+.visibleOnMobile {
+  display: none;
 }
 
 @media (max-width: 1440px) {
@@ -21,5 +24,15 @@
   .container {
     width: 85%;
     gap: 3.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hideOnMobile {
+    display: none;
+  }
+
+  .visibleOnMobile {
+    display: block;
   }
 }
