@@ -44,7 +44,7 @@ type SystemEvents = RemoteCommandEvents & {
   routeChange: OnRouteChangeEventType;
 };
 
-export interface OnEndedEventType {
+export interface OnEndedEventType extends EventEmptyType {
   bufferId: string | undefined;
 }
 
