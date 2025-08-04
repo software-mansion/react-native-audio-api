@@ -127,7 +127,8 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
 export interface IAudioBufferQueueSourceNode
   extends IAudioBufferBaseSourceNode {
-  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
+  // returns bufferId
+  enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   pause: () => void;
 }
 

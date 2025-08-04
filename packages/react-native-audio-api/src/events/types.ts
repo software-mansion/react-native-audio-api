@@ -44,6 +44,10 @@ type SystemEvents = RemoteCommandEvents & {
   routeChange: OnRouteChangeEventType;
 };
 
+export interface OnEndedEventType {
+  bufferId: string | undefined;
+}
+
 export interface OnAudioReadyEventType {
   buffer: AudioBuffer;
   numFrames: number;
@@ -51,7 +55,7 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: EventEmptyType;
+  ended: OnEndedEventType;
   audioReady: OnAudioReadyEventType;
   positionChanged: EventTypeWithValue;
   audioError: EventEmptyType; // to change

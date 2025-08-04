@@ -35,13 +35,12 @@ void AudioBufferQueueSourceNode::pause() {
   isPaused_ = true;
 }
 
-void AudioBufferQueueSourceNode::enqueueBuffer(
-    const std::shared_ptr<AudioBuffer> &buffer,
-    bool isLastBuffer) {
+std::string AudioBufferQueueSourceNode::enqueueBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer) {
   auto locker = Locker(getBufferLock());
-  buffers_.emplace(buffer);
+  buffers_.emplace(bufferId_, buffer);
 
-  isLastBuffer_ = isLastBuffer;
+  return std::to_string(bufferId_++);
 }
 
 void AudioBufferQueueSourceNode::disable() {
@@ -93,7 +92,9 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto buffer = buffers_.front();
+  auto data = buffers_.front();
+  auto bufferId = data.first;
+  auto buffer = data.second;
 
   size_t framesLeft = offsetLength;
 
@@ -117,16 +118,20 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
+      std::unordered_map<std::string, EventValue> body = {
+            {"bufferId", std::to_string(bufferId)}};
+      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+            "ended", onEndedCallbackId_, body);
+
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);
         readIndex = 0;
 
-        if (isLastBuffer_) {
-          playbackState_ = PlaybackState::STOP_SCHEDULED;
-        }
         break;
       } else {
-        buffer = buffers_.front();
+        data = buffers_.front();
+        bufferId = data.first;
+        buffer = data.second;
 
         readIndex = 0;
       }

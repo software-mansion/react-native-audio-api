@@ -4,13 +4,9 @@ import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
-  public enqueueBuffer(
-    buffer: AudioBuffer,
-    isLastBuffer: boolean = false
-  ): void {
-    (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
-      buffer.buffer,
-      isLastBuffer
+  public enqueueBuffer(buffer: AudioBuffer): string {
+    return (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
+      buffer.buffer
     );
   }
 
