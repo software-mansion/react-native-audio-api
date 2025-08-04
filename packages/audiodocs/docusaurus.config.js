@@ -4,7 +4,9 @@
 const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
 
+// eslint-disable-next-line import/first
 import remarkMath from 'remark-math';
+// eslint-disable-next-line import/first
 import rehypeKatex from 'rehype-katex';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -79,6 +81,7 @@ const config = {
   themeConfig: {
     // Replace with your project's social card
     // image: 'img/docusaurus-social-card.jpg',
+    image: 'img/og-image.png',
 
     navbar: {
       hideOnScroll: true,

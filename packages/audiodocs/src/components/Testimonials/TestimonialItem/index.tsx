@@ -17,7 +17,7 @@ interface Props extends PropsWithChildren {
 
 const TestimonialItem = ({ author, company, image, link, children }: Props) => {
   return (
-    <a href={link} target="_blank" className={styles.testimonialItem}>
+    <div className={styles.testimonialItem}>
       <QuoteIcon
         className={styles.quoteIcon}
         color={
@@ -32,11 +32,13 @@ const TestimonialItem = ({ author, company, image, link, children }: Props) => {
         </div>
         <div className={styles.testimonialAuthorInfo}>
           <h5 className={styles.testimonialAuthorName}>{author}</h5>
-          <span className={styles.testimonialCompany}>{company}</span>
+          <a href={link} target="_blank" rel="noopener noreferrer" className={styles.testimonialAuthorLink}>
+            <span className={styles.testimonialCompany}>{company}</span>
+          </a>
         </div>
       </div>
       <p className={styles.testimonialBody}>{children}</p>
-    </a>
+    </div>
   );
 };
 

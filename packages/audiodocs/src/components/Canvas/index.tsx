@@ -1,6 +1,7 @@
 import React, { useRef, useState, useLayoutEffect, memo, forwardRef } from 'react';
 
 import styles from './styles.module.css';
+import clsx from 'clsx';
 
 export interface CanvasContext {
   canvas: HTMLCanvasElement;
@@ -11,13 +12,14 @@ interface CanvasProps<RenderingContext> {
   height?: number;
   prepareRenderingContext?: (canvasContext: CanvasContext) => RenderingContext;
   onDraw?: (canvasContext: CanvasContext, renderingContext: RenderingContext) => void
+  className?: string;
 }
 
 const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<RenderingContext>(
   props: CanvasProps<RenderingContext>,
   ref: React.ForwardedRef<HTMLCanvasElement>
 ) {
-  const { height = 250, onDraw, prepareRenderingContext } = props;
+  const { height = 250, onDraw, prepareRenderingContext, className } = props;
 
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,7 +84,7 @@ const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<R
 
   return (
     <div ref={canvasWrapperRef}>
-      <canvas className={styles.canvas} ref={setCanvasRef} width={width} height={height}></canvas>
+      <canvas className={clsx(styles.canvas, className)} ref={setCanvasRef} width={width} height={height}></canvas>
     </div>
   );
 });

@@ -13,15 +13,7 @@ const testimonials: Testimonial[] = [
   {
     author: 'Kim Chouard',
     company: 'Odisei Music',
-    body: (
-      <>
-        <span>react-native-audio-api is a total game changer. It fills one of the biggest gaps in the React Native ecosystem by embracing what already works: the Web Audio API, making it universal and somehow even improving the Web in the process.</span>
-        <br /> <br />
-        <span>At Odisei Music, it powers all audio in Odisei Play, our saxophone learning app, where &lt;10ms latency isn’t a luxury, it’s a necessity. No other solution even came close.</span>
-        <br /> <br />
-        <span>This lib doesn’t just solve a problem, it unlocks a whole new category of apps for React Native devs.</span>
-      </>
-    ),
+    body: `React-native-audio-api is a total game changer – it fills one of the biggest gaps in the React Native ecosystem. At Odisei Music, it powers all audio in Odisei Play, our saxophone learning app, where <10ms latency isn’t a luxury, it’s a necessity. No other solution even came close. This lib doesn’t just solve a problem, it unlocks a whole new category of apps for React Native devs.`,
     link: 'https://odiseimusic.com/odisei-play/',
     image: {
       alt: 'Kim Chouard',

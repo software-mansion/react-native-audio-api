@@ -25,8 +25,7 @@ function Home() {
   }, [])
   return (
     <Layout
-      title="React Native Audio API"
-      description="Declarative API exposing platform native touch and gesture system to React Native.">
+      description="React Native Audio API is a library that lets you build powerful audio features in your app – from real-time effects and visualization to multi-track playback">
       <div className={styles.container}>
         <Hero />
       </div>

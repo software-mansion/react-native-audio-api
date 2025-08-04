@@ -88,7 +88,9 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
       }
     }
     return -1;
-  }, [equalizerBands, getControlPointPosition]);  const handleStart = useCallback((clientX: number, clientY: number) => {
+  }, [equalizerBands, getControlPointPosition]);
+
+  const handleStart = useCallback((clientX: number, clientY: number) => {
     if (!canvasRef?.current) {
       return;
     }
@@ -101,6 +103,7 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
 
     const index = findControlPointAtPosition(x, y, rect);
     if (index !== -1) {
+      canvasRef.current.style.cursor = 'grabbing';
       dragState.current = {
         isDragging: true,
         dragIndex: index,
@@ -138,6 +141,7 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     dragState.current.isDragging = false;
     dragState.current.dragIndex = -1;
     canvasRect.current = null;
+    canvasRef.current!.style.cursor = 'pointer';
   }, []);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {

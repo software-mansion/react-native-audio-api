@@ -6,6 +6,7 @@ import Canvas, { CanvasContext } from '../Canvas';
 import AudioManager from '@site/src/audio/AudioManager';
 import { clearCanvas, createGradient, drawEqGrid, drawShadedCurve, stretchFrequencies, getEqualizerResponse, getDrawingBounds, Point, drawEQControlPoints } from '@site/src/canvasUtils';
 import useEqualizerControls from '@site/src/audio/useEqualizerControls';
+import styles from './styles.module.css';
 
 interface EqRenderingContext {
   analyser: AnalyserNode;
@@ -55,7 +56,7 @@ const Equalizer: React.FC = () => {
   }, [isPlaying, colorMode]);
 
   return (
-    <Canvas onDraw={onDraw} prepareRenderingContext={prepareRenderingContext} ref={canvasRef} />
+    <Canvas onDraw={onDraw} prepareRenderingContext={prepareRenderingContext} ref={canvasRef} className={styles.canvas} />
   );
 };
 
