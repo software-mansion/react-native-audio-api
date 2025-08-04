@@ -92,19 +92,31 @@ const LandingWidget: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Toolbar
-        isLoading={isLoading}
-        soundButtons={buttons}
-        onPlaySound={onPlaySound}
-        displayType={displayType}
-        onSetDisplayType={setDisplayType}
-      />
+      <div className={styles.toolbarDesktop}>
+        <Toolbar
+          isLoading={isLoading}
+          soundButtons={buttons}
+          onPlaySound={onPlaySound}
+          displayType={displayType}
+          onSetDisplayType={setDisplayType}
+        />
+      </div>
 
       {displayType === 'equalizer' ? (
         <Equalizer />
       ) : (
         <Spectrogram />
       )}
+
+      <div className={styles.toolbarMobile}>
+        <Toolbar
+          isLoading={isLoading}
+          soundButtons={buttons}
+          onPlaySound={onPlaySound}
+          displayType={displayType}
+          onSetDisplayType={setDisplayType}
+        />
+      </div>
     </div>
   );
 }

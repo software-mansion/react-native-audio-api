@@ -52,3 +52,13 @@
 [data-theme='dark'] .soundButtonActive .soundButtonName {
   color: var(--swm-navy-dark-100);
 }
+
+
+@media (max-width: 768px) {
+  .soundButtonInactive,
+  .soundButtonActive,
+  .soundButtonDisabled {
+    padding: 15px 12px;
+    margin: 0;
+  }
+}

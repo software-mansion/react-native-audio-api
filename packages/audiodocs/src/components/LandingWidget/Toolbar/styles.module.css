@@ -4,12 +4,28 @@
   margin-bottom: 12px;
 }
 
-
 .eqButton {
   padding: 15px 16px;
   border: none;
   margin-right: 8px;
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .eqButton {
+    display: none;
+  }
+
+  .toolbar {
+    width: 100%;
+  }
+
+  .soundButtons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 12px;
+  }
 }
 
 .eqButtonText {

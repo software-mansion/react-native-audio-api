@@ -14,7 +14,7 @@ export default class Equalizer {
       const filter = audioContext.createBiquadFilter();
       filter.type = frequencies[i].type;
       filter.frequency.value = frequencies[i].frequency;
-      // filter.Q.value = 1;
+      filter.Q.value = 1;
       filter.gain.value = 0;
       return filter;
     });

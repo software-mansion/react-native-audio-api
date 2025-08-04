@@ -39,7 +39,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
   return (
     <div className={styles.toolbar}>
-      <div>
+      <div className={styles.soundButtons}>
         {soundButtons.map(renderButton)}
       </div>
       <div>
