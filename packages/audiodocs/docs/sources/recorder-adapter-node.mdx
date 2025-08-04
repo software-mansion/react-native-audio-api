@@ -7,12 +7,12 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # RecorderAdapterNode
 
-The `RecorderAdapterNode` is an [`AudioNode`](/core/audio-node) which is an adapter for [`AudioRecorder`](/inputs/audio-recorder).
+The `RecorderAdapterNode` is an [`AudioNode`](/docs/core/audio-node) which is an adapter for [`AudioRecorder`](/docs/inputs/audio-recorder).
 It lets you compose audio input from recorder into an audio graph.
 
 ## Constructor
 
-[`BaseAudioContext.createRecorderAdapter()`](/core/base-audio-context#createrecorderadapter)
+[`BaseAudioContext.createRecorderAdapter()`](/docs/core/base-audio-context#createrecorderadapter)
 
 ## Example
 
@@ -31,4 +31,4 @@ recorderAdapterNode.connect(audioContext.destination)
 ## Remarks
 - Adapter without the recorder will produce silence
 - Adapter that is connected only to the recorder will work fine and keep small buffer of recorded Data
-- Adapter node will not be garbage collected until he is connected to either some destination or recorder 
+- Adapter node will not be garbage collected until he is connected to either some destination or recorder
