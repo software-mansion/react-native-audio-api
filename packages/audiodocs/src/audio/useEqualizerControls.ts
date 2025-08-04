@@ -37,7 +37,6 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
   const canvasRect = useRef<DOMRect | null>(null);
 
   const updateGain = useCallback((index: number, gain: number) => {
-    // Clamp gain between -12 and +12 dB
     const clampedGain = Math.max(-12, Math.min(12, gain));
 
     setEqualizerBands(prev => {
@@ -48,39 +47,36 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
   }, []);
 
   const getControlPointPosition = useCallback((frequency: number, gain: number, canvasRect: DOMRect, index: number) => {
-    // Use the same drawing bounds logic as the drawing function
     const labelBoxSize = 32;
     const drawingWidth = canvasRect.width - labelBoxSize;
     const drawingHeight = canvasRect.height - labelBoxSize;
-    const offsetX = 0; // drawing starts at x=0
-    const offsetY = 0; // drawing starts at y=0
+    const offsetX = 0;
+    const offsetY = 0;
 
     const logFreq = Math.log10(frequency);
     const normalizedPos = (logFreq - logMin) / (logMax - logMin);
     let x = offsetX + (normalizedPos * drawingWidth);
 
-    // Apply custom positioning - exactly like the drawing function:
-    // Points 1,2,5 keep their current positions, point 3 goes to center + 96px, point 4 reflects point 2
     if (index === 0) {
-      x += 96; // Point 1 (index 0) - keep current position
+      x += 96;
     } else if (index === 1) {
-      x += 91; // Point 2 (index 1) - keep current position
+      x += 66;
     } else if (index === 2) {
-      x = offsetX + drawingWidth / 2 + 59; // Point 3 (index 2) - center + 59px to the right
+      x = offsetX + drawingWidth / 2 + 59;
     } else if (index === 3) {
-      x -= 18; // Point 4 (index 3) - reflect point 2's position
+      x -= 18;
     } else if (index === 4) {
-      x -= 96; // Point 5 (index 4) - keep current position
+      x -= 96;
     }
 
-    const normalizedGain = gain / 12; // -1 to 1 range
+    const normalizedGain = gain / 12;
     const y = offsetY + drawingHeight / 2 - (normalizedGain * drawingHeight / 2);
 
     return { x, y };
   }, []);
 
   const findControlPointAtPosition = useCallback((x: number, y: number, rect: DOMRect) => {
-    const controlPointRadius = 24; // 48px diameter = 24px radius
+    const controlPointRadius = 24;
 
     for (let i = 0; i < equalizerBands.length; i++) {
       const band = equalizerBands[i];
@@ -120,18 +116,19 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     }
 
     const deltaY = dragState.current.startY - clientY;
+
+    // TODO: global variable
     const labelBoxSize = 32;
     const drawingHeight = canvasRect.current.height - labelBoxSize;
-    const gainChange = (deltaY / drawingHeight) * 24; // 24dB range using drawing height
+    const gainChange = (deltaY / drawingHeight) * 24;
     let newGain = dragState.current.startGain + gainChange;
 
-    // Clamp gain to prevent control points from going outside the canvas boundaries
-    // The control points have a 24px radius, so we need to account for that
+
+    // TODO: global variable
     const controlPointRadius = 24;
     const maxGainForBounds = 12 * (1 - (2 * controlPointRadius) / drawingHeight);
     const minGainForBounds = -maxGainForBounds;
 
-    // Apply stricter bounds to keep circles fully visible
     newGain = Math.max(minGainForBounds, Math.min(maxGainForBounds, newGain));
 
     updateGain(dragState.current.dragIndex, newGain);
@@ -143,7 +140,6 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     canvasRect.current = null;
   }, []);
 
-  // Mouse event handlers
   const handleMouseDown = useCallback((e: MouseEvent) => {
     handleStart(e.clientX, e.clientY);
   }, [handleStart]);
@@ -156,7 +152,6 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     handleEnd();
   }, [handleEnd]);
 
-  // Touch event handlers
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
@@ -166,7 +161,7 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (e.touches.length === 1 && dragState.current.isDragging) {
-      e.preventDefault(); // Prevent scrolling
+      e.preventDefault();
       const touch = e.touches[0];
       handleMove(touch.clientY);
     }
@@ -176,7 +171,6 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     handleEnd();
   }, [handleEnd]);
 
-  // Setup global event listeners
   useEffect(() => {
     if (!canvasRef?.current) {
       return;
@@ -184,11 +178,10 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
 
     const canvas = canvasRef.current;
 
-    // Add canvas event listeners
+    // TODO: those should be react params
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 
-    // Add global event listeners
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -196,11 +189,9 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     document.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
-      // Remove canvas event listeners
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('touchstart', handleTouchStart);
 
-      // Remove global event listeners
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('touchmove', handleTouchMove);

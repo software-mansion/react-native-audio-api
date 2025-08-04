@@ -37,7 +37,7 @@ export default function drawEQControlPoints(
       if (index === 0) {
         posX += 96; // Point 1 (index 0) - keep current position
       } else if (index === 1) {
-        posX += 91; // Point 2 (index 1) - keep current position
+        posX += 66; // Point 2 (index 1) - keep current position
       } else if (index === 2) {
         posX = x + width / 2 + 59; // Point 3 (index 2) - center + 86px to the right
       } else if (index === 3) {
