@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/alicja/react-native-audio-api/packages/react-native-audio-api/libs/vorbis/build-ios-simulator/cmake_install.cmake",
+		"/Users/alicja/react-native-audio-api/packages/react-native-audio-api/libs/vorbis/build-ios-simulator/lib/cmake_install.cmake",
+		"/Users/alicja/react-native-audio-api/packages/react-native-audio-api/libs/vorbis/build-ios-simulator/test/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
