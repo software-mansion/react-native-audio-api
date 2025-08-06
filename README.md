@@ -13,7 +13,7 @@ allowing developers to generate and modify audio in exact same way it is possibl
 
 ## Installation
 
-check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/fundamentals/getting-started) section of our documentation for detailed instructions!
+check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/docs/fundamentals/getting-started) section of our documentation for detailed instructions!
 
 ## Roadmap
 
@@ -56,7 +56,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 ## Web Audio API Specification Coverage
 
-Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion.github.io/react-native-audio-api/other/web-audio-api-coverage).
+Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://docs.swmansion.com/react-native-audio-api/docs/other/web-audio-api-coverage).
 
 ## Examples
 
