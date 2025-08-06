@@ -16,7 +16,7 @@ class AudioParam;
 
 class AudioNodeManager {
  public:
-  enum class ConnectionType { CONNECT, DISCONNECT };
+  enum class ConnectionType { CONNECT, DISCONNECT, DISCONNECT_ALL };
   AudioNodeManager() = default;
   ~AudioNodeManager();
 
