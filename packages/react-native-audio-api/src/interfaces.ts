@@ -41,9 +41,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<boolean>;
+  resume(): Promise<boolean>;
+  suspend(): Promise<boolean>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
@@ -127,7 +127,8 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
 export interface IAudioBufferQueueSourceNode
   extends IAudioBufferBaseSourceNode {
-  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
+  // returns bufferId
+  enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   pause: () => void;
 }
 

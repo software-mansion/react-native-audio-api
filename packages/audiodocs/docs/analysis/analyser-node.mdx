@@ -8,9 +8,9 @@ import { ReadOnly } from '@site/src/components/Badges';
 # AnalyserNode
 
 The `AnalyserNode` interface represents a node providing two core functionalities: extracting time-domain data and frequency-domain data from audio signals.
-It is an [`AudioNode`](/core/audio-node) that passes the audio data unchanged from input to output, but allows you to take passed data and process it.
+It is an [`AudioNode`](/docs/core/audio-node) that passes the audio data unchanged from input to output, but allows you to take passed data and process it.
 
-#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
@@ -23,17 +23,17 @@ In contrast, a frequency-domain graph reveals how the signal's energy or power i
 
 ## Constructor
 
-[`BaseAudioContext.createAnalyser()`](/core/base-audio-context#createanalyser)
+[`BaseAudioContext.createAnalyser()`](/docs/core/base-audio-context#createanalyser)
 
 ## Properties
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `fftSize` | `number` | Integer value representing size of [Fast Fourier Transform](https://en.wikipedia.org/wiki/Fast_Fourier_transform) used to determine frequency domain. In general it is size of returning time-domain data. |
-| `minDecibels` | `number` | Float value representing the minimum value for the range of results from [`getByteFrequencyData()`](/analysis/analyser-node#getbytefrequencydata). |
-| `maxDecibels` | `number` | Float value representing the maximum value for the range of results from [`getByteFrequencyData()`](/analysis/analyser-node#getbytefrequencydata). |
+| `minDecibels` | `number` | Float value representing the minimum value for the range of results from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata). |
+| `maxDecibels` | `number` | Float value representing the maximum value for the range of results from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata). |
 | `smoothingTimeConstant` | `number` | Float value representing averaging constant with the last analysis frame. In general the higher value the smoother is the transition between values over time. |
-| `window` | [`WindowType`](/types/window-type) | Enumerated value that specifies the type of window function applied when extracting frequency data. |
+| `window` | [`WindowType`](/docs/types/window-type) | Enumerated value that specifies the type of window function applied when extracting frequency data. |
 | `frequencyBinCount` | `number` | Integer value representing amount of the data obtained in frequency domain, half of the `fftSize` property. | <ReadOnly /> |
 
 :::caution
@@ -98,13 +98,13 @@ Each value in the array is within the range 0 to 255, where value of 127 indicat
 #### `minDecibels`
 - Default value is -100 dB.
 - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
-- When getting data from [`getByteFrequencyData()`](/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude lower then `minDecibels` will be returned as 0.
+- When getting data from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude lower then `minDecibels` will be returned as 0.
 - Throws `IndexSizeError` if set value is greater than or equal to `maxDecibels`.
 
 #### `maxDecibels`
 - Default value is -30 dB.
 - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
-- When getting data from [`getByteFrequencyData()`](/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude higher then `maxDecibels` will be returned as 255.
+- When getting data from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude higher then `maxDecibels` will be returned as 255.
 - Throws `IndexSizeError` if set value is less then or equal to `minDecibels`.
 
 #### `smoothingTimeConstant`

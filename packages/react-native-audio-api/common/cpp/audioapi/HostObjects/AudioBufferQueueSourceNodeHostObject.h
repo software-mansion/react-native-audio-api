@@ -36,11 +36,10 @@ class AudioBufferQueueSourceNodeHostObject
 
         auto audioBufferHostObject =
                 args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-        auto isLastBuffer = args[1].asBool();
 
-        audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, isLastBuffer);
+        auto bufferId = audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_);
 
-        return jsi::Value::undefined();
+        return jsi::String::createFromUtf8(runtime, bufferId);
     }
 };
 

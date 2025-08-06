@@ -8,16 +8,16 @@ import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/core/audio-context), `OfflineAudioContext`.
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), `OfflineAudioContext`.
 
 #### Audio graph
 
 An audio graph is a structured representation of audio processing elements and their connections within an audio context.
 The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
 In general we can distinguish four types of nodes:
-- Source nodes (e.g [`AudioBufferSourceNode`](/sources/audio-buffer-source-node), `OscillatorNode`)
-- Effect nodes (e.g [`GainNode`](/effects/gain-node), `BiquadFilterNode`)
-- Analysis nodes (e.g [`AnalyserNode`](/analysis/analyser-node))
+- Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), `OscillatorNode`)
+- Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), `BiquadFilterNode`)
+- Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
 - Destination nodes (e.g `AudioDestinationNode`)
 
 ![](/img/audio-graph.png)
@@ -27,7 +27,7 @@ In general we can distinguish four types of nodes:
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
 By default render quantum size value is 128 and it is constant.
 
-The [`AudioContext`](/core/audio-context) rendering thread is driven by a system-level audio callback.
+The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
@@ -42,19 +42,19 @@ Concept of system-level audio callback does not apply to `OfflineAudioContext`.
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
 | `destination` | `AudioDestinationNode` | Final output destination associated with the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
+| `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
 ## Methods
 
 ### `createAnalyser`
 
-The above method lets you create [`AnalyserNode`](/analysis/analyser-node).
+The above method lets you create [`AnalyserNode`](/docs/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
 ### `createRecorderAdapter`
 
-The above method lets you create [`RecorderAdapterNode`](/sources/recorder-adapter-node).
+The above method lets you create [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
 
@@ -66,7 +66,7 @@ The above method lets you create `BiquadFilterNode`.
 
 ### `createBuffer`
 
-The above method lets you create [`AudioBuffer`](/sources/audio-buffer).
+The above method lets you create [`AudioBuffer`](/docs/sources/audio-buffer).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -86,29 +86,29 @@ The above method lets you create [`AudioBuffer`](/sources/audio-buffer).
 
 ### `createBufferSource`
 
-The above method lets you create [`AudioBufferSourceNode`](/sources/audio-buffer-source-node).
+The above method lets you create [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/core/base-audio-context#audiobuffersourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
+| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/docs/core/base-audio-context#audiobuffersourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
 ### `createBufferQueueSource` <MobileOnly />
 
-The above method lets you create [`AudioBufferQueueSourceNode`](/sources/audio-buffer-queue-source-node).
+The above method lets you create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
 #### Returns `AudioBufferQueueSourceNode`.
 
 ### `createGain`
 
-The above method lets you create [`GainNode`](/effects/gain-node).
+The above method lets you create [`GainNode`](/docs/effects/gain-node).
 
 #### Returns `GainNode`.
 
 ### `createOscillator`
 
-The above method lets you create [`OscillatorNode`](/sources/oscillator-node).
+The above method lets you create [`OscillatorNode`](/docs/sources/oscillator-node).
 
 #### Returns `OscillatorNode`.
 
@@ -120,7 +120,7 @@ The above method lets you create `PeriodicWave`.
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. |
+| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. |
 
 #### Errors
 
@@ -134,13 +134,13 @@ The above method lets you create `PeriodicWave`.
 
 The above method lets you create `StereoPannerNode`.
 
-#### Returns [`StereoPannerNode`](/effects/stereo-panner-node).
+#### Returns [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 ### `createBiquadFilter`
 
 The above method lets you create `BiquadFilterNode`.
 
-#### Returns [`BiquadFilterNode`](/effects/biquad-filter-node).
+#### Returns [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 :::caution
 Supported file formats:
@@ -234,7 +234,7 @@ The above method lets you decode audio data. It decodes with PCM data in Base64.
 **Acceptable values:**
   - `suspended`
 
-  The audio context has been suspended (with one of [`suspend`](/core/audio-context#suspend) or `OfflineAudioContext.suspend`).
+  The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or `OfflineAudioContext.suspend`).
 
   - `running`
 
@@ -242,7 +242,7 @@ The above method lets you decode audio data. It decodes with PCM data in Base64.
 
   - `closed`
 
-  The audio context has been closed (with [`close`](/core/audio-context#close) method).
+  The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
 </details>
 
 ### `AudioBufferSourceNodeOptions`

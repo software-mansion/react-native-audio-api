@@ -1,0 +1,20 @@
+
+.container {
+  position: relative;
+}
+
+.toolbarMobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .toolbarMobile {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .toolbarDesktop {
+    display: none;
+  }
+}

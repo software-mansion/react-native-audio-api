@@ -13,7 +13,7 @@ allowing developers to generate and modify audio in exact same way it is possibl
 
 ## Installation
 
-check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/fundamentals/getting-started) section of our documentation for detailed instructions!
+check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/docs/fundamentals/getting-started) section of our documentation for detailed instructions!
 
 ## Roadmap
 
@@ -42,8 +42,13 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - <sub>[![Released in 0.6.0](https://img.shields.io/badge/Released_in-0.6.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.6.0)</sub> **Connect audio param** 🤞  <br />
   Ability to connect Audio nodes to audio params, which will allow for powerful and efficient modulation of audio parameters, creating effects like tremolo, vibrato or complex envelope followers. <br />
 
-- **Microphone support** 🎙️ <br />
+- <sub>[![Released in 0.7.0](https://img.shields.io/badge/Released_in-0.7.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.7.0)</sub>
+**Microphone support** 🎙️ <br />
   Grab audio data from device microphone or connected device, connect it to the audio graph or stream through the internet <br />
+
+- <sub>[![Released in 0.7.0](https://img.shields.io/badge/Released_in-0.7.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.7.0)</sub>
+**Custom Audio Processor** 🎙️ <br />
+  Write your own processing AudioNode <br />
 
 - **JS Audio Worklets** 🐎 <br />
   Ability to run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
@@ -51,7 +56,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 ## Web Audio API Specification Coverage
 
-Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion.github.io/react-native-audio-api/other/web-audio-api-coverage).
+Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://docs.swmansion.com/react-native-audio-api/docs/other/web-audio-api-coverage).
 
 ## Examples
 

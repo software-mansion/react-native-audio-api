@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Let's make some noise!
 
-In this section, we will guide you through the basic concepts of Audio API. We are going to use core audio components such as [`AudioContext`](/core/audio-context) and [`AudioBufferSourceNode`](/sources/audio-buffer-source-node) to simply play sound from a file, which will help you develop a basic understanding of the library.
+In this section, we will guide you through the basic concepts of Audio API. We are going to use core audio components such as [`AudioContext`](/docs/core/audio-context) and [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) to simply play sound from a file, which will help you develop a basic understanding of the library.
 
 ## Using audio context
 
@@ -60,11 +60,11 @@ export default function App() {
 }
 ```
 
-We have used the [`decodeAudioData`](/core/base-audio-context#decodeaudiodata) method of the [`BaseAudioContext`](/core/base-audio-context), which takes a URL to a local file or bundled audio asset and decodes it into raw audio data that can be used within our system.
+We have used the [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) method of the [`BaseAudioContext`](/docs/core/base-audio-context), which takes a URL to a local file or bundled audio asset and decodes it into raw audio data that can be used within our system.
 
 ## Play the audio
 
-The last and final step is to create an [`AudioBufferSourceNode`](/sources/audio-buffer-source-node), connect it to the `AudioContext's` destination, and start playing the sound. For the purpose of this guide, we will play the sound for just 10 seconds.
+The last and final step is to create an [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), connect it to the `AudioContext's` destination, and start playing the sound. For the purpose of this guide, we will play the sound for just 10 seconds.
 
 ```jsx {13-14,16-18}
 import React from 'react';
@@ -105,14 +105,14 @@ import LetsMakeSomeNoiseSrc from '!!raw-loader!@site/src/examples/LetsMakeSomeNo
 
 ## Summary
 
-In this guide, we have learned how to create a simple audio player using [`AudioContext`](/core/audio-context) and [``AudioBufferSourceNode``](/sources/audio-buffer-source-node) as well as how we can load audio data from a remote source. To sum up:
+In this guide, we have learned how to create a simple audio player using [`AudioContext`](/docs/core/audio-context) and [``AudioBufferSourceNode``](/docs/sources/audio-buffer-source-node) as well as how we can load audio data from a remote source. To sum up:
 
 - `AudioContext` is the main object that controls the audio graph.
-- the [`decodeAudioData`](/core/base-audio-context#decodeaudiodata) method can be used to load audio data from a remote resource in the form of an [`AudioBuffer`](/sources/audio-buffer).
+- the [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) method can be used to load audio data from a remote resource in the form of an [`AudioBuffer`](/docs/sources/audio-buffer).
 - `AudioBufferSourceNode` can be used with any `AudioBuffer`.
 - In order to hear the sounds, we need to connect the source node to the destination node exposed by `AudioContext`.
-- We can control the playback of the sound using [`start`](/sources/audio-buffer-source-node#start) and [`stop`](/sources/audio-scheduled-source-node#stop) methods of the `AudioBufferSourceNode` (and other source nodes, which we will show later).
+- We can control the playback of the sound using [`start`](/docs/sources/audio-buffer-source-node#start) and [`stop`](/docs/sources/audio-scheduled-source-node#stop) methods of the `AudioBufferSourceNode` (and other source nodes, which we will show later).
 
 ## What's next?
 
-In [the next section](/guides/making-a-piano-keyboard), we will learn more about how the audio graph works, what audio parameters are, and how we can use them to create a simple piano keyboard.
+In [the next section](/docs/guides/making-a-piano-keyboard), we will learn more about how the audio graph works, what audio parameters are, and how we can use them to create a simple piano keyboard.

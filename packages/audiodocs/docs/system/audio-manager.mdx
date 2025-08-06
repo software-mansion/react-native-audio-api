@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, OnlyiOS } from '@site/src/components/Badges';
+import { Optional, ReadOnly, OnlyiOS, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -32,7 +32,6 @@ function App() {
     });
 
   useEffect(() => {
-
     // enabling emission of events
     AudioManager.enableRemoteCommand('remotePlay', true);
     AudioManager.enableRemoteCommand('remotePause', true);
@@ -79,7 +78,7 @@ function App() {
 
 | Parameters | Type | Description |
 | :---: | :---: | :-----: |
-| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
+| `info` | [`LockScreenInfo`](/docs/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
 
 #### Returns `undefined`
 
@@ -93,7 +92,7 @@ Resets all of the lock screen data.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
+| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
 
 #### Returns `undefined`
 
@@ -117,6 +116,24 @@ Resets all of the lock screen data.
 
 #### Returns `undefined`
 
+### `activelyReclaimSession` <OnlyiOS /> <Experimental />
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable session spoofing |
+
+#### Returns `undefined`
+
+More aggressively try to reactivate the audio session during interruptions.
+
+In some cases (depends on app session settings and other apps using audio) system may never
+send the `interruption ended` event. This method will check if any other audio is playing
+and try to reactivate the audio session, as soon as there is "silence".
+Although this might change the expected behavior.
+
+Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+interval polling to check if other audio is playing.
+
 ### `observeVolumeChanges`
 
 | Parameters | Type | Description |
@@ -131,14 +148,14 @@ Enables emition of some system events.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`RemoteCommandEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
+| `name` | [`RemoteCommandEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
 | `enabled` | `boolean` | Indicates the start or the end of event emission |
 
 #### Returns `undefined`
 
 :::info
 
-If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/system/audio-manager#addsystemeventlistener)
+If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/docs/system/audio-manager#addsystemeventlistener)
 with proper parameters.
 
 :::
@@ -150,29 +167,29 @@ Adds callback to be invoked upon hearing an event.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`SystemEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
-| `callback` | [`SystemEventCallback`](/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
+| `name` | [`SystemEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
+| `callback` | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
 
-#### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
 
 ### `requestRecordingPermissions`
 
 Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
 Allows to check if permissions were previously granted.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `getDevicesInfo`
 
 Allows to check currently used and available devices.
 
-#### Returns promise of [`AudioDevicesInfo`](/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 
 ## Remarks
 
