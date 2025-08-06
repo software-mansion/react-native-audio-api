@@ -44,7 +44,13 @@ s.pod_target_xcconfig = {
   "USE_HEADERMAP" => "YES",
   "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
   "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-  "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\" \"$(PODS_TARGET_SRCROOT)/ios\" \"#{external_dir}/include\" \"#{external_dir}/include/opus\" \"#{external_dir}/include/vorbis\"",
+  "HEADER_SEARCH_PATHS" => %W[
+    $(PODS_TARGET_SRCROOT)/common/cpp
+    $(PODS_TARGET_SRCROOT)/ios
+    #{external_dir}/include
+    #{external_dir}/include/opus
+    #{external_dir}/include/vorbis
+  ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }
 

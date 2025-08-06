@@ -7,7 +7,7 @@
 #ifndef OV_EXCLUDE_STATIC_CALLBACKS
 #define OV_EXCLUDE_STATIC_CALLBACKS
 #endif
-#include "../../libs/vorbis/include/vorbis/vorbisfile.h"
+#include <audioapi/external/include/vorbis/vorbisfile.h>
 #endif
 
 #include <string.h> /* For memset(). */
