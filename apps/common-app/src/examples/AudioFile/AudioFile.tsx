@@ -5,10 +5,8 @@ import { Container, Button, Spacer } from '../../components';
 import AudioPlayer from './AudioPlayer';
 import { colors } from '../../styles';
 
-// const URL =
-//   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
-// const URL = 'https://example-files.online-convert.com/audio/opus/example.opus';
-const URL = 'https://getsamplefiles.com/download/ogg/sample-1.ogg';
+const URL =
+  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);

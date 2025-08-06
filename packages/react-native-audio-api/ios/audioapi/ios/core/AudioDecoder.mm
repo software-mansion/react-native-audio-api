@@ -20,12 +20,12 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int num
     const
 {
   std::vector<int16_t> buffer;
-  int16_t temp[4096 * numChannels];
+  int16_t temp[CHUNK_SIZE * numChannels];
   outFramesRead = 0;
 
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
-    ma_decoder_read_pcm_frames(&decoder, temp, 4096, &tempFramesDecoded);
+    ma_decoder_read_pcm_frames(&decoder, temp, CHUNK_SIZE, &tempFramesDecoded);
     if (tempFramesDecoded == 0) {
       break;
     }

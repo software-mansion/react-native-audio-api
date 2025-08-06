@@ -10,6 +10,8 @@ namespace audioapi {
 
 class AudioBus;
 
+static constexpr int CHUNK_SIZE = 4096;
+
 class AudioDecoder {
  public:
   explicit AudioDecoder(float sampleRate) : sampleRate_(sampleRate) {}
