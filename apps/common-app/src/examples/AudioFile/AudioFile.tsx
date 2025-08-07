@@ -52,6 +52,7 @@ const AudioFile: FC = () => {
     AudioManager.enableRemoteCommand('remoteSkipForward', true);
     AudioManager.enableRemoteCommand('remoteSkipBackward', true);
     AudioManager.observeAudioInterruptions(true);
+    AudioManager.activelyReclaimSession(true);
 
     const remotePlaySubscription = AudioManager.addSystemEventListener(
       'remotePlay',

@@ -57,20 +57,24 @@ void AudioNodeManager::addAudioParam(const std::shared_ptr<AudioParam> &param) {
 }
 
 void AudioNodeManager::settlePendingConnections() {
-  for (auto it = audioNodesToConnect_.begin(), end = audioNodesToConnect_.end();
-       it != end;
-       ++it) {
-    std::shared_ptr<AudioNode> from = std::get<0>(*it);
-    std::shared_ptr<AudioNode> to = std::get<1>(*it);
-    ConnectionType type = std::get<2>(*it);
+  for (int i = 0; i < audioNodesToConnect_.size(); ++i) {
+    auto &connection = audioNodesToConnect_[i];
+    std::shared_ptr<AudioNode> from = std::get<0>(connection);
+    std::shared_ptr<AudioNode> to = std::get<1>(connection);
+    ConnectionType type = std::get<2>(connection);
 
     assert(from != nullptr);
-    assert(to != nullptr);
 
     if (type == ConnectionType::CONNECT) {
+      assert(to != nullptr);
       from->connectNode(to);
-    } else {
+    } else if (type == ConnectionType::DISCONNECT) {
+      assert(to != nullptr);
       from->disconnectNode(to);
+    } else {
+      for (auto &node : from->outputNodes_) {
+        from->disconnectNode(node);
+      }
     }
   }
 

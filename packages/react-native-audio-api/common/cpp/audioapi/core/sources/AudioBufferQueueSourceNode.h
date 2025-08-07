@@ -23,10 +23,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     void stop(double when) override;
     void pause();
 
-    void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, bool isLastBuffer);
+    std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
     void dequeueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
     void clearBuffers();
-
     void disable() override;
 
  protected:
@@ -35,8 +34,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
  private:
     // User provided buffers
-    std::queue<std::shared_ptr<AudioBuffer>> buffers_;
-    bool isLastBuffer_ = false;
+    std::queue<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
+    size_t bufferId_ = 0;
+
     bool isPaused_ = false;
 
     double playedBuffersDuration_ = 0;

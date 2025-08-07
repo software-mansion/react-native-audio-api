@@ -5,7 +5,6 @@ import {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
-  ProcessorMode,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
 
@@ -17,7 +16,6 @@ export interface IBaseAudioContext {
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(): IOscillatorNode;
-  createCustomProcessor(identifier: string): ICustomProcessorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -43,9 +41,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<boolean>;
+  resume(): Promise<boolean>;
+  suspend(): Promise<boolean>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
@@ -64,11 +62,6 @@ export interface IAudioNode {
 
   connect: (destination: IAudioNode | IAudioParam) => void;
   disconnect: (destination?: IAudioNode | IAudioParam) => void;
-}
-
-export interface ICustomProcessorNode extends IAudioNode {
-  readonly customProcessor: IAudioParam;
-  processorMode: ProcessorMode;
 }
 
 export interface IGainNode extends IAudioNode {
@@ -134,9 +127,11 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
 export interface IAudioBufferQueueSourceNode
   extends IAudioBufferBaseSourceNode {
-  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
   dequeueBuffer: (audioBuffer: IAudioBuffer) => void;
   clearBuffers: () => void;
+
+  // returns bufferId
+  enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   pause: () => void;
 }
 

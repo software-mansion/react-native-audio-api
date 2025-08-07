@@ -2,6 +2,7 @@ import { IAudioBufferSourceNode } from '../interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
+import { EventEmptyType } from '../events/types';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   public get buffer(): AudioBuffer | null {
@@ -78,5 +79,15 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
+  }
+
+  public override get onEnded(): ((event: EventEmptyType) => void) | undefined {
+    return super.onEnded as ((event: EventEmptyType) => void) | undefined;
+  }
+
+  public override set onEnded(
+    callback: ((event: EventEmptyType) => void) | null
+  ) {
+    super.onEnded = callback;
   }
 }

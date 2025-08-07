@@ -5,7 +5,7 @@ import {
   AudioRecorder,
   RecorderAdapterNode,
   AudioBufferSourceNode,
-  AudioBuffer
+  AudioBuffer,
 } from 'react-native-audio-api';
 
 import { Container, Button } from '../../components';
@@ -21,20 +21,20 @@ const Record: FC = () => {
   const audioBuffersRef = useRef<AudioBuffer[]>([]);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
 
-
   useEffect(() => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
-    
+
+    AudioManager.requestRecordingPermissions();
+
     recorderRef.current = new AudioRecorder({
       sampleRate: SAMPLE_RATE,
       bufferLengthInSamples: SAMPLE_RATE,
     });
   }, []);
-
 
   const startEcho = () => {
     if (!recorderRef.current) {
@@ -46,15 +46,15 @@ const Record: FC = () => {
     recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
     recorderAdapterRef.current.connect(aCtxRef.current.destination);
     recorderRef.current.connect(recorderAdapterRef.current);
-    
+
     recorderRef.current.start();
-    console.log('Recording started'); 
+    console.log('Recording started');
     console.log('Audio context state:', aCtxRef.current.state);
     if (aCtxRef.current.state === 'suspended') {
       console.log('Resuming audio context');
       aCtxRef.current.resume();
     }
-  }
+  };
 
   /// This stops only the recording, not the audio context
   const stopEcho = () => {
@@ -66,7 +66,7 @@ const Record: FC = () => {
     aCtxRef.current = null;
     recorderAdapterRef.current = null;
     console.log('Recording stopped');
-  }
+  };
 
   const startRecordReplay = () => {
     if (!recorderRef.current) {
@@ -92,8 +92,7 @@ const Record: FC = () => {
       recorderRef.current?.stop();
       console.log('Recording stopped');
     }, 5000);
-
-  }
+  };
 
   const stopRecordReplay = () => {
     const aCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
@@ -128,19 +127,22 @@ const Record: FC = () => {
       },
       (nextStartAt - tNow) * 1000
     );
-
-  }
+  };
 
   return (
     <Container style={{ gap: 40 }}>
-      <Text style={{ color: colors.white, fontSize: 24, textAlign: 'center' }}>Sample rate: {SAMPLE_RATE}</Text>
+      <Text style={{ color: colors.white, fontSize: 24, textAlign: 'center' }}>
+        Sample rate: {SAMPLE_RATE}
+      </Text>
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Text style={{ color: colors.white, fontSize: 24 }}>Echo example</Text>
         <Button title="Start Recording" onPress={startEcho} />
         <Button title="Stop Recording" onPress={stopEcho} />
       </View>
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <Text style={{ color: colors.white, fontSize: 24 }}>Record & replay example</Text>
+        <Text style={{ color: colors.white, fontSize: 24 }}>
+          Record & replay example
+        </Text>
         <Button title="Record for Replay" onPress={startRecordReplay} />
         <Button title="Replay" onPress={stopRecordReplay} />
       </View>

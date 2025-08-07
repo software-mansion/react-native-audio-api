@@ -101,6 +101,7 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine attachInputNode:self.sinkNode];
+  [audioEngine startIfNecessary];
 }
 
 - (void)stop
@@ -108,6 +109,7 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine detachInputNode];
+  [audioEngine stopIfNecessary];
 }
 
 - (void)cleanup
