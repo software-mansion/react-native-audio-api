@@ -10,8 +10,14 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     );
   }
 
-  public dequeueBuffer(buffer: AudioBuffer): void {
-    (this.node as IAudioBufferQueueSourceNode).dequeueBuffer(buffer.buffer);
+  public dequeueBuffer(bufferId: string): void {
+    const id = parseInt(bufferId, 10);
+    if (isNaN(id) || id < 0) {
+      throw new RangeError(
+        `bufferId must be a non-negative integer: ${bufferId}`
+      );
+    }
+    (this.node as IAudioBufferQueueSourceNode).dequeueBuffer(id);
   }
 
   public clearBuffers(): void {

@@ -43,14 +43,13 @@ std::string AudioBufferQueueSourceNode::enqueueBuffer(
   return std::to_string(bufferId_++);
 }
 
-void AudioBufferQueueSourceNode::dequeueBuffer(
-    const std::shared_ptr<AudioBuffer> &buffer) {
+void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
   auto locker = Locker(getBufferLock());
   if (buffers_.empty()) {
     return;
   }
 
-  if (buffers_.front() == buffer) {
+  if (buffers_.front().first == bufferId) {
     buffers_.pop();
     vReadIndex_ = 0.0;
     return;
@@ -58,9 +57,9 @@ void AudioBufferQueueSourceNode::dequeueBuffer(
 
   // If the buffer is not at the front, we need to remove it from the queue.
   // And keep vReadIndex_ at the same position.
-  std::queue<std::shared_ptr<AudioBuffer>> newQueue;
+  std::queue<std::pair<size_t, std::shared_ptr<AudioBuffer>>> newQueue;
   while (!buffers_.empty()) {
-    if (buffers_.front() != buffer) {
+    if (buffers_.front().first != bufferId) {
       newQueue.push(buffers_.front());
     }
     buffers_.pop();

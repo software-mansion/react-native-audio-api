@@ -24,7 +24,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     void pause();
 
     std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
-    void dequeueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+    void dequeueBuffer(const size_t bufferId);
     void clearBuffers();
     void disable() override;
 

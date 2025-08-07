@@ -46,10 +46,10 @@ class AudioBufferQueueSourceNodeHostObject
         auto audioBufferQueueSourceNode =
                 std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-        auto audioBufferHostObject =
-                args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+        auto bufferId =
+                args[0].getNumber();
 
-        audioBufferQueueSourceNode->dequeueBuffer(audioBufferHostObject->audioBuffer_);
+        audioBufferQueueSourceNode->dequeueBuffer(bufferId);
 
         return jsi::Value::undefined();
     }
