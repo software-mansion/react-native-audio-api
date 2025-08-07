@@ -52,6 +52,22 @@ The above method lets you add another buffer to queue. Returns `bufferId` that c
 
 #### Returns `string`.
 
+### `dequeueBuffer`
+
+The above method lets you remove a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `buffer` | [`AudioBuffer`](/sources/audio-buffer) | Buffer to remove from the queue. |
+
+#### Returns `void`.
+
+### `clearBuffers`
+
+The above method lets you remove all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+
+#### Returns `void`.
+
 ## Events
 
 ### `onEnded` <Overridden />
