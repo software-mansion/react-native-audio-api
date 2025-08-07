@@ -44,6 +44,37 @@ void AudioBufferQueueSourceNode::enqueueBuffer(
   isLastBuffer_ = isLastBuffer;
 }
 
+void AudioBufferQueueSourceNode::dequeueBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer) {
+  auto locker = Locker(getBufferLock());
+  if (buffers_.empty()) {
+    return;
+  }
+
+  if (buffers_.front() == buffer) {
+    buffers_.pop();
+    vReadIndex_ = 0.0;
+    return;
+  }
+
+  // If the buffer is not at the front, we need to remove it from the queue.
+  // And keep vReadIndex_ at the same position.
+  std::queue<std::shared_ptr<AudioBuffer>> newQueue;
+  while (!buffers_.empty()) {
+    if (buffers_.front() != buffer) {
+      newQueue.push(buffers_.front());
+    }
+    buffers_.pop();
+  }
+  std::swap(buffers_, newQueue);
+}
+
+void AudioBufferQueueSourceNode::clearBuffers() {
+  auto locker = Locker(getBufferLock());
+  buffers_ = {};
+  vReadIndex_ = 0.0;
+}
+
 void AudioBufferQueueSourceNode::disable() {
   if (isPaused_) {
     playbackState_ = PlaybackState::UNSCHEDULED;

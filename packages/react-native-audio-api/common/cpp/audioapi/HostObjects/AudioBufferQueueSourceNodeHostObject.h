@@ -42,6 +42,27 @@ class AudioBufferQueueSourceNodeHostObject
 
         return jsi::Value::undefined();
     }
+
+    JSI_HOST_FUNCTION(dequeueBuffer) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        auto audioBufferHostObject =
+                args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+
+        audioBufferQueueSourceNode->dequeueBuffer(audioBufferHostObject->audioBuffer_);
+
+        return jsi::Value::undefined();
+    }
+
+    JSI_HOST_FUNCTION(clearBuffers) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->clearBuffers();
+
+        return jsi::Value::undefined();
+    }
 };
 
 } // namespace audioapi

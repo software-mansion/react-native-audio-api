@@ -14,6 +14,14 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     );
   }
 
+  public dequeueBuffer(buffer: AudioBuffer): void {
+    (this.node as IAudioBufferQueueSourceNode).dequeueBuffer(buffer.buffer);
+  }
+
+  public clearBuffers(): void {
+    (this.node as IAudioBufferQueueSourceNode).clearBuffers();
+  }
+
   public override start(when: number = 0, offset?: number): void {
     if (when < 0) {
       throw new RangeError(
