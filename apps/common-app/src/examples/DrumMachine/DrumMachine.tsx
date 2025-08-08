@@ -148,8 +148,7 @@ const DrumMachine: React.FC = () => {
             // @ts-ignore ???
             width={size}
             height={size}
-            onLayout={onCanvasLayout}
-          >
+            onLayout={onCanvasLayout}>
             <Grid />
             {patterns.map((pattern) => (
               <PatternShape key={pattern.instrumentName} pattern={pattern} />
