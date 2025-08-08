@@ -20,3 +20,5 @@ export const PLAYBACK_SPEED_CONFIG = {
   step: 0.25,
   default: 1,
 } as const;
+
+export const SAMPLE_RATE = 44100;

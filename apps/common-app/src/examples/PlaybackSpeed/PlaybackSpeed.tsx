@@ -10,7 +10,12 @@ import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
 import { AudioContext } from 'react-native-audio-api';
 import type { AudioBufferSourceNode } from 'react-native-audio-api';
-import { PCM_DATA, labelWidth, PLAYBACK_SPEED_CONFIG } from './constants';
+import {
+  PCM_DATA,
+  labelWidth,
+  PLAYBACK_SPEED_CONFIG,
+  SAMPLE_RATE,
+} from './constants';
 import { TimeStretchingAlgorithm, TIME_STRETCHING_OPTIONS } from './types';
 import { getAudioSettings } from './helpers';
 
@@ -33,7 +38,7 @@ const PlaybackSpeed: FC = () => {
 
   const initializeAudioContext = useCallback(() => {
     if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext({ sampleRate: 44100 });
+      aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     }
     return aCtxRef.current;
   }, []);
