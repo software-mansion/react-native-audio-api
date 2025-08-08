@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
 import { AudioContext } from 'react-native-audio-api';
 import type { AudioBufferSourceNode } from 'react-native-audio-api';
@@ -33,7 +33,7 @@ const PlaybackSpeed: FC = () => {
 
   const initializeAudioContext = useCallback(() => {
     if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext();
+      aCtxRef.current = new AudioContext({ sampleRate: 44100 });
     }
     return aCtxRef.current;
   }, []);
@@ -151,10 +151,6 @@ const PlaybackSpeed: FC = () => {
       </View>
 
       <View style={styles.controlsContainer}>
-        {isLoading && (
-          <ActivityIndicator color="#FFFFFF" style={styles.loadingIndicator} />
-        )}
-
         <Button
           title={isPlaying ? 'Stop' : 'Play'}
           onPress={togglePlayPause}
@@ -186,10 +182,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingIndicator: {
-    position: 'absolute',
-    top: -40,
   },
 });
 
