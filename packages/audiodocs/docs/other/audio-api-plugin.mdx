@@ -16,6 +16,7 @@ background audio related settings in developer friendly way.
 
 ```typescript
 interface Options {
+  iosMicrophonePermission?: string;
   iosBackgroundMode: boolean;
   androidPermissions: string[];
   androidForegroundService: boolean;
@@ -38,6 +39,7 @@ Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
+        "iosMicrophonePermission": "This app requires access to the microphone to record audio.",
         "androidPermissions" : [
           "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
@@ -64,6 +66,7 @@ export default {
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
+        "iosMicrophonePermission": "This app requires access to the microphone to record audio.",
         "androidPermissions" : [
           "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
@@ -87,6 +90,12 @@ export default {
 Defaults to `true`.
 
 Allows app to play audio in the background on iOS.
+
+### iosMicrophonePermission
+
+Defaults to `undefined`.
+
+Allows to specify a custom microphone permission message for iOS. If not specified it will be omitted in the `Info.plist`.
 
 ### androidPermissions
 
