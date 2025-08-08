@@ -117,7 +117,7 @@ const PlaybackSpeed: FC = () => {
       if (audioSettings.PSOLA) {
         stopPlayback();
       } else {
-        if (aCtxRef.current && sourceRef.current && !audioSettings.PSOLA) {
+        if (aCtxRef.current && sourceRef.current) {
           sourceRef.current.playbackRate.value = newSpeed;
         }
       }
