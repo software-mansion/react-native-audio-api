@@ -4,6 +4,7 @@ import { AudioManager } from 'react-native-audio-api';
 import { Container, Button, Spacer } from '../../components';
 import AudioPlayer from './AudioPlayer';
 import { colors } from '../../styles';
+import BackgroundTimer from 'react-native-background-timer';
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
@@ -88,6 +89,12 @@ const AudioFile: FC = () => {
         if (event.type === 'began') {
           await AudioPlayer.pause();
           setIsPlaying(false);
+        } else if (event.type === 'ended' && event.shouldResume) {
+          BackgroundTimer.setTimeout(async () => {
+            AudioManager.setAudioSessionActivity(true);
+            await AudioPlayer.play();
+            setIsPlaying(true);
+          }, 1000);
         }
       }
     );

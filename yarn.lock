@@ -3229,6 +3229,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-native-background-timer@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@types/react-native-background-timer@npm:2.0.2"
+  checksum: 10/b463cc1c33d50af5cc3b81a98f10315188b044f6de8e13733da9bfe0b16018ab5e8b680aae6305cff06c4cffb66f89b59782499fc1e90d42591c8324319afaa7
+  languageName: node
+  linkType: hard
+
 "@types/react-test-renderer@npm:^19.1.0":
   version: 19.1.0
   resolution: "@types/react-test-renderer@npm:19.1.0"
@@ -4696,6 +4703,7 @@ __metadata:
     "@shopify/react-native-skia": "npm:2.1.1"
     "@types/jest": "npm:^29.5.13"
     "@types/react": "npm:^19.1.0"
+    "@types/react-native-background-timer": "npm:^2.0.2"
     "@types/react-test-renderer": "npm:^19.1.0"
     eslint: "npm:^8.57.0"
     jest: "npm:^29.6.3"
@@ -4703,6 +4711,7 @@ __metadata:
     react: "npm:19.1.0"
     react-native: "npm:0.80.0"
     react-native-audio-api: "workspace:*"
+    react-native-background-timer: "npm:^2.4.1"
     react-native-dotenv: "npm:3.4.11"
     react-native-gesture-handler: "npm:2.26.0"
     react-native-reanimated: "npm:3.18.0"
@@ -10666,6 +10675,15 @@ __metadata:
     setup-rn-audio-api-web: ./scripts/setup-rn-audio-api-web.js
   languageName: unknown
   linkType: soft
+
+"react-native-background-timer@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "react-native-background-timer@npm:2.4.1"
+  peerDependencies:
+    react-native: ">=0.47.0"
+  checksum: 10/57e1a1955dbe74b0cafcd1f214697b0ec020e52fe08e4c25d7db0268e1891c4b968e0e0f4211658fb010c5ac79302b7330a5411f622653a8096bbff5143c5d75
+  languageName: node
+  linkType: hard
 
 "react-native-builder-bob@npm:0.33.1":
   version: 0.33.1
