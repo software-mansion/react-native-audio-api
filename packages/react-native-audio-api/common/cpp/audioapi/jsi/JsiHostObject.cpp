@@ -1,7 +1,7 @@
 #include <audioapi/jsi/JsiHostObject.h>
 
 //  set this value to 1 in order to debug the construction/destruction
-#define JSI_DEBUG_ALLOCATIONS 1
+#define JSI_DEBUG_ALLOCATIONS 0
 
 namespace audioapi {
 
