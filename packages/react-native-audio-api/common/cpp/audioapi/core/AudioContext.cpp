@@ -63,14 +63,21 @@ bool AudioContext::resume() {
   }
 
   if (!playerHasBeenStarted_) {
-    playerHasBeenStarted_ = true;
-    audioPlayer_->start();
-  } else {
-    audioPlayer_->resume();
+    if (audioPlayer_->start()) {
+      playerHasBeenStarted_ = true;
+      state_ = ContextState::RUNNING;
+      return true;
+    }
+
+    return false;
   }
 
-  state_ = ContextState::RUNNING;
-  return true;
+  if (audioPlayer_->resume()) {
+    state_ = ContextState::RUNNING;
+    return true;
+  }
+
+  return false;
 }
 
 bool AudioContext::suspend() {
@@ -90,13 +97,13 @@ bool AudioContext::suspend() {
 
 std::function<void(std::shared_ptr<AudioBus>, int)>
 AudioContext::renderAudio() {
-  if (!isRunning() || !destination_) {
-    return [](const std::shared_ptr<AudioBus> &, int) {};
-  }
-
   return [this](const std::shared_ptr<AudioBus> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
+}
+
+bool AudioContext::isDriverRunning() const {
+  return audioPlayer_->isRunning();
 }
 
 } // namespace audioapi

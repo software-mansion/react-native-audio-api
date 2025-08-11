@@ -25,6 +25,7 @@ interface Spec extends TurboModule {
   // Remote commands, system events and interruptions
   enableRemoteCommand(name: string, enabled: boolean): void;
   observeAudioInterruptions(enabled: boolean): void;
+  activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
 
   // Permissions

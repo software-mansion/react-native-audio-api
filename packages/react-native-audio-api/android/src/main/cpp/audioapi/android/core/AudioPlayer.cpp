@@ -45,10 +45,13 @@ bool AudioPlayer::openAudioStream() {
   return true;
 }
 
-void AudioPlayer::start() {
+bool AudioPlayer::start() {
   if (mStream_) {
-    mStream_->requestStart();
+    auto result = mStream_->requestStart();
+    return result == oboe::Result::OK;
   }
+
+  return false;
 }
 
 void AudioPlayer::stop() {
@@ -57,10 +60,13 @@ void AudioPlayer::stop() {
   }
 }
 
-void AudioPlayer::resume() {
+bool AudioPlayer::resume() {
   if (mStream_) {
-    mStream_->requestStart();
+    auto result = mStream_->requestStart();
+    return result == oboe::Result::OK;
   }
+
+  return false;
 }
 
 void AudioPlayer::suspend() {
@@ -76,6 +82,10 @@ void AudioPlayer::cleanup() {
     mStream_->close();
     mStream_.reset();
   }
+}
+
+bool AudioPlayer::isRunning() const {
+  return mStream_ && mStream_->getState() == oboe::StreamState::Started;
 }
 
 DataCallbackResult AudioPlayer::onAudioReady(

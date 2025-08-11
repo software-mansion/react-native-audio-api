@@ -9,6 +9,7 @@ import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
 import Record from './Record/Record';
+import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -17,6 +18,7 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
@@ -46,6 +48,18 @@ export const Examples: Example[] = [
     screen: Piano,
   },
   {
+    key: 'AudioFile',
+    title: 'Audio File',
+    subtitle: 'Play an audio file',
+    screen: AudioFile,
+  },
+  {
+    key: 'PlaybackSpeed',
+    title: 'Playback Speed',
+    subtitle: 'Control playback speed of audio',
+    screen: PlaybackSpeed,
+  },
+  {
     key: 'TextToSpeech',
     title: 'Text to Speech',
     subtitle: 'type some text and hear it spoken',
@@ -62,12 +76,6 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
-  },
-  {
-    key: 'AudioFile',
-    title: 'Audio File',
-    subtitle: 'Play an audio file',
-    screen: AudioFile,
   },
   {
     key: 'AudioVisualizer',

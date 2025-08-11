@@ -21,11 +21,13 @@ class IOSAudioPlayer {
       int channelCount);
   ~IOSAudioPlayer();
 
-  void start();
+  bool start();
   void stop();
-  void resume();
+  bool resume();
   void suspend();
   void cleanup();
+
+  bool isRunning() const;
 
  protected:
   std::shared_ptr<AudioBus> audioBus_;
@@ -34,4 +36,5 @@ class IOSAudioPlayer {
   int channelCount_;
   std::atomic<bool> isRunning_;
 };
+
 } // namespace audioapi

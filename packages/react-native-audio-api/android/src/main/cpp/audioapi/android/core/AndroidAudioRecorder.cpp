@@ -1,9 +1,11 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/core/Constants.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 namespace audioapi {
 
@@ -65,7 +67,7 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     int32_t numFrames) {
   if (isRunning_.load()) {
     auto *inputChannel = static_cast<float *>(audioData);
-    circularBuffer_->push_back(inputChannel, numFrames);
+    writeToBuffers(inputChannel, numFrames);
   }
 
   while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {

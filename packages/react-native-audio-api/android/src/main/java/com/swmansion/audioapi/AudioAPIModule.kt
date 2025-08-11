@@ -91,6 +91,10 @@ class AudioAPIModule(
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
 
+  override fun activelyReclaimSession(enabled: Boolean) {
+    MediaSessionManager.activelyReclaimSession(enabled)
+  }
+
   override fun observeVolumeChanges(enabled: Boolean) {
     MediaSessionManager.observeVolumeChanges(enabled)
   }

@@ -16,6 +16,13 @@
 
     float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
 
+    if (!devicePrefferedSampleRate) {
+      NSError *error;
+      devicePrefferedSampleRate = sampleRate;
+
+      [[AVAudioSession sharedInstance] setPreferredSampleRate:sampleRate error:&error];
+    }
+
     self.inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                         sampleRate:devicePrefferedSampleRate
                                                           channels:1
@@ -94,6 +101,7 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine attachInputNode:self.sinkNode];
+  [audioEngine startIfNecessary];
 }
 
 - (void)stop
@@ -101,6 +109,7 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine detachInputNode];
+  [audioEngine stopIfNecessary];
 }
 
 - (void)cleanup

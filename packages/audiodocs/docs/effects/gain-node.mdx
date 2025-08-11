@@ -8,13 +8,13 @@ import { ReadOnly } from '@site/src/components/Badges';
 # GainNode
 
 The `GainNode` interface represents the change in volume (amplitude) of the audio signal.
-It is an [`AudioNode`](/core/audio-node) that applies given gain to processing audio data.
+It is an [`AudioNode`](/docs/core/audio-node) that applies given gain to processing audio data.
 
-Direct gain modification often results in unpleasant 'clicks'. To avoid this effect, utilize exponential interpolation methods from the [`AudioParam`](/core/audio-param).
+Direct gain modification often results in unpleasant 'clicks'. To avoid this effect, utilize exponential interpolation methods from the [`AudioParam`](/docs/core/audio-param).
 
 ![gain-node](/img/gain-node.png)
 
-#### [`AudioNode`](/core/audio-node#read-only-properties) properties
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
@@ -34,13 +34,13 @@ You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.
 
 ## Constructor
 
-[`BaseAudioContext.createGain()`](/core/base-audio-context#creategain)
+[`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain)
 
 ## Properties
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `gain` | [`AudioParam`](/core/audio-param) | [`a-rate`](/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing value of gain to apply. | <ReadOnly />
+| `gain` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing value of gain to apply. | <ReadOnly />
 
 ## Remarks
 

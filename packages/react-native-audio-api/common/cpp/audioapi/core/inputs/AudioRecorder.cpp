@@ -1,9 +1,11 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/sources/AudioBuffer.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 namespace audioapi {
 
@@ -14,8 +16,9 @@ AudioRecorder::AudioRecorder(
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
-  circularBuffer_ =
-      std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
+  constexpr int minRingBufferSize = 8192;
+  ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
+  circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
   isRunning_.store(false);
 }
 
@@ -53,6 +56,29 @@ void AudioRecorder::sendRemainingData() {
       outputChannel, circularBuffer_->getNumberOfAvailableFrames());
 
   invokeOnAudioReadyCallback(bus, availableFrames, 0);
+}
+
+void AudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
+  node->init(ringBufferSize_);
+  adapterNodeLock_.lock();
+  adapterNode_ = node;
+  adapterNodeLock_.unlock();
+}
+
+void AudioRecorder::disconnect() {
+  adapterNodeLock_.lock();
+  adapterNode_ = nullptr;
+  adapterNodeLock_.unlock();
+}
+
+void AudioRecorder::writeToBuffers(const float *data, int numFrames) {
+  if (adapterNodeLock_.try_lock()) {
+    if (adapterNode_ != nullptr) {
+      adapterNode_->buff_->write(data, numFrames);
+    }
+    adapterNodeLock_.unlock();
+  }
+  circularBuffer_->push_back(data, numFrames);
 }
 
 } // namespace audioapi

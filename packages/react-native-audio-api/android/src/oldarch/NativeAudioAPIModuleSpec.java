@@ -68,6 +68,10 @@
 
    @ReactMethod
    @DoNotStrip
+   public abstract void activelyReclaimSession(boolean enabled);
+
+   @ReactMethod
+   @DoNotStrip
    public abstract void observeVolumeChanges(boolean enabled);
 
    @ReactMethod

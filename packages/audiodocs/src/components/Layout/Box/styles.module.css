@@ -1,0 +1,16 @@
+
+
+.box {
+  width: 100%;
+  padding: 20px;
+}
+
+.boxRed {
+  background-color: var(--swm-red-light-60);
+  box-shadow: -12px 12px 0px var(--swm-red-light-100);
+}
+
+[data-theme='dark'] .boxRed {
+  /* background-color: var(--swm-red-dark-60);
+  box-shadow: -12px 12px 0px var(--swm-red-dark-100); */
+}

@@ -1,0 +1,127 @@
+
+.heroMargin {
+  margin-top: 8rem;
+  /* margin-top: 11.25rem; */
+}
+
+.playerInfoImageBg {
+  width: 160px;
+  height: 160px;
+  flex: 0 0 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background: rgba(0, 0, 0, 0.2); */
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* [data-theme='dark'] .playerInfoImageBg {
+  background: rgba(0, 0, 0, 0.35);
+} */
+
+.playerInfoTitle {
+  display: flex;
+  flex-direction: row;
+  font-family: var(--swm-title-landing-font);
+  font-size: 64px;
+  font-weight: 700;
+
+
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--swm-landing-heading);
+  color: var(--swm-white);
+}
+
+.playerInfoTitle :nth-child(2) {
+  /* color: var(--swm-white); */
+  color: var(--swm-landing-heading);
+  /* color: var(--swm-red-light-100); */
+  /* color: var(--swm-off-white); */
+}
+
+.playerInfoDescription {
+  font-family: var(--swm-h2-font-size);
+  /* font-size: 32px; */
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: var(--swm-heading-letter-spacing-bigger);
+
+  /* margin-top: 3rem;
+  margin-bottom: 5.5rem; */
+  width: 70%;
+  /* color: var(--swm-landing-heading); */
+  color: var(--swm-off-white);
+}
+
+.playerProgressTimeLeft,
+.playerProgressTimeRight {
+  font-family: var(--swm-h2-font-size);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--swm-heading-letter-spacing-bigger);
+  /* color: var(--swm-landing-heading); */
+  color: var(--swm-off-white);
+  width: 60px;
+  text-align: center;
+}
+
+.playerProgressBar {
+  flex: 1;
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  position: relative;
+  margin: 0 1rem;
+  overflow: hidden;
+}
+
+.playerProgressBarFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  /* background-color: var(--swm-red-light-80); */
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+}
+
+.playerControlButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--swm-white);
+}
+
+.playerControlIcon {
+  width: 48px;
+  height: 48px;
+  color: var(--swm-white);
+}
+
+.playerControlIconSmall {
+  width: 24px;
+  height: 24px;
+  color: var(--swm-white);
+}
+.playerVolumeIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.playerVolumeIcon img {
+  width: 100%;
+  height: 100%;
+}
+
+.playerSliderContainer {
+  flex: 1;
+  margin: 0 1rem;
+}

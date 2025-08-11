@@ -148,6 +148,10 @@ object MediaSessionManager {
     }
   }
 
+  fun activelyReclaimSession(enabled: Boolean) {
+    // do nothing on android
+  }
+
   fun observeVolumeChanges(observe: Boolean) {
     if (observe) {
       ContextCompat.registerReceiver(

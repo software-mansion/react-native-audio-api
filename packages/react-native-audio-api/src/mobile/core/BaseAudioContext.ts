@@ -6,7 +6,6 @@ import {
 } from '../../types';
 import AudioDestinationNode from '../destinations/AudioDestinationNode';
 import OscillatorNode from '../sources/OscillatorNode';
-import CustomProcessorNode from '../effects/CustomProcessorNode';
 import GainNode from '../effects/GainNode';
 import StereoPannerNode from '../effects/StereoPannerNode';
 import BiquadFilterNode from '../effects/BiquadFilterNode';
@@ -15,12 +14,13 @@ import AudioBuffer from '../sources/AudioBuffer';
 import PeriodicWave from '../effects/PeriodicWave';
 import AnalyserNode from '../analysis/AnalyserNode';
 import AudioBufferQueueSourceNode from '../sources/AudioBufferQueueSourceNode';
+import RecorderAdapterNode from '../sources/RecorderAdapterNode';
 import { InvalidAccessError, NotSupportedError } from '../../errors';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  protected readonly context: IBaseAudioContext;
+  readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
@@ -36,15 +36,12 @@ export default class BaseAudioContext {
     return this.context.state;
   }
 
-  createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+  createRecorderAdapter(): RecorderAdapterNode {
+    return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
   }
 
-  createCustomProcessor(identifier: string): CustomProcessorNode {
-    return new CustomProcessorNode(
-      this,
-      this.context.createCustomProcessor(identifier)
-    );
+  createOscillator(): OscillatorNode {
+    return new OscillatorNode(this, this.context.createOscillator());
   }
 
   createGain(): GainNode {

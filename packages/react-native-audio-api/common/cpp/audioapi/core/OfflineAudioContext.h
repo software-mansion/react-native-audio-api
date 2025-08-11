@@ -35,6 +35,8 @@ class OfflineAudioContext : public BaseAudioContext {
   std::shared_ptr<AudioBus> resultBus_;
 
   void renderAudio();
+
+  bool isDriverRunning() const override;
 };
 
 } // namespace audioapi

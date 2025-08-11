@@ -1648,6 +1648,8 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
+  - react-native-background-timer (2.4.1):
+    - React-Core
   - react-native-safe-area-context (5.4.1):
     - boost
     - DoubleConversion
@@ -2243,7 +2245,7 @@ PODS:
     - React-perflogger (= 0.80.0)
     - React-utils (= 0.80.0)
     - SocketRocket
-  - RNAudioAPI (0.7.0):
+  - RNAudioAPI (0.7.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2270,10 +2272,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.7.0)
+    - RNAudioAPI/audioapi (= 0.7.1)
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi (0.7.0):
+  - RNAudioAPI/audioapi (0.7.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2300,10 +2302,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.7.0)
+    - RNAudioAPI/audioapi/ios (= 0.7.1)
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.7.0):
+  - RNAudioAPI/audioapi/ios (0.7.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2675,6 +2677,7 @@ DEPENDENCIES:
   - React-logger (from `../../../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../../../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-background-timer (from `../../../node_modules/react-native-background-timer`)
   - react-native-safe-area-context (from `../../../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../../../node_modules/@shopify/react-native-skia`)"
   - React-NativeModulesApple (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2802,6 +2805,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../../../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-background-timer:
+    :path: "../../../node_modules/react-native-background-timer"
   react-native-safe-area-context:
     :path: "../../../node_modules/react-native-safe-area-context"
   react-native-skia:
@@ -2922,6 +2927,7 @@ SPEC CHECKSUMS:
   React-logger: dce52a571ba0e0149c3f0fcc6866cbc0c8552c5e
   React-Mapbuffer: f5754c33877eaf36e4c76c613b35615a181c85c5
   React-microtasksnativemodule: 23df6374a3ac422d8c2927839bcaeed61fee3dad
+  react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
   react-native-safe-area-context: c98c858bd57e01b4047f957934f0a34b173028fb
   react-native-skia: a41aa775aca8cd5695f88a6e486ca06754542e17
   React-NativeModulesApple: e16d5c133019987285f001fbf1461a861e40426f
@@ -2955,7 +2961,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 3267432b637c9b38e86961b287f784ee1b08dde0
   ReactCodegen: d82f538f70f00484d418803f74b5a0ea09cc8689
   ReactCommon: b028d09a66e60ebd83ca59d8cc9a1216360db147
-  RNAudioAPI: 373a0f79aab614f1a6dbe43944a17d35365c5b8b
+  RNAudioAPI: 7ba48681da626677a851e7b91d7910b776410976
   RNGestureHandler: eeb622199ef1fb3a076243131095df1c797072f0
   RNReanimated: 402e6a3b84071df4da6264630a1b99962a113d2d
   RNScreens: ee2abe7e0c548eed14e92742e81ed991165c56aa

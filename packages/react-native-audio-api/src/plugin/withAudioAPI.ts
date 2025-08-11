@@ -8,6 +8,7 @@ import {
 const pkg = require('react-native-audio-api/package.json');
 
 interface Options {
+  iosMicrophonePermission?: string;
   iosBackgroundMode: boolean;
   androidPermissions: string[];
   androidForegroundService: boolean;
@@ -35,6 +36,16 @@ const withBackgroundAudio: ConfigPlugin = (config) => {
       ),
     ];
 
+    return iosConfig;
+  });
+};
+
+const withIosMicrophonePermission: ConfigPlugin<Options> = (
+  config,
+  { iosMicrophonePermission }
+) => {
+  return withInfoPlist(config, (iosConfig) => {
+    iosConfig.modResults.NSMicrophoneUsageDescription = iosMicrophonePermission;
     return iosConfig;
   });
 };
@@ -88,6 +99,10 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
 
   if (options.androidForegroundService) {
     config = withForegroundService(config, options);
+  }
+
+  if (options.iosMicrophonePermission) {
+    config = withIosMicrophonePermission(config, options);
   }
 
   return config;

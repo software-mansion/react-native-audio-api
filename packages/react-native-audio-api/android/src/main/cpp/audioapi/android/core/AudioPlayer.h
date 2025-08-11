@@ -19,11 +19,13 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
       float sampleRate,
       int channelCount);
 
-  void start();
+  bool start();
   void stop();
-  void resume();
+  bool resume();
   void suspend();
   void cleanup();
+
+  bool isRunning() const;
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,

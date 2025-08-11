@@ -52,13 +52,13 @@ export { default as AudioParam } from './mobile/core/AudioParam';
 export { default as AudioScheduledSourceNode } from './mobile/sources/AudioScheduledSourceNode';
 export { default as BaseAudioContext } from './mobile/core/BaseAudioContext';
 export { default as BiquadFilterNode } from './mobile/effects/BiquadFilterNode';
-export { default as CustomProcessorNode } from './mobile/effects/CustomProcessorNode';
 export { default as GainNode } from './mobile/effects/GainNode';
 export { default as OscillatorNode } from './mobile/sources/OscillatorNode';
 export { default as StereoPannerNode } from './mobile/effects/StereoPannerNode';
 export { default as AudioRecorder } from './mobile/inputs/AudioRecorder';
 export { default as AudioManager } from './mobile/system';
 export { default as useSystemVolume } from './mobile/hooks/useSystemVolume';
+export { default as RecorderAdapterNode } from './mobile/sources/RecorderAdapterNode';
 
 export {
   OscillatorType,

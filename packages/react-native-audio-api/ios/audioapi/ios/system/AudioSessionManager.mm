@@ -205,6 +205,12 @@
   return true;
 }
 
+- (void)markSettingsAsDirty
+{
+  self.hasDirtySettings = true;
+  self.isActive = false;
+}
+
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   if (@available(iOS 17, *)) {

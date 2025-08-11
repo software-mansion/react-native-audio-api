@@ -1,0 +1,64 @@
+
+
+.soundButtonInactive {
+  padding: 15px 16px;
+  background-color: var(--swm-red-light-40);
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+[data-theme='dark'] .soundButtonInactive {
+  background-color: var(--swm-red-dark-140);
+}
+
+.soundButtonActive {
+  padding: 15px 16px;
+  background-color: var(--swm-red-light-80);
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+[data-theme='dark'] .soundButtonActive {
+  background-color: var(--swm-red-dark-100);
+}
+
+.soundButtonDisabled {
+  padding: 15px 16px;
+  background-color: var(--swm-red-light-40);
+  border: none;
+  margin-right: 8px;
+  cursor: not-allowed;
+}
+
+.soundButtonDisabled .soundButtonName {
+  opacity: 0.5;
+}
+
+
+.soundButtonName {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--swm-navy-light-100);
+}
+
+[data-theme='dark'] .soundButtonName {
+  color: var(--swm-white);
+}
+
+
+[data-theme='dark'] .soundButtonActive .soundButtonName {
+  color: var(--swm-navy-dark-100);
+}
+
+
+@media (max-width: 768px) {
+  .soundButtonInactive,
+  .soundButtonActive,
+  .soundButtonDisabled {
+    padding: 15px 12px;
+    margin: 0;
+  }
+}

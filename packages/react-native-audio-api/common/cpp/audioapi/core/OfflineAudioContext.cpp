@@ -116,4 +116,8 @@ void OfflineAudioContext::startRendering(
   renderAudio();
 }
 
+bool OfflineAudioContext::isDriverRunning() const {
+  return true;
+}
+
 } // namespace audioapi

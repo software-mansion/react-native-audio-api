@@ -21,6 +21,7 @@ class AudioContext : public BaseAudioContext {
   bool resume();
   bool suspend();
 
+
  private:
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;
@@ -28,6 +29,8 @@ class AudioContext : public BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
   bool playerHasBeenStarted_;
+
+  bool isDriverRunning() const override;
 
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
 };
