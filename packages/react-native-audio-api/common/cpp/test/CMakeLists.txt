@@ -32,6 +32,11 @@ file(GLOB_RECURSE RNAUDIOAPI_LIBS
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
 )
 
+list(REMOVE_ITEM RNAUDIOAPI_LIBS
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.c"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
+)
+
 add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})
 add_library(rnaudioapi_libs STATIC ${RNAUDIOAPI_LIBS})
 
@@ -51,6 +56,8 @@ add_executable(
   OscillatorTest.cpp
   GainTest.cpp
 )
+
+add_compile_definitions(AUDIO_API_TEST_SUITE)
 
 target_link_libraries(tests
   rnaudioapi
