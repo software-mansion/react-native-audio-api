@@ -33,7 +33,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
-  decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
+  decodeAudioData: (arrayBuffer: Uint8Array) => Promise<IAudioBuffer>;
   decodePCMAudioDataInBase64: (
     b64: string,
     playbackRate: number
