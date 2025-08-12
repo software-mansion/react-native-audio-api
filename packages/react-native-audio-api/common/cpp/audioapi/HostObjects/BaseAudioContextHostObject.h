@@ -14,6 +14,7 @@
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
+#include <audioapi/HostObjects/StreamerNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -42,6 +43,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
     addFunctions(
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -86,6 +88,13 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto oscillatorHostObject =
         std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createStreamer) {
+    auto streamer = context_->createStreamer();
+    auto streamerHostObject =
+        std::make_shared<StreamerNodeHostObject>(streamer);
+    return jsi::Object::createFromHostObject(runtime, streamerHostObject);
   }
 
   JSI_HOST_FUNCTION(createGain) {

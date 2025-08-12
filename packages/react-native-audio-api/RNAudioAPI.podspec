@@ -49,6 +49,10 @@ s.pod_target_xcconfig = {
     #{external_dir}/include
     #{external_dir}/include/opus
     #{external_dir}/include/vorbis
+    #{external_dir}/include/libavcodec
+    #{external_dir}/include/libavformat
+    #{external_dir}/include/libavutil
+    #{external_dir}/include/libswresample
   ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }
@@ -62,6 +66,10 @@ s.user_target_xcconfig = {
     -force_load #{lib_dir}/libvorbis.a
     -force_load #{lib_dir}/libvorbisenc.a
     -force_load #{lib_dir}/libvorbisfile.a
+    -force_load #{lib_dir}/libavcodec.a
+    -force_load #{lib_dir}/libavformat.a
+    -force_load #{lib_dir}/libavutil.a
+    -force_load #{lib_dir}/libswresample.a
   ].join(" ")
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.

@@ -14,6 +14,7 @@ import AudioBuffer from './AudioBuffer';
 import PeriodicWave from './PeriodicWave';
 import AnalyserNode from './AnalyserNode';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
+import StreamerNode from './StreamerNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
@@ -42,6 +43,10 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this, this.context.createOscillator());
+  }
+
+  createStreamer(): StreamerNode {
+    return new StreamerNode(this, this.context.createStreamer());
   }
 
   createGain(): GainNode {

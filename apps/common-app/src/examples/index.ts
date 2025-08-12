@@ -10,6 +10,7 @@ import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
 import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import Streaming from './Streaming/Streaming';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -22,6 +23,7 @@ type NavigationParamList = {
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
+  Streamer: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -95,4 +97,10 @@ export const Examples: Example[] = [
     subtitle: 'Record audio',
     screen: Record,
   },
+  {
+    key: 'Streamer',
+    title: 'Streamer',
+    subtitle: 'Stream audio from a URL',
+    screen: Streaming,
+  }
 ] as const;

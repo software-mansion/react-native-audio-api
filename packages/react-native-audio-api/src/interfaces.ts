@@ -38,6 +38,7 @@ export interface IBaseAudioContext {
     b64: string,
     playbackRate: number
   ) => Promise<IAudioBuffer>;
+  createStreamer: () => IStreamerNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -112,6 +113,12 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   type: OscillatorType;
 
   setPeriodicWave(periodicWave: IPeriodicWave): void;
+}
+
+export interface IStreamerNode extends IAudioNode {
+  initialize(streamPath: string): boolean;
+  startStreaming(): void;
+  stopStreaming(): void;
 }
 
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
