@@ -35,9 +35,8 @@ Pod::Spec.new do |s|
 
   s.compiler_flags = "#{folly_flags}"
 
-external_dir = "$(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external"
-# lib_dir = "$(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external/$(PLATFORM_NAME)"
-lib_dir = "$(SRCROOT)/../../../packages/react-native-audio-api/common/cpp/audioapi/external/$(PLATFORM_NAME)"
+external_dir = File.join(__dir__, "common/cpp/audioapi/external")
+lib_dir = "#{external_dir}/$(PLATFORM_NAME)"
 
 
 s.pod_target_xcconfig = {
