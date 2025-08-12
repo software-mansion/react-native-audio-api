@@ -42,6 +42,23 @@ JsiHostObject::JsiHostObject(JsiHostObject &&other) noexcept {
 #endif
 }
 
+JsiHostObject &JsiHostObject::operator=(JsiHostObject &&other) noexcept {
+  if (this != &other) {
+    getters_ = std::move(other.getters_);
+    functions_ = std::move(other.functions_);
+    setters_ = std::move(other.setters_);
+
+#if JSI_DEBUG_ALLOCATIONS
+    auto it = std::find(objects.begin(), objects.end(), &other);
+    if (it != objects.end()) {
+      objects.erase(it);
+    }
+    objects.push_back(this);
+#endif
+  }
+  return *this;
+}
+
 JsiHostObject::~JsiHostObject() {
 #if JSI_DEBUG_ALLOCATIONS
   auto it = std::find(objects.begin(), objects.end(), this);

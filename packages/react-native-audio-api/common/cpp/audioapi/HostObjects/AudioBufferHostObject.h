@@ -36,6 +36,13 @@ class AudioBufferHostObject : public JsiHostObject {
   AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
       : JsiHostObject(std::move(other)),
         audioBuffer_(std::move(other.audioBuffer_)) {}
+  AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept {
+    if (this != &other) {
+      JsiHostObject::operator=(std::move(other));
+      audioBuffer_ = std::move(other.audioBuffer_);
+    }
+    return *this;
+  }
 
   [[nodiscard]] size_t getSizeInBytes() const {
     return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() *

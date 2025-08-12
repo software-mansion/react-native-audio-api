@@ -51,6 +51,7 @@ class JsiHostObject : public jsi::HostObject {
   JsiHostObject(const JsiHostObject &) = delete;
   JsiHostObject &operator=(const JsiHostObject &) = delete;
   JsiHostObject(JsiHostObject &&) noexcept;
+  JsiHostObject &operator=(JsiHostObject &&other) noexcept;
   ~JsiHostObject() override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
