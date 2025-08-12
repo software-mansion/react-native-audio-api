@@ -28,15 +28,27 @@ JsiHostObject::JsiHostObject() {
 #endif
 }
 
+JsiHostObject::JsiHostObject(JsiHostObject &&other) noexcept {
+  getters_ = std::move(other.getters_);
+  functions_ = std::move(other.functions_);
+  setters_ = std::move(other.setters_);
+
+#if JSI_DEBUG_ALLOCATIONS
+  auto it = std::find(objects.begin(), objects.end(), &other);
+  if (it != objects.end()) {
+    objects.erase(it);
+  }
+  objects.push_back(this);
+#endif
+}
+
 JsiHostObject::~JsiHostObject() {
 #if JSI_DEBUG_ALLOCATIONS
-  for (size_t i = 0; i < objects.size(); ++i) {
-    if (objects.at(i) == this) {
-      objects.erase(objects.begin() + i);
-      break;
-    }
+  auto it = std::find(objects.begin(), objects.end(), this);
+  if (it != objects.end()) {
+    objects.erase(it);
+    objCounter--;
   }
-  objCounter--;
 #endif
 }
 
