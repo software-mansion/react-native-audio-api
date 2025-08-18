@@ -35,10 +35,10 @@
 - (bool)start
 {
   NSLog(@"[AudioPlayer] start");
-  
+
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
-  
+
   // AudioEngine allows us to attach and connect nodes at runtime but with few limitations
   // in this case if it is the first player and recorder started the engine we need to restart.
   // It can be optimized by tracking if we haven't break rules of at runtime modifications from docs

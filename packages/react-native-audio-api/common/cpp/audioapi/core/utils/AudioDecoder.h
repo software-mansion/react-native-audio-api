@@ -29,14 +29,14 @@ class AudioDecoder {
   float sampleRate_;
   int numChannels_ = 2;
 
-  std::vector<int16_t> readAllPcmFrames(
+  static std::vector<int16_t> readAllPcmFrames(
       ma_decoder &decoder,
       int numChannels,
-      ma_uint64 &outFramesRead) const;
-  std::shared_ptr<AudioBus> makeAudioBusFromInt16Buffer(
+      ma_uint64 &outFramesRead);
+  static std::shared_ptr<AudioBus> makeAudioBusFromInt16Buffer(
       const std::vector<int16_t> &buffer,
       int numChannels,
-      float sampleRate) const;
+      float sampleRate);
 
   void changePlaybackSpeedIfNeeded(
       std::vector<int16_t> &buffer,
