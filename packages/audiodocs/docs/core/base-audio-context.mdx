@@ -15,8 +15,8 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 An audio graph is a structured representation of audio processing elements and their connections within an audio context.
 The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
 In general we can distinguish four types of nodes:
-- Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), `OscillatorNode`)
-- Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), `BiquadFilterNode`)
+- Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node))
+- Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), [`BiquadFilterNode`](/docs/effects/biquad-filter-node))
 - Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
 - Destination nodes (e.g `AudioDestinationNode`)
 
@@ -57,12 +57,6 @@ The above method lets you create [`AnalyserNode`](/docs/analysis/analyser-node).
 The above method lets you create [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
-
-### `createBiquadFilter`
-
-The above method lets you create `BiquadFilterNode`.
-
-#### Returns `BiquadFilterNode`.
 
 ### `createBuffer`
 
@@ -114,7 +108,7 @@ The above method lets you create [`OscillatorNode`](/docs/sources/oscillator-nod
 
 ### `createPeriodicWave`
 
-The above method lets you create `PeriodicWave`.
+The above method lets you create [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -132,15 +126,15 @@ The above method lets you create `PeriodicWave`.
 
 ### `createStereoPanner`
 
-The above method lets you create `StereoPannerNode`.
+The above method lets you create [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
-#### Returns [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+#### Returns `StereoPannerNode`.
 
 ### `createBiquadFilter`
 
-The above method lets you create `BiquadFilterNode`.
+The above method lets you create [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
-#### Returns [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
+#### Returns `BiquadFilterNode`.
 
 :::caution
 Supported file formats:
