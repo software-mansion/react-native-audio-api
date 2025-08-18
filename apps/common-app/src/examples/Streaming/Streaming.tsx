@@ -8,7 +8,7 @@ import {
 import { Container, Button } from '../../components';
 import { View } from 'react-native';
 
-const SAMPLE_RATE = 16000;
+const SAMPLE_RATE = 44100;
 
 const Streaming: FC = () => {
   const streamerRef = useRef<StreamerNode | null>(null);
