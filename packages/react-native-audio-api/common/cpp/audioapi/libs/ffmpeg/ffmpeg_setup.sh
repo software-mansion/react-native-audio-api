@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-SOURCE_DIR="/path/to/your/ffmpeg/source"  # Change this to your FFmpeg source directory
+SOURCE_DIR="/Users/michal/FFmpeg"  # Change this to your FFmpeg source directory
 if [ ! -d "${SOURCE_DIR}" ]; then
     echo "FFmpeg source directory does not exist: ${SOURCE_DIR}"
     exit 1
@@ -49,6 +49,7 @@ COMMON_CONFIG="
 --enable-decoder=aac
 --enable-decoder=mp3
 --enable-decoder=flac
+--enable-protocol=udp
 "
 
 # Function to build for a specific architecture
@@ -129,7 +130,7 @@ make distclean 2>/dev/null || true
 cd - > /dev/null
 
 # iOS Architectures
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "$OSTYPE" != "darwin"* ]]; then
     echo "Building for iOS architectures..."
     
     # iOS SDK paths
@@ -201,24 +202,27 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
         OPENSSL_PREBUILT_FOLDER="$(pwd)/openssl-prebuilt"
         if [ ! -d "$OPENSSL_PREBUILT_FOLDER" ]; then
             echo "Cloning and building OpenSSL for Android..."
-            git clone https://github.com/openssl/openssl.git
+            if [ ! -d "openssl" ]; then
+                git clone https://github.com/openssl/openssl.git
+            fi
             cd openssl
             export ANDROID_NDK_ROOT=${NDK_PATH}
             PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/darwin-x86_64/bin:$PATH
             mkdir -p "${OPENSSL_PREBUILT_FOLDER}/include"
-            cp -r include/crypto include/openssl "${OPENSSL_PREBUILT_FOLDER}/include"
 
             # arm64-v8a
             ./Configure android-arm64 no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
             make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
             mkdir -p ${OPENSSL_PREBUILT_FOLDER}/arm64-v8a && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/arm64-v8a"
+            cp -r include/crypto include/openssl "${OPENSSL_PREBUILT_FOLDER}/include"
             make clean
 
             # armeabi-v7a
             ./Configure android-arm no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
             make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
             mkdir -p ${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a"
-            make clean && cd .. && rm -rf openssl
+            make clean 
+            cd .. && rm -rf openssl
         fi
         
         # ARM64-v8a
@@ -253,6 +257,8 @@ echo "=============="
 find "${OUTPUT_DIR}" -name "*.a" | while read -r lib; do
     echo "Built: $lib"
 done
+
+rm -rf "${BUILD_DIR}"
 
 echo ""
 echo "All builds completed!"

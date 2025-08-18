@@ -7,9 +7,12 @@ set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
 set(ARCH_LIB_DIR ${EXTERNAL_DIR}/${ANDROID_ABI})
 set(INCLUDE_DIR ${EXTERNAL_DIR}/include)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
+
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
-foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile)
+foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile avcodec avformat avutil swresample crypto ssl)
   add_library(${lib} STATIC IMPORTED)
   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${ARCH_LIB_DIR}/lib${lib}.a)
 endforeach()
@@ -26,6 +29,12 @@ target_include_directories(
   "${INCLUDE_DIR}"
   "${INCLUDE_DIR}/opus"
   "${INCLUDE_DIR}/vorbis"
+  "${INCLUDE_DIR}/openssl"
+  "${INCLUDE_DIR}/crypto"
+  "${INCLUDE_DIR}/libavcodec"
+  "${INCLUDE_DIR}/libavformat"
+  "${INCLUDE_DIR}/libavutil"
+  "${INCLUDE_DIR}/libswresample"
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
@@ -61,4 +70,11 @@ target_link_libraries(react-native-audio-api
   vorbis
   vorbisenc
   vorbisfile
+  avcodec
+  avformat
+  avutil
+  swresample
+  crypto
+  ssl
+  z
 )
