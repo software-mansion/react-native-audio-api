@@ -3119,29 +3119,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native/eslint-config@npm:0.76.5":
-  version: 0.76.5
-  resolution: "@react-native/eslint-config@npm:0.76.5"
-  dependencies:
-    "@babel/core": "npm:^7.25.2"
-    "@babel/eslint-parser": "npm:^7.25.1"
-    "@react-native/eslint-plugin": "npm:0.76.5"
-    "@typescript-eslint/eslint-plugin": "npm:^7.1.1"
-    "@typescript-eslint/parser": "npm:^7.1.1"
-    eslint-config-prettier: "npm:^8.5.0"
-    eslint-plugin-eslint-comments: "npm:^3.2.0"
-    eslint-plugin-ft-flow: "npm:^2.0.1"
-    eslint-plugin-jest: "npm:^27.9.0"
-    eslint-plugin-react: "npm:^7.30.1"
-    eslint-plugin-react-hooks: "npm:^4.6.0"
-    eslint-plugin-react-native: "npm:^4.0.0"
-  peerDependencies:
-    eslint: ">=8"
-    prettier: ">=2"
-  checksum: 10/28fff6184fa3e015df9ae86a10a6cd3d563b2440112b1cd0b6ea201a42a9f88407b7b7c61b3ee08b2eb633dcdf8cf43ef58b7472782e84771be9070f176d9082
-  languageName: node
-  linkType: hard
-
 "@react-native/eslint-config@npm:0.81.0":
   version: 0.81.0
   resolution: "@react-native/eslint-config@npm:0.81.0"
@@ -3162,13 +3139,6 @@ __metadata:
     eslint: ">=8"
     prettier: ">=2"
   checksum: 10/bc8eaf5e35399b48d870c09a56aaa800510b958d9f100e13dedf4ef386dcf6d48f88039332168456cd5b70754987c5fa332da2b46c88feb7a98d988b7b54e4b4
-  languageName: node
-  linkType: hard
-
-"@react-native/eslint-plugin@npm:0.76.5":
-  version: 0.76.5
-  resolution: "@react-native/eslint-plugin@npm:0.76.5"
-  checksum: 10/0418f5d5b02db80b1a2a193dafd0f01f9c8176488325b6e1d23318df8b374992142417724e52ac802a60a8bc92622d982a407dcb71d3f85922576c234194414f
   languageName: node
   linkType: hard
 
@@ -10981,7 +10951,7 @@ __metadata:
   dependencies:
     "@commitlint/config-conventional": "npm:^17.0.2"
     "@evilmartians/lefthook": "npm:^1.5.0"
-    "@react-native/eslint-config": "npm:0.76.5"
+    "@react-native/eslint-config": "npm:0.81.0"
     "@types/raf": "npm:^3.4.3"
     commitlint: "npm:^17.0.2"
     eslint: "npm:^8.57.0"
