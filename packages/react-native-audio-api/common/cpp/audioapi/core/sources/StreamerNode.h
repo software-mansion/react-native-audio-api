@@ -27,7 +27,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   explicit StreamerNode(BaseAudioContext *context);
   ~StreamerNode() override;
 
-  // @brief Initialize all necessary ffmpeg components for streaming audio
+  /** 
+   * @brief Initialize all necessary ffmpeg components for streaming audio 
+  */
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
 
@@ -49,42 +51,54 @@ class StreamerNode : public AudioScheduledSourceNode {
   size_t maxBufferSize_; // maximum size of the buffered bus
   int audio_stream_index_; // index of the audio stream channel in the input
   SwrContext* swrCtx_;
-  uint8_t** resampledData_;
+  uint8_t** resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
   int maxResampledSamples_;
   std::mutex mutex_;
   std::thread streamingThread_;
   std::atomic<bool> streamFlag; // Flag to control the streaming thread
 
-  // @brief Setting up the resampler
-  // @return true if successful, false otherwise
+  /** 
+   * @brief Setting up the resampler
+   * @return true if successful, false otherwise
+   */
   bool setupResampler();
 
-  // @brief Resample the audio frame, change its sample format and channel layout
-  // @param frame The AVFrame to resample
-  // @return true if successful, false otherwise
+  /** 
+   * @brief Resample the audio frame, change its sample format and channel layout
+   * @param frame The AVFrame to resample
+   * @return true if successful, false otherwise
+   */
   bool processFrameWithResampler(AVFrame* frame);
 
-  // @brief Thread function to continuously read and process audio frames
-  // @details This function runs in a separate thread to avoid blocking the main audio processing thread
-  // @note It will read frames from the input stream, resample them, and store them in the buffered bus
-  // @note The thread will stop when streamFlag is set to false
+  /**
+   * @brief Thread function to continuously read and process audio frames
+   * @details This function runs in a separate thread to avoid blocking the main audio processing thread
+   * @note It will read frames from the input stream, resample them, and store them in the buffered bus
+   * @note The thread will stop when streamFlag is set to false
+   */
   void streamAudio();
 
-  // @brief Clean up resources
+  /** @brief Clean up resources */
   void cleanup();
 
-  // @brief Open the input stream
-  // @param inputUrl The URL of the input stream
-  // @return true if successful, false otherwise
-  // @note This function initializes the FFmpeg libraries and opens the input stream
+  /**
+   * @brief Open the input stream
+   * @param input_url The URL of the input stream
+   * @return true if successful, false otherwise
+   * @note This function initializes the FFmpeg libraries and opens the input stream
+   */
   bool openInput(const std::string& inputUrl);
 
-  // @brief Find the audio stream channel in the input
-  // @return true if audio stream was found, false otherwise
+  /** 
+   * @brief Find the audio stream channel in the input
+   * @return true if audio stream was found, false otherwise
+   */
   bool findAudioStream();
 
-  // @brief Set up the decoder for the audio stream
-  // @return true if successful, false otherwise
+  /** 
+   * @brief Set up the decoder for the audio stream
+   * @return true if successful, false otherwise
+   */
   bool setupDecoder();
   #endif // AUDIO_API_TEST_SUITE
 };
