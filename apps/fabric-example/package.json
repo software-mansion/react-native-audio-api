@@ -12,15 +12,13 @@
   "dependencies": {
     "common-app": "workspace:*",
     "react": "19.1.0",
-    "react-native": "0.80.0"
+    "react-native": "0.81.0"
   },
   "devDependencies": {
-    "@react-native-community/cli": "19.0.0",
-    "@react-native-community/cli-platform-android": "19.0.0",
-    "@react-native-community/cli-platform-ios": "19.0.0"
+    "prettier": "^3.3.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.13.0"
   },
   "reactNativeVectorIcons": {
     "fontDir": "./assets/fonts"

@@ -100,5 +100,6 @@ module.exports = {
     'jest/prefer-to-have-length': 'warn',
     'jest/valid-expect': 'error',
     'react/react-in-jsx-scope': 'off',
+    'import/no-duplicates': 'warn', // Avoid issues in native component specs since 0.81
   },
 };

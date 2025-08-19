@@ -72,8 +72,11 @@ void AudioNodeManager::settlePendingConnections() {
       assert(to != nullptr);
       from->disconnectNode(to);
     } else {
-      for (auto &node : from->outputNodes_) {
-        from->disconnectNode(node);
+      for (auto it = from->outputNodes_.begin();
+           it != from->outputNodes_.end();) {
+        auto next = std::next(it);
+        from->disconnectNode(*it);
+        it = next;
       }
     }
   }

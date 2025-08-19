@@ -10,11 +10,11 @@
 #include <utility>
 #include <vector>
 
-#define JSI_HOST_FUNCTION(NAME)  \
-  jsi::Value NAME(               \
-      jsi::Runtime &runtime,     \
+#define JSI_HOST_FUNCTION(NAME)    \
+  jsi::Value NAME(                 \
+      jsi::Runtime &runtime,       \
       const jsi::Value &thisValue, \
-      const jsi::Value *args,    \
+      const jsi::Value *args,      \
       size_t count)
 
 #define JSI_EXPORT_FUNCTION(CLASS, FUNCTION)                                \
@@ -48,6 +48,10 @@ using namespace facebook;
 class JsiHostObject : public jsi::HostObject {
  public:
   JsiHostObject();
+  JsiHostObject(const JsiHostObject &) = delete;
+  JsiHostObject &operator=(const JsiHostObject &) = delete;
+  JsiHostObject(JsiHostObject &&) noexcept;
+  JsiHostObject &operator=(JsiHostObject &&other) noexcept;
   ~JsiHostObject() override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;

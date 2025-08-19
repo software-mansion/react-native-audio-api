@@ -17,20 +17,19 @@ namespace audioapi {
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
 std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int numChannels, ma_uint64 &outFramesRead)
-    const
 {
   std::vector<int16_t> buffer;
-  int16_t temp[CHUNK_SIZE * numChannels];
+  std::vector<int16_t> temp(CHUNK_SIZE * numChannels);
   outFramesRead = 0;
 
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
-    ma_decoder_read_pcm_frames(&decoder, temp, CHUNK_SIZE, &tempFramesDecoded);
+    ma_decoder_read_pcm_frames(&decoder, temp.data(), CHUNK_SIZE, &tempFramesDecoded);
     if (tempFramesDecoded == 0) {
       break;
     }
 
-    buffer.insert(buffer.end(), temp, temp + tempFramesDecoded * numChannels);
+    buffer.insert(buffer.end(), temp.data(), temp.data() + tempFramesDecoded * numChannels);
     outFramesRead += tempFramesDecoded;
   }
 
@@ -38,7 +37,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int num
 }
 
 std::shared_ptr<AudioBus>
-AudioDecoder::makeAudioBusFromInt16Buffer(const std::vector<int16_t> &buffer, int numChannels, float sampleRate) const
+AudioDecoder::makeAudioBusFromInt16Buffer(const std::vector<int16_t> &buffer, int numChannels, float sampleRate)
 {
   auto outputFrames = buffer.size() / numChannels;
   auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels, sampleRate);

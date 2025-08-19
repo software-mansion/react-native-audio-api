@@ -20,19 +20,23 @@ namespace audioapi {
 std::vector<int16_t> AudioDecoder::readAllPcmFrames(
     ma_decoder &decoder,
     int numChannels,
-    ma_uint64 &outFramesRead) const {
+    ma_uint64 &outFramesRead) {
   std::vector<int16_t> buffer;
-  int16_t temp[CHUNK_SIZE * numChannels];
+  std::vector<int16_t> temp(CHUNK_SIZE * numChannels);
   outFramesRead = 0;
 
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
-    ma_decoder_read_pcm_frames(&decoder, temp, CHUNK_SIZE, &tempFramesDecoded);
+    ma_decoder_read_pcm_frames(
+        &decoder, temp.data(), CHUNK_SIZE, &tempFramesDecoded);
     if (tempFramesDecoded == 0) {
       break;
     }
 
-    buffer.insert(buffer.end(), temp, temp + tempFramesDecoded * numChannels);
+    buffer.insert(
+        buffer.end(),
+        temp.data(),
+        temp.data() + tempFramesDecoded * numChannels);
     outFramesRead += tempFramesDecoded;
   }
 
@@ -42,7 +46,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(
 std::shared_ptr<AudioBus> AudioDecoder::makeAudioBusFromInt16Buffer(
     const std::vector<int16_t> &buffer,
     int numChannels,
-    float sampleRate) const {
+    float sampleRate) {
   auto outputFrames = buffer.size() / numChannels;
   auto audioBus =
       std::make_shared<AudioBus>(outputFrames, numChannels, sampleRate);
