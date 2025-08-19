@@ -94,7 +94,9 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto streamer = context_->createStreamer();
     auto streamerHostObject =
         std::make_shared<StreamerNodeHostObject>(streamer);
-    return jsi::Object::createFromHostObject(runtime, streamerHostObject);
+    auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
+    object.setExternalMemoryPressure(runtime, 4000000); // streamer node uses roughly 4MB of memory
+    return object;
   }
 
   JSI_HOST_FUNCTION(createGain) {

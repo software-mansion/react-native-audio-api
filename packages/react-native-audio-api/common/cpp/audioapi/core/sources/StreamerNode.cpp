@@ -9,7 +9,6 @@
 namespace audioapi {
 StreamerNode::StreamerNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context),
-      streamPath_(""),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
       decoder_(nullptr),
@@ -64,14 +63,19 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   maxBufferSize_ = 5 * codecCtx_->sample_rate;
-  // if decoding is faster than playing, we buffer 5 seconds of audio
+  // If decoding is faster than playing, we buffer 5 seconds of audio
   bufferedBus_ = std::make_shared<AudioBus>(
       maxBufferSize_, codecpar_->ch_layout.nb_channels, codecCtx_->sample_rate);
 
-  thread_ = std::thread(&StreamerNode::streamAudio, this);
+  streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
   streamFlag.store(true);
   isInitialized_ = true;
   return true;
+}
+
+void StreamerNode::stop(double when) {
+  AudioScheduledSourceNode::stop(when);
+  streamFlag.store(false);
 }
 
 bool StreamerNode::setupResampler() {
@@ -99,7 +103,7 @@ bool StreamerNode::setupResampler() {
   }
 
   // Allocate output buffer for resampled data
-  maxResampledSamples_ = 8192; // Start with reasonable buffer size
+  maxResampledSamples_ = 8192;
   int ret = av_samples_alloc_array_and_samples(
       &resampledData_,
       nullptr,
@@ -153,16 +157,16 @@ void StreamerNode::streamAudio() {
         return;
       }
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }
 
 void StreamerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // TODO: BETTER HANDLING STOPPING
-  if (playbackState_ == PlaybackState::FINISHED) {
-    return;
-  }
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
   // If we have enough buffered data, copy to output bus
   if (bufferedBusIndex_ >= framesToProcess) {
     Locker locker(mutex_);
@@ -170,14 +174,14 @@ void StreamerNode::processNode(
       memcpy(
           processingBus->getChannel(ch)->getData(),
           bufferedBus_->getChannel(ch)->getData(),
-          framesToProcess * sizeof(float));
+          offsetLength * sizeof(float));
 
       memmove(
           bufferedBus_->getChannel(ch)->getData(),
-          bufferedBus_->getChannel(ch)->getData() + framesToProcess,
-          (maxBufferSize_ - framesToProcess) * sizeof(float));
+          bufferedBus_->getChannel(ch)->getData() + offsetLength,
+          (maxBufferSize_ - offsetLength) * sizeof(float));
     }
-    bufferedBusIndex_ -= framesToProcess;
+    bufferedBusIndex_ -= offsetLength;
   }
 }
 
@@ -303,9 +307,8 @@ bool StreamerNode::setupDecoder() {
 }
 
 void StreamerNode::cleanup() {
-  // Clean up resampler
   streamFlag.store(false);
-  thread_.join();
+  streamingThread_.join();
   if (swrCtx_) {
     swr_free(&swrCtx_);
   }
@@ -336,28 +339,5 @@ void StreamerNode::cleanup() {
   decoder_ = nullptr;
   codecpar_ = nullptr;
   maxResampledSamples_ = 0;
-}
-
-void StreamerNode::startStreaming() {
-  if (!isInitialized_) {
-    std::cerr << "StreamerNode is not initialized" << std::endl;
-    return;
-  }
-
-  if (playbackState_ == PlaybackState::PLAYING) {
-    std::cerr << "StreamerNode is already playing" << std::endl;
-    return;
-  }
-}
-
-void StreamerNode::stopStreaming() {
-  if (playbackState_ == PlaybackState::UNSCHEDULED ||
-      playbackState_ == PlaybackState::FINISHED) {
-    std::cerr << "StreamerNode is not playing" << std::endl;
-    return;
-  }
-  playbackState_ = PlaybackState::FINISHED;
-
-  cleanup();
 }
 } // namespace audioapi

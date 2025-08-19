@@ -19,7 +19,6 @@ const Streaming: FC = () => {
     const actx = new AudioContext({ sampleRate: SAMPLE_RATE });
     aCtxRef.current = actx;
     gainRef.current = actx.createGain();
-    streamerRef.current = actx.createStreamer();
     return () => {
       aCtxRef.current?.close();
       streamerRef.current?.stop();
@@ -27,8 +26,12 @@ const Streaming: FC = () => {
   }, []);
 
   const startStreaming = () => {
-    if (!aCtxRef.current || !gainRef.current || !streamerRef.current) {
+    if (!aCtxRef.current || !gainRef.current) {
       console.error('AudioContext or gain or streamer is not initialized');
+      return;
+    }
+    if (streamerRef.current) {
+      console.error('StreamerNode is already initialized');
       return;
     }
     streamerRef.current = aCtxRef.current.createStreamer();
@@ -36,16 +39,13 @@ const Streaming: FC = () => {
     streamerRef.current.initialize('https://stream.radioparadise.com/aac-320');
     streamerRef.current.connect(gainRef.current);
     gainRef.current.connect(aCtxRef.current.destination);
-    streamerRef.current.startStreaming();
     streamerRef.current.start(aCtxRef.current.currentTime);
   };
 
   const stopStreaming = () => {
     if (streamerRef.current) {
-      streamerRef.current.stop(aCtxRef.current?.currentTime);
-      // streamerRef.current.stopStreaming();
-      streamerRef.current.disconnect(gainRef.current!);
-      console.log('Streaming stopped');
+      streamerRef.current.stop(aCtxRef.current!.currentTime);
+      streamerRef.current = null;
     } else {
       console.error('StreamerNode is not initialized');
     }

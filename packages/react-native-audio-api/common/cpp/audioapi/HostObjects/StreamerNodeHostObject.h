@@ -17,9 +17,7 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
   explicit StreamerNodeHostObject(
           const std::shared_ptr<StreamerNode> &node)
       : AudioScheduledSourceNodeHostObject(node) {
-    addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize),
-                 JSI_EXPORT_FUNCTION(StreamerNodeHostObject, startStreaming),
-                 JSI_EXPORT_FUNCTION(StreamerNodeHostObject, stopStreaming));
+    addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize));
   }
 
   JSI_HOST_FUNCTION(initialize) {
@@ -27,18 +25,6 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
     auto path = args[0].getString(runtime).utf8(runtime);
     auto result = streamerNode->initialize(path);
     return jsi::Value(result);
-  }
-
-  JSI_HOST_FUNCTION(startStreaming) {
-    auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
-    streamerNode->startStreaming();
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(stopStreaming) {
-    auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
-    streamerNode->stopStreaming();
-    return jsi::Value::undefined();
   }
 };
 } // namespace audioapi
