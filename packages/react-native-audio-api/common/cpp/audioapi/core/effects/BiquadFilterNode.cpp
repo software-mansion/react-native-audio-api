@@ -77,6 +77,8 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const int length) {
+  applyFilter();
+
   // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
@@ -91,7 +93,7 @@ void BiquadFilterNode::getFrequencyResponse(
       continue;
     }
 
-    auto omega = -PI * frequencyArray[i];
+    auto omega = -PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
@@ -156,7 +158,7 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
   float theta = PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
   float cosW = std::cos(theta);
-  float beta = (1 - cosW) / 2;
+  float beta = (1 + cosW) / 2;
 
   setNormalizedCoefficients(
       beta, -2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
@@ -365,13 +367,15 @@ void BiquadFilterNode::processNode(
   float a1 = a1_;
   float a2 = a2_;
 
+  float x1, x2, y1, y2;
+
   for (int c = 0; c < numChannels; ++c) {
     auto channelData = processingBus->getChannel(c)->getData();
 
-    float x1 = 0.0f;
-    float x2 = 0.0f;
-    float y1 = 0.0f;
-    float y2 = 0.0f;
+    x1 = x1_;
+    x2 = x2_;
+    y1 = y1_;
+    y2 = y2_;
 
     for (int i = 0; i < framesToProcess; ++i) {
       float input = channelData[i];
@@ -385,6 +389,10 @@ void BiquadFilterNode::processNode(
       y1 = output;
     }
   }
+  x1_ = x1;
+  x2_ = x2;
+  y1_ = y1;
+  y2_ = y2;
 }
 
 } // namespace audioapi

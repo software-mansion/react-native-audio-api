@@ -54,7 +54,7 @@ class BiquadFilterNode : public AudioNode {
   float b0_ = 1.0;
   float b1_ = 0;
   float b2_ = 0;
-  float a1_ = 1.0;
+  float a1_ = 0;
   float a2_ = 0;
 
   static BiquadFilterType fromString(const std::string &type) {
