@@ -2,6 +2,7 @@
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 
+#ifndef AUDIO_API_TEST_SUITE
 extern "C" {
   #include <libavformat/avformat.h>
   #include <libavcodec/avcodec.h>
@@ -10,6 +11,7 @@ extern "C" {
   #include <libavutil/opt.h>
   #include <libswresample/swresample.h>
 }
+#endif
 
 #include <cmath>
 #include <memory>
@@ -24,6 +26,8 @@ class StreamerNode : public AudioScheduledSourceNode {
  public:
   explicit StreamerNode(BaseAudioContext *context);
   ~StreamerNode() override;
+
+  // @brief Initialize all necessary ffmpeg components for streaming audio
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
 
@@ -31,6 +35,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
+  #ifndef AUDIO_API_TEST_SUITE
   AVFormatContext* fmtCtx_;
   AVCodecContext* codecCtx_;
   const AVCodec* decoder_;
@@ -81,5 +86,6 @@ class StreamerNode : public AudioScheduledSourceNode {
   // @brief Set up the decoder for the audio stream
   // @return true if successful, false otherwise
   bool setupDecoder();
+  #endif // AUDIO_API_TEST_SUITE
 };
 } // namespace audioapi

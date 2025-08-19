@@ -70,11 +70,13 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   return oscillator;
 }
 
+#ifndef AUDIO_API_TEST_SUITE
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
   auto streamer = std::make_shared<StreamerNode>(this);
   nodeManager_->addSourceNode(streamer);
   return streamer;
 }
+#endif
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
   auto gain = std::make_shared<GainNode>(this);

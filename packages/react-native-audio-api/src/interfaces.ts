@@ -117,8 +117,6 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 
 export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
-  startStreaming(): void;
-  stopStreaming(): void;
 }
 
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
