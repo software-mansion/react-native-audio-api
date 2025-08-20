@@ -61,8 +61,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  maxBufferSize_ = 5 * codecCtx_->sample_rate;
-  // If decoding is faster than playing, we buffer 5 seconds of audio
+  maxBufferSize_ = BUFFER_LENGTH_SECONDS * codecCtx_->sample_rate;
+  // If decoding is faster than playing, we buffer few seconds of audio
   bufferedBus_ = std::make_shared<AudioBus>(
       maxBufferSize_, codecpar_->ch_layout.nb_channels, codecCtx_->sample_rate);
 
@@ -102,7 +102,7 @@ bool StreamerNode::setupResampler() {
   }
 
   // Allocate output buffer for resampled data
-  maxResampledSamples_ = 8192;
+  maxResampledSamples_ = INITIAL_MAX_RESAMPLED_SAMPLES;
   int ret = av_samples_alloc_array_and_samples(
       &resampledData_,
       nullptr,

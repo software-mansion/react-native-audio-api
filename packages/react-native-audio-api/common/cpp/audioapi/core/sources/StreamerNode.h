@@ -55,6 +55,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   std::mutex mutex_;
   std::thread streamingThread_;
   std::atomic<bool> streamFlag; // Flag to control the streaming thread
+  static constexpr float BUFFER_LENGTH_SECONDS = 5.0f; // Length of the buffer in seconds
+  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
 
   /**
    * @brief Setting up the resampler
