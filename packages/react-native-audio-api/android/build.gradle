@@ -1,6 +1,5 @@
 import com.android.Version
 import org.apache.tools.ant.taskdefs.condition.Os
-import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
 buildscript {
   repositories {
@@ -230,8 +229,36 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
     }
 }
 
+def staticLibConfig = [
+  baseUrl: 'https://raw.githubusercontent.com/mdydek/react-native-audio-api-prebuilt-libs/main/android',
+  libNames: ['avcodec', 'avformat', 'avutil', 'swresample', 'crypto', 'ssl', 'ogg', 'opus', 'opusfile', 'vorbis', 'vorbisenc', 'vorbisfile'],
+  targetDir: "${projectDir}/src/main/cpp/audioapi/prebuilt_libs"
+]
+
+task downloadStaticPrebuiltLibraries {
+    def buildAbis = reactNativeArchitectures()
+    buildAbis.each { abi ->
+      staticLibConfig.libNames.each { lib ->
+        def libUrl = "${staticLibConfig.baseUrl}/${abi}/lib${lib}.a"
+        def targetFile = file("${staticLibConfig.targetDir}/${abi}/lib${lib}.a")
+        targetFile.parentFile.mkdirs()
+        if (!targetFile.exists()) {
+          println "Downloading ${abi} static library: lib${lib}.a"
+          new URL(libUrl).withInputStream { input ->
+            targetFile.withOutputStream { output ->
+              output << input
+            }
+          }
+          println "Downloaded: ${targetFile.absolutePath}"
+        }
+    }
+  }
+}
+
+// Make preBuild depend on the download task
 tasks.preBuild {
     dependsOn assertMinimalReactNativeVersion
+    dependsOn downloadStaticPrebuiltLibraries
 }
 
 task cleanCmakeCache() {

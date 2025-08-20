@@ -203,15 +203,15 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
             mkdir -p ${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a"
             make clean
 
-            # ./Configure android-x86 no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
-            # make -j10
-            # mkdir -p ${OPENSSL_PREBUILT_FOLDER}/x86 && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/x86"
-            # make clean
+            ./Configure android-x86 no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
+            make -j10
+            mkdir -p ${OPENSSL_PREBUILT_FOLDER}/x86 && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/x86"
+            make clean
 
-            # ./Configure android-x86_64 no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
-            # make -j10
-            # mkdir -p ${OPENSSL_PREBUILT_FOLDER}/x86_64 && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/x86_64"
-            # make clean
+            ./Configure android-x86_64 no-shared no-asm -D__ANDROID_API__=${API_LEVEL}
+            make -j10
+            mkdir -p ${OPENSSL_PREBUILT_FOLDER}/x86_64 && cp libcrypto.a libssl.a "${OPENSSL_PREBUILT_FOLDER}/x86_64"
+            make clean
 
             cd .. && rm -rf openssl
         fi
@@ -236,26 +236,26 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
 
         rm -rf ${OUTPUT_DIR}/android/armv7a/share
 
-        # # x86
-        # build_arch "x86" "linux" \
-        #     "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang" \
-        #     "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang++" \
-        #     "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
-        #     "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL}" \
-        #     "--enable-openssl --extra-libs=-lz"
+        # x86
+        build_arch "x86" "linux" \
+            "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang" \
+            "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang++" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL}" \
+            "--enable-openssl --extra-libs=-lz"
 
-        # rm -rf ${OUTPUT_DIR}/android/x86/share
+        rm -rf ${OUTPUT_DIR}/android/x86/share
 
 
-        # # x86_64
-        # build_arch "x86_64" "linux" \
-        #     "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang" \
-        #     "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang++" \
-        #     "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
-        #     "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL}" \
-        #     "--enable-openssl --extra-libs=-lz"
+        # x86_64
+        build_arch "x86_64" "linux" \
+            "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang" \
+            "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang++" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL}" \
+            "--enable-openssl --extra-libs=-lz"
 
-        # rm -rf ${OUTPUT_DIR}/android/x86_64/share
+        rm -rf ${OUTPUT_DIR}/android/x86_64/share
 
         
         echo "Android builds completed!"

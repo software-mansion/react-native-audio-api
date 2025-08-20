@@ -3,9 +3,7 @@ cmake_minimum_required(VERSION 3.12.0)
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
-set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
-set(ARCH_LIB_DIR ${EXTERNAL_DIR}/${ANDROID_ABI})
-set(INCLUDE_DIR ${EXTERNAL_DIR}/include)
+set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
@@ -14,7 +12,7 @@ add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SO
 
 foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile avcodec avformat avutil swresample crypto ssl)
   add_library(${lib} STATIC IMPORTED)
-  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${ARCH_LIB_DIR}/lib${lib}.a)
+  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${ANDROID_CPP_DIR}/audioapi/prebuilt_libs/${ANDROID_ABI}/lib${lib}.a)
 endforeach()
 
 find_package(ReactAndroid REQUIRED CONFIG)
