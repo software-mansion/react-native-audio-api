@@ -230,28 +230,59 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 }
 
 def staticLibConfig = [
-  baseUrl: 'https://raw.githubusercontent.com/mdydek/react-native-audio-api-prebuilt-libs/main/android',
+  baseUrl: 'https://raw.githubusercontent.com/mdydek/react-native-audio-api-prebuilt-libs/main',
   libNames: ['avcodec', 'avformat', 'avutil', 'swresample', 'crypto', 'ssl', 'ogg', 'opus', 'opusfile', 'vorbis', 'vorbisenc', 'vorbisfile'],
-  targetDir: "${projectDir}/src/main/cpp/audioapi/prebuilt_libs"
+  targetDir: "${projectDir}/../common/cpp/audioapi/external"
 ]
 
 task downloadStaticPrebuiltLibraries {
     def buildAbis = reactNativeArchitectures()
     buildAbis.each { abi ->
       staticLibConfig.libNames.each { lib ->
-        def libUrl = "${staticLibConfig.baseUrl}/${abi}/lib${lib}.a"
+        def libUrl = "${staticLibConfig.baseUrl}/android/${abi}/lib${lib}.a"
         def targetFile = file("${staticLibConfig.targetDir}/${abi}/lib${lib}.a")
         targetFile.parentFile.mkdirs()
         if (!targetFile.exists()) {
-          println "Downloading ${abi} static library: lib${lib}.a"
+          println "Downloading: ${abi} lib${lib}.a"
           new URL(libUrl).withInputStream { input ->
             targetFile.withOutputStream { output ->
               output << input
             }
           }
-          println "Downloaded: ${targetFile.absolutePath}"
         }
     }
+  }
+
+  //download include folder
+  def includeUrl = "${staticLibConfig.baseUrl}/include.zip"
+  def targetIncludeDir = file("${projectDir}/../common/cpp/audioapi/external/include")
+  def parentDir = file(staticLibConfig['targetDir'])
+
+  if (!targetIncludeDir.exists() || targetIncludeDir.listFiles().length == 0) {
+    println "Downloading include folder from: ${includeUrl}"
+
+    def tempZipFile = file("${parentDir}/temp_include.zip")
+    new URL(includeUrl).withInputStream { input ->
+      tempZipFile.withOutputStream { output ->
+        output << input
+      }
+    }
+
+    copy {
+      from zipTree(tempZipFile)
+      into file("${targetIncludeDir}/..")
+    }
+
+    def macosxDir = file("${targetIncludeDir}/__MACOSX")
+    if (macosxDir.exists()) {
+      delete macosxDir
+    }
+
+    delete tempZipFile
+
+    println "Downloaded and extracted include folder to: ${targetIncludeDir.absolutePath}"
+  } else {
+    println "Include folder already exists: ${targetIncludeDir.absolutePath}"
   }
 }
 

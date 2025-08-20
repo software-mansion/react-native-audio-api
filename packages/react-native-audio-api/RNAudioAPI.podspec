@@ -35,6 +35,10 @@ Pod::Spec.new do |s|
 
   s.compiler_flags = "#{folly_flags}"
 
+  s.prepare_command = <<-CMD
+    ruby -r './scripts/download_audioapi_libs.rb'
+  CMD
+
 external_dir = File.join(__dir__, "common/cpp/audioapi/external")
 lib_dir = "#{external_dir}/$(PLATFORM_NAME)"
 
@@ -76,5 +80,3 @@ s.user_target_xcconfig = {
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   install_modules_dependencies(s)
 end
-
-
