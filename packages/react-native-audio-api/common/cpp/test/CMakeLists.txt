@@ -32,7 +32,7 @@ list(REMOVE_ITEM RNAUDIOAPI_SRC
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
   CONFIGURE_DEPENDS
-"${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
 )
 

@@ -55,8 +55,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
   pkt_ = av_packet_alloc();
   frame_ = av_frame_alloc();
 
-  if (!pkt_ || !frame_) {
-    std::cerr << "Could not allocate packet or frame" << std::endl;
+  if (pkt_ == nullptr || frame_ == nullptr) {
     cleanup();
     return false;
   }
@@ -80,8 +79,7 @@ void StreamerNode::stop(double when) {
 bool StreamerNode::setupResampler() {
   // Allocate resampler context
   swrCtx_ = swr_alloc();
-  if (!swrCtx_) {
-    std::cerr << "Could not allocate resampler context" << std::endl;
+  if (swrCtx_ == nullptr) {
     return false;
   }
 
@@ -97,7 +95,6 @@ bool StreamerNode::setupResampler() {
 
   // Initialize the resampler
   if (swr_init(swrCtx_) < 0) {
-    std::cerr << "Could not initialize resampler" << std::endl;
     return false;
   }
 
@@ -112,7 +109,6 @@ bool StreamerNode::setupResampler() {
       0);
 
   if (ret < 0) {
-    std::cerr << "Could not allocate resampled data buffer" << std::endl;
     return false;
   }
 
@@ -121,39 +117,30 @@ bool StreamerNode::setupResampler() {
 
 void StreamerNode::streamAudio() {
   while (streamFlag.load()) {
-    if (pendingFrame_) {
+    if (pendingFrame_ != nullptr) {
       if (!processFrameWithResampler(pendingFrame_)) {
-        std::cerr << "Error processing pending frame" << std::endl;
         cleanup();
         return;
       }
     } else {
-      if (av_read_frame(fmtCtx_, pkt_) >= 0) {
-        if (pkt_->stream_index == audio_stream_index_) {
-          if (avcodec_send_packet(codecCtx_, pkt_) == 0) {
-            if (avcodec_receive_frame(codecCtx_, frame_) == 0) {
-              if (!processFrameWithResampler(frame_)) {
-                std::cerr << "Error processing frame with resampler"
-                          << std::endl;
-                cleanup();
-                return;
-              }
-            } else {
-              std::cerr << "Error receiving frame from codec" << std::endl;
-              cleanup();
-              return;
-            }
-          } else {
-            std::cerr << "Error decoding audio packet" << std::endl;
-            cleanup();
-            return;
-          }
-        }
-        av_packet_unref(pkt_);
-      } else {
-        std::cerr << "Error reading frame from input stream" << std::endl;
+      if (av_read_frame(fmtCtx_, pkt_) < 0) {
         cleanup();
         return;
+      }
+      if (pkt_->stream_index == audio_stream_index_) {
+        if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
+          cleanup();
+          return;
+        }
+        if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
+          cleanup();
+          return;
+        }
+        if (!processFrameWithResampler(frame_)) {
+          cleanup();
+          return;
+        }
+        av_packet_unref(pkt_);
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -201,7 +188,6 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
         0);
 
     if (ret < 0) {
-      std::cerr << "Could not reallocate resampled data buffer" << std::endl;
       return false;
     }
   }
@@ -215,7 +201,6 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
       frame->nb_samples);
 
   if (converted_samples < 0) {
-    std::cerr << "Error converting samples" << std::endl;
     return false;
   }
 
@@ -241,15 +226,10 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
 bool StreamerNode::openInput(const std::string &input_url) {
   int ret = avformat_open_input(&fmtCtx_, input_url.c_str(), nullptr, nullptr);
   if (ret < 0) {
-    char errbuf[256];
-    av_strerror(ret, errbuf, sizeof(errbuf));
-    std::cerr << "Could not open input: " << input_url << "\nReason: " << errbuf
-              << std::endl;
     return false;
   }
 
   if (avformat_find_stream_info(fmtCtx_, nullptr) < 0) {
-    std::cerr << "Failed to retrieve input stream information" << std::endl;
     return false;
   }
 
@@ -268,8 +248,7 @@ bool StreamerNode::findAudioStream() {
     }
   }
 
-  if (audio_stream_index_ < 0 || !codecpar_) {
-    std::cerr << "Could not find audio stream in input" << std::endl;
+  if (audio_stream_index_ < 0 || codecpar_ == nullptr) {
     return false;
   }
 
@@ -278,25 +257,20 @@ bool StreamerNode::findAudioStream() {
 
 bool StreamerNode::setupDecoder() {
   decoder_ = avcodec_find_decoder(codecpar_->codec_id);
-  if (!decoder_) {
-    std::cerr << "Could not find decoder for codec ID: " << codecpar_->codec_id
-              << std::endl;
+  if (decoder_ == nullptr) {
     return false;
   }
 
   codecCtx_ = avcodec_alloc_context3(decoder_);
-  if (!codecCtx_) {
-    std::cerr << "Could not allocate codec context" << std::endl;
+  if (codecCtx_ == nullptr) {
     return false;
   }
 
   if (avcodec_parameters_to_context(codecCtx_, codecpar_) < 0) {
-    std::cerr << "Could not copy codec parameters to context" << std::endl;
     return false;
   }
 
   if (avcodec_open2(codecCtx_, decoder_, nullptr) < 0) {
-    std::cerr << "Could not open codec" << std::endl;
     return false;
   }
 
@@ -306,28 +280,28 @@ bool StreamerNode::setupDecoder() {
 void StreamerNode::cleanup() {
   streamFlag.store(false);
   streamingThread_.join();
-  if (swrCtx_) {
+  if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }
 
-  if (resampledData_) {
+  if (resampledData_ != nullptr) {
     av_freep(&resampledData_[0]);
     av_freep(&resampledData_);
   }
 
-  if (frame_) {
+  if (frame_ != nullptr) {
     av_frame_free(&frame_);
   }
 
-  if (pkt_) {
+  if (pkt_ != nullptr) {
     av_packet_free(&pkt_);
   }
 
-  if (codecCtx_) {
+  if (codecCtx_ != nullptr) {
     avcodec_free_context(&codecCtx_);
   }
 
-  if (fmtCtx_) {
+  if (fmtCtx_ != nullptr) {
     avformat_close_input(&fmtCtx_);
   }
 
