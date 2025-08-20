@@ -27,8 +27,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   explicit StreamerNode(BaseAudioContext *context);
   ~StreamerNode() override;
 
-  /** 
-   * @brief Initialize all necessary ffmpeg components for streaming audio 
+  /**
+   * @brief Initialize all necessary ffmpeg components for streaming audio
   */
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
@@ -45,7 +45,6 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVPacket* pkt_;
   AVFrame* frame_; // Frame that is currently being processed
   AVFrame* pendingFrame_; // Frame that is saved if bufferedBus is full
-  bool hasPendingFrame_; // Flag to indicate if there is a pending frame
   std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
   size_t bufferedBusIndex_; // index in the buffered bus where we write the next frame
   size_t maxBufferSize_; // maximum size of the buffered bus
@@ -57,13 +56,13 @@ class StreamerNode : public AudioScheduledSourceNode {
   std::thread streamingThread_;
   std::atomic<bool> streamFlag; // Flag to control the streaming thread
 
-  /** 
+  /**
    * @brief Setting up the resampler
    * @return true if successful, false otherwise
    */
   bool setupResampler();
 
-  /** 
+  /**
    * @brief Resample the audio frame, change its sample format and channel layout
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
@@ -89,13 +88,13 @@ class StreamerNode : public AudioScheduledSourceNode {
    */
   bool openInput(const std::string& inputUrl);
 
-  /** 
+  /**
    * @brief Find the audio stream channel in the input
    * @return true if audio stream was found, false otherwise
    */
   bool findAudioStream();
 
-  /** 
+  /**
    * @brief Set up the decoder for the audio stream
    * @return true if successful, false otherwise
    */

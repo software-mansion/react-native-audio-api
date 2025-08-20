@@ -16,7 +16,6 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       pkt_(nullptr),
       frame_(nullptr),
       pendingFrame_(nullptr),
-      hasPendingFrame_(false),
       bufferedBus_(nullptr),
       bufferedBusIndex_(0),
       maxBufferSize_(0),
@@ -222,18 +221,16 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
 
   // Check if converted data fits in buffer
   if (bufferedBusIndex_ + converted_samples > maxBufferSize_) {
-    hasPendingFrame_ = true;
     pendingFrame_ = frame;
     return true;
   } else {
-    hasPendingFrame_ = false;
     pendingFrame_ = nullptr;
   }
 
   // Copy converted data to our buffer
   Locker locker(mutex_);
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
-    float *src = reinterpret_cast<float *>(resampledData_[ch]);
+    auto *src = reinterpret_cast<float *>(resampledData_[ch]);
     float *dst = bufferedBus_->getChannel(ch)->getData() + bufferedBusIndex_;
     memcpy(dst, src, converted_samples * sizeof(float));
   }
@@ -263,7 +260,7 @@ bool StreamerNode::findAudioStream() {
   audio_stream_index_ = -1;
   codecpar_ = nullptr;
 
-  for (unsigned int i = 0; i < fmtCtx_->nb_streams; ++i) {
+  for (int i = 0; i < fmtCtx_->nb_streams; ++i) {
     if (fmtCtx_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
       audio_stream_index_ = i;
       codecpar_ = fmtCtx_->streams[i]->codecpar;
