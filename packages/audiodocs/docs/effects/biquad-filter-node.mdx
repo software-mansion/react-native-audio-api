@@ -40,6 +40,12 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 | `notch` | Notch (band-stop) filter. Opposite of a bandpass filter: frequencies around the center are attenuated; others remain unchanged. | The center of the frequency range where the notch is applied. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
 | `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
 
+import InteractiveExample from '@site/src/components/InteractiveExample';
+import Biquad from '@site/src/examples/Biquad/Component';
+import BiquadSrc from '!!raw-loader!@site/src/examples/Biquad/Source';
+
+<InteractiveExample src={BiquadSrc} component={Biquad} />
+
 ## Methods
 
 ### `getFrequencyResponse`
