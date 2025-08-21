@@ -142,7 +142,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto length = static_cast<int>(arrayBufferReal.size(runtime));
 
     auto arrayBufferImag = args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-    auto imag = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
+    auto imag = reinterpret_cast<float *>(arrayBufferImag.data(runtime));
 
     auto disableNormalization = args[2].getBool();
 
