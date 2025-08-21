@@ -11,6 +11,7 @@
 #include <cmath>
 #include <complex>
 #include <cassert>
+#include <cstring>
 
 namespace signalsmith { namespace linear {
 
