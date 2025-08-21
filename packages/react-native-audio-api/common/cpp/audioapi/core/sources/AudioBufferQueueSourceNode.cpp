@@ -14,7 +14,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context)
     : AudioBufferBaseSourceNode(context) {
   buffers_ = {};
-  stretch_->presetDefault(channelCount_, context_->getSampleRate(), true);
+  stretch_->presetDefault(channelCount_, context_->getSampleRate());
 
   isInitialized_ = true;
 }
