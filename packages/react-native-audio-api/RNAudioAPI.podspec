@@ -36,7 +36,7 @@ Pod::Spec.new do |s|
   s.compiler_flags = "#{folly_flags}"
 
   s.prepare_command = <<-CMD
-    ruby -r './scripts/download_audioapi_libs.rb'
+    ruby -r './scripts/download-audioapi-libs.rb'
   CMD
 
 external_dir = File.join(__dir__, "common/cpp/audioapi/external")

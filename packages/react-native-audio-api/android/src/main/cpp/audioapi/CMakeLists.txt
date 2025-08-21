@@ -12,7 +12,7 @@ add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SO
 
 foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile avcodec avformat avutil swresample crypto ssl)
   add_library(${lib} STATIC IMPORTED)
-  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${ANDROID_CPP_DIR}/audioapi/prebuilt_libs/${ANDROID_ABI}/lib${lib}.a)
+  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${COMMON_CPP_DIR}/audioapi/external/${ANDROID_ABI}/lib${lib}.a)
 endforeach()
 
 find_package(ReactAndroid REQUIRED CONFIG)
