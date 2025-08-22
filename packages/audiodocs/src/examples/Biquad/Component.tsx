@@ -39,6 +39,7 @@ const AudioFile: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const filterRef = useRef<BiquadFilterNode | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (!audioContextRef.current) audioContextRef.current = new AudioContext();
@@ -70,7 +71,6 @@ const AudioFile: React.FC = () => {
       : 'allpass';
   }, [filterType]);
 
-
   useEffect(() => {
     if (!filterRef.current) return;
     filterRef.current.frequency.value = filterFreq;
@@ -78,6 +78,9 @@ const AudioFile: React.FC = () => {
     filterRef.current.gain.value = filterGain;
   }, [filterFreq, filterQ, filterGain]);
 
+  useEffect(() => {
+    drawFrequencyResponse();
+  }, [filterType, filterFreq, filterQ, filterGain]);
 
   const handlePlayPause = async () => {
     if (!audioContextRef.current || !audioBufferRef.current) return;
@@ -103,10 +106,73 @@ const AudioFile: React.FC = () => {
     setIsPlaying(prev => !prev);
   };
 
+  const drawFrequencyResponse = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    const frequencies = new Float32Array(200);
+    const magResponse = new Float32Array(frequencies.length);
+    const phaseResponse = new Float32Array(frequencies.length);
+
+    for (let i = 0; i < frequencies.length; i++) {
+      frequencies[i] = 20 * (20000 / 20) ** (i / (frequencies.length - 1));
+    }
+
+    if (filterType !== 'none' && filterRef.current) {
+      filterRef.current.getFrequencyResponse(frequencies, magResponse, phaseResponse);
+    } else {
+      magResponse.fill(1);
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+
+    const numGridLines = 10;
+    const gridSpacing = canvas.width / numGridLines;
+    for (let i = 0; i <= numGridLines; i++) {
+      const x = i * gridSpacing;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+
+    const dBMarks = [-30, -20, -10, 0, 10, 20, 30];
+    const dBSpacing = canvas.height / (dBMarks.length - 1);
+    for (let i = 0; i < dBMarks.length; i++) {
+      const y = i * dBSpacing;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    for (let i = 0; i < frequencies.length; i++) {
+      const x = (i / (frequencies.length - 1)) * canvas.width;
+      const db = 20 * Math.log10(magResponse[i]);
+      const y = canvas.height - ((db + 30) / 60) * canvas.height;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#38acdd';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  };
+
   return (
     <View style={{ flex: 1, padding: 16 }}>
       {isLoading && <ActivityIndicator color="#FFFFFF" />}
 
+      <canvas ref={canvasRef} width={600} height={200} style={{ backgroundColor: '#111', borderRadius: 6, marginTop: 16 }} />
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#38acdd" />
 
       <ScrollView horizontal style={{ marginTop: 16 }}>
@@ -168,7 +234,6 @@ const AudioFile: React.FC = () => {
           )}
         </div>
       )}
-
     </View>
   );
 };
@@ -184,3 +249,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
 });
+
+// TODO:
+// fix styling
+// case when none is selected
