@@ -13,7 +13,7 @@ You can use it for audio playback, including standard pause and resume functiona
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
 However, this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](/docs/sources/audio-buffer).
 
-#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
+#### [`AudioNode`](/docs/core/audio-node#properties) properties
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={"defined by associated buffer"} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
@@ -55,7 +55,7 @@ function App() {
 
 ## Methods
 
-### `start` <Overridden />
+### `start` <Overridden /> {#start}
 
 The above method schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated `AudioBuffer`, or starts to play immediately.
 
