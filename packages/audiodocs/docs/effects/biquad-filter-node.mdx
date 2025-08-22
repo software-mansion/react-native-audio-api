@@ -26,7 +26,7 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 | `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents |
 | `Q` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
 | `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) |
-| `type` | `string` | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
+| `type` | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
 
 #### BiquadFilterType enumeration description
 | `type` | Description | `frequency` | `Q` | `gain` |
@@ -53,18 +53,26 @@ import BiquadSrc from '!!raw-loader!@site/src/examples/Biquad/Source';
 | Parameters | Type | Description |
 | :--------: | :--: | :---------- |
 | `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
-| `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, sampleRate / 2], the corresponding results are NaN. |
-| `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, sampleRate / 2], the corresponding results are NaN. |
+| `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
+| `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
 | `length` | `number` | The number of frequency values to process. It should match the length of all input and output arrays. |
 
 #### Returns `undefined`.
 
 ## Remarks
+TODO: https://developer.mozilla.org/en-US/docs/Web/API/BiquadFilterNode#instance_properties
 #### `frequency`
 - float, default value is 350.
+- range: [10, $\frac{sampleRate}{2}$]
 #### `detune`
 - float, default value is 0.
 #### `Q`
 - float, default value is 1.
+For lowpass and highpass, the Q value is interpreted to be in dB. For these filters the value range is [-Q, Q] where Q is the largest value for which 10Q/20 does not overflow the bound above. This is approximately 770.63678.
+For bandpass, notch, allpass, and peaking, the Q value is related to the bandwidth of the filter and should be positive, but there's no stricter maximum than the above.
+It is not used for lowshelf and highshelf filters.
 #### `gain`
+- When its value is positive, it represents a real gain; when negative, it represents an attenuation.
+It is expressed in dB, has a default value of 0, and can take a value in a nominal range of -40 to 40.
+#### `type`
 - [`BiquadFilterType`](#biquadfiltertype-enumeration-description), default is "lowpass".
