@@ -3322,16 +3322,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@shopify/react-native-skia@npm:^2.1.1":
-  version: 2.2.4
-  resolution: "@shopify/react-native-skia@npm:2.2.4"
+"@shopify/react-native-skia@npm:2.1.1":
+  version: 2.1.1
+  resolution: "@shopify/react-native-skia@npm:2.1.1"
   dependencies:
     canvaskit-wasm: "npm:0.40.0"
     react-reconciler: "npm:0.31.0"
   peerDependencies:
     react: ">=19.0"
     react-native: ">=0.78"
-    react-native-reanimated: ">=3.0"
+    react-native-reanimated: ^3.0
   peerDependenciesMeta:
     react-native:
       optional: true
@@ -3339,7 +3339,7 @@ __metadata:
       optional: true
   bin:
     setup-skia-web: scripts/setup-canvaskit.js
-  checksum: 10/6262a6a4836ee3c3f4c4d8195492f2abd07e387fcc229b696a3a0851600eaa5c6930bc73738326028bf81f1feed6bc1aac952975a68100b75d8f56611b22846e
+  checksum: 10/85c4cbd313191ee59115dbdaa4ca6ca703a27184ba0d1cd950bcef49d12b47d606212f144da28a72ff356db6ae053308dab32e23c53f5294ce814b7b167b303d
   languageName: node
   linkType: hard
 
@@ -5068,7 +5068,7 @@ __metadata:
     "@react-navigation/native": "npm:7.1.17"
     "@react-navigation/native-stack": "npm:7.3.25"
     "@react-navigation/stack": "npm:7.4.7"
-    "@shopify/react-native-skia": "npm:^2.1.1"
+    "@shopify/react-native-skia": "npm:2.1.1"
     "@types/jest": "npm:^29.5.13"
     "@types/react": "npm:^19.1.0"
     "@types/react-native-background-timer": "npm:^2.0.2"

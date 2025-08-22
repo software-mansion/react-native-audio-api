@@ -11,6 +11,8 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
 
+#include <RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -19,7 +21,11 @@ using namespace facebook;
 
 class AudioAPIModuleInstaller {
  public:
-  static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry, jsi::Runtime *uiRuntime = nullptr) {
+  static void injectJSIBindings(
+    jsi::Runtime *jsiRuntime,
+    const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
     auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry, uiRuntime);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
@@ -79,7 +85,7 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCreateAudioRecorderFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry, jsi::Runtime *uiRuntime) {
+  static jsi::Function getCreateAudioRecorderFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry, std::shared_ptr<worklets::WorkletRuntime> uiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),

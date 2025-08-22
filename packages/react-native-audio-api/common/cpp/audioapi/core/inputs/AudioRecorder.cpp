@@ -23,10 +23,10 @@ AudioRecorder::AudioRecorder(
 }
 
 void AudioRecorder::setWorkletCallback(
-    const std::shared_ptr<jsi::Function> &callback,
-    jsi::Runtime *uiRuntime) {
+    std::shared_ptr<worklets::ShareableWorklet> &callback,
+    std::shared_ptr<worklets::WorkletRuntime> &uiRuntime) {
   std::lock_guard<std::mutex> lock(workletCallbackMutex_);
-  workletCallback_ = callback;
+  shareableWorklet_ = callback;
   uiRuntime_ = uiRuntime;
 }
 void AudioRecorder::invokeWorkletOnAudioReadyCallback(
@@ -35,30 +35,20 @@ void AudioRecorder::invokeWorkletOnAudioReadyCallback(
     double when) {
   std::lock_guard<std::mutex> lock(workletCallbackMutex_);
 
-  if (!workletCallback_ || !uiRuntime_) {
+  if (!shareableWorklet_ || !uiRuntime_) {
     return;
   }
 
-  // Get audio data from the first channel
   auto channelData = bus->getChannel(0);
-  auto dataPtr = channelData->getData();
-  auto frameCount = channelData->getSize();
 
-  try {
-    // Create JSI Array from audio data
-    auto jsArray = jsi::Array(*uiRuntime_, frameCount);
-    for (size_t i = 0; i < frameCount; i++) {
-      jsArray.setValueAtIndex(*uiRuntime_, i, jsi::Value(dataPtr[i]));
-    }
-
-    printf("Invoking worklet callback");
-    // Call the worklet directly on current thread (NAIVE - for testing only)
-    workletCallback_->call(*uiRuntime_, jsArray, jsi::Value(when));
-
-  } catch (const std::exception &e) {
-    // Handle error - this is important since we're on audio thread
-    printf("Worklet callback error: %s\n", e.what());
+  /// this part might throw
+  auto &uiRuntimeRaw = uiRuntime_->getJSIRuntime();
+  auto jsArray = jsi::Array(uiRuntimeRaw, numFrames);
+  for (size_t i = 0; i < numFrames; i++) {
+    jsArray.setValueAtIndex(uiRuntimeRaw, i, jsi::Value((*channelData)[i]));
   }
+
+  uiRuntime_->runGuarded(shareableWorklet_, jsArray, jsi::Value(when));
 }
 
 void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
@@ -78,6 +68,7 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
 
+  invokeWorkletOnAudioReadyCallback(bus, numFrames, when);
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "audioReady", onAudioReadyCallbackId_, body);

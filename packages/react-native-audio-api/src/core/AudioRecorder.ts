@@ -4,6 +4,7 @@ import AudioBuffer from './AudioBuffer';
 import { OnAudioReadyEventType } from '../events/types';
 import { AudioEventEmitter } from '../events';
 import RecorderAdapterNode from './RecorderAdapterNode';
+import { makeShareableCloneRecursive } from 'react-native-worklets';
 
 export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
@@ -58,6 +59,6 @@ export default class AudioRecorder {
   public setWorkletCallback(
     callback: (audioData: Float32Array, timestamp: number) => void
   ): void {
-    this.recorder.setWorkletCallback(callback);
+    this.recorder.setWorkletCallback(makeShareableCloneRecursive(callback));
   }
 }

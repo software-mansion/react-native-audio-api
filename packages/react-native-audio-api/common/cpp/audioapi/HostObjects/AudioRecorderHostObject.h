@@ -6,6 +6,8 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
+#include <RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h>
+#include <RNWorklets/worklets/SharedItems/Shareables.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
@@ -28,7 +30,7 @@ class AudioRecorderHostObject : public JsiHostObject {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       int bufferLength,
-      jsi::Runtime *uiRuntime) : uiRuntime_(uiRuntime) {
+      std::shared_ptr<worklets::WorkletRuntime> uiRuntime) : uiRuntime_(uiRuntime) {
 #ifdef ANDROID
     audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
@@ -49,7 +51,8 @@ class AudioRecorderHostObject : public JsiHostObject {
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect)
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setWorkletCallback)
     );
   }
 
@@ -78,9 +81,9 @@ class AudioRecorderHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(setWorkletCallback) {
-    if (count > 0 && args[0].isObject() && args[0].getObject(runtime).isFunction(runtime)) {
-      auto callback = std::make_shared<jsi::Function>(args[0].getObject(runtime).getFunction(runtime));
-      audioRecorder_->setWorkletCallback(callback, uiRuntime_);
+    if (count > 0) {
+      auto shareableWorklet = worklets::extractShareableOrThrow<worklets::ShareableWorklet>(runtime, args[0]);
+      audioRecorder_->setWorkletCallback(shareableWorklet, uiRuntime_);
     }
     return jsi::Value::undefined();
   }
@@ -91,6 +94,6 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  jsi::Runtime *uiRuntime_;
+  std::shared_ptr<worklets::WorkletRuntime> uiRuntime_;
 };
 } // namespace audioapi

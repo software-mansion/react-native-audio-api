@@ -7,6 +7,7 @@ import {
   ChannelInterpretation,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
+import { ShareableRef } from 'react-native-worklets';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -205,7 +206,9 @@ export interface IAudioRecorder {
   onAudioReady: string;
 
   setWorkletCallback: (
-    callback: (audioData: Float32Array, timestamp: number) => void
+    shareableRef: ShareableRef<
+      (audioData: Float32Array, timestamp: number) => void
+    >
   ) => void;
 }
 

@@ -105,8 +105,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   }
 
   // Get the actual JSI Runtime reference
-  jsi::Runtime *uiRuntime = &(uiWorkletRuntime->getJSIRuntime());
-  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler, uiRuntime);
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @true;

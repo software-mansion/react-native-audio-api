@@ -4,7 +4,7 @@ package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
-folly_flags = "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
+folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
-  
+
   s.dependency "RNWorklets"
 
   s.subspec "audioapi" do |ss|
@@ -48,14 +48,14 @@ s.pod_target_xcconfig = {
   "HEADER_SEARCH_PATHS" => %W[
     $(PODS_TARGET_SRCROOT)/common/cpp
     $(PODS_TARGET_SRCROOT)/ios
-
     #{external_dir}/include
     #{external_dir}/include/opus
     #{external_dir}/include/vorbis
     $(PODS_ROOT)/Headers/Public/RNWorklets
     $(PODS_ROOT)/Headers/Private/React-Core
   ].join(" "),
-  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}",
+  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }
 
 s.user_target_xcconfig = {
