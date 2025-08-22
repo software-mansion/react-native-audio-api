@@ -80,7 +80,8 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-reanimated": "^4.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",

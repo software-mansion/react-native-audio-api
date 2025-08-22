@@ -54,4 +54,10 @@ export default class AudioRecorder {
 
     this.recorder.onAudioReady = subscription.subscriptionId;
   }
+
+  public setWorkletCallback(
+    callback: (audioData: Float32Array, timestamp: number) => void
+  ): void {
+    this.recorder.setWorkletCallback(callback);
+  }
 }

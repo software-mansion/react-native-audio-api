@@ -27,7 +27,8 @@ class AudioRecorderHostObject : public JsiHostObject {
       jsi::Runtime *runtime,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
-      int bufferLength) {
+      int bufferLength,
+      jsi::Runtime *uiRuntime) : uiRuntime_(uiRuntime) {
 #ifdef ANDROID
     audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
@@ -76,11 +77,20 @@ class AudioRecorderHostObject : public JsiHostObject {
     return jsi::Value::undefined();
   }
 
+  JSI_HOST_FUNCTION(setWorkletCallback) {
+    if (count > 0 && args[0].isObject() && args[0].getObject(runtime).isFunction(runtime)) {
+      auto callback = std::make_shared<jsi::Function>(args[0].getObject(runtime).getFunction(runtime));
+      audioRecorder_->setWorkletCallback(callback, uiRuntime_);
+    }
+    return jsi::Value::undefined();
+  }
+
   JSI_PROPERTY_SETTER(onAudioReady) {
     audioRecorder_->setOnAudioReadyCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
   }
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
+  jsi::Runtime *uiRuntime_;
 };
 } // namespace audioapi

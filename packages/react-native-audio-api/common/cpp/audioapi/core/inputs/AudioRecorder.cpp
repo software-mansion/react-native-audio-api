@@ -22,6 +22,45 @@ AudioRecorder::AudioRecorder(
   isRunning_.store(false);
 }
 
+void AudioRecorder::setWorkletCallback(
+    const std::shared_ptr<jsi::Function> &callback,
+    jsi::Runtime *uiRuntime) {
+  std::lock_guard<std::mutex> lock(workletCallbackMutex_);
+  workletCallback_ = callback;
+  uiRuntime_ = uiRuntime;
+}
+void AudioRecorder::invokeWorkletOnAudioReadyCallback(
+    const std::shared_ptr<AudioBus> &bus,
+    int numFrames,
+    double when) {
+  std::lock_guard<std::mutex> lock(workletCallbackMutex_);
+
+  if (!workletCallback_ || !uiRuntime_) {
+    return;
+  }
+
+  // Get audio data from the first channel
+  auto channelData = bus->getChannel(0);
+  auto dataPtr = channelData->getData();
+  auto frameCount = channelData->getSize();
+
+  try {
+    // Create JSI Array from audio data
+    auto jsArray = jsi::Array(*uiRuntime_, frameCount);
+    for (size_t i = 0; i < frameCount; i++) {
+      jsArray.setValueAtIndex(*uiRuntime_, i, jsi::Value(dataPtr[i]));
+    }
+
+    printf("Invoking worklet callback");
+    // Call the worklet directly on current thread (NAIVE - for testing only)
+    workletCallback_->call(*uiRuntime_, jsArray, jsi::Value(when));
+
+  } catch (const std::exception &e) {
+    // Handle error - this is important since we're on audio thread
+    printf("Worklet callback error: %s\n", e.what());
+  }
+}
+
 void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
   onAudioReadyCallbackId_ = callbackId;
 }

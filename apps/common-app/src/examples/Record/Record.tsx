@@ -34,6 +34,16 @@ const Record: FC = () => {
       sampleRate: SAMPLE_RATE,
       bufferLengthInSamples: SAMPLE_RATE,
     });
+    recorderRef.current.setWorkletCallback((audioData: Float32Array, timestamp: number) => {
+      'worklet';
+      // This runs on UI thread!
+      let sum = 0;
+      for (let i = 0; i < audioData.length; i++) {
+        sum += Math.abs(audioData[i]);
+      }
+      const rms = Math.sqrt(sum / audioData.length);
+      console.log('Audio RMS:', rms);
+    });
   }, []);
 
   const startEcho = () => {

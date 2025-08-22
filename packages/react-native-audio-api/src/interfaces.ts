@@ -203,6 +203,10 @@ export interface IAudioRecorder {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
+
+  setWorkletCallback: (
+    callback: (audioData: Float32Array, timestamp: number) => void
+  ) => void;
 }
 
 export interface IAudioEventEmitter {

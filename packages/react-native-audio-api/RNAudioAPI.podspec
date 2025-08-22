@@ -18,6 +18,8 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
+  
+  s.dependency "RNWorklets"
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h}"
@@ -46,9 +48,12 @@ s.pod_target_xcconfig = {
   "HEADER_SEARCH_PATHS" => %W[
     $(PODS_TARGET_SRCROOT)/common/cpp
     $(PODS_TARGET_SRCROOT)/ios
+
     #{external_dir}/include
     #{external_dir}/include/opus
     #{external_dir}/include/vorbis
+    $(PODS_ROOT)/Headers/Public/RNWorklets
+    $(PODS_ROOT)/Headers/Private/React-Core
   ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }

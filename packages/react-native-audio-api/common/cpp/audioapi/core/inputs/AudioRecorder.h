@@ -1,11 +1,14 @@
 #pragma once
 
+#include <jsi/jsi.h>
 
 #include <memory>
-#include <mutex>
 #include <atomic>
+#include <mutex>
 
 namespace audioapi {
+using namespace facebook;
+
 class RecorderAdapterNode;
 class AudioBus;
 class CircularAudioArray;
@@ -40,6 +43,14 @@ class AudioRecorder {
   /// @note Last few frames of audio might be written to the buffer after disconnecting.
   void disconnect();
 
+
+
+  void invokeWorkletOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus,
+                                        int numFrames, double when);
+
+  void setWorkletCallback(const std::shared_ptr<jsi::Function> &callback, jsi::Runtime *uiRuntime);
+
+
   virtual void start() = 0;
   virtual void stop() = 0;
 
@@ -56,6 +67,10 @@ class AudioRecorder {
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
+
+  std::shared_ptr<jsi::Function> workletCallback_;
+  jsi::Runtime *uiRuntime_;
+  mutable std::mutex workletCallbackMutex_;
 
   void writeToBuffers(const float *data, int numFrames);
 };
