@@ -1,8 +1,7 @@
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, AudioManager } from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
-  BiquadFilterNode,
 } from 'react-native-audio-api';
 
 class AudioPlayer {
@@ -10,7 +9,6 @@ class AudioPlayer {
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
 
-  private filterNode: BiquadFilterNode;
   private isPlaying: boolean = false;
 
   private offset: number = 0;
@@ -20,13 +18,6 @@ class AudioPlayer {
 
   constructor() {
     this.audioContext = new AudioContext({ initSuspended: true });
-
-    // ✅ filtr ustawiony na stałe
-    this.filterNode = this.audioContext.createBiquadFilter();
-    this.filterNode.type = 'allpass';
-    this.filterNode.frequency.value = 200;
-    this.filterNode.Q.value = 1;
-    this.filterNode.gain.value = 0;
   }
 
   play = async () => {
@@ -52,22 +43,24 @@ class AudioPlayer {
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
 
-    this.sourceNode.connect(this.filterNode);
-    this.filterNode.connect(this.audioContext.destination);
-
+    this.sourceNode.connect(this.audioContext.destination);
     if (this.seekOffset !== 0) {
       this.offset = Math.max(this.seekOffset + this.offset, 0);
       this.seekOffset = 0;
     }
-
     this.sourceNode.onPositionChanged = (event) => {
       this.offset = event.value;
+
       if (this.onPositionChanged) {
         this.onPositionChanged(this.offset / this.audioBuffer!.duration);
       }
     };
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
+
+    AudioManager.setLockScreenInfo({
+      state: 'state_playing',
+    });
   };
 
   pause = async () => {
@@ -77,6 +70,10 @@ class AudioPlayer {
     }
 
     this.sourceNode?.stop(this.audioContext.currentTime);
+
+    AudioManager.setLockScreenInfo({
+      state: 'state_paused',
+    });
 
     await this.audioContext.suspend();
 
@@ -128,20 +125,6 @@ class AudioPlayer {
     callback: null | ((offset: number) => void) = null
   ) => {
     this.onPositionChanged = callback;
-  };
-
-  // ✅ zmiana typu filtra (np. lowpass, highpass itd.)
-  setFilterType = (type: BiquadFilterType) => {
-    if (this.filterNode) {
-      this.filterNode.type = type;
-    }
-  };
-
-  // ✅ zmiana częstotliwości odcięcia
-  setFilterFrequency = (freq: number) => {
-    if (this.filterNode) {
-      this.filterNode.frequency.value = freq;
-    }
   };
 }
 

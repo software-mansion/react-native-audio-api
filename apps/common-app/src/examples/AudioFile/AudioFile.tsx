@@ -1,36 +1,18 @@
 import React, { useCallback, useEffect, useState, FC } from 'react';
-import {
-  ActivityIndicator,
-  View,
-  StyleSheet,
-  Text,
-  Pressable,
-} from 'react-native';
-import { Container, Button, Spacer, Slider } from '../../components'; // <-- slider z components
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { AudioManager } from 'react-native-audio-api';
+import { Container, Button, Spacer } from '../../components';
 import AudioPlayer from './AudioPlayer';
-import { colors, layout } from '../../styles';
+import { colors } from '../../styles';
+import BackgroundTimer from 'react-native-background-timer';
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
-
-const FILTER_TYPES: BiquadFilterType[] = [
-  'lowpass',
-  'highpass',
-  'bandpass',
-  'lowshelf',
-  'highshelf',
-  'peaking',
-  'notch',
-  'allpass',
-];
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [positionPercentage, setPositionPercentage] = useState(0);
-
-  const [filterType, setFilterType] = useState<BiquadFilterType>('lowpass');
-  const [filterFreq, setFilterFreq] = useState(1000);
 
   const togglePlayPause = async () => {
     if (isPlaying) {
@@ -41,6 +23,10 @@ const AudioFile: FC = () => {
       });
 
       await AudioPlayer.play();
+
+      AudioManager.observeAudioInterruptions(true);
+
+      AudioManager.getDevicesInfo().then(console.log);
     }
 
     setIsPlaying((prev) => !prev);
@@ -48,26 +34,83 @@ const AudioFile: FC = () => {
 
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
+
     await AudioPlayer.loadBuffer(URL);
+
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
+    AudioManager.setLockScreenInfo({
+      title: 'Audio file',
+      artist: 'Software Mansion',
+      album: 'Audio API',
+      duration: 10,
+    });
+
+    AudioManager.enableRemoteCommand('remotePlay', true);
+    AudioManager.enableRemoteCommand('remotePause', true);
+    AudioManager.enableRemoteCommand('remoteSkipForward', true);
+    AudioManager.enableRemoteCommand('remoteSkipBackward', true);
+    AudioManager.observeAudioInterruptions(true);
+    AudioManager.activelyReclaimSession(true);
+
+    const remotePlaySubscription = AudioManager.addSystemEventListener(
+      'remotePlay',
+      () => {
+        AudioPlayer.play();
+      }
+    );
+
+    const remotePauseSubscription = AudioManager.addSystemEventListener(
+      'remotePause',
+      () => {
+        AudioPlayer.pause();
+      }
+    );
+
+    const remoteSkipForwardSubscription = AudioManager.addSystemEventListener(
+      'remoteSkipForward',
+      (event) => {
+        AudioPlayer.seekBy(event.value);
+      }
+    );
+
+    const remoteSkipBackwardSubscription = AudioManager.addSystemEventListener(
+      'remoteSkipBackward',
+      (event) => {
+        AudioPlayer.seekBy(-event.value);
+      }
+    );
+
+    const interruptionSubscription = AudioManager.addSystemEventListener(
+      'interruption',
+      async (event) => {
+        if (event.type === 'began') {
+          await AudioPlayer.pause();
+          setIsPlaying(false);
+        } else if (event.type === 'ended' && event.shouldResume) {
+          BackgroundTimer.setTimeout(async () => {
+            AudioManager.setAudioSessionActivity(true);
+            await AudioPlayer.play();
+            setIsPlaying(true);
+          }, 1000);
+        }
+      }
+    );
+
     fetchAudioBuffer();
 
     return () => {
+      remotePlaySubscription?.remove();
+      remotePauseSubscription?.remove();
+      remoteSkipForwardSubscription?.remove();
+      remoteSkipBackwardSubscription?.remove();
+      interruptionSubscription?.remove();
+      AudioManager.resetLockScreenInfo();
       AudioPlayer.reset();
     };
   }, [fetchAudioBuffer]);
-
-  // 🔹 reaguj na zmianę UI
-  useEffect(() => {
-    AudioPlayer.setFilterType(filterType);
-  }, [filterType]);
-
-  useEffect(() => {
-    AudioPlayer.setFilterFrequency(filterFreq);
-  }, [filterFreq]);
 
   return (
     <Container centered>
@@ -78,44 +121,6 @@ const AudioFile: FC = () => {
         disabled={isLoading}
       />
       <Spacer.Vertical size={20} />
-
-      <Slider
-        label="Filter Freq"
-        value={filterFreq}
-        onValueChange={setFilterFreq}
-        min={50}
-        max={5000}
-        step={10}
-        minLabelWidth={80}
-      />
-      <Spacer.Vertical size={20} />
-
-      <View style={styles.filterTypeContainer}>
-        {FILTER_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            style={({ pressed }) => [
-              styles.filterButton,
-              pressed
-                ? styles.pressedFilterButton
-                : type === filterType
-                  ? styles.activeFilterButton
-                  : styles.inactiveFilterButton,
-            ]}
-            onPress={() => setFilterType(type)}>
-            <Text
-              style={[
-                styles.filterButtonText,
-                type === filterType && styles.activeFilterButtonText,
-              ]}>
-              {type}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Spacer.Vertical size={40} />
-
       <View style={styles.progressContainer}>
         <View
           style={[
@@ -131,35 +136,6 @@ const AudioFile: FC = () => {
 export default AudioFile;
 
 const styles = StyleSheet.create({
-  filterTypeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  filterButton: {
-    padding: layout.spacing,
-    marginHorizontal: 5,
-    marginVertical: 5,
-    borderWidth: 1,
-    borderRadius: layout.radius,
-  },
-  activeFilterButton: {
-    backgroundColor: colors.main,
-    borderColor: colors.main,
-  },
-  pressedFilterButton: {
-    backgroundColor: `${colors.main}88`,
-    borderColor: colors.main,
-  },
-  inactiveFilterButton: {
-    borderColor: colors.border,
-  },
-  filterButtonText: {
-    color: colors.white,
-    textTransform: 'capitalize',
-  },
-  activeFilterButtonText: {
-    color: colors.white,
-  },
   progressContainer: {
     width: '100%',
     height: 10,
