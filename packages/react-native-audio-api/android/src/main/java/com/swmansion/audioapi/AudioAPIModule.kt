@@ -10,6 +10,7 @@ import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.PermissionRequestListener
+import com.swmansion.worklets.WorkletsModule
 import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
@@ -26,6 +27,7 @@ class AudioAPIModule(
   private val mHybridData: HybridData
 
   external fun initHybrid(
+    workletsModule: WorkletsModule,
     jsContext: Long,
     callInvoker: CallInvokerHolderImpl,
   ): HybridData
@@ -41,7 +43,11 @@ class AudioAPIModule(
     try {
       System.loadLibrary("react-native-audio-api")
       val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
-      mHybridData = initHybrid(reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
+      
+      val workletsModule = reactContext.getNativeModule(WorkletsModule::class.java)
+        ?: throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
+      
+      mHybridData = initHybrid(workletsModule, reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
     }

@@ -6,10 +6,12 @@ using namespace facebook::jni;
 
 AudioAPIModule::AudioAPIModule(
     jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
+    const std::shared_ptr<WorkletsModuleProxy> &workletsModuleProxy,
     jsi::Runtime *jsiRuntime,
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
+      workletsModuleProxy_(workletsModuleProxy),
       jsCallInvoker_(jsCallInvoker) {
   audioEventHandlerRegistry_ =
       std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
@@ -17,12 +19,14 @@ AudioAPIModule::AudioAPIModule(
 
 jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     jni::alias_ref<jhybridobject> jThis,
+    jni::alias_ref<WorkletsModule::javaobject> jWorkletsModule,
     jlong jsContext,
     jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
         jsCallInvokerHolder) {
   auto jsCallInvoker = jsCallInvokerHolder->cthis()->getCallInvoker();
   auto rnRuntime = reinterpret_cast<jsi::Runtime *>(jsContext);
-  return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
+  auto workletsModuleProxy = jWorkletsModule->cthis()->getWorkletsModuleProxy();
+  return makeCxxInstance(jThis, workletsModuleProxy, rnRuntime, jsCallInvoker);
 }
 
 void AudioAPIModule::registerNatives() {
@@ -36,8 +40,9 @@ void AudioAPIModule::registerNatives() {
 }
 
 void AudioAPIModule::injectJSIBindings() {
+  auto uiWorkletRuntime = workletsModuleProxy_->getUIWorkletRuntime();
   AudioAPIModuleInstaller::injectJSIBindings(
-      jsiRuntime_, jsCallInvoker_, audioEventHandlerRegistry_);
+      jsiRuntime_, jsCallInvoker_, audioEventHandlerRegistry_, uiWorkletRuntime);
 }
 
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(

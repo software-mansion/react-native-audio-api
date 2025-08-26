@@ -11,7 +11,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
 
-#include <RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h>
+#include <worklets/WorkletRuntime/WorkletRuntime.h>
 
 #include <memory>
 

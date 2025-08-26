@@ -7,6 +7,8 @@
 #include <fbjni/fbjni.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
+#include <worklets/NativeModules/WorkletsModuleProxy.h>
+#include <worklets/android/WorkletsModule.h>
 #include <memory>
 #include <utility>
 #include <unordered_map>
@@ -15,6 +17,7 @@ namespace audioapi {
 
 using namespace facebook;
 using namespace react;
+using namespace worklets;
 
 class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
  public:
@@ -23,6 +26,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   static jni::local_ref<AudioAPIModule::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis,
+      jni::alias_ref<WorkletsModule::javaobject> jWorkletsModule,
       jlong jsContext,
       jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
           jsCallInvokerHolder);
@@ -37,11 +41,13 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
+  std::shared_ptr<worklets::WorkletsModuleProxy> workletsModuleProxy_;
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
+      const std::shared_ptr<worklets::WorkletsModuleProxy> &workletsModuleProxy,
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
 };

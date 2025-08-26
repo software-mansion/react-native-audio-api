@@ -18,6 +18,25 @@ find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 find_package(oboe REQUIRED CONFIG)
 
+if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+  set(BUILD_TYPE "debug")
+else()
+  set(BUILD_TYPE "release")
+endif()
+
+# Always assume worklets is available for testing
+set(WORKLETS_FOUND TRUE)
+message(STATUS "Worklets support enabled - setting up imported worklets library")
+
+# Import the worklets library (similar to how Reanimated does it)
+add_library(worklets SHARED IMPORTED)
+set_target_properties(
+  worklets
+  PROPERTIES
+    IMPORTED_LOCATION
+    "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+)
+
 target_include_directories(
   react-native-audio-api
   PRIVATE
@@ -27,8 +46,11 @@ target_include_directories(
   "${INCLUDE_DIR}/opus"
   "${INCLUDE_DIR}/vorbis"
   "${REACT_NATIVE_DIR}/ReactCommon"
+  "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+  "${REACT_NATIVE_WORKLETS_DIR}/Common/cpp"
+  "${REACT_NATIVE_WORKLETS_DIR}/android/src/main/cpp"
 )
 
 set(LINK_LIBRARIES
@@ -38,6 +60,10 @@ set(LINK_LIBRARIES
   log
   oboe::oboe
 )
+
+if(WORKLETS_FOUND)
+  list(APPEND LINK_LIBRARIES worklets)
+endif()
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
   set(RN_VERSION_LINK_LIBRARIES

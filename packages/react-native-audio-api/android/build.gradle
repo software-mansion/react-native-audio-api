@@ -66,6 +66,23 @@ def resolveReactNativeDirectory() {
   )
 }
 
+def resolveReactNativeWorkletsDirectory() {
+  def reactNativeWorkletsLocation = safeAppExtGet("REACT_NATIVE_WORKLETS_NODE_MODULES_DIR", null)
+  if (reactNativeWorkletsLocation != null) {
+    return file(reactNativeWorkletsLocation)
+  }
+
+  // Fallback to node resolver for custom directory structures like monorepos.
+  def reactNativeWorkletsPackage = file(["node", "--print", "require.resolve('react-native-worklets/package.json')"].execute(null, rootDir).text.trim())
+  if (reactNativeWorkletsPackage.exists()) {
+    return reactNativeWorkletsPackage.parentFile
+  }
+
+  throw new GradleException(
+      "[AudioAPI] Unable to resolve react-native-worklets location in node_modules. You should set project extension property (in `app/build.gradle`) named `REACT_NATIVE_WORKLETS_NODE_MODULES_DIR` with the path to react-native-worklets in node_modules."
+  )
+}
+
 def toPlatformFileString(String path) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
       path = path.replace(File.separatorChar, '/' as char)
@@ -83,6 +100,7 @@ static def supportsNamespace() {
 }
 
 def reactNativeRootDir = resolveReactNativeDirectory()
+def reactNativeWorkletsRootDir = resolveReactNativeWorkletsDirectory()
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -118,6 +136,7 @@ android {
                   "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
                   "-DANDROID_TOOLCHAIN=clang",
                   "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
+                  "-DREACT_NATIVE_WORKLETS_DIR=${toPlatformFileString(reactNativeWorkletsRootDir.path)}",
                   "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
                   "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
       }
@@ -219,6 +238,15 @@ dependencies {
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
   implementation 'com.google.oboe:oboe:1.9.3'
   implementation 'androidx.media:media:1.7.0'
+  implementation project(':react-native-worklets')
+}
+
+// Ensure worklets is built before react-native-audio-api
+evaluationDependsOn(":react-native-worklets")
+
+afterEvaluate {
+    tasks.getByName("buildCMakeDebug").dependsOn(findProject(":react-native-worklets").tasks.getByName("mergeDebugNativeLibs"))
+    tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(findProject(":react-native-worklets").tasks.getByName("mergeReleaseNativeLibs"))
 }
 
 def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {

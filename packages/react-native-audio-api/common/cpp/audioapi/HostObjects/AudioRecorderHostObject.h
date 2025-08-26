@@ -6,8 +6,8 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
-#include <RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h>
-#include <RNWorklets/worklets/SharedItems/Shareables.h>
+#include <worklets/WorkletRuntime/WorkletRuntime.h>
+#include <worklets/SharedItems/Shareables.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
