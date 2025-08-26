@@ -10,6 +10,7 @@ import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
 import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import Worklets from './Worklets/Worklets';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -22,6 +23,7 @@ type NavigationParamList = {
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
+  Worklets: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -95,4 +97,10 @@ export const Examples: Example[] = [
     subtitle: 'Record audio',
     screen: Record,
   },
+  {
+    key: 'Worklets',
+    title: 'Worklets',
+    subtitle: 'Process audio on ui thread with worklet support',
+    screen: Worklets,
+  }
 ] as const;
