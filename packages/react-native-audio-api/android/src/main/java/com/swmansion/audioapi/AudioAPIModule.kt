@@ -43,10 +43,11 @@ class AudioAPIModule(
     try {
       System.loadLibrary("react-native-audio-api")
       val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
-      
-      val workletsModule = reactContext.getNativeModule(WorkletsModule::class.java)
-        ?: throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
-      
+
+      val workletsModule =
+        reactContext.getNativeModule(WorkletsModule::class.java)
+          ?: throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
+
       mHybridData = initHybrid(workletsModule, reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)

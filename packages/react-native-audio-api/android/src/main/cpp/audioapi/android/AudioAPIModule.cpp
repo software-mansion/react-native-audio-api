@@ -42,7 +42,10 @@ void AudioAPIModule::registerNatives() {
 void AudioAPIModule::injectJSIBindings() {
   auto uiWorkletRuntime = workletsModuleProxy_->getUIWorkletRuntime();
   AudioAPIModuleInstaller::injectJSIBindings(
-      jsiRuntime_, jsCallInvoker_, audioEventHandlerRegistry_, uiWorkletRuntime);
+      jsiRuntime_,
+      jsCallInvoker_,
+      audioEventHandlerRegistry_,
+      uiWorkletRuntime);
 }
 
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
