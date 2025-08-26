@@ -1,3 +1,12 @@
+/*
+ * This file links to the FFmpeg library, which is licensed under the
+ * GNU Lesser General Public License (LGPL) version 2.1 or later.
+ *
+ * Our own code in this file is licensed under the MIT License, but note
+ * that linking with FFmpeg means you must comply with the terms of the
+ * LGPL for FFmpeg itself.
+ */
+
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>

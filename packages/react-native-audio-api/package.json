@@ -35,7 +35,6 @@
     "!**/.*",
     "!**/node_modules",
     "scripts/setup-rn-audio-api-web.js",
-    "scripts/download-audioapi-libs.rb",
     "app.plugin.js"
   ],
   "scripts": {

@@ -28,8 +28,8 @@ COMMON_CONFIG="
 --disable-protocols
 --disable-devices
 --disable-filters
---enable-static
---disable-shared
+--disable-static
+--enable-shared
 --enable-small
 --disable-debug
 --disable-optimizations
@@ -46,6 +46,8 @@ COMMON_CONFIG="
 --enable-decoder=mp3
 --enable-decoder=flac
 --enable-protocol=udp
+--enable-pic
+--disable-x86asm
 "
 
 build_arch() {
@@ -57,15 +59,25 @@ build_arch() {
     local LDFLAGS=$6
     local EXTRA_CONFIG=$7
     
-    if [[ ${PLATFORM} == "linux" ]]; then
+    if [[ ${PLATFORM} == "android" ]]; then
         PLATFORM_NAME="android"
-        ARCH_NAME=${ARCH}
+        if [[ ${ARCH} == "aarch64" ]]; then
+            ARCH_NAME="arm64-v8a"
+        elif [[ ${ARCH} == "armv7a" ]]; then
+            ARCH_NAME="armeabi-v7a"
+        else
+            ARCH_NAME=${ARCH}
+        fi
     elif [[ ${PLATFORM} == "darwin" ]]; then
         PLATFORM_NAME="ios"
-        ARCH_NAME=${ARCH}
+        ARCH_NAME="iphoneos"
     elif [[ ${PLATFORM} == "darwinsim" ]]; then
         PLATFORM_NAME="ios"
-        ARCH_NAME=${ARCH}-sim
+        if [[ ${ARCH} == "x86_64" ]]; then
+            ARCH_NAME="iphonesimulator_x86_64"
+        else
+            ARCH_NAME="iphonesimulator_arm64"
+        fi
     fi
 
     echo "Building FFmpeg for ${PLATFORM_NAME} ${ARCH_NAME}..."
@@ -123,7 +135,7 @@ make distclean 2>/dev/null || true
 cd - > /dev/null
 
 # iOS Architectures
-if [[ "$OSTYPE" != "darwin"* ]]; then
+if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Building for iOS architectures..."
     
     # iOS SDK paths
@@ -148,6 +160,16 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
         "--disable-iconv --disable-zlib"
 
     rm -rf "${OUTPUT_DIR}/ios/arm64-sim/share"
+
+    # iOS Simulator x86_64 (Intel Macs)
+    build_arch "x86_64" "darwinsim" \
+        "$(xcrun --sdk iphonesimulator --find clang)" \
+        "$(xcrun --sdk iphonesimulator --find clang++)" \
+        "-arch x86_64 -mios-simulator-version-min=11.0 -isysroot ${IOS_SIM_SDK_PATH}" \
+        "-arch x86_64 -mios-simulator-version-min=11.0 -isysroot ${IOS_SIM_SDK_PATH}" \
+        "--disable-iconv --disable-zlib"
+
+    rm -rf "${OUTPUT_DIR}/ios/x86_64-sim/share"
     
     echo "iOS builds completed!"
 else
@@ -217,42 +239,42 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
         fi
         
         # ARM64-v8a
-        build_arch "aarch64" "linux" \
+        build_arch "aarch64" "android" \
             "${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/arm64-v8a -L${TOOLCHAIN}/sysroot/usr/lib/aarch64-linux-android/${API_LEVEL}" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/arm64-v8a -L${TOOLCHAIN}/sysroot/usr/lib/aarch64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/aarch64/share
         
         # ARMv7a
-        build_arch "armv7a" "linux" \
+        build_arch "armv7a" "android" \
             "${TOOLCHAIN}/bin/armv7a-linux-androideabi${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/armv7a-linux-androideabi${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a -L${TOOLCHAIN}/sysroot/usr/lib/arm-linux-android/${API_LEVEL}" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a -L${TOOLCHAIN}/sysroot/usr/lib/arm-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/armv7a/share
 
         # x86
-        build_arch "x86" "linux" \
+        build_arch "x86" "android" \
             "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL}" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/x86/share
 
 
         # x86_64
-        build_arch "x86_64" "linux" \
+        build_arch "x86_64" "android" \
             "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL}" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/x86_64/share
@@ -264,15 +286,7 @@ else
     echo "Skipping Android builds (ANDROID_NDK_ROOT or NDK_ROOT not set)"
 fi
 
-echo ""
-echo "Build Summary:"
-echo "=============="
-find "${OUTPUT_DIR}" -name "*.a" | while read -r lib; do
-    echo "Built: $lib"
-done
-
 rm -rf "${BUILD_DIR}"
 
 echo ""
 echo "All builds completed!"
-echo "Static libraries (.a files) are located in: ${OUTPUT_DIR}"

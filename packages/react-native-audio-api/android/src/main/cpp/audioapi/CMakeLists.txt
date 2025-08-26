@@ -4,16 +4,24 @@ file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audi
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
+set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
+set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
+set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
-foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile avcodec avformat avutil swresample crypto ssl)
+foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
   add_library(${lib} STATIC IMPORTED)
-  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${COMMON_CPP_DIR}/audioapi/external/${ANDROID_ABI}/lib${lib}.a)
+  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${EXTERNAL_DIR}/${ANDROID_ABI}/lib${lib}.a)
 endforeach()
+
+ foreach (lib IN ITEMS avcodec avformat avutil swresample)
+   add_library(${lib} SHARED IMPORTED)
+   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
+ endforeach()
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -26,6 +34,7 @@ target_include_directories(
   "${ANDROID_CPP_DIR}"
   "${INCLUDE_DIR}"
   "${INCLUDE_DIR}/opus"
+  "${FFMPEG_INCLUDE_DIR}"
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
