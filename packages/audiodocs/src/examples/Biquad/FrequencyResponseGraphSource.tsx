@@ -53,7 +53,7 @@ const RangeSlider = ({
   </div>
 );
 
-const AudioFile: React.FC = () => {
+const FrequencyResponseGraph: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [filterType, setFilterType] = useState<BiquadFilterType>('allpass');
@@ -88,7 +88,9 @@ const AudioFile: React.FC = () => {
     };
 
     init();
-    return () => { audioContextRef.current?.close(); };
+    return () => {
+      audioContextRef.current?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -203,7 +205,7 @@ const AudioFile: React.FC = () => {
   );
 };
 
-export default AudioFile;
+export default FrequencyResponseGraph;
 
 const styles = StyleSheet.create({
   filterButton: {

@@ -2,7 +2,8 @@
   "parser": "@babel/eslint-parser",
   "parserOptions": {
     "babelOptions": {
-      "presets": ["@babel/preset-react"]
+      "presets": ["@babel/preset-react"],
+      "plugins": ["react-native-worklets/plugin"]
     }
   }
 }

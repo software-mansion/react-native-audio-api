@@ -4,11 +4,18 @@ sidebar_position: 1
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { ReadOnly } from '@site/src/components/Badges';
+import InteractiveExample from '@site/src/components/InteractiveExample';
 
 # BiquadFilterNode
 
 The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](/docs/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
+
+
+import BiquadExample from '@site/src/examples/Biquad/BiquadExampleComponent';
+import BiquadExampleSrc from '!!raw-loader!@site/src/examples/Biquad/BiquadExampleSource';
+
+<InteractiveExample src={BiquadExampleSrc} component={BiquadExample} />
 
 
 #### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
@@ -40,11 +47,11 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 | `notch` | Notch (band-stop) filter. Opposite of a bandpass filter: frequencies around the center are attenuated; others remain unchanged. | The center of the frequency range where the notch is applied. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
 | `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
 
-import InteractiveExample from '@site/src/components/InteractiveExample';
-import Biquad from '@site/src/examples/Biquad/Component';
-import BiquadSrc from '!!raw-loader!@site/src/examples/Biquad/Source';
 
-<InteractiveExample src={BiquadSrc} component={Biquad} />
+import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraphComponent';
+import FrequencyResponseGraphSrc from '!!raw-loader!@site/src/examples/Biquad/FrequencyResponseGraphSource';
+
+<InteractiveExample src={FrequencyResponseGraphSrc} component={FrequencyResponseGraph} />
 
 ## Methods
 

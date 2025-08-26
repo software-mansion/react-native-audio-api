@@ -15,10 +15,12 @@
     "react-native-background-timer": "^2.4.1",
     "react-native-dotenv": "3.4.11",
     "react-native-gesture-handler": "2.28.0",
-    "react-native-reanimated": "3.19.1",
+    "react-native-reanimated": "^4.0.2",
     "react-native-safe-area-context": "5.6.0",
     "react-native-screens": "4.14.1",
-    "react-native-svg": "15.12.1"
+    "react-native-svg": "15.12.1",
+    "react-native-web": "^0.21.1",
+    "react-native-worklets": "^0.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
