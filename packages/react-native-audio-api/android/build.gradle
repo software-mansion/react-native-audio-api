@@ -172,8 +172,8 @@ android {
   }
 
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
 
     packagingOptions {
       doNotStrip resolveBuildType() == 'debug' ? "**/**/*.so" : ''
@@ -217,7 +217,7 @@ dependencies {
   implementation "com.facebook.react:react-native:+"
   implementation 'androidx.core:core-ktx:1.13.1'
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
-  implementation 'com.google.oboe:oboe:1.9.0'
+  implementation 'com.google.oboe:oboe:1.9.3'
   implementation 'androidx.media:media:1.7.0'
 }
 

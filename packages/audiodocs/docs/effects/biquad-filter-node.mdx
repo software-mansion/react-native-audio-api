@@ -22,10 +22,10 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 
 | Name | Type |  Rate  | Description |
 | :--: | :--: | :----------: | :-- |
-| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz) |
-| `detune` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents |
-| `Q` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
-| `gain` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) |
+| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz) |
+| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents |
+| `Q` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
+| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) |
 | `type` | `string` | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
 
 #### BiquadFilterType enumeration description

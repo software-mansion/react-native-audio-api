@@ -5,50 +5,40 @@
 namespace audioapi {
 
 AudioNodeDestructor::AudioNodeDestructor() {
-  isExiting_ = false;
-  nodesForDeconstruction_.reserve(10);
-  thread_ = std::thread(&AudioNodeDestructor::process, this);
+  isExiting_.store(false, std::memory_order_release);
+  auto [sender, receiver] = channels::spsc::channel<
+      std::shared_ptr<AudioNode>,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>(kChannelCapacity);
+  sender_ = std::move(sender);
+  workerHandle_ =
+      std::thread(&AudioNodeDestructor::process, this, std::move(receiver));
 }
 
 AudioNodeDestructor::~AudioNodeDestructor() {
-  isExiting_ = true;
+  isExiting_.store(true, std::memory_order_release);
 
-  cv_.notify_one(); // call process for the last time
-  if (thread_.joinable()) {
-    thread_.join();
+  // We need to send a nullptr to unblock the receiver
+  sender_.send(nullptr);
+  if (workerHandle_.joinable()) {
+    workerHandle_.join();
   }
 }
 
-void AudioNodeDestructor::tryCallWithLock(
-    const std::function<void()> &callback) {
-  if (auto lock = Locker::tryLock(mutex_)) {
-    callback();
-  }
+bool AudioNodeDestructor::tryAddNodeForDeconstruction(
+    std::shared_ptr<AudioNode> &&node) {
+  return sender_.try_send(std::move(node)) ==
+      channels::spsc::ResponseStatus::SUCCESS;
 }
 
-void AudioNodeDestructor::addNodeForDeconstruction(
-    const std::shared_ptr<AudioNode> &node) {
-  // NOTE: this method must be called within `tryCallWithLock`
-  nodesForDeconstruction_.emplace_back(node);
-}
-
-void AudioNodeDestructor::notify() {
-  cv_.notify_one();
-}
-
-void AudioNodeDestructor::process() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  while (!isExiting_) {
-    cv_.wait(lock, [this] {
-      return isExiting_ || !nodesForDeconstruction_.empty();
-    });
-
-    if (isExiting_)
-      break;
-
-    if (!isExiting_ && !nodesForDeconstruction_.empty()) {
-      nodesForDeconstruction_.clear();
-    }
+void AudioNodeDestructor::process(
+    channels::spsc::Receiver<
+        std::shared_ptr<AudioNode>,
+        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+        channels::spsc::WaitStrategy::ATOMIC_WAIT> &&receiver) {
+  auto rcv = std::move(receiver);
+  while (!isExiting_.load(std::memory_order_acquire)) {
+    rcv.receive();
   }
 }
 
