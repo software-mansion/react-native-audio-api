@@ -65,14 +65,14 @@ bool StreamerNode::initialize(const std::string &input_url) {
       maxBufferSize_, codecpar_->ch_layout.nb_channels, codecCtx_->sample_rate);
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
-  streamFlag.store(true);
+  streamFlag.store(true, std::memory_order_relaxed);
   isInitialized_ = true;
   return true;
 }
 
 void StreamerNode::stop(double when) {
   AudioScheduledSourceNode::stop(when);
-  streamFlag.store(false);
+  streamFlag.store(false, std::memory_order_relaxed);
 }
 
 bool StreamerNode::setupResampler() {
@@ -111,7 +111,7 @@ bool StreamerNode::setupResampler() {
 }
 
 void StreamerNode::streamAudio() {
-  while (streamFlag.load()) {
+  while (streamFlag.load(), std::memory_order_relaxed) {
     if (pendingFrame_ != nullptr) {
       if (!processFrameWithResampler(pendingFrame_)) {
         cleanup();
@@ -259,7 +259,7 @@ bool StreamerNode::setupDecoder() {
 }
 
 void StreamerNode::cleanup() {
-  streamFlag.store(false);
+  streamFlag.store(false, std::memory_order_relaxed);
   streamingThread_.join();
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
