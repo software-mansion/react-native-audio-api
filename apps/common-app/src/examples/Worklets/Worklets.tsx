@@ -35,7 +35,6 @@ function Worklets() {
         });
 
         AudioManager.requestRecordingPermissions();
-
         recorderRef.current = new AudioRecorder({
             sampleRate: SAMPLE_RATE,
             bufferLengthInSamples: 512,
@@ -60,14 +59,14 @@ function Worklets() {
             const scaledAmplitude = Math.min(rms * 150, 1);
             
             console.log(`RMS: ${rms}, Scaled: ${scaledAmplitude}`);
+            
             bar0.value = bar1.value;
             bar1.value = bar2.value;
             bar3.value = bar2.value;
             bar4.value = bar3.value;
-            
-            // Set new amplitude in center
-            bar2.value = scaledAmplitude;
+            bar2.value = scaledAmplitude; 
         });
+
         aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
         recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
         recorderAdapterRef.current.connect(aCtxRef.current.destination);
