@@ -1,7 +1,6 @@
-import { IndexSizeError } from '../../errors';
-import { IAnalyserNode } from '../interfaces';
-import { WindowType } from '../../types';
 import AudioNode from '../core/AudioNode';
+import { WindowType } from '../../types';
+import { IndexSizeError } from '../../errors';
 
 export default class AnalyserNode extends AudioNode {
   private static allowedFFTSize: number[] = [
@@ -9,7 +8,7 @@ export default class AnalyserNode extends AudioNode {
   ];
 
   public get fftSize(): number {
-    return (this.node as IAnalyserNode).fftSize;
+    return (this.node as globalThis.AnalyserNode).fftSize;
   }
 
   public set fftSize(value: number) {
@@ -19,11 +18,11 @@ export default class AnalyserNode extends AudioNode {
       );
     }
 
-    (this.node as IAnalyserNode).fftSize = value;
+    (this.node as globalThis.AnalyserNode).fftSize = value;
   }
 
   public get minDecibels(): number {
-    return (this.node as IAnalyserNode).minDecibels;
+    return (this.node as globalThis.AnalyserNode).minDecibels;
   }
 
   public set minDecibels(value: number) {
@@ -33,11 +32,11 @@ export default class AnalyserNode extends AudioNode {
       );
     }
 
-    (this.node as IAnalyserNode).minDecibels = value;
+    (this.node as globalThis.AnalyserNode).minDecibels = value;
   }
 
   public get maxDecibels(): number {
-    return (this.node as IAnalyserNode).maxDecibels;
+    return (this.node as globalThis.AnalyserNode).maxDecibels;
   }
 
   public set maxDecibels(value: number) {
@@ -47,11 +46,11 @@ export default class AnalyserNode extends AudioNode {
       );
     }
 
-    (this.node as IAnalyserNode).maxDecibels = value;
+    (this.node as globalThis.AnalyserNode).maxDecibels = value;
   }
 
   public get smoothingTimeConstant(): number {
-    return (this.node as IAnalyserNode).smoothingTimeConstant;
+    return (this.node as globalThis.AnalyserNode).smoothingTimeConstant;
   }
 
   public set smoothingTimeConstant(value: number) {
@@ -61,34 +60,35 @@ export default class AnalyserNode extends AudioNode {
       );
     }
 
-    (this.node as IAnalyserNode).smoothingTimeConstant = value;
+    (this.node as globalThis.AnalyserNode).smoothingTimeConstant = value;
   }
 
   public get window(): WindowType {
-    return (this.node as IAnalyserNode).window;
+    console.warn('React Native Audio API: window prop is not supported on web');
+    return 'blackman';
   }
 
   public set window(value: WindowType) {
-    (this.node as IAnalyserNode).window = value;
+    console.warn('React Native Audio API: window prop is not supported on web');
   }
 
   public get frequencyBinCount(): number {
-    return (this.node as IAnalyserNode).frequencyBinCount;
+    return (this.node as globalThis.AnalyserNode).frequencyBinCount;
   }
 
   public getFloatFrequencyData(array: Float32Array<ArrayBuffer>): void {
-    (this.node as IAnalyserNode).getFloatFrequencyData(array);
+    (this.node as globalThis.AnalyserNode).getFloatFrequencyData(array);
   }
 
   public getByteFrequencyData(array: Uint8Array<ArrayBuffer>): void {
-    (this.node as IAnalyserNode).getByteFrequencyData(array);
+    (this.node as globalThis.AnalyserNode).getByteFrequencyData(array);
   }
 
   public getFloatTimeDomainData(array: Float32Array<ArrayBuffer>): void {
-    (this.node as IAnalyserNode).getFloatTimeDomainData(array);
+    (this.node as globalThis.AnalyserNode).getFloatTimeDomainData(array);
   }
 
   public getByteTimeDomainData(array: Uint8Array<ArrayBuffer>): void {
-    (this.node as IAnalyserNode).getByteTimeDomainData(array);
+    (this.node as globalThis.AnalyserNode).getByteTimeDomainData(array);
   }
 }
