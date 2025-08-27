@@ -1,9 +1,10 @@
 #pragma once
 
 #include <jsi/jsi.h>
+#if RN_AUDIO_API_ENABLE_WORKLETS
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 #include <worklets/SharedItems/Shareables.h>
-
+#endif
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -46,12 +47,11 @@ class AudioRecorder {
   void disconnect();
 
 
-
+  #if RN_AUDIO_API_ENABLE_WORKLETS
   void invokeWorkletOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus,
                                         int numFrames, double when);
-
   void setWorkletCallback(std::shared_ptr<worklets::ShareableWorklet> &callback, std::shared_ptr<worklets::WorkletRuntime> &uiRuntime);
-
+  #endif
 
   virtual void start() = 0;
   virtual void stop() = 0;
@@ -70,9 +70,11 @@ class AudioRecorder {
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
 
+  #if RN_AUDIO_API_ENABLE_WORKLETS
   std::shared_ptr<worklets::ShareableWorklet> shareableWorklet_;
   std::shared_ptr<worklets::WorkletRuntime> uiRuntime_;
   mutable std::mutex workletCallbackMutex_;
+  #endif
 
   void writeToBuffers(const float *data, int numFrames);
 };

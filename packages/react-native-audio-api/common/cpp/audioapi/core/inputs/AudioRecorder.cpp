@@ -22,6 +22,7 @@ AudioRecorder::AudioRecorder(
   isRunning_.store(false);
 }
 
+#if RN_AUDIO_API_ENABLE_WORKLETS
 void AudioRecorder::setWorkletCallback(
     std::shared_ptr<worklets::ShareableWorklet> &callback,
     std::shared_ptr<worklets::WorkletRuntime> &uiRuntime) {
@@ -50,6 +51,7 @@ void AudioRecorder::invokeWorkletOnAudioReadyCallback(
 
   uiRuntime_->runGuarded(shareableWorklet_, jsArray, jsi::Value(when));
 }
+#endif
 
 void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
   onAudioReadyCallbackId_ = callbackId;
@@ -68,7 +70,9 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
 
+  #if RN_AUDIO_API_ENABLE_WORKLETS
   invokeWorkletOnAudioReadyCallback(bus, numFrames, when);
+  #endif
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "audioReady", onAudioReadyCallbackId_, body);

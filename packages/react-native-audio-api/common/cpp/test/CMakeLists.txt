@@ -7,6 +7,9 @@ set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
+# Disable worklets support for tests
+set(RN_AUDIO_API_ENABLE_WORKLETS FALSE)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest

@@ -6,8 +6,11 @@
 #include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
+
+#if RN_AUDIO_API_ENABLE_WORKLETS
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 #include <worklets/SharedItems/Shareables.h>
+#endif
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
@@ -81,11 +84,15 @@ class AudioRecorderHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(setWorkletCallback) {
+    #if RN_AUDIO_API_ENABLE_WORKLETS
     if (count > 0) {
       auto shareableWorklet = worklets::extractShareableOrThrow<worklets::ShareableWorklet>(runtime, args[0]);
       audioRecorder_->setWorkletCallback(shareableWorklet, uiRuntime_);
     }
     return jsi::Value::undefined();
+    #else
+    return jsi::Value::undefined();
+    #endif
   }
 
   JSI_PROPERTY_SETTER(onAudioReady) {

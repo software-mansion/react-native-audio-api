@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.12.0)
 
+# Enable worklets support for Android builds
+set(RN_AUDIO_API_ENABLE_WORKLETS TRUE)
+
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
