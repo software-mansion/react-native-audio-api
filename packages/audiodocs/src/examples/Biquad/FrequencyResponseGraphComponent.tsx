@@ -38,7 +38,7 @@ const RangeSlider = ({
   onChange: (v: number) => void;
 }) => (
   <div style={{ marginTop: 8 }}>
-    <label style={{ color: '#fff' }}>
+    <label style={{ color: '#fcfcff' }}>
       {label}: {value.toFixed(1)} {unit}
       <input
         type="range"
@@ -47,7 +47,7 @@ const RangeSlider = ({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: '100%', marginTop: 4 }}
+        style={{ width: '100%', marginTop: 4, color: '#6676aa' }}
       />
     </label>
   </div>
@@ -60,10 +60,14 @@ const FrequencyResponseGraph: React.FC = () => {
   const [filterFreq, setFilterFreq] = useState(350);
   const [filterQ, setFilterQ] = useState(1);
   const [filterGain, setFilterGain] = useState(0);
+  const [selectedAudio, setSelectedAudio] = useState<'audio1' | 'audio2'>('audio1');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const audioBuffersRef = useRef<{ audio1: AudioBuffer | null; audio2: AudioBuffer | null }>({
+    audio1: null,
+    audio2: null,
+  });
   const filterRef = useRef<BiquadFilterNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -77,13 +81,19 @@ const FrequencyResponseGraph: React.FC = () => {
       filterRef.current = filter;
 
       setIsLoading(true);
-      audioBufferRef.current = await fetch('/react-native-audio-api/audio/voice/example-voice-01.mp3')
-        .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
-        .catch((error) => {
-          console.error('Error decoding audio data source:', error);
-          return null;
-        });
+      try {
+        const audio1 = await fetch('/react-native-audio-api/audio/voice/example-voice-01.mp3')
+          .then((response) => response.arrayBuffer())
+          .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
+
+        const audio2 = await fetch('/react-native-audio-api/audio/music/example-music-01.mp3')
+          .then((response) => response.arrayBuffer())
+          .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
+
+        audioBuffersRef.current = { audio1, audio2 };
+      } catch (error) {
+        console.error('Error decoding audio data source:', error);
+      }
       setIsLoading(false);
     };
 
@@ -105,23 +115,38 @@ const FrequencyResponseGraph: React.FC = () => {
     drawFrequencyResponse();
   }, [filterType, filterFreq, filterQ, filterGain]);
 
-  const handlePlayPause = async () => {
-    if (!audioContextRef.current || !audioBufferRef.current) return;
+  const playAudio = async () => {
+    if (!audioContextRef.current) return;
 
+    bufferSourceRef.current?.stop();
+    bufferSourceRef.current = null;
+
+    const buffer = selectedAudio === 'audio1' ? audioBuffersRef.current.audio1 : audioBuffersRef.current.audio2;
+    if (!buffer) return;
+
+    const source = await audioContextRef.current.createBufferSource();
+    source.buffer = buffer;
+    bufferSourceRef.current = source;
+
+    source.connect(filterRef.current!);
+    source.start();
+
+    setIsPlaying(true);
+  };
+
+  const handlePlayPause = async () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
       bufferSourceRef.current = null;
+      setIsPlaying(false);
     } else {
-      const source = await audioContextRef.current.createBufferSource();
-      source.buffer = audioBufferRef.current;
-      bufferSourceRef.current = source;
-
-      source.connect(filterRef.current!);
-      source.start();
+      await playAudio();
     }
-
-    setIsPlaying(prev => !prev);
   };
+
+  useEffect(() => {
+    if (isPlaying) playAudio();
+  }, [selectedAudio]);
 
   const drawFrequencyResponse = () => {
     if (!canvasRef.current || !filterRef.current) return;
@@ -161,7 +186,7 @@ const FrequencyResponseGraph: React.FC = () => {
       line(0, y, width, y);
     }
 
-    // response
+    // frequency response
     ctx.beginPath();
     mags.forEach((m, i) => {
       const x = (i / (mags.length - 1)) * width;
@@ -176,23 +201,39 @@ const FrequencyResponseGraph: React.FC = () => {
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      {isLoading && <ActivityIndicator color="#FFFFFF" />}
+    <View style={styles.container}>
+      {isLoading && <ActivityIndicator color="#fcfcff" />}
 
-      <canvas ref={canvasRef} width={600} height={200} style={{ borderRadius: 6, marginTop: 16 }} />
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#38acdd" />
+      <canvas ref={canvasRef} width={600} height={200} style={styles.canvas} />
+      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
 
       <ScrollView horizontal style={{ marginTop: 16 }}>
-        {FILTER_TYPES.map(type => (
+        {FILTER_TYPES.map((type) => (
           <Pressable
             key={type}
             onPress={() => setFilterType(type)}
-            style={[styles.filterButton, filterType === type && { backgroundColor: '#38acdd' }]}
+            style={[styles.filterButton, filterType === type && styles.filterButtonActive]}
           >
-            <Text style={{ color: '#fff' }}>{type}</Text>
+            <Text style={styles.labelText}>{type}</Text>
           </Pressable>
         ))}
       </ScrollView>
+
+      <View style={styles.audioToggleContainer}>
+        <Text style={[styles.labelText, { marginRight: 8 }]}>Voice</Text>
+        <Pressable
+          onPress={() => setSelectedAudio(selectedAudio === 'audio1' ? 'audio2' : 'audio1')}
+          style={styles.toggleTrack}
+        >
+          <View
+            style={[
+              styles.toggleThumb,
+              { transform: [{ translateX: selectedAudio === 'audio1' ? 0 : 26 }] },
+            ]}
+          />
+        </Pressable>
+        <Text style={[styles.labelText, { marginLeft: 8 }]}>Music</Text>
+      </View>
 
       <div style={{ marginTop: 16 }}>
         <RangeSlider label="Frequency" value={filterFreq} min={10} max={5000} step={10} unit="Hz" onChange={setFilterFreq} />
@@ -208,13 +249,38 @@ const FrequencyResponseGraph: React.FC = () => {
 export default FrequencyResponseGraph;
 
 const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  canvas: { borderRadius: 6, marginTop: 16 },
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#33488e',
+    backgroundColor: '#6676aa',
     borderRadius: 6,
     marginRight: 8,
   },
+  filterButtonActive: {
+    backgroundColor: '#33488e',
+  },
+  labelText: {
+    color: '#fcfcff',
+  },
+  audioToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  toggleTrack: {
+    width: 50,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#33488e',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#6676aa',
+  },
 });
-
-// TODO: fix styling in bright mode

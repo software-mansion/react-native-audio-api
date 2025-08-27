@@ -16,7 +16,9 @@ const useFlapStyle = (progress: number, { axis, translate, multiplier }: FlapPar
       transform: [
         { perspective: 800 },
         axis === "X" ? { translateY: translate } : { translateX: translate },
-        axis === "X" ? { rotateX: withTiming(rotate) } : { rotateY: withTiming(rotate) },
+        axis === "X"
+          ? { rotateX: withTiming(rotate, { duration: 50 }) }
+          : { rotateY: withTiming(rotate, { duration: 50 }) },
         axis === "X" ? { translateY: -translate } : { translateX: -translate },
       ],
     };
