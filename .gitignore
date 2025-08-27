@@ -90,3 +90,4 @@ react-native-audio-api*.tgz
 compile_commands.json
 openssl-prebuilt/
 prebuilt_libs/
+output/

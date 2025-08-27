@@ -46,17 +46,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  if (!findAudioStream()) {
-    cleanup();
-    return false;
-  }
-
-  if (!setupDecoder()) {
-    cleanup();
-    return false;
-  }
-
-  if (!setupResampler()) {
+  if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
     cleanup();
     return false;
   }
@@ -117,11 +107,7 @@ bool StreamerNode::setupResampler() {
       AV_SAMPLE_FMT_FLTP,
       0);
 
-  if (ret < 0) {
-    return false;
-  }
-
-  return true;
+  return ret >= 0;
 }
 
 void StreamerNode::streamAudio() {
@@ -233,16 +219,10 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
 }
 
 bool StreamerNode::openInput(const std::string &input_url) {
-  int ret = avformat_open_input(&fmtCtx_, input_url.c_str(), nullptr, nullptr);
-  if (ret < 0) {
+  if (avformat_open_input(&fmtCtx_, input_url.c_str(), nullptr, nullptr) < 0) {
     return false;
   }
-
-  if (avformat_find_stream_info(fmtCtx_, nullptr) < 0) {
-    return false;
-  }
-
-  return true;
+  return avformat_find_stream_info(fmtCtx_, nullptr) >= 0;
 }
 
 bool StreamerNode::findAudioStream() {
@@ -257,11 +237,7 @@ bool StreamerNode::findAudioStream() {
     }
   }
 
-  if (audio_stream_index_ < 0 || codecpar_ == nullptr) {
-    return false;
-  }
-
-  return true;
+  return audio_stream_index_ >= 0 && codecpar_ != nullptr;
 }
 
 bool StreamerNode::setupDecoder() {
@@ -279,11 +255,7 @@ bool StreamerNode::setupDecoder() {
     return false;
   }
 
-  if (avcodec_open2(codecCtx_, decoder_, nullptr) < 0) {
-    return false;
-  }
-
-  return true;
+  return avcodec_open2(codecCtx_, decoder_, nullptr) >= 0;
 }
 
 void StreamerNode::cleanup() {

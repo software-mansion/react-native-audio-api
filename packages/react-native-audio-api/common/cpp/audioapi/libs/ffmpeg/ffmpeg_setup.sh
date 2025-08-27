@@ -15,6 +15,11 @@ OUTPUT_DIR="$(pwd)/output"
 mkdir -p "${BUILD_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
+AVUTIL_VERSION="60.6.100"
+AVCODEC_VERSION="62.8.100"
+AVFORMAT_VERSION="62.1.103"
+SWRRESAMPLE_VERSION="6.0.100"
+
 COMMON_CONFIG="
 --disable-programs
 --disable-doc
@@ -122,6 +127,27 @@ build_arch() {
     cd - > /dev/null
 }
 
+fix_dynamic_ios_linkage() {
+    local LIB_PATH=$1
+    
+    # Get all dependencies that are not system libraries (including the library itself)
+    otool -L "${LIB_PATH}" | grep -v "/usr/lib/" | grep -v "/System/" | awk 'NR>1 {print $1}' | while read -r dep; do
+        if [[ -n "$dep" ]]; then
+            # Extract library name without any version numbers and extension for framework path
+            local lib_name=$(basename "$dep" | sed 's/\.dylib$//' | sed 's/\.[0-9][0-9.]*$//')
+            local framework_path="@rpath/Frameworks/${lib_name}.framework/${lib_name}"
+            echo "Changing dependency: $dep -> $framework_path"
+            install_name_tool -change "$dep" "$framework_path" "${LIB_PATH}"
+        fi
+    done
+    
+    # Also update the library's own install name to use @rpath with framework structure
+    local lib_name=$(basename "${LIB_PATH}" | sed 's/\.dylib$//' | sed 's/\.[0-9][0-9.]*$//')
+    local framework_path="@rpath/Frameworks/${lib_name}.framework/${lib_name}"
+    echo "Updating install name for $(basename "${LIB_PATH}") -> $framework_path"
+    install_name_tool -id "$framework_path" "${LIB_PATH}"
+}
+
 # Check if source exists
 if [ ! -d "${SOURCE_DIR}" ]; then
     echo "FFmpeg source not found."
@@ -149,8 +175,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         "-arch arm64 -mios-version-min=11.0 -isysroot ${IOS_SDK_PATH}" \
         "-arch arm64 -mios-version-min=11.0 -isysroot ${IOS_SDK_PATH}" \
         "--disable-iconv --disable-zlib"
+
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libavcodec.${AVCODEC_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libavformat.${AVFORMAT_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libavutil.${AVUTIL_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib"
     
-    rm -rf "${OUTPUT_DIR}/ios/arm64/share"
+    rm -rf "${OUTPUT_DIR}/ios/iphoneos/share"
 
     build_arch "arm64" "darwinsim" \
         "$(xcrun --sdk iphonesimulator --find clang)" \
@@ -159,7 +190,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         "-arch arm64 -mios-simulator-version-min=11.0 -isysroot ${IOS_SIM_SDK_PATH}" \
         "--disable-iconv --disable-zlib"
 
-    rm -rf "${OUTPUT_DIR}/ios/arm64-sim/share"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavcodec.${AVCODEC_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavformat.${AVFORMAT_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavutil.${AVUTIL_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib"
+
+    rm -rf "${OUTPUT_DIR}/ios/iphonesimulator_arm64/share"
 
     # iOS Simulator x86_64 (Intel Macs)
     build_arch "x86_64" "darwinsim" \
@@ -169,7 +205,39 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         "-arch x86_64 -mios-simulator-version-min=11.0 -isysroot ${IOS_SIM_SDK_PATH}" \
         "--disable-iconv --disable-zlib"
 
-    rm -rf "${OUTPUT_DIR}/ios/x86_64-sim/share"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavcodec.${AVCODEC_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavformat.${AVFORMAT_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavutil.${AVUTIL_VERSION}.dylib"
+    fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib"
+
+    rm -rf "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/share"
+
+    mkdir -p "${OUTPUT_DIR}/ios/iphonesimulator/lib"
+    lipo -create \
+        "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavcodec.${AVCODEC_VERSION}.dylib" \
+        "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavcodec.${AVCODEC_VERSION}.dylib" \
+        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavcodec.${AVCODEC_VERSION}.dylib"
+    lipo -create \
+        "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavformat.${AVFORMAT_VERSION}.dylib" \
+        "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavformat.${AVFORMAT_VERSION}.dylib" \
+        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavformat.${AVFORMAT_VERSION}.dylib"
+    
+    lipo -create \
+        "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavutil.${AVUTIL_VERSION}.dylib" \
+        "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavutil.${AVUTIL_VERSION}.dylib" \
+        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavutil.${AVUTIL_VERSION}.dylib" 
+       
+    lipo -create \
+        "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib" \
+        "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib" \
+        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib"
+
+    mv "${OUTPUT_DIR}/ios/iphonesimulator/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib" "${OUTPUT_DIR}/ios/iphonesimulator/lib/libswresample.dylib"
+    mv "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavutil.${AVUTIL_VERSION}.dylib" "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavutil.dylib"
+    mv "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavformat.${AVFORMAT_VERSION}.dylib" "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavformat.dylib"
+    mv "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavcodec.${AVCODEC_VERSION}.dylib" "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavcodec.dylib"
+
+    bash ./create_xcframework.sh
     
     echo "iOS builds completed!"
 else
@@ -289,4 +357,4 @@ fi
 rm -rf "${BUILD_DIR}"
 
 echo ""
-echo "All builds completed!"
+echo "All FFmpeg builds completed!"
