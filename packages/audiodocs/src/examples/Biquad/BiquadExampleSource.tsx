@@ -26,8 +26,11 @@ const useFlapStyle = (progress: number, { axis, translate, multiplier }: FlapPar
 };
 
 const BoxWithFlaps = ({ progress }: { progress: number }) => {
-  const topStyle = useFlapStyle(progress, { axis: "X", translate: -50, multiplier: -120 });
-  const bottomStyle = useFlapStyle(progress, { axis: "X", translate: 50, multiplier: 120 });
+  const phaseShift = 0.7;
+  const delayedProgress = Math.max(0, progress - phaseShift) / (1 - phaseShift);
+
+  const topStyle = useFlapStyle(delayedProgress, { axis: "X", translate: -25, multiplier: 130 });
+  const bottomStyle = useFlapStyle(delayedProgress, { axis: "X", translate: 25, multiplier: -130 });
   const leftStyle = useFlapStyle(progress, { axis: "Y", translate: -50, multiplier: -110 });
   const rightStyle = useFlapStyle(progress, { axis: "Y", translate: 50, multiplier: 110 });
 
@@ -40,12 +43,12 @@ const BoxWithFlaps = ({ progress }: { progress: number }) => {
   const flapConfigs = [
     {
       key: "top",
-      style: { top: 0, left: 1, width: 198, height: 100, borderBottomWidth: 2 },
+      style: { top: 0, left: 1, width: 198, height: 50, borderBottomWidth: 2 },
       animatedStyle: topStyle,
     },
     {
       key: "bottom",
-      style: { bottom: 0, left: 1, width: 198, height: 100, borderTopWidth: 2 },
+      style: { bottom: 0, left: 1, width: 198, height: 50, borderTopWidth: 2 },
       animatedStyle: bottomStyle,
     },
     {
@@ -77,9 +80,9 @@ const BoxWithFlaps = ({ progress }: { progress: number }) => {
 
       {/* Gramophone */}
       <Image
-        style={{ width: 100, height: 100, position: "absolute" }}
+        style={{ width: 250, height: 250, position: "absolute" }}
         source={{
-          uri: "https://img.freepik.com/premium-vector/gramophone-illustration-vector-music-cartoon_773815-277.jpg",
+          uri: 'https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-b3fc-61f7-85f7-0df1cc60ecca/raw?se=2025-08-27T16%3A46%3A06Z&sp=r&sv=2024-08-04&sr=b&scid=4ab0bd70-aeeb-5211-ab2d-533022fdef61&skoid=eb780365-537d-4279-a878-cae64e33aa9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-27T04%3A51%3A33Z&ske=2025-08-28T04%3A51%3A33Z&sks=b&skv=2024-08-04&sig=sRrtIPMqvZzo0sjZ0eU1ybRDxjfC9SfpdJoliI8av4s%3D',
         }}
       />
 
@@ -95,8 +98,8 @@ const BoxWithFlaps = ({ progress }: { progress: number }) => {
 };
 
 const AudioFile: React.FC = () => {
-  const [loading, setLoading] = useState(false);
   const [slider, setSlider] = useState(0);
+  const [sliderPressed, setSliderPressed] = useState(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -118,7 +121,6 @@ const AudioFile: React.FC = () => {
       filterRef.current = filterNode;
       gainRef.current = gainNode;
 
-      setLoading(true);
       audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-01.mp3')
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
@@ -126,7 +128,6 @@ const AudioFile: React.FC = () => {
           console.error('Error decoding audio data source:', error);
           return null;
         });
-      setLoading(false);
     };
 
     init();
@@ -135,10 +136,9 @@ const AudioFile: React.FC = () => {
     };
   }, []);
 
-
-  const startSound = async () => {
+  const playSound = async () => {
     if (!audioContextRef.current || !audioBufferRef.current) return;
-    if( bufferSourceRef.current != null ) {
+    if (bufferSourceRef.current != null) {
       stopSound();
     }
     const source = await audioContextRef.current.createBufferSource();
@@ -161,25 +161,31 @@ const AudioFile: React.FC = () => {
       filterRef.current.Q.value = 1 + (1 - ratio) * 10;
       gainRef.current.gain.value = 0.2 + ratio * 0.8;
     }
-  }, [slider]);
+
+    if ((sliderPressed || slider > 0) && !bufferSourceRef.current) playSound();
+    if (!sliderPressed && slider === 0) stopSound();
+
+    if (!sliderPressed && slider > 0) {
+      const id = requestAnimationFrame(() => setSlider(prev => Math.max(0, prev - 1)));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [slider, sliderPressed]);
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
       <BoxWithFlaps progress={slider / 100} />
-      <div style={{ marginTop: 50, width: 180 }}>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={slider}
-          onChange={(e) => setSlider(Number(e.target.value))}
-          onMouseDown={startSound}
-          onMouseUp={stopSound}
-          onTouchStart={startSound}
-          onTouchEnd={stopSound}
-          style={{ width: "100%", marginTop: 20 }}
-        />
-      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={slider}
+        onChange={(e) => setSlider(Number(e.target.value))}
+        onMouseDown={() => setSliderPressed(true)}
+        onMouseUp={() => setSliderPressed(false)}
+        onTouchStart={() => setSliderPressed(true)}
+        onTouchEnd={() => setSliderPressed(false)}
+        style={{ width: 200, marginTop: 50 }}
+      />
     </View>
   );
 };
