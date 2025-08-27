@@ -1,7 +1,96 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { AudioContext, AudioBufferSourceNode, BiquadFilterNode, GainNode } from 'react-native-audio-api';
+import { View, ViewStyle, Image } from "react-native";
+import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { AudioContext, AudioBufferSourceNode, BiquadFilterNode, GainNode, AudioBuffer } from 'react-native-audio-api';
+
+type FlapParams = {
+  axis: "X" | "Y";
+  translate: number;
+  multiplier: number;
+};
+
+const useFlapStyle = (progress: number, { axis, translate, multiplier }: FlapParams) => {
+  return useAnimatedStyle(() => {
+    const rotate = `${progress * multiplier}deg`;
+    return {
+      transform: [
+        { perspective: 800 },
+        axis === "X" ? { translateY: translate } : { translateX: translate },
+        axis === "X" ? { rotateX: withTiming(rotate) } : { rotateY: withTiming(rotate) },
+        axis === "X" ? { translateY: -translate } : { translateX: -translate },
+      ],
+    };
+  });
+};
+
+const BoxWithFlaps = ({ progress }: { progress: number }) => {
+  const topStyle = useFlapStyle(progress, { axis: "X", translate: -50, multiplier: -120 });
+  const bottomStyle = useFlapStyle(progress, { axis: "X", translate: 50, multiplier: 120 });
+  const leftStyle = useFlapStyle(progress, { axis: "Y", translate: -50, multiplier: -110 });
+  const rightStyle = useFlapStyle(progress, { axis: "Y", translate: 50, multiplier: 110 });
+
+  const baseFlapStyle: ViewStyle = {
+    position: "absolute",
+    backgroundColor: "#a9744f",
+    borderColor: "#5c3d2e",
+  };
+
+  const flapConfigs = [
+    {
+      key: "top",
+      style: { top: 0, left: 1, width: 198, height: 100, borderBottomWidth: 2 },
+      animatedStyle: topStyle,
+    },
+    {
+      key: "bottom",
+      style: { bottom: 0, left: 1, width: 198, height: 100, borderTopWidth: 2 },
+      animatedStyle: bottomStyle,
+    },
+    {
+      key: "left",
+      style: { top: 0, left: 0, width: 100, height: 200, borderRightWidth: 2, zIndex: 1 },
+      animatedStyle: leftStyle,
+    },
+    {
+      key: "right",
+      style: { top: 0, right: 0, width: 100, height: 200, borderLeftWidth: 2, zIndex: 1 },
+      animatedStyle: rightStyle,
+    },
+  ];
+
+  return (
+    <View style={{ width: 200, height: 200, position: "relative", alignItems: "center", justifyContent: "center" }}>
+      {/* Box base */}
+      <View
+        style={{
+          position: "absolute",
+          width: 200,
+          height: 200,
+          backgroundColor: "#9d6c49ff",
+          borderWidth: 2,
+          borderColor: "#5c3d2e",
+          borderRadius: 4,
+        }}
+      />
+
+      {/* Gramophone */}
+      <Image
+        style={{ width: 100, height: 100, position: "absolute" }}
+        source={{
+          uri: "https://img.freepik.com/premium-vector/gramophone-illustration-vector-music-cartoon_773815-277.jpg",
+        }}
+      />
+
+      {/* Flaps */}
+      {flapConfigs.map((flap) => (
+        <Animated.View
+          key={flap.key}
+          style={[baseFlapStyle, flap.style, flap.animatedStyle]}
+        />
+      ))}
+    </View>
+  );
+};
 
 const AudioFile: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -12,8 +101,6 @@ const AudioFile: React.FC = () => {
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const filterRef = useRef<BiquadFilterNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
-
-  const squareX = useSharedValue(0);
 
   useEffect(() => {
     const init = async () => {
@@ -49,6 +136,9 @@ const AudioFile: React.FC = () => {
 
   const startSound = async () => {
     if (!audioContextRef.current || !audioBufferRef.current) return;
+    if( bufferSourceRef.current != null ) {
+      stopSound();
+    }
     const source = await audioContextRef.current.createBufferSource();
     source.buffer = audioBufferRef.current;
     bufferSourceRef.current = source;
@@ -62,10 +152,6 @@ const AudioFile: React.FC = () => {
     bufferSourceRef.current = null;
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: withTiming(slider / 100 * 120, { duration: 50 }) }],
-  }));
-
   useEffect(() => {
     if (filterRef.current && gainRef.current) {
       const ratio = slider / 100;
@@ -76,26 +162,20 @@ const AudioFile: React.FC = () => {
   }, [slider]);
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', padding: 16 }}>
-      {loading && <ActivityIndicator color="#FFF" />}
-
-      <View style={{ position: 'absolute', top: 150, width: 200, height: 100, alignItems: 'center' }}>
-        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ff5722', position: 'absolute', left: 0, top: 10 }} />
-        <Animated.View style={[{ width: 80, height: 80, backgroundColor: 'rgba(0,0,0,0.8)', position: 'absolute', top: 10 }, animatedStyle]} />
-      </View>
-
-      <div style={{ marginTop: 300, width: 180 }}>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <BoxWithFlaps progress={slider / 100} />
+      <div style={{ marginTop: 50, width: 180 }}>
         <input
           type="range"
           min={0}
           max={100}
           value={slider}
-          onChange={e => setSlider(Number(e.target.value))}
+          onChange={(e) => setSlider(Number(e.target.value))}
           onMouseDown={startSound}
           onMouseUp={stopSound}
           onTouchStart={startSound}
           onTouchEnd={stopSound}
-          style={{ width: '100%', marginTop: 20 }}
+          style={{ width: "100%", marginTop: 20 }}
         />
       </div>
     </View>
