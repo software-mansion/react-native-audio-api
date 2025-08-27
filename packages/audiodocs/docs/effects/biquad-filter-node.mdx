@@ -29,13 +29,14 @@ import BiquadExampleSrc from '!!raw-loader!@site/src/examples/Biquad/BiquadExamp
 
 | Name | Type |  Rate  | Description |
 | :--: | :--: | :----------: | :-- |
-| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz) |
-| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents |
+| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz). |
+| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents. |
 | `Q` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
-| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB) |
+| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB). |
 | `type` | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
 
 #### BiquadFilterType enumeration description
+Note: The detune parameter behaves the same way for all filter types, so it is not repeated below.
 | `type` | Description | `frequency` | `Q` | `gain` |
 |:------:|:-----------:|:-----------:|:---:|:------:|
 | `lowpass` | Second-order resonant lowpass filter with 12dB/octave rolloff. Frequencies below the cutoff pass through; higher frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak. | Not used |
@@ -67,19 +68,26 @@ import FrequencyResponseGraphSrc from '!!raw-loader!@site/src/examples/Biquad/Fr
 #### Returns `undefined`.
 
 ## Remarks
-TODO: https://developer.mozilla.org/en-US/docs/Web/API/BiquadFilterNode#instance_properties
+
 #### `frequency`
-- float, default value is 350.
-- range: [10, $\frac{sampleRate}{2}$]
+- Float. Default: 350.
+- Range: [10, $\frac{sampleRate}{2}$].
+
 #### `detune`
-- float, default value is 0.
+- Float. Default: 0.
+
 #### `Q`
-- float, default value is 1.
-For lowpass and highpass, the Q value is interpreted to be in dB. For these filters the value range is [-Q, Q] where Q is the largest value for which 10Q/20 does not overflow the bound above. This is approximately 770.63678.
-For bandpass, notch, allpass, and peaking, the Q value is related to the bandwidth of the filter and should be positive, but there's no stricter maximum than the above.
-It is not used for lowshelf and highshelf filters.
+- Float. Default: 1.
+- Range:
+  - For `lowpass` and `highpass` is [-Q, Q], where Q is the largest value for which $10^{Q/20}$ does not overflow the single-precision floating-point representation.
+Numerically: Q ≈ 770.63678.
+  - For `bandpass`, `notch`, `allpass`, and `peaking`: Q is related to the filter’s bandwidth and should be positive.
+  - Not used for `lowshelf` and `highshelf`.
+
 #### `gain`
-- When its value is positive, it represents a real gain; when negative, it represents an attenuation.
-It is expressed in dB, has a default value of 0, and can take a value in a nominal range of -40 to 40.
+- Float. Default: 0.
+- Range: [-40, 40].
+- Positive values correspond to amplification; negative to attenuation.
+
 #### `type`
-- [`BiquadFilterType`](#biquadfiltertype-enumeration-description), default is "lowpass".
+- [`BiquadFilterType`](#biquadfiltertype-enumeration-description). Default: `"lowpass"`.
