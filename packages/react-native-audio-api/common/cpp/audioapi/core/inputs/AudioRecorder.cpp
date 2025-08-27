@@ -70,9 +70,9 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
 
-  #if RN_AUDIO_API_ENABLE_WORKLETS
+#if RN_AUDIO_API_ENABLE_WORKLETS
   invokeWorkletOnAudioReadyCallback(bus, numFrames, when);
-  #endif
+#endif
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "audioReady", onAudioReadyCallbackId_, body);
