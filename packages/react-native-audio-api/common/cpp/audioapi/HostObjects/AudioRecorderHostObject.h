@@ -7,10 +7,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 
-#if RN_AUDIO_API_ENABLE_WORKLETS
-#include <worklets/WorkletRuntime/WorkletRuntime.h>
-#include <worklets/SharedItems/Shareables.h>
-#endif
+#include <audioapi/core/utils/UiWorkletsRunner.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
@@ -33,18 +30,20 @@ class AudioRecorderHostObject : public JsiHostObject {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       int bufferLength,
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime) : uiRuntime_(uiRuntime) {
+      const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
 #ifdef ANDROID
     audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
       sampleRate,
       bufferLength,
-      audioEventHandlerRegistry
+      audioEventHandlerRegistry,
+      workletRunner
     );
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
       sampleRate,
       bufferLength,
-      audioEventHandlerRegistry
+      audioEventHandlerRegistry,
+      workletRunner
     );
 #endif
 
@@ -87,12 +86,10 @@ class AudioRecorderHostObject : public JsiHostObject {
     #if RN_AUDIO_API_ENABLE_WORKLETS
     if (count > 0) {
       auto shareableWorklet = worklets::extractShareableOrThrow<worklets::ShareableWorklet>(runtime, args[0]);
-      audioRecorder_->setWorkletCallback(shareableWorklet, uiRuntime_);
+      audioRecorder_->setWorkletCallback(shareableWorklet);
     }
-    return jsi::Value::undefined();
-    #else
-    return jsi::Value::undefined();
     #endif
+    return jsi::Value::undefined();
   }
 
   JSI_PROPERTY_SETTER(onAudioReady) {
@@ -101,6 +98,5 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  std::shared_ptr<worklets::WorkletRuntime> uiRuntime_;
 };
 } // namespace audioapi

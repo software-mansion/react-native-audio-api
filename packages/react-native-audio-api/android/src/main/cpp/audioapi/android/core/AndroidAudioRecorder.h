@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/utils/UiWorkletsRunner.h>
 
 #include <oboe/Oboe.h>
 #include <functional>
@@ -16,7 +17,9 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
  public:
     AndroidAudioRecorder(float sampleRate,
                          int bufferLength,
-                         const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+                         const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+                         const std::shared_ptr<UiWorkletsRunner> &workletRunner
+                        );
 
     ~AndroidAudioRecorder() override;
 

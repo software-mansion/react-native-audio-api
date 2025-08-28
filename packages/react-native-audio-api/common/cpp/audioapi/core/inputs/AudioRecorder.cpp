@@ -12,10 +12,12 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
+      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      workletRunner_(workletRunner) {
   constexpr int minRingBufferSize = 8192;
   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
@@ -24,11 +26,9 @@ AudioRecorder::AudioRecorder(
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
 void AudioRecorder::setWorkletCallback(
-    std::shared_ptr<worklets::ShareableWorklet> &callback,
-    std::shared_ptr<worklets::WorkletRuntime> &uiRuntime) {
+    std::shared_ptr<worklets::ShareableWorklet> &callback) {
   std::lock_guard<std::mutex> lock(workletCallbackMutex_);
   shareableWorklet_ = callback;
-  uiRuntime_ = uiRuntime;
 }
 void AudioRecorder::invokeWorkletOnAudioReadyCallback(
     const std::shared_ptr<AudioBus> &bus,
@@ -36,20 +36,24 @@ void AudioRecorder::invokeWorkletOnAudioReadyCallback(
     double when) {
   std::lock_guard<std::mutex> lock(workletCallbackMutex_);
 
-  if (!shareableWorklet_ || !uiRuntime_) {
+  if (!shareableWorklet_) {
     return;
   }
 
   auto channelData = bus->getChannel(0);
 
+  auto uiRuntimeRaw = workletRunner_->getJSIRuntime();
+  if (uiRuntimeRaw == nullptr) {
+    return;
+  }
   /// this part might throw
-  auto &uiRuntimeRaw = uiRuntime_->getJSIRuntime();
-  auto jsArray = jsi::Array(uiRuntimeRaw, numFrames);
+  auto jsArray = jsi::Array(*uiRuntimeRaw, numFrames);
   for (size_t i = 0; i < numFrames; i++) {
-    jsArray.setValueAtIndex(uiRuntimeRaw, i, jsi::Value((*channelData)[i]));
+    jsArray.setValueAtIndex(*uiRuntimeRaw, i, jsi::Value((*channelData)[i]));
   }
 
-  uiRuntime_->runGuarded(shareableWorklet_, jsArray, jsi::Value(when));
+  workletRunner_->executeWorkletAsync(
+      shareableWorklet_, jsArray, jsi::Value(when));
 }
 #endif
 

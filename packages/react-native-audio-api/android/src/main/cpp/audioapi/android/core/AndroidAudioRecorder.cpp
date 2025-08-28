@@ -12,8 +12,13 @@ namespace audioapi {
 AndroidAudioRecorder::AndroidAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry) {
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner)
+    : AudioRecorder(
+          sampleRate,
+          bufferLength,
+          audioEventHandlerRegistry,
+          workletRunner) {
   AudioStreamBuilder builder;
   builder.setSharingMode(SharingMode::Exclusive)
       ->setDirection(Direction::Input)

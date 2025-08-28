@@ -1,10 +1,8 @@
 #pragma once
 
 #include <jsi/jsi.h>
-#if RN_AUDIO_API_ENABLE_WORKLETS
-#include <worklets/WorkletRuntime/WorkletRuntime.h>
-#include <worklets/SharedItems/Shareables.h>
-#endif
+#include <audioapi/core/utils/UiWorkletsRunner.h>
+
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -23,7 +21,8 @@ class AudioRecorder {
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner
   );
 
   virtual ~AudioRecorder() = default;
@@ -50,7 +49,7 @@ class AudioRecorder {
   #if RN_AUDIO_API_ENABLE_WORKLETS
   void invokeWorkletOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus,
                                         int numFrames, double when);
-  void setWorkletCallback(std::shared_ptr<worklets::ShareableWorklet> &callback, std::shared_ptr<worklets::WorkletRuntime> &uiRuntime);
+  void setWorkletCallback(std::shared_ptr<worklets::ShareableWorklet> &callback);
   #endif
 
   virtual void start() = 0;
@@ -69,10 +68,11 @@ class AudioRecorder {
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
+  std::shared_ptr<UiWorkletsRunner> workletRunner_;
+
 
   #if RN_AUDIO_API_ENABLE_WORKLETS
   std::shared_ptr<worklets::ShareableWorklet> shareableWorklet_;
-  std::shared_ptr<worklets::WorkletRuntime> uiRuntime_;
   mutable std::mutex workletCallbackMutex_;
   #endif
 
