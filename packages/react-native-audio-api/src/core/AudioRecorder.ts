@@ -4,7 +4,7 @@ import AudioBuffer from './AudioBuffer';
 import { OnAudioReadyEventType } from '../events/types';
 import { AudioEventEmitter } from '../events';
 import RecorderAdapterNode from './RecorderAdapterNode';
-import { makeShareableCloneRecursive } from 'react-native-worklets';
+import { isWorkletsAvailable, workletsModule } from '../utils';
 
 export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
@@ -59,18 +59,22 @@ export default class AudioRecorder {
   public setWorkletCallback(
     callback: (audioData: Float32Array, timestamp: number) => void
   ): void {
-    this.recorder.setWorkletCallback(
-      makeShareableCloneRecursive((audioData, timestamp) => {
-        'worklet';
-        callback(audioData, timestamp);
-        /// !IMPORTANT Workaround
-        /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
-        /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
-        /// So worklet will be called but any of its interactions with the UI thread will not be visible.
+    if (isWorkletsAvailable) {
+      this.recorder.setWorkletCallback(
+        workletsModule.makeShareableCloneRecursive(
+          (audioData: Float32Array, timestamp: number) => {
+            'worklet';
+            callback(audioData, timestamp);
+            /// !IMPORTANT Workaround
+            /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
+            /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
+            /// So worklet will be called but any of its interactions with the UI thread will not be visible.
 
-        /// This forces to flush queue
-        requestAnimationFrame(() => {});
-      })
-    );
+            /// This forces to flush queue
+            requestAnimationFrame(() => {});
+          }
+        )
+      );
+    }
   }
 }

@@ -1,25 +1,13 @@
 #pragma once
 
 #include <jsi/jsi.h>
+#include <audioapi/core/utils/UiWorkletsSafeIncludes.h>
 
 #include <functional>
 #include <atomic>
 #include <memory>
+#include <utility>
 
-#define RN_AUDIO_API_ENABLE_WORKLETS 1
-
-#if RN_AUDIO_API_ENABLE_WORKLETS
-#include <worklets/WorkletRuntime/WorkletRuntime.h>
-#include <worklets/SharedItems/Shareables.h>
-#else
-/// @brief Dummy implementation of worklets for non-worklet builds they should do nothing and mock necessary methods
-/// @note It helps to reduce compile time branching across codebase
-/// @note If you need to base some c++ implementation on if the worklets are enabled use `#if RN_AUDIO_API_ENABLE_WORKLETS`
-namespace worklets {
-struct WorkletRuntime {};
-struct ShareableWorklet {};
-} // namespace worklets
-#endif
 
 namespace audioapi {
 using namespace facebook;
@@ -31,10 +19,40 @@ class UiWorkletsRunner {
     jsi::Runtime* getJSIRuntime() const noexcept;
 
     template<typename... Args>
-    bool executeWorkletAsync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args);
+    bool executeWorkletAsync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
+      auto lockedRuntime = uiRuntime_.lock();
+      if (lockedRuntime == nullptr) {
+         return false;
+      }
+
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+
+      /// TODO change to use spsc channel and managed thread
+      /// For now and test purposes it does the same thing as executeWorkletSync
+      lockedRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
+      return true;
+
+      #else
+      return false;
+      #endif
+    }
 
     template<typename... Args>
-    bool executeWorkletSync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args);
+    bool executeWorkletSync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
+      auto lockedRuntime = uiRuntime_.lock();
+      if (lockedRuntime == nullptr) {
+         return false;
+      }
+
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+
+      lockedRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
+      return true;
+
+      #else
+      return false;
+      #endif
+    }
 
  private:
     std::weak_ptr<worklets::WorkletRuntime> uiRuntime_;
@@ -54,6 +72,3 @@ class UiWorkletsRunner {
 
 
 } // namespace audioapi
-
-// Template methods definitions
-#include <audioapi/core/utils/UiWorkletsRunner.tpp>

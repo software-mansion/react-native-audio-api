@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-# Enable worklets support for Android builds
-set(RN_AUDIO_API_ENABLE_WORKLETS TRUE)
-
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
@@ -27,35 +24,6 @@ else()
   set(BUILD_TYPE "release")
 endif()
 
-# Always assume worklets is available for testing
-set(WORKLETS_FOUND TRUE)
-message(STATUS "Worklets support enabled - setting up imported worklets library")
-
-# Import the worklets library (similar to how Reanimated does it)
-add_library(worklets SHARED IMPORTED)
-set_target_properties(
-  worklets
-  PROPERTIES
-    IMPORTED_LOCATION
-    "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
-)
-
-target_include_directories(
-  react-native-audio-api
-  PRIVATE
-  "${COMMON_CPP_DIR}"
-  "${ANDROID_CPP_DIR}"
-  "${INCLUDE_DIR}"
-  "${INCLUDE_DIR}/opus"
-  "${INCLUDE_DIR}/vorbis"
-  "${REACT_NATIVE_DIR}/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
-  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-  "${REACT_NATIVE_WORKLETS_DIR}/Common/cpp"
-  "${REACT_NATIVE_WORKLETS_DIR}/android/src/main/cpp"
-)
-
 set(LINK_LIBRARIES
   ReactAndroid::jsi
   fbjni::fbjni
@@ -64,8 +32,46 @@ set(LINK_LIBRARIES
   oboe::oboe
 )
 
-if(WORKLETS_FOUND)
+if(RN_AUDIO_API_WORKLETS_ENABLED)
+  # Import the worklets library (similar to how Reanimated does it)
+  add_library(worklets SHARED IMPORTED)
+  set_target_properties(
+    worklets
+    PROPERTIES
+      IMPORTED_LOCATION
+      "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+  )
+  target_include_directories(
+    react-native-audio-api
+    PRIVATE
+    "${COMMON_CPP_DIR}"
+    "${ANDROID_CPP_DIR}"
+    "${INCLUDE_DIR}"
+    "${INCLUDE_DIR}/opus"
+    "${INCLUDE_DIR}/vorbis"
+    "${REACT_NATIVE_DIR}/ReactCommon"
+    "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
+    "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+    "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+    "${REACT_NATIVE_WORKLETS_DIR}/Common/cpp"
+    "${REACT_NATIVE_WORKLETS_DIR}/android/src/main/cpp"
+  )
   list(APPEND LINK_LIBRARIES worklets)
+else()
+  target_include_directories(
+    react-native-audio-api
+    PRIVATE
+    "${COMMON_CPP_DIR}"
+    "${ANDROID_CPP_DIR}"
+    "${INCLUDE_DIR}"
+    "${INCLUDE_DIR}/opus"
+    "${INCLUDE_DIR}/vorbis"
+    "${REACT_NATIVE_DIR}/ReactCommon"
+    "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
+    "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+    "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+  )
+
 endif()
 
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
@@ -78,6 +84,18 @@ else()
     ReactAndroid::react_nativemodule_core
     ReactAndroid::glog
     ReactAndroid::reactnativejni
+  )
+endif()
+
+if(RN_AUDIO_API_WORKLETS_ENABLED)
+  target_compile_definitions(
+    react-native-audio-api
+    PRIVATE RN_AUDIO_API_ENABLE_WORKLETS=1
+  )
+else()
+  target_compile_definitions(
+    react-native-audio-api
+    PRIVATE RN_AUDIO_API_ENABLE_WORKLETS=0
   )
 endif()
 

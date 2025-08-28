@@ -7,7 +7,6 @@ import {
   ChannelInterpretation,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
-import { ShareableRef } from 'react-native-worklets';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -205,11 +204,10 @@ export interface IAudioRecorder {
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
 
-  setWorkletCallback: (
-    shareableRef: ShareableRef<
-      (audioData: Float32Array, timestamp: number) => void
-    >
-  ) => void;
+  // We expect the argument to be a
+  // ShareableRef<(audioData: Float32Array, timestamp: number) => void>
+  // We need to use any because user might not have react-native-worklets installed
+  setWorkletCallback: (shareableRef: any) => void;
 }
 
 export interface IAudioEventEmitter {

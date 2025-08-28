@@ -1,6 +1,7 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
+import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -10,7 +11,6 @@ import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.PermissionRequestListener
-import com.swmansion.worklets.WorkletsModule
 import java.lang.ref.WeakReference
 
 @OptIn(FrameworkAPI::class)
@@ -27,7 +27,7 @@ class AudioAPIModule(
   private val mHybridData: HybridData
 
   external fun initHybrid(
-    workletsModule: WorkletsModule,
+    workletsModule: Any?,
     jsContext: Long,
     callInvoker: CallInvokerHolderImpl,
   ): HybridData
@@ -44,10 +44,17 @@ class AudioAPIModule(
       System.loadLibrary("react-native-audio-api")
       val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
 
-      val workletsModule =
-        reactContext.getNativeModule(WorkletsModule::class.java)
-          ?: throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
-
+      var workletsModule: Any? = null
+      if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
+        try {
+          // We check if the class exists via reflection
+          @Suppress("UNCHECKED_CAST")
+          val clazz = Class.forName("com.swmansion.worklets.WorkletsModule") as Class<NativeModule>
+          workletsModule = reactContext.getNativeModule(clazz)
+        } catch (e: ClassNotFoundException) {
+          throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
+        }
+      }
       mHybridData = initHybrid(workletsModule, reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
