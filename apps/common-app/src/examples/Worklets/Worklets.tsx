@@ -88,6 +88,11 @@ function Worklets() {
         recorderAdapterRef.current = null;
         aCtxRef.current = null;
         console.log("Recording stopped");
+        bar0.value = 0;
+        bar1.value = 0;
+        bar2.value = 0;
+        bar3.value = 0;
+        bar4.value = 0;
     }
 
     const createBarStyle = (index: number) => {
