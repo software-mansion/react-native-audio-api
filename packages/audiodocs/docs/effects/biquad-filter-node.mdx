@@ -49,10 +49,9 @@ Note: The detune parameter behaves the same way for all filter types, so it is n
 | `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
 
 
-import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraphComponent';
-import FrequencyResponseGraphSrc from '!!raw-loader!@site/src/examples/Biquad/FrequencyResponseGraphSource';
+import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraph';
 
-<InteractiveExample src={FrequencyResponseGraphSrc} component={FrequencyResponseGraph} />
+<AudioApiExample component={FrequencyResponseGraph} />
 
 ## Methods
 
