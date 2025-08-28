@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
+import Canvas from 'react-native-canvas';
 
 const FILTER_TYPES: BiquadFilterType[] = [
   'allpass', 'lowpass', 'highpass', 'bandpass',
@@ -37,20 +39,22 @@ const RangeSlider = ({
   unit?: string;
   onChange: (v: number) => void;
 }) => (
-  <div style={{ marginTop: 8 }}>
-    <label style={{ color: '#fcfcff' }}>
+  <View style={{ marginTop: 8 }}>
+    <Text style={{ color: '#fcfcff' }}>
       {label}: {value.toFixed(1)} {unit}
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: '100%', marginTop: 4, color: '#6676aa' }}
-      />
-    </label>
-  </div>
+    </Text>
+    <Slider
+      minimumValue={min}
+      maximumValue={max}
+      step={step}
+      value={value}
+      onValueChange={onChange}
+      minimumTrackTintColor="#38acdd"
+      maximumTrackTintColor="#6676aa"
+      thumbTintColor="#fcfcff"
+      style={{ width: '100%', marginTop: 4 }}
+    />
+  </View>
 );
 
 const FrequencyResponseGraph: React.FC = () => {
@@ -69,7 +73,7 @@ const FrequencyResponseGraph: React.FC = () => {
     audio2: null,
   });
   const filterRef = useRef<BiquadFilterNode | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<Canvas | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -151,10 +155,12 @@ const FrequencyResponseGraph: React.FC = () => {
   const drawFrequencyResponse = () => {
     if (!canvasRef.current || !filterRef.current) return;
 
-    const ctx = canvasRef.current.getContext('2d');
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { width, height } = canvasRef.current;
+    const width = 600;
+    const height = 200;
 
     const N = 200;
     const frequencies = new Float32Array(N).map((_, i) => 20 * 1000 ** (i / (N - 1)));
@@ -174,9 +180,9 @@ const FrequencyResponseGraph: React.FC = () => {
     ctx.strokeStyle = '#bcdae4ff';
     ctx.lineWidth = 1;
 
-    const numGridLines = 10;
-    for (let i = 0; i <= numGridLines; i++) {
-      const x = (i / numGridLines) * width;
+    const numGridLines = 11;
+    for (let i = 0; i < numGridLines; i++) {
+      const x = (i / (numGridLines - 1)) * width;
       line(x, 0, x, height);
     }
 
@@ -189,8 +195,10 @@ const FrequencyResponseGraph: React.FC = () => {
     // frequency response
     ctx.beginPath();
     mags.forEach((m, i) => {
+      // Map the index (0..N) to the horizontal axis
       const x = (i / (mags.length - 1)) * width;
       const db = 20 * Math.log10(m);
+      // Map dB range [-30, +30] to vertical axis
       const y = height - ((db + 30) / 60) * height;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
@@ -204,7 +212,10 @@ const FrequencyResponseGraph: React.FC = () => {
     <View style={styles.container}>
       {isLoading && <ActivityIndicator color="#fcfcff" />}
 
-      <canvas ref={canvasRef} width={600} height={200} style={styles.canvas} />
+      <Canvas
+        ref={canvasRef}
+        style={{ width: 600, height: 200, borderRadius: 6, marginTop: 16 }}
+      />
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
 
       <ScrollView horizontal style={{ marginTop: 16 }}>
@@ -235,13 +246,15 @@ const FrequencyResponseGraph: React.FC = () => {
         <Text style={[styles.labelText, { marginLeft: 8 }]}>Music</Text>
       </View>
 
-      <div style={{ marginTop: 16 }}>
+      <View style={{ marginTop: 16 }}>
         <RangeSlider label="Frequency" value={filterFreq} min={10} max={5000} step={10} unit="Hz" onChange={setFilterFreq} />
-        <RangeSlider label="Q" value={filterQ} min={0.1} max={20} step={0.1} onChange={setFilterQ} />
+        {(filterType !== 'lowshelf' && filterType !== 'highshelf') && (
+          <RangeSlider label="Q" value={filterQ} min={0.1} max={20} step={0.1} onChange={setFilterQ} />
+        )}
         {(filterType === 'peaking' || filterType === 'lowshelf' || filterType === 'highshelf') && (
           <RangeSlider label="Gain" value={filterGain} min={-40} max={40} step={0.5} unit="dB" onChange={setFilterGain} />
         )}
-      </div>
+      </View>
     </View>
   );
 };

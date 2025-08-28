@@ -5,6 +5,7 @@ sidebar_position: 1
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 import InteractiveExample from '@site/src/components/InteractiveExample';
+import AudioApiExample from '@site/src/components/AudioApiExample'
 
 # BiquadFilterNode
 
@@ -13,9 +14,8 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 
 
 import BiquadExample from '@site/src/examples/Biquad/BiquadExampleComponent';
-import BiquadExampleSrc from '!!raw-loader!@site/src/examples/Biquad/BiquadExampleSource';
 
-<InteractiveExample src={BiquadExampleSrc} component={BiquadExample} />
+<AudioApiExample component={BiquadExample} />
 
 
 #### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties

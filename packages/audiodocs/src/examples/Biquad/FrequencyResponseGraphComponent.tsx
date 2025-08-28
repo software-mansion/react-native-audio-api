@@ -174,9 +174,9 @@ const FrequencyResponseGraph: React.FC = () => {
     ctx.strokeStyle = '#bcdae4ff';
     ctx.lineWidth = 1;
 
-    const numGridLines = 10;
-    for (let i = 0; i <= numGridLines; i++) {
-      const x = (i / numGridLines) * width;
+    const numGridLines = 11;
+    for (let i = 0; i < numGridLines; i++) {
+      const x = (i / (numGridLines - 1)) * width;
       line(x, 0, x, height);
     }
 
@@ -189,8 +189,10 @@ const FrequencyResponseGraph: React.FC = () => {
     // frequency response
     ctx.beginPath();
     mags.forEach((m, i) => {
+      // Map the index (0..N) to the horizontal axis
       const x = (i / (mags.length - 1)) * width;
       const db = 20 * Math.log10(m);
+      // Map dB range [-30, +30] to vertical axis
       const y = height - ((db + 30) / 60) * height;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
@@ -237,7 +239,9 @@ const FrequencyResponseGraph: React.FC = () => {
 
       <div style={{ marginTop: 16 }}>
         <RangeSlider label="Frequency" value={filterFreq} min={10} max={5000} step={10} unit="Hz" onChange={setFilterFreq} />
-        <RangeSlider label="Q" value={filterQ} min={0.1} max={20} step={0.1} onChange={setFilterQ} />
+        {(filterType !== 'lowshelf' && filterType !== 'highshelf') && (
+          <RangeSlider label="Q" value={filterQ} min={0.1} max={20} step={0.1} onChange={setFilterQ} />
+        )}
         {(filterType === 'peaking' || filterType === 'lowshelf' || filterType === 'highshelf') && (
           <RangeSlider label="Gain" value={filterGain} min={-40} max={40} step={0.5} unit="dB" onChange={setFilterGain} />
         )}
