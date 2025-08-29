@@ -42,7 +42,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
   static constexpr int getEstimatedSize() {
-    return SIZE;
+    return StreamerNode::SIZE;
   } // in bytes
 
  protected:
