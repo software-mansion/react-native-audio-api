@@ -75,6 +75,11 @@ export default class AudioRecorder {
           }
         )
       );
+    } else {
+      /// User does not have worklets as a dependency so he cannot use the worklet API.
+      throw new Error(
+        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+      );
     }
   }
 }
