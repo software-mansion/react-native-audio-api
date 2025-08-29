@@ -1,7 +1,6 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import Piano from './Piano';
-import TextToSpeech from './TextToSpeech';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
@@ -58,12 +57,6 @@ export const Examples: Example[] = [
     title: 'Playback Speed',
     subtitle: 'Control playback speed of audio',
     screen: PlaybackSpeed,
-  },
-  {
-    key: 'TextToSpeech',
-    title: 'Text to Speech',
-    subtitle: 'type some text and hear it spoken',
-    screen: TextToSpeech,
   },
   {
     key: 'Metronome',
