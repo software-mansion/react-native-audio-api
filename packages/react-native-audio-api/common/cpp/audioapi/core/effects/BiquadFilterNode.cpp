@@ -77,6 +77,8 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const int length) {
+  applyFilter();
+
   // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
@@ -91,7 +93,7 @@ void BiquadFilterNode::getFrequencyResponse(
       continue;
     }
 
-    auto omega = -PI * frequencyArray[i];
+    auto omega = -PI * frequencyArray[i] / context_->getNyquistFrequency();
     auto z = std::complex<float>(cos(omega), sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
@@ -99,13 +101,6 @@ void BiquadFilterNode::getFrequencyResponse(
     phaseResponseOutput[i] =
         static_cast<float>(atan2(imag(response), real(response)));
   }
-}
-
-void BiquadFilterNode::resetCoefficients() {
-  x1_ = 0.0;
-  x2_ = 0.0;
-  y1_ = 0.0;
-  y2_ = 0.0;
 }
 
 void BiquadFilterNode::setNormalizedCoefficients(
@@ -163,7 +158,7 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
   float theta = PI * frequency;
   float alpha = std::sin(theta) / (2 * g);
   float cosW = std::cos(theta);
-  float beta = (1 - cosW) / 2;
+  float beta = (1 + cosW) / 2;
 
   setNormalizedCoefficients(
       beta, -2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
@@ -313,13 +308,17 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
       1 - alpha, -2 * cosW, 1 + alpha, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
-void BiquadFilterNode::updateCoefficientsForFrame(
-    float frequency,
-    float detune,
-    float Q,
-    float gain) {
-  float normalizedFrequency = frequency / context_->getNyquistFrequency();
+void BiquadFilterNode::applyFilter() {
+  double currentTime = context_->getCurrentTime();
 
+  float frequency =
+      frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  float detune =
+      detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+
+  float normalizedFrequency = frequency / context_->getNyquistFrequency();
   if (detune != 0.0f) {
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
   }
@@ -357,47 +356,43 @@ void BiquadFilterNode::updateCoefficientsForFrame(
 void BiquadFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  double currentTime = context_->getCurrentTime();
-  auto frequencyValues =
-      frequencyParam_->processARateParam(framesToProcess, currentTime)
-          ->getChannel(0)
-          ->getData();
-  auto detuneValues =
-      detuneParam_->processARateParam(framesToProcess, currentTime)
-          ->getChannel(0)
-          ->getData();
-  auto qValues = QParam_->processARateParam(framesToProcess, currentTime)
-                     ->getChannel(0)
-                     ->getData();
-  auto gainValues = gainParam_->processARateParam(framesToProcess, currentTime)
-                        ->getChannel(0)
-                        ->getData();
+  int numChannels = processingBus->getNumberOfChannels();
 
-  for (int c = 0; c < processingBus->getNumberOfChannels(); c++) {
-    float x1 = x1_;
-    float x2 = x2_;
-    float y1 = y1_;
-    float y2 = y2_;
+  applyFilter();
 
-    for (int i = 0; i < framesToProcess; i++) {
-      updateCoefficientsForFrame(
-          frequencyValues[i], detuneValues[i], qValues[i], gainValues[i]);
+  // local copies for micro-optimization
+  float b0 = b0_;
+  float b1 = b1_;
+  float b2 = b2_;
+  float a1 = a1_;
+  float a2 = a2_;
 
-      float input = (*processingBus->getChannel(c))[i];
-      float output = b0_ * input + b1_ * x1 + b2_ * x2 - a1_ * y1 - a2_ * y2;
+  float x1, x2, y1, y2;
 
-      (*processingBus->getChannel(c))[i] = output;
+  for (int c = 0; c < numChannels; ++c) {
+    auto channelData = processingBus->getChannel(c)->getData();
+
+    x1 = x1_;
+    x2 = x2_;
+    y1 = y1_;
+    y2 = y2_;
+
+    for (int i = 0; i < framesToProcess; ++i) {
+      float input = channelData[i];
+      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+
+      channelData[i] = output;
 
       x2 = x1;
       x1 = input;
       y2 = y1;
       y1 = output;
     }
-    x1_ = x1;
-    x2_ = x2;
-    y1_ = y1;
-    y2_ = y2;
   }
+  x1_ = x1;
+  x2_ = x2;
+  y1_ = y1;
+  y2_ = y2;
 }
 
 } // namespace audioapi

@@ -135,8 +135,12 @@ const config = {
             },
             plugins: [
               new webpack.DefinePlugin({
-              ...processMock,
-              __DEV__: 'false',
+                ...processMock,
+                __DEV__: 'false',
+              }),
+              // Provide React automatically where library code expects global React
+              new webpack.ProvidePlugin({
+                React: 'react',
               }),
             ],
             module: {
@@ -149,11 +153,23 @@ const config = {
                   test: /\.tsx?$/,
                   use: 'babel-loader',
                 },
+                {
+                  test: /\.(js|jsx)$/,
+                  use: {
+                    loader: 'babel-loader',
+                    options: {
+                      presets: [
+                        '@babel/preset-react',
+                        { plugins: ['@babel/plugin-proposal-class-properties'] },
+                      ],
+                    },
+                  },
+                },
               ],
             },
             resolve: {
               alias: { 'react-native$': 'react-native-web' },
-              extensions: ['.web.js', '...'],
+              extensions: ['.web.js', '.js', '...'],
             },
           };
         },

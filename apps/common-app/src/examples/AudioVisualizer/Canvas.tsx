@@ -1,12 +1,11 @@
 import React, {
-  useState,
   useContext,
   createContext,
   PropsWithChildren,
   useMemo,
 } from 'react';
-import { LayoutChangeEvent, StyleSheet } from 'react-native';
-import { Canvas as SKCanvas } from '@shopify/react-native-skia';
+import { StyleSheet } from 'react-native';
+import { Canvas as SKCanvas, useCanvasSize } from '@shopify/react-native-skia';
 
 interface Size {
   width: number;
@@ -24,24 +23,18 @@ const CanvasContext = createContext<CanvasContext>({
 });
 
 const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-
-  const onCanvasLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-
-    setSize({ width, height });
-  };
+  const { ref, size } = useCanvasSize();
 
   const context = useMemo(
     () => ({
       initialized: true,
       size: { width: size.width, height: size.height },
     }),
-    [size.width, size.height]
+    [size]
   );
 
   return (
-    <SKCanvas style={styles.canvas} onLayout={onCanvasLayout}>
+    <SKCanvas style={styles.canvas} ref={ref}>
       <CanvasContext.Provider value={context}>
         {children}
       </CanvasContext.Provider>

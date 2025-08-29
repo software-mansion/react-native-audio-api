@@ -177,12 +177,25 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 
 add_library(react-native-audio-api SHARED IMPORTED)
 string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_LOWER)
-# we need to find where original library was built
+# we need to import built library from android directory
 set_target_properties(react-native-audio-api PROPERTIES IMPORTED_LOCATION
         ${AUDIO_API_DIR}/android/build/intermediates/merged_native_libs/${BUILD_TYPE_LOWER}/merge${CMAKE_BUILD_TYPE}NativeLibs/out/lib/${CMAKE_ANDROID_ARCH_ABI}/libreact-native-audio-api.so
 )
 target_link_libraries(${CMAKE_PROJECT_NAME} react-native-audio-api android log)
 ```
+
+Last part that is required for you to do, is to add following lines to `build.gradle` file located in `android/app` directory.
+
+```Cmake
+evaluationDependsOn(":react-native-audio-api")
+
+afterEvaluate {
+    tasks.getByName("buildCMakeDebug").dependsOn(findProject(":react-native-audio-api").tasks.getByName("mergeDebugNativeLibs"))
+    tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(findProject(":react-native-audio-api").tasks.getByName("mergeReleaseNativeLibs"))
+}
+```
+
+Since in `CmakeLists.txt` we depend on libreact-native-audio-api.so, we need to make sure that building an app will be invoked after library is existing.
 
 ## Final touches
 

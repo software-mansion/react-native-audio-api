@@ -1,0 +1,35 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  contain: content;
+  background-color: var(--swm-off-background);
+  border: 1px solid var(--swm-border);
+  margin-bottom: var(--ifm-leading);
+}
+
+.largerContainer {
+  min-height: 400px;
+}
+
+.buttonsContainer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.25em 0.75em 0.25em 1.25em;
+  margin: 1.5em 2em 1.5em 1.5em;
+}
+
+.lowerButtonsContainer {
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.iconStub {
+  width: 30px;
+  height: 30px;
+}
+
+.previewContainer {
+  flex: 1 1 auto;
+  padding-top: 60px;
+}
