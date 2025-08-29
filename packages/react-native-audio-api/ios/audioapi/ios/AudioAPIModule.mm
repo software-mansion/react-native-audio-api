@@ -1,7 +1,7 @@
 #import <React/RCTBridge+Private.h>
 #import <audioapi/ios/AudioAPIModule.h>
 
-#import <audioapi/core/utils/UiWorkletsSafeIncludes.h>
+#import <audioapi/core/utils/worklets/SafeIncludes.h>
 #if RN_AUDIO_API_ENABLE_WORKLETS
 #import <worklets/apple/WorkletsModule.h>
 #endif

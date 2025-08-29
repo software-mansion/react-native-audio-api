@@ -7,7 +7,7 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/utils/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 namespace audioapi {
 

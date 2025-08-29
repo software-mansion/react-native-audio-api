@@ -11,7 +11,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
 
-#include <audioapi/core/utils/UiWorkletsSafeIncludes.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
 

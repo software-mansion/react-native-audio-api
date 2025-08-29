@@ -7,7 +7,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 
-#include <audioapi/core/utils/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>

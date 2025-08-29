@@ -1,7 +1,7 @@
 #pragma once
 
 #include <jsi/jsi.h>
-#include <audioapi/core/utils/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 #include <memory>
 #include <atomic>

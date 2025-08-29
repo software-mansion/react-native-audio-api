@@ -7,7 +7,7 @@
 #include <fbjni/fbjni.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
-#include <audioapi/core/utils/UiWorkletsSafeIncludes.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <memory>
 #include <utility>
 #include <unordered_map>
