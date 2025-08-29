@@ -41,6 +41,11 @@ class StreamerNode : public AudioScheduledSourceNode {
   */
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
+
+ private:
+  static constexpr int SIZE = 4'000'000; // 4MB
+
+ public:
   static constexpr int getEstimatedSize() {
     return StreamerNode::SIZE;
   } // in bytes
@@ -113,7 +118,6 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @return true if successful, false otherwise
    */
   bool setupDecoder();
-  static constexpr int SIZE = 4'000'000; // 4MB
   #endif // AUDIO_API_TEST_SUITE
 };
 } // namespace audioapi
