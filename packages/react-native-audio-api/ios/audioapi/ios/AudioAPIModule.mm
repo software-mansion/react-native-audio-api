@@ -3,10 +3,10 @@
 
 #import <audioapi/core/utils/UiWorkletsSafeIncludes.h>
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  #import <worklets/apple/WorkletsModule.h>
+#import <worklets/apple/WorkletsModule.h>
 #endif
 #ifdef RCT_NEW_ARCH_ENABLED
-  #import <React/RCTCallInvoker.h>
+#import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
 #import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
