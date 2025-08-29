@@ -10,7 +10,7 @@ The `AudioDestinationNode` interface represents the final destination of an audi
 
 In most cases, this means the sound is sent to the system’s default output device, such as speakers or headphones.
 When used with an [`OfflineAudioContext`](/docs/core/offline-audio-context) the rendered audio isn’t played back immediately—instead,
-it is stored in an `AudioBuffer`.
+it is stored in an [`AudioBuffer`](/docs/sources/audio-buffer).
 
 Each `AudioContext` has exactly one AudioDestinationNode, which can be accessed through its
 [`AudioContext.destination`](/docs/core/base-audio-context/#properties) property.
