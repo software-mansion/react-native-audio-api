@@ -9,7 +9,7 @@ import {
 } from 'react-native-audio-api';
 import { BoxWithFlaps } from './BoxWithFlaps';
 
-const AudioFile: React.FC = () => {
+const BiquadExample: React.FC = () => {
   const [slider, setSlider] = useState(0);
   const [sliderPressed, setSliderPressed] = useState(false);
 
@@ -104,4 +104,4 @@ const AudioFile: React.FC = () => {
   );
 };
 
-export default AudioFile;
+export default BiquadExample;

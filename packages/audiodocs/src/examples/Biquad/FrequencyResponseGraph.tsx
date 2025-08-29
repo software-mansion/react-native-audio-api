@@ -12,7 +12,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { drawFrequencyResponse } from './drawFrequencyResponse';
 import RangeSlider from './RangeSlider';
@@ -30,13 +29,13 @@ const FrequencyResponseGraph: React.FC = () => {
   const [filterFreq, setFilterFreq] = useState(350);
   const [filterQ, setFilterQ] = useState(1);
   const [filterGain, setFilterGain] = useState(0);
-  const [selectedAudio, setSelectedAudio] = useState<'audio1' | 'audio2'>('audio1');
+  const [selectedAudio, setSelectedAudio] = useState<'speech' | 'music'>('speech');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBuffersRef = useRef<{ audio1: AudioBuffer | null; audio2: AudioBuffer | null }>({
-    audio1: null,
-    audio2: null,
+  const audioBuffersRef = useRef<{ speech: AudioBuffer | null; music: AudioBuffer | null }>({
+    speech: null,
+    music: null,
   });
   const filterRef = useRef<BiquadFilterNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -52,15 +51,15 @@ const FrequencyResponseGraph: React.FC = () => {
 
       setIsLoading(true);
       try {
-        const audio1 = await fetch('/react-native-audio-api/audio/voice/example-voice-01.mp3')
+        const speech = await fetch('/react-native-audio-api/audio/voice/example-voice-01.mp3')
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 
-        const audio2 = await fetch('/react-native-audio-api/audio/music/example-music-03.mp3')
+        const music = await fetch('/react-native-audio-api/audio/music/example-music-03.mp3')
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 
-        audioBuffersRef.current = { audio1, audio2 };
+        audioBuffersRef.current = { speech, music };
       } catch (error) {
         console.error('Error decoding audio data source:', error);
       }
@@ -91,7 +90,7 @@ const FrequencyResponseGraph: React.FC = () => {
     bufferSourceRef.current?.stop();
     bufferSourceRef.current = null;
 
-    const buffer = selectedAudio === 'audio1' ? audioBuffersRef.current.audio1 : audioBuffersRef.current.audio2;
+    const buffer = selectedAudio === 'speech' ? audioBuffersRef.current.speech : audioBuffersRef.current.music;
     if (!buffer) return;
 
     const source = await audioContextRef.current.createBufferSource();
@@ -125,28 +124,31 @@ const FrequencyResponseGraph: React.FC = () => {
       <canvas ref={canvasRef} width={600} height={200} style={styles.canvas} />
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
 
-      <ScrollView horizontal style={{ marginTop: 16 }}>
+      <View style={[styles.filterButtonsContainer, { marginTop: 16 }]}>
         {FILTER_TYPES.map((type) => (
           <Pressable
             key={type}
             onPress={() => setFilterType(type)}
-            style={[styles.filterButton, filterType === type && styles.filterButtonActive]}
+            style={[
+              styles.filterButton,
+              filterType === type && styles.filterButtonActive,
+            ]}
           >
             <Text style={styles.labelText}>{type}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <View style={styles.audioToggleContainer}>
-        <Text style={[styles.labelText, { marginRight: 8 }]}>Voice</Text>
+        <Text style={[styles.labelText, { marginRight: 8 }]}>Speech</Text>
         <Pressable
-          onPress={() => setSelectedAudio(selectedAudio === 'audio1' ? 'audio2' : 'audio1')}
+          onPress={() => setSelectedAudio(selectedAudio === 'speech' ? 'music' : 'speech')}
           style={styles.toggleTrack}
         >
           <View
             style={[
               styles.toggleThumb,
-              { transform: [{ translateX: selectedAudio === 'audio1' ? 0 : 26 }] },
+              { transform: [{ translateX: selectedAudio === 'speech' ? 0 : 26 }] },
             ]}
           />
         </Pressable>
@@ -177,6 +179,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#6676aa',
     borderRadius: 6,
     marginRight: 8,
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   filterButtonActive: {
     backgroundColor: '#33488e',
