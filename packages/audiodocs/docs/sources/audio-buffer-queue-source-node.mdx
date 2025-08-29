@@ -72,7 +72,7 @@ The above method lets you remove all buffers from the queue. Note that `onEnded`
 
 ### `onEnded` <Overridden />
 
-Allows to set (or remove) callback that will be fired when queue source node has stopped playing with payload `event.bufferId = undefined`
+Allows to set (or remove) callback that will be fired when queue source node has been stopped with payload `event.bufferId = undefined`
 or when a specific buffer has ended with payload `event.bufferId = <bufferId>`.
 
 You can remove callback by passing `null`.
