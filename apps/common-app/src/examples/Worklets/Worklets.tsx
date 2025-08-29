@@ -47,7 +47,7 @@ function Worklets() {
             return;
         }
 
-        recorderRef.current.setWorkletCallback((audioData: Float32Array, timestamp: number) => {
+        recorderRef.current.onAudioReadyWorklet((audioData: Float32Array, timestamp: number) => {
             'worklet';
             
             // Calculates RMS amplitude
