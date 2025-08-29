@@ -5,11 +5,23 @@
 #include <string>
 #include <memory>
 
+#ifdef __APPLE__
+  /// We cannot make any conditional logic inside podspec but it should automatically compile those files
+  /// they should be accessible if someone has react-native-worklets in node_modules
+  #if __has_include(<worklets/WorkletRuntime/WorkletRuntime.h>)
+    #define RN_AUDIO_API_ENABLE_WORKLETS 1
+  #else
+    #define RN_AUDIO_API_ENABLE_WORKLETS 0
+  #endif
+#endif
+
 #if RN_AUDIO_API_ENABLE_WORKLETS
-#include <worklets/WorkletRuntime/WorkletRuntime.h>
-#include <worklets/SharedItems/Shareables.h>
-#include <worklets/NativeModules/WorkletsModuleProxy.h>
-#include <worklets/android/WorkletsModule.h>
+  #include <worklets/WorkletRuntime/WorkletRuntime.h>
+  #include <worklets/SharedItems/Shareables.h>
+  #include <worklets/NativeModules/WorkletsModuleProxy.h>
+  #if ANDROID
+    #include <worklets/android/WorkletsModule.h>
+  #endif
 #else
 /// @brief Dummy implementation of worklets for non-worklet builds they should do nothing and mock necessary methods
 /// @note It helps to reduce compile time branching across codebase

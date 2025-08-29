@@ -1,12 +1,12 @@
 #import <React/RCTBridge+Private.h>
 #import <audioapi/ios/AudioAPIModule.h>
-// #import <react-native-worklets-core/RNWorklets.h>
-// #import <worklets/apple/WorkletsModule.h>
-#import <worklets/NativeModules/WorkletsModuleProxy.h>
-#import <worklets/apple/WorkletsModule.h>
+
+#import <audioapi/core/utils/UiWorkletsSafeIncludes.h>
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  #import <worklets/apple/WorkletsModule.h>
+#endif
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <React/RCTCallInvoker.h>
-// #import <ReactCommon/RCTTurboModule.h>
+  #import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
 #import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -84,6 +84,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   _eventHandler = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
 
+#if RN_AUDIO_API_ENABLE_WORKLETS
   WorkletsModule *workletsModule = [_moduleRegistry moduleForName:"WorkletsModule"];
 
   if (!workletsModule) {
@@ -106,6 +107,9 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   // Get the actual JSI Runtime reference
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
+#else
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
+#endif
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @true;

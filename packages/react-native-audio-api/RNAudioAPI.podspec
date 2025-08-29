@@ -19,8 +19,6 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
-  s.dependency "RNWorklets"
-
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h}"
     ss.header_dir = "audioapi"
@@ -39,7 +37,6 @@ Pod::Spec.new do |s|
 
 external_dir = File.join(__dir__, "common/cpp/audioapi/external")
 lib_dir = "#{external_dir}/$(PLATFORM_NAME)"
-
 
 s.pod_target_xcconfig = {
   "USE_HEADERMAP" => "YES",
