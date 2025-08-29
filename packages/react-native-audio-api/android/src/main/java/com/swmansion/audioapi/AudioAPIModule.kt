@@ -1,7 +1,6 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
-import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
