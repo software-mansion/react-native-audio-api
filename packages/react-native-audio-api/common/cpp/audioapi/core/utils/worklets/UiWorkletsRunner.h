@@ -14,14 +14,24 @@ using namespace facebook;
 
 class UiWorkletsRunner {
  public:
-    explicit UiWorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> uiRuntime) noexcept;
+    explicit UiWorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
 
-    jsi::Runtime* getJSIRuntime() const noexcept;
+    inline jsi::Runtime* getJSIRuntime() const noexcept {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
+         return nullptr;
+      }
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+      return &strongRuntime->getJSIRuntime();
+      #else
+      return nullptr;
+      #endif
+    }
 
     template<typename... Args>
     bool executeWorkletAsync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
-      auto lockedRuntime = uiRuntime_.lock();
-      if (lockedRuntime == nullptr) {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
          return false;
       }
 
@@ -29,7 +39,7 @@ class UiWorkletsRunner {
 
       /// TODO change to use spsc channel and managed thread
       /// For now and test purposes it does the same thing as executeWorkletSync
-      lockedRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
+      strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
       return true;
 
       #else
@@ -39,14 +49,14 @@ class UiWorkletsRunner {
 
     template<typename... Args>
     bool executeWorkletSync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
-      auto lockedRuntime = uiRuntime_.lock();
-      if (lockedRuntime == nullptr) {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
          return false;
       }
 
       #if RN_AUDIO_API_ENABLE_WORKLETS
 
-      lockedRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
+      strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
       return true;
 
       #else
@@ -55,7 +65,7 @@ class UiWorkletsRunner {
     }
 
  private:
-    std::weak_ptr<worklets::WorkletRuntime> uiRuntime_;
+    std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime_;
 };
 
 /*

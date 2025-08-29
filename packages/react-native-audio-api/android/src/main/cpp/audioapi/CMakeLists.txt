@@ -39,7 +39,7 @@ if(RN_AUDIO_API_WORKLETS_ENABLED)
     worklets
     PROPERTIES
       IMPORTED_LOCATION
-      "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+      "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
   )
   target_include_directories(
     react-native-audio-api
@@ -53,8 +53,8 @@ if(RN_AUDIO_API_WORKLETS_ENABLED)
     "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
     "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
     "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-    "${REACT_NATIVE_WORKLETS_DIR}/Common/cpp"
-    "${REACT_NATIVE_WORKLETS_DIR}/android/src/main/cpp"
+    "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
+    "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
   )
   list(APPEND LINK_LIBRARIES worklets)
 else()

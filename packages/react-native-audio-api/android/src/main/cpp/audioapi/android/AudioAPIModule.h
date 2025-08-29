@@ -40,14 +40,16 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
+  #if RN_AUDIO_API_ENABLE_WORKLETS
+  std::weak_ptr<worklets::WorkletsModuleProxy> weakWorkletsModuleProxy_;
+  #endif
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   #if RN_AUDIO_API_ENABLE_WORKLETS
-  std::shared_ptr<worklets::WorkletsModuleProxy> workletsModuleProxy_;
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
-      const std::shared_ptr<worklets::WorkletsModuleProxy> &workletsModuleProxy,
+      std::weak_ptr<worklets::WorkletsModuleProxy> weakWorkletsModuleProxy,
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
   #else

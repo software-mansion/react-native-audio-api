@@ -35,7 +35,7 @@ using namespace worklets;
 
 @implementation AudioAPIModule {
   std::shared_ptr<AudioEventHandlerRegistry> _eventHandler;
-  std::shared_ptr<WorkletsModuleProxy> workletsModuleProxy_;
+  std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy_;
 }
 
 #if defined(RCT_NEW_ARCH_ENABLED)
@@ -97,7 +97,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
     NSLog(@"WorkletsModuleProxy not available");
   }
 
-  workletsModuleProxy_ = workletsModuleProxy;
+  weakWorkletsModuleProxy_ = workletsModuleProxy;
 
   auto uiWorkletRuntime = workletsModuleProxy->getUIWorkletRuntime();
 

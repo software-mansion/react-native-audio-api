@@ -47,11 +47,8 @@ class AudioAPIModule(
       var workletsModule: Any? = null
       if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
         try {
-          // We check if the class exists via reflection
-          @Suppress("UNCHECKED_CAST")
-          val clazz = Class.forName("com.swmansion.worklets.WorkletsModule") as Class<NativeModule>
-          workletsModule = reactContext.getNativeModule(clazz)
-        } catch (e: ClassNotFoundException) {
+          workletsModule = reactContext.getNativeModule("WorkletsModule")
+        } catch (ex: Exception) {
           throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
         }
       }

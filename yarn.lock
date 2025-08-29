@@ -5086,6 +5086,7 @@ __metadata:
     react-native-safe-area-context: "npm:5.6.0"
     react-native-screens: "npm:4.14.1"
     react-native-svg: "npm:15.12.1"
+    react-native-worklets: "npm:^0.4.1"
     react-test-renderer: "npm:19.1.0"
     typescript: "npm:5.8.3"
   peerDependencies:
@@ -6624,7 +6625,6 @@ __metadata:
     prettier: "npm:^3.3.3"
     react: "npm:19.1.0"
     react-native: "npm:0.81.0"
-    react-native-worklets: "npm:^0.4.1"
   languageName: unknown
   linkType: soft
 

@@ -7,14 +7,14 @@ using namespace facebook::jni;
 AudioAPIModule::AudioAPIModule(
     jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
 #if RN_AUDIO_API_ENABLE_WORKLETS
-    const std::shared_ptr<WorkletsModuleProxy> &workletsModuleProxy,
+    std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy,
 #endif
     jsi::Runtime *jsiRuntime,
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
 #if RN_AUDIO_API_ENABLE_WORKLETS
-      workletsModuleProxy_(workletsModuleProxy),
+      weakWorkletsModuleProxy_(weakWorkletsModuleProxy),
 #endif
       jsCallInvoker_(jsCallInvoker) {
   audioEventHandlerRegistry_ =
@@ -36,10 +36,9 @@ jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     auto workletsModuleProxy = castedModule->cthis()->getWorkletsModuleProxy();
     return makeCxxInstance(
         jThis, workletsModuleProxy, rnRuntime, jsCallInvoker);
-  } else {
-    throw std::runtime_error(
-        "Worklets module is required but not provided from Java/Kotlin side");
   }
+  throw std::runtime_error(
+      "Worklets module is required but not provided from Java/Kotlin side");
 #else
   return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
 #endif
@@ -57,7 +56,8 @@ void AudioAPIModule::registerNatives() {
 
 void AudioAPIModule::injectJSIBindings() {
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  auto uiWorkletRuntime = workletsModuleProxy_->getUIWorkletRuntime();
+  auto uiWorkletRuntime =
+      weakWorkletsModuleProxy_.lock()->getUIWorkletRuntime();
 #else
   auto uiWorkletRuntime = nullptr;
 #endif

@@ -27,14 +27,14 @@ AudioRecorder::AudioRecorder(
 #if RN_AUDIO_API_ENABLE_WORKLETS
 void AudioRecorder::setWorkletCallback(
     std::shared_ptr<worklets::ShareableWorklet> &callback) {
-  std::lock_guard<std::mutex> lock(workletCallbackMutex_);
+  std::scoped_lock<std::mutex> lock(workletCallbackMutex_);
   shareableWorklet_ = callback;
 }
 void AudioRecorder::invokeWorkletOnAudioReadyCallback(
     const std::shared_ptr<AudioBus> &bus,
     int numFrames,
     double when) {
-  std::lock_guard<std::mutex> lock(workletCallbackMutex_);
+  std::scoped_lock<std::mutex> lock(workletCallbackMutex_);
 
   if (!shareableWorklet_) {
     return;

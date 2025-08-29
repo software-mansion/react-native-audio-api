@@ -67,23 +67,11 @@ def resolveReactNativeDirectory() {
 }
 
 def resolveReactNativeWorkletsDirectory() {
-  def reactNativeWorkletsLocation = safeAppExtGet("REACT_NATIVE_WORKLETS_NODE_MODULES_DIR", null)
-  if (reactNativeWorkletsLocation != null) {
-    return file(reactNativeWorkletsLocation)
+  def rnWorklets = rootProject.subprojects.find { it.name == 'react-native-worklets' }
+  if (rnWorklets != null) {
+    return rnWorklets.projectDir
   }
 
-  try {
-    // Fallback to node resolver for custom directory structures like monorepos.
-    def nodeOutput = ["node", "--print", "require.resolve('react-native-worklets/package.json')"].execute(null, rootDir).text.trim()
-    if (nodeOutput && nodeOutput != "") {
-      def reactNativeWorkletsPackage = file(nodeOutput)
-      if (reactNativeWorkletsPackage.exists()) {
-        return reactNativeWorkletsPackage.parentFile
-      }
-    }
-  } catch (Exception ignored) {
-    // If node or require.resolve fails, just return null
-  }
   return null;
 }
 
@@ -257,17 +245,18 @@ dependencies {
   implementation 'androidx.media:media:1.7.0'
 
   if (isWorkletsAvailable) {
-    implementation project(':react-native-worklets')
+    implementation(rootProject.subprojects.find { it.name == 'react-native-worklets' })
   }
 }
 
 if (isWorkletsAvailable) {
   // Ensure worklets is built before react-native-audio-api
-  evaluationDependsOn(":react-native-worklets")
+  def rnWorkletsProject = rootProject.subprojects.find { it.name == 'react-native-worklets' }
+  evaluationDependsOn(rnWorkletsProject.path)
 
   afterEvaluate {
-      tasks.getByName("buildCMakeDebug").dependsOn(findProject(":react-native-worklets").tasks.getByName("mergeDebugNativeLibs"))
-      tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(findProject(":react-native-worklets").tasks.getByName("mergeReleaseNativeLibs"))
+      tasks.getByName("buildCMakeDebug").dependsOn(rnWorkletsProject.tasks.getByName("mergeDebugNativeLibs"))
+      tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(rnWorkletsProject.tasks.getByName("mergeReleaseNativeLibs"))
   }
 }
 
