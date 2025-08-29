@@ -43,7 +43,7 @@ import WhiteNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/White
 
 Pink noise, also known as 1/f noise (where "f" stands for frequency), is a type of signal or sound that has equal energy per octave. This means that the power spectral density (PSD) decreases inversely with frequency. In simpler terms, pink noise has more energy at lower frequencies and less energy at higher frequencies, which makes it sound softer and more balanced to the human ear than white noise.
 
-To generate pink noise, we will use the effects of a $\dfrac{-3dB}{octave}$ filter using the [Paul Kellet's refined method](https://www.musicdsp.org/en/latest/Filters/76-pink-noise-filter.html)
+To generate pink noise, we will use the effects of a $\frac{-3dB}{octave}$ filter using the [Paul Kellet's refined method](https://www.musicdsp.org/en/latest/Filters/76-pink-noise-filter.html)
 
 ```tsx
 const createPinkNoise = () => {
@@ -87,7 +87,7 @@ import PinkNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/PinkNo
 
 The last noise type I would like to describe is brownian noise (also known as Brown or red noise). Brownian noise is named after the Brownian motion phenomenon, where particles inside a fluid move randomly due to collisions with other particles. It relates to its sonic counterpart in that Brownian noise is characterized by a significant presence of low frequencies, with energy decreasing as the frequency increases. Brownian noise is believed to sound like waterfall.
 
-Brownian noise, similarly to pink one, decreases in power by $\dfrac{12dB}{octave}$ and sounds similar to waterfall. The implementation is taken from article by Zach Denton, [How to Generate Noise with the Web Audio API](https://noisehack.com/generate-noise-web-audio-api/):
+Brownian noise, similarly to pink one, decreases in power by $\frac{12dB}{octave}$ and sounds similar to waterfall. The implementation is taken from article by Zach Denton, [How to Generate Noise with the Web Audio API](https://noisehack.com/generate-noise-web-audio-api/):
 
 
 ```tsx

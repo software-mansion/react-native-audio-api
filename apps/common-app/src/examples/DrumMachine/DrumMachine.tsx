@@ -1,8 +1,8 @@
-import { Canvas } from '@shopify/react-native-skia';
-import React, { useState, useCallback } from 'react';
+import { Canvas, useCanvasRef } from '@shopify/react-native-skia';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import { AudioContext } from 'react-native-audio-api';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { colors } from '../../styles';
 import { Select, Slider, Spacer, Container } from '../../components';
@@ -10,8 +10,7 @@ import Kick from '../../utils/soundEngines/Kick';
 import Clap from '../../utils/soundEngines/Clap';
 import HiHat from '../../utils/soundEngines/HiHat';
 
-import { InstrumentName, Pattern } from '../../types';
-import type { XYWHRect } from '../../types';
+import { InstrumentName, Pattern, XYWHRect } from '../../types';
 import { size, initialBpm, numBeats } from './constants';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
@@ -61,12 +60,20 @@ const DrumMachine: React.FC = () => {
     setup: setupPlayer,
   });
 
+  const ref = useCanvasRef();
   const [canvasRect, setCanvasRect] = useState<XYWHRect>({
     x: 0,
     y: 0,
-    width: 0,
-    height: 0,
+    width: size,
+    height: size,
   });
+  useLayoutEffect(() => {
+    ref.current?.measure(
+      (x: number, y: number, width: number, height: number) => {
+        setCanvasRect({ x, y, width, height });
+      }
+    );
+  }, [ref]);
 
   const onPatternChange = useCallback(
     (patternIdx: number, stepIdx: number) => {
@@ -112,15 +119,6 @@ const DrumMachine: React.FC = () => {
     }
   }, [player]);
 
-  const onCanvasLayout = useCallback((event: LayoutChangeEvent) => {
-    setCanvasRect({
-      x: event.nativeEvent.layout.x,
-      y: event.nativeEvent.layout.y,
-      width: event.nativeEvent.layout.width,
-      height: event.nativeEvent.layout.height,
-    });
-  }, []);
-
   const gesture = useGestures({ canvasRect, onPatternChange });
 
   return (
@@ -144,11 +142,7 @@ const DrumMachine: React.FC = () => {
       <Spacer.Vertical size={54} />
       <GestureDetector gesture={gesture}>
         <View style={styles.container}>
-          <Canvas
-            // @ts-ignore ???
-            width={size}
-            height={size}
-            onLayout={onCanvasLayout}>
+          <Canvas ref={ref} style={{ width: size, height: size }}>
             <Grid />
             {patterns.map((pattern) => (
               <PatternShape key={pattern.instrumentName} pattern={pattern} />
