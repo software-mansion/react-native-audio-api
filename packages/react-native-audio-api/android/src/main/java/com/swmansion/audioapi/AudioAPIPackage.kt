@@ -31,9 +31,9 @@ class AudioAPIPackage : BaseReactPackage() {
         ReactModuleInfo(
           AudioAPIModule.NAME,
           AudioAPIModule.NAME,
-          true,
-          false,
-          false,
+          true, // canOverrideExistingModule
+          false, // needsEagerInit
+          false, // isCxxModule
           isTurboModule,
         )
 
