@@ -128,22 +128,7 @@ class AudioNodeManager {
   void prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec);
 
   template <typename U>
-  bool nodeCanBeDestructed(std::shared_ptr<U> const& node) {
-    if (node.use_count() > 1) {
-      return false;
-    }
-
-    // If the node is an AudioScheduledSourceNode, we need to check if it is still playing
-    if constexpr (std::is_same<U, AudioScheduledSourceNode>::value) {
-      if (node->isUnscheduled() || node->isFinished()) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return true;
-    }
-  }
+  bool nodeCanBeDestructed(std::shared_ptr<U> const& node);
 };
 
 #undef AUDIO_NODE_MANAGER_SPSC_OPTIONS
