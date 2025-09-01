@@ -14,6 +14,8 @@
 #include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
+#include <audioapi/HostObjects/WorkletNodeHostObject.h>
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -40,6 +42,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
     addFunctions(
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
@@ -79,6 +82,19 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto recorderAdapter = context_->createRecorderAdapter();
     auto recorderAdapterHostObject = std::make_shared<RecorderAdapterNodeHostObject>(recorderAdapter);
     return jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createWorkletNode) {
+    #if RN_AUDIO_API_ENABLE_WORKLETS
+    auto shareableWorklet = worklets::extractShareableOrThrow<worklets::ShareableWorklet>(runtime, args[0]);
+    auto bufferLength = static_cast<size_t>(args[1].getNumber());
+    auto inputChannelCount = static_cast<size_t>(args[2].getNumber());
+
+    auto workletNode = context_->createWorkletNode(shareableWorklet, bufferLength, inputChannelCount);
+    auto workletNodeHostObject = std::make_shared<WorkletNodeHostObject>(workletNode);
+    return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+    #endif
+    return jsi::Value::undefined();
   }
 
   JSI_HOST_FUNCTION(createOscillator) {

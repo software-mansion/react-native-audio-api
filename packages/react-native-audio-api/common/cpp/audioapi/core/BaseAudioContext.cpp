@@ -4,6 +4,7 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
+#include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
@@ -20,11 +21,13 @@ namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry>
-        &audioEventHandlerRegistry) {
+        &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
 
   audioEventHandlerRegistry_ = audioEventHandlerRegistry;
+  workletRunner_ = workletRunner;
 }
 
 std::string BaseAudioContext::getState() {
@@ -55,6 +58,16 @@ double BaseAudioContext::getCurrentTime() const {
 
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
   return destination_;
+}
+
+std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
+    std::shared_ptr<worklets::ShareableWorklet> &shareableWorklet,
+    size_t bufferLength,
+    size_t inputChannelCount) {
+  auto workletNode = std::make_shared<WorkletNode>(
+      this, shareableWorklet, bufferLength, inputChannelCount);
+  nodeManager_->addProcessingNode(workletNode);
+  return workletNode;
 }
 
 std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {

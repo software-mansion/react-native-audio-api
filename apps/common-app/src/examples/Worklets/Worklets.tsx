@@ -5,6 +5,7 @@ import {
   AudioManager,
   AudioRecorder,
   RecorderAdapterNode,
+  WorkletNode
 } from 'react-native-audio-api';
 import { Container } from "../../components";
 import { Extrapolation, useSharedValue } from "react-native-reanimated";
@@ -20,7 +21,8 @@ function Worklets() {
     const recorderRef = useRef<AudioRecorder | null>(null);
     const aCtxRef = useRef<AudioContext | null>(null);
     const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
-    
+    const workletNodeRef = useRef<WorkletNode | null>(null);
+ 
     const bar0 = useSharedValue(0);
     const bar1 = useSharedValue(0);
     const bar2 = useSharedValue(0); // center bar
@@ -37,7 +39,7 @@ function Worklets() {
         AudioManager.requestRecordingPermissions();
         recorderRef.current = new AudioRecorder({
             sampleRate: SAMPLE_RATE,
-            bufferLengthInSamples: 512,
+            bufferLengthInSamples: 1024,
         });
     }, []);
 
@@ -47,16 +49,17 @@ function Worklets() {
             return;
         }
 
-        recorderRef.current.onAudioReadyWorklet((audioData: Float32Array, timestamp: number) => {
+        const worklet = (audioData: Array<Float32Array>, timestamp: number) => {
             'worklet';
             
+
             // Calculates RMS amplitude
             let sum = 0;
             for (let i = 0; i < audioData.length; i++) {
-                sum += audioData[i] * audioData[i];
+                sum += audioData[0][i] * audioData[0][i];
             }
-            const rms = Math.sqrt(sum / audioData.length);
-            const scaledAmplitude = Math.min(rms * 150, 1);
+            const rms = Math.sqrt(sum / audioData[0].length);
+            const scaledAmplitude = Math.min(rms * 500, 1);
             
             console.log(`RMS: ${rms}, Scaled: ${scaledAmplitude}`);
             
@@ -65,11 +68,14 @@ function Worklets() {
             bar3.value = bar2.value;
             bar4.value = bar3.value;
             bar2.value = scaledAmplitude; 
-        });
+        };
 
         aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
         recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
-        recorderAdapterRef.current.connect(aCtxRef.current.destination);
+        workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 512, 1);
+        recorderAdapterRef.current.connect(workletNodeRef.current);
+        workletNodeRef.current.connect(aCtxRef.current.destination);
+
         recorderRef.current.connect(recorderAdapterRef.current);
         recorderRef.current.start();
         console.log("Recording started");
