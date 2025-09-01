@@ -238,10 +238,10 @@ void AudioNodeManager::prepareNodesForDestruction(
   // nodes in range [begin, vec.size()) should be deleted
   // so new size of the vector will be `begin`
   while (begin <= end) {
-    while (begin < end && vec[end].use_count() == 1) {
+    while (begin < end && nodeCanBeDestructed(vec[end])) {
       end--;
     }
-    if (vec[begin].use_count() == 1) {
+    if (nodeCanBeDestructed(vec[begin])) {
       std::swap(vec[begin], vec[end]);
       end--;
     }
