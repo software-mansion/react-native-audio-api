@@ -49,7 +49,7 @@ function Worklets() {
             return;
         }
 
-        const worklet = (audioData: Array<Float32Array>, timestamp: number) => {
+        const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
             'worklet';
             
 

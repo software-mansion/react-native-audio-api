@@ -58,6 +58,26 @@ The above method lets you create [`RecorderAdapterNode`](/docs/sources/recorder-
 
 #### Returns `RecorderAdapterNode`
 
+### `createWorkletNode` <MobileOnly />
+
+The above method lets you create [`WorkletNode`](/docs/worklets/worklet-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
+| `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
+| `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+| `NotSupportedError` | `bufferLength` < 1. |
+| `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
+
+#### Returns `WorkletNode`.
+
 ### `createBuffer`
 
 The above method lets you create [`AudioBuffer`](/docs/sources/audio-buffer).

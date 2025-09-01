@@ -43,9 +43,9 @@ export default class BaseAudioContext {
     bufferLength: number,
     inputChannelCount: number
   ): WorkletNode {
-    if (inputChannelCount < 1) {
+    if (inputChannelCount < 1 || inputChannelCount > 32) {
       throw new NotSupportedError(
-        `The number of input channels provided (${inputChannelCount}) can not be less than 1`
+        `The number of input channels provided (${inputChannelCount}) can not be less than 1 or greater than 32`
       );
     }
     if (bufferLength < 1) {
