@@ -34,7 +34,7 @@ class AudioAPIPackage : BaseReactPackage() {
           true,
           false,
           false,
-          isTurboModule
+          isTurboModule,
         )
 
       moduleInfos
