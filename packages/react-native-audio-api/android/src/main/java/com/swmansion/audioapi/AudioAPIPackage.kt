@@ -31,10 +31,10 @@ class AudioAPIPackage : BaseReactPackage() {
         ReactModuleInfo(
           AudioAPIModule.NAME,
           AudioAPIModule.NAME,
-          canOverrideExistingModule = true,
-          needsEagerInit = false,
-          isCxxModule = false,
-          isTurboModule = isTurboModule,
+          true,
+          false,
+          false,
+          isTurboModule
         )
 
       moduleInfos
