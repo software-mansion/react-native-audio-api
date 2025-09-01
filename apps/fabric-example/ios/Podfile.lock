@@ -2342,7 +2342,7 @@ PODS:
     - React-perflogger (= 0.81.0)
     - React-utils (= 0.81.0)
     - SocketRocket
-  - RNAudioAPI (0.7.2):
+  - RNAudioAPI (0.8.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2368,10 +2368,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.7.2)
+    - RNAudioAPI/audioapi (= 0.8.0)
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi (0.7.2):
+  - RNAudioAPI/audioapi (0.8.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2397,10 +2397,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/ios (= 0.7.2)
+    - RNAudioAPI/audioapi/ios (= 0.8.0)
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.7.2):
+  - RNAudioAPI/audioapi/ios (0.8.0):
     - boost
     - DoubleConversion
     - fast_float
