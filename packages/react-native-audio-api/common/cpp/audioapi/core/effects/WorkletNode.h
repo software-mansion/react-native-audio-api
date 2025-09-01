@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <jsi/jsi.h>
 #include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 #include <audioapi/core/AudioNode.h>
@@ -11,6 +12,22 @@
 #include <vector>
 
 namespace audioapi {
+
+#if RN_AUDIO_API_TEST
+class WorkletNode : public AudioNode {
+ public:
+  explicit WorkletNode(
+      BaseAudioContext *context,
+      std::shared_ptr<worklets::ShareableWorklet> &worklet,
+      size_t bufferLength,
+      size_t inputChannelCount
+  ) : AudioNode(context) {}
+
+ protected:
+  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
+};
+#else
+
 using namespace facebook;
 
 class WorkletNode : public AudioNode {
@@ -35,5 +52,6 @@ class WorkletNode : public AudioNode {
   size_t curBuffIndex_;
 };
 
+#endif
 
 } // namespace audioapi

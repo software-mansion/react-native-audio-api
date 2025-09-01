@@ -15,6 +15,10 @@
   #endif
 #endif
 
+#ifndef RN_AUDIO_API_TEST
+  #define RN_AUDIO_API_TEST 0
+#endif
+
 #if RN_AUDIO_API_ENABLE_WORKLETS
   #include <worklets/WorkletRuntime/WorkletRuntime.h>
   #include <worklets/SharedItems/Shareables.h>

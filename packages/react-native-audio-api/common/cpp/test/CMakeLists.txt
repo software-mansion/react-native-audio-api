@@ -25,6 +25,7 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
 )
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp")
+list(REMOVE_ITEM RNAUDIOAPI_SRC "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletNode.cpp")
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
   CONFIGURE_DEPENDS
@@ -50,7 +51,6 @@ target_include_directories(rnaudioapi PUBLIC
 target_include_directories(rnaudioapi_libs PUBLIC
   ${ROOT}/packages/react-native-audio-api/common/cpp
 )
-
 add_executable(
   tests
   OscillatorTest.cpp
@@ -58,6 +58,8 @@ add_executable(
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)
+add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
+add_compile_definitions(RN_AUDIO_API_TEST=1)
 
 target_link_libraries(tests
   rnaudioapi
