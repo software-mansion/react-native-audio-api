@@ -8,7 +8,7 @@ extern "C" {
     #include <libavformat/avformat.h>
     #include <libavutil/opt.h>
     #include <libswresample/swresample.h>
-}    
+}
 
 namespace audioapi::ffmpegdecoder {
 // Custom IO context for reading from memory

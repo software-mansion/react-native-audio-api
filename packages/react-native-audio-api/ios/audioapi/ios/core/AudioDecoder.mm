@@ -8,7 +8,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/libs/ffmpeg/ffmpeg_decoder.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoder.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 

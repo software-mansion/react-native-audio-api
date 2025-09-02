@@ -7,7 +7,9 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
-#include <audioapi/libs/ffmpeg/ffmpeg_decoder.h>
+#ifndef AUDIO_API_TEST_SUITE
+#include <audioapi/libs/ffmpeg/FFmpegDecoder.h>
+#endif
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 
@@ -63,6 +65,7 @@ std::shared_ptr<AudioBus> AudioDecoder::makeAudioBusFromInt16Buffer(
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
+#ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
   if (path.find(".mp4") != std::string::npos ||
       path.find(".m4a") != std::string::npos ||
@@ -73,14 +76,12 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     ma_decoder decoder;
     ma_decoder_config config = ma_decoder_config_init(
         ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
-#ifndef AUDIO_API_TEST_SUITE
     ma_decoding_backend_vtable *customBackends[] = {
         ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
     config.ppCustomBackendVTables = customBackends;
     config.customBackendCount =
         sizeof(customBackends) / sizeof(customBackends[0]);
-#endif
 
     if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
       // __android_log_print(
@@ -104,11 +105,13 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     ma_decoder_uninit(&decoder);
   }
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#endif
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     const void *data,
     size_t size) const {
+#ifndef AUDIO_API_TEST_SUITE
   std::string format = AudioDecoder::detectAudioFormat(data, size);
   std::vector<int16_t> buffer;
   if (format == "mp4" || format == "m4a" || format == "aac") {
@@ -118,14 +121,12 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     ma_decoder_config config = ma_decoder_config_init(
         ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
 
-#ifndef AUDIO_API_TEST_SUITE
     ma_decoding_backend_vtable *customBackends[] = {
         ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
     config.ppCustomBackendVTables = customBackends;
     config.customBackendCount =
         sizeof(customBackends) / sizeof(customBackends[0]);
-#endif
 
     if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
       // __android_log_print(
@@ -148,6 +149,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     ma_decoder_uninit(&decoder);
   }
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#endif
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
