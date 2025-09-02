@@ -15,27 +15,45 @@ class ParamChangeEvent {
       double endTime,
       float startValue,
       float endValue,
-      std::function<float(double, double, float, float, double)> calculateValue,
+      std::function<float(double, double, float, float, double)> &&calculateValue,
       ParamChangeEventType type);
 
-  [[nodiscard]] double getEndTime() const;
-  [[nodiscard]] double getStartTime() const;
-  [[nodiscard]] float getEndValue() const;
-  [[nodiscard]] float getStartValue() const;
-  [[nodiscard]] std::function<float(double, double, float, float, double)>
-  getCalculateValue() const;
-  [[nodiscard]] ParamChangeEventType getType() const;
+  [[nodiscard]] inline double getEndTime() const {
+    return endTime_;
+  }
+  [[nodiscard]] inline double getStartTime() const {
+    return startTime_;
+  }
+  [[nodiscard]] inline float getEndValue() const {
+    return endValue_;
+  }
+  [[nodiscard]] inline float getStartValue() const {
+    return startValue_;
+  }
+  [[nodiscard]] inline std::function<float(double, double, float, float, double)>
+  getCalculateValue() const {
+    return calculateValue_;
+  }
+  [[nodiscard]] inline ParamChangeEventType getType() const {
+    return type_;
+  }
 
-  void setEndTime(double endTime);
-  void setStartValue(float startValue);
-  void setEndValue(float endValue);
+  inline void setEndTime(double endTime) {
+    endTime_ = endTime;
+  }
+  inline void setStartValue(float startValue) {
+    startValue_ = startValue;
+  }
+  inline void setEndValue(float endValue) {
+    endValue_ = endValue;
+  }
 
  private:
   double startTime_;
   double endTime_;
+  std::function<float(double, double, float, float, double)> calculateValue_;
   float startValue_;
   float endValue_;
-  std::function<float(double, double, float, float, double)> calculateValue_;
   ParamChangeEventType type_;
 };
 
