@@ -73,6 +73,50 @@ class AudioDecoder {
     stretch_deinit(stretcher);
   }
 
+  static std::string detectAudioFormat(const void* data, size_t size) {
+    if (size < 12) return "unknown";
+    const unsigned char* bytes = static_cast<const unsigned char*>(data);
+
+    // WAV/RIFF
+    if (size >= 12 && std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
+        return "wav";
+
+    // OGG
+    if (std::memcmp(bytes, "OggS", 4) == 0)
+        return "ogg";
+
+    // FLAC
+    if (std::memcmp(bytes, "fLaC", 4) == 0)
+        return "flac";
+
+    // AAC starts with 0xFF 0xF1 or 0xFF 0xF9
+    if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0)
+        return "aac";
+
+    // MP3: "ID3" or 0xFF 0xFB / 0xFF 0xF3 / 0xFF 0xF2
+    if (std::memcmp(bytes, "ID3", 3) == 0)
+        return "mp3";
+    if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
+        return "mp3";
+
+    if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
+        char brand[5] = {0};
+        std::memcpy(brand, bytes + 8, 4);
+
+        if (std::memcmp(brand, "M4A ", 4) == 0)
+            return "m4a";
+        else if (std::memcmp(brand, "mp42", 4) == 0 || std::memcmp(brand, "isom", 4) == 0)
+            return "mp4";
+        else if (std::memcmp(brand, "qt  ", 4) == 0)
+            return "mov";
+        else
+            return "mp4";
+    }
+
+    return "unknown";
+}
+
+
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * 32768.0f);
   }
