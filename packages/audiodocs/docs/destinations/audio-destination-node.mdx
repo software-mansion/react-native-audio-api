@@ -1,0 +1,31 @@
+---
+sidebar_position: 1
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+
+# AudioDestinationNode
+
+The `AudioDestinationNode` interface represents the final destination of an audio graph, where all processed audio is ultimately directed.
+
+In most cases, this means the sound is sent to the system’s default output device, such as speakers or headphones.
+When used with an [`OfflineAudioContext`](/docs/core/offline-audio-context) the rendered audio isn’t played back immediately—instead,
+it is stored in an [`AudioBuffer`](/docs/sources/audio-buffer).
+
+Each `AudioContext` has exactly one AudioDestinationNode, which can be accessed through its
+[`AudioContext.destination`](/docs/core/base-audio-context/#properties) property.
+
+
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={0} channelCount={2} channelCountMode={"explicit"} channelInterpretation={"speakers"} />
+
+## Properties
+
+`AudioDestinationNode` does not define any additional properties.
+It inherits all properties from [`AudioNode`](/docs/core/audio-node), listed above.
+
+## Methods
+
+`AudioDestinationNode` does not define any additional methods.
+It inherits all methods from [`AudioNode`](/docs/core/audio-node).
+

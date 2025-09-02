@@ -8,7 +8,7 @@ import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), `OfflineAudioContext`.
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context).
 
 #### Audio graph
 
@@ -18,7 +18,7 @@ In general we can distinguish four types of nodes:
 - Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node))
 - Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), [`BiquadFilterNode`](/docs/effects/biquad-filter-node))
 - Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
-- Destination nodes (e.g `AudioDestinationNode`)
+- Destination nodes (e.g [`AudioDestinationNode`](/docs/destinations/audio-destination-node))
 
 ![](/img/audio-graph.png)
 

@@ -114,7 +114,9 @@ Allows to specify certain android app permissions to apply.
 
 - `android.permission.FOREGROUND_SERVICE` - Allows an app to run a Foreground Service
 
-- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - Allows an app to run a Foreground Service specifically for playing audio or video.
+- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - Allows an app to run a Foreground Service specifically for continues audio or video playback.
+
+- `android.permission.FOREGROUND_SERVICE_MICROPHONE` - Allows an app to run a Foreground Service specifically for continues microphone capture from the background.
 
 - `android.permission.MODIFY_AUDIO_SETTINGS` - Allows an app to modify global audio settings.
 
@@ -136,3 +138,8 @@ Allows user to specify appropriate Foreground Service type.
 ##### Types description
 
 - `mediaPlayback` - Continue audio or video playback from the background.
+
+- `microphone` - Continue microphone capture from the background, such as voice recorders or communication apps.
+
+  Runtime prerequisites:
+    - Request and be granted the RECORD_AUDIO runtime permission.
