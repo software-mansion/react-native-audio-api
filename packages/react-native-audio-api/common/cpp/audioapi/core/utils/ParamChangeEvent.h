@@ -10,6 +10,7 @@ namespace audioapi {
 
 class ParamChangeEvent {
  public:
+  ParamChangeEvent() = default;
   explicit ParamChangeEvent(
       double startTime,
       double endTime,
