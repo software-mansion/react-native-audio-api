@@ -15,8 +15,13 @@ class RingBuffer {
     return (n & (n - 1)) == 0;
   }
  public:
+
+  /// @brief Constructor for RingBuffer.
+  /// @param capacity The maximum number of elements that can be held in the buffer.
+  /// @note Capacity must be a valid power of two and must be greater than zero.
   RingBuffer(size_t capacity)
     : headIndex_(0), tailIndex_(0) {
+    static_assert(capacity > 0, "RingBuffer's capacity must be positive");
     static_assert(isPowerOfTwo(capacity), "RingBuffer's capacity must be power of 2");
     capacity_ = capacity;
     buffer_ = static_cast<T*>(
@@ -60,6 +65,14 @@ class RingBuffer {
   }
 
   const inline T& peekBack() const noexcept {
+    return buffer_[tailIndex_];
+  }
+
+  inline T& peekFrontMut() noexcept {
+    return buffer_[headIndex_];
+  }
+
+  inline T& peekBackMut() noexcept {
     return buffer_[tailIndex_];
   }
 
