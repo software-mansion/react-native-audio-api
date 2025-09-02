@@ -8,12 +8,11 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #ifndef AUDIO_API_TEST_SUITE
+#include <android/log.h>
 #include <audioapi/libs/ffmpeg/FFmpegDecoder.h>
 #endif
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
-
-// #include <android/log.h>
 
 namespace audioapi {
 
@@ -84,11 +83,11 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
         sizeof(customBackends) / sizeof(customBackends[0]);
 
     if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
-      // __android_log_print(
-      //     ANDROID_LOG_ERROR,
-      //     "AudioDecoder",
-      //     "Failed to initialize decoder for file: %s",
-      //     path.c_str());
+      __android_log_print(
+          ANDROID_LOG_ERROR,
+          "AudioDecoder",
+          "Failed to initialize decoder for file: %s",
+          path.c_str());
       ma_decoder_uninit(&decoder);
       return nullptr;
     }
@@ -96,8 +95,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     ma_uint64 framesRead = 0;
     auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
     if (framesRead == 0) {
-      // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
-      // decode");
+      __android_log_print(
+          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
       ma_decoder_uninit(&decoder);
       return nullptr;
     }
@@ -129,10 +128,10 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
         sizeof(customBackends) / sizeof(customBackends[0]);
 
     if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
-      // __android_log_print(
-      //     ANDROID_LOG_ERROR,
-      //     "AudioDecoder",
-      //     "Failed to initialize decoder for memory block");
+      __android_log_print(
+          ANDROID_LOG_ERROR,
+          "AudioDecoder",
+          "Failed to initialize decoder for memory block");
       ma_decoder_uninit(&decoder);
       return nullptr;
     }
@@ -140,8 +139,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     ma_uint64 framesRead = 0;
     buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
     if (framesRead == 0) {
-      // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
-      // decode");
+      __android_log_print(
+          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
       ma_decoder_uninit(&decoder);
       return nullptr;
     }
