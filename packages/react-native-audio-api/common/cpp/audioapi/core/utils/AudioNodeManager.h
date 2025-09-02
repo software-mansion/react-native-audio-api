@@ -128,7 +128,7 @@ class AudioNodeManager {
   void prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec);
 
   template <typename U>
-  bool nodeCanBeDestructed(std::shared_ptr<U> const& node);
+  inline static bool nodeCanBeDestructed(std::shared_ptr<U> const& node);
 };
 
 #undef AUDIO_NODE_MANAGER_SPSC_OPTIONS

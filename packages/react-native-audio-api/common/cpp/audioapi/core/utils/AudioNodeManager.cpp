@@ -214,20 +214,15 @@ void AudioNodeManager::handleAddToDeconstructionEvent(
 }
 
 template <typename U>
-bool AudioNodeManager::nodeCanBeDestructed(std::shared_ptr<U> const &node) {
-  if (node.use_count() > 1) {
-    return false;
-  }
+inline bool AudioNodeManager::nodeCanBeDestructed(
+    std::shared_ptr<U> const &node) {
   // If the node is an AudioScheduledSourceNode, we need to check if it is still
   // playing
-  if constexpr (std::is_same<U, AudioScheduledSourceNode>::value) {
-    if (node->isUnscheduled() || node->isFinished()) {
-      return true;
-    } else {
-      return false;
-    }
+  if constexpr (std::is_base_of<U, AudioScheduledSourceNode>::value) {
+    return node.use_count() == 1 &&
+        (node->isUnscheduled() || node->isFinished());
   } else {
-    return true;
+    return node.use_count() == 1;
   }
 }
 
@@ -256,10 +251,10 @@ void AudioNodeManager::prepareNodesForDestruction(
   // nodes in range [begin, vec.size()) should be deleted
   // so new size of the vector will be `begin`
   while (begin <= end) {
-    while (begin < end && nodeCanBeDestructed(vec[end])) {
+    while (begin < end && AudioNodeManager::nodeCanBeDestructed(vec[end])) {
       end--;
     }
-    if (nodeCanBeDestructed(vec[begin])) {
+    if (AudioNodeManager::nodeCanBeDestructed(vec[begin])) {
       std::swap(vec[begin], vec[end]);
       end--;
     }
