@@ -104,6 +104,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     ma_decoder_uninit(&decoder);
   }
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#else
+  return nullptr;
 #endif
 }
 
@@ -148,6 +150,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     ma_decoder_uninit(&decoder);
   }
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#else
+  return nullptr;
 #endif
 }
 
