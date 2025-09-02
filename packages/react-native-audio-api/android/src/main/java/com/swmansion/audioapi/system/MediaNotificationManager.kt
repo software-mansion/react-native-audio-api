@@ -1,21 +1,21 @@
 package com.swmansion.audioapi.system
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.res.Resources
-import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.KeyEvent
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.swmansion.audioapi.R
 import java.lang.ref.WeakReference
@@ -107,34 +107,20 @@ class MediaNotificationManager(
     return builder.build()
   }
 
-  @SuppressLint("MissingPermission")
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   @Synchronized
-  fun show(
+  fun updateNotification(
     builder: NotificationCompat.Builder?,
     isPlaying: Boolean,
   ) {
     NotificationManagerCompat.from(reactContext.get()!!).notify(
       MediaSessionManager.NOTIFICATION_ID,
-      prepareNotification(
-        builder!!,
-        isPlaying,
-      ),
+      prepareNotification(builder!!, isPlaying),
     )
   }
 
-  fun hide() {
+  fun cancelNotification() {
     NotificationManagerCompat.from(reactContext.get()!!).cancel(MediaSessionManager.NOTIFICATION_ID)
-
-    try {
-      val myIntent =
-        Intent(
-          reactContext.get(),
-          NotificationService::class.java,
-        )
-      reactContext.get()?.stopService(myIntent)
-    } catch (e: java.lang.Exception) {
-      Log.w("AudioManagerModule", "Error stopping service: ${e.message}")
-    }
   }
 
   @Synchronized
@@ -182,45 +168,30 @@ class MediaNotificationManager(
     return NotificationCompat.Action(icon!!, title, i)
   }
 
-  class NotificationService : Service() {
-    private val binder = LocalBinder()
+  class AudioForegroundService : Service() {
     private var notification: Notification? = null
+    private var isServiceStarted = false
+    private val serviceLock = Any()
 
-    inner class LocalBinder : Binder() {
-      private var weakService: WeakReference<NotificationService>? = null
+    override fun onBind(intent: Intent): IBinder? = null
 
-      fun onBind(service: NotificationService) {
-        weakService = WeakReference(service)
-      }
-
-      fun getService(): NotificationService? = weakService?.get()
-    }
-
-    override fun onBind(intent: Intent): IBinder {
-      binder.onBind(this)
-      return binder
-    }
-
-    fun forceForeground() {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val intent = Intent(this, NotificationService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-        notification =
-          MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
-        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
-      }
-    }
-
-    override fun onCreate() {
-      super.onCreate()
-      try {
-        notification =
-          MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
-        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
-      } catch (ex: Exception) {
-        Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
+    private fun startForegroundService() {
+      synchronized(serviceLock) {
+        if (!isServiceStarted) {
+          try {
+            notification =
+              MediaSessionManager.mediaNotificationManager
+                .prepareNotification(
+                  NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID),
+                  false,
+                )
+            startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
+            isServiceStarted = true
+          } catch (ex: Exception) {
+            Log.w("AudioManagerModule", "Error starting foreground service: ${ex.message}")
+            stopSelf()
+          }
+        }
       }
     }
 
@@ -229,26 +200,40 @@ class MediaNotificationManager(
       flags: Int,
       startId: Int,
     ): Int {
-      onCreate()
+      val action = intent?.action
+
+      when (action) {
+        "START_FOREGROUND" -> startForegroundService()
+        "STOP_FOREGROUND" -> stopForegroundService()
+        else -> startForegroundService()
+      }
+
       return START_NOT_STICKY
+    }
+
+    private fun stopForegroundService() {
+      synchronized(serviceLock) {
+        if (isServiceStarted) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+          }
+          isServiceStarted = false
+          stopSelf()
+        }
+      }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
       super.onTaskRemoved(rootIntent)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-      }
-      stopSelf()
+      stopForegroundService()
     }
 
     override fun onDestroy() {
-      super.onDestroy()
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        stopForeground(STOP_FOREGROUND_REMOVE)
+      synchronized(serviceLock) {
+        notification = null
+        isServiceStarted = false
       }
-
-      stopSelf()
+      super.onDestroy()
     }
   }
 }

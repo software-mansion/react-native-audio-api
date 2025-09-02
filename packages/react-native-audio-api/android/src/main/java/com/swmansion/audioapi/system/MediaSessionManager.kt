@@ -3,18 +3,14 @@ package com.swmansion.audioapi.system
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
-import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -41,31 +37,8 @@ object MediaSessionManager {
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
 
-  private val connection =
-    object : ServiceConnection {
-      override fun onServiceConnected(
-        name: ComponentName,
-        service: IBinder,
-      ) {
-        Log.w("MediaSessionManager", "onServiceConnected")
-        val binder = service as MediaNotificationManager.NotificationService.LocalBinder
-        val notificationService = binder.getService()
-        notificationService?.forceForeground()
-        reactContext.get()?.unbindService(this)
-      }
-
-      override fun onServiceDisconnected(name: ComponentName) {
-        Log.w("MediaSessionManager", "Service is disconnected.")
-      }
-
-      override fun onBindingDied(name: ComponentName) {
-        Log.w("MediaSessionManager", "Binding has died.")
-      }
-
-      override fun onNullBinding(name: ComponentName) {
-        Log.w("MediaSessionManager", "Bind was null.")
-      }
-    }
+  private var isServiceRunning = false
+  private val serviceStateLock = Any()
 
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
@@ -83,8 +56,8 @@ object MediaSessionManager {
     this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
     this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
     this.mediaReceiver =
-      MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager), this.audioAPIModule)
-    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule))
+      MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(this.mediaNotificationManager), this.audioAPIModule)
+    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.mediaNotificationManager)))
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
@@ -107,16 +80,33 @@ object MediaSessionManager {
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
-    val myIntent = Intent(this.reactContext.get(), MediaNotificationManager.NotificationService::class.java)
+    startForegroundService()
+  }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      try {
-        this.reactContext.get()?.bindService(myIntent, connection, Context.BIND_AUTO_CREATE)
-      } catch (ignored: Exception) {
-        ContextCompat.startForegroundService(this.reactContext.get()!!, myIntent)
+  fun startForegroundService() {
+    synchronized(serviceStateLock) {
+      if (!isServiceRunning) {
+        val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
+        intent.action = "START_FOREGROUND"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          ContextCompat.startForegroundService(reactContext.get()!!, intent)
+        } else {
+          reactContext.get()?.startService(intent)
+        }
+        isServiceRunning = true
       }
-    } else {
-      this.reactContext.get()?.startService(myIntent)
+    }
+  }
+
+  fun stopForegroundService() {
+    synchronized(serviceStateLock) {
+      if (isServiceRunning) {
+        val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
+        intent.action = "STOP_FOREGROUND"
+        reactContext.get()?.startService(intent)
+        isServiceRunning = false
+      }
     }
   }
 

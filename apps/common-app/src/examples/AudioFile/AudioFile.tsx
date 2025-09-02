@@ -59,6 +59,7 @@ const AudioFile: FC = () => {
       'remotePlay',
       () => {
         AudioPlayer.play();
+        setIsPlaying(true);
       }
     );
 
@@ -66,6 +67,7 @@ const AudioFile: FC = () => {
       'remotePause',
       () => {
         AudioPlayer.pause();
+        setIsPlaying(false);
       }
     );
 
