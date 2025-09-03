@@ -84,14 +84,14 @@ object MediaSessionManager {
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
   }
 
-  fun attachSourceNode(player: NativeAudioPlayer): String {
+  fun attachAudioPlayer(player: NativeAudioPlayer): String {
     val uuid = UUID.randomUUID().toString()
     nativeAudioPlayers[uuid] = player
 
     return uuid
   }
 
-  fun detachSourceNode(uuid: String) {
+  fun detachAudioPlayer(uuid: String) {
     nativeAudioPlayers.remove(uuid)
   }
 

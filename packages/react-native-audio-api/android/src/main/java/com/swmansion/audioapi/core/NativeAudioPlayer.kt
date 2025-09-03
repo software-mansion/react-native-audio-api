@@ -9,14 +9,14 @@ class NativeAudioPlayer {
 
   @DoNotStrip
   fun start() {
-    this.sourceNodeId = MediaSessionManager.attachSourceNode(this)
+    this.sourceNodeId = MediaSessionManager.attachAudioPlayer(this)
     MediaSessionManager.startForegroundServiceIfNecessary()
   }
 
   @DoNotStrip
   fun stop() {
     this.sourceNodeId?.let {
-      MediaSessionManager.detachSourceNode(it)
+      MediaSessionManager.detachAudioPlayer(it)
       this.sourceNodeId = null
     }
     MediaSessionManager.stopForegroundServiceIfNecessary()
