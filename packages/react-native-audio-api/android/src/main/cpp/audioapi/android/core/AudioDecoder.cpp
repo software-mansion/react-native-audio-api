@@ -9,7 +9,7 @@
 
 #ifndef AUDIO_API_TEST_SUITE
 #include <android/log.h>
-#include <audioapi/libs/ffmpeg/FFmpegDecoder.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
@@ -68,7 +68,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     buffer =
-        ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+        ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate_));
     if (buffer.empty()) {
       __android_log_print(
           ANDROID_LOG_ERROR,
@@ -122,7 +122,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
   std::string format = AudioDecoder::detectAudioFormat(data, size);
   std::vector<int16_t> buffer;
   if (format == "mp4" || format == "m4a" || format == "aac") {
-    buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, sampleRate_);
+    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, sampleRate_);
   } else {
     ma_decoder decoder;
     ma_decoder_config config = ma_decoder_config_init(

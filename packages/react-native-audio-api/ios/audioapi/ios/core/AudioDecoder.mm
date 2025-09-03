@@ -8,7 +8,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/libs/ffmpeg/FFmpegDecoder.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -56,7 +56,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
 {
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-    buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    buffer = ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate_));
     if (buffer.empty()) {
       NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
       return nullptr;
@@ -93,7 +93,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, 
   std::vector<int16_t> buffer;
   std::string format = AudioDecoder::detectAudioFormat(data, size);
   if (format == "mp4" || format == "m4a" || format == "aac") {
-    buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate_));
+    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate_));
   } else {
     ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
