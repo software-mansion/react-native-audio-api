@@ -66,11 +66,17 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
 #ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
-  if (path.find(".mp4") != std::string::npos ||
-      path.find(".m4a") != std::string::npos ||
-      path.find(".aac") != std::string::npos) {
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     buffer =
         ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    if (buffer.empty()) {
+      __android_log_print(
+          ANDROID_LOG_ERROR,
+          "AudioDecoder",
+          "Failed to decode with FFmpeg: %s",
+          path.c_str());
+      return nullptr;
+    }
   } else {
     ma_decoder decoder;
     ma_decoder_config config = ma_decoder_config_init(

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 
 namespace audioapi {
 
@@ -79,7 +80,7 @@ class AudioDecoder {
     const unsigned char* bytes = static_cast<const unsigned char*>(data);
 
     // WAV/RIFF
-    if (size >= 12 && std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
+    if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
         return "wav";
 
     // OGG
@@ -94,28 +95,34 @@ class AudioDecoder {
     if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0)
         return "aac";
 
-    // MP3: "ID3" or 0xFF 0xFB / 0xFF 0xF3 / 0xFF 0xF2
+    // MP3: "ID3" or 11-bit frame sync (0xFF 0xE0)
     if (std::memcmp(bytes, "ID3", 3) == 0)
         return "mp3";
     if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
         return "mp3";
 
     if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
-        char brand[5] = {0};
-        std::memcpy(brand, bytes + 8, 4);
-
-        if (std::memcmp(brand, "M4A ", 4) == 0)
+        if (std::memcmp(bytes + 8, "M4A ", 4) == 0)
             return "m4a";
-        else if (std::memcmp(brand, "mp42", 4) == 0 || std::memcmp(brand, "isom", 4) == 0)
+        else if (std::memcmp(bytes + 8, "mp42", 4) == 0 || std::memcmp(bytes + 8, "isom", 4) == 0)
             return "mp4";
-        else if (std::memcmp(brand, "qt  ", 4) == 0)
+        else if (std::memcmp(bytes + 8, "qt  ", 4) == 0)
             return "mov";
         else
             return "mp4";
     }
-
     return "unknown";
-}
+  }
+
+  static inline bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
+    std::string pathLower = path;
+    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
+    for (const auto& ext : extensions) {
+        if (pathLower.find(ext) != std::string::npos)
+            return true;
+    }
+    return false;
+  }
 
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {

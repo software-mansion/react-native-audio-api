@@ -10,7 +10,7 @@ extern "C" {
     #include <libswresample/swresample.h>
 }
 
-namespace audioapi::ffmpegdecoder {
+namespace audioapi::ffmpegdecoding {
 // Custom IO context for reading from memory
 struct MemoryIOContext {
     const uint8_t *data;

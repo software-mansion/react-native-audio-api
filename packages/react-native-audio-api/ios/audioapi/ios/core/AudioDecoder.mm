@@ -55,9 +55,12 @@ AudioDecoder::makeAudioBusFromInt16Buffer(const std::vector<int16_t> &buffer, in
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
   std::vector<int16_t> buffer;
-  if (path.find(".mp4") != std::string::npos || path.find(".m4a") != std::string::npos ||
-      path.find(".aac") != std::string::npos) {
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    if (buffer.empty()) {
+      NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
+      return nullptr;
+    }
   } else {
     ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
