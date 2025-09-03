@@ -53,16 +53,15 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
   **Microphone support** 🎙️ <br />
     Grab audio data from device microphone or connected device, connect it to the audio graph or stream through the internet <br />
 
-  **Custom Audio Processor** 🎙️ <br />
+  **Custom Audio Processor** ⚙️ <br />
     Write your own processing AudioNode <br />
 
-- **Decoding support for m4a/mp4/aac/ogg/opus** 🐎 <br />
-  Ability to decode m4a/mp4/aac/ogg/opus audio files, allowing for playback of these formats in the audio graph.
-  <br />
+- <sub>[![Released in 0.8.0](https://img.shields.io/badge/Released_in-0.8.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.8.0)</sub> <br />
+  **Decoding support for m4a/mp4/aac/ogg/opus** 📁 <br />
+  Ability to decode m4a/mp4/aac/ogg/opus audio files, allowing for playback of these formats in the audio graph. <br />
 
-- **HLS streaming support** 🐎 <br />
-  Ability to stream audio from HLS sources, allowing for playback of live audio streams or pre-recorded audio files.
-  <br />
+  **HLS streaming support** 🌊 <br />
+  Ability to stream audio from HLS sources, allowing for playback of live audio streams or pre-recorded audio files. <br />
 
 - **JS Audio Worklets** 🐎 <br />
   Ability to run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
