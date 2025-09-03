@@ -20,8 +20,10 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.core.NativeAudioPlayer
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import java.lang.ref.WeakReference
+import java.util.UUID
 
 object MediaSessionManager {
   private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
@@ -39,6 +41,7 @@ object MediaSessionManager {
 
   private var isServiceRunning = false
   private val serviceStateLock = Any()
+  private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
 
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
@@ -79,34 +82,59 @@ object MediaSessionManager {
     this.audioFocusListener =
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
-
-    startForegroundService()
   }
 
-  fun startForegroundService() {
-    synchronized(serviceStateLock) {
-      if (!isServiceRunning) {
-        val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-        intent.action = "START_FOREGROUND"
+  fun attachSourceNode(player: NativeAudioPlayer): String {
+    val uuid = UUID.randomUUID().toString()
+    nativeAudioPlayers[uuid] = player
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          ContextCompat.startForegroundService(reactContext.get()!!, intent)
-        } else {
-          reactContext.get()?.startService(intent)
-        }
-        isServiceRunning = true
-      }
+    return uuid
+  }
+
+  fun detachSourceNode(uuid: String) {
+    nativeAudioPlayers.remove(uuid)
+  }
+
+  fun startForegroundServiceIfNecessary() {
+    if (nativeAudioPlayers.isNotEmpty()) {
+      startForegroundService()
     }
   }
 
-  fun stopForegroundService() {
+  fun stopForegroundServiceIfNecessary() {
+    if (nativeAudioPlayers.isEmpty()) {
+      stopForegroundService()
+    }
+  }
+
+  private fun startForegroundService() {
     synchronized(serviceStateLock) {
-      if (isServiceRunning) {
-        val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-        intent.action = "STOP_FOREGROUND"
-        reactContext.get()?.startService(intent)
-        isServiceRunning = false
+      if (isServiceRunning || reactContext.get() == null) {
+        return
       }
+
+      val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
+      intent.action = "START_FOREGROUND"
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        ContextCompat.startForegroundService(reactContext.get()!!, intent)
+      } else {
+        reactContext.get()!!.startService(intent)
+      }
+      isServiceRunning = true
+    }
+  }
+
+  private fun stopForegroundService() {
+    synchronized(serviceStateLock) {
+      if (!isServiceRunning || reactContext.get() == null) {
+        return
+      }
+
+      val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
+      intent.action = "STOP_FOREGROUND"
+      reactContext.get()!!.startService(intent)
+      isServiceRunning = false
     }
   }
 

@@ -26,7 +26,7 @@ class MediaReceiver(
       if (!checkApp(intent)) return
 
       mediaNotificationManager.get()?.cancelNotification()
-      MediaSessionManager.stopForegroundService()
+      MediaSessionManager.stopForegroundServiceIfNecessary()
       mediaSession.get()?.isActive = false
 
       audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("closeNotification", mapOf()) // add to ts events

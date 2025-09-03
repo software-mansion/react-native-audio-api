@@ -15,6 +15,8 @@ AudioPlayer::AudioPlayer(
       sampleRate_(sampleRate),
       channelCount_(channelCount) {
   isInitialized_ = openAudioStream();
+
+  nativeAudioPlayer_ = jni::make_global(NativeAudioPlayer::create());
 }
 
 bool AudioPlayer::openAudioStream() {
@@ -47,6 +49,7 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   if (mStream_) {
+    nativeAudioPlayer_->start();
     auto result = mStream_->requestStart();
     return result == oboe::Result::OK;
   }
@@ -56,6 +59,7 @@ bool AudioPlayer::start() {
 
 void AudioPlayer::stop() {
   if (mStream_) {
+    nativeAudioPlayer_->stop();
     mStream_->requestStop();
   }
 }

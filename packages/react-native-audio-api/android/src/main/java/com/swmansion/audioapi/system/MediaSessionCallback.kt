@@ -20,7 +20,7 @@ class MediaSessionCallback(
 
   override fun onStop() {
     mediaNotificationManager.get()?.cancelNotification()
-    MediaSessionManager.stopForegroundService()
+    MediaSessionManager.stopForegroundServiceIfNecessary()
 
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteStop", mapOf())
   }
