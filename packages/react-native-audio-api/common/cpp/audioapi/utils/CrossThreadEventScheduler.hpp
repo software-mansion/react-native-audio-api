@@ -37,9 +37,7 @@ class CrossThreadEventScheduler {
   /// @brief Schedules an event to be processed on the audio thread.
   /// @param event The event to schedule.
   /// @return True if the event was successfully scheduled, false if the queue is full.
-  bool scheduleEvent(std::function<void(T&)> &&event, T& data) noexcept(noexcept(eventSender_.try_send(std::move(event)))) {
-    scheduled++;
-    printf("current threadId: %d\n", std::this_thread::get_id());
+  bool scheduleEvent(std::function<void(T&)> &&event) noexcept(noexcept(eventSender_.try_send(std::move(event)))) {
     return eventSender_.try_send(std::move(event)) == ResponseStatus::SUCCESS;
   }
 
@@ -48,17 +46,11 @@ class CrossThreadEventScheduler {
   void processAllEvents(T& data) noexcept(noexcept(eventReceiver_.try_receive(std::declval<std::function<void(T&)>&>()))) {
     std::function<void(T&)> event;
     while (eventReceiver_.try_receive(event) == ResponseStatus::SUCCESS) {
-      if (!event) {
-        printf("Received empty event\n");
-      }
-      processed++;
       event(data);
     }
   }
 
  private:
-  int scheduled {0};
-  int processed {0};
   Sender<std::function<void(T&)>> eventSender_;
   Receiver<std::function<void(T&)>> eventReceiver_;
 };

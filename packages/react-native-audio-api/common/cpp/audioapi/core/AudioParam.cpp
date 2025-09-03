@@ -68,7 +68,6 @@ float AudioParam::getValueAtTime(double time) {
  * time (step function).
  */
 void AudioParam::setValueAtTime(float value, double startTime) {
-  return;
   auto event = [value, startTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
     if (startTime <= param.getQueueEndTime()) {
@@ -88,16 +87,15 @@ void AudioParam::setValueAtTime(float value, double startTime) {
       return endValue;
     };
 
-    param.updateQueue(
-        std::move(ParamChangeEvent(
-            startTime,
-            startTime,
-            param.getQueueEndValue(),
-            value,
-            std::move(calculateValue),
-            ParamChangeEventType::SET_VALUE)));
+    param.updateQueue(ParamChangeEvent(
+        startTime,
+        startTime,
+        param.getQueueEndValue(),
+        value,
+        std::move(calculateValue),
+        ParamChangeEventType::SET_VALUE));
   };
-  eventScheduler_.scheduleEvent(std::move(event), *this);
+  eventScheduler_.scheduleEvent(std::move(event));
 }
 
 /**
@@ -132,16 +130,15 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
       return endValue;
     };
 
-    param.updateQueue(
-        std::move(ParamChangeEvent(
+    param.updateQueue(ParamChangeEvent(
             param.getQueueEndTime(),
             endTime,
             param.getQueueEndValue(),
             value,
             std::move(calculateValue),
-            ParamChangeEventType::LINEAR_RAMP)));
+            ParamChangeEventType::LINEAR_RAMP));
   };
-  eventScheduler_.scheduleEvent(std::move(event), *this);
+  eventScheduler_.scheduleEvent(std::move(event));
 }
 
 /**
@@ -175,16 +172,15 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
       return endValue;
     };
 
-    param.updateQueue(
-        std::move(ParamChangeEvent(
-            param.getQueueEndTime(),
-            endTime,
-            param.getQueueEndValue(),
-            value,
-            std::move(calculateValue),
-            ParamChangeEventType::EXPONENTIAL_RAMP)));
+    param.updateQueue(ParamChangeEvent(
+        param.getQueueEndTime(),
+        endTime,
+        param.getQueueEndValue(),
+        value,
+        std::move(calculateValue),
+        ParamChangeEventType::EXPONENTIAL_RAMP));
   };
-  eventScheduler_.scheduleEvent(std::move(event), *this);
+  eventScheduler_.scheduleEvent(std::move(event));
 }
 
 /**
@@ -213,18 +209,17 @@ void AudioParam::setTargetAtTime(
               target +
               (startValue - target) * exp(-(time - startTime) / timeConstant));
         };
-    param.updateQueue(
-        std::move(ParamChangeEvent(
+    param.updateQueue(ParamChangeEvent(
             startTime,
             startTime, // SetTarget events have infinite duration conceptually
             param.getQueueEndValue(),
             param.getQueueEndValue(), // End value is not meaningful for
                                       // infinite events
             std::move(calculateValue),
-            ParamChangeEventType::SET_TARGET)));
+            ParamChangeEventType::SET_TARGET));
   };
 
-  eventScheduler_.scheduleEvent(std::move(event), *this);
+  eventScheduler_.scheduleEvent(std::move(event));
 }
 
 /**
@@ -269,35 +264,32 @@ void AudioParam::setValueCurveAtTime(
       return endValue;
     };
 
-    param.updateQueue(
-        std::move(ParamChangeEvent(
+    param.updateQueue(ParamChangeEvent(
             startTime,
             startTime + duration,
             param.getQueueEndValue(),
             values->at(length - 1),
             std::move(calculateValue),
-            ParamChangeEventType::SET_VALUE_CURVE)));
+            ParamChangeEventType::SET_VALUE_CURVE));
   };
 
   /// Schedules an event that modifies this param
   /// It will be executed on next audio render cycle
-  eventScheduler_.scheduleEvent(std::move(event), *this);
+  eventScheduler_.scheduleEvent(std::move(event));
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
   eventScheduler_.scheduleEvent(
       [cancelTime](AudioParam &param) {
         param.eventsQueue_.cancelScheduledValues(cancelTime);
-      },
-      *this);
+      });
 }
 
 void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   eventScheduler_.scheduleEvent(
       [cancelTime](AudioParam &param) {
         param.eventsQueue_.cancelAndHoldAtTime(cancelTime, param.endTime_);
-      },
-      *this);
+      });
 }
 
 void AudioParam::addInputNode(AudioNode *node) {
