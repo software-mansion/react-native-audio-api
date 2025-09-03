@@ -6,11 +6,6 @@
 
 namespace audioapi {
 
-/**
- * Constructor initializes the parameter with constraints and sets up the
- * working audio bus. The calculateValue_ function is initialized to simply
- * return the current value (no automation).
- */
 AudioParam::AudioParam(
     float defaultValue,
     float minValue,
@@ -23,11 +18,13 @@ AudioParam::AudioParam(
       maxValue_(maxValue),
       eventsQueue_(),
       eventScheduler_(32),
+      inputNodes_(16),
       audioBus_(
           std::make_shared<AudioBus>(
               RENDER_QUANTUM_SIZE,
               1,
-              context->getSampleRate())) {
+              context->getSampleRate())),
+      inputBuses_(4) {
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
@@ -38,12 +35,6 @@ AudioParam::AudioParam(
   };
 }
 
-/**
- * Core automation processing method. This advances through the event queue when
- * the current automation segment ends, loads the next event's parameters into
- * the cached state variables, and calculates the parameter value for the
- * specified time using the active calculation function.
- */
 float AudioParam::getValueAtTime(double time) {
   // Check if current automation segment has ended and we need to advance to
   // next event
@@ -62,11 +53,6 @@ float AudioParam::getValueAtTime(double time) {
   return value_;
 }
 
-/**
- * Schedules an instant value change. The calculateValue function returns
- * startValue before the scheduled time and endValue at or after the scheduled
- * time (step function).
- */
 void AudioParam::setValueAtTime(float value, double startTime) {
   auto event = [value, startTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
@@ -98,11 +84,6 @@ void AudioParam::setValueAtTime(float value, double startTime) {
   eventScheduler_.scheduleEvent(std::move(event));
 }
 
-/**
- * Schedules a linear interpolation from the end of previous automation to the
- * target value. The calculateValue function implements linear interpolation:
- * startValue + (endValue - startValue) * progress
- */
 void AudioParam::linearRampToValueAtTime(float value, double endTime) {
   auto event = [value, endTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
@@ -131,21 +112,16 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
     };
 
     param.updateQueue(ParamChangeEvent(
-            param.getQueueEndTime(),
-            endTime,
-            param.getQueueEndValue(),
-            value,
-            std::move(calculateValue),
-            ParamChangeEventType::LINEAR_RAMP));
+        param.getQueueEndTime(),
+        endTime,
+        param.getQueueEndValue(),
+        value,
+        std::move(calculateValue),
+        ParamChangeEventType::LINEAR_RAMP));
   };
   eventScheduler_.scheduleEvent(std::move(event));
 }
 
-/**
- * Schedules an exponential curve from the end of previous automation to the
- * target value. Uses power function: startValue *
- * (endValue/startValue)^progress for smooth exponential curves.
- */
 void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   auto event = [value, endTime](AudioParam &param) {
     if (endTime <= param.getQueueEndTime()) {
@@ -183,12 +159,6 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   eventScheduler_.scheduleEvent(std::move(event));
 }
 
-/**
- * Schedules an exponential approach to a target value with first-order
- * exponential decay. Uses the formula: target + (startValue - target) *
- * e^(-(time - startTime) / timeConstant) This creates a smooth asymptotic
- * approach that theoretically never reaches the target.
- */
 void AudioParam::setTargetAtTime(
     float target,
     double startTime,
@@ -210,24 +180,18 @@ void AudioParam::setTargetAtTime(
               (startValue - target) * exp(-(time - startTime) / timeConstant));
         };
     param.updateQueue(ParamChangeEvent(
-            startTime,
-            startTime, // SetTarget events have infinite duration conceptually
-            param.getQueueEndValue(),
-            param.getQueueEndValue(), // End value is not meaningful for
-                                      // infinite events
-            std::move(calculateValue),
-            ParamChangeEventType::SET_TARGET));
+        startTime,
+        startTime, // SetTarget events have infinite duration conceptually
+        param.getQueueEndValue(),
+        param.getQueueEndValue(), // End value is not meaningful for
+                                  // infinite events
+        std::move(calculateValue),
+        ParamChangeEventType::SET_TARGET));
   };
 
   eventScheduler_.scheduleEvent(std::move(event));
 }
 
-/**
- * Schedules the parameter to follow a custom curve defined by an array of
- * values. The curve is sampled with linear interpolation between adjacent array
- * elements. Progress through the array is calculated as: (time - startTime) /
- * duration * (length - 1)
- */
 void AudioParam::setValueCurveAtTime(
     std::shared_ptr<std::vector<float>> values,
     size_t length,
@@ -265,12 +229,12 @@ void AudioParam::setValueCurveAtTime(
     };
 
     param.updateQueue(ParamChangeEvent(
-            startTime,
-            startTime + duration,
-            param.getQueueEndValue(),
-            values->at(length - 1),
-            std::move(calculateValue),
-            ParamChangeEventType::SET_VALUE_CURVE));
+        startTime,
+        startTime + duration,
+        param.getQueueEndValue(),
+        values->at(length - 1),
+        std::move(calculateValue),
+        ParamChangeEventType::SET_VALUE_CURVE));
   };
 
   /// Schedules an event that modifies this param
@@ -279,33 +243,28 @@ void AudioParam::setValueCurveAtTime(
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
-  eventScheduler_.scheduleEvent(
-      [cancelTime](AudioParam &param) {
-        param.eventsQueue_.cancelScheduledValues(cancelTime);
-      });
+  eventScheduler_.scheduleEvent([cancelTime](AudioParam &param) {
+    param.eventsQueue_.cancelScheduledValues(cancelTime);
+  });
 }
 
 void AudioParam::cancelAndHoldAtTime(double cancelTime) {
-  eventScheduler_.scheduleEvent(
-      [cancelTime](AudioParam &param) {
-        param.eventsQueue_.cancelAndHoldAtTime(cancelTime, param.endTime_);
-      });
+  eventScheduler_.scheduleEvent([cancelTime](AudioParam &param) {
+    param.eventsQueue_.cancelAndHoldAtTime(cancelTime, param.endTime_);
+  });
 }
 
 void AudioParam::addInputNode(AudioNode *node) {
-  /// should also be handled by events scheduling TODO
-  auto position = inputNodes_.find(node);
-  if (position == inputNodes_.end()) {
-    inputNodes_.insert(node);
-  }
+  inputNodes_.emplace_back(node);
 }
 
 void AudioParam::removeInputNode(AudioNode *node) {
-  /// should also be handled by events scheduling TODO
-  auto position = inputNodes_.find(node);
-
-  if (position != inputNodes_.end()) {
-    inputNodes_.erase(position);
+  for (int i = 0; i < inputNodes_.size(); i++) {
+    if (inputNodes_[i] == node) {
+      std::swap(inputNodes_[i], inputNodes_.back());
+      inputNodes_.resize(inputNodes_.size() - 1);
+      break;
+    }
   }
 }
 
@@ -313,40 +272,35 @@ std::shared_ptr<AudioBus> AudioParam::calculateInputs(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   processingBus->zero();
-  if (!inputNodes_.empty()) {
-    processInputs(processingBus, framesToProcess, true);
-    mixInputsBuses(processingBus);
-  }
+  if (inputNodes_.empty())
+    return processingBus;
+  processInputs(processingBus, framesToProcess, true);
+  mixInputsBuses(processingBus);
   return processingBus;
 }
 
-/**
- * Processes parameter values at audio rate (per-sample precision).
- * For each audio frame, calculates the automated parameter value and adds any
- * input modulation. Returns an AudioBus where each sample contains the
- * parameter value for that time instant.
- */
 std::shared_ptr<AudioBus> AudioParam::processARateParam(
     int framesToProcess,
     double time) {
   processScheduledEvents();
   auto processingBus = calculateInputs(audioBus_, framesToProcess);
 
+
+  float sampleRate = context_->getSampleRate();
+  float *busData = processingBus->getChannel(0)->getData();
+  float timeCache = time;
+  float timeStep = 1.0f / sampleRate;
+  float sample = 0.0f;
+
   // Add automated parameter value to each sample
-  for (size_t i = 0; i < framesToProcess; i++) {
-    auto sample = getValueAtTime(time + i / context_->getSampleRate());
-    processingBus->getChannel(0)->getData()[i] += sample;
+  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+    sample = getValueAtTime(timeCache);
+    busData[i] += sample;
   }
   // processingBus is a mono bus containing per-sample parameter values
   return processingBus;
 }
 
-/**
- * Processes parameter values at control rate (per-block precision).
- * Calculates a single parameter value for the entire audio block and adds input
- * modulation. More efficient than A-rate processing but with lower time
- * precision.
- */
 float AudioParam::processKRateParam(int framesToProcess, double time) {
   processScheduledEvents();
   auto processingBus = calculateInputs(audioBus_, framesToProcess);
@@ -371,14 +325,10 @@ void AudioParam::processInputs(
     // Process this input node and store its output bus
     auto inputBus = inputNode->processAudio(
         outputBus, framesToProcess, checkIsAlreadyProcessed);
-    inputBuses_.push_back(inputBus);
+    inputBuses_.emplace_back(inputBus);
   }
 }
 
-/**
- * Mixes all processed input buses together using sum mixing.
- * After mixing, clears the inputBuses_ vector for the next processing cycle.
- */
 void AudioParam::mixInputsBuses(
     const std::shared_ptr<AudioBus> &processingBus) {
   assert(processingBus != nullptr);

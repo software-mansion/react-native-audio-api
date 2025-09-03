@@ -69,12 +69,11 @@ class AudioParam {
   // JS-Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-  // JS-Thread only (indirectly through AudioNode::connectParam)
+  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
   void addInputNode(AudioNode* node);
 
-  // JS-Thread only (indirectly through AudioNode::disconnectParam)
+  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
   void removeInputNode(AudioNode* node);
-
 
   // Audio-Thread only
   std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
@@ -101,7 +100,7 @@ class AudioParam {
   std::function<float(double, double, float, float, double)> calculateValue_;
 
   // Input modulation system
-  std::unordered_set<AudioNode *> inputNodes_;
+  std::vector<AudioNode *> inputNodes_;
   std::shared_ptr<AudioBus> audioBus_;
   std::vector<std::shared_ptr<AudioBus>> inputBuses_;
 
