@@ -51,6 +51,7 @@ COMMON_CONFIG="
 --enable-decoder=mp3
 --enable-decoder=flac
 --enable-protocol=udp
+--enable-protocol=file
 --enable-pic
 --disable-x86asm
 "
@@ -310,28 +311,28 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
         build_arch "aarch64" "android" \
             "${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/arm64-v8a -L${TOOLCHAIN}/sysroot/usr/lib/aarch64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/arm64-v8a -L${TOOLCHAIN}/sysroot/usr/lib/aarch64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
             "--enable-openssl --extra-libs=-lz"
 
-        rm -rf ${OUTPUT_DIR}/android/aarch64/share
+        rm -rf ${OUTPUT_DIR}/android/arm64-v8a/share
         
         # ARMv7a
         build_arch "armv7a" "android" \
             "${TOOLCHAIN}/bin/armv7a-linux-androideabi${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/armv7a-linux-androideabi${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a -L${TOOLCHAIN}/sysroot/usr/lib/arm-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/sysroot/usr/include -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/armeabi-v7a -L${TOOLCHAIN}/sysroot/usr/lib/arm-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
             "--enable-openssl --extra-libs=-lz"
 
-        rm -rf ${OUTPUT_DIR}/android/armv7a/share
+        rm -rf ${OUTPUT_DIR}/android/armeabi-v7a/share
 
         # x86
         build_arch "x86" "android" \
             "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/i686-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/i686-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/x86/share
@@ -341,8 +342,8 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
         build_arch "x86_64" "android" \
             "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang" \
             "${TOOLCHAIN}/bin/x86_64-linux-android${API_LEVEL}-clang++" \
-            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic" \
-            "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic" \
+            "-I${OPENSSL_PREBUILT_FOLDER}/include -I${TOOLCHAIN}/darwin-x86_64/sysroot/usr/include -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+            "-L${OPENSSL_PREBUILT_FOLDER}/x86_64 -L${TOOLCHAIN}/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/${API_LEVEL} -fPIC -Wl,-Bsymbolic -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
             "--enable-openssl --extra-libs=-lz"
 
         rm -rf ${OUTPUT_DIR}/android/x86_64/share

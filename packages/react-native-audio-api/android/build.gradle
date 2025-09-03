@@ -230,7 +230,7 @@ dependencies {
 
 def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
     // If you change the minimal React Native version remember to update Compatibility Table in docs
-    def minimalReactNativeVersion = 75
+    def minimalReactNativeVersion = 76
     onlyIf { REACT_NATIVE_MINOR_VERSION < minimalReactNativeVersion }
     doFirst {
         throw new GradleException("[AudioAPI] Unsupported React Native version. Please use $minimalReactNativeVersion. or newer.")

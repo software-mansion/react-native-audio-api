@@ -28,6 +28,8 @@ list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.h"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.h"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS

@@ -8,6 +8,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/base64/base64.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -53,6 +54,15 @@ AudioDecoder::makeAudioBusFromInt16Buffer(const std::vector<int16_t> &buffer, in
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
+  std::vector<int16_t> buffer;
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+    buffer = ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    if (buffer.empty()) {
+      NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
+      return nullptr;
+    }
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  }
   ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   ma_decoder decoder;
@@ -67,7 +77,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
   }
 
   ma_uint64 framesRead = 0;
-  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
   if (framesRead == 0) {
     NSLog(@"Failed to decode");
     ma_decoder_uninit(&decoder);
@@ -80,6 +90,16 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
 {
+  std::vector<int16_t> buffer;
+  const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
+  if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
+    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate_));
+    if (buffer.empty()) {
+      NSLog(@"Failed to decode with FFmpeg");
+      return nullptr;
+    }
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  }
   ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   ma_decoder decoder;
@@ -94,7 +114,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, 
   }
 
   ma_uint64 framesRead = 0;
-  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
   if (framesRead == 0) {
     NSLog(@"Failed to decode");
     ma_decoder_uninit(&decoder);

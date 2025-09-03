@@ -7,10 +7,12 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+#ifndef AUDIO_API_TEST_SUITE
+#include <android/log.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#endif
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
-
-// #include <android/log.h>
 
 namespace audioapi {
 
@@ -62,77 +64,105 @@ std::shared_ptr<AudioBus> AudioDecoder::makeAudioBusFromInt16Buffer(
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
+#ifndef AUDIO_API_TEST_SUITE
+  std::vector<int16_t> buffer;
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+    buffer =
+        ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    if (buffer.empty()) {
+      __android_log_print(
+          ANDROID_LOG_ERROR,
+          "AudioDecoder",
+          "Failed to decode with FFmpeg: %s",
+          path.c_str());
+      return nullptr;
+    }
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
-#ifndef AUDIO_API_TEST_SUITE
   ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount =
       sizeof(customBackends) / sizeof(customBackends[0]);
-#endif
 
   if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
-    // __android_log_print(
-    //     ANDROID_LOG_ERROR,
-    //     "AudioDecoder",
-    //     "Failed to initialize decoder for file: %s",
-    //     path.c_str());
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "Failed to initialize decoder for file: %s",
+        path.c_str());
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
   ma_uint64 framesRead = 0;
-  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
   if (framesRead == 0) {
-    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
-    // decode");
+    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
   ma_decoder_uninit(&decoder);
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#else
+  return nullptr;
+#endif
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
     const void *data,
     size_t size) const {
+#ifndef AUDIO_API_TEST_SUITE
+  std::vector<int16_t> buffer;
+  const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
+  if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
+      format == AudioFormat::AAC) {
+    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, sampleRate_);
+    if (buffer.empty()) {
+      __android_log_print(
+          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
+      return nullptr;
+    }
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
       ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
 
-#ifndef AUDIO_API_TEST_SUITE
   ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount =
       sizeof(customBackends) / sizeof(customBackends[0]);
-#endif
 
   if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
-    // __android_log_print(
-    //     ANDROID_LOG_ERROR,
-    //     "AudioDecoder",
-    //     "Failed to initialize decoder for memory block");
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "Failed to initialize decoder for memory block");
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
   ma_uint64 framesRead = 0;
-  auto buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
   if (framesRead == 0) {
-    // __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to
-    // decode");
+    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
   ma_decoder_uninit(&decoder);
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+#else
+  return nullptr;
+#endif
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
