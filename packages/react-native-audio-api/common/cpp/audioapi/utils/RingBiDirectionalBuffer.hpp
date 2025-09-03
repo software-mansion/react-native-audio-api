@@ -7,19 +7,19 @@ namespace audioapi {
 
 /// @brief A ring buffer implementation (non thread safe).
 /// @tparam T The type of elements stored in the buffer.
+/// @tparam Capacity The maximum number of elements that can be held in the buffer.
 /// @note This implementation is NOT thread-safe.
 /// @note Can be refered as bounded queue
-template <typename T>
+/// @note Capacity must be a valid power of two and must be greater than zero.
+template <typename T, size_t Capacity>
 class RingBiDirectionalBuffer {
  public:
   /// @brief Constructor for RingBuffer.
-  /// @param capacity The maximum number of elements that can be held in the buffer.
-  /// @note Capacity must be a valid power of two and must be greater than zero.
-  RingBiDirectionalBuffer(size_t capacity)
+  RingBiDirectionalBuffer()
     : headIndex_(0), tailIndex_(0) {
-    static_assert(capacity > 0, "RingBiDirectionalBuffer's capacity must be positive");
-    static_assert(isPowerOfTwo(capacity), "RingBiDirectionalBuffer's capacity must be power of 2");
-    capacity_ = capacity;
+    static_assert(Capacity > 0, "RingBiDirectionalBuffer's capacity must be positive");
+    static_assert(isPowerOfTwo(Capacity), "RingBiDirectionalBuffer's capacity must be power of 2");
+    capacity_ = Capacity;
     buffer_ = static_cast<T*>(
       ::operator new[](
         capacity_ * sizeof(T),
@@ -96,9 +96,9 @@ class RingBiDirectionalBuffer {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
+    tailIndex_ = prevIndex(tailIndex_);
     out = std::move(buffer_[tailIndex_]);
     buffer_[tailIndex_].~T();
-    tailIndex_ = prevIndex(tailIndex_);
     return true;
   }
 
@@ -108,8 +108,8 @@ class RingBiDirectionalBuffer {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
-    buffer_[tailIndex_].~T();
     tailIndex_ = prevIndex(tailIndex_);
+    buffer_[tailIndex_].~T();
     return true;
   }
 
@@ -122,7 +122,7 @@ class RingBiDirectionalBuffer {
   /// @brief Peek at the back of the buffer.
   /// @return A const reference to the back element of the buffer.
   const inline T& peekBack() const noexcept {
-    return buffer_[tailIndex_];
+    return buffer_[prevIndex(tailIndex_)];
   }
 
   /// @brief Peek at the front of the buffer.
@@ -134,7 +134,7 @@ class RingBiDirectionalBuffer {
   /// @brief Peek at the back of the buffer.
   /// @return A mutable reference to the back element of the buffer.
   inline T& peekBackMut() noexcept {
-    return buffer_[tailIndex_];
+    return buffer_[prevIndex(tailIndex_)];
   }
 
   /// @brief Check if the buffer is empty.
@@ -176,14 +176,14 @@ class RingBiDirectionalBuffer {
   /// @brief Get the next index in the buffer.
   /// @param n The current index.
   /// @return The next index in the buffer.
-  inline size_t nextIndex(const size_t n) const {
+  inline size_t nextIndex(const size_t n) const noexcept {
     return (n + 1) & (capacity_ - 1);
   }
 
   /// @brief Get the previous index in the buffer.
   /// @param n The current index.
   /// @return The previous index in the buffer.
-  inline size_t prevIndex(const size_t n) const {
+  inline size_t prevIndex(const size_t n) const noexcept {
     return (n - 1) & (capacity_ - 1);
   }
 

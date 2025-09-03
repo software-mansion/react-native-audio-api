@@ -13,7 +13,7 @@ class AudioParamEventQueue {
   /// @brief Constructor for AudioParamEventQueue.
   /// @param capacity_ The maximum number of events that can be held in the queue.
   /// @note Capacity must be valid power of two.
-  explicit AudioParamEventQueue(size_t capacity_);
+  explicit AudioParamEventQueue();
 
   /// @brief Push a new event to the back of the queue.
   /// @note Handles connecting the start value of the new event to the end value of the last event in the queue.
@@ -21,7 +21,7 @@ class AudioParamEventQueue {
 
   /// @brief Pop the front event from the queue.
   /// @return The front event in the queue.
-  ParamChangeEvent popFront();
+  bool popFront(ParamChangeEvent &event);
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
@@ -34,35 +34,32 @@ class AudioParamEventQueue {
 
   /// @brief Get the first event in the queue.
   /// @return The first event in the queue.
-  inline const ParamChangeEvent& front() const {
+  inline const ParamChangeEvent& front() const noexcept {
     return eventQueue_.peekFront();
   }
 
   /// @brief Get the last event in the queue.
   /// @return The last event in the queue.
-  inline const ParamChangeEvent& back() const {
+  inline const ParamChangeEvent& back() const noexcept {
     return eventQueue_.peekBack();
   }
 
   /// @brief Check if the event queue is empty.
   /// @return True if the queue is empty, false otherwise.
-  inline bool isEmpty() const {
+  inline bool isEmpty() const noexcept {
     return eventQueue_.isEmpty();
   }
 
   /// @brief Check if the event queue is full.
   /// @return True if the queue is full, false otherwise.
-  inline bool isFull() const {
+  inline bool isFull() const noexcept {
     return eventQueue_.isFull();
   }
 
  private:
   /// @brief The queue of parameter change events.
   /// @note INVARIANT it always holds non-overlapping events sorted by start time.
-  RingBiDirectionalBuffer<ParamChangeEvent> eventQueue_;
-
-  /// @brief The maximum number of events that can be held in the queue.
-  size_t capacity_;
+  RingBiDirectionalBuffer<ParamChangeEvent, 32> eventQueue_;
 };
 
 } // namespace audioapi

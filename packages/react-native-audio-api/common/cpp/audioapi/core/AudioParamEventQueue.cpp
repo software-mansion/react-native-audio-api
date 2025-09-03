@@ -2,8 +2,7 @@
 
 namespace audioapi {
 
-AudioParamEventQueue::AudioParamEventQueue(const size_t capacity)
-    : capacity_(capacity), eventQueue_(capacity) {}
+AudioParamEventQueue::AudioParamEventQueue() : eventQueue_() {}
 
 void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
   if (eventQueue_.isEmpty()) {
@@ -26,10 +25,8 @@ void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
   eventQueue_.pushBack(std::move(event));
 }
 
-ParamChangeEvent AudioParamEventQueue::popFront() noexcept {
-  ParamChangeEvent event;
-  eventQueue_.popFront(event);
-  return std::move(event);
+bool AudioParamEventQueue::popFront(ParamChangeEvent &event) {
+  return eventQueue_.popFront(event);
 }
 
 void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
