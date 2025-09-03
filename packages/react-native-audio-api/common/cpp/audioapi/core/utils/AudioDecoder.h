@@ -116,12 +116,9 @@ class AudioDecoder {
     if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
         if (std::memcmp(bytes + 8, "M4A ", 4) == 0)
             return AudioFormat::M4A;
-        else if (std::memcmp(bytes + 8, "mp42", 4) == 0 || std::memcmp(bytes + 8, "isom", 4) == 0)
-            return AudioFormat::MP4;
         else if (std::memcmp(bytes + 8, "qt  ", 4) == 0)
             return AudioFormat::MOV;
-        else
-            return AudioFormat::MP4;
+        return AudioFormat::MP4;
     }
     return AudioFormat::UNKNOWN;
   }
@@ -130,7 +127,7 @@ class AudioDecoder {
     std::string pathLower = path;
     std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
     for (const auto& ext : extensions) {
-        if (pathLower.find(ext) != std::string::npos)
+        if (pathLower.ends_with(ext))
             return true;
     }
     return false;
