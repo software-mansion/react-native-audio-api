@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bit>
 #include <memory>
 #include <type_traits>
 
@@ -17,7 +18,6 @@ class RingBiDirectionalBuffer {
   /// @brief Constructor for RingBuffer.
   RingBiDirectionalBuffer()
     : headIndex_(0), tailIndex_(0) {
-    static_assert(Capacity > 0, "RingBiDirectionalBuffer's capacity must be positive");
     static_assert(isPowerOfTwo(Capacity), "RingBiDirectionalBuffer's capacity must be power of 2");
     capacity_ = Capacity;
     buffer_ = static_cast<T*>(
@@ -42,7 +42,7 @@ class RingBiDirectionalBuffer {
   /// @param value The value to push.
   /// @return True if the value was pushed successfully, false if the buffer is full.
   template <typename U>
-  bool pushBack(U&& value) noexcept(std::is_nothrow_constructible<T, U&&>::value) {
+  bool pushBack(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
     if (isFull()) [[ unlikely ]] {
       return false;
     }
@@ -56,7 +56,7 @@ class RingBiDirectionalBuffer {
   /// @param value The value to push.
   /// @return True if the value was pushed successfully, false if the buffer is full.
   template <typename U>
-  bool pushFront(U&& value) noexcept(std::is_nothrow_constructible<T, U&&>::value) {
+  bool pushFront(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
     if (isFull()) [[ unlikely ]] {
       return false;
     }
@@ -68,7 +68,7 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the front of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popFront(T& out) noexcept(std::is_nothrow_move_constructible<T>::value && std::is_nothrow_destructible<T>::value) {
+  bool popFront(T& out) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
@@ -80,7 +80,7 @@ class RingBiDirectionalBuffer {
 
   /// @brief Pop a value from the front of the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popFront() noexcept(std::is_nothrow_destructible<T>::value) {
+  bool popFront() noexcept(std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
@@ -92,7 +92,7 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the back of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popBack(T& out) noexcept(std::is_nothrow_move_constructible<T>::value && std::is_nothrow_destructible<T>::value) {
+  bool popBack(T& out) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
@@ -104,7 +104,7 @@ class RingBiDirectionalBuffer {
 
   /// @brief Pop a value from the back of the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popBack() noexcept(std::is_nothrow_destructible<T>::value) {
+  bool popBack() noexcept(std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[ unlikely ]] {
       return false;
     }
@@ -139,31 +139,31 @@ class RingBiDirectionalBuffer {
 
   /// @brief Check if the buffer is empty.
   /// @return True if the buffer is empty, false otherwise.
-  const inline bool isEmpty() const noexcept {
+  inline bool isEmpty() const noexcept {
     return headIndex_ == tailIndex_;
   }
 
   /// @brief Check if the buffer is full.
   /// @return True if the buffer is full, false otherwise.
-  const inline bool isFull() const noexcept {
+  inline bool isFull() const noexcept {
     return nextIndex(tailIndex_) == headIndex_;
   }
 
   /// @brief Get the capacity of the buffer.
   /// @return The capacity of the buffer.
-  const inline size_t getCapacity() const noexcept {
+  inline size_t getCapacity() const noexcept {
     return capacity_;
   }
 
   /// @brief Get the real capacity of the buffer (excluding one slot for the empty state).
   /// @return The real capacity of the buffer.
-  const inline size_t getRealCapacity() const noexcept {
+  inline size_t getRealCapacity() const noexcept {
     return capacity_ - 1;
   }
 
   /// @brief Get the number of elements in the buffer.
   /// @return The number of elements in the buffer.
-  const inline size_t size() const noexcept {
+  inline size_t size() const noexcept {
     return (capacity_ + tailIndex_ - headIndex_) & (capacity_ - 1);
   }
 
@@ -191,7 +191,7 @@ class RingBiDirectionalBuffer {
   /// @param n The number to check.
   /// @return True if n is a power of two, false otherwise.
   static constexpr bool isPowerOfTwo(size_t n) {
-    return (n & (n - 1)) == 0;
+    return std::has_single_bit(n);
   }
 };
 

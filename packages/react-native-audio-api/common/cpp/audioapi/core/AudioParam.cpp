@@ -62,7 +62,7 @@ void AudioParam::setValueAtTime(float value, double startTime) {
 
     // Step function: instant change at startTime
     auto calculateValue = [](double startTime,
-                             double,
+                             double /* endTime */,
                              float startValue,
                              float endValue,
                              double time) {
@@ -272,8 +272,9 @@ std::shared_ptr<AudioBus> AudioParam::calculateInputs(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   processingBus->zero();
-  if (inputNodes_.empty())
+  if (inputNodes_.empty()) {
     return processingBus;
+  }
   processInputs(processingBus, framesToProcess, true);
   mixInputsBuses(processingBus);
   return processingBus;

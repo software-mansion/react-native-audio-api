@@ -11,7 +11,6 @@ namespace audioapi {
 class AudioParamEventQueue {
  public:
   /// @brief Constructor for AudioParamEventQueue.
-  /// @param capacity_ The maximum number of events that can be held in the queue.
   /// @note Capacity must be valid power of two.
   explicit AudioParamEventQueue();
 
