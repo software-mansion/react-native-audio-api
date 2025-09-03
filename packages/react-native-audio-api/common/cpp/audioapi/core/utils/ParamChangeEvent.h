@@ -42,33 +42,33 @@ class ParamChangeEvent {
     return *this;
   }
 
-  [[nodiscard]] inline double getEndTime() const {
+  [[nodiscard]] inline double getEndTime() const noexcept {
     return endTime_;
   }
-  [[nodiscard]] inline double getStartTime() const {
+  [[nodiscard]] inline double getStartTime() const noexcept {
     return startTime_;
   }
-  [[nodiscard]] inline float getEndValue() const {
+  [[nodiscard]] inline float getEndValue() const noexcept {
     return endValue_;
   }
-  [[nodiscard]] inline float getStartValue() const {
+  [[nodiscard]] inline float getStartValue() const noexcept {
     return startValue_;
   }
   [[nodiscard]] inline const std::function<float(double, double, float, float, double)>&
-  getCalculateValue() const {
+  getCalculateValue() const noexcept {
     return calculateValue_;
   }
-  [[nodiscard]] inline ParamChangeEventType getType() const {
+  [[nodiscard]] inline ParamChangeEventType getType() const noexcept {
     return type_;
   }
 
-  inline void setEndTime(double endTime) {
+  inline void setEndTime(double endTime) noexcept {
     endTime_ = endTime;
   }
-  inline void setStartValue(float startValue) {
+  inline void setStartValue(float startValue) noexcept {
     startValue_ = startValue;
   }
-  inline void setEndValue(float endValue) {
+  inline void setEndValue(float endValue) noexcept {
     endValue_ = endValue;
   }
 

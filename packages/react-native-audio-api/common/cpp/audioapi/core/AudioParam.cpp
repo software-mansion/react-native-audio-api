@@ -285,7 +285,6 @@ std::shared_ptr<AudioBus> AudioParam::processARateParam(
   processScheduledEvents();
   auto processingBus = calculateInputs(audioBus_, framesToProcess);
 
-
   float sampleRate = context_->getSampleRate();
   float *busData = processingBus->getChannel(0)->getData();
   float timeCache = time;

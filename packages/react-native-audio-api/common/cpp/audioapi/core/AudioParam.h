@@ -19,6 +19,9 @@ class AudioParam {
  public:
   explicit AudioParam(float defaultValue, float minValue, float maxValue, BaseAudioContext *context);
 
+  /// JS-Thread only methods
+  /// These methods are called only from HostObjects invoked on the JS thread.
+
   // JS-Thread only
   [[nodiscard]] inline float getValue() const noexcept {
     return value_;
@@ -69,6 +72,10 @@ class AudioParam {
   // JS-Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
+
+  /// Audio-Thread only methods
+  /// These methods are called only from the Audio rendering thread.
+
   // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
   void addInputNode(AudioNode* node);
 
@@ -104,21 +111,30 @@ class AudioParam {
   std::shared_ptr<AudioBus> audioBus_;
   std::vector<std::shared_ptr<AudioBus>> inputBuses_;
 
-  inline double getQueueEndTime() const {
-    if (eventsQueue_.isEmpty()) {
-      return endTime_;
-    }
-    return eventsQueue_.back().getEndTime();
+  /// @brief Get the end time of the parameter queue.
+  /// @return The end time of the parameter queue or last endTime_ if queue is empty.
+  inline double getQueueEndTime() const noexcept {
+    return
+      endTime_ * static_cast<double>(eventsQueue_.isEmpty()) +
+      eventsQueue_.back().getEndTime() * static_cast<double>(!eventsQueue_.isEmpty());
   }
-  inline float getQueueEndValue() const {
-    if (eventsQueue_.isEmpty()) {
-      return endValue_;
-    }
-    return eventsQueue_.back().getEndValue();
+
+  /// @brief Get the end value of the parameter queue.
+  /// @return The end value of the parameter queue or last endValue_ if queue is empty.
+  inline float getQueueEndValue() const noexcept {
+    return
+      endValue_ * static_cast<float>(eventsQueue_.isEmpty()) +
+      eventsQueue_.back().getEndValue() * static_cast<float>(!eventsQueue_.isEmpty());
   }
-  inline void processScheduledEvents() {
+
+  /// @brief Process all scheduled events.
+  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this))) {
     eventScheduler_.processAllEvents(*this);
   }
+
+  /// @brief Update the parameter queue with a new event.
+  /// @param event The new event to add to the queue.
+  /// @note Handles connecting start value of the new event to the end value of the previous event.
   inline void updateQueue(ParamChangeEvent &&event) {
     eventsQueue_.pushBack(std::move(event));
   }
