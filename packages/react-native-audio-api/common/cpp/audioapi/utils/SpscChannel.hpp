@@ -85,7 +85,7 @@ public:
     Sender& operator=(Sender&& other) noexcept {
         channel_ = std::move(other.channel_);
         return *this;
-    } 
+    }
     Sender(Sender&& other) noexcept : channel_(std::move(other.channel_)) {}
 
     /// @brief Try to send a value to the channel
@@ -198,21 +198,21 @@ public:
     /// @param capacity The minimum capacity of the channel, for performance it will be allocated with next power of 2
     /// Uses raw memory allocation so the T type is not required to provide default constructors
     /// alignment is the key for performance it makes sure that objects are properly aligned in memory for faster access
-    explicit InnerChannel(size_t capacity) : 
+    explicit InnerChannel(size_t capacity) :
         capacity_(next_power_of_2(capacity)),
         capacity_mask_(capacity_ - 1),
         buffer_(static_cast<T*>(operator new[](capacity_ * sizeof(T), std::align_val_t{alignof(T)}))) {
-        
+
         // Initialize cache values for better performance
         rcvCursorCache_ = 0;
         sendCursorCache_ = 0;
-        
+
         // Initialize reader state for overwrite strategy
         if constexpr (Strategy == OverflowStrategy::OVERWRITE_ON_FULL) {
             oldestOccupied_.store(false, std::memory_order_relaxed);
         }
     }
-    
+
     /// This should not be called if there is existing handle to reader or writer
     ~InnerChannel() {
         size_t sendCursor = sendCursor_.load(std::memory_order_seq_cst);
@@ -226,7 +226,10 @@ public:
         }
 
         // Deallocate the buffer
-        ::operator delete[](buffer_);
+        ::operator delete[](
+          buffer_,
+          capacity_ * sizeof(T),
+          std::align_val_t{alignof(T)});
     }
 
     /// @brief Try to send a value to the channel
@@ -240,8 +243,8 @@ public:
         } else {
             return try_send_overwrite_on_full(std::forward<U>(value));
         }
-    }    
-    
+    }
+
     /// @brief Try to receive a value from the channel
     /// @param value The variable to store the received value
     /// @return ResponseStatus indicating the result of the operation
@@ -255,7 +258,7 @@ public:
                 return ResponseStatus::SKIP_DUE_TO_OVERWRITE;
             }
         }
-        
+
         size_t rcvCursor = rcvCursor_.load(std::memory_order_relaxed); // only receiver thread reads this
 
         if (rcvCursor == sendCursorCache_) {
@@ -274,11 +277,11 @@ public:
         buffer_[rcvCursor].~T(); // Call destructor
 
         rcvCursor_.store(next_index(rcvCursor), std::memory_order_release);
-        
+
         if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
             rcvCursor_.notify_one(); // Notify sender that a value has been received
         }
-        
+
         if constexpr (Strategy == OverflowStrategy::OVERWRITE_ON_FULL) {
             oldestOccupied_.store(false, std::memory_order_release);
         }
@@ -301,7 +304,7 @@ private:
 
         // Construct the new element in place
         new (&buffer_[sendCursor]) T(std::forward<U>(value));
-        
+
         sendCursor_.store(next_sendCursor, std::memory_order_release);
 
         if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
@@ -310,7 +313,7 @@ private:
 
         return ResponseStatus::SUCCESS;
     }
-    
+
     /// @brief Try to send with OVERWRITE_ON_FULL strategy
     template<typename U>
     inline ResponseStatus try_send_overwrite_on_full(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
@@ -336,7 +339,7 @@ private:
                 } else {
                     rcvCursorCache_ = newestRcvCursor;
                 }
-                
+
                 oldestOccupied_.store(false, std::memory_order_release);
             }
         }
@@ -344,11 +347,11 @@ private:
         // Normal case: buffer not full
         new (&buffer_[sendCursor]) T(std::forward<U>(value));
         sendCursor_.store(next_sendCursor, std::memory_order_release);
-        
+
         if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
             sendCursor_.notify_one(); // Notify receiver that a value has been sent
         }
-        
+
         return ResponseStatus::SUCCESS;
     }
 
@@ -357,7 +360,7 @@ private:
     /// @return The next power of 2
     static constexpr size_t next_power_of_2(const size_t n) noexcept {
         if (n <= 1) return 1;
-        
+
         // Use bit manipulation for efficiency
         size_t power = 1;
         while (power < n) {
@@ -382,7 +385,7 @@ private:
     alignas(64) std::atomic<size_t> sendCursor_{0};
     alignas(64) size_t rcvCursorCache_{0}; // reduces cache coherency
 
-    /// Consumer-side data (accessed by receiver thread)  
+    /// Consumer-side data (accessed by receiver thread)
     alignas(64) std::atomic<size_t> rcvCursor_{0};
     alignas(64) size_t sendCursorCache_{0}; // reduces cache coherency
 
