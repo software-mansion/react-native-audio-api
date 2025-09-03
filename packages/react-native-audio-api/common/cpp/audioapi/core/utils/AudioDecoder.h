@@ -10,6 +10,18 @@
 
 namespace audioapi {
 
+enum class AudioFormat {
+  UNKNOWN,
+  WAV,
+  OGG,
+  FLAC,
+  AAC,
+  MP3,
+  M4A,
+  MP4,
+  MOV
+};
+
 class AudioBus;
 
 static constexpr int CHUNK_SIZE = 4096;
@@ -75,43 +87,43 @@ class AudioDecoder {
     stretch_deinit(stretcher);
   }
 
-  static std::string detectAudioFormat(const void* data, size_t size) {
-    if (size < 12) return "unknown";
-    const unsigned char* bytes = static_cast<const unsigned char*>(data);
+  static AudioFormat detectAudioFormat(const void* data, size_t size) {
+    if (size < 12) return AudioFormat::UNKNOWN;
+    const auto* bytes = static_cast<const unsigned char*>(data);
 
     // WAV/RIFF
     if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
-        return "wav";
+        return AudioFormat::WAV;
 
     // OGG
     if (std::memcmp(bytes, "OggS", 4) == 0)
-        return "ogg";
+        return AudioFormat::OGG;
 
     // FLAC
     if (std::memcmp(bytes, "fLaC", 4) == 0)
-        return "flac";
+        return AudioFormat::FLAC;
 
     // AAC starts with 0xFF 0xF1 or 0xFF 0xF9
     if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0)
-        return "aac";
+        return AudioFormat::AAC;
 
     // MP3: "ID3" or 11-bit frame sync (0xFF 0xE0)
     if (std::memcmp(bytes, "ID3", 3) == 0)
-        return "mp3";
+        return AudioFormat::MP3;
     if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
-        return "mp3";
+        return AudioFormat::MP3;
 
     if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
         if (std::memcmp(bytes + 8, "M4A ", 4) == 0)
-            return "m4a";
+            return AudioFormat::M4A;
         else if (std::memcmp(bytes + 8, "mp42", 4) == 0 || std::memcmp(bytes + 8, "isom", 4) == 0)
-            return "mp4";
+            return AudioFormat::MP4;
         else if (std::memcmp(bytes + 8, "qt  ", 4) == 0)
-            return "mov";
+            return AudioFormat::MOV;
         else
-            return "mp4";
+            return AudioFormat::MP4;
     }
-    return "unknown";
+    return AudioFormat::UNKNOWN;
   }
 
   static inline bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {

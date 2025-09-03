@@ -61,63 +61,67 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(const std::string &pa
       NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
       return nullptr;
     }
-  } else {
-    ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
-
-    ma_decoder decoder;
-    ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
-    config.ppCustomBackendVTables = customBackends;
-    config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
-
-    if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
-      NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
-      ma_decoder_uninit(&decoder);
-      return nullptr;
-    }
-
-    ma_uint64 framesRead = 0;
-    buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
-    if (framesRead == 0) {
-      NSLog(@"Failed to decode");
-      ma_decoder_uninit(&decoder);
-      return nullptr;
-    }
-
-    ma_decoder_uninit(&decoder);
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
   }
+  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+
+  ma_decoder decoder;
+  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  config.ppCustomBackendVTables = customBackends;
+  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
+
+  if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
+    NSLog(@"Failed to initialize decoder for file: %s", path.c_str());
+    ma_decoder_uninit(&decoder);
+    return nullptr;
+  }
+
+  ma_uint64 framesRead = 0;
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  if (framesRead == 0) {
+    NSLog(@"Failed to decode");
+    ma_decoder_uninit(&decoder);
+    return nullptr;
+  }
+
+  ma_decoder_uninit(&decoder);
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
 }
 
 std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
 {
   std::vector<int16_t> buffer;
-  std::string format = AudioDecoder::detectAudioFormat(data, size);
-  if (format == "mp4" || format == "m4a" || format == "aac") {
+  const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
+  if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
     buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate_));
-  } else {
-    ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
-
-    ma_decoder decoder;
-    ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
-    config.ppCustomBackendVTables = customBackends;
-    config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
-
-    if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
-      NSLog(@"Failed to initialize decoder for memory block");
-      ma_decoder_uninit(&decoder);
+    if (buffer.empty()) {
+      NSLog(@"Failed to decode with FFmpeg");
       return nullptr;
     }
-
-    ma_uint64 framesRead = 0;
-    buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
-    if (framesRead == 0) {
-      NSLog(@"Failed to decode");
-      ma_decoder_uninit(&decoder);
-      return nullptr;
-    }
-
-    ma_decoder_uninit(&decoder);
+    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
   }
+  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+
+  ma_decoder decoder;
+  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  config.ppCustomBackendVTables = customBackends;
+  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
+
+  if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
+    NSLog(@"Failed to initialize decoder for memory block");
+    ma_decoder_uninit(&decoder);
+    return nullptr;
+  }
+
+  ma_uint64 framesRead = 0;
+  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  if (framesRead == 0) {
+    NSLog(@"Failed to decode");
+    ma_decoder_uninit(&decoder);
+    return nullptr;
+  }
+
+  ma_decoder_uninit(&decoder);
   return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
 }
 
