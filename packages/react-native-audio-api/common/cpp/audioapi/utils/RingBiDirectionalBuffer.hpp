@@ -8,18 +8,17 @@ namespace audioapi {
 
 /// @brief A ring buffer implementation (non thread safe).
 /// @tparam T The type of elements stored in the buffer.
-/// @tparam Capacity The maximum number of elements that can be held in the buffer.
+/// @tparam capacity_ The maximum number of elements that can be held in the buffer.
 /// @note This implementation is NOT thread-safe.
 /// @note Can be refered as bounded queue
 /// @note Capacity must be a valid power of two and must be greater than zero.
-template <typename T, size_t Capacity>
+template <typename T, size_t capacity_>
 class RingBiDirectionalBuffer {
  public:
   /// @brief Constructor for RingBuffer.
   RingBiDirectionalBuffer()
     : headIndex_(0), tailIndex_(0) {
-    static_assert(isPowerOfTwo(Capacity), "RingBiDirectionalBuffer's capacity must be power of 2");
-    capacity_ = Capacity;
+    static_assert(isPowerOfTwo(capacity_), "RingBiDirectionalBuffer's capacity must be power of 2");
     buffer_ = static_cast<T*>(
       ::operator new[](
         capacity_ * sizeof(T),
@@ -172,7 +171,6 @@ class RingBiDirectionalBuffer {
 
  private:
   T *buffer_;
-  size_t capacity_;
   size_t headIndex_;
   size_t tailIndex_;
 

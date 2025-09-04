@@ -28,7 +28,6 @@ class AudioParamEventQueue {
 
   /// @brief Cancel scheduled parameter changes and hold the current value at the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
-  /// @return The new endTime after cancelation.
   void cancelAndHoldAtTime(double cancelTime, double& endTimeCache);
 
   /// @brief Get the first event in the queue.
