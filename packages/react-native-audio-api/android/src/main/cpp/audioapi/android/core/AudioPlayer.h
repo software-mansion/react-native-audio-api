@@ -13,7 +13,6 @@ using namespace oboe;
 
 class AudioContext;
 class AudioBus;
-class NativeAudioPlayer;
 
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
@@ -53,7 +52,7 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
 
   bool openAudioStream();
 
-  jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
+  facebook::jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
 };
 
 } // namespace audioapi
