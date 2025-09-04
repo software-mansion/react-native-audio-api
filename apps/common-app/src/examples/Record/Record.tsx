@@ -103,7 +103,7 @@ const Record: FC = () => {
 
     setTimeout(() => {
       stopRecorder();
-    }, 1000);
+    }, 5000);
   };
 
   const stopRecordReplay = () => {
