@@ -72,10 +72,14 @@ std::vector<int16_t> readAllPcmFrames(
 
   AVPacket *packet = av_packet_alloc();
   AVFrame *frame = av_frame_alloc();
-  
+
   if (packet == nullptr || frame == nullptr) {
-    if (packet != nullptr) av_packet_free(&packet);
-    if (frame != nullptr) av_frame_free(&frame);
+    if (packet != nullptr) {
+      av_packet_free(&packet);
+    }
+    if (frame != nullptr) {
+      av_frame_free(&frame);
+    }
     swr_free(&swr_ctx);
     av_channel_layout_uninit(&out_ch_layout);
     return buffer;
@@ -122,7 +126,7 @@ std::vector<int16_t> readAllPcmFrames(
                 max_resampled_samples,
                 AV_SAMPLE_FMT_S16,
                 0);
-            
+
             if (ret < 0) {
               break; // Exit on allocation failure
             }
@@ -143,7 +147,7 @@ std::vector<int16_t> readAllPcmFrames(
                 buffer.data() + current_size,
                 resampled_data[0],
                 new_samples * sizeof(int16_t));
-            
+
             framesRead += converted_samples;
           }
         }
@@ -170,7 +174,7 @@ std::vector<int16_t> readAllPcmFrames(
           max_resampled_samples,
           AV_SAMPLE_FMT_S16,
           0);
-      
+
       if (ret < 0) {
         break;
       }
@@ -191,7 +195,7 @@ std::vector<int16_t> readAllPcmFrames(
           buffer.data() + current_size,
           resampled_data[0],
           new_samples * sizeof(int16_t));
-      
+
       framesRead += converted_samples;
     }
   }
@@ -208,195 +212,208 @@ std::vector<int16_t> readAllPcmFrames(
   return buffer;
 }
 
-std::vector<int16_t> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
-    if (data == nullptr || size == 0) {
-        return {};
-    }
+std::vector<int16_t>
+decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
+  if (data == nullptr || size == 0) {
+    return {};
+  }
 
-    MemoryIOContext io_ctx;
-    io_ctx.data = static_cast<const uint8_t *>(data);
-    io_ctx.size = size;
-    io_ctx.pos = 0;
+  MemoryIOContext io_ctx;
+  io_ctx.data = static_cast<const uint8_t *>(data);
+  io_ctx.size = size;
+  io_ctx.pos = 0;
 
-    constexpr size_t buffer_size = 4096;
-    uint8_t *io_buffer = static_cast<uint8_t *>(av_malloc(buffer_size));
-    if (io_buffer == nullptr) {
-        return {};
-    }
+  constexpr size_t buffer_size = 4096;
+  uint8_t *io_buffer = static_cast<uint8_t *>(av_malloc(buffer_size));
+  if (io_buffer == nullptr) {
+    return {};
+  }
 
-    AVIOContext *avio_ctx = avio_alloc_context(
-        io_buffer, buffer_size, 0, &io_ctx, read_packet, nullptr, seek_packet);
+  AVIOContext *avio_ctx = avio_alloc_context(
+      io_buffer, buffer_size, 0, &io_ctx, read_packet, nullptr, seek_packet);
 
-    if (avio_ctx == nullptr) {
-      av_free(io_buffer);
-      return {};
-    }
+  if (avio_ctx == nullptr) {
+    av_free(io_buffer);
+    return {};
+  }
 
-    // Create format context and set custom IO
-    AVFormatContext *fmt_ctx = avformat_alloc_context();
-    if (fmt_ctx == nullptr) {
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-    
-    fmt_ctx->pb = avio_ctx;
+  // Create format context and set custom IO
+  AVFormatContext *fmt_ctx = avformat_alloc_context();
+  if (fmt_ctx == nullptr) {
+    avio_context_free(&avio_ctx);
+    return {};
+  }
 
-    // Open input from memory
-    if (avformat_open_input(&fmt_ctx, nullptr, nullptr, nullptr) < 0) {
-      avformat_free_context(fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
+  fmt_ctx->pb = avio_ctx;
 
-    // Find stream info
-    if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
+  // Open input from memory
+  if (avformat_open_input(&fmt_ctx, nullptr, nullptr, nullptr) < 0) {
+    avformat_free_context(fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
+  }
 
-    int audio_stream_index = -1;
-    for (int i = 0; i < fmt_ctx->nb_streams; i++) {
-      if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        audio_stream_index = i;
-        break;
-      }
-    }
-
-    if (audio_stream_index == -1) {
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    AVCodecParameters *codecpar = fmt_ctx->streams[audio_stream_index]->codecpar;
-
-    // Find decoder
-    const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
-    if (codec == nullptr) {
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    // Allocate and setup codec context
-    AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
-    if (codec_ctx == nullptr) {
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    if (avcodec_parameters_to_context(codec_ctx, codecpar) < 0) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    // Get actual channel count from the decoded stream
-    int actual_channels = codec_ctx->ch_layout.nb_channels;
-
-    // Validate channel count
-    if (actual_channels <= 0 || actual_channels > 8) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      avio_context_free(&avio_ctx);
-      return {};
-    }
-
-    // Decode all frames
-    size_t framesRead = 0;
-    std::vector<int16_t> decoded_buffer = readAllPcmFrames(
-        fmt_ctx, codec_ctx, sample_rate, audio_stream_index, actual_channels, framesRead);
-
-    // Cleanup - Note: avio_context_free will free the io_buffer
-    avcodec_free_context(&codec_ctx);
+  // Find stream info
+  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
     avformat_close_input(&fmt_ctx);
     avio_context_free(&avio_ctx);
-
-    if (framesRead == 0 || decoded_buffer.empty()) {
-      return {};
-    }
-
-    return decoded_buffer;
-}
-
-std::vector<int16_t> decodeWithFilePath(const std::string &path, int sample_rate) {
-  if (path.empty()) {
-      return {};
+    return {};
   }
 
-  AVFormatContext *fmt_ctx = nullptr;
-  if (avformat_open_input(&fmt_ctx, path.c_str(), nullptr, nullptr) < 0) {
-      return {};
-  }
-  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
-      avformat_close_input(&fmt_ctx);
-      return {};
-  }
   int audio_stream_index = -1;
   for (int i = 0; i < fmt_ctx->nb_streams; i++) {
-      if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-          audio_stream_index = i;
-          break;
-      }
+    if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+      audio_stream_index = i;
+      break;
+    }
   }
+
   if (audio_stream_index == -1) {
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
 
   AVCodecParameters *codecpar = fmt_ctx->streams[audio_stream_index]->codecpar;
+
+  // Find decoder
   const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
   if (codec == nullptr) {
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
+
+  // Allocate and setup codec context
   AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
   if (codec_ctx == nullptr) {
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
 
   if (avcodec_parameters_to_context(codec_ctx, codecpar) < 0) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
 
   if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
 
+  // Get actual channel count from the decoded stream
   int actual_channels = codec_ctx->ch_layout.nb_channels;
+
+  // Validate channel count
   if (actual_channels <= 0 || actual_channels > 8) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      return {};
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    avio_context_free(&avio_ctx);
+    return {};
   }
 
+  // Decode all frames
   size_t framesRead = 0;
   std::vector<int16_t> decoded_buffer = readAllPcmFrames(
-      fmt_ctx, codec_ctx, sample_rate, audio_stream_index, actual_channels, framesRead);
+      fmt_ctx,
+      codec_ctx,
+      sample_rate,
+      audio_stream_index,
+      actual_channels,
+      framesRead);
 
+  // Cleanup - Note: avio_context_free will free the io_buffer
   avcodec_free_context(&codec_ctx);
   avformat_close_input(&fmt_ctx);
+  avio_context_free(&avio_ctx);
 
   if (framesRead == 0 || decoded_buffer.empty()) {
-      return {};
+    return {};
   }
 
   return decoded_buffer;
 }
 
-} // namespace audioapi::ffmpegdecoder
+std::vector<int16_t> decodeWithFilePath(
+    const std::string &path,
+    int sample_rate) {
+  if (path.empty()) {
+    return {};
+  }
+
+  AVFormatContext *fmt_ctx = nullptr;
+  if (avformat_open_input(&fmt_ctx, path.c_str(), nullptr, nullptr) < 0) {
+    return {};
+  }
+  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+  int audio_stream_index = -1;
+  for (int i = 0; i < fmt_ctx->nb_streams; i++) {
+    if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+      audio_stream_index = i;
+      break;
+    }
+  }
+  if (audio_stream_index == -1) {
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+
+  AVCodecParameters *codecpar = fmt_ctx->streams[audio_stream_index]->codecpar;
+  const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
+  if (codec == nullptr) {
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+  AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
+  if (codec_ctx == nullptr) {
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+
+  if (avcodec_parameters_to_context(codec_ctx, codecpar) < 0) {
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+
+  if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+
+  int actual_channels = codec_ctx->ch_layout.nb_channels;
+  if (actual_channels <= 0 || actual_channels > 8) {
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&fmt_ctx);
+    return {};
+  }
+
+  size_t framesRead = 0;
+  std::vector<int16_t> decoded_buffer = readAllPcmFrames(
+      fmt_ctx,
+      codec_ctx,
+      sample_rate,
+      audio_stream_index,
+      actual_channels,
+      framesRead);
+
+  avcodec_free_context(&codec_ctx);
+  avformat_close_input(&fmt_ctx);
+
+  if (framesRead == 0 || decoded_buffer.empty()) {
+    return {};
+  }
+
+  return decoded_buffer;
+}
+
+} // namespace audioapi::ffmpegdecoding
