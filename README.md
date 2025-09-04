@@ -81,7 +81,7 @@ We are open to new ideas and general feedback. If you want to share your opinion
 
 ## License
 
-react-native-audio-api library is licensed under [The MIT License](./LICENSE). Some of the source code uses implementation directly copied from Webkit and utilizes FFmpeg binaries. Copyrights are held by respective organizations, check [THIRD_PARTY](./THIRD_PARTY) file for further details.
+react-native-audio-api library is licensed under [The MIT License](./LICENSE). Some of the source code uses implementation directly copied from Webkit and utilizes FFmpeg binaries. Copyrights are held by respective organizations, check [THIRD_PARTY](./THIRD_PARTY.md) file for further details.
 
 ## Credits
 

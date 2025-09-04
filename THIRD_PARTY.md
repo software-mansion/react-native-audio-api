@@ -18,7 +18,7 @@ In addition we utilize FFmpeg library under GNU Lesser General Public License (L
 - Source: https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0
 - Used in audio processing module [packages/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp)
 - Used in audio decoding module [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp)
-- Instruction for relinking: 
+- Instruction for relinking: [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md)
 
 Other LGPL components may be included as dependencies.
 The full text of the LGPL license is included in lgplv3 file.
