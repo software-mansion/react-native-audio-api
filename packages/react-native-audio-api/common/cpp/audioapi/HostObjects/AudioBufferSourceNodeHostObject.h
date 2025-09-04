@@ -125,16 +125,14 @@ class AudioBufferSourceNodeHostObject
     auto audioBufferSourceNode =
         std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
-    auto audioBufferSourceNodeJsiObject = args[0].getObject(runtime);
-
-    if (args[1].isNull()) {
+    if (args[0].isNull()) {
       audioBufferSourceNode->setBuffer(std::shared_ptr<AudioBuffer>(nullptr));
       return jsi::Value::undefined();
     }
 
     auto bufferHostObject =
-        args[1].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    audioBufferSourceNodeJsiObject.setExternalMemoryPressure(runtime,
+        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    thisValue.asObject(runtime).setExternalMemoryPressure(runtime,
         bufferHostObject->getSizeInBytes() + 16);
     audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
     return jsi::Value::undefined();

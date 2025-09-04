@@ -33,7 +33,9 @@ class BiquadFilterNode : public AudioNode {
       int length);
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  void processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
@@ -52,7 +54,7 @@ class BiquadFilterNode : public AudioNode {
   float b0_ = 1.0;
   float b1_ = 0;
   float b2_ = 0;
-  float a1_ = 1.0;
+  float a1_ = 0;
   float a2_ = 0;
 
   static BiquadFilterType fromString(const std::string &type) {
@@ -103,7 +105,6 @@ class BiquadFilterNode : public AudioNode {
     }
   }
 
-  void resetCoefficients();
   void setNormalizedCoefficients(
       float b0,
       float b1,

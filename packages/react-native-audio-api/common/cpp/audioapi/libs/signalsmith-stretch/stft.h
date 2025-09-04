@@ -5,9 +5,17 @@
 
 namespace signalsmith { namespace linear {
 
+enum {
+	STFT_SPECTRUM_PACKED=0,
+	STFT_SPECTRUM_MODIFIED=1,
+	STFT_SPECTRUM_UNPACKED=2,
+};
+
 /// A self-normalising STFT, with variable position/window for output blocks
-template<typename Sample, bool splitComputation=false, bool modified=false>
+template<typename Sample, bool splitComputation=false, int spectrumType=STFT_SPECTRUM_PACKED>
 struct DynamicSTFT {
+	static constexpr bool modified = (spectrumType == STFT_SPECTRUM_MODIFIED);
+	static constexpr bool unpacked = (spectrumType == STFT_SPECTRUM_UNPACKED);
 	RealFFT<Sample, splitComputation, modified> fft;
 
 	using Complex = std::complex<Sample>;
@@ -16,13 +24,13 @@ struct DynamicSTFT {
 	static constexpr WindowShape acg = WindowShape::acg;
 	static constexpr WindowShape kaiser = WindowShape::kaiser;
 
-	void configure(size_t inChannels, size_t outChannels, size_t blockSamples, size_t extraInputHistory=0, size_t intervalSamples=0) {
+	void configure(size_t inChannels, size_t outChannels, size_t blockSamples, size_t extraInputHistory=0, size_t intervalSamples=0, Sample asymmetry=0) {
 		_analysisChannels = inChannels;
 		_synthesisChannels = outChannels;
 		_blockSamples = blockSamples;
 		_fftSamples = fft.fastSizeAbove((blockSamples + 1)/2)*2;
 		fft.resize(_fftSamples);
-		_fftBins = _fftSamples/2;
+		_fftBins = _fftSamples/2 + (spectrumType == STFT_SPECTRUM_UNPACKED);
 
 		_inputLengthSamples = _blockSamples + extraInputHistory;
 		input.buffer.resize(_inputLengthSamples*_analysisChannels);
@@ -34,7 +42,7 @@ struct DynamicSTFT {
 
 		_analysisWindow.resize(_blockSamples);
 		_synthesisWindow.resize(_blockSamples);
-		setInterval(intervalSamples ? intervalSamples : blockSamples/4, acg);
+		setInterval(intervalSamples ? intervalSamples : blockSamples/4, acg, asymmetry);
 
 		reset();
 	}
@@ -82,7 +90,7 @@ struct DynamicSTFT {
 		moveOutput(_defaultInterval); // ready for first block immediately
 	}
 
-	void writeInput(size_t channel, size_t offset, size_t length, Sample *inputArray) {
+	void writeInput(size_t channel, size_t offset, size_t length, const Sample *inputArray) {
 		Sample *buffer = input.buffer.data() + channel*_inputLengthSamples;
 
 		size_t offsetPos = (input.pos + offset)%_inputLengthSamples;
@@ -97,7 +105,7 @@ struct DynamicSTFT {
 			buffer[i2] = inputArray[i];
 		}
 	}
-	void writeInput(size_t channel, size_t length, Sample *inputArray) {
+	void writeInput(size_t channel, size_t length, const Sample *inputArray) {
 		writeInput(channel, 0, length, inputArray);
 	}
 	void moveInput(size_t samples, bool clearInput=false) {
@@ -160,6 +168,42 @@ struct DynamicSTFT {
 	}
 	void readOutput(size_t channel, size_t length, Sample *outputArray) {
 		return readOutput(channel, 0, length, outputArray);
+	}
+	void addOutput(size_t channel, size_t offset, size_t length, const Sample *newOutputArray) {
+		length = std::min(_blockSamples, length);
+		Sample *buffer = output.buffer.data() + channel*_blockSamples;
+		size_t offsetPos = (output.pos + offset)%_blockSamples;
+		size_t outputWrapIndex = _blockSamples - offsetPos;
+		size_t chunk1 = std::min(length, outputWrapIndex);
+		for (size_t i = 0; i < chunk1; ++i) {
+			size_t i2 = offsetPos + i;
+			buffer[i2] += newOutputArray[i]*output.windowProducts[i2];
+		}
+		for (size_t i = chunk1; i < length; ++i) {
+			size_t i2 = i + offsetPos - _blockSamples;
+			buffer[i2] += newOutputArray[i]*output.windowProducts[i2];
+		}
+	}
+	void addOutput(size_t channel, size_t length, const Sample *newOutputArray) {
+		return addOutput(channel, 0, length, newOutputArray);
+	}
+	void replaceOutput(size_t channel, size_t offset, size_t length, const Sample *newOutputArray) {
+		length = std::min(_blockSamples, length);
+		Sample *buffer = output.buffer.data() + channel*_blockSamples;
+		size_t offsetPos = (output.pos + offset)%_blockSamples;
+		size_t outputWrapIndex = _blockSamples - offsetPos;
+		size_t chunk1 = std::min(length, outputWrapIndex);
+		for (size_t i = 0; i < chunk1; ++i) {
+			size_t i2 = offsetPos + i;
+			buffer[i2] = newOutputArray[i]*output.windowProducts[i2];
+		}
+		for (size_t i = chunk1; i < length; ++i) {
+			size_t i2 = i + offsetPos - _blockSamples;
+			buffer[i2] = newOutputArray[i]*output.windowProducts[i2];
+		}
+	}
+	void replaceOutput(size_t channel, size_t length, const Sample *newOutputArray) {
+		return replaceOutput(channel, 0, length, newOutputArray);
 	}
 	void moveOutput(size_t samples) {
 		if (samples == 1) { // avoid all the loops/chunks if we can
@@ -233,27 +277,35 @@ struct DynamicSTFT {
 		return _synthesisOffset;
 	}
 
-	void setInterval(size_t defaultInterval, WindowShape windowShape=WindowShape::ignore) {
+	void setInterval(size_t defaultInterval, WindowShape windowShape=WindowShape::ignore, Sample asymmetry=0) {
 		_defaultInterval = defaultInterval;
 		if (windowShape == WindowShape::ignore) return;
 
-		_analysisOffset = _synthesisOffset = _blockSamples/2;
-
 		if (windowShape == acg) {
 			auto window = ApproximateConfinedGaussian::withBandwidth(double(_blockSamples)/defaultInterval);
-			window.fill(_synthesisWindow, _blockSamples);
+			window.fill(_synthesisWindow, _blockSamples, asymmetry, false);
 		} else if (windowShape == kaiser) {
 			auto window = Kaiser::withBandwidth(double(_blockSamples)/defaultInterval, true);
-			window.fill(_synthesisWindow,  _blockSamples);
+			window.fill(_synthesisWindow,  _blockSamples, asymmetry, true);
 		}
 
+		_analysisOffset = _synthesisOffset = _blockSamples/2;
 		if (_analysisChannels == 0) {
 			for (auto &v : _analysisWindow) v = 1;
-		} else {
+		} else if (asymmetry == 0) {
 			forcePerfectReconstruction(_synthesisWindow, _blockSamples, _defaultInterval);
 			for (size_t i = 0; i < _blockSamples; ++i) {
 				_analysisWindow[i] = _synthesisWindow[i];
 			}
+		} else {
+			for (size_t i = 0; i < _blockSamples; ++i) {
+				_analysisWindow[i] = _synthesisWindow[_blockSamples - 1 - i];
+			}
+		}
+		// Set offsets to peak's index
+		for (size_t i = 0; i < _blockSamples; ++i) {
+			if (_analysisWindow[i] > _analysisWindow[_analysisOffset]) _analysisOffset = i;
+			if (_synthesisWindow[i] > _synthesisWindow[_synthesisOffset]) _synthesisOffset = i;
 		}
 	}
 
@@ -307,10 +359,19 @@ struct DynamicSTFT {
 			}
 			if (splitComputation) return;
 		}
+		auto *spectrumPtr = spectrum(channel);
 		if (splitComputation) {
-			fft.fft(step, timeBuffer.data(), spectrum(channel));
+			fft.fft(step, timeBuffer.data(), spectrumPtr);
+			if (unpacked && step == fft.steps() - 1) {
+				spectrumPtr[_fftBins - 1] = spectrumPtr[0].imag();
+				spectrumPtr[0].imag(0);
+			}
 		} else {
 			fft.fft(timeBuffer.data(), spectrum(channel));
+			if (unpacked) {
+				spectrumPtr[_fftBins - 1] = spectrumPtr[0].imag();
+				spectrumPtr[0].imag(0);
+			}
 		}
 	}
 
@@ -333,13 +394,18 @@ struct DynamicSTFT {
 		size_t channel = step/(fftSteps + 1);
 		step -= channel*(fftSteps + 1);
 
+		auto *spectrumPtr = spectrum(channel);
+		if (unpacked && step == 0) { // re-pack
+			spectrumPtr[0].imag(spectrumPtr[_fftBins - 1].real());
+		}
+
 		if (splitComputation) {
 			if (step < fftSteps) {
-				fft.ifft(step, spectrum(channel), timeBuffer.data());
+				fft.ifft(step, spectrumPtr, timeBuffer.data());
 				return;
 			}
 		} else {
-			fft.ifft(spectrum(channel), timeBuffer.data());
+			fft.ifft(spectrumPtr, timeBuffer.data());
 		}
 
 		// extra step after each channel's FFT
@@ -501,75 +567,13 @@ private:
 			return alpha*M_PI;
 		}
 
-		static double betaToBandwidth(double beta) {
-			double alpha = beta*(1.0/M_PI);
-			return 2*std::sqrt(alpha*alpha + 1);
-		}
-		static double bandwidthToEnergyDb(double bandwidth, bool heuristicOptimal=false) {
-			// Horrible heuristic fits
-			if (heuristicOptimal) {
-				if (bandwidth < 3) bandwidth += (3 - bandwidth)*0.5;
-				return 12.9 + -3/(bandwidth + 0.4) - 13.4*bandwidth + (bandwidth < 3)*-9.6*(bandwidth - 3);
-			}
-			return 10.5 + 15/(bandwidth + 0.4) - 13.25*bandwidth + (bandwidth < 2)*13*(bandwidth - 2);
-		}
-		static double energyDbToBandwidth(double energyDb, bool heuristicOptimal=false) {
-			double bw = 1;
-			while (bw < 20 && bandwidthToEnergyDb(bw, heuristicOptimal) > energyDb) {
-				bw *= 2;
-			}
-			double step = bw/2;
-			while (step > 0.0001) {
-				if (bandwidthToEnergyDb(bw, heuristicOptimal) > energyDb) {
-					bw += step;
-				} else {
-					bw -= step;
-				}
-				step *= 0.5;
-			}
-			return bw;
-		}
-		static double bandwidthToPeakDb(double bandwidth, bool heuristicOptimal=false) {
-			// Horrible heuristic fits
-			if (heuristicOptimal) {
-				return 14.2 - 20/(bandwidth + 1) - 13*bandwidth + (bandwidth < 3)*-6*(bandwidth - 3) + (bandwidth < 2.25)*5.8*(bandwidth - 2.25);
-			}
-			return 10 + 8/(bandwidth + 2) - 12.75*bandwidth + (bandwidth < 2)*4*(bandwidth - 2);
-		}
-		static double peakDbToBandwidth(double peakDb, bool heuristicOptimal=false) {
-			double bw = 1;
-			while (bw < 20 && bandwidthToPeakDb(bw, heuristicOptimal) > peakDb) {
-				bw *= 2;
-			}
-			double step = bw/2;
-			while (step > 0.0001) {
-				if (bandwidthToPeakDb(bw, heuristicOptimal) > peakDb) {
-					bw += step;
-				} else {
-					bw -= step;
-				}
-				step *= 0.5;
-			}
-			return bw;
-		}
-
-		static double bandwidthToEnbw(double bandwidth, bool heuristicOptimal=false) {
-			if (heuristicOptimal) bandwidth = heuristicBandwidth(bandwidth);
-			double b2 = std::max<double>(bandwidth - 2, 0);
-			return 1 + b2*(0.2 + b2*(-0.005 + b2*(-0.000005 + b2*0.0000022)));
-		}
-
-		double operator ()(double unit) {
-			double r = 2*unit - 1;
-			double arg = std::sqrt(1 - r*r);
-			return bessel0(beta*arg)*invB0;
-		}
-
 		template<typename Data>
-		void fill(Data &&data, size_t size) const {
+		void fill(Data &&data, size_t size, double warp, bool isForSynthesis) const {
 			double invSize = 1.0/size;
+			size_t offsetI = (size&1) ? 1 : (isForSynthesis ? 0 : 2);
 			for (size_t i = 0; i < size; ++i) {
-				double r = (2*i + 1)*invSize - 1;
+				double r = (2*i + offsetI)*invSize - 1;
+				r = (r + warp)/(1 + r*warp);
 				double arg = std::sqrt(1 - r*r);
 				data[i] = bessel0(beta*arg)*invB0;
 			}
@@ -594,12 +598,14 @@ private:
 
 		/// Fills an arbitrary container
 		template<typename Data>
-		void fill(Data &&data, size_t size) const {
+		void fill(Data &&data, size_t size, double warp, bool isForSynthesis) const {
 			double invSize = 1.0/size;
 			double offsetScale = gaussian(1)/(gaussian(3) + gaussian(-1));
 			double norm = 1/(gaussian(0) - 2*offsetScale*(gaussian(2)));
+			size_t offsetI = (size&1) ? 1 : (isForSynthesis ? 0 : 2);
 			for (size_t i = 0; i < size; ++i) {
-				double r = (2*i + 1)*invSize - 1;
+				double r = (2*i + offsetI)*invSize - 1;
+				r = (r + warp)/(1 + r*warp);
 				data[i] = norm*(gaussian(r) - offsetScale*(gaussian(r - 2) + gaussian(r + 2)));
 			}
 		}

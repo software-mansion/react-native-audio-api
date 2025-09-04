@@ -12,3 +12,11 @@ Copyright (c) The WebKit Authors
 WebKit, 3 Clause BSD
 Copyright (c) The WebKit Authors
 [https://github.com/WebKit/webkit](https://github.com/WebKit/webkit)
+
+In addition we utilize FFmpeg library under GNU Lesser General Public License (LGPL) version 2.1 or later
+
+- Source: https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0
+- Location: Used in audio processing module (packages/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp)
+
+Other LGPL components may be included as dependencies.
+The full text of the LGPL license is included in COPYING.LGPLv3

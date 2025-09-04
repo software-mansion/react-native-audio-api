@@ -8,6 +8,7 @@ import {
 const pkg = require('react-native-audio-api/package.json');
 
 interface Options {
+  iosMicrophonePermission?: string;
   iosBackgroundMode: boolean;
   androidPermissions: string[];
   androidForegroundService: boolean;
@@ -19,7 +20,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     iosBackgroundMode: true,
     androidPermissions: [
       'android.permission.FOREGROUND_SERVICE',
-      'android.permission.WAKE_LOCK',
+      'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
     ],
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
@@ -35,6 +36,16 @@ const withBackgroundAudio: ConfigPlugin = (config) => {
       ),
     ];
 
+    return iosConfig;
+  });
+};
+
+const withIosMicrophonePermission: ConfigPlugin<Options> = (
+  config,
+  { iosMicrophonePermission }
+) => {
+  return withInfoPlist(config, (iosConfig) => {
+    iosConfig.modResults.NSMicrophoneUsageDescription = iosMicrophonePermission;
     return iosConfig;
   });
 };
@@ -60,7 +71,7 @@ const withForegroundService: ConfigPlugin<Options> = (
     const serviceElement = {
       $: {
         'android:name':
-          'com.swmansion.audioapi.system.MediaNotificationManager$NotificationService',
+          'com.swmansion.audioapi.system.MediaNotificationManager$AudioForegroundService',
         'android:stopWithTask': 'true',
         'android:foregroundServiceType': SFTypes,
       },
@@ -88,6 +99,10 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
 
   if (options.androidForegroundService) {
     config = withForegroundService(config, options);
+  }
+
+  if (options.iosMicrophonePermission) {
+    config = withIosMicrophonePermission(config, options);
   }
 
   return config;

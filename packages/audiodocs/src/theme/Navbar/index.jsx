@@ -1,6 +1,7 @@
 import React from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { Navbar } from '@swmansion/t-rex-ui';
+import './styles.css';
 
 export default function NavbarWrapper(props) {
   const titleImages = {
@@ -17,7 +18,19 @@ export default function NavbarWrapper(props) {
       useLandingLogoDualVariant={true}
       heroImages={heroImages}
       titleImages={titleImages}
+      landingItems={[
+        {
+          href: '/react-native-audio-api/docs',
+          label: 'Docs',
+          position: 'right',
+          'aria-label': 'Documentation',
+        },
+      ]}
       {...props}
-    />
+    >
+      <button type='button' className='navbar__toggle' aria-label='Toggle navigation'>
+        <span className='navbar__toggle-icon' />
+      </button>
+    </Navbar>
   );
 }

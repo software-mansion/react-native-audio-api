@@ -1,7 +1,6 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import Piano from './Piano';
-import TextToSpeech from './TextToSpeech';
 import Metronome from './Metronome';
 import Oscillator from './Oscillator';
 import DrumMachine from './DrumMachine';
@@ -9,6 +8,8 @@ import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import OfflineRendering from './OfflineRendering';
 import Record from './Record/Record';
+import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import Streaming from './Streaming/Streaming';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -17,9 +18,11 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
+  Streamer: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -46,10 +49,16 @@ export const Examples: Example[] = [
     screen: Piano,
   },
   {
-    key: 'TextToSpeech',
-    title: 'Text to Speech',
-    subtitle: 'type some text and hear it spoken',
-    screen: TextToSpeech,
+    key: 'AudioFile',
+    title: 'Audio File',
+    subtitle: 'Play an audio file',
+    screen: AudioFile,
+  },
+  {
+    key: 'PlaybackSpeed',
+    title: 'Playback Speed',
+    subtitle: 'Control playback speed of audio',
+    screen: PlaybackSpeed,
   },
   {
     key: 'Metronome',
@@ -62,12 +71,6 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     subtitle: 'Generate sound waves',
     screen: Oscillator,
-  },
-  {
-    key: 'AudioFile',
-    title: 'Audio File',
-    subtitle: 'Play an audio file',
-    screen: AudioFile,
   },
   {
     key: 'AudioVisualizer',
@@ -87,4 +90,10 @@ export const Examples: Example[] = [
     subtitle: 'Record audio',
     screen: Record,
   },
+  {
+    key: 'Streamer',
+    title: 'Streamer',
+    subtitle: 'Stream audio from a URL',
+    screen: Streaming,
+  }
 ] as const;

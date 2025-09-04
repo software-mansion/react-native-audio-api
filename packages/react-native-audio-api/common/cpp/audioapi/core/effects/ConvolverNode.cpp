@@ -49,7 +49,7 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
 void ConvolverNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // printf("scale factor: %f\n", scaleFactor_);
+  printf("frames to process: %d\n", framesToProcess);
   convolver_->process(
       *processingBus->getChannel(0),
       *processingBus->getChannel(0),

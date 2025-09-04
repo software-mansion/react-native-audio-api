@@ -48,6 +48,7 @@ Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`.
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
+        "iosMicrophonePermission": "This app requires access to the microphone to record audio.",
         "androidPermissions" : [
           "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
@@ -74,6 +75,7 @@ export default {
       "react-native-audio-api",
       {
         "iosBackgroundMode": true,
+        "iosMicrophonePermission": "This app requires access to the microphone to record audio.",
         "androidPermissions" : [
           "android.permission.MODIFY_AUDIO_SETTINGS",
           "android.permission.FOREGROUND_SERVICE",
@@ -90,7 +92,7 @@ export default {
 ```
 </details>
 
-Read more about plugin [here](/other/audio-api-plugin)!
+Read more about plugin [here](/docs/other/audio-api-plugin)!
 
 ### Step 3: Wrap metro config with Audio API wrapper (recommended)
 
@@ -172,4 +174,4 @@ No further steps are necessary.
 
 ## What's next?
 
-In [the next section](/guides/lets-make-some-noise), we will learn how to prepare Audio API and to play some sound!.
+In [the next section](/docs/guides/lets-make-some-noise), we will learn how to prepare Audio API and to play some sound!.

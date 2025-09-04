@@ -14,7 +14,7 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~OfflineAudioContext() override;
 
   void resume();
@@ -35,6 +35,8 @@ class OfflineAudioContext : public BaseAudioContext {
   std::shared_ptr<AudioBus> resultBus_;
 
   void renderAudio();
+
+  bool isDriverRunning() const override;
 };
 
 } // namespace audioapi

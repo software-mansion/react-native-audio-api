@@ -28,6 +28,6 @@ float linearToDecibels(float value) {
 }
 
 float decibelsToLinear(float value) {
-  return powf(10, value / 20);
+  return pow(10, value / 20);
 }
 } // namespace audioapi::dsp

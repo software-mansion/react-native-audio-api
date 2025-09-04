@@ -35,14 +35,46 @@ Pod::Spec.new do |s|
 
   s.compiler_flags = "#{folly_flags}"
 
-  s.pod_target_xcconfig = {
-    "USE_HEADERMAP" => "YES",
-    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
-    "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\" \"$(PODS_TARGET_SRCROOT)/ios\"",
-    'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
-  }
+  # s.prepare_command = <<-CMD TODO: re-add when we have prebuilt libs put somewhere public
+  #   ruby -r './scripts/download-audioapi-libs.rb'
+  # CMD
 
+  external_dir = File.join(__dir__, "common/cpp/audioapi/external")
+  lib_dir = "#{external_dir}/$(PLATFORM_NAME)"
+  
+  s.ios.vendored_frameworks = [
+    'common/cpp/audioapi/external/libavcodec.xcframework',
+    'common/cpp/audioapi/external/libavformat.xcframework',
+    'common/cpp/audioapi/external/libavutil.xcframework',
+    'common/cpp/audioapi/external/libswresample.xcframework'
+  ]
+  
+s.pod_target_xcconfig = {
+  "USE_HEADERMAP" => "YES",
+  "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+  "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
+  "HEADER_SEARCH_PATHS" => %W[
+    $(PODS_TARGET_SRCROOT)/common/cpp
+    $(PODS_TARGET_SRCROOT)/ios
+    #{external_dir}/include
+    #{external_dir}/include/opus
+    #{external_dir}/include/vorbis
+    $(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external/ffmpeg_include
+  ].join(" "),
+  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+}
+
+s.user_target_xcconfig = {
+  'OTHER_LDFLAGS' => %W[
+    $(inherited)
+    -force_load #{lib_dir}/libopusfile.a
+    -force_load #{lib_dir}/libopus.a
+    -force_load #{lib_dir}/libogg.a
+    -force_load #{lib_dir}/libvorbis.a
+    -force_load #{lib_dir}/libvorbisenc.a
+    -force_load #{lib_dir}/libvorbisfile.a
+  ].join(" ")
+}
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   install_modules_dependencies(s)

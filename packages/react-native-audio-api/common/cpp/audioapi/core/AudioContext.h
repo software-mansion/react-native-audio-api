@@ -14,12 +14,13 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AudioContext() override;
 
   void close();
   bool resume();
   bool suspend();
+
 
  private:
 #ifdef ANDROID
@@ -28,6 +29,8 @@ class AudioContext : public BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
   bool playerHasBeenStarted_;
+
+  bool isDriverRunning() const override;
 
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
 };

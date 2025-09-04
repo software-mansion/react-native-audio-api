@@ -1,4 +1,9 @@
-import { SessionOptions, LockScreenInfo, PermissionStatus } from './types';
+import {
+  SessionOptions,
+  LockScreenInfo,
+  PermissionStatus,
+  AudioDevicesInfo,
+} from './types';
 import {
   SystemEventName,
   SystemEventCallback,
@@ -52,6 +57,23 @@ class AudioManager {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
 
+  /**
+   * @param enabled - Whether to actively reclaim the session or not
+   * @experimental more aggressively try to reactivate the audio session during interruptions.
+   * It is subject to change in the future and might be removed.
+   *
+   * In some cases (depends on app session settings and other apps using audio) system may never
+   * send the `interruption ended` event. This method will check if any other audio is playing
+   * and try to reactivate the audio session, as soon as there is "silence".
+   * Although this might change the expected behavior.
+   *
+   * Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+   * interval polling to check if other audio is playing.
+   */
+  activelyReclaimSession(enabled: boolean) {
+    NativeAudioAPIModule!.activelyReclaimSession(enabled);
+  }
+
   observeVolumeChanges(enabled: boolean) {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }
@@ -73,6 +95,10 @@ class AudioManager {
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
     return NativeAudioAPIModule!.checkRecordingPermissions();
+  }
+
+  async getDevicesInfo(): Promise<AudioDevicesInfo> {
+    return NativeAudioAPIModule!.getDevicesInfo();
   }
 }
 

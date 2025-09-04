@@ -27,6 +27,7 @@ class AudioScheduledSourceNode : public AudioNode {
   // FINISHED: The node has finished playing.
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
+  virtual ~AudioScheduledSourceNode();
 
   void start(double when);
   virtual void stop(double when);
@@ -37,6 +38,7 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isFinished();
   bool isStopScheduled();
 
+  void clearOnEndedCallback();
   void setOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;
@@ -47,7 +49,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
-  uint64_t onEndedCallbackId_ = 0;
+  std::atomic<uint64_t> onEndedCallbackId_ = 0;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBus>& processingBus,

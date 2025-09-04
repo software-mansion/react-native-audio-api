@@ -1,9 +1,11 @@
 #pragma once
 
 #include <oboe/Oboe.h>
+#include <cassert>
 #include <functional>
 #include <memory>
-#include <cassert>
+
+#include <audioapi/android/core/NativeAudioPlayer.hpp>
 
 namespace audioapi {
 
@@ -12,22 +14,33 @@ using namespace oboe;
 class AudioContext;
 class AudioBus;
 
-class AudioPlayer : public AudioStreamDataCallback {
+class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
   AudioPlayer(
       const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
-      float sampleRate);
+      float sampleRate,
+      int channelCount);
 
-  void start();
+  ~AudioPlayer() override {
+    nativeAudioPlayer_.release();
+    cleanup();
+  }
+
+  bool start();
   void stop();
-  void resume();
+  bool resume();
   void suspend();
   void cleanup();
+
+  [[nodiscard]] bool isRunning() const;
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,
       void *audioData,
       int32_t numFrames) override;
+
+  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */)
+      override;
 
  private:
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
@@ -36,6 +49,10 @@ class AudioPlayer : public AudioStreamDataCallback {
   bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;
+
+  bool openAudioStream();
+
+  facebook::jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
 };
 
 } // namespace audioapi

@@ -1,0 +1,11 @@
+
+@media (max-width: 996px) {
+  .docs-doc-page .navbar__item {
+    display: none !important;
+  }
+}
+
+.navbar__item {
+  display: block !important;
+}
+

@@ -1,0 +1,68 @@
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.eqButton {
+  padding: 15px 16px;
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .eqButton {
+    display: none;
+  }
+
+  .toolbar {
+    width: 100%;
+  }
+
+  .soundButtons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+.eqButtonText {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.eqButtonInactive {
+  background-color: var(--swm-navy-light-20);
+}
+
+.eqButtonInactive .eqButtonText {
+  color: var(--swm-navy-light-100);
+}
+
+.eqButtonActive {
+  background-color: var(--swm-navy-light-100);
+}
+
+.eqButtonActive .eqButtonText {
+  color: var(--swm-off-white);
+}
+
+
+[data-theme='dark'] .eqButtonInactive {
+  background-color: var(--swm-navy-dark-60);
+}
+
+[data-theme='dark'] .eqButtonInactive .eqButtonText {
+  color: var(--swm-navy-light-100);
+}
+
+[data-theme='dark'] .eqButtonActive {
+  background-color: var(--swm-navy-dark-40);
+}
+
+[data-theme='dark'] .eqButtonActive .eqButtonText {
+  color: var(--swm-navy-light-100);
+}

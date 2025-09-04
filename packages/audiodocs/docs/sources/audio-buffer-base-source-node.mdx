@@ -1,0 +1,58 @@
+---
+sidebar_position: 3
+---
+
+import { MobileOnly } from '@site/src/components/Badges';
+
+# AudioBufferBaseSourceNode
+
+The `AudioBufferBaseSourceNode` interface is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which aggregates behavior of nodes that requires [`AudioBuffer`](/docs/sources/audio-buffer).
+
+Child classes:
+ - [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node)
+ - [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node)
+
+## Properties
+
+It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+
+## Methods
+
+`AudioBufferBaseSourceNode` does not define any additional methods.
+It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+
+## Events
+
+### `onPositionChanged` <MobileOnly />
+
+Allow to set (or remove) callback that will be fired after processing certain part of an audio.
+Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+You can remove callback by passing `null`.
+
+### `onPositionChangedInterval` <MobileOnly />
+
+Allow to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+
+```ts
+import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
+
+function App() {
+    const ctx = new AudioContext();
+    const sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = null; //set your buffer
+    let offset = 0;
+
+    sourceNode.onPositionChanged = (event) => { //setting callback
+        this.offset = event.value;
+    };
+
+    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+
+    sourceNode.start();
+}
+```

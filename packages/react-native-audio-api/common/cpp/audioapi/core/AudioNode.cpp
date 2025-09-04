@@ -49,10 +49,10 @@ void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
 }
 
 void AudioNode::disconnect() {
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
-    disconnect(*it);
-  }
+  context_->getNodeManager()->addPendingNodeConnection(
+      shared_from_this(),
+      nullptr,
+      AudioNodeManager::ConnectionType::DISCONNECT_ALL);
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {

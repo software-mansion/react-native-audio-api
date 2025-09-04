@@ -36,9 +36,29 @@ class AudioBufferQueueSourceNodeHostObject
 
         auto audioBufferHostObject =
                 args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-        auto isLastBuffer = args[1].asBool();
 
-        audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_, isLastBuffer);
+        auto bufferId = audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_);
+
+        return jsi::String::createFromUtf8(runtime, bufferId);
+    }
+
+    JSI_HOST_FUNCTION(dequeueBuffer) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        auto bufferId =
+                args[0].getNumber();
+
+        audioBufferQueueSourceNode->dequeueBuffer(bufferId);
+
+        return jsi::Value::undefined();
+    }
+
+    JSI_HOST_FUNCTION(clearBuffers) {
+        auto audioBufferQueueSourceNode =
+                std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+        audioBufferQueueSourceNode->clearBuffers();
 
         return jsi::Value::undefined();
     }

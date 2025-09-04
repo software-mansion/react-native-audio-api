@@ -60,7 +60,7 @@ class AudioAPIModule(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    // noting to do here
+    promise?.resolve(true)
   }
 
   override fun setAudioSessionOptions(
@@ -91,6 +91,10 @@ class AudioAPIModule(
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
 
+  override fun activelyReclaimSession(enabled: Boolean) {
+    MediaSessionManager.activelyReclaimSession(enabled)
+  }
+
   override fun observeVolumeChanges(enabled: Boolean) {
     MediaSessionManager.observeVolumeChanges(enabled)
   }
@@ -102,5 +106,9 @@ class AudioAPIModule(
 
   override fun checkRecordingPermissions(promise: Promise) {
     promise.resolve(MediaSessionManager.checkRecordingPermissions())
+  }
+
+  override fun getDevicesInfo(promise: Promise) {
+    promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 }

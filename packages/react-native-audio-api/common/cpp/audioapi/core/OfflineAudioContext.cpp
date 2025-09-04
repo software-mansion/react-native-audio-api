@@ -22,7 +22,8 @@ OfflineAudioContext::OfflineAudioContext(
     int numberOfChannels,
     size_t length,
     float sampleRate,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry>
+        &audioEventHandlerRegistry)
     : BaseAudioContext(audioEventHandlerRegistry),
       length_(length),
       numberOfChannels_(numberOfChannels),
@@ -113,6 +114,10 @@ void OfflineAudioContext::startRendering(
 
   resultCallback_ = std::move(callback);
   renderAudio();
+}
+
+bool OfflineAudioContext::isDriverRunning() const {
+  return true;
 }
 
 } // namespace audioapi

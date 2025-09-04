@@ -4,14 +4,24 @@ import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
-  public enqueueBuffer(
-    buffer: AudioBuffer,
-    isLastBuffer: boolean = false
-  ): void {
-    (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
-      buffer.buffer,
-      isLastBuffer
+  public enqueueBuffer(buffer: AudioBuffer): string {
+    return (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
+      buffer.buffer
     );
+  }
+
+  public dequeueBuffer(bufferId: string): void {
+    const id = parseInt(bufferId, 10);
+    if (isNaN(id) || id < 0) {
+      throw new RangeError(
+        `bufferId must be a non-negative integer: ${bufferId}`
+      );
+    }
+    (this.node as IAudioBufferQueueSourceNode).dequeueBuffer(id);
+  }
+
+  public clearBuffers(): void {
+    (this.node as IAudioBufferQueueSourceNode).clearBuffers();
   }
 
   public override start(when: number = 0, offset?: number): void {

@@ -58,11 +58,19 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
     } else if (value->isInstanceOf(jni::JFloat::javaClassStatic())) {
       body[name] = jni::static_ref_cast<jni::JFloat>(value)->value();
     } else if (value->isInstanceOf(jni::JBoolean::javaClassStatic())) {
-      body[name] = jni::static_ref_cast<jni::JBoolean>(value)->value();
+      auto booleanValue = jni::static_ref_cast<jni::JBoolean>(value)->value();
+
+      if (booleanValue) {
+        body[name] = true;
+      } else {
+        body[name] = false;
+      }
     }
   }
 
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      eventName->toStdString(), body);
+  if (audioEventHandlerRegistry_ != nullptr) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        eventName->toStdString(), body);
+  }
 }
 } // namespace audioapi

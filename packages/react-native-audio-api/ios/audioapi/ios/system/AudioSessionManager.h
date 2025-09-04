@@ -19,6 +19,7 @@
 - (void)cleanup;
 - (bool)configureAudioSession;
 - (bool)reconfigureAudioSession;
+- (void)markSettingsAsDirty;
 
 - (NSNumber *)getDevicePreferredSampleRate;
 - (void)setAudioSessionOptions:(NSString *)category
@@ -26,7 +27,11 @@
                        options:(NSArray *)options
                   allowHaptics:(BOOL)allowHaptics;
 - (bool)setActive:(bool)active;
+
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+
+- (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;
 
 @end

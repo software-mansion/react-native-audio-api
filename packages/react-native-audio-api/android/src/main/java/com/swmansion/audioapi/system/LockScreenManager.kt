@@ -12,7 +12,6 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
-import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.instance
 import com.swmansion.audioapi.R
 import java.io.IOException
 import java.lang.ref.WeakReference
@@ -123,7 +122,7 @@ class LockScreenManager(
             )
 
             nb.setLargeIcon(bitmap)
-            mediaNotificationManager.get()?.show(nb, isPlaying)
+            mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
 
             artworkThread = null
           } catch (ex: Exception) {
@@ -168,14 +167,14 @@ class LockScreenManager(
 
     mediaSession.get()?.setMetadata(md.build())
     mediaSession.get()?.setActive(true)
-    mediaNotificationManager.get()?.show(nb, isPlaying)
+    mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
   }
 
   fun resetLockScreenInfo() {
     if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
     artworkThread = null
 
-    mediaNotificationManager.get()?.hide()
+    mediaNotificationManager.get()?.cancelNotification()
     mediaSession.get()?.setActive(false)
   }
 
@@ -212,7 +211,7 @@ class LockScreenManager(
           .Builder(
             "SkipBackward",
             "Skip Backward",
-            R.drawable.skip_backward_10,
+            R.drawable.skip_backward_15,
           ).build(),
       )
     }
@@ -225,7 +224,7 @@ class LockScreenManager(
           .Builder(
             "SkipForward",
             "Skip Forward",
-            R.drawable.skip_forward_10,
+            R.drawable.skip_forward_15,
           ).build(),
       )
     }
@@ -236,7 +235,7 @@ class LockScreenManager(
     updateNotificationMediaStyle()
 
     if (mediaSession.get()?.isActive == true) {
-      mediaNotificationManager.get()?.show(nb, isPlaying)
+      mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
     }
   }
 
@@ -250,7 +249,7 @@ class LockScreenManager(
       // If we are running the app in debug mode, the "local" image will be served from htt://localhost:8080, so we need to check for this case and load those images from URL
       if (local && !url.startsWith("http")) {
         // Gets the drawable from the RN's helper for local resources
-        val helper = instance
+        val helper = com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.instance
         val image = helper.getResourceDrawable(reactContext.get()!!, url)
 
         bitmap =

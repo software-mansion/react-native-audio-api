@@ -16,6 +16,15 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
 }
 
+AudioScheduledSourceNode::~AudioScheduledSourceNode() {
+  if (onEndedCallbackId_ != 0 &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
+    context_->audioEventHandlerRegistry_->unregisterHandler(
+        "ended", onEndedCallbackId_);
+    onEndedCallbackId_ = 0;
+  }
+}
+
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
@@ -43,6 +52,17 @@ bool AudioScheduledSourceNode::isFinished() {
 
 bool AudioScheduledSourceNode::isStopScheduled() {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
+}
+
+void AudioScheduledSourceNode::clearOnEndedCallback() {
+  if (onEndedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "ended", onEndedCallbackId_);
+  onEndedCallbackId_ = 0;
 }
 
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
@@ -149,8 +169,10 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      "ended", onEndedCallbackId_, {});
+  if (context_->audioEventHandlerRegistry_ != nullptr) {
+    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "ended", onEndedCallbackId_, {});
+  }
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

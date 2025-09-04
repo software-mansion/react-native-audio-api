@@ -16,6 +16,9 @@ changelog:
     - title: 👨🏻‍🔬 Unstable
       labels:
         - unstable
+    - title: 🧪 Tests
+      labels:
+        - tests
     - title: Other Changes
       labels:
         - "*"

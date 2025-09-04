@@ -118,7 +118,7 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
   auto centsToCull = static_cast<float>(rangeIndex) * CentsPerRange;
 
   // A value from 0 -> 1 representing what fraction of the partials to keep.
-  auto cullingScale = std::powf(2, -centsToCull / 1200);
+  auto cullingScale = std::pow(2, -centsToCull / 1200);
 
   // The very top range will have all the partials culled.
   int numberOfPartials =

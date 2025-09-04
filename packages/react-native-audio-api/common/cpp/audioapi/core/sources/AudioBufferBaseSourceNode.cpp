@@ -23,6 +23,15 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(BaseAudioContext *context)
       std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
 }
 
+AudioBufferBaseSourceNode::~AudioBufferBaseSourceNode() {
+  if (onPositionChangedCallbackId_ != 0 &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
+    context_->audioEventHandlerRegistry_->unregisterHandler(
+        "positionChanged", onPositionChangedCallbackId_);
+    onPositionChangedCallbackId_ = 0;
+  }
+}
+
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
   return detuneParam_;
 }
@@ -30,6 +39,17 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam()
     const {
   return playbackRateParam_;
+}
+
+void AudioBufferBaseSourceNode::clearOnPositionChangedCallback() {
+  if (onPositionChangedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "positionChanged", onPositionChangedCallbackId_);
+  onPositionChangedCallbackId_ = 0;
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
@@ -42,13 +62,18 @@ void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
       context_->getSampleRate() * static_cast<float>(interval) / 1000);
 }
 
+int AudioBufferBaseSourceNode::getOnPositionChangedInterval() {
+  return onPositionChangedInterval_;
+}
+
 std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
   return bufferLock_;
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedCallbackId_ != 0 &&
-      onPositionChangedTime_ > onPositionChangedInterval_) {
+      onPositionChangedTime_ > onPositionChangedInterval_ &&
+      context_->audioEventHandlerRegistry_ != nullptr) {
     std::unordered_map<std::string, EventValue> body = {
         {"value", getCurrentPosition()}};
 

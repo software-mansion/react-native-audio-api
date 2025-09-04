@@ -5,7 +5,6 @@ import {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
-  ProcessorMode,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
 
@@ -15,8 +14,8 @@ export interface IBaseAudioContext {
   readonly sampleRate: number;
   readonly currentTime: number;
 
+  createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(): IOscillatorNode;
-  createCustomProcessor(identifier: string): ICustomProcessorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -36,13 +35,17 @@ export interface IBaseAudioContext {
   createConvolver: () => IConvolverNode;
   decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
   decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
-  decodePCMAudioDataInBase64: (b64: string) => Promise<IAudioBuffer>;
+  decodePCMAudioDataInBase64: (
+    b64: string,
+    playbackRate: number
+  ) => Promise<IAudioBuffer>;
+  createStreamer: () => IStreamerNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  resume(): Promise<boolean>;
+  suspend(): Promise<boolean>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
@@ -61,11 +64,6 @@ export interface IAudioNode {
 
   connect: (destination: IAudioNode | IAudioParam) => void;
   disconnect: (destination?: IAudioNode | IAudioParam) => void;
-}
-
-export interface ICustomProcessorNode extends IAudioNode {
-  readonly customProcessor: IAudioParam;
-  processorMode: ProcessorMode;
 }
 
 export interface IGainNode extends IAudioNode {
@@ -97,7 +95,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onended: string;
+  onEnded: string;
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
@@ -118,6 +116,10 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
+export interface IStreamerNode extends IAudioNode {
+  initialize(streamPath: string): boolean;
+}
+
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   buffer: IAudioBuffer | null;
   loop: boolean;
@@ -126,15 +128,16 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   loopEnd: number;
 
   start: (when?: number, offset?: number, duration?: number) => void;
-  setBuffer: (
-    audioBufferSourceNode: IAudioBufferSourceNode,
-    audioBuffer: IAudioBuffer | null
-  ) => void;
+  setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 
 export interface IAudioBufferQueueSourceNode
   extends IAudioBufferBaseSourceNode {
-  enqueueBuffer: (audioBuffer: IAudioBuffer, isLastBuffer: boolean) => void;
+  dequeueBuffer: (bufferId: number) => void;
+  clearBuffers: () => void;
+
+  // returns bufferId
+  enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   pause: () => void;
 }
 
@@ -201,9 +204,13 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
+export interface IRecorderAdapterNode extends IAudioNode {}
+
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
+  connect: (node: IRecorderAdapterNode) => void;
+  disconnect: () => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;

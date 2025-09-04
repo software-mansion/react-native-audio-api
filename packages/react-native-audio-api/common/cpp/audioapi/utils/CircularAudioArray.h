@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.h>
+#include <stdexcept>
 
 namespace audioapi {
 
