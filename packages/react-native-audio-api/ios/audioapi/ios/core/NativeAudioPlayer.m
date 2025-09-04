@@ -58,7 +58,6 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
-  [audioEngine detachInputNode];
   [audioEngine stopIfNecessary];
   self.sourceNodeId = nil;
 }

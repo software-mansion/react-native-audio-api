@@ -194,7 +194,6 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.audioEngine attachNode:inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:nil];
-  [self restartAudioEngine];
 }
 
 - (void)detachInputNode
