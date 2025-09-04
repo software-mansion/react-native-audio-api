@@ -23,7 +23,7 @@ import java.lang.ref.WeakReference
 class MediaNotificationManager(
   private val reactContext: WeakReference<ReactApplicationContext>,
 ) {
-  private var smallIcon: Int = R.drawable.play
+  private var smallIcon: Int = R.drawable.logo
   private var customIcon: Int = 0
 
   private var play: NotificationCompat.Action? = null
