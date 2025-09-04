@@ -27,6 +27,9 @@ const Record: FC = () => {
       sampleRate: SAMPLE_RATE,
       bufferLengthInSamples: SAMPLE_RATE,
     });
+    return () => {
+      aCtxRef.current?.close();
+    };
   }, []);
 
   const setupRecording = () => {
