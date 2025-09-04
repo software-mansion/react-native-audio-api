@@ -40,14 +40,13 @@ class MediaNotificationManager(
     const val MEDIA_BUTTON: String = "audio_manager_media_button"
   }
 
-  enum class ForegroundAction() {
+  enum class ForegroundAction {
     START_FOREGROUND,
-    STOP_FOREGROUND;
+    STOP_FOREGROUND,
+    ;
 
     companion object {
-      fun fromAction(action: String?): ForegroundAction? {
-        return entries.firstOrNull { it.name == action }
-      }
+      fun fromAction(action: String?): ForegroundAction? = entries.firstOrNull { it.name == action }
     }
   }
 
