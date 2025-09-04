@@ -30,6 +30,9 @@ class RingBiDirectionalBuffer {
 
   /// @brief Destructor for RingBuffer.
   ~RingBiDirectionalBuffer() {
+    for (int i = headIndex_; i != tailIndex_; i = nextIndex(i)) {
+      buffer_[i].~T();
+    }
     ::operator delete[](
       buffer_,
       capacity_ * sizeof(T),

@@ -114,17 +114,19 @@ class AudioParam {
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
   inline double getQueueEndTime() const noexcept {
-    return
-      endTime_ * static_cast<double>(eventsQueue_.isEmpty()) +
-      eventsQueue_.back().getEndTime() * static_cast<double>(!eventsQueue_.isEmpty());
+    if (eventsQueue_.isEmpty()) {
+      return endTime_;
+    }
+    return eventsQueue_.back().getEndTime();
   }
 
   /// @brief Get the end value of the parameter queue.
   /// @return The end value of the parameter queue or last endValue_ if queue is empty.
   inline float getQueueEndValue() const noexcept {
-    return
-      endValue_ * static_cast<float>(eventsQueue_.isEmpty()) +
-      eventsQueue_.back().getEndValue() * static_cast<float>(!eventsQueue_.isEmpty());
+    if (eventsQueue_.isEmpty()) {
+      return endValue_;
+    }
+    return eventsQueue_.back().getEndValue();
   }
 
   /// @brief Process all scheduled events.
