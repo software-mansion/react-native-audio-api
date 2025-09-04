@@ -40,6 +40,17 @@ class MediaNotificationManager(
     const val MEDIA_BUTTON: String = "audio_manager_media_button"
   }
 
+  enum class ForegroundAction() {
+    START_FOREGROUND,
+    STOP_FOREGROUND;
+
+    companion object {
+      fun fromAction(action: String?): ForegroundAction? {
+        return entries.firstOrNull { it.name == action }
+      }
+    }
+  }
+
   @SuppressLint("RestrictedApi")
   @Synchronized
   fun prepareNotification(
@@ -188,7 +199,7 @@ class MediaNotificationManager(
             startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
             isServiceStarted = true
           } catch (ex: Exception) {
-            Log.w("AudioManagerModule", "Error starting foreground service: ${ex.message}")
+            Log.e("AudioManagerModule", "Error starting foreground service: ${ex.message}")
             stopSelf()
           }
         }
@@ -200,11 +211,11 @@ class MediaNotificationManager(
       flags: Int,
       startId: Int,
     ): Int {
-      val action = intent?.action
+      val action = ForegroundAction.fromAction(intent?.action)
 
       when (action) {
-        "START_FOREGROUND" -> startForegroundService()
-        "STOP_FOREGROUND" -> stopForegroundService()
+        ForegroundAction.START_FOREGROUND -> startForegroundService()
+        ForegroundAction.STOP_FOREGROUND -> stopForegroundService()
         else -> startForegroundService()
       }
 

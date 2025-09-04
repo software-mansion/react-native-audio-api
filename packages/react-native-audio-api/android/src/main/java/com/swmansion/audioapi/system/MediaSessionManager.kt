@@ -114,7 +114,7 @@ object MediaSessionManager {
       }
 
       val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-      intent.action = "START_FOREGROUND"
+      intent.action = MediaNotificationManager.ForegroundAction.START_FOREGROUND.action
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         ContextCompat.startForegroundService(reactContext.get()!!, intent)
@@ -132,7 +132,7 @@ object MediaSessionManager {
       }
 
       val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-      intent.action = "STOP_FOREGROUND"
+      intent.action = MediaNotificationManager.ForegroundAction.STOP_FOREGROUND.action
       reactContext.get()!!.startService(intent)
       isServiceRunning = false
     }

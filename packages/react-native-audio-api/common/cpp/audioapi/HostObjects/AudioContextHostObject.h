@@ -25,8 +25,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(close) {
-    auto promise = promiseVendor_->createPromise([this](const std::shared_ptr<Promise>& promise) {
-      auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto promise = promiseVendor_->createPromise([audioContext](const std::shared_ptr<Promise>& promise) {
       audioContext->close();
 
       promise->resolve([](jsi::Runtime &runtime) {
@@ -38,8 +38,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(resume) {
-    auto promise = promiseVendor_->createPromise([this](const std::shared_ptr<Promise>& promise) {
-        auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto promise = promiseVendor_->createPromise([audioContext](const std::shared_ptr<Promise>& promise) {
         auto result = audioContext->resume();
 
         promise->resolve([result](jsi::Runtime &runtime) {
@@ -51,8 +51,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   }
 
   JSI_HOST_FUNCTION(suspend) {
-    auto promise = promiseVendor_->createPromise([this](const std::shared_ptr<Promise>& promise) {
-      auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+    auto promise = promiseVendor_->createPromise([audioContext](const std::shared_ptr<Promise>& promise) {
       auto result = audioContext->suspend();
 
       promise->resolve([result](jsi::Runtime &runtime) {
