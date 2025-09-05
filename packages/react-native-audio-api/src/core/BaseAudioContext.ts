@@ -56,9 +56,12 @@ export default class BaseAudioContext {
 
     if (isWorkletsAvailable) {
       const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-        (audioData: Array<Float32Array>, channelCount: number) => {
+        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
           'worklet';
-          callback(audioData, channelCount);
+          const floatAudioData: Array<Float32Array> = audioBuffers.map(
+            (buffer) => new Float32Array(buffer)
+          );
+          callback(floatAudioData, channelCount);
 
           /// !IMPORTANT Workaround
           /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with

@@ -8,17 +8,23 @@ WorkletNode::WorkletNode(
     size_t bufferLength,
     size_t inputChannelCount)
     : AudioNode(context),
+      buffRealLength_(bufferLength * sizeof(float)),
       bufferLength_(bufferLength),
       workletRunner_(context->workletRunner_),
       shareableWorklet_(worklet),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
   buffs_.reserve(inputChannelCount_);
-  auto *runtime = workletRunner_->getJSIRuntime();
   for (size_t i = 0; i < inputChannelCount_; ++i) {
-    buffs_.emplace_back(*runtime, bufferLength_);
+    buffs_.emplace_back(new uint8_t[buffRealLength_]);
   }
   isInitialized_ = true;
+}
+
+WorkletNode::~WorkletNode() {
+  for (auto &buff : buffs_) {
+    delete[] buff;
+  }
 }
 
 void WorkletNode::processNode(
@@ -32,19 +38,17 @@ void WorkletNode::processNode(
     size_t framesToWorkletInvoke = bufferLength_ - curBuffIndex_;
     size_t needsToProcess = framesToProcess - processed;
     size_t shouldProcess = std::min(framesToWorkletInvoke, needsToProcess);
-    auto uiRuntimeRaw = workletRunner_->getJSIRuntime();
 
-    /// By creating an array when processing smaller chunks we distribute time
-    /// that it takes to create bigger arrays
     for (size_t ch = 0; ch < channelCount_; ch++) {
+      /// here we copy
+      /// to   uint8_t* [curBuffIndex_, curBuffIndex_ + shouldProcess]
+      /// from float* [processed, processed + shouldProcess]
+      /// so as the we need to copy shouldProcess * sizeof(float) bytes
       auto channelData = processingBus->getChannel(ch)->getData();
-      auto &jsArray = buffs_[ch];
-      for (size_t i = 0; i < shouldProcess; i++) {
-        jsArray.setValueAtIndex(
-            *uiRuntimeRaw,
-            curBuffIndex_ + i,
-            jsi::Value(channelData[processed + i]));
-      }
+      std::memcpy(
+          /* dest */ buffs_[ch] + curBuffIndex_ * sizeof(float),
+          /* src */ reinterpret_cast<const uint8_t *>(channelData + processed),
+          /* size */ shouldProcess * sizeof(float));
     }
     processed += shouldProcess;
     curBuffIndex_ += shouldProcess;
@@ -53,14 +57,23 @@ void WorkletNode::processNode(
     if (curBuffIndex_ == bufferLength_) {
       // Reset buffer index, channel buffers and execute worklet
       curBuffIndex_ = 0;
+      auto uiRuntimeRaw = workletRunner_->getJSIRuntime();
       auto jsArray = jsi::Array(*uiRuntimeRaw, channelCount_);
       for (size_t ch = 0; ch < channelCount_; ch++) {
-        jsArray.setValueAtIndex(*uiRuntimeRaw, ch, buffs_[ch]);
-        buffs_[ch] = jsi::Array(*uiRuntimeRaw, bufferLength_);
+        uint8_t *buffPtr = buffs_[ch];
+        buffs_[ch] = new uint8_t[buffRealLength_];
+        auto sharedAudioArray =
+            std::make_shared<AudioArrayBuffer>(buffPtr, buffRealLength_);
+        auto arrayBuffer =
+            jsi::ArrayBuffer(*uiRuntimeRaw, std::move(sharedAudioArray));
+        jsArray.setValueAtIndex(*uiRuntimeRaw, ch, std::move(arrayBuffer));
       }
+      jsArray.setExternalMemoryPressure(
+          *uiRuntimeRaw, channelCount_ * buffRealLength_);
+
       workletRunner_->executeWorkletSync(
           shareableWorklet_,
-          jsArray,
+          std::move(jsArray),
           jsi::Value(*uiRuntimeRaw, static_cast<int>(channelCount_)));
     }
   }
