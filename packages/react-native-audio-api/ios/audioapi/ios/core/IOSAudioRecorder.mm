@@ -15,9 +15,8 @@ namespace audioapi {
 IOSAudioRecorder::IOSAudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner)
-    : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry, workletRunner)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : AudioRecorder(sampleRate, bufferLength, audioEventHandlerRegistry)
 {
   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames, AVAudioTime *when) {
     if (isRunning_.load()) {

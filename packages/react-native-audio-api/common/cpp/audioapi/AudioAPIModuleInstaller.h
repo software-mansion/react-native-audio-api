@@ -98,12 +98,12 @@ class AudioAPIModuleInstaller {
   static jsi::Function getCreateAudioRecorderFunction(
     jsi::Runtime *jsiRuntime,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
+    const std::shared_ptr<UiWorkletsRunner> & /* workletRunner */) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
         0,
-        [audioEventHandlerRegistry, workletRunner](
+        [audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -113,7 +113,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
           auto bufferLength = static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
 
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, audioEventHandlerRegistry, sampleRate, bufferLength, workletRunner);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, audioEventHandlerRegistry, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
         });

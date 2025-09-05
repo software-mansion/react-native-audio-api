@@ -210,11 +210,6 @@ export interface IAudioRecorder {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
-
-  // We expect the argument to be a
-  // ShareableRef<(audioData: Float32Array, timestamp: number) => void>
-  // We need to use any because user might not have react-native-worklets installed
-  setWorkletCallback: (shareableRef: any) => void;
 }
 
 export interface IAudioEventEmitter {

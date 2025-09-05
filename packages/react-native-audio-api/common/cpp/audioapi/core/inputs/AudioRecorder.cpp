@@ -12,50 +12,15 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      workletRunner_(workletRunner) {
+      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
   constexpr int minRingBufferSize = 8192;
   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
   isRunning_.store(false);
 }
-
-#if RN_AUDIO_API_ENABLE_WORKLETS
-void AudioRecorder::setWorkletCallback(
-    std::shared_ptr<worklets::ShareableWorklet> &callback) {
-  std::scoped_lock<std::mutex> lock(workletCallbackMutex_);
-  shareableWorklet_ = callback;
-}
-void AudioRecorder::invokeWorkletOnAudioReadyCallback(
-    const std::shared_ptr<AudioBus> &bus,
-    int numFrames,
-    double when) {
-  std::scoped_lock<std::mutex> lock(workletCallbackMutex_);
-
-  if (!shareableWorklet_) {
-    return;
-  }
-
-  auto channelData = bus->getChannel(0);
-
-  auto uiRuntimeRaw = workletRunner_->getJSIRuntime();
-  if (uiRuntimeRaw == nullptr) {
-    return;
-  }
-  /// this part might throw
-  auto jsArray = jsi::Array(*uiRuntimeRaw, numFrames);
-  for (size_t i = 0; i < numFrames; i++) {
-    jsArray.setValueAtIndex(*uiRuntimeRaw, i, jsi::Value((*channelData)[i]));
-  }
-
-  workletRunner_->executeWorkletAsync(
-      shareableWorklet_, jsArray, jsi::Value(when));
-}
-#endif
 
 void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
   onAudioReadyCallbackId_ = callbackId;
@@ -74,9 +39,6 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   body.insert({"numFrames", numFrames});
   body.insert({"when", when});
 
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  invokeWorkletOnAudioReadyCallback(bus, numFrames, when);
-#endif
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "audioReady", onAudioReadyCallbackId_, body);

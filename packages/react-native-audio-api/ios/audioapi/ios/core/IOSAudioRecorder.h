@@ -7,7 +7,6 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 namespace audioapi {
 
@@ -20,8 +19,7 @@ class IOSAudioRecorder : public AudioRecorder {
       float sampleRate,
       int bufferLength,
       const std::shared_ptr<AudioEventHandlerRegistry>
-          &audioEventHandlerRegistry,
-      const std::shared_ptr<UiWorkletsRunner> &workletRunner);
+          &audioEventHandlerRegistry);
 
   ~IOSAudioRecorder() override;
 

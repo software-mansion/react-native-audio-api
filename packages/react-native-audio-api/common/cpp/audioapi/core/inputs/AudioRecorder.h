@@ -1,7 +1,6 @@
 #pragma once
 
 #include <jsi/jsi.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 #include <memory>
 #include <atomic>
@@ -21,8 +20,7 @@ class AudioRecorder {
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
   );
 
   virtual ~AudioRecorder() = default;
@@ -45,13 +43,6 @@ class AudioRecorder {
   /// @note Last few frames of audio might be written to the buffer after disconnecting.
   void disconnect();
 
-
-  #if RN_AUDIO_API_ENABLE_WORKLETS
-  void invokeWorkletOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus,
-                                        int numFrames, double when);
-  void setWorkletCallback(std::shared_ptr<worklets::ShareableWorklet> &callback);
-  #endif
-
   virtual void start() = 0;
   virtual void stop() = 0;
 
@@ -68,13 +59,6 @@ class AudioRecorder {
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
-  std::shared_ptr<UiWorkletsRunner> workletRunner_;
-
-
-  #if RN_AUDIO_API_ENABLE_WORKLETS
-  std::shared_ptr<worklets::ShareableWorklet> shareableWorklet_;
-  mutable std::mutex workletCallbackMutex_;
-  #endif
 
   void writeToBuffers(const float *data, int numFrames);
 };

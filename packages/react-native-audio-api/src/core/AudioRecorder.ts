@@ -4,7 +4,6 @@ import AudioBuffer from './AudioBuffer';
 import { OnAudioReadyEventType } from '../events/types';
 import { AudioEventEmitter } from '../events';
 import RecorderAdapterNode from './RecorderAdapterNode';
-import { isWorkletsAvailable, workletsModule } from '../utils';
 
 export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
@@ -54,32 +53,5 @@ export default class AudioRecorder {
     );
 
     this.recorder.onAudioReady = subscription.subscriptionId;
-  }
-
-  public onAudioReadyWorklet(
-    callback: (audioData: Float32Array, timestamp: number) => void
-  ): void {
-    if (isWorkletsAvailable) {
-      this.recorder.setWorkletCallback(
-        workletsModule.makeShareableCloneRecursive(
-          (audioData: Float32Array, timestamp: number) => {
-            'worklet';
-            callback(audioData, timestamp);
-            /// !IMPORTANT Workaround
-            /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
-            /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
-            /// So worklet will be called but any of its interactions with the UI thread will not be visible.
-
-            /// This forces to flush queue
-            requestAnimationFrame(() => {});
-          }
-        )
-      );
-    } else {
-      /// User does not have worklets as a dependency so he cannot use the worklet API.
-      throw new Error(
-        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
-      );
-    }
   }
 }
