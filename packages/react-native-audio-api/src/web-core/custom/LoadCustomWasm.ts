@@ -3,7 +3,7 @@ const eventTitle = 'rnaaCstStretchLoaded';
 
 export let globalWasmPromise: Promise<void> | null = null;
 
-const LoadCustomWasm = async () => {
+const LoadCustomWasm = async (pathPrefix: string = '') => {
   if (typeof window === 'undefined') {
     return null;
   }
@@ -18,7 +18,7 @@ const LoadCustomWasm = async () => {
     loadScript.type = 'module';
 
     loadScript.textContent = `
-      import SignalsmithStretch from '/signalsmithStretch.mjs';
+      import SignalsmithStretch from '${pathPrefix}/signalsmithStretch.mjs';
       window.${globalTag} = SignalsmithStretch;
       window.postMessage('${eventTitle}');
     `;
