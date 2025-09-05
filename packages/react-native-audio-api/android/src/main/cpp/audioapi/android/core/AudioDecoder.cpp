@@ -67,8 +67,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
 #ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-    buffer =
-        ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate_));
+    buffer = ffmpegdecoding::decodeWithFilePath(
+        path, numChannels_, static_cast<int>(sampleRate_));
     if (buffer.empty()) {
       __android_log_print(
           ANDROID_LOG_ERROR,
@@ -122,7 +122,8 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
       format == AudioFormat::AAC) {
-    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, sampleRate_);
+    buffer = ffmpegdecoding::decodeWithMemoryBlock(
+        data, size, numChannels_, sampleRate_);
     if (buffer.empty()) {
       __android_log_print(
           ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");

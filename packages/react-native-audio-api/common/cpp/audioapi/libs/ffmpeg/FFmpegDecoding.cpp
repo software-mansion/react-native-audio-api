@@ -208,7 +208,7 @@ std::vector<int16_t> readAllPcmFrames(
   return buffer;
 }
 
-std::vector<int16_t> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
+std::vector<int16_t> decodeWithMemoryBlock(const void *data, size_t size, const int channel_count, int sample_rate) {
     if (data == nullptr || size == 0) {
         return {};
     }
@@ -315,7 +315,7 @@ std::vector<int16_t> decodeWithMemoryBlock(const void *data, size_t size, int sa
     // Decode all frames
     size_t framesRead = 0;
     std::vector<int16_t> decoded_buffer = readAllPcmFrames(
-        fmt_ctx, codec_ctx, sample_rate, audio_stream_index, actual_channels, framesRead);
+        fmt_ctx, codec_ctx, sample_rate, audio_stream_index, channel_count, framesRead);
 
     // Cleanup - Note: avio_context_free will free the io_buffer
     avcodec_free_context(&codec_ctx);
@@ -329,7 +329,7 @@ std::vector<int16_t> decodeWithMemoryBlock(const void *data, size_t size, int sa
     return decoded_buffer;
 }
 
-std::vector<int16_t> decodeWithFilePath(const std::string &path, int sample_rate) {
+std::vector<int16_t> decodeWithFilePath(const std::string &path, const int channel_count, int sample_rate) {
   if (path.empty()) {
       return {};
   }
@@ -378,16 +378,9 @@ std::vector<int16_t> decodeWithFilePath(const std::string &path, int sample_rate
       return {};
   }
 
-  int actual_channels = codec_ctx->ch_layout.nb_channels;
-  if (actual_channels <= 0 || actual_channels > 8) {
-      avcodec_free_context(&codec_ctx);
-      avformat_close_input(&fmt_ctx);
-      return {};
-  }
-
   size_t framesRead = 0;
   std::vector<int16_t> decoded_buffer = readAllPcmFrames(
-      fmt_ctx, codec_ctx, sample_rate, audio_stream_index, actual_channels, framesRead);
+      fmt_ctx, codec_ctx, sample_rate, audio_stream_index, channel_count, framesRead);
 
   avcodec_free_context(&codec_ctx);
   avformat_close_input(&fmt_ctx);
