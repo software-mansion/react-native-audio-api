@@ -32,7 +32,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback does not apply to `OfflineAudioContext`.
+Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context).
 :::
 
 ## Properties
@@ -40,7 +40,7 @@ Concept of system-level audio callback does not apply to `OfflineAudioContext`.
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
-| `destination` | `AudioDestinationNode` | Final output destination associated with the context. | <ReadOnly /> |
+| `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
@@ -237,7 +237,7 @@ The above method lets you decode audio data. It decodes with PCM data in Base64.
 **Acceptable values:**
   - `suspended`
 
-  The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or `OfflineAudioContext.suspend`).
+  The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
 
   - `running`
 
