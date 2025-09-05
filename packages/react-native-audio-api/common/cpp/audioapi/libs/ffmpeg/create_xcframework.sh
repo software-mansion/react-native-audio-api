@@ -62,7 +62,7 @@ create_framework() {
     # Change the shared library identification name, removing version number and 'dylib' extension;
     # \c Frameworks part of the name is needed since this is where frameworks will be installed in
     # an application bundle:
-    install_name_tool -id @rpath/Frameworks/${framework_name}.framework/${framework_name} "${framework_complete_path}"
+    install_name_tool -id @rpath/${framework_name}.framework/${framework_name} "${framework_complete_path}"
 
     # Add Info.plist file into the framework directory:
     build_info_plist "${ffmpeg_library_path}/framework/${framework_name}.framework/Info.plist" "${framework_name}" "io.qt.ffmpegkit."${framework_name}
@@ -71,7 +71,7 @@ create_framework() {
         if [ "$found_name" != "$framework_name" ]
         then
             # Change the dependent shared library install name to remove version number and 'dylib' extension:
-            install_name_tool -change "$dependency_path" @rpath/Frameworks/${found_name}.framework/${found_name} "${framework_complete_path}"
+            install_name_tool -change "$dependency_path" @rpath/${found_name}.framework/${found_name} "${framework_complete_path}"
         fi
     done
 }
