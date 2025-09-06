@@ -26,7 +26,7 @@ interface IStretcherNode extends globalThis.AudioNode {
   numberOfInputs: number;
   numberOfOutputs: number;
 
-  onended:
+  onEnded:
     | ((this: globalThis.AudioScheduledSourceNode, ev: Event) => unknown)
     | null;
   addEventListener: (

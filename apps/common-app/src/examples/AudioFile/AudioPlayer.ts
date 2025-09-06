@@ -58,6 +58,7 @@ class AudioPlayer {
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
+
     AudioManager.setLockScreenInfo({
       state: 'state_playing',
     });
