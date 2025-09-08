@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, FC } from "react";
-import { AudioContext } from "react-native-audio-api";
+import { AudioContext, OscillatorNode, GainNode } from "react-native-audio-api";
 import styles from "./styles.module.css";
 import AdsrChart from "./AdsrChart";
 
@@ -18,6 +18,8 @@ interface GainAdsrExampleProps {
 const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const oscRef = useRef<OscillatorNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
 
   const [playbackProgress, setPlaybackProgress] = useState(0);
 
@@ -26,12 +28,14 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
     audioContextRef.current = ctx;
 
     return () => {
-      const toClose = audioContextRef.current;
-      if (toClose) {
-        toClose.close().catch(() => {});
-        audioContextRef.current = null;
+      if (oscRef.current) {
+        oscRef.current.stop();
+      }
+      if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      audioContextRef.current?.close().catch(() => {});
+      audioContextRef.current = null;
     };
   }, []);
 
@@ -39,15 +43,31 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
     const ctx = audioContextRef.current;
     if (!ctx) return;
 
+    if (oscRef.current) {
+      oscRef.current.stop(0);
+      oscRef.current = null;
+    }
+    if (gainRef.current) {
+        gainRef.current.disconnect();
+        gainRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setPlaybackProgress(0);
+
     const osc = await ctx.createOscillator();
     const gain = await ctx.createGain();
+
+    oscRef.current = osc;
+    gainRef.current = gain;
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
     const { attack, decay, sustain, release } = props;
-    const sustainHoldTime = 0.6;
+    const sustainHoldTime = 0.6; 
     const totalDuration = attack + decay + sustainHoldTime + release + 0.02;
 
     gain.gain.setValueAtTime(0.00001, now);
@@ -57,11 +77,11 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
 
     const sustainStartTime = peakTime + Math.max(0.01, decay);
     gain.gain.exponentialRampToValueAtTime(
-      Math.max(0.00001, sustain + 0.00001),
+      Math.max(0.00001, sustain),
       sustainStartTime
     );
 
-    const releaseStartTime = sustainStartTime;
+    const releaseStartTime = sustainStartTime + sustainHoldTime;
     const endTime = releaseStartTime + Math.max(0.01, release);
 
     gain.gain.setValueAtTime(Math.max(0.00001, sustain), releaseStartTime);
