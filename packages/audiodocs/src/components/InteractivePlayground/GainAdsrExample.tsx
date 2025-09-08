@@ -47,7 +47,7 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
 
     const now = ctx.currentTime;
     const { attack, decay, sustain, release } = props;
-    const sustainHoldTime = 0.3;
+    const sustainHoldTime = 0.6;
     const totalDuration = attack + decay + sustainHoldTime + release + 0.02;
 
     gain.gain.setValueAtTime(0.00001, now);

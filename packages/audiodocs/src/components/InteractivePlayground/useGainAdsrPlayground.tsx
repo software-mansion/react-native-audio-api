@@ -7,10 +7,10 @@ import Typography from "@mui/material/Typography";
 import Slider from "@mui/material/Slider";
 
 const initialState = {
-  attack: 0.1,
-  decay: 0.2,
+  attack: 1,
+  decay: 1,
   sustain: 0.5,
-  release: 0.5,
+  release: 2,
 };
 
 export function useGainAdsrPlayground() {

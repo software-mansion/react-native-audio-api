@@ -38,8 +38,14 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     const handleRadius = 4;
     const hitPadding = 8;
     const minTime = 0.01;
-    const sustainHoldTime = 0.3;
+    const sustainHoldTime = 0.6;
     const maxTime = 4.0;
+
+    const visualScale = 0.5;
+
+    const attackMax = 2;
+    const decayMax = 2;
+    const releaseMax = 3;
 
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -48,14 +54,19 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     ctx.scale(dpr, dpr);
     const { width, height } = rect;
 
-    const padding = 20;
+    const padding = 10;
     const chartWidth = width - 2 * padding;
     const chartHeight = height - 2 * padding;
 
-    const timeToX = (time: number) => padding + (time / maxTime) * chartWidth;
+    const timeToX = (time: number) =>
+      padding + ((time * visualScale) / maxTime) * chartWidth;
+    const xToTime = (x: number) =>
+      ((x - padding) / chartWidth) * (maxTime / visualScale);
+
     const levelToY = (level: number) => padding + (1 - level) * chartHeight;
-    const xToTime = (x: number) => ((x - padding) / chartWidth) * maxTime;
     const yToLevel = (y: number) => 1 - (y - padding) / chartHeight;
+
+    const totalDuration = attack + decay + sustainHoldTime + release;
 
     const points = {
       start: { x: timeToX(0), y: levelToY(0) },
@@ -66,7 +77,7 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
         y: levelToY(sustain),
       },
       releaseEnd: {
-        x: timeToX(attack + decay + sustainHoldTime + release),
+        x: timeToX(totalDuration),
         y: levelToY(0),
       },
     };
@@ -95,7 +106,7 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     ctx.closePath();
     ctx.clip();
 
-    const progressX = padding + playbackProgress * chartWidth;
+    const progressX = timeToX(totalDuration * playbackProgress);
 
     ctx.fillStyle =
       theme === "dark" ? "rgba(167, 139, 250, 0.4)" : "rgba(139, 92, 246, 0.6)";
@@ -154,24 +165,22 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      const currentTime = xToTime(mouseX);
+      const currentTime = xToTime(mouseX); // real seconds
       const currentLevel = yToLevel(mouseY);
 
       if (draggingPoint === "attack") {
-        setAttack(
-          Math.max(
-            minTime,
-            Math.min(currentTime, maxTime - (decay + sustainHoldTime + release))
-          )
-        );
+        const clamped = Math.max(minTime, Math.min(currentTime, attackMax));
+        setAttack(clamped);
       } else if (draggingPoint === "decay") {
-        setDecay(Math.max(minTime, currentTime - attack));
+        const rawDecay = currentTime - attack;
+        const clamped = Math.max(minTime, Math.min(rawDecay, decayMax));
+        setDecay(clamped);
       } else if (draggingPoint === "sustain") {
         setSustain(Math.max(0, Math.min(1, currentLevel)));
       } else if (draggingPoint === "release") {
-        setRelease(
-          Math.max(minTime, currentTime - (attack + decay + sustainHoldTime))
-        );
+        const rawRelease = currentTime - (attack + decay + sustainHoldTime);
+        const clamped = Math.max(minTime, Math.min(rawRelease, releaseMax));
+        setRelease(clamped);
       }
     };
 
