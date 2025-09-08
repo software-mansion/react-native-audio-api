@@ -2,4 +2,4 @@
 import { LoadCustomWasm } from 'react-native-audio-api';
 
 // This function will now run once when the site loads
-LoadCustomWasm();
+LoadCustomWasm('/react-native-audio-api');
