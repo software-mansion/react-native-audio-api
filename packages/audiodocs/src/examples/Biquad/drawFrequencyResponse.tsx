@@ -9,7 +9,11 @@ export const drawFrequencyResponse = (
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const { width, height } = canvas;
+  const width = canvas.width;
+  const height = canvas.height;
+
+  const clientW = canvas.clientWidth || 1;
+  const dpr = clientW > 0 ? Math.max(1, canvas.width / clientW) : (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
 
   const N = 200;
   const frequencies = new Float32Array(N).map((_, i) => 20 * 1000 ** (i / (N - 1)));
@@ -17,7 +21,6 @@ export const drawFrequencyResponse = (
   const phases = new Float32Array(N);
   filter.getFrequencyResponse(frequencies, mags, phases);
 
-  // helper
   const line = (x1: number, y1: number, x2: number, y2: number) => {
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -25,10 +28,9 @@ export const drawFrequencyResponse = (
     ctx.stroke();
   };
 
-  // grid
   ctx.clearRect(0, 0, width, height);
   ctx.strokeStyle = '#bcdae4ff';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * dpr;
 
   const numGridLines = 11;
   for (let i = 0; i < numGridLines; i++) {
@@ -42,18 +44,15 @@ export const drawFrequencyResponse = (
     line(0, y, width, y);
   }
 
-  // frequency response
   ctx.beginPath();
   mags.forEach((m, i) => {
-    // Map the index (0..N) to the horizontal axis
     const x = (i / (mags.length - 1)) * width;
     const db = 20 * Math.log10(m);
-    // Map dB range [-30, +30] to vertical axis
     const y = height - ((db + 30) / 60) * height;
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
 
   ctx.strokeStyle = '#38acdd';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * dpr;
   ctx.stroke();
 };
