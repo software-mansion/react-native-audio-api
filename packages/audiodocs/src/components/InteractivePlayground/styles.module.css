@@ -27,7 +27,7 @@
   background-color: var(--swm-off-background);
   color: var(--swm-sidebar-menu-color);
   transition: background-color 0.2s, border-color 0.2s;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1;
   max-width: 350px;
   position: relative;
 }

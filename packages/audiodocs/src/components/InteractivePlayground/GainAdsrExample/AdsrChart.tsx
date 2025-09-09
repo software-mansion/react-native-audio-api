@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, FC, useState } from "react";
+import React, { useRef, useEffect, FC, useState } from "react"; 
+import { HANDLE_RADIUS, HIT_PADDING, MIN_TIME, SUSTAIN_HOLD_TIME, MAX_TIME, VISUAL_SCALE, ATTACK_MAX, RELEASE_MAX, DECAY_MAX } from "./constants";
 
 interface AdsrChartProps {
   attack: number;
@@ -35,18 +36,6 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const handleRadius = 4;
-    const hitPadding = 8;
-    const minTime = 0.01;
-    const sustainHoldTime = 0.6;
-    const maxTime = 4.0;
-
-    const visualScale = 0.5;
-
-    const attackMax = 2;
-    const decayMax = 2;
-    const releaseMax = 3;
-
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
@@ -59,21 +48,21 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     const chartHeight = height - 2 * padding;
 
     const timeToX = (time: number) =>
-      padding + ((time * visualScale) / maxTime) * chartWidth;
+      padding + ((time * VISUAL_SCALE) / MAX_TIME) * chartWidth;
     const xToTime = (x: number) =>
-      ((x - padding) / chartWidth) * (maxTime / visualScale);
+      ((x - padding) / chartWidth) * (MAX_TIME / VISUAL_SCALE);
 
     const levelToY = (level: number) => padding + (1 - level) * chartHeight;
     const yToLevel = (y: number) => 1 - (y - padding) / chartHeight;
 
-    const totalDuration = attack + decay + sustainHoldTime + release;
+    const totalDuration = attack + decay + SUSTAIN_HOLD_TIME + release;
 
     const points = {
       start: { x: timeToX(0), y: levelToY(0) },
       attackEnd: { x: timeToX(attack), y: levelToY(1) },
       decayEnd: { x: timeToX(attack + decay), y: levelToY(sustain) },
       sustainEnd: {
-        x: timeToX(attack + decay + sustainHoldTime),
+        x: timeToX(attack + decay + SUSTAIN_HOLD_TIME),
         y: levelToY(sustain),
       },
       releaseEnd: {
@@ -126,7 +115,7 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
       points.sustainEnd,
     ].forEach((p) => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, handleRadius, 0, 2 * Math.PI);
+      ctx.arc(p.x, p.y, HANDLE_RADIUS, 0, 2 * Math.PI);
       ctx.fillStyle = handleFill;
       ctx.fill();
     });
@@ -138,22 +127,22 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
 
       if (
         Math.hypot(points.attackEnd.x - mouseX, points.attackEnd.y - mouseY) <
-        handleRadius + hitPadding
+        HANDLE_RADIUS + HIT_PADDING
       ) {
         setDraggingPoint("attack");
       } else if (
         Math.hypot(points.sustainEnd.x - mouseX, points.sustainEnd.y - mouseY) <
-        handleRadius + hitPadding
+        HANDLE_RADIUS + HIT_PADDING
       ) {
         setDraggingPoint("sustain");
       } else if (
         Math.hypot(points.decayEnd.x - mouseX, points.decayEnd.y - mouseY) <
-        handleRadius + hitPadding
+        HANDLE_RADIUS + HIT_PADDING
       ) {
         setDraggingPoint("decay");
       } else if (
         Math.hypot(points.releaseEnd.x - mouseX, points.releaseEnd.y - mouseY) <
-        handleRadius + hitPadding
+        HANDLE_RADIUS + HIT_PADDING
       ) {
         setDraggingPoint("release");
       }
@@ -169,17 +158,17 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
       const currentLevel = yToLevel(mouseY);
 
       if (draggingPoint === "attack") {
-        const clamped = Math.max(minTime, Math.min(currentTime, attackMax));
+        const clamped = Math.max(MIN_TIME, Math.min(currentTime, ATTACK_MAX));
         setAttack(clamped);
       } else if (draggingPoint === "decay") {
         const rawDecay = currentTime - attack;
-        const clamped = Math.max(minTime, Math.min(rawDecay, decayMax));
+        const clamped = Math.max(MIN_TIME, Math.min(rawDecay, DECAY_MAX));
         setDecay(clamped);
       } else if (draggingPoint === "sustain") {
         setSustain(Math.max(0, Math.min(1, currentLevel)));
       } else if (draggingPoint === "release") {
-        const rawRelease = currentTime - (attack + decay + sustainHoldTime);
-        const clamped = Math.max(minTime, Math.min(rawRelease, releaseMax));
+        const rawRelease = currentTime - (attack + decay + SUSTAIN_HOLD_TIME);
+        const clamped = Math.max(MIN_TIME, Math.min(rawRelease, RELEASE_MAX));
         setRelease(clamped);
       }
     };

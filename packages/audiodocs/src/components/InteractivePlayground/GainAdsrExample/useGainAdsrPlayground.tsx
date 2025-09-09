@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import GainAdsrExample from "./GainAdsrExample";
-import LocalMuiTheme from "./interactivePlaygroundMuiTheme";
+import LocalMuiTheme from "../interactivePlaygroundMuiTheme";
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";

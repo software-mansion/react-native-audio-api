@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AudioBufferSourceExample from "./AudioBufferSourceExample";
-import LocalMuiTheme from "./interactivePlaygroundMuiTheme";
+import LocalMuiTheme from "../interactivePlaygroundMuiTheme";
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";

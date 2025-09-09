@@ -5,7 +5,7 @@ import {
   AudioBuffer,
   AnalyserNode,
 } from "react-native-audio-api";
-import styles from "./styles.module.css";
+import styles from "../styles.module.css";
 
 const FFT_SIZE = 2048;
 
@@ -182,14 +182,16 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
     if (isPlaying) {
       animationFrameRef.current = requestAnimationFrame(draw);
     } else {
-      if (animationFrameRef.current)
+      if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      } 
       setTimeDomainData(new Uint8Array(FFT_SIZE).fill(128));
     }
 
     return () => {
-      if (animationFrameRef.current)
+      if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [isPlaying]);
 
@@ -216,32 +218,3 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
 };
 
 export default AudioBufferSourceExample;
-
-// minimal example to test pitchCorrection = true
-
-// import React from 'react';
-// import { AudioContext } from 'react-native-audio-api';
-
-// export default function MinimalReactExample() {
-//   const handlePlay = async () => {
-//     const audioContext = new AudioContext();
-
-//     const audioBuffer = await fetch('/react-native-audio-api/audio/music/example-music-01.mp3')
-//       .then((response) => response.arrayBuffer())
-//       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
-
-//     const playerNode = await audioContext.createBufferSource({ pitchCorrection: true});
-//     playerNode.buffer = audioBuffer;
-//     await audioContext.resume();
-
-//     playerNode.connect(audioContext.destination);
-//     playerNode.start();
-//     playerNode.stop(audioContext.currentTime + 5);
-//   };
-
-//   return (
-//     <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-//       <button onClick={handlePlay}>Play sound!</button>
-//     </div>
-//   );
-// }

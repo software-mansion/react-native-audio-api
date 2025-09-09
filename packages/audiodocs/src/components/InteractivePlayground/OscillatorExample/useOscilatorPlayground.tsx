@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import OscillatorExample from "./OscillatorExample";
 import { OscillatorType } from "react-native-audio-api";
-import LocalMuiTheme from "./interactivePlaygroundMuiTheme";
+import LocalMuiTheme from "../interactivePlaygroundMuiTheme";
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";

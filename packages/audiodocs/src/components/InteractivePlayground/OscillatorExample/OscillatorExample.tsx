@@ -6,7 +6,7 @@ import {
   OscillatorNode,
   OscillatorType,
 } from "react-native-audio-api";
-import styles from "./styles.module.css";
+import styles from "../styles.module.css";
 
 const FFT_SIZE = 2048;
 

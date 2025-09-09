@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, FC } from "react";
 import { AudioContext, OscillatorNode, GainNode } from "react-native-audio-api";
-import styles from "./styles.module.css";
+import styles from "../styles.module.css";
 import AdsrChart from "./AdsrChart";
 
 interface GainAdsrExampleProps {
