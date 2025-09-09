@@ -173,8 +173,12 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
       }
     };
 
-    const handleMouseUp = () => setDraggingPoint(null);
-    const handleMouseLeave = () => setDraggingPoint(null);
+    const handleMouseUp = () => {
+      setDraggingPoint(null);
+    };
+    const handleMouseLeave = () => {
+      setDraggingPoint(null);
+    };
 
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
