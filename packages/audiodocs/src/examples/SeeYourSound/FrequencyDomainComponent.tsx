@@ -17,43 +17,78 @@ interface ChartProps {
   dataSize: number;
 }
 
-const FrequencyChart: React.FC<ChartProps> = (props) => {
-  const { data, dataSize } = props;
-
-  const canvasRef = useRef(null);
+const FrequencyChart: React.FC<ChartProps> = ({ data, dataSize }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    if (!canvas) return;
 
-    const barWidth = canvas.width / (dataSize);
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    const cssWidth = Number(canvas.dataset.cssWidth) || (canvas.clientWidth || 300);
+    const cssHeight = Number(canvas.dataset.cssHeight) || (canvas.clientHeight || 150);
+
+    const scaledWidth = Math.max(1, Math.floor(cssWidth * dpr));
+    const scaledHeight = Math.max(1, Math.floor(cssHeight * dpr));
+
+    canvas.width = scaledWidth;
+    canvas.height = scaledHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
 
-    data.forEach((value, index) => {
+    const barWidth = canvas.width / dataSize;
+
+    for (let i = 0; i < data.length && i < dataSize; i++) {
+      const value = data[i];
       const height = canvas.height * (value / 256);
       const offset = canvas.height - height;
-      const hue = (index / dataSize) * 360;
+      const hue = (i / dataSize) * 360;
       ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-      ctx.fillRect(index * barWidth, offset, barWidth, height);
-    });
-
-  }, [data, dataSize]);
+      ctx.fillRect(i * barWidth, offset, Math.max(1, barWidth), height);
+    }
+  }, [data, dataSize]); 
 
   return (
     <CanvasSizer canvasHeight={300}>
-      {({ width, height }) => (
-        <canvas
-          ref={canvasRef}
-          style={{ flex: 1 }}
-          width={width}
-          height={height}
-        />
-      )}
+      {({ width, height }) => {
+        const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        const scaledWidth = Math.max(1, Math.floor(width * dpr));
+        const scaledHeight = Math.max(1, Math.floor(height * dpr));
+
+        const containerStyle: React.CSSProperties = {
+          width: `${width}px`,
+          height: `${height}px`,
+          overflow: 'hidden',
+        };
+
+        const canvasStyle: React.CSSProperties = {
+          width: `${scaledWidth}px`,
+          height: `${scaledHeight}px`,
+          transform: `scale(${1 / dpr})`,
+          transformOrigin: 'top left',
+          display: 'block',
+        };
+
+        return (
+          <div style={containerStyle}>
+            <canvas
+              ref={canvasRef}
+              width={scaledWidth}
+              height={scaledHeight}
+              data-css-width={width}
+              data-css-height={height}
+              style={canvasStyle}
+            />
+          </div>
+        );
+      }}
     </CanvasSizer>
   );
-}
+};
 
 const FFT_SIZE = 512;
 
