@@ -93,7 +93,9 @@ class AudioPlayer {
   loadBuffer = async (url: string) => {
     const buffer = await fetch(url)
       .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
+      .then((arrayBuffer) =>
+        this.audioContext.decoder.decodeWithMemoryBlock(arrayBuffer)
+      )
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
         return null;

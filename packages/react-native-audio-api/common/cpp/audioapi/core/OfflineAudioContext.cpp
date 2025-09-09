@@ -29,7 +29,7 @@ OfflineAudioContext::OfflineAudioContext(
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0) {
   sampleRate_ = sampleRate;
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate_);
+  decoder = std::make_shared<AudioDecoder>(sampleRate_);
   resultBus_ = std::make_shared<AudioBus>(
       static_cast<int>(length_), numberOfChannels_, sampleRate_);
 }

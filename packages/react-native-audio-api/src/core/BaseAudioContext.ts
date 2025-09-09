@@ -17,16 +17,19 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import StreamerNode from './StreamerNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
+import AudioDecoder from './AudioDecoder';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
+  readonly decoder: AudioDecoder;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
+    this.decoder = new AudioDecoder(this.sampleRate);
   }
 
   public get currentTime(): number {
@@ -127,33 +130,5 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  /** Decodes audio data from a local file path. */
-  async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
-    // Remove the file:// prefix if it exists
-    if (sourcePath.startsWith('file://')) {
-      sourcePath = sourcePath.replace('file://', '');
-    }
-
-    return new AudioBuffer(
-      await this.context.decodeAudioDataSource(sourcePath)
-    );
-  }
-
-  /** Decodes audio data from an ArrayBuffer. */
-  async decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodeAudioData(new Uint8Array(data))
-    );
-  }
-
-  async decodePCMInBase64Data(
-    base64: string,
-    playbackRate: number = 1.0
-  ): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodePCMAudioDataInBase64(base64, playbackRate)
-    );
   }
 }

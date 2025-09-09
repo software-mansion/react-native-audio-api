@@ -25,7 +25,7 @@ AudioContext::AudioContext(
 #endif
 
   sampleRate_ = sampleRate;
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate);
+  decoder = std::make_shared<AudioDecoder>(sampleRate);
 
   if (initSuspended) {
     playerHasBeenStarted_ = false;

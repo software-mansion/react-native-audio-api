@@ -1,3 +1,4 @@
+#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/base64/base64.h>
@@ -45,7 +46,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(
   return buffer;
 }
 
-std::shared_ptr<AudioBus> AudioDecoder::makeAudioBusFromInt16Buffer(
+std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(
     const std::vector<int16_t> &buffer,
     int numChannels,
     float sampleRate) {
@@ -59,11 +60,14 @@ std::shared_ptr<AudioBus> AudioDecoder::makeAudioBusFromInt16Buffer(
       channelData[i] = int16ToFloat(buffer[i * numChannels + ch]);
     }
   }
-  return audioBus;
+  return std::make_shared<AudioBuffer>(audioBus);
 }
 
-std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
+  // if (path.starts_with("file://")) {
+  //   path = path.replace(0, 7, "");
+  // }
 #ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
@@ -77,7 +81,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
           path.c_str());
       return nullptr;
     }
-    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+    return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
@@ -108,13 +112,13 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithFilePath(
   }
 
   ma_decoder_uninit(&decoder);
-  return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
 #else
   return nullptr;
 #endif
 }
 
-std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
     const void *data,
     size_t size) const {
 #ifndef AUDIO_API_TEST_SUITE
@@ -128,7 +132,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
           ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
       return nullptr;
     }
-    return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+    return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
@@ -159,13 +163,13 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithMemoryBlock(
   }
 
   ma_decoder_uninit(&decoder);
-  return makeAudioBusFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
 #else
   return nullptr;
 #endif
 }
 
-std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
     const std::string &data,
     float playbackSpeed) const {
   auto decodedData = base64_decode(data, false);
@@ -193,7 +197,7 @@ std::shared_ptr<AudioBus> AudioDecoder::decodeWithPCMInBase64(
     rightChannelData[i] = sample;
   }
 
-  return audioBus;
+  return std::make_shared<AudioBuffer>(audioBus);
 }
 
 } // namespace audioapi

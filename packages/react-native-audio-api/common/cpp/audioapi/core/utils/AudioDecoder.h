@@ -12,6 +12,7 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioBuffer;
 
 static constexpr int CHUNK_SIZE = 4096;
 
@@ -19,12 +20,12 @@ class AudioDecoder {
  public:
   explicit AudioDecoder(float sampleRate) : sampleRate_(sampleRate) {}
 
-  [[nodiscard]] std::shared_ptr<AudioBus> decodeWithFilePath(
+  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithFilePath(
       const std::string &path) const;
-  [[nodiscard]] std::shared_ptr<AudioBus> decodeWithMemoryBlock(
+  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(
       const void *data,
       size_t size) const;
-  [[nodiscard]] std::shared_ptr<AudioBus> decodeWithPCMInBase64(
+  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
       const std::string &data,
       float playbackSpeed) const;
 
@@ -36,7 +37,7 @@ class AudioDecoder {
       ma_decoder &decoder,
       int numChannels,
       ma_uint64 &outFramesRead);
-  static std::shared_ptr<AudioBus> makeAudioBusFromInt16Buffer(
+  static std::shared_ptr<AudioBuffer> makeAudioBufferFromInt16Buffer(
       const std::vector<int16_t> &buffer,
       int numChannels,
       float sampleRate);

@@ -2,6 +2,7 @@ import { NativeAudioAPIModule } from './specs';
 import { AudioRecorderOptions } from './types';
 import type {
   IAudioContext,
+  IAudioDecoder,
   IAudioRecorder,
   IOfflineAudioContext,
   IAudioEventEmitter,
@@ -21,6 +22,8 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
+  var createAudioDecoder: (sampleRate: number) => IAudioDecoder;
+
   var AudioEventEmitter: IAudioEventEmitter;
 }
 /* eslint-disable no-var */
@@ -29,6 +32,7 @@ if (
   global.createAudioContext == null ||
   global.createOfflineAudioContext == null ||
   global.createAudioRecorder == null ||
+  global.createAudioDecoder == null ||
   global.AudioEventEmitter == null
 ) {
   if (!NativeAudioAPIModule) {
@@ -57,6 +61,7 @@ export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
+export { default as AudioDecoder } from './core/AudioDecoder';
 export { default as StreamerNode } from './core/StreamerNode';
 export { default as AudioManager } from './system';
 export { default as useSystemVolume } from './hooks/useSytemVolume';

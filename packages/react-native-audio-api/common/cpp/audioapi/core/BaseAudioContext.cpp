@@ -10,7 +10,6 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/sources/StreamerNode.h>
-#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
@@ -130,41 +129,6 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    const std::string &path) {
-  auto audioBus = audioDecoder_->decodeWithFilePath(path);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
-    const void *data,
-    size_t size) {
-  auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
-    const std::string &data,
-    float playbackSpeed) {
-  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data, playbackSpeed);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {
