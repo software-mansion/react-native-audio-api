@@ -3,6 +3,7 @@
 #include <bit>
 #include <memory>
 #include <type_traits>
+#include <iostream>
 
 namespace audioapi {
 
@@ -46,6 +47,7 @@ class RingBiDirectionalBuffer {
   template <typename U>
   bool pushBack(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
     if (isFull()) [[ unlikely ]] {
+      std::cout<<"RingBiDirectionalBuffer FULL"<<std::endl;
       return false;
     }
     new (&buffer_[tailIndex_]) T(std::forward<U>(value));

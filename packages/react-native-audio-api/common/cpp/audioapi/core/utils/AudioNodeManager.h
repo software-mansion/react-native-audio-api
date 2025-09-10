@@ -102,11 +102,11 @@ class AudioNodeManager {
 
   /// @brief Initial capacity for various node types for deletion
   /// @note Higher capacity decreases number of reallocations at runtime (can be easily adjusted to 128 if needed)
-  static constexpr size_t kInitialCapacity = 32;
+  static constexpr size_t kInitialCapacity = 128;
 
   /// @brief Initial capacity for event passing channel
   /// @note High value reduces wait time for sender (JavaScript/HostObjects thread here)
-  static constexpr size_t kChannelCapacity = 1024;
+  static constexpr size_t kChannelCapacity = 2048;
 
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sourceNodes_;
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;

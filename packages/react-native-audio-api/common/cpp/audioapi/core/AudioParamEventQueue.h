@@ -57,7 +57,7 @@ class AudioParamEventQueue {
  private:
   /// @brief The queue of parameter change events.
   /// @note INVARIANT it always holds non-overlapping events sorted by start time.
-  RingBiDirectionalBuffer<ParamChangeEvent, 32> eventQueue_;
+  RingBiDirectionalBuffer<ParamChangeEvent, 512> eventQueue_;
 };
 
 } // namespace audioapi

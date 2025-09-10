@@ -63,7 +63,7 @@ class InnerChannel;
 /// @return A pair of sender and receiver for the channel
 template <typename T, OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL, WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
 std::pair<Sender<T, Strategy, Wait>, Receiver<T, Strategy, Wait>> channel(size_t capacity) {
-    auto channel = std::make_shared<InnerChannel<T, Strategy, Wait>>(capacity);
+    auto channel = std::make_shared<InnerChannel<T, Strategy, Wait>>(512);
     return { Sender<T, Strategy, Wait>(channel), Receiver<T, Strategy, Wait>(channel) };
 }
 
@@ -205,7 +205,7 @@ public:
     /// Uses raw memory allocation so the T type is not required to provide default constructors
     /// alignment is the key for performance it makes sure that objects are properly aligned in memory for faster access
     explicit InnerChannel(size_t capacity) :
-        capacity_(next_power_of_2(capacity)),
+        capacity_(next_power_of_2(512)),
         capacity_mask_(capacity_ - 1),
         buffer_(static_cast<T*>(operator new[](capacity_ * sizeof(T), std::align_val_t{alignof(T)}))) {
 

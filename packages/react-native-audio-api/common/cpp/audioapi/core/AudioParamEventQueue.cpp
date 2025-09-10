@@ -1,4 +1,5 @@
 #include <audioapi/core/AudioParamEventQueue.h>
+#include <iostream>
 
 namespace audioapi {
 
@@ -22,6 +23,8 @@ void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
         event.getStartTime()));
   }
   event.setStartValue(prev.getEndValue());
+  std::cout << "AUDIOPARAM EVENTQUEUE startTime: " << event.getStartTime()
+            << "  value: " << event.getStartValue() << std::endl;
   eventQueue_.pushBack(std::move(event));
 }
 

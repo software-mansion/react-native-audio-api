@@ -3,6 +3,7 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <iostream>
 
 namespace audioapi {
 
@@ -57,6 +58,8 @@ void AudioParam::setValueAtTime(float value, double startTime) {
   auto event = [value, startTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
     if (startTime <= param.getQueueEndTime()) {
+      std::cout << "IGNORE startTime before queueEndTime" << value << "  "
+                << startTime << std::endl;
       return;
     }
 
@@ -243,6 +246,7 @@ void AudioParam::setValueCurveAtTime(
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
+  std::cout << "cancelScheduledValues" << std::endl;
   eventScheduler_.scheduleEvent([cancelTime](AudioParam &param) {
     param.eventsQueue_.cancelScheduledValues(cancelTime);
   });
