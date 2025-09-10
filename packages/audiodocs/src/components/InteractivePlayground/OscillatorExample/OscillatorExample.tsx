@@ -28,34 +28,10 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const [timeDomainData, setTimeDomainData] = useState(
-    new Uint8Array(FFT_SIZE).fill(128)
-  );
-
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const ctx = new AudioContext();
-    audioContextRef.current = ctx;
-
-    const g = ctx.createGain();
-    gainRef.current = g;
-
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = FFT_SIZE;
-    analyserRef.current = analyser;
-
-    g.connect(analyser);
-    analyser.connect(ctx.destination);
-
-    return () => {
-      ctx.close();
-    };
-  }, []);
 
   const stopSound = useCallback(() => {
     if (oscillatorRef.current) {
@@ -99,6 +75,25 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
   }, [type, frequency, detune, volume, isPlaying, stopSound]);
 
   useEffect(() => {
+    const ctx = new AudioContext();
+    audioContextRef.current = ctx;
+
+    const g = ctx.createGain();
+    gainRef.current = g;
+
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = FFT_SIZE;
+    analyserRef.current = analyser;
+
+    g.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    return () => {
+      ctx.close();
+    };
+  }, []);
+
+  useEffect(() => {
     const osc = oscillatorRef.current;
     const g = gainRef.current;
     if (osc && g) {
@@ -118,33 +113,9 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
     }
   }, [frequency, detune, volume, type, isPlaying, playSound, stopSound]);
 
-  useEffect(() => {
-    const draw = () => {
-      if (analyserRef.current) {
-        const dataArray = new Uint8Array(FFT_SIZE);
-        analyserRef.current.getByteTimeDomainData(dataArray);
-        setTimeDomainData(dataArray);
-      }
-      animationFrameRef.current = requestAnimationFrame(draw);
-    };
-
-    if (isPlaying) {
-      animationFrameRef.current = requestAnimationFrame(draw);
-    } else {
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
-      setTimeDomainData(new Uint8Array(FFT_SIZE).fill(128));
-    }
-
-    return () => {
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [isPlaying]);
-
   return (
     <div className={styles.oscillatorContainer}>
-      <WaveformVisualizer data={timeDomainData} theme={theme} />
+      <WaveformVisualizer analyserNode={analyserRef.current} fftSize={FFT_SIZE} theme={theme} />
 
       <button
         onClick={() => (isPlaying ? stopSound() : playSound())}
