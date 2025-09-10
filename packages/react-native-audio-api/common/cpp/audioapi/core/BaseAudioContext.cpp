@@ -3,7 +3,6 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/ConvolverNode.h>
-#include <audioapi/core/effects/CustomProcessorNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>

@@ -40,14 +40,21 @@ const Oscillator: FC = () => {
         audioContextRef.current = new AudioContext();
       }
 
-        const length = audioContextRef.current.sampleRate * 2; // 2 seconds
+        // Create a simple but long reverb
+        const length = audioContextRef.current.sampleRate * 0.5; // 0.5 seconds
         const impulse = audioContextRef.current.createBuffer(2, length, audioContextRef.current.sampleRate);
-        
+
         for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
           const channelData = impulse.getChannelData(channel);
           for (let i = 0; i < length; i++) {
-            // Exponentially decay the impulse
-            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+            if (i === 0) {
+              // Direct sound
+              channelData[i] = 1.0;
+            } else {
+              // Simple exponential decay
+              const t = i / audioContextRef.current.sampleRate;
+              channelData[i] = 0.3 * Math.exp(-t * 5); // Simple decay
+            }
           }
         }
 

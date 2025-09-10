@@ -64,6 +64,15 @@ bool Convolver::init(
   _fft = std::make_shared<dsp::FFT>((int)_segSize);
   _fftBuffer.resize(_segSize);
 
+  // Debug: Print IR information
+  printf("Convolver init: irLen=%zu, blockSize=%zu, segCount=%zu\n", 
+         irLen, _blockSize, _segCount);
+  printf("First 10 IR samples: ");
+  for (int i = 0; i < std::min(10, (int)irLen); ++i) {
+    printf("%.6f ", ir[i]);
+  }
+  printf("\n");
+
   // segments preparation
   for (int i = 0; i < _segCount; ++i) {
     std::vector<std::complex<float>> vec(
