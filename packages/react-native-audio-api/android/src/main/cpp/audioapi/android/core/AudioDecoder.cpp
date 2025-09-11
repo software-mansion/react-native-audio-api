@@ -22,10 +22,9 @@ namespace audioapi {
 // returns 0 for Vorbis decoders.
 std::vector<int16_t> AudioDecoder::readAllPcmFrames(
     ma_decoder &decoder,
-    int numChannels,
     ma_uint64 &outFramesRead) {
   std::vector<int16_t> buffer;
-  std::vector<int16_t> temp(CHUNK_SIZE * numChannels);
+  std::vector<int16_t> temp(CHUNK_SIZE * numChannels_);
   outFramesRead = 0;
 
   while (true) {
@@ -39,7 +38,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(
     buffer.insert(
         buffer.end(),
         temp.data(),
-        temp.data() + tempFramesDecoded * numChannels);
+        temp.data() + tempFramesDecoded * numChannels_);
     outFramesRead += tempFramesDecoded;
   }
 
@@ -47,17 +46,15 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(
-    const std::vector<int16_t> &buffer,
-    int numChannels,
-    float sampleRate) {
-  auto outputFrames = buffer.size() / numChannels;
+    const std::vector<int16_t> &buffer) {
+  auto outputFrames = buffer.size() / numChannels_;
   auto audioBus =
-      std::make_shared<AudioBus>(outputFrames, numChannels, sampleRate);
+      std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
 
-  for (int ch = 0; ch < numChannels; ++ch) {
+  for (int ch = 0; ch < numChannels_; ++ch) {
     auto channelData = audioBus->getChannel(ch)->getData();
     for (int i = 0; i < outputFrames; ++i) {
-      channelData[i] = int16ToFloat(buffer[i * numChannels + ch]);
+      channelData[i] = int16ToFloat(buffer[i * numChannels_ + ch]);
     }
   }
   return std::make_shared<AudioBuffer>(audioBus);
@@ -104,7 +101,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
   }
 
   ma_uint64 framesRead = 0;
-  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, framesRead);
   if (framesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
     ma_decoder_uninit(&decoder);
@@ -112,7 +109,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
   }
 
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  return makeAudioBufferFromInt16Buffer(buffer);
 #else
   return nullptr;
 #endif
@@ -132,7 +129,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
           ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
       return nullptr;
     }
-    return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
+    return makeAudioBufferFromInt16Buffer(buffer);
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
@@ -155,7 +152,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
   }
 
   ma_uint64 framesRead = 0;
-  buffer = readAllPcmFrames(decoder, numChannels_, framesRead);
+  buffer = readAllPcmFrames(decoder, framesRead);
   if (framesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
     ma_decoder_uninit(&decoder);
@@ -163,7 +160,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
   }
 
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
+  return makeAudioBufferFromInt16Buffer(buffer);
 #else
   return nullptr;
 #endif
