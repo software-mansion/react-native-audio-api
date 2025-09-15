@@ -7,6 +7,9 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
+`AudioRecorder` provides a simple way to manage audio recording.
+It connects to the audio graph through a [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) and triggers events when new audio data is ready.
+
 ## Constructor
 
 [`AudioRecorder(options)`](/docs/inputs/audio-recorder#audiorecorderoptions)
@@ -37,44 +40,50 @@ function App() {
 }
 ```
 
+## Properties
+None. `AudioRecorder` has no own or inherited properties.
+
 ## Methods
 
 ### `start`
 
-The above starts recording.
+Starts recording.
 
 #### Returns `undefined`.
 
 ### `stop`
 
-The above stops recording.
+Stops recording.
 
 #### Returns `undefined`.
 
 ### `connect`
 
-The above method connects recorder to the adapter. If the recorder is already connected it will change its adapter (it is equivalent of calling disconnect() previously).
-Be carefull `RecorderAdapterNode` can be connected only once. You can't connect same adapter twice (even to different recorders).
+Connects recorder to the adapter. If the recorder is already connected, it will switch to the new adapter (it is equivalent to calling disconnect() previously).
+Be careful `RecorderAdapterNode` can be connected only once. You can't connect same adapter twice (even to different recorders).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `node` | [RecorderAdapterNode](/docs/sources/recorder-adapter-node) | Adapter that we want to connect to. |
+| `node` | [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) | Adapter that we want to connect to. |
 
-#### Returns `undefined`
+#### Returns `undefined`.
 
 ### `disconnect`
 
-The above method disconnects recorder from the currently connected adapter. It does not need to be called before connect.
+Disconnects recorder from the currently connected adapter. It does not need to be called before connect.
+
+#### Returns `undefined`.
 
 ### `onAudioReady`
 
-The above allows user to set a callback after every portion of data deliverance.
+Allows user to set a callback after every portion of data deliverance.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `callback` | [(OnAudioReadyEventType => void)](/docs/inputs/audio-recorder#onaudioreadyeventtype) | callback that will be invoked |
+| `callback` | [`(OnAudioReadyEventType => void)`](/docs/inputs/audio-recorder#onaudioreadyeventtype) | The callback function to handle audio data. |
 
 #### Returns `undefined`.
+
 
 ## Remarks
 
