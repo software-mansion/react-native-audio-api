@@ -26,18 +26,15 @@ class AudioDecoder {
       const void *data,
       size_t size) const;
   [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
-      const std::string &data,
-      float playbackSpeed) const;
+      const std::string &data) const;
 
  private:
   float sampleRate_;
   int numChannels_ = 2;
 
-  static std::vector<int16_t> readAllPcmFrames(
-      ma_decoder &decoder,
-      ma_uint64 &outFramesRead);
-  static std::shared_ptr<AudioBuffer> makeAudioBufferFromInt16Buffer(
-      const std::vector<int16_t> &buffer);
+  std::vector<int16_t> readAllPcmFrames(ma_decoder &decoder) const;
+  std::shared_ptr<AudioBuffer> makeAudioBufferFromInt16Buffer(
+      const std::vector<int16_t> &buffer) const;
 
   void changePlaybackSpeedIfNeeded(
       std::vector<int16_t> &buffer,

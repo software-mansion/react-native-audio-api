@@ -6,26 +6,24 @@
 #include <audioapi/utils/AudioBus.h>
 
 #define MINIAUDIO_IMPLEMENTATION
+#include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
+#include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #ifndef AUDIO_API_TEST_SUITE
 #include <android/log.h>
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif
-#include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
-#include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 
 namespace audioapi {
 
 // Decoding audio in fixed-size chunks because total frame count can't be
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
-std::vector<int16_t> AudioDecoder::readAllPcmFrames(
-    ma_decoder &decoder,
-    ma_uint64 &outFramesRead) {
+std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const {
   std::vector<int16_t> buffer;
   std::vector<int16_t> temp(CHUNK_SIZE * numChannels_);
-  outFramesRead = 0;
+  ma_uint64 outFramesRead = 0;
 
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
@@ -42,11 +40,18 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(
     outFramesRead += tempFramesDecoded;
   }
 
+  if (outFramesRead == 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
+  }
   return buffer;
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(
-    const std::vector<int16_t> &buffer) {
+    const std::vector<int16_t> &buffer) const {
+  if (buffer.empty()) {
+    return nullptr;
+  }
+
   auto outputFrames = buffer.size() / numChannels_;
   auto audioBus =
       std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
@@ -78,7 +83,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
           path.c_str());
       return nullptr;
     }
-    return makeAudioBufferFromInt16Buffer(buffer, numChannels_, sampleRate_);
+    return makeAudioBufferFromInt16Buffer(buffer);
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(
@@ -100,14 +105,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     return nullptr;
   }
 
-  ma_uint64 framesRead = 0;
-  buffer = readAllPcmFrames(decoder, framesRead);
-  if (framesRead == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
-    ma_decoder_uninit(&decoder);
-    return nullptr;
-  }
-
+  buffer = readAllPcmFrames(decoder);
   ma_decoder_uninit(&decoder);
   return makeAudioBufferFromInt16Buffer(buffer);
 #else
@@ -151,14 +149,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
     return nullptr;
   }
 
-  ma_uint64 framesRead = 0;
-  buffer = readAllPcmFrames(decoder, framesRead);
-  if (framesRead == 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
-    ma_decoder_uninit(&decoder);
-    return nullptr;
-  }
-
+  buffer = readAllPcmFrames(decoder);
   ma_decoder_uninit(&decoder);
   return makeAudioBufferFromInt16Buffer(buffer);
 #else
@@ -167,29 +158,19 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
-    const std::string &data,
-    float playbackSpeed) const {
+    const std::string &data) const {
   auto decodedData = base64_decode(data, false);
-
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
-  size_t framesDecoded = decodedData.size() / 2;
-
-  std::vector<int16_t> buffer(framesDecoded);
-  for (size_t i = 0; i < framesDecoded; ++i) {
-    buffer[i] =
-        static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]);
-  }
-
-  changePlaybackSpeedIfNeeded(buffer, framesDecoded, 1, playbackSpeed);
-  auto outputFrames = buffer.size();
+  size_t numFramesDecoded = decodedData.size() / 2;
 
   auto audioBus =
-      std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
+      std::make_shared<AudioBus>(numFramesDecoded, numChannels_, sampleRate_);
   auto leftChannelData = audioBus->getChannel(0)->getData();
   auto rightChannelData = audioBus->getChannel(1)->getData();
 
-  for (size_t i = 0; i < outputFrames; ++i) {
-    auto sample = int16ToFloat(buffer[i]);
+  for (size_t i = 0; i < numFramesDecoded; ++i) {
+    float sample = int16ToFloat(
+        static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]));
     leftChannelData[i] = sample;
     rightChannelData[i] = sample;
   }

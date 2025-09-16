@@ -51,7 +51,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
-        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser);
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
   }
 
   ~BaseAudioContextHostObject() override;
