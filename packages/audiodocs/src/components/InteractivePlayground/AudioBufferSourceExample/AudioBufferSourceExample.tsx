@@ -41,6 +41,14 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
+  const audioPropsRef = useRef({
+    playbackRate,
+    detune,
+    loop,
+    loopStart,
+    loopEnd,
+  });
+
   const stopSound = useCallback(() => {
     if (bufferSourceRef.current) {
       bufferSourceRef.current.onEnded = null; // Prevent onEnded from firing on manual stop
@@ -59,12 +67,26 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
     if (bufferSourceRef.current) {
       stopSound();
     }
+    
+    const {
+      playbackRate,
+      detune,
+      loop,
+      loopStart,
+      loopEnd,
+    } = audioPropsRef.current;
 
     const source = await ctx.createBufferSource({
       pitchCorrection: pitchCorrection,
     });
 
     source.buffer = audioBufferRef.current;
+    source.playbackRate.value = playbackRate;
+    source.detune.value = detune;
+    source.loop = loop;
+    source.loopStart = loopStart;
+    source.loopEnd = loopEnd;
+
     await ctx.resume();
     source.connect(analyserRef.current!);
     source.start();
@@ -77,7 +99,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
         setIsPlaying(false);
       }
     };
-  }, [stopSound]);
+  }, [stopSound]); 
 
   const handlePlayButtonClick = () => {
     if (isPlaying) {
@@ -86,6 +108,16 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
       playSound();
     }
   };
+
+  useEffect(() => {
+    audioPropsRef.current = {
+      playbackRate,
+      detune,
+      loop,
+      loopStart,
+      loopEnd,
+    };
+  }, [playbackRate, detune, loop, loopStart, loopEnd]);
 
   useEffect(() => {
     let mounted = true;
@@ -127,7 +159,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
       stopSound();
       playSound();
     }
-  }, [pitchCorrection, stopSound, playSound, isPlaying]);
+  }, [pitchCorrection]);
 
   useEffect(() => {
     if (!bufferSourceRef.current) {
