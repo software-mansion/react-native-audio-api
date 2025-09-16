@@ -22,25 +22,44 @@ const Record: FC = () => {
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
 
   useEffect(() => {
+    AudioManager.requestRecordingPermissions();
+    recorderRef.current = new AudioRecorder({
+      sampleRate: SAMPLE_RATE,
+      bufferLengthInSamples: SAMPLE_RATE,
+    });
+    return () => {
+      aCtxRef.current?.close();
+    };
+  }, []);
+
+  const setupRecording = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
+  };
 
-    AudioManager.requestRecordingPermissions();
-
-    recorderRef.current = new AudioRecorder({
-      sampleRate: SAMPLE_RATE,
-      bufferLengthInSamples: SAMPLE_RATE,
-    });
-  }, []);
+  const stopRecorder = () => {
+    if (recorderRef.current) {
+      recorderRef.current.stop();
+      console.log('Recording stopped');
+      // advised, but not required
+      AudioManager.setAudioSessionOptions({
+        iosCategory: 'playback',
+        iosMode: 'default',
+      });
+    } else {
+      console.error('AudioRecorder is not initialized');
+    }
+  };
 
   const startEcho = () => {
     if (!recorderRef.current) {
       console.error('AudioContext or AudioRecorder is not initialized');
       return;
     }
+    setupRecording();
 
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
@@ -58,14 +77,9 @@ const Record: FC = () => {
 
   /// This stops only the recording, not the audio context
   const stopEcho = () => {
-    if (!recorderRef.current) {
-      console.error('AudioRecorder is not initialized');
-      return;
-    }
-    recorderRef.current.stop();
+    stopRecorder();
     aCtxRef.current = null;
     recorderAdapterRef.current = null;
-    console.log('Recording stopped');
   };
 
   const startRecordReplay = () => {
@@ -73,6 +87,8 @@ const Record: FC = () => {
       console.error('AudioRecorder is not initialized');
       return;
     }
+    setupRecording();
+    audioBuffersRef.current = [];
 
     recorderRef.current.onAudioReady((event) => {
       const { buffer, numFrames, when } = event;
@@ -89,8 +105,7 @@ const Record: FC = () => {
     recorderRef.current.start();
 
     setTimeout(() => {
-      recorderRef.current?.stop();
-      console.log('Recording stopped');
+      stopRecorder();
     }, 5000);
   };
 

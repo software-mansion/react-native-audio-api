@@ -136,7 +136,7 @@ fix_dynamic_ios_linkage() {
         if [[ -n "$dep" ]]; then
             # Extract library name without any version numbers and extension for framework path
             local lib_name=$(basename "$dep" | sed 's/\.dylib$//' | sed 's/\.[0-9][0-9.]*$//')
-            local framework_path="@rpath/Frameworks/${lib_name}.framework/${lib_name}"
+            local framework_path="@rpath/${lib_name}.framework/${lib_name}"
             echo "Changing dependency: $dep -> $framework_path"
             install_name_tool -change "$dep" "$framework_path" "${LIB_PATH}"
         fi
@@ -144,7 +144,7 @@ fix_dynamic_ios_linkage() {
     
     # Also update the library's own install name to use @rpath with framework structure
     local lib_name=$(basename "${LIB_PATH}" | sed 's/\.dylib$//' | sed 's/\.[0-9][0-9.]*$//')
-    local framework_path="@rpath/Frameworks/${lib_name}.framework/${lib_name}"
+    local framework_path="@rpath/${lib_name}.framework/${lib_name}"
     echo "Updating install name for $(basename "${LIB_PATH}") -> $framework_path"
     install_name_tool -id "$framework_path" "${LIB_PATH}"
 }

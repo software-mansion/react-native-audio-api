@@ -39,8 +39,11 @@ Pod::Spec.new do |s|
   #   ruby -r './scripts/download-audioapi-libs.rb'
   # CMD
 
-  external_dir = File.join(__dir__, "common/cpp/audioapi/external")
-  lib_dir = "#{external_dir}/$(PLATFORM_NAME)"
+  # Assumes Pods dir is nested under ios project dir
+  ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
+  rn_audio_dir_relative = Pathname.new(__dir__).relative_path_from(ios_dir).to_s
+  external_dir = "common/cpp/audioapi/external"
+  lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir}/$(PLATFORM_NAME)"
   
   s.ios.vendored_frameworks = [
     'common/cpp/audioapi/external/libavcodec.xcframework',
@@ -56,9 +59,9 @@ s.pod_target_xcconfig = {
   "HEADER_SEARCH_PATHS" => %W[
     $(PODS_TARGET_SRCROOT)/common/cpp
     $(PODS_TARGET_SRCROOT)/ios
-    #{external_dir}/include
-    #{external_dir}/include/opus
-    #{external_dir}/include/vorbis
+    $(PODS_TARGET_SRCROOT)/#{external_dir}/include
+    $(PODS_TARGET_SRCROOT)/#{external_dir}/include/opus
+    $(PODS_TARGET_SRCROOT)/#{external_dir}/include/vorbis
     $(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external/ffmpeg_include
   ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"

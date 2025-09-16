@@ -4,6 +4,9 @@ sidebar_position: 2
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { ReadOnly } from '@site/src/components/Badges';
+import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+
 
 # GainNode
 
@@ -31,6 +34,18 @@ The most common way of describing an envelope is ADSR. This acronym stands for: 
 ![ADSR Example](/img/ADSR.svg)
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
+
+## ADSR Playground
+
+This is an interactive example demonstrating the ADSR on GainNode. You can adjust the parameters in real-time to hear and see how they affect the generated sound wave.
+
+
+
+<details open>
+<summary><code>GainNode</code> interactive playground</summary>
+
+<InteractivePlayground usePlayground={useGainAdsrPlayground} />
+</details>
 
 ## Constructor
 

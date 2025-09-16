@@ -122,7 +122,7 @@ class LockScreenManager(
             )
 
             nb.setLargeIcon(bitmap)
-            mediaNotificationManager.get()?.show(nb, isPlaying)
+            mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
 
             artworkThread = null
           } catch (ex: Exception) {
@@ -167,14 +167,14 @@ class LockScreenManager(
 
     mediaSession.get()?.setMetadata(md.build())
     mediaSession.get()?.setActive(true)
-    mediaNotificationManager.get()?.show(nb, isPlaying)
+    mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
   }
 
   fun resetLockScreenInfo() {
     if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
     artworkThread = null
 
-    mediaNotificationManager.get()?.hide()
+    mediaNotificationManager.get()?.cancelNotification()
     mediaSession.get()?.setActive(false)
   }
 
@@ -235,7 +235,7 @@ class LockScreenManager(
     updateNotificationMediaStyle()
 
     if (mediaSession.get()?.isActive == true) {
-      mediaNotificationManager.get()?.show(nb, isPlaying)
+      mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
     }
   }
 

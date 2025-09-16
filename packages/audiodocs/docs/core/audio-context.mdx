@@ -40,13 +40,13 @@ The above method lets you close the audio context, releasing any system audio re
 The above method lets you suspend time progression in the audio context.
 It is useful when your application will not use audio for a while.
 
-#### Returns `Promise<undefined>`.
+#### Returns `Promise<boolean>`.
 
 ### `resume`
 
 The above method lets resume time progression in audio context that previously has been suspended.
 
-#### Returns `Promise<undefined>`.
+#### Returns `Promise<boolean>`.
 
 
 ## Remarks
@@ -55,7 +55,7 @@ The above method lets resume time progression in audio context that previously h
 
 <details>
 
-`AudioContextOptions` is a dictionary object specifies sample rate for the new context.
+`AudioContextOptions` is a dictionary object, which specifies sample rate for the new context.
 
 ```jsx
 interface AudioContextOptions {

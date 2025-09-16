@@ -20,39 +20,86 @@ interface ChartProps {
 const TimeChart: React.FC<ChartProps> = (props) => {
   const { data, dataSize } = props;
 
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    if (!canvas) return;
 
-    const maxWidth = canvas.width;
-    const maxHeight = canvas.height;
+    const dpr =
+      typeof window !== 'undefined' && window.devicePixelRatio
+        ? window.devicePixelRatio
+        : 1;
+
+    const cssWidth = Number(canvas.dataset.cssWidth) || canvas.clientWidth || 300;
+    const cssHeight = Number(canvas.dataset.cssHeight) || canvas.clientHeight || 150;
+
+    const scaledWidth = Math.max(1, Math.floor(cssWidth * dpr));
+    const scaledHeight = Math.max(1, Math.floor(cssHeight * dpr));
+
+    if (canvas.width !== scaledWidth) canvas.width = scaledWidth;
+    if (canvas.height !== scaledHeight) canvas.height = scaledHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
 
-    data.forEach((value, index) => {
-      const x = (index * maxWidth) / dataSize;
-      const y = maxHeight - (value / 255) * maxHeight;
-      ctx.lineTo(x, y);
-    });
+    const maxWidth = canvas.width;
+    const maxHeight = canvas.height;
 
+    for (let i = 0; i < data.length && i < dataSize; i++) {
+      const value = data[i];
+      const x = (i * maxWidth) / dataSize;
+      const y = maxHeight - (value / 255) * maxHeight;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    // Keep stroke thickness consistent in CSS pixels by scaling with dpr
     ctx.strokeStyle = '#B5E1F1';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * dpr;
     ctx.stroke();
   }, [data, dataSize]);
 
   return (
     <CanvasSizer canvasHeight={300}>
-      {({width, height }) => (
-        <canvas
-          ref={canvasRef}
-          style={{ flex: 1 }}
-          width={width}
-          height={height}
-        />
-      )}
+      {({ width, height }) => {
+        const dpr =
+          typeof window !== 'undefined' && window.devicePixelRatio
+            ? window.devicePixelRatio
+            : 1;
+        const scaledWidth = Math.max(1, Math.floor(width * dpr));
+        const scaledHeight = Math.max(1, Math.floor(height * dpr));
+
+        const containerStyle: React.CSSProperties = {
+          width: `${width}px`,
+          height: `${height}px`,
+          overflow: 'hidden',
+        };
+
+        const canvasStyle: React.CSSProperties = {
+          width: `${scaledWidth}px`,
+          height: `${scaledHeight}px`,
+          transform: `scale(${1 / dpr})`,
+          transformOrigin: 'top left',
+          display: 'block',
+        };
+
+        return (
+          <div style={containerStyle}>
+            <canvas
+              ref={canvasRef}
+              width={scaledWidth}
+              height={scaledHeight}
+              data-css-width={width}
+              data-css-height={height}
+              style={canvasStyle}
+            />
+          </div>
+        );
+      }}
     </CanvasSizer>
   );
 }

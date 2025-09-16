@@ -134,7 +134,7 @@ const DrumMachine: React.FC = () => {
           label="BPM"
           step={1}
           min={24}
-          max={1000}
+          max={1500}
           value={bpm}
           onValueChange={setBpm}
         />

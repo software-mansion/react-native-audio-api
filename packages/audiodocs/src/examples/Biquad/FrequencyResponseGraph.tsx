@@ -21,7 +21,6 @@ const FILTER_TYPES: BiquadFilterType[] = [
   'lowshelf', 'highshelf', 'peaking', 'notch',
 ];
 
-
 const FrequencyResponseGraph: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +38,23 @@ const FrequencyResponseGraph: React.FC = () => {
   });
   const filterRef = useRef<BiquadFilterNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const adjustCanvasForRetina = (canvas: HTMLCanvasElement | null, cssWidth = 600, cssHeight = 200) => {
+    if (!canvas) return;
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    const measuredCssWidth = canvas.clientWidth || cssWidth;
+    const measuredCssHeight = canvas.clientHeight || cssHeight;
+
+    const scaledWidth = Math.max(1, Math.floor(measuredCssWidth * dpr));
+    const scaledHeight = Math.max(1, Math.floor(measuredCssHeight * dpr));
+
+    if (canvas.width !== scaledWidth) canvas.width = scaledWidth;
+    if (canvas.height !== scaledHeight) canvas.height = scaledHeight;
+
+    canvas.style.width = `${measuredCssWidth}px`;
+    canvas.style.height = `${measuredCssHeight}px`;
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -81,8 +97,18 @@ const FrequencyResponseGraph: React.FC = () => {
     filter.Q.value = filterQ;
     filter.gain.value = filterGain;
 
+    adjustCanvasForRetina(canvasRef.current);
     drawFrequencyResponse(canvasRef.current, filterRef.current);
   }, [filterType, filterFreq, filterQ, filterGain]);
+
+  useEffect(() => {
+    const onResize = () => {
+      adjustCanvasForRetina(canvasRef.current);
+      if (filterRef.current) drawFrequencyResponse(canvasRef.current, filterRef.current);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const playAudio = async () => {
     if (!audioContextRef.current) return;
@@ -121,9 +147,16 @@ const FrequencyResponseGraph: React.FC = () => {
     <View style={styles.container}>
       {isLoading && <ActivityIndicator color="#fcfcff" />}
 
-      <canvas ref={canvasRef} width={600} height={200} style={styles.canvas} />
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
-
+      <canvas
+        ref={canvasRef}
+        width={600}
+        height={200}
+        style={styles.canvas}
+        aria-label="frequency-response-canvas"
+      />
+      <View style={{ paddingTop: 10 }}>
+        <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
+      </View>
       <View style={[styles.filterButtonsContainer, { marginTop: 16 }]}>
         {FILTER_TYPES.map((type) => (
           <Pressable
@@ -172,7 +205,7 @@ export default FrequencyResponseGraph;
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  canvas: { borderRadius: 6, marginTop: 16 },
+  canvas: { marginTop: 16 },
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
