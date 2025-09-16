@@ -7,8 +7,7 @@ const { generate } = require('../lib/generator');
 program
   .name('audio-api-node-generator')
   .description('Generate template files for custom processor using react-native-audio-api.')
-  .version('0.0.2');
-
+  .version('0.0.5');
 
 program
   .command('create')
