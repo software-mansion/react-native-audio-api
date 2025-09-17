@@ -41,14 +41,6 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
-  const audioPropsRef = useRef({
-    playbackRate,
-    detune,
-    loop,
-    loopStart,
-    loopEnd,
-  });
-
   const stopSound = useCallback(() => {
     if (bufferSourceRef.current) {
       bufferSourceRef.current.onEnded = null; // Prevent onEnded from firing on manual stop
@@ -67,14 +59,6 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
     if (bufferSourceRef.current) {
       stopSound();
     }
-    
-    const {
-      playbackRate,
-      detune,
-      loop,
-      loopStart,
-      loopEnd,
-    } = audioPropsRef.current;
 
     const source = await ctx.createBufferSource({
       pitchCorrection: pitchCorrection,
@@ -99,7 +83,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
         setIsPlaying(false);
       }
     };
-  }, [stopSound]); 
+  }, [stopSound, playbackRate,detune,loop,loopStart,loopEnd, pitchCorrection]); 
 
   const handlePlayButtonClick = () => {
     if (isPlaying) {
@@ -108,16 +92,6 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
       playSound();
     }
   };
-
-  useEffect(() => {
-    audioPropsRef.current = {
-      playbackRate,
-      detune,
-      loop,
-      loopStart,
-      loopEnd,
-    };
-  }, [playbackRate, detune, loop, loopStart, loopEnd]);
 
   useEffect(() => {
     let mounted = true;
@@ -162,15 +136,26 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
   }, [pitchCorrection]);
 
   useEffect(() => {
-    if (!bufferSourceRef.current) {
+    const source = bufferSourceRef.current;
+    const ctx = audioContextRef.current;
+    if (!source || !ctx) {
       return;
     }
 
-    bufferSourceRef.current.playbackRate.value = playbackRate;
-    bufferSourceRef.current.detune.value = detune;
-    bufferSourceRef.current.loop = loop;
-    bufferSourceRef.current.loopStart = loopStart;
-    bufferSourceRef.current.loopEnd = loopEnd;
+    const RAMP_TIME = 0.05; 
+
+    source.playbackRate.setValueAtTime(
+      playbackRate,
+      ctx.currentTime + RAMP_TIME
+    );
+    source.detune.setValueAtTime(
+      detune,
+      ctx.currentTime + RAMP_TIME
+    );
+ 
+    source.loop = loop;
+    source.loopStart = loopStart;
+    source.loopEnd = loopEnd;
   }, [playbackRate, detune, loop, loopStart, loopEnd]);
 
   return (
