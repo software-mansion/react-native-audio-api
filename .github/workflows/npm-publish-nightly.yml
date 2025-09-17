@@ -4,11 +4,15 @@ on:
   schedule:
     - cron: '32 23 * * *' # Every day at 23:32 UTC
   workflow_dispatch:
+    inputs:
+      nightly-build:
+        description: 'Whether to publish as an nightly build'
+        required: true
+        type: boolean
 
 jobs:
   publish-nightly:
     uses: ./.github/workflows/npm-audio-package-build.yml
     with:
-      nightly-build: true
-    secrets:
-      inherit
+      nightly-build: ${{ inputs.nightly-build || true }}
+    secrets: inherit
