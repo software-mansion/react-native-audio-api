@@ -8,6 +8,10 @@ on:
         type: boolean
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     if: github.repository == 'software-mansion/react-native-audio-api'
@@ -30,6 +34,9 @@ jobs:
           node-version: 22
           cache: 'yarn'
           registry-url: https://registry.npmjs.org/
+
+      - name: Update NPM
+        run: npm install -g npm@latest
 
       - name: Determine version
         working-directory: ${{ env.AUDIO_API_DIR }}
@@ -102,5 +109,3 @@ jobs:
 
       - name: Publish package to npm
         run: npm publish $PACKAGE_NAME --tag ${{ env.TAG }} --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
