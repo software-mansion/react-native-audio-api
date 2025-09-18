@@ -54,44 +54,43 @@
   float inputSampleRate = self.inputFormat.sampleRate;
   float outputSampleRate = self.outputFormat.sampleRate;
 
-  AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:outputSampleRate];
-
   if (inputSampleRate != outputSampleRate) {
-    AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
-                                                                  frameCapacity:frameCount];
+    @autoreleasepool {
+      AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
+                                                                    frameCapacity:frameCount];
+      memcpy(
+          inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
+          inputData->mBuffers[0].mData,
+          inputData->mBuffers[0].mDataByteSize);
+      inputBuffer.frameLength = frameCount;
 
-    memcpy(
-        inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
-        inputData->mBuffers[0].mData,
-        inputData->mBuffers[0].mDataByteSize);
-    inputBuffer.frameLength = frameCount;
+      int outputFrameCount = frameCount * outputSampleRate / inputSampleRate;
 
-    int outputFrameCount = frameCount * outputSampleRate / inputSampleRate;
+      AVAudioPCMBuffer *outputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.audioConverter.outputFormat
+                                                                     frameCapacity:outputFrameCount];
 
-    AVAudioPCMBuffer *outputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.audioConverter.outputFormat
-                                                                   frameCapacity:outputFrameCount];
+      NSError *error = nil;
+      AVAudioConverterInputBlock inputBlock =
+          ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+      {
+        *outStatus = AVAudioConverterInputStatus_HaveData;
+        return inputBuffer;
+      };
 
-    NSError *error = nil;
-    AVAudioConverterInputBlock inputBlock =
-        ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-    {
-      *outStatus = AVAudioConverterInputStatus_HaveData;
-      return inputBuffer;
-    };
+      [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
 
-    [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
+      if (error) {
+        NSLog(@"Error during audio conversion: %@", error.localizedDescription);
+        return kAudioServicesBadSpecifierSizeError;
+      }
 
-    if (error) {
-      NSLog(@"Error during audio conversion: %@", error.localizedDescription);
-      return kAudioServicesBadSpecifierSizeError;
+      self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength);
     }
-
-    self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength, time);
 
     return kAudioServicesNoError;
   }
 
-  self.receiverBlock(inputData, frameCount, time);
+  self.receiverBlock(inputData, frameCount);
 
   return kAudioServicesNoError;
 }

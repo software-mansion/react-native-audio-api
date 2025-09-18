@@ -23,7 +23,7 @@ class AudioRecorder {
   virtual ~AudioRecorder() = default;
 
   void setOnAudioReadyCallbackId(uint64_t callbackId);
-  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames, double when);
+  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
   void sendRemainingData();
 
   /// @brief

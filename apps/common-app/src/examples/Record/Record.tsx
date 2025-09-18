@@ -29,6 +29,7 @@ const Record: FC = () => {
     });
     return () => {
       aCtxRef.current?.close();
+      stopRecorder();
     };
   }, []);
 
@@ -91,13 +92,12 @@ const Record: FC = () => {
     audioBuffersRef.current = [];
 
     recorderRef.current.onAudioReady((event) => {
-      const { buffer, numFrames, when } = event;
+      const { buffer, numFrames } = event;
 
       console.log(
         'Audio recorder buffer ready:',
         buffer.duration,
-        numFrames,
-        when
+        numFrames
       );
       audioBuffersRef.current.push(buffer);
     });
@@ -146,17 +146,17 @@ const Record: FC = () => {
 
   return (
     <Container style={{ gap: 40 }}>
-      <Text style={{ color: colors.white, fontSize: 24, textAlign: 'center' }}>
+      <Text style={{ color: colors.gray, fontSize: 18, textAlign: 'center' }}>
         Sample rate: {SAMPLE_RATE}
       </Text>
-      <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <Text style={{ color: colors.white, fontSize: 24 }}>Echo example</Text>
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
+        <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>
         <Button title="Start Recording" onPress={startEcho} />
         <Button title="Stop Recording" onPress={stopEcho} />
       </View>
-      <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <Text style={{ color: colors.white, fontSize: 24 }}>
-          Record & replay example
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 40 }}>
+        <Text style={{ color: colors.white, fontSize: 16 }}>
+          Record & replay
         </Text>
         <Button title="Record for Replay" onPress={startRecordReplay} />
         <Button title="Replay" onPress={stopRecordReplay} />

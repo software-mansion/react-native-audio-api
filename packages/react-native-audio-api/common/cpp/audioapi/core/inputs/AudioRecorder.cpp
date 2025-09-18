@@ -28,8 +28,7 @@ void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
 
 void AudioRecorder::invokeOnAudioReadyCallback(
     const std::shared_ptr<AudioBus> &bus,
-    int numFrames,
-    double when) {
+    int numFrames) {
   auto audioBuffer = std::make_shared<AudioBuffer>(bus);
   auto audioBufferHostObject =
       std::make_shared<AudioBufferHostObject>(audioBuffer);
@@ -37,7 +36,6 @@ void AudioRecorder::invokeOnAudioReadyCallback(
   std::unordered_map<std::string, EventValue> body = {};
   body.insert({"buffer", audioBufferHostObject});
   body.insert({"numFrames", numFrames});
-  body.insert({"when", when});
 
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
@@ -55,7 +53,7 @@ void AudioRecorder::sendRemainingData() {
   circularBuffer_->pop_front(
       outputChannel, circularBuffer_->getNumberOfAvailableFrames());
 
-  invokeOnAudioReadyCallback(bus, availableFrames, 0);
+  invokeOnAudioReadyCallback(bus, availableFrames);
 }
 
 void AudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {

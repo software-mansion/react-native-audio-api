@@ -75,10 +75,8 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     auto *outputChannel = bus->getChannel(0)->getData();
 
     circularBuffer_->pop_front(outputChannel, bufferLength_);
-    auto when = static_cast<double>(
-        oboeStream->getTimestamp(CLOCK_MONOTONIC).value().timestamp);
 
-    invokeOnAudioReadyCallback(bus, bufferLength_, when);
+    invokeOnAudioReadyCallback(bus, bufferLength_);
   }
 
   return DataCallbackResult::Continue;
