@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
 namespace audioapi {
@@ -93,7 +94,22 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       }
 
       try {
-        auto eventObject = createEventObject(body);
+        jsi::Object eventObject(*runtime_);
+        // handle special logic for microphone, because we pass audio buffer
+        // which has significant size
+        if (eventName.compare("audioReady") == 0) {
+          auto bufferIt = body.find("buffer");
+          if (bufferIt != body.end()) {
+            auto bufferHostObject =
+                std::static_pointer_cast<AudioBufferHostObject>(
+                    std::get<std::shared_ptr<jsi::HostObject>>(
+                        bufferIt->second));
+            eventObject =
+                createEventObject(body, bufferHostObject->getSizeInBytes());
+          }
+        } else {
+          eventObject = createEventObject(body);
+        }
         handler->call(*runtime_, eventObject);
       } catch (const std::exception &e) {
         // re-throw the exception to be handled by the caller
@@ -142,7 +158,21 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
 
     // Hours spent on this: 5
     try {
-      auto eventObject = createEventObject(body);
+      jsi::Object eventObject(*runtime_);
+      // handle special logic for microphone, because we pass audio buffer which
+      // has significant size
+      if (eventName.compare("audioReady") == 0) {
+        auto bufferIt = body.find("buffer");
+        if (bufferIt != body.end()) {
+          auto bufferHostObject =
+              std::static_pointer_cast<AudioBufferHostObject>(
+                  std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
+          eventObject =
+              createEventObject(body, bufferHostObject->getSizeInBytes());
+        }
+      } else {
+        eventObject = createEventObject(body);
+      }
       handlerIt->second->call(*runtime_, eventObject);
     } catch (const std::exception &e) {
       // re-throw the exception to be handled by the caller
@@ -182,6 +212,14 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
     }
   }
 
+  return eventObject;
+}
+
+jsi::Object AudioEventHandlerRegistry::createEventObject(
+    const std::unordered_map<std::string, EventValue> &body,
+    size_t memoryPressure) {
+  auto eventObject = createEventObject(body);
+  eventObject.setExternalMemoryPressure(*runtime_, memoryPressure);
   return eventObject;
 }
 
