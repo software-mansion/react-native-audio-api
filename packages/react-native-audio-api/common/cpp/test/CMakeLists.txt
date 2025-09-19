@@ -21,10 +21,10 @@ enable_testing()
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/*.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AudioDecoder.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/utils/AudioDecoder.cpp"
 )
 
-list(REMOVE_ITEM RNAUDIOAPI_SRC 
+list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.h"
