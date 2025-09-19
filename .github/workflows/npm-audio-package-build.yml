@@ -2,7 +2,7 @@ name: NPM Build and publish to npm
 
 on:
   schedule:
-    - cron: '32 23 * * *' # Every day at 23:32 UTC
+    - cron: '01 00 * * *' # Every day at 00:01 UTC
   workflow_dispatch:
     inputs:
       latest-build:
