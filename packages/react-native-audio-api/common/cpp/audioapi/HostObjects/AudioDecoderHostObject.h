@@ -28,7 +28,7 @@ class AudioDecoderHostObject : public JsiHostObject {
   }
 
   JSI_HOST_FUNCTION(decodeWithMemoryBlock) {
-    auto arrayBuffer = args[0].getObject(runtime).getArrayBuffer(runtime);
+    auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
     auto data = arrayBuffer.data(runtime);
     auto size = static_cast<int>(arrayBuffer.size(runtime));
 

@@ -11,18 +11,21 @@ export default class AudioDecoder {
   public decode(path: string): Promise<AudioBuffer>;
   public decode(buffer: ArrayBuffer): Promise<AudioBuffer>;
 
-  public decode(input: string | ArrayBuffer): Promise<AudioBuffer> {
+  public async decode(input: string | ArrayBuffer): Promise<AudioBuffer> {
+    let buffer;
     if (typeof input === 'string') {
-      if (input.match(/\.(mp3|wav|flac|opus|ogg|m4a|aac|mp4)$/i)) {
-        return this.decoder.decodeWithFilePath(input);
+      if (/\.(mp3|wav|flac|opus|ogg|m4a|aac|mp4)$/i.test(input)) {
+        buffer = await this.decoder.decodeWithFilePath(input);
+      } else {
+        buffer = await this.decoder.decodeWithPCMInBase64(input);
       }
-      return this.decoder.decodeWithPCMInBase64(input);
+    } else if (input instanceof ArrayBuffer) {
+      buffer = await this.decoder.decodeWithMemoryBlock(new Uint8Array(input));
     }
 
-    if (input instanceof ArrayBuffer) {
-      return this.decoder.decodeWithMemoryBlock(input);
+    if (!buffer) {
+      throw new Error('Unsupported input type or failed to decode audio');
     }
-
-    return Promise.reject(new Error('Unsupported input type for decode()'));
+    return new AudioBuffer(buffer);
   }
 }

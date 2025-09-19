@@ -7,7 +7,6 @@ import {
   ChannelInterpretation,
 } from './types';
 import { AudioEventName, AudioEventCallback } from './events/types';
-import AudioBuffer from './core/AudioBuffer';
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -207,9 +206,9 @@ export interface IAudioRecorder {
 }
 
 export interface IAudioDecoder {
-  decodeWithMemoryBlock: (arrayBuffer: ArrayBuffer) => Promise<AudioBuffer>;
-  decodeWithFilePath: (sourcePath: string) => Promise<AudioBuffer>;
-  decodeWithPCMInBase64: (b64: string) => Promise<AudioBuffer>;
+  decodeWithMemoryBlock: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
+  decodeWithFilePath: (sourcePath: string) => Promise<IAudioBuffer>;
+  decodeWithPCMInBase64: (b64: string) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioEventEmitter {
