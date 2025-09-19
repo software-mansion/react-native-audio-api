@@ -1,12 +1,14 @@
 name: NPM Build and publish to npm
 
 on:
-  workflow_call:
+  schedule:
+    - cron: '32 23 * * *' # Every day at 23:32 UTC
+  workflow_dispatch:
     inputs:
-      nightly-build:
+      latest-build:
+        description: 'Whether to publish as a latest build'
         required: true
         type: boolean
-  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -53,7 +55,7 @@ jobs:
 
       - name: Set tag
         run: |
-          if [[ "${{ inputs.nightly-build }}" == "true" ]]; then
+          if [[ "${{ inputs.latest-build }}" != "true" ]]; then
             echo "TAG=audio-api-nightly" >> $GITHUB_ENV
           else
             echo "TAG=latest" >> $GITHUB_ENV
@@ -67,7 +69,7 @@ jobs:
         id: build
         working-directory: ${{ env.AUDIO_API_DIR }}
         run: |
-          if [[ "${{ inputs.nightly-build }}" == "true" ]]; then
+          if [[ "${{ inputs.latest-build }}" != "true" ]]; then
             ./scripts/create-package.sh generate_nightly_version
           else
             ./scripts/create-package.sh
