@@ -14,10 +14,15 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: 'npm-audio-package-build'
+  cancel-in-progress: false
+
 jobs:
   build:
     if: github.repository == 'software-mansion/react-native-audio-api'
     runs-on: ubuntu-latest
+    environment: deployment
     permissions:
       contents: read
       id-token: write
