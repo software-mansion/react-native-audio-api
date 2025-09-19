@@ -28,9 +28,7 @@ const Piano: FC = () => {
     Object.entries(sources).forEach(async ([key, url]) => {
       bufferListRef.current[key as KeyName] = await fetch(url)
         .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) =>
-          audioContextRef.current!.decodeAudioData(arrayBuffer)
-        );
+        .then((arrayBuffer) => audioContextRef.current!.decode(arrayBuffer));
     });
 
     const newNotes: Partial<Record<KeyName, PianoNote>> = {};

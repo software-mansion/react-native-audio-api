@@ -43,9 +43,7 @@ const OfflineRendering: FC = () => {
 
       const buffer = await fetch(URL)
         .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) =>
-          offlineAudioContext.decodeAudioData(arrayBuffer)
-        );
+        .then((arrayBuffer) => offlineAudioContext.decode(arrayBuffer));
       const audioBufferSourceNode = offlineAudioContext.createBufferSource();
       audioBufferSourceNode.buffer = buffer;
 

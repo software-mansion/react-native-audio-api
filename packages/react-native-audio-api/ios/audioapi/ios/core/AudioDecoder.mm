@@ -64,7 +64,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string 
   // if (path.starts_with("file://")) {
   //   path = path.replace(0, 7, "");
   // }
-   NSLog(@"PATH");
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     buffer = ffmpegdecoding::decodeWithFilePath(path, numChannels_, static_cast<int>(sampleRate_));
@@ -94,7 +93,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string 
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
 {
-   NSLog(@"MEMORY");
   std::vector<int16_t> buffer;
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
@@ -105,7 +103,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *dat
     }
     return makeAudioBufferFromInt16Buffer(buffer);
   }
-  NSLog(@"nie ffmpeg");
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
 
@@ -121,13 +118,11 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *dat
 
   buffer = readAllPcmFrames(decoder);
   ma_decoder_uninit(&decoder);
-  NSLog(@"zdekodowane");
   return makeAudioBufferFromInt16Buffer(buffer);
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(const std::string &data) const
 {
-   NSLog(@"PCM");
   auto decodedData = base64_decode(data, false);
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
   size_t numFramesDecoded = decodedData.size() / 2;

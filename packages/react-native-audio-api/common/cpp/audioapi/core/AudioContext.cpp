@@ -6,7 +6,6 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 
 namespace audioapi {
@@ -25,7 +24,6 @@ AudioContext::AudioContext(
 #endif
 
   sampleRate_ = sampleRate;
-  decoder = std::make_shared<AudioDecoder>(sampleRate);
 
   if (initSuspended) {
     playerHasBeenStarted_ = false;

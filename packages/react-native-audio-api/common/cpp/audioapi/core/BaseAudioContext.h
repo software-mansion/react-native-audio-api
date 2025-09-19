@@ -25,7 +25,6 @@ class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
-class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
@@ -69,9 +68,6 @@ class BaseAudioContext {
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
-
-  // init in AudioContext or OfflineContext constructor
-  std::shared_ptr<AudioDecoder> decoder;
 
  protected:
   static std::string toString(ContextState state);

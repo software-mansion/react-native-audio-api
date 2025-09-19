@@ -40,6 +40,16 @@ export default class BaseAudioContext {
     return this.context.state;
   }
 
+  public async decode(input: string | ArrayBuffer): Promise<AudioBuffer> {
+    if (typeof input === 'string') {
+      return this.decoder.decode(input);
+    } else if (input instanceof ArrayBuffer) {
+      return this.decoder.decode(input);
+    } else {
+      throw new TypeError('Input must be a string or ArrayBuffer');
+    }
+  }
+
   createRecorderAdapter(): RecorderAdapterNode {
     return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
   }
