@@ -57,24 +57,27 @@ void WorkletNode::processNode(
     if (curBuffIndex_ == bufferLength_) {
       // Reset buffer index, channel buffers and execute worklet
       curBuffIndex_ = 0;
-      auto uiRuntimeRaw = workletRunner_->getJSIRuntime();
-      auto jsArray = jsi::Array(*uiRuntimeRaw, channelCount_);
-      for (size_t ch = 0; ch < channelCount_; ch++) {
-        uint8_t *buffPtr = buffs_[ch];
-        buffs_[ch] = new uint8_t[buffRealLength_];
-        auto sharedAudioArray =
-            std::make_shared<AudioArrayBuffer>(buffPtr, buffRealLength_);
-        auto arrayBuffer =
-            jsi::ArrayBuffer(*uiRuntimeRaw, std::move(sharedAudioArray));
-        jsArray.setValueAtIndex(*uiRuntimeRaw, ch, std::move(arrayBuffer));
-      }
-      jsArray.setExternalMemoryPressure(
-          *uiRuntimeRaw, channelCount_ * buffRealLength_);
+      workletRunner_->executeOnRuntimeGuarded([this, channelCount_](jsi::Runtime& uiRuntimeRaw) {
 
-      workletRunner_->executeWorkletSync(
+        /// Arguments preparation
+        auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
+        for (size_t ch = 0; ch < channelCount_; ch++) {
+          uint8_t *buffPtr = buffs_[ch];
+          buffs_[ch] = new uint8_t[buffRealLength_];
+          auto sharedAudioArray =
+            std::make_shared<AudioArrayBuffer>(buffPtr, buffRealLength_);
+          auto arrayBuffer =
+            jsi::ArrayBuffer(uiRuntimeRaw, std::move(sharedAudioArray));
+          jsArray.setValueAtIndex(uiRuntimeRaw, ch, std::move(arrayBuffer));
+        }
+        jsArray.setExternalMemoryPressure(
+          uiRuntimeRaw, channelCount_ * buffRealLength_);
+
+        workletRunner_->executeWorkletSync(
           shareableWorklet_,
           std::move(jsArray),
-          jsi::Value(*uiRuntimeRaw, static_cast<int>(channelCount_)));
+          jsi::Value(uiRuntimeRaw, static_cast<int>(channelCount_)));
+      });
     }
   }
 }

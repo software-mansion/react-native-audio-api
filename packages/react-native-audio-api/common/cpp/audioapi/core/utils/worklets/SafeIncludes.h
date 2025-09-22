@@ -20,7 +20,12 @@
 #endif
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
+  // Magic trick here, please do not try this at home
+  #undef private
+  #define private public
   #include <worklets/WorkletRuntime/WorkletRuntime.h>
+  #undef private
+
   #include <worklets/SharedItems/Serializable.h>
   #include <worklets/NativeModules/WorkletsModuleProxy.h>
   #if ANDROID

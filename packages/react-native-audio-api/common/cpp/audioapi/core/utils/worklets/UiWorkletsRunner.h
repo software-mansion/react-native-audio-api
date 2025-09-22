@@ -29,6 +29,21 @@ class UiWorkletsRunner {
       #endif
     }
 
+    bool executeOnRuntimeGuarded(const std::function<void(jsi::Runtime&)>& job) const noexcept {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
+         return false;
+      }
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+      std::unique_lock<std::recursive_mutex> lock(*strongRuntime->runtimeMutex_);
+      jsi::Runtime& rt = strongRuntime->getJSIRuntime();
+      job(rt);
+      return true;
+      #else
+      return false;
+      #endif
+    }
+
     template<typename... Args>
     bool executeWorkletAsync(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
       auto strongRuntime = weakUiRuntime_.lock();
