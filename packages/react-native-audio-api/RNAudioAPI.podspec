@@ -64,7 +64,7 @@ s.pod_target_xcconfig = {
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
-    $(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external/ffmpeg_include
+    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include
   ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }
