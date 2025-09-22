@@ -81,10 +81,12 @@ s.user_target_xcconfig = {
   ].join(" "),
   'HEADER_SEARCH_PATHS' => %W[
     $(inherited)
-    #{external_dir}/ffmpeg_include
-    #{external_dir}/include
-    $(PODS_TARGET_SRCROOT)/common/cpp
     $(PODS_ROOT)/Headers/Public/RNAudioAPI
+    $(PODS_TARGET_SRCROOT)/common/cpp
+    #{external_dir}/include
+    #{external_dir}/include/opus
+    #{external_dir}/include/vorbis
+    #{external_dir}/ffmpeg_include
   ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
