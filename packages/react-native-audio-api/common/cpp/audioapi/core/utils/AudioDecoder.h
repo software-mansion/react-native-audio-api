@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/types/AudioFormat.h>
-#include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <algorithm>
 #include <cstring>
@@ -35,41 +34,6 @@ class AudioDecoder {
   std::vector<int16_t> readAllPcmFrames(ma_decoder &decoder) const;
   std::shared_ptr<AudioBuffer> makeAudioBufferFromInt16Buffer(
       const std::vector<int16_t> &buffer) const;
-
-  void changePlaybackSpeedIfNeeded(
-      std::vector<int16_t> &buffer,
-      size_t framesDecoded,
-      int numChannels,
-      float playbackSpeed) const {
-    if (playbackSpeed == 1.0f) {
-      return;
-    }
-
-    auto stretcher = stretch_init(
-        static_cast<int>(sampleRate_ / 333.0f),
-        static_cast<int>(sampleRate_ / 55.0f),
-        numChannels,
-        0x1);
-
-    int maxOutputFrames = stretch_output_capacity(
-        stretcher, static_cast<int>(framesDecoded), 1 / playbackSpeed);
-    std::vector<int16_t> stretchedBuffer(maxOutputFrames);
-
-    int outputFrames = stretch_samples(
-        stretcher,
-        buffer.data(),
-        static_cast<int>(framesDecoded),
-        stretchedBuffer.data(),
-        1 / playbackSpeed);
-
-    outputFrames +=
-        stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
-    stretchedBuffer.resize(outputFrames);
-
-    buffer = stretchedBuffer;
-
-    stretch_deinit(stretcher);
-  }
 
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
