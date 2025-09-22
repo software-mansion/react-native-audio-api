@@ -5,8 +5,22 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstring>
+#include <algorithm>
 
 namespace audioapi {
+
+enum class AudioFormat {
+  UNKNOWN,
+  WAV,
+  OGG,
+  FLAC,
+  AAC,
+  MP3,
+  M4A,
+  MP4,
+  MOV
+};
 
 class AudioBus;
 
@@ -72,6 +86,53 @@ class AudioDecoder {
 
     stretch_deinit(stretcher);
   }
+
+  static AudioFormat detectAudioFormat(const void* data, size_t size) {
+    if (size < 12) return AudioFormat::UNKNOWN;
+    const auto* bytes = static_cast<const unsigned char*>(data);
+
+    // WAV/RIFF
+    if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
+        return AudioFormat::WAV;
+
+    // OGG
+    if (std::memcmp(bytes, "OggS", 4) == 0)
+        return AudioFormat::OGG;
+
+    // FLAC
+    if (std::memcmp(bytes, "fLaC", 4) == 0)
+        return AudioFormat::FLAC;
+
+    // AAC starts with 0xFF 0xF1 or 0xFF 0xF9
+    if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0)
+        return AudioFormat::AAC;
+
+    // MP3: "ID3" or 11-bit frame sync (0xFF 0xE0)
+    if (std::memcmp(bytes, "ID3", 3) == 0)
+        return AudioFormat::MP3;
+    if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
+        return AudioFormat::MP3;
+
+    if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
+        if (std::memcmp(bytes + 8, "M4A ", 4) == 0)
+            return AudioFormat::M4A;
+        else if (std::memcmp(bytes + 8, "qt  ", 4) == 0)
+            return AudioFormat::MOV;
+        return AudioFormat::MP4;
+    }
+    return AudioFormat::UNKNOWN;
+  }
+
+  static inline bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
+    std::string pathLower = path;
+    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
+    for (const auto& ext : extensions) {
+        if (pathLower.ends_with(ext))
+            return true;
+    }
+    return false;
+  }
+
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * 32768.0f);

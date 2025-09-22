@@ -3,16 +3,25 @@ cmake_minimum_required(VERSION 3.12.0)
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
+set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
+set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
-set(ARCH_LIB_DIR ${EXTERNAL_DIR}/${ANDROID_ABI})
-set(INCLUDE_DIR ${EXTERNAL_DIR}/include)
+set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
-foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile)
+foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
   add_library(${lib} STATIC IMPORTED)
-  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${ARCH_LIB_DIR}/lib${lib}.a)
+  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${EXTERNAL_DIR}/${ANDROID_ABI}/lib${lib}.a)
 endforeach()
+
+ foreach (lib IN ITEMS avcodec avformat avutil swresample)
+   add_library(${lib} SHARED IMPORTED)
+   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
+ endforeach()
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -23,6 +32,19 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 else()
   set(BUILD_TYPE "release")
 endif()
+
+target_include_directories(
+  react-native-audio-api
+  PRIVATE
+  "${COMMON_CPP_DIR}"
+  "${ANDROID_CPP_DIR}"
+  "${INCLUDE_DIR}"
+  "${INCLUDE_DIR}/opus"
+  "${FFMPEG_INCLUDE_DIR}"
+  "${REACT_NATIVE_DIR}/ReactCommon"
+  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+)
 
 set(LINK_LIBRARIES
   ReactAndroid::jsi
@@ -79,6 +101,10 @@ else()
   )
 endif()
 
+set(RN_VERSION_LINK_LIBRARIES
+  ReactAndroid::reactnative
+)
+
 if(RN_AUDIO_API_WORKLETS_ENABLED)
   target_compile_definitions(
     react-native-audio-api
@@ -100,4 +126,11 @@ target_link_libraries(react-native-audio-api
   vorbis
   vorbisenc
   vorbisfile
+  avcodec
+  avformat
+  avutil
+  swresample
+  crypto
+  ssl
+  z
 )

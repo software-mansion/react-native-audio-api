@@ -24,7 +24,7 @@ export default class AudioContext extends BaseAudioContext {
     );
   }
 
-  async close(): Promise<boolean> {
+  async close(): Promise<void> {
     return (this.context as IAudioContext).close();
   }
 

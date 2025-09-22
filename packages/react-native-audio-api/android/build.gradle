@@ -1,6 +1,5 @@
 import com.android.Version
 import org.apache.tools.ant.taskdefs.condition.Os
-import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
 buildscript {
   repositories {
@@ -103,6 +102,11 @@ def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 100
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
 
 android {
+  sourceSets {
+      main {
+          jniLibs.srcDirs = ['src/main/jniLibs']
+      }
+  }
   if (supportsNamespace()) {
     namespace "com.swmansion.audioapi"
 
@@ -149,6 +153,9 @@ android {
   }
 
   packagingOptions {
+    jniLibs {
+      useLegacyPackaging = false  // enables 16KB alignment
+    }
     excludes = [
       "META-INF",
       "META-INF/**",
@@ -263,15 +270,17 @@ if (isWorkletsAvailable) {
 
 def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
     // If you change the minimal React Native version remember to update Compatibility Table in docs
-    def minimalReactNativeVersion = 75
+    def minimalReactNativeVersion = 76
     onlyIf { REACT_NATIVE_MINOR_VERSION < minimalReactNativeVersion }
     doFirst {
         throw new GradleException("[AudioAPI] Unsupported React Native version. Please use $minimalReactNativeVersion. or newer.")
     }
 }
 
+// Make preBuild depend on the download task
 tasks.preBuild {
     dependsOn assertMinimalReactNativeVersion
+    // dependsOn downloadStaticPrebuiltLibraries TODO: re-add when we have prebuilt libs put somewhere public
 }
 
 task cleanCmakeCache() {

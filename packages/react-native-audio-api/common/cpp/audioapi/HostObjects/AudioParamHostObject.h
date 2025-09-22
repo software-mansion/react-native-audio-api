@@ -4,6 +4,7 @@
 #include <audioapi/core/AudioParam.h>
 
 #include <jsi/jsi.h>
+#include <utility>
 #include <memory>
 #include <vector>
 #include <cstddef>
@@ -81,12 +82,13 @@ class AudioParamHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(setValueCurveAtTime) {
     auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-    auto values = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+    auto rawValues = reinterpret_cast<float *>(arrayBuffer.data(runtime));
     auto length = static_cast<int>(arrayBuffer.size(runtime));
+    auto values = std::make_unique<std::vector<float>>(rawValues, rawValues + length);
 
     double startTime = args[1].getNumber();
     double duration = args[2].getNumber();
-    param_->setValueCurveAtTime(values, length, startTime, duration);
+    param_->setValueCurveAtTime(std::move(values), length, startTime, duration);
     return jsi::Value::undefined();
   }
 

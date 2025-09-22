@@ -1,21 +1,22 @@
 package com.swmansion.audioapi.system
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.content.res.Resources
-import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.KeyEvent
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.swmansion.audioapi.R
 import java.lang.ref.WeakReference
@@ -23,7 +24,7 @@ import java.lang.ref.WeakReference
 class MediaNotificationManager(
   private val reactContext: WeakReference<ReactApplicationContext>,
 ) {
-  private var smallIcon: Int = R.drawable.play
+  private var smallIcon: Int = R.drawable.logo
   private var customIcon: Int = 0
 
   private var play: NotificationCompat.Action? = null
@@ -38,6 +39,16 @@ class MediaNotificationManager(
     const val REMOVE_NOTIFICATION: String = "audio_manager_remove_notification"
     const val PACKAGE_NAME: String = "com.swmansion.audioapi.system"
     const val MEDIA_BUTTON: String = "audio_manager_media_button"
+  }
+
+  enum class ForegroundAction {
+    START_FOREGROUND,
+    STOP_FOREGROUND,
+    ;
+
+    companion object {
+      fun fromAction(action: String?): ForegroundAction? = entries.firstOrNull { it.name == action }
+    }
   }
 
   @SuppressLint("RestrictedApi")
@@ -107,34 +118,20 @@ class MediaNotificationManager(
     return builder.build()
   }
 
-  @SuppressLint("MissingPermission")
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   @Synchronized
-  fun show(
+  fun updateNotification(
     builder: NotificationCompat.Builder?,
     isPlaying: Boolean,
   ) {
     NotificationManagerCompat.from(reactContext.get()!!).notify(
       MediaSessionManager.NOTIFICATION_ID,
-      prepareNotification(
-        builder!!,
-        isPlaying,
-      ),
+      prepareNotification(builder!!, isPlaying),
     )
   }
 
-  fun hide() {
+  fun cancelNotification() {
     NotificationManagerCompat.from(reactContext.get()!!).cancel(MediaSessionManager.NOTIFICATION_ID)
-
-    try {
-      val myIntent =
-        Intent(
-          reactContext.get(),
-          NotificationService::class.java,
-        )
-      reactContext.get()?.stopService(myIntent)
-    } catch (e: java.lang.Exception) {
-      Log.w("AudioManagerModule", "Error stopping service: ${e.message}")
-    }
   }
 
   @Synchronized
@@ -182,45 +179,42 @@ class MediaNotificationManager(
     return NotificationCompat.Action(icon!!, title, i)
   }
 
-  class NotificationService : Service() {
-    private val binder = LocalBinder()
+  class AudioForegroundService : Service() {
     private var notification: Notification? = null
+    private var isServiceStarted = false
+    private val serviceLock = Any()
 
-    inner class LocalBinder : Binder() {
-      private var weakService: WeakReference<NotificationService>? = null
+    override fun onBind(intent: Intent): IBinder? = null
 
-      fun onBind(service: NotificationService) {
-        weakService = WeakReference(service)
-      }
+    private fun startForegroundService() {
+      synchronized(serviceLock) {
+        if (!isServiceStarted) {
+          try {
+            notification =
+              MediaSessionManager.mediaNotificationManager
+                .prepareNotification(
+                  NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID),
+                  false,
+                )
 
-      fun getService(): NotificationService? = weakService?.get()
-    }
-
-    override fun onBind(intent: Intent): IBinder {
-      binder.onBind(this)
-      return binder
-    }
-
-    fun forceForeground() {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val intent = Intent(this, NotificationService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-        notification =
-          MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
-        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
-      }
-    }
-
-    override fun onCreate() {
-      super.onCreate()
-      try {
-        notification =
-          MediaSessionManager.mediaNotificationManager
-            .prepareNotification(NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID), false)
-        startForeground(MediaSessionManager.NOTIFICATION_ID, notification)
-      } catch (ex: Exception) {
-        Log.w("AudioManagerModule", "Error starting service: ${ex.message}")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+              startForeground(
+                MediaSessionManager.NOTIFICATION_ID,
+                notification!!,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST,
+              )
+            } else {
+              startForeground(
+                MediaSessionManager.NOTIFICATION_ID,
+                notification,
+              )
+            }
+            isServiceStarted = true
+          } catch (ex: Exception) {
+            Log.e("AudioManagerModule", "Error starting foreground service: ${ex.message}")
+            stopSelf()
+          }
+        }
       }
     }
 
@@ -229,26 +223,40 @@ class MediaNotificationManager(
       flags: Int,
       startId: Int,
     ): Int {
-      onCreate()
+      val action = ForegroundAction.fromAction(intent?.action)
+
+      when (action) {
+        ForegroundAction.START_FOREGROUND -> startForegroundService()
+        ForegroundAction.STOP_FOREGROUND -> stopForegroundService()
+        else -> startForegroundService()
+      }
+
       return START_NOT_STICKY
+    }
+
+    private fun stopForegroundService() {
+      synchronized(serviceLock) {
+        if (isServiceStarted) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+          }
+          isServiceStarted = false
+          stopSelf()
+        }
+      }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
       super.onTaskRemoved(rootIntent)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-      }
-      stopSelf()
+      stopForegroundService()
     }
 
     override fun onDestroy() {
-      super.onDestroy()
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        stopForeground(STOP_FOREGROUND_REMOVE)
+      synchronized(serviceLock) {
+        notification = null
+        isServiceStarted = false
       }
-
-      stopSelf()
+      super.onDestroy()
     }
   }
 }

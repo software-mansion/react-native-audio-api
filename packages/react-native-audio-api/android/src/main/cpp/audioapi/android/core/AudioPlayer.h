@@ -5,6 +5,8 @@
 #include <functional>
 #include <memory>
 
+#include <audioapi/android/core/NativeAudioPlayer.hpp>
+
 namespace audioapi {
 
 using namespace oboe;
@@ -19,13 +21,18 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
       float sampleRate,
       int channelCount);
 
+  ~AudioPlayer() override {
+    nativeAudioPlayer_.release();
+    cleanup();
+  }
+
   bool start();
   void stop();
   bool resume();
   void suspend();
   void cleanup();
 
-  bool isRunning() const;
+  [[nodiscard]] bool isRunning() const;
 
   DataCallbackResult onAudioReady(
       AudioStream *oboeStream,
@@ -44,6 +51,8 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
   int channelCount_;
 
   bool openAudioStream();
+
+  facebook::jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
 };
 
 } // namespace audioapi

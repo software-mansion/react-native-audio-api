@@ -34,6 +34,7 @@ class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
 class WorkletNode;
+class StreamerNode;
 
 class BaseAudioContext {
  public:
@@ -49,6 +50,7 @@ class BaseAudioContext {
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, size_t bufferLength, size_t inputChannelCount);
   std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();

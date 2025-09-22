@@ -1,17 +1,14 @@
 package com.swmansion.audioapi.system
 
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
-import androidx.core.app.NotificationManagerCompat
 import com.swmansion.audioapi.AudioAPIModule
 import java.lang.ref.WeakReference
-import java.util.HashMap
 
 class MediaSessionCallback(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
+  private val mediaNotificationManager: WeakReference<MediaNotificationManager>,
 ) : MediaSessionCompat.Callback() {
   override fun onPlay() {
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remotePlay", mapOf())
@@ -22,13 +19,8 @@ class MediaSessionCallback(
   }
 
   override fun onStop() {
-    val reactContext = audioAPIModule.get()?.reactContext?.get()!!
-    NotificationManagerCompat.from(reactContext).cancel(MediaSessionManager.NOTIFICATION_ID)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val myIntent =
-        Intent(reactContext, MediaNotificationManager.NotificationService::class.java)
-      reactContext.stopService(myIntent)
-    }
+    mediaNotificationManager.get()?.cancelNotification()
+    MediaSessionManager.stopForegroundServiceIfNecessary()
 
     audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("remoteStop", mapOf())
   }

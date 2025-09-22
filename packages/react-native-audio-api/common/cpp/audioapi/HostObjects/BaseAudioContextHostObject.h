@@ -16,6 +16,7 @@
 #include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
 #include <audioapi/HostObjects/WorkletNodeHostObject.h>
 #include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/HostObjects/StreamerNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -45,6 +46,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
+        JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
         JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -102,6 +104,15 @@ class BaseAudioContextHostObject : public JsiHostObject {
     auto oscillatorHostObject =
         std::make_shared<OscillatorNodeHostObject>(oscillator);
     return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
+  }
+
+  JSI_HOST_FUNCTION(createStreamer) {
+    auto streamer = context_->createStreamer();
+    auto streamerHostObject =
+        std::make_shared<StreamerNodeHostObject>(streamer);
+    auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
+    object.setExternalMemoryPressure(runtime, StreamerNode::getEstimatedSize());
+    return object;
   }
 
   JSI_HOST_FUNCTION(createGain) {
