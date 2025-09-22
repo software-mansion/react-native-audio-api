@@ -55,37 +55,40 @@
   float outputSampleRate = self.outputFormat.sampleRate;
 
   if (inputSampleRate != outputSampleRate) {
+    AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
+                                                                  frameCapacity:frameCount];
+    memcpy(
+        inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
+        inputData->mBuffers[0].mData,
+        inputData->mBuffers[0].mDataByteSize);
+    inputBuffer.frameLength = frameCount;
+
+    int outputFrameCount = frameCount * outputSampleRate / inputSampleRate;
+
+    AVAudioPCMBuffer *outputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.audioConverter.outputFormat
+                                                                   frameCapacity:outputFrameCount];
+
+    NSError *error = nil;
+    AVAudioConverterInputBlock inputBlock =
+        ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+    {
+      *outStatus = AVAudioConverterInputStatus_HaveData;
+      return inputBuffer;
+    };
+
+    /// IMPORTANT: AVAudioConverter leaks memory without autorelease pool
+    /// more details here: https://github.com/poneciak57/AVAudioConverter-memory-leak-repro-electric-boogaloo
+    /// we can try to remove it in the future or refactor to reuse buffers to minimize allocations
     @autoreleasepool {
-      AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
-                                                                    frameCapacity:frameCount];
-      memcpy(
-          inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
-          inputData->mBuffers[0].mData,
-          inputData->mBuffers[0].mDataByteSize);
-      inputBuffer.frameLength = frameCount;
-
-      int outputFrameCount = frameCount * outputSampleRate / inputSampleRate;
-
-      AVAudioPCMBuffer *outputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.audioConverter.outputFormat
-                                                                     frameCapacity:outputFrameCount];
-
-      NSError *error = nil;
-      AVAudioConverterInputBlock inputBlock =
-          ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-      {
-        *outStatus = AVAudioConverterInputStatus_HaveData;
-        return inputBuffer;
-      };
-
       [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
-
-      if (error) {
-        NSLog(@"Error during audio conversion: %@", error.localizedDescription);
-        return kAudioServicesBadSpecifierSizeError;
-      }
-
-      self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength);
     }
+
+    if (error) {
+      NSLog(@"Error during audio conversion: %@", error.localizedDescription);
+      return kAudioServicesBadSpecifierSizeError;
+    }
+
+    self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength);
 
     return kAudioServicesNoError;
   }
