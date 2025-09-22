@@ -4,7 +4,7 @@ namespace audioapi {
 
 WorkletNode::WorkletNode(
     BaseAudioContext *context,
-    std::shared_ptr<worklets::ShareableWorklet> &worklet,
+    std::shared_ptr<worklets::SerializableWorklet> &worklet,
     size_t bufferLength,
     size_t inputChannelCount)
     : AudioNode(context),

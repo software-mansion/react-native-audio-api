@@ -4692,11 +4692,11 @@ __metadata:
     react-native-audio-api: "workspace:*"
     react-native-background-timer: "npm:2.4.1"
     react-native-gesture-handler: "npm:2.28.0"
-    react-native-reanimated: "npm:^4.0.0"
+    react-native-reanimated: "npm:^4.1.0"
     react-native-safe-area-context: "npm:5.6.0"
     react-native-screens: "npm:4.14.1"
     react-native-svg: "npm:15.12.1"
-    react-native-worklets: "npm:^0.4.1"
+    react-native-worklets: "npm:^0.5.1"
     react-test-renderer: "npm:19.1.0"
     typescript: "npm:5.8.3"
   peerDependencies:
@@ -10667,7 +10667,7 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
-    react-native-worklets: ^0.4.1
+    react-native-worklets: ^0.5.1
   bin:
     setup-rn-audio-api-web: ./scripts/setup-rn-audio-api-web.js
   languageName: unknown
@@ -10738,9 +10738,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-reanimated@npm:^4.0.0":
-  version: 4.0.3
-  resolution: "react-native-reanimated@npm:4.0.3"
+"react-native-reanimated@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "react-native-reanimated@npm:4.1.0"
   dependencies:
     react-native-is-edge-to-edge: "npm:^1.2.1"
     semver: "npm:7.7.2"
@@ -10748,8 +10748,8 @@ __metadata:
     "@babel/core": ^7.0.0-0
     react: "*"
     react-native: "*"
-    react-native-worklets: ">=0.4.0"
-  checksum: 10/03b8b330b2dbfebd7e635375a1bc48c87b5ec57b92d87ab3ee94464ec5f8f4ac13c4e91e4f27fc5c137072c7f12d3f52795af5a57032d274275da6f39ae3ba8e
+    react-native-worklets: ">=0.5.0"
+  checksum: 10/1420a4f76b0123aa47e1cfb07bba130f3a81176f727af957c53f526f19b70b1525187f4e931f14a124d5064bfeb96144880b236543d7655ff3b51fed48b7654d
   languageName: node
   linkType: hard
 
@@ -10791,9 +10791,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-worklets@npm:^0.4.1":
-  version: 0.4.2
-  resolution: "react-native-worklets@npm:0.4.2"
+"react-native-worklets@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "react-native-worklets@npm:0.5.1"
   dependencies:
     "@babel/plugin-transform-arrow-functions": "npm:^7.0.0-0"
     "@babel/plugin-transform-class-properties": "npm:^7.0.0-0"
@@ -10805,11 +10805,12 @@ __metadata:
     "@babel/plugin-transform-unicode-regex": "npm:^7.0.0-0"
     "@babel/preset-typescript": "npm:^7.16.7"
     convert-source-map: "npm:^2.0.0"
+    semver: "npm:7.7.2"
   peerDependencies:
     "@babel/core": ^7.0.0-0
     react: "*"
     react-native: "*"
-  checksum: 10/e0c31ca57f5e66d9be337c7857c4330ee43693a3da832c4fc643a27fbd6d8810d63f9569dcd17f4c5d0c0828ccf7367f8683ab474358b43a7a695f75e6bb6d5b
+  checksum: 10/39e70b64560cc4b031ac329bfbd0686b744b6940bbe1d1768a227bb9e142a0e2bad5ef16752003e83374db49d8d6396c72236b9c279e1465a7177f887ae12d48
   languageName: node
   linkType: hard
 

@@ -16,6 +16,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include "utils/worklets/SafeIncludes.h"
 
 namespace audioapi {
 
@@ -61,7 +62,7 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 }
 
 std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
-    std::shared_ptr<worklets::ShareableWorklet> &shareableWorklet,
+    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
     size_t bufferLength,
     size_t inputChannelCount) {
   auto workletNode = std::make_shared<WorkletNode>(

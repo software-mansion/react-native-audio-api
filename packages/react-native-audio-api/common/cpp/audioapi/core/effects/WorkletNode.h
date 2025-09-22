@@ -19,7 +19,7 @@ class WorkletNode : public AudioNode {
  public:
   explicit WorkletNode(
       BaseAudioContext *context,
-      std::shared_ptr<worklets::ShareableWorklet> &worklet,
+      std::shared_ptr<worklets::SerializableWorklet> &worklet,
       size_t bufferLength,
       size_t inputChannelCount
   ) : AudioNode(context) {}
@@ -36,7 +36,7 @@ class WorkletNode : public AudioNode {
  public:
   explicit WorkletNode(
       BaseAudioContext *context,
-      std::shared_ptr<worklets::ShareableWorklet> &worklet,
+      std::shared_ptr<worklets::SerializableWorklet> &worklet,
       size_t bufferLength,
       size_t inputChannelCount
   );
@@ -49,7 +49,7 @@ class WorkletNode : public AudioNode {
 
  private:
   std::shared_ptr<UiWorkletsRunner> workletRunner_;
-  std::shared_ptr<worklets::ShareableWorklet> shareableWorklet_;
+  std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<uint8_t*> buffs_;
 
   /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer

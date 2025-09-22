@@ -86,7 +86,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION(createWorkletNode) {
     #if RN_AUDIO_API_ENABLE_WORKLETS
-    auto shareableWorklet = worklets::extractShareableOrThrow<worklets::ShareableWorklet>(runtime, args[0]);
+    auto shareableWorklet = worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(runtime, args[0]);
     auto bufferLength = static_cast<size_t>(args[1].getNumber());
     auto inputChannelCount = static_cast<size_t>(args[2].getNumber());
 

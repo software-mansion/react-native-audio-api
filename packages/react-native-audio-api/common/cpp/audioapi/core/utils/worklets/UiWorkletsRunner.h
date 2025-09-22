@@ -7,6 +7,7 @@
 #include <atomic>
 #include <memory>
 #include <utility>
+#include "SafeIncludes.h"
 
 
 namespace audioapi {
@@ -29,7 +30,7 @@ class UiWorkletsRunner {
     }
 
     template<typename... Args>
-    bool executeWorkletAsync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
+    bool executeWorkletAsync(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
       auto strongRuntime = weakUiRuntime_.lock();
       if (strongRuntime == nullptr) {
          return false;
@@ -48,7 +49,7 @@ class UiWorkletsRunner {
     }
 
     template<typename... Args>
-    bool executeWorkletSync(const std::shared_ptr<worklets::ShareableWorklet>& shareableWorklet, Args&&... args) {
+    bool executeWorkletSync(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
       auto strongRuntime = weakUiRuntime_.lock();
       if (strongRuntime == nullptr) {
          return false;

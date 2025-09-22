@@ -21,7 +21,7 @@
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
   #include <worklets/WorkletRuntime/WorkletRuntime.h>
-  #include <worklets/SharedItems/Shareables.h>
+  #include <worklets/SharedItems/Serializable.h>
   #include <worklets/NativeModules/WorkletsModuleProxy.h>
   #if ANDROID
     #include <worklets/android/WorkletsModule.h>
@@ -38,8 +38,8 @@ class WorkletsModuleProxy {};
 class WorkletRuntime {
   explicit WorkletRuntime(uint64_t, const std::shared_ptr<MessageQueueThread> &, const std::string &, const bool);
 };
-class ShareableWorklet {
-  ShareableWorklet(jsi::Runtime*, const jsi::Object &);
+class SerializableWorklet {
+  SerializableWorklet(jsi::Runtime*, const jsi::Object &);
 };
 } // namespace worklets
 #endif
