@@ -1,11 +1,11 @@
 #pragma once
 
 #include <audioapi/jsi/JsiPromise.h>
-#include <audioapi/core/core/AudioContext.h>
-#include <audioapi/core/core/OfflineAudioContext.h>
+#include <audioapi/core/AudioContext.h>
+#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/HostObjects/core/AudioContextHostObject.h>
-#include <audioapi/HostObjects/core/OfflineAudioContextHostObject.h>
+#include <audioapi/HostObjects/AudioContextHostObject.h>
+#include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/HostObjects/core/AudioParamHostObject.h>
-#include <audioapi/core/core/AudioNode.h>
+#include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/jsi/JsiHostObject.h>
 
 #include <jsi/jsi.h>

@@ -1,4 +1,4 @@
-#include <audioapi/core/core/OfflineAudioContext.h>
+#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>

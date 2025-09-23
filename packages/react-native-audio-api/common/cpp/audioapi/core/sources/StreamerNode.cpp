@@ -8,7 +8,7 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>

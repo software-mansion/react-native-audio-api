@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/core/BaseAudioContextHostObject.h>
+#include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
 namespace audioapi {
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {

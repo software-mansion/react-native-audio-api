@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/HostObjects/core/AudioNodeHostObject.h>
-#include <audioapi/HostObjects/core/AudioParamHostObject.h>
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 
 #include <memory>

@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/core/AudioContextHostObject.h>
+#include <audioapi/HostObjects/AudioContextHostObject.h>
 
 namespace audioapi {
 

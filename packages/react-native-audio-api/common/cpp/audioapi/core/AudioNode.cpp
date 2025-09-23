@@ -1,6 +1,6 @@
-#include <audioapi/core/core/AudioNode.h>
-#include <audioapi/core/core/AudioParam.h>
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>

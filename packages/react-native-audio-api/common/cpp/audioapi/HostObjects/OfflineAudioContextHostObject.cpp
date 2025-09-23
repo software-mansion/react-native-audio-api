@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/core/OfflineAudioContextHostObject.h>
+#include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 
 namespace audioapi {
 

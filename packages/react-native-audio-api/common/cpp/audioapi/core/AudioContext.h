@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/BaseAudioContext.h>
 
 #include <memory>
 #include <functional>

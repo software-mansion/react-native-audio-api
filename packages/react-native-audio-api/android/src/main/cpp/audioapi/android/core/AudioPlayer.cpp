@@ -1,6 +1,6 @@
 #include <android/log.h>
 #include <audioapi/android/core/AudioPlayer.h>
-#include <audioapi/core/core/AudioContext.h>
+#include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>

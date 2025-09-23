@@ -1,9 +1,9 @@
 #pragma once
 
-#include <audioapi/core/core/AudioParam.h>
-#include <audioapi/core/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
 

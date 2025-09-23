@@ -1,5 +1,5 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/GainNode.h>

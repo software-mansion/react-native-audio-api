@@ -1,6 +1,6 @@
 #include "OfflineAudioContext.h"
 
-#include <audioapi/core/core/AudioContext.h>
+#include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/AudioDecoder.h>

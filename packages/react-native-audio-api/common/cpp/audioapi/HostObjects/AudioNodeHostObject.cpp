@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/core/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
 
 namespace audioapi {
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, numberOfInputs) {

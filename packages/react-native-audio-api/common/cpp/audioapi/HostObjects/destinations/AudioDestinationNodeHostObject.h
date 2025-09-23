@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/HostObjects/core/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
 
 #include <memory>
 #include <vector>

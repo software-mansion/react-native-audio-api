@@ -1,5 +1,5 @@
-#include <audioapi/core/core/AudioParam.h>
-#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
