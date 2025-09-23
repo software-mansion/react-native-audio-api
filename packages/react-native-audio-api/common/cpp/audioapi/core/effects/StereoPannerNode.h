@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/core/AudioNode.h>
+#include <audioapi/core/core/AudioParam.h>
 
 #include <algorithm>
 #include <memory>

@@ -1,5 +1,5 @@
-#include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/Constants.h>
+#include <audioapi/core/core/BaseAudioContext.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/core/AudioNode.h>
 #include <audioapi/dsp/FFT.h>
 
 #include <memory>

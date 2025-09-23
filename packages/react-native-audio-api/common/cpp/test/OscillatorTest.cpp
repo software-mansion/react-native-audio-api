@@ -1,4 +1,4 @@
-#include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/core/OfflineAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <gtest/gtest.h>
 #include "MockAudioEventHandlerRegistry.h"

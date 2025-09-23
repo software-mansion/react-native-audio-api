@@ -1,4 +1,4 @@
-#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/core/AudioNode.h>
 #include <audioapi/core/utils/AudioNodeDestructor.h>
 #include <audioapi/core/utils/Locker.h>
 

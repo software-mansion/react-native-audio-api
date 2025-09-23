@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/core/OfflineAudioContext.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
 #include <jsi/jsi.h>

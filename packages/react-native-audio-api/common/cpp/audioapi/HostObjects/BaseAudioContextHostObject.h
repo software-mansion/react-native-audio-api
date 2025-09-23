@@ -6,7 +6,7 @@
 #include <audioapi/HostObjects/AudioBufferSourceNodeHostObject.h>
 #include <audioapi/HostObjects/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
-#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/core/BaseAudioContext.h>
 #include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
 #include <audioapi/HostObjects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/OscillatorNodeHostObject.h>

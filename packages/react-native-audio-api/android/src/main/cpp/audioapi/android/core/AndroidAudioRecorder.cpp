@@ -1,5 +1,5 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
-#include <audioapi/core/Constants.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>

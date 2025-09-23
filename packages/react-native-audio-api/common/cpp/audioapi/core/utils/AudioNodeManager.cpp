@@ -1,5 +1,5 @@
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/core/AudioNode.h>
+#include <audioapi/core/core/AudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>

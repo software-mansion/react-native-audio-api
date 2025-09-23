@@ -1,5 +1,5 @@
-#include <audioapi/core/AudioParam.h>
-#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/core/AudioParam.h>
+#include <audioapi/core/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
