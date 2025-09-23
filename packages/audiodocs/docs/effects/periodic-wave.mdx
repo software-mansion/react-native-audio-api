@@ -10,7 +10,13 @@ The `PeriodicWave` interface defines a periodic waveform that can be used to sha
 
 [`BaseAudioContext.createPeriodicWave(real, imag)`](/docs/core/base-audio-context#createperiodicwave)
 
-[`BaseAudioContext.createPeriodicWave(real, imag, disableNormalization)`](/docs/core/base-audio-context#createperiodicwave)
+[`BaseAudioContext.createPeriodicWave(real, imag, constraints: PeriodicWaveConstraints)`](/docs/core/base-audio-context#createperiodicwave)
+
+```jsx
+interface PeriodicWaveConstraints {
+  disableNormalization: boolean; // default set to false (normalization is enabled)
+}
+```
 
 ## Properties
 None. `PeriodicWave` has no own or inherited properties.
