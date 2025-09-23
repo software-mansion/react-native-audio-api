@@ -19,11 +19,6 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
     addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
   }
 
-  JSI_PROPERTY_GETTER(pan) {
-    auto stereoPannerNode = std::static_pointer_cast<StereoPannerNode>(node_);
-    auto panParam_ =
-        std::make_shared<AudioParamHostObject>(stereoPannerNode->getPanParam());
-    return jsi::Object::createFromHostObject(runtime, panParam_);
-  }
+  JSI_PROPERTY_GETTER_DECL(pan);
 };
 } // namespace audioapi

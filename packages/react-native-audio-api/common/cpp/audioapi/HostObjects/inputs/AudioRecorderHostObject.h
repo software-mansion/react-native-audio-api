@@ -52,33 +52,12 @@ class AudioRecorderHostObject : public JsiHostObject {
     );
   }
 
-  JSI_HOST_FUNCTION(connect) {
-    auto adapterNodeHostObject = args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(runtime);
-    audioRecorder_->connect(
-        std::static_pointer_cast<RecorderAdapterNode>(adapterNodeHostObject->node_));
-    return jsi::Value::undefined();
-  }
+  JSI_PROPERTY_SETTER_DECL(onAudioReady);
 
-  JSI_HOST_FUNCTION(disconnect) {
-    audioRecorder_->disconnect();
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(start) {
-    audioRecorder_->start();
-
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(stop) {
-    audioRecorder_->stop();
-
-    return jsi::Value::undefined();
-  }
-
-  JSI_PROPERTY_SETTER(onAudioReady) {
-    audioRecorder_->setOnAudioReadyCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
-  }
+  JSI_HOST_FUNCTION_DECL(connect);
+  JSI_HOST_FUNCTION_DECL(disconnect);
+  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(stop);
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;

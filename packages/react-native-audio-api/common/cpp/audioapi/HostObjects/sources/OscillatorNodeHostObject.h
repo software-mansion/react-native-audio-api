@@ -28,38 +28,12 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
     addSetters(JSI_EXPORT_PROPERTY_SETTER(OscillatorNodeHostObject, type));
   }
 
-  JSI_PROPERTY_GETTER(frequency) {
-    auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-    auto frequencyParam_ = std::make_shared<AudioParamHostObject>(
-        oscillatorNode->getFrequencyParam());
-    return jsi::Object::createFromHostObject(runtime, frequencyParam_);
-  }
+  JSI_PROPERTY_GETTER_DECL(frequency);
+  JSI_PROPERTY_GETTER_DECL(detune);
+  JSI_PROPERTY_GETTER_DECL(type);
 
-  JSI_PROPERTY_GETTER(detune) {
-    auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-    auto detuneParam_ = std::make_shared<AudioParamHostObject>(
-        oscillatorNode->getDetuneParam());
-    return jsi::Object::createFromHostObject(runtime, detuneParam_);
-  }
+  JSI_HOST_FUNCTION_DECL(setPeriodicWave);
 
-  JSI_PROPERTY_GETTER(type) {
-    auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-    auto waveType = oscillatorNode->getType();
-    return jsi::String::createFromUtf8(runtime, waveType);
-  }
-
-  JSI_HOST_FUNCTION(setPeriodicWave) {
-    auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-    auto periodicWave =
-        args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(
-            runtime);
-    oscillatorNode->setPeriodicWave(periodicWave->periodicWave_);
-    return jsi::Value::undefined();
-  }
-
-  JSI_PROPERTY_SETTER(type) {
-    auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-    oscillatorNode->setType(value.getString(runtime).utf8(runtime));
-  }
+  JSI_PROPERTY_SETTER_DECL(type);
 };
 } // namespace audioapi

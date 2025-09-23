@@ -9,7 +9,7 @@
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
+#include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
 #include <memory>
 

@@ -23,23 +23,8 @@ class AudioEventHandlerRegistryHostObject : public JsiHostObject {
           JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));
     }
 
-    JSI_HOST_FUNCTION(addAudioEventListener) {
-      auto eventName = args[0].getString(runtime).utf8(runtime);
-      auto callback = std::make_shared<jsi::Function>(args[1].getObject(runtime).getFunction(runtime));
-
-      auto listenerId = eventHandlerRegistry_->registerHandler(eventName, callback);
-
-      return jsi::String::createFromUtf8(runtime, std::to_string(listenerId));
-    }
-
-    JSI_HOST_FUNCTION(removeAudioEventListener) {
-        auto eventName = args[0].getString(runtime).utf8(runtime);
-        uint64_t listenerId = std::stoull(args[1].getString(runtime).utf8(runtime));
-
-        eventHandlerRegistry_->unregisterHandler(eventName, listenerId);
-
-        return jsi::Value::undefined();
-    }
+    JSI_HOST_FUNCTION_DECL(addAudioEventListener);
+    JSI_HOST_FUNCTION_DECL(removeAudioEventListener);
 
  private:
     std::shared_ptr<AudioEventHandlerRegistry> eventHandlerRegistry_;

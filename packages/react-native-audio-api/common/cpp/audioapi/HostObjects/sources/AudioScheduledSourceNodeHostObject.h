@@ -16,6 +16,7 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
       : AudioNodeHostObject(node) {
     addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
+
     addFunctions(
         JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
         JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
@@ -30,27 +31,9 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
     audioScheduledSourceNode->clearOnEndedCallback();
   }
 
-  JSI_PROPERTY_SETTER(onEnded) {
-    auto audioScheduleSourceNode =
-            std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+  JSI_PROPERTY_SETTER_DECL(onEnded);
 
-    audioScheduleSourceNode->setOnEndedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
-  }
-
-  JSI_HOST_FUNCTION(start) {
-    auto when = args[0].getNumber();
-    auto audioScheduleSourceNode =
-        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-    audioScheduleSourceNode->start(when);
-    return jsi::Value::undefined();
-  }
-
-  JSI_HOST_FUNCTION(stop) {
-    auto time = args[0].getNumber();
-    auto audioScheduleSourceNode =
-        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-    audioScheduleSourceNode->stop(time);
-    return jsi::Value::undefined();
-  }
+  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(stop);
 };
 } // namespace audioapi

@@ -20,11 +20,6 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
     addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize));
   }
 
-  JSI_HOST_FUNCTION(initialize) {
-    auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
-    auto path = args[0].getString(runtime).utf8(runtime);
-    auto result = streamerNode->initialize(path);
-    return jsi::Value(result);
-  }
+  JSI_HOST_FUNCTION_DECL(initialize);
 };
 } // namespace audioapi
