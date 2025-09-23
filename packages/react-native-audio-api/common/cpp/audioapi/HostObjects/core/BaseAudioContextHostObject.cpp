@@ -2,9 +2,9 @@
 
 namespace audioapi {
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
-    auto destination = std::make_shared<AudioDestinationNodeHostObject>(
-            context_->getDestination());
-    return jsi::Object::createFromHostObject(runtime, destination);
+  auto destination = std::make_shared<AudioDestinationNodeHostObject>(
+      context_->getDestination());
+  return jsi::Object::createFromHostObject(runtime, destination);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
@@ -21,7 +21,8 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createRecorderAdapter) {
   auto recorderAdapter = context_->createRecorderAdapter();
-  auto recorderAdapterHostObject = std::make_shared<RecorderAdapterNodeHostObject>(recorderAdapter);
+  auto recorderAdapterHostObject =
+      std::make_shared<RecorderAdapterNodeHostObject>(recorderAdapter);
   return jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
 }
 
@@ -34,8 +35,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
   auto streamer = context_->createStreamer();
-  auto streamerHostObject =
-      std::make_shared<StreamerNodeHostObject>(streamer);
+  auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(streamer);
   auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
   object.setExternalMemoryPressure(runtime, StreamerNode::getEstimatedSize());
   return object;
@@ -70,31 +70,40 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
-    auto bufferSource = context_->createBufferQueueSource();
-    auto bufferStreamSourceHostObject =
-            std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
-    return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
+  auto bufferSource = context_->createBufferQueueSource();
+  auto bufferStreamSourceHostObject =
+      std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
+  return jsi::Object::createFromHostObject(
+      runtime, bufferStreamSourceHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBuffer) {
   auto numberOfChannels = static_cast<int>(args[0].getNumber());
   auto length = static_cast<size_t>(args[1].getNumber());
   auto sampleRate = static_cast<float>(args[2].getNumber());
-  auto buffer = BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
+  auto buffer =
+      BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
   auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
   auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
-  jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
+  jsiObject.setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes());
 
   return jsiObject;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
-  auto arrayBufferReal = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBufferReal = args[0]
+                             .getObject(runtime)
+                             .getPropertyAsObject(runtime, "buffer")
+                             .getArrayBuffer(runtime);
   auto real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
   auto length = static_cast<int>(arrayBufferReal.size(runtime));
 
-  auto arrayBufferImag = args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBufferImag = args[1]
+                             .getObject(runtime)
+                             .getPropertyAsObject(runtime, "buffer")
+                             .getArrayBuffer(runtime);
   auto imag = reinterpret_cast<float *>(arrayBufferImag.data(runtime));
 
   auto disableNormalization = args[2].getBool();
@@ -102,13 +111,12 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
   auto complexData = std::vector<std::complex<float>>(length);
 
   for (size_t i = 0; i < length; i++) {
-      complexData[i] = std::complex<float>(
-          static_cast<float>(real[i]),
-          static_cast<float>(imag[i]));
+    complexData[i] = std::complex<float>(
+        static_cast<float>(real[i]), static_cast<float>(imag[i]));
   }
 
-  auto periodicWave = context_->createPeriodicWave(
-      complexData, disableNormalization, length);
+  auto periodicWave =
+      context_->createPeriodicWave(complexData, disableNormalization, length);
   auto periodicWaveHostObject =
       std::make_shared<PeriodicWaveHostObject>(periodicWave);
 
@@ -124,78 +132,96 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodeAudioDataSource) {
   auto sourcePath = args[0].getString(runtime).utf8(runtime);
 
-  auto promise = promiseVendor_->createPromise([this, sourcePath](std::shared_ptr<Promise> promise) {
-    std::thread([this, sourcePath, promise = std::move(promise)]() {
-      auto results = context_->decodeAudioDataSource(sourcePath);
+  auto promise = promiseVendor_->createPromise(
+      [this, sourcePath](std::shared_ptr<Promise> promise) {
+        std::thread([this, sourcePath, promise = std::move(promise)]() {
+          auto results = context_->decodeAudioDataSource(sourcePath);
 
-      if (!results) {
-        promise->reject("Failed to decode audio data source.");
-        return;
-      }
+          if (!results) {
+            promise->reject("Failed to decode audio data source.");
+            return;
+          }
 
-      auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+          auto audioBufferHostObject =
+              std::make_shared<AudioBufferHostObject>(results);
 
-      promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-        auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-        jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-        return jsiObject;
+          promise->resolve([audioBufferHostObject = std::move(
+                                audioBufferHostObject)](jsi::Runtime &runtime) {
+            auto jsiObject = jsi::Object::createFromHostObject(
+                runtime, audioBufferHostObject);
+            jsiObject.setExternalMemoryPressure(
+                runtime, audioBufferHostObject->getSizeInBytes());
+            return jsiObject;
+          });
+        }).detach();
       });
-    }).detach();
-  });
 
   return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodeAudioData) {
-  auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBuffer = args[0]
+                         .getObject(runtime)
+                         .getPropertyAsObject(runtime, "buffer")
+                         .getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
   auto size = static_cast<int>(arrayBuffer.size(runtime));
 
-  auto promise = promiseVendor_->createPromise([this, data, size](std::shared_ptr<Promise> promise) {
-    std::thread([this, data, size, promise = std::move(promise)]() {
-      auto results = context_->decodeAudioData(data, size);
+  auto promise = promiseVendor_->createPromise(
+      [this, data, size](std::shared_ptr<Promise> promise) {
+        std::thread([this, data, size, promise = std::move(promise)]() {
+          auto results = context_->decodeAudioData(data, size);
 
-      if (!results) {
-        promise->reject("Failed to decode audio data source.");
-        return;
-      }
+          if (!results) {
+            promise->reject("Failed to decode audio data source.");
+            return;
+          }
 
-      auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+          auto audioBufferHostObject =
+              std::make_shared<AudioBufferHostObject>(results);
 
-      promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-        auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-        jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-        return jsiObject;
+          promise->resolve([audioBufferHostObject = std::move(
+                                audioBufferHostObject)](jsi::Runtime &runtime) {
+            auto jsiObject = jsi::Object::createFromHostObject(
+                runtime, audioBufferHostObject);
+            jsiObject.setExternalMemoryPressure(
+                runtime, audioBufferHostObject->getSizeInBytes());
+            return jsiObject;
+          });
+        }).detach();
       });
-    }).detach();
-  });
 
   return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodePCMAudioDataInBase64) {
-    auto b64 = args[0].getString(runtime).utf8(runtime);
-    auto playbackSpeed = static_cast<float>(args[1].getNumber());
+  auto b64 = args[0].getString(runtime).utf8(runtime);
+  auto playbackSpeed = static_cast<float>(args[1].getNumber());
 
-    auto promise = promiseVendor_->createPromise([this, b64, playbackSpeed](std::shared_ptr<Promise> promise) {
+  auto promise = promiseVendor_->createPromise(
+      [this, b64, playbackSpeed](std::shared_ptr<Promise> promise) {
         std::thread([this, b64, playbackSpeed, promise = std::move(promise)]() {
-            auto results = context_->decodeWithPCMInBase64(b64, playbackSpeed);
+          auto results = context_->decodeWithPCMInBase64(b64, playbackSpeed);
 
-            if (!results) {
-                promise->reject("Failed to decode audio data source.");
-                return;
-            }
+          if (!results) {
+            promise->reject("Failed to decode audio data source.");
+            return;
+          }
 
-            auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(results);
+          auto audioBufferHostObject =
+              std::make_shared<AudioBufferHostObject>(results);
 
-            promise->resolve([audioBufferHostObject = std::move(audioBufferHostObject)](jsi::Runtime &runtime) {
-                auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-                jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-                return jsiObject;
-            });
+          promise->resolve([audioBufferHostObject = std::move(
+                                audioBufferHostObject)](jsi::Runtime &runtime) {
+            auto jsiObject = jsi::Object::createFromHostObject(
+                runtime, audioBufferHostObject);
+            jsiObject.setExternalMemoryPressure(
+                runtime, audioBufferHostObject->getSizeInBytes());
+            return jsiObject;
+          });
         }).detach();
-    });
+      });
 
-    return promise;
+  return promise;
 }
-}
+} // namespace audioapi

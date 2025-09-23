@@ -25,8 +25,8 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, Q) {
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, gain) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto gainParam_ = std::make_shared<AudioParamHostObject>(
-      biquadFilterNode->getGainParam());
+  auto gainParam_ =
+      std::make_shared<AudioParamHostObject>(biquadFilterNode->getGainParam());
   return jsi::Object::createFromHostObject(runtime, gainParam_);
 }
 
@@ -37,20 +37,31 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
-    auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-    biquadFilterNode->setType(value.getString(runtime).utf8(runtime));
+  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
+  biquadFilterNode->setType(value.getString(runtime).utf8(runtime));
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
-  auto arrayBufferFrequency = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
+  auto arrayBufferFrequency = args[0]
+                                  .getObject(runtime)
+                                  .getPropertyAsObject(runtime, "buffer")
+                                  .getArrayBuffer(runtime);
+  auto frequencyArray =
+      reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
   auto length = static_cast<int>(arrayBufferFrequency.size(runtime));
 
-  auto arrayBufferMag = args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBufferMag = args[1]
+                            .getObject(runtime)
+                            .getPropertyAsObject(runtime, "buffer")
+                            .getArrayBuffer(runtime);
   auto magResponseOut = reinterpret_cast<float *>(arrayBufferMag.data(runtime));
 
-  auto arrayBufferPhase = args[2].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
+  auto arrayBufferPhase = args[2]
+                              .getObject(runtime)
+                              .getPropertyAsObject(runtime, "buffer")
+                              .getArrayBuffer(runtime);
+  auto phaseResponseOut =
+      reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
   biquadFilterNode->getFrequencyResponse(

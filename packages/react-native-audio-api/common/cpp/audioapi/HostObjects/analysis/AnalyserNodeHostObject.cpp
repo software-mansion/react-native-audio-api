@@ -33,37 +33,40 @@ JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, window) {
   return jsi::String::createFromUtf8(runtime, windowType);
 }
 
-    JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        auto fftSize = static_cast<int>(value.getNumber());
-        analyserNode->setFftSize(fftSize);
-    }
+JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  auto fftSize = static_cast<int>(value.getNumber());
+  analyserNode->setFftSize(fftSize);
+}
 
-    JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        auto minDecibels = static_cast<float>(value.getNumber());
-        analyserNode->setMinDecibels(minDecibels);
-    }
+JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  auto minDecibels = static_cast<float>(value.getNumber());
+  analyserNode->setMinDecibels(minDecibels);
+}
 
-    JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        auto maxDecibels = static_cast<float>(value.getNumber());
-        analyserNode->setMaxDecibels(maxDecibels);
-    }
+JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  auto maxDecibels = static_cast<float>(value.getNumber());
+  analyserNode->setMaxDecibels(maxDecibels);
+}
 
-    JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        auto smoothingTimeConstant = static_cast<float>(value.getNumber());
-        analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
-    }
+JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  auto smoothingTimeConstant = static_cast<float>(value.getNumber());
+  analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
+}
 
-    JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
-        auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-        analyserNode->setWindowType(value.getString(runtime).utf8(runtime));
-    }
+JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  analyserNode->setWindowType(value.getString(runtime).utf8(runtime));
+}
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
-  auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBuffer = args[0]
+                         .getObject(runtime)
+                         .getPropertyAsObject(runtime, "buffer")
+                         .getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -74,7 +77,10 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
-  auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBuffer = args[0]
+                         .getObject(runtime)
+                         .getPropertyAsObject(runtime, "buffer")
+                         .getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -85,7 +91,10 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
-  auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBuffer = args[0]
+                         .getObject(runtime)
+                         .getPropertyAsObject(runtime, "buffer")
+                         .getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -96,7 +105,10 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteTimeDomainData) {
-  auto arrayBuffer = args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  auto arrayBuffer = args[0]
+                         .getObject(runtime)
+                         .getPropertyAsObject(runtime, "buffer")
+                         .getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 

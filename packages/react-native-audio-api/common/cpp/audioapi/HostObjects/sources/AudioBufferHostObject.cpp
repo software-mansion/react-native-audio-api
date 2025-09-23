@@ -27,8 +27,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
 
   // reading or writing from this ArrayBuffer could cause a crash
   // if underlying channelData is deallocated
-  auto audioArrayBuffer =
-      std::make_shared<AudioArrayBuffer>(channelData, size);
+  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(channelData, size);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
   auto float32ArrayCtor =

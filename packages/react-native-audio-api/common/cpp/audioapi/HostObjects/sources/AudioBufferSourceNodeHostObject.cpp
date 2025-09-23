@@ -72,12 +72,12 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
   auto offset = args[1].getNumber();
 
   auto audioBufferSourceNode =
-    std::static_pointer_cast<AudioBufferSourceNode>(node_);
+      std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
   if (args[2].isUndefined()) {
-      audioBufferSourceNode->start(when, offset);
+    audioBufferSourceNode->start(when, offset);
 
-      return jsi::Value::undefined();
+    return jsi::Value::undefined();
   }
 
   auto duration = args[2].getNumber();
@@ -97,8 +97,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
 
   auto bufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  thisValue.asObject(runtime).setExternalMemoryPressure(runtime,
-      bufferHostObject->getSizeInBytes() + 16);
+  thisValue.asObject(runtime).setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes() + 16);
   audioBufferSourceNode->setBuffer(bufferHostObject->audioBuffer_);
   return jsi::Value::undefined();
 }

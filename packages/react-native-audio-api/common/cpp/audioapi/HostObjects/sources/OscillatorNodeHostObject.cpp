@@ -11,8 +11,8 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, frequency) {
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, detune) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto detuneParam_ = std::make_shared<AudioParamHostObject>(
-      oscillatorNode->getDetuneParam());
+  auto detuneParam_ =
+      std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
 
@@ -25,8 +25,7 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
   auto periodicWave =
-      args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(
-          runtime);
+      args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(runtime);
   oscillatorNode->setPeriodicWave(periodicWave->periodicWave_);
   return jsi::Value::undefined();
 }

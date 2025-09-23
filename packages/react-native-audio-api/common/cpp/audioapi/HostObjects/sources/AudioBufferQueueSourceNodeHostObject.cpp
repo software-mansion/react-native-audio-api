@@ -18,7 +18,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
 
-  auto bufferId = audioBufferQueueSourceNode->enqueueBuffer(audioBufferHostObject->audioBuffer_);
+  auto bufferId = audioBufferQueueSourceNode->enqueueBuffer(
+      audioBufferHostObject->audioBuffer_);
 
   return jsi::String::createFromUtf8(runtime, bufferId);
 }
@@ -27,8 +28,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {
   auto audioBufferQueueSourceNode =
       std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-  auto bufferId =
-      args[0].getNumber();
+  auto bufferId = args[0].getNumber();
 
   audioBufferQueueSourceNode->dequeueBuffer(bufferId);
 
