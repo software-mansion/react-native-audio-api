@@ -164,13 +164,12 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         readIndex = 0;
 
         break;
-      } else {
-        data = buffers_.front();
-        bufferId = data.first;
-        buffer = data.second;
-
-        readIndex = 0;
       }
+
+      data = buffers_.front();
+      bufferId = data.first;
+      buffer = data.second;
+      readIndex = 0;
     }
   }
 
@@ -245,12 +244,12 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
         processingBus->zero(writeIndex, framesLeft);
         vReadIndex_ = 0.0;
         break;
-      } else {
-        vReadIndex_ = vReadIndex_ - buffer->getLength();
-        data = buffers_.front();
-        bufferId = data.first;
-        buffer = data.second;
       }
+
+      vReadIndex_ = vReadIndex_ - buffer->getLength();
+      data = buffers_.front();
+      bufferId = data.first;
+      buffer = data.second;
     }
   }
 }
