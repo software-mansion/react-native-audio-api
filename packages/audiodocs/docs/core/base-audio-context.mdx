@@ -84,13 +84,17 @@ The above method lets you create [`AudioBufferSourceNode`](/docs/sources/audio-b
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferSourceNodeOptions`](/docs/core/base-audio-context#audiobuffersourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
+| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/core/base-audio-context#audiobufferbasesourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
 ### `createBufferQueueSource` <MobileOnly />
 
 The above method lets you create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/core/base-audio-context#audiobufferbasesourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferQueueSourceNode`.
 
@@ -248,14 +252,14 @@ The above method lets you decode audio data. It decodes with PCM data in Base64.
   The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
 </details>
 
-### `AudioBufferSourceNodeOptions`
+### `AudioBufferBaseSourceNodeOptions`
 
 <details>
 
-`AudioBufferSourceNodeOptions` is a dictionary object specifies if pitch correction algorithm has to be available.
+`AudioBufferBaseSourceNodeOptions` is a dictionary object specifies if pitch correction algorithm has to be available.
 
 ```jsx
-interface AudioBufferSourceNodeOptions {
+interface AudioBufferBaseSourceNodeOptions {
   pitchCorrection: boolean
 }
 ```
