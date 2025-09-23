@@ -106,7 +106,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto framesNeededToStretch =
+      static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
   updatePlaybackInfo(
       playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
