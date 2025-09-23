@@ -48,19 +48,19 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 ### `createAnalyser`
 
-Allows to create [`AnalyserNode`](/docs/analysis/analyser-node).
+Creates [`AnalyserNode`](/docs/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
 ### `createRecorderAdapter`
 
-Allows to create [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
+Creates [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
 
 ### `createBuffer`
 
-Allows to create [`AudioBuffer`](/docs/sources/audio-buffer).
+Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -80,7 +80,7 @@ Allows to create [`AudioBuffer`](/docs/sources/audio-buffer).
 
 ### `createBufferSource`
 
-Allows to create [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
+Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -90,7 +90,7 @@ Allows to create [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-nod
 
 ### `createBufferQueueSource` <MobileOnly />
 
-Allows to create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
+Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -100,25 +100,25 @@ Allows to create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue
 
 ### `createGain`
 
-Allows to create [`GainNode`](/docs/effects/gain-node).
+Creates [`GainNode`](/docs/effects/gain-node).
 
 #### Returns `GainNode`.
 
 ### `createOscillator`
 
-Allows to create [`OscillatorNode`](/docs/sources/oscillator-node).
+Creates [`OscillatorNode`](/docs/sources/oscillator-node).
 
 #### Returns `OscillatorNode`.
 
 ### `createStreamer` <MobileOnly />
 
-Allows to create [`StreamerNode`](/docs/sources/streamer-node).
+Creates [`StreamerNode`](/docs/sources/streamer-node).
 
 #### Returns `StreamerNode`.
 
 ### `createPeriodicWave`
 
-Allows to create [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
+Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -136,13 +136,13 @@ Allows to create [`PeriodicWave`](/docs/effects/periodic-wave). This waveform sp
 
 ### `createStereoPanner`
 
-Allows to create [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 #### Returns `StereoPannerNode`.
 
 ### `createBiquadFilter`
 
-Allows to create [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
+Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 #### Returns `BiquadFilterNode`.
 
@@ -175,7 +175,7 @@ const buffer = await fetch(url)
 ```
 </details>
 
-Allows to decode audio data. It decodes with in memory audio data block.
+Decodes audio data. It decodes with in memory audio data block.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -201,7 +201,7 @@ const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
 ```
 </details>
 
-Allows to decode audio data file.
+Decodes audio data file.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -219,7 +219,7 @@ const buffer = await this.audioContext.decodePCMInBase64Data(data);
 ```
 </details>
 
-Allows to decode audio data. It decodes with PCM data in Base64.
+Decodes audio data. It decodes with PCM data in Base64.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
