@@ -106,7 +106,8 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
 
 std::shared_ptr<AudioBufferQueueSourceNode>
 BaseAudioContext::createBufferQueueSource(bool pitchCorrection) {
-  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
+  auto bufferSource =
+      std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }

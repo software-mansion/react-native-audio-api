@@ -7,8 +7,12 @@
 #include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
-AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(BaseAudioContext *context, bool pitchCorrection)
-    : AudioScheduledSourceNode(context), pitchCorrection_(pitchCorrection), vReadIndex_(0.0) {
+AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
+    BaseAudioContext *context,
+    bool pitchCorrection)
+    : AudioScheduledSourceNode(context),
+      pitchCorrection_(pitchCorrection),
+      vReadIndex_(0.0) {
   onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);
 
   detuneParam_ = std::make_shared<AudioParam>(
@@ -102,8 +106,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   playbackRateBus_->zero();
 
-  auto framesNeededToStretch =
-      static_cast<int>(std::abs(playbackRate * static_cast<float>(framesToProcess)));
+  auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
   updatePlaybackInfo(
       playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
@@ -130,10 +133,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 }
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
-        const std::shared_ptr<AudioBus> &processingBus,
-        int framesToProcess) {
-size_t startOffset = 0;
-size_t offsetLength = 0;
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
 
   auto computedPlaybackRate = getComputedPlaybackRateValue(framesToProcess);
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
@@ -145,24 +148,25 @@ size_t offsetLength = 0;
 
   if (std::fabs(computedPlaybackRate) == 1.0) {
     processWithoutInterpolation(
-            processingBus, startOffset, offsetLength, computedPlaybackRate);
+        processingBus, startOffset, offsetLength, computedPlaybackRate);
   } else {
     processWithInterpolation(
-            processingBus, startOffset, offsetLength, computedPlaybackRate);
+        processingBus, startOffset, offsetLength, computedPlaybackRate);
   }
 
   sendOnPositionChangedEvent();
 }
 
-float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess) {
-    auto time = context_->getCurrentTime();
+float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(
+    int framesToProcess) {
+  auto time = context_->getCurrentTime();
 
-    auto playbackRate =
-            playbackRateParam_->processKRateParam(framesToProcess, time);
-    auto detune = std::pow(
-            2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
+  auto playbackRate =
+      playbackRateParam_->processKRateParam(framesToProcess, time);
+  auto detune = std::pow(
+      2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
 
-    return playbackRate * detune;
+  return playbackRate * detune;
 }
 
 } // namespace audioapi
