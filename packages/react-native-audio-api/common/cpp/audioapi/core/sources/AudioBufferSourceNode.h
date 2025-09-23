@@ -45,15 +45,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   double loopStart_;
   double loopEnd_;
 
-  // pitch correction
-  bool pitchCorrection_;
-
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
-
-  void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
-                                     int framesToProcess);
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -65,9 +59,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<AudioBus>& processingBus,
       size_t startOffset,
       size_t offsetLength,
-      float playbackRate);
-
-  float getComputedPlaybackRateValue(int framesToProcess);
+      float playbackRate) override;
 
   double getVirtualStartFrame();
   double getVirtualEndFrame();
