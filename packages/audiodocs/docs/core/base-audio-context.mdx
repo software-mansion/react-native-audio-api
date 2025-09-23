@@ -48,19 +48,19 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 ### `createAnalyser`
 
-The above method lets you create [`AnalyserNode`](/docs/analysis/analyser-node).
+Allows to create [`AnalyserNode`](/docs/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
 ### `createRecorderAdapter`
 
-The above method lets you create [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
+Allows to create [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
 
 ### `createBuffer`
 
-The above method lets you create [`AudioBuffer`](/docs/sources/audio-buffer).
+Allows to create [`AudioBuffer`](/docs/sources/audio-buffer).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -80,7 +80,7 @@ The above method lets you create [`AudioBuffer`](/docs/sources/audio-buffer).
 
 ### `createBufferSource`
 
-The above method lets you create [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
+Allows to create [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -90,7 +90,7 @@ The above method lets you create [`AudioBufferSourceNode`](/docs/sources/audio-b
 
 ### `createBufferQueueSource` <MobileOnly />
 
-The above method lets you create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
+Allows to create [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -100,25 +100,25 @@ The above method lets you create [`AudioBufferQueueSourceNode`](/docs/sources/au
 
 ### `createGain`
 
-The above method lets you create [`GainNode`](/docs/effects/gain-node).
+Allows to create [`GainNode`](/docs/effects/gain-node).
 
 #### Returns `GainNode`.
 
 ### `createOscillator`
 
-The above method lets you create [`OscillatorNode`](/docs/sources/oscillator-node).
+Allows to create [`OscillatorNode`](/docs/sources/oscillator-node).
 
 #### Returns `OscillatorNode`.
 
 ### `createStreamer` <MobileOnly />
 
-The above method lets you create [`StreamerNode`](/docs/sources/streamer-node).
+Allows to create [`StreamerNode`](/docs/sources/streamer-node).
 
 #### Returns `StreamerNode`.
 
 ### `createPeriodicWave`
 
-The above method lets you create [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
+Allows to create [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -136,13 +136,13 @@ The above method lets you create [`PeriodicWave`](/docs/effects/periodic-wave). 
 
 ### `createStereoPanner`
 
-The above method lets you create [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+Allows to create [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 #### Returns `StereoPannerNode`.
 
 ### `createBiquadFilter`
 
-The above method lets you create [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
+Allows to create [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 #### Returns `BiquadFilterNode`.
 
@@ -175,7 +175,7 @@ const buffer = await fetch(url)
 ```
 </details>
 
-The above method lets you decode audio data. It decodes with in memory audio data block.
+Allows to decode audio data. It decodes with in memory audio data block.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -201,7 +201,7 @@ const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
 ```
 </details>
 
-The above method lets you decode audio data file.
+Allows to decode audio data file.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -219,7 +219,7 @@ const buffer = await this.audioContext.decodePCMInBase64Data(data);
 ```
 </details>
 
-The above method lets you decode audio data. It decodes with PCM data in Base64.
+Allows to decode audio data. It decodes with PCM data in Base64.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |

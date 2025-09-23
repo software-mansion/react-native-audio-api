@@ -51,7 +51,7 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 ### `enqueueBuffer`
 
-The above method lets you add another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
+Allows to add another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -61,7 +61,7 @@ The above method lets you add another buffer to queue. Returns `bufferId` that c
 
 ### `dequeueBuffer`
 
-The above method lets you remove a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Allows to remove a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -71,7 +71,7 @@ The above method lets you remove a buffer from the queue. Note that `onEnded` ev
 
 ### `clearBuffers`
 
-The above method lets you remove all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Allows to remove all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
 #### Returns `undefined`.
 
