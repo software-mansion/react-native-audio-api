@@ -1,8 +1,8 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioScheduledSourceNodeHostObject.h>
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/PeriodicWaveHostObject.h>
+#include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/HostObjects/core/AudioParamHostObject.h>
+#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/core/sources/StreamerNode.h>
 
 #include <memory>

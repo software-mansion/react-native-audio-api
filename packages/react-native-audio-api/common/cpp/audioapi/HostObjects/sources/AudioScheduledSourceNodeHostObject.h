@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/core/AudioNodeHostObject.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 
 #include <memory>

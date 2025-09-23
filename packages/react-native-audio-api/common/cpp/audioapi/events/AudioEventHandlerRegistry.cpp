@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
 namespace audioapi {

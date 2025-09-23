@@ -2,19 +2,19 @@
 
 #include <audioapi/jsi/JsiHostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
-#include <audioapi/HostObjects/AudioBufferSourceNodeHostObject.h>
-#include <audioapi/HostObjects/AudioBufferQueueSourceNodeHostObject.h>
-#include <audioapi/HostObjects/AudioDestinationNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
+#include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/core/core/BaseAudioContext.h>
-#include <audioapi/HostObjects/BiquadFilterNodeHostObject.h>
-#include <audioapi/HostObjects/GainNodeHostObject.h>
-#include <audioapi/HostObjects/OscillatorNodeHostObject.h>
-#include <audioapi/HostObjects/PeriodicWaveHostObject.h>
-#include <audioapi/HostObjects/StereoPannerNodeHostObject.h>
-#include <audioapi/HostObjects/AnalyserNodeHostObject.h>
-#include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
-#include <audioapi/HostObjects/StreamerNodeHostObject.h>
+#include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/GainNodeHostObject.h>
+#include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
+#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
+#include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
+#include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
+#include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
 
 #include <jsi/jsi.h>
 #include <memory>

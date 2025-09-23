@@ -1,8 +1,8 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/HostObjects/AudioBufferBaseSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
 #include <vector>

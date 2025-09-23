@@ -3,9 +3,9 @@
 #include <jsi/jsi.h>
 
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/HostObjects/RecorderAdapterNodeHostObject.h>
+#include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>

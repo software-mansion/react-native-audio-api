@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/core/AudioNodeHostObject.h>
 
 #include <memory>
 #include <string>
