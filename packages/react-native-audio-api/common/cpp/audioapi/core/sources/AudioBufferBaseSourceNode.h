@@ -14,8 +14,8 @@ class AudioParam;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferBaseSourceNode(BaseAudioContext *context);
-  virtual ~AudioBufferBaseSourceNode();
+  explicit AudioBufferBaseSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  ~AudioBufferBaseSourceNode() override;
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
@@ -23,9 +23,12 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   void clearOnPositionChangedCallback();
   void setOnPositionChangedCallbackId(uint64_t callbackId);
   void setOnPositionChangedInterval(int interval);
-  [[nodiscard]] int getOnPositionChangedInterval();
+  [[nodiscard]] int getOnPositionChangedInterval() const;
 
  protected:
+    // pitch correction
+    bool pitchCorrection_;
+
     std::mutex bufferLock_;
 
     // pitch correction
@@ -47,9 +50,21 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
     virtual double getCurrentPosition() const = 0;
 
     void sendOnPositionChangedEvent();
+
     void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
                                     int framesToProcess);
+    void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
+                                       int framesToProcess);
+
+    float getComputedPlaybackRateValue(int framesToProcess);
+
     virtual void processWithoutInterpolation(
+            const std::shared_ptr<AudioBus>& processingBus,
+            size_t startOffset,
+            size_t offsetLength,
+            float playbackRate) = 0;
+
+    virtual void processWithInterpolation(
             const std::shared_ptr<AudioBus>& processingBus,
             size_t startOffset,
             size_t offsetLength,

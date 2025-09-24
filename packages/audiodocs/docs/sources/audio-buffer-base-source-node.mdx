@@ -56,3 +56,17 @@ function App() {
     sourceNode.start();
 }
 ```
+
+## Remarks
+
+#### `detune`
+- Default value is 0.0.
+- Nominal range is -∞ to ∞.
+- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
+- When `createBufferSource(true)` it is clamped to range -1200 to 1200.
+
+#### `playbackRate`
+- Default value is 1.0.
+- Nominal range is -∞ to ∞.
+- For example value of 1.0 plays audio at normal speed, whereas value of 2.0 plays audio twice as fast as normal speed.
+- When created with `createBufferSource(true)` it is clamped to range 0 to 3 and uses pitch correction algorithm.

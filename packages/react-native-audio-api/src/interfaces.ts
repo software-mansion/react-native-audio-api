@@ -20,7 +20,9 @@ export interface IBaseAudioContext {
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
-  createBufferQueueSource: () => IAudioBufferQueueSourceNode;
+  createBufferQueueSource: (
+    pitchCorrection: boolean
+  ) => IAudioBufferQueueSourceNode;
   createBuffer: (
     channels: number,
     length: number,

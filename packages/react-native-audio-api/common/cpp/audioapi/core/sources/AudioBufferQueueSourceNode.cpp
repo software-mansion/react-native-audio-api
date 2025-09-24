@@ -11,8 +11,9 @@
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
-    BaseAudioContext *context)
-    : AudioBufferBaseSourceNode(context) {
+    BaseAudioContext *context,
+    bool pitchCorrection)
+    : AudioBufferBaseSourceNode(context, pitchCorrection) {
   buffers_ = {};
   stretch_->presetDefault(channelCount_, context_->getSampleRate());
 
@@ -90,13 +91,17 @@ void AudioBufferQueueSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
-    // No audio data to fill, zero the output and return.
+    // no audio data to fill, zero the output and return.
     if (buffers_.empty()) {
       processingBus->zero();
       return;
     }
 
-    processWithPitchCorrection(processingBus, framesToProcess);
+    if (!pitchCorrection_) {
+      processWithoutPitchCorrection(processingBus, framesToProcess);
+    } else {
+      processWithPitchCorrection(processingBus, framesToProcess);
+    }
 
     handleStopScheduled();
   } else {
@@ -135,6 +140,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
 
     assert(readIndex >= 0);
     assert(writeIndex >= 0);
+    assert(readIndex + framesToCopy <= buffer->getLength());
     assert(writeIndex + framesToCopy <= processingBus->getSize());
 
     processingBus->copy(
@@ -158,18 +164,94 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         readIndex = 0;
 
         break;
-      } else {
-        data = buffers_.front();
-        bufferId = data.first;
-        buffer = data.second;
-
-        readIndex = 0;
       }
+
+      data = buffers_.front();
+      bufferId = data.first;
+      buffer = data.second;
+      readIndex = 0;
     }
   }
 
   // update reading index for next render quantum
   vReadIndex_ = static_cast<double>(readIndex);
+}
+
+void AudioBufferQueueSourceNode::processWithInterpolation(
+    const std::shared_ptr<AudioBus> &processingBus,
+    size_t startOffset,
+    size_t offsetLength,
+    float playbackRate) {
+  size_t writeIndex = startOffset;
+  size_t framesLeft = offsetLength;
+
+  auto data = buffers_.front();
+  auto bufferId = data.first;
+  auto buffer = data.second;
+
+  while (framesLeft > 0) {
+    auto readIndex = static_cast<size_t>(vReadIndex_);
+    size_t nextReadIndex = readIndex + 1;
+    auto factor =
+        static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
+
+    bool crossBufferInterpolation = false;
+    std::shared_ptr<AudioBuffer> nextBuffer = nullptr;
+
+    if (nextReadIndex >= buffer->getLength()) {
+      if (buffers_.size() > 1) {
+        auto tempQueue = buffers_;
+        tempQueue.pop();
+        nextBuffer = tempQueue.front().second;
+        nextReadIndex = 0;
+        crossBufferInterpolation = true;
+      } else {
+        nextReadIndex = readIndex;
+      }
+    }
+
+    for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
+      float *destination = processingBus->getChannel(i)->getData();
+      const float *currentSource = buffer->bus_->getChannel(i)->getData();
+
+      if (crossBufferInterpolation) {
+        const float *nextSource = nextBuffer->bus_->getChannel(i)->getData();
+        float currentSample = currentSource[readIndex];
+        float nextSample = nextSource[nextReadIndex];
+        destination[writeIndex] =
+            currentSample + factor * (nextSample - currentSample);
+      } else {
+        destination[writeIndex] = dsp::linearInterpolate(
+            currentSource, readIndex, nextReadIndex, factor);
+      }
+    }
+
+    writeIndex += 1;
+    // queue source node always use positive playbackRate
+    vReadIndex_ += std::abs(playbackRate);
+    framesLeft -= 1;
+
+    if (vReadIndex_ >= static_cast<double>(buffer->getLength())) {
+      playedBuffersDuration_ += buffer->getDuration();
+      buffers_.pop();
+
+      std::unordered_map<std::string, EventValue> body = {
+          {"bufferId", std::to_string(bufferId)}};
+      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+          "ended", onEndedCallbackId_, body);
+
+      if (buffers_.empty()) {
+        processingBus->zero(writeIndex, framesLeft);
+        vReadIndex_ = 0.0;
+        break;
+      }
+
+      vReadIndex_ = vReadIndex_ - buffer->getLength();
+      data = buffers_.front();
+      bufferId = data.first;
+      buffer = data.second;
+    }
+  }
 }
 
 } // namespace audioapi
