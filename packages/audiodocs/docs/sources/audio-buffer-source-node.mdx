@@ -13,7 +13,7 @@ import { useGainAdsrPlayground } from '@site/src/components/InteractivePlaygroun
 
 # AudioBufferSourceNode
 
-The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in 
+The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
 [`AudioBuffer`](/docs/sources/audio-buffer). You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
@@ -67,7 +67,7 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 ### `start` <Overridden /> {#start}
 
-The above method schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
+Schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -91,12 +91,6 @@ The above method schedules `AudioBufferSourceNode` to start playback of audio da
 #### `buffer`
 - If is null, it outputs a single channel of silence (all samples are equal to 0).
 
-#### `detune`
-- Default value is 0.0.
-- Nominal range is -∞ to ∞.
-- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
-- When `createBufferSource(true)` it is clamped to range -1200 to 1200.
-
 #### `loop`
 - Default value is false.
 
@@ -106,19 +100,9 @@ The above method schedules `AudioBufferSourceNode` to start playback of audio da
 #### `loopEnd`
 - Default value is `buffer.duration`.
 
-#### `playbackRate`
-- Default value is 1.0.
-- Nominal range is -∞ to ∞.
-- For example value of 1.0 plays audio at normal speed, whereas value of 2.0 plays audio twice as fast as normal speed.
-- When created with `createBufferSource(true)` it is clamped to range 0 to 3 and uses pitch correction algorithm.
-
-
-
 ## AudioBufferSourceNode Playground
 
 This is an interactive example demonstrating the AudioBufferSourceNode. You can adjust the parameters in real-time to hear and see how they affect the generated sound wave.
-
-
 
 <details open>
 <summary><code>AudioBufferSourceNode</code> interactive playground</summary>

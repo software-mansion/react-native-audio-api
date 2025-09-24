@@ -14,7 +14,7 @@ The `AudioBufferQueueSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sourc
 
 ## Constructor
 
-[`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#createbuffersource)
+[`BaseAudioContext.createBufferQueueSource(options)`](/docs/core/base-audio-context#createqueuebuffersource)
 
 ## Example
 
@@ -51,7 +51,7 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 ### `enqueueBuffer`
 
-The above method lets you add another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
+Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -61,7 +61,7 @@ The above method lets you add another buffer to queue. Returns `bufferId` that c
 
 ### `dequeueBuffer`
 
-The above method lets you remove a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Removes a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -71,7 +71,7 @@ The above method lets you remove a buffer from the queue. Note that `onEnded` ev
 
 ### `clearBuffers`
 
-The above method lets you remove all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Removes all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
 #### Returns `undefined`.
 
@@ -79,7 +79,7 @@ The above method lets you remove all buffers from the queue. Note that `onEnded`
 
 ### `onEnded` <Overridden />
 
-Allows to set (or remove) callback that will be fired when queue source node has been stopped with payload `event.bufferId = undefined`
+Sets (or remove) callback that will be fired when queue source node has been stopped with payload `event.bufferId = undefined`
 or when a specific buffer has ended with payload `event.bufferId = <bufferId>`.
 
 You can remove callback by passing `null`.

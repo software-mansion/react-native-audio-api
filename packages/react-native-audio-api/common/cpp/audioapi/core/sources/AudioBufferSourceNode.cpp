@@ -13,12 +13,11 @@ namespace audioapi {
 AudioBufferSourceNode::AudioBufferSourceNode(
     BaseAudioContext *context,
     bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context),
+    : AudioBufferBaseSourceNode(context, pitchCorrection),
       loop_(false),
       loopSkip_(false),
       loopStart_(0),
-      loopEnd_(0),
-      pitchCorrection_(pitchCorrection) {
+      loopEnd_(0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
   alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
 
@@ -155,31 +154,6 @@ double AudioBufferSourceNode::getCurrentPosition() const {
  * Helper functions
  */
 
-void AudioBufferSourceNode::processWithoutPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-
-  auto computedPlaybackRate = getComputedPlaybackRateValue(framesToProcess);
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
-
-  if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
-    return;
-  }
-
-  if (std::fabs(computedPlaybackRate) == 1.0) {
-    processWithoutInterpolation(
-        processingBus, startOffset, offsetLength, computedPlaybackRate);
-  } else {
-    processWithInterpolation(
-        processingBus, startOffset, offsetLength, computedPlaybackRate);
-  }
-
-  sendOnPositionChangedEvent();
-}
-
 void AudioBufferSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBus> &processingBus,
     size_t startOffset,
@@ -306,19 +280,6 @@ void AudioBufferSourceNode::processWithInterpolation(
       }
     }
   }
-}
-
-float AudioBufferSourceNode::getComputedPlaybackRateValue(int framesToProcess) {
-  auto time = context_->getCurrentTime();
-
-  auto sampleRateFactor =
-      alignedBus_->getSampleRate() / context_->getSampleRate();
-  auto playbackRate =
-      playbackRateParam_->processKRateParam(framesToProcess, time);
-  auto detune = std::pow(
-      2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
-
-  return playbackRate * sampleRateFactor * detune;
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame() {

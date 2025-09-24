@@ -189,8 +189,8 @@
   --swm-interactive-button-color: var(--swm-navy-light-60);
   --swm-interactive-button-active: var(--ifm-font-color-base);
 
-  --swm-interactive-slider: var(--swm-purple-light-100);
-  --swm-interactive-slider-rail: var(--swm-navy-light-20);
+  --swm-interactive-slider: var(--swm-red-light-80);
+  --swm-interactive-slider-rail: var(--swm-navy-light-10);
 
   /* --swm-navy-light-100 in rgba */
   --swm-interactive-copy-button-off: rgba(0, 26, 114, 0);

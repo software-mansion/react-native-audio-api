@@ -26,7 +26,7 @@ It can be set to specific value or schedule value change to happen at specific t
 
 ### `setValueAtTime`
 
-The above method schedules an instant change to the `value` at given `startTime`.
+Schedules an instant change to the `value` at given `startTime`.
 
 :::caution
 
@@ -53,7 +53,7 @@ as they are more efficient for continuous changes.
 
 ### `linearRampToValueAtTime`
 
-The above method schedules a gradual linear change to the new value.
+Schedules a gradual linear change to the new value.
 The change begins at the time designated for the previous event. It follows a linear ramp to the `value`, achieving it by the specified `endTime`.
 
 ![](/img/linearRampToValueAtTime.png)
@@ -73,7 +73,7 @@ The change begins at the time designated for the previous event. It follows a li
 
 ### `exponentialRampToValueAtTime`
 
-The above method schedules a gradual exponential change to the new value.
+Schedules a gradual exponential change to the new value.
 The change begins at the time designated for the previous event. It follows an exponential ramp to the `value`, achieving it by the specified `endTime`.
 
 ![](/img/exponentialRampToValueAtTime.png)
@@ -93,7 +93,7 @@ The change begins at the time designated for the previous event. It follows an e
 
 ### `setTargetAtTime`
 
-The above method schedules a gradual change to the new value at the start time.
+Schedules a gradual change to the new value at the start time.
 This method is useful for decay or release portions of [ADSR envelopes](/docs/effects/gain-node#envelope---adsr).
 
 ![](/img/setTargetAtTime.png)
@@ -115,7 +115,7 @@ This method is useful for decay or release portions of [ADSR envelopes](/docs/ef
 
 ### `setValueCurveAtTime`
 
-The above method schedules the parameters's value change following a curve defined by given array.
+Schedules the parameters's value change following a curve defined by given array.
 
 ![](/img/setValueCurveAtTime.png)
 
@@ -135,7 +135,7 @@ The above method schedules the parameters's value change following a curve defin
 
 ### `cancelScheduledValues`
 
-The above method cancels all scheduled changes after given cancel time.
+Cancels all scheduled changes after given cancel time.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -151,7 +151,7 @@ The above method cancels all scheduled changes after given cancel time.
 
 ### `cancelAndHoldAtTime`
 
-The above method cancels all scheduled changes after given cancel time, but holds its value at given cancel time until further changes appear.
+Cancels all scheduled changes after given cancel time, but holds its value at given cancel time until further changes appear.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
