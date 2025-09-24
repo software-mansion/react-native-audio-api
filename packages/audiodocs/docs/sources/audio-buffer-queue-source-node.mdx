@@ -14,7 +14,13 @@ The `AudioBufferQueueSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sourc
 
 ## Constructor
 
-[`BaseAudioContext.createBufferQueueSource(options)`](/docs/core/base-audio-context#createqueuebuffersource)
+[`BaseAudioContext.createBufferQueueSource(options: AudioBufferBaseSourceNodeOptions)`](/docs/core/base-audio-context#createbufferqueuesource)
+
+```jsx
+interface AudioBufferBaseSourceNodeOptions {
+  pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
+}
+```
 
 ## Example
 
