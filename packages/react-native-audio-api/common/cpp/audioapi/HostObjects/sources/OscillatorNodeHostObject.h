@@ -1,9 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
-#include <audioapi/core/sources/OscillatorNode.h>
 
 #include <memory>
 #include <string>
@@ -12,21 +9,12 @@
 namespace audioapi {
 using namespace facebook;
 
+class OscillatorNode;
+
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit OscillatorNodeHostObject(
-          const std::shared_ptr<OscillatorNode> &node)
-      : AudioScheduledSourceNodeHostObject(node) {
-    addGetters(
-        JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
-        JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),
-        JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, type));
-
-    addFunctions(
-        JSI_EXPORT_FUNCTION(OscillatorNodeHostObject, setPeriodicWave));
-
-    addSetters(JSI_EXPORT_PROPERTY_SETTER(OscillatorNodeHostObject, type));
-  }
+          const std::shared_ptr<OscillatorNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

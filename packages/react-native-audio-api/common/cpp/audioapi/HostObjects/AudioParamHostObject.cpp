@@ -1,6 +1,29 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
+#include <audioapi/core/AudioParam.h>
+
 namespace audioapi {
+
+AudioParamHostObject::AudioParamHostObject(
+    const std::shared_ptr<AudioParam> &param)
+    : param_(param) {
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, minValue),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, maxValue));
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, linearRampToValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, exponentialRampToValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
+
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
+}
 
 JSI_PROPERTY_GETTER_IMPL(AudioParamHostObject, value) {
   return {param_->getValue()};

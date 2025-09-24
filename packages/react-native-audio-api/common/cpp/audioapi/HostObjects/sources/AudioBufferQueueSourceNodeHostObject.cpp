@@ -1,6 +1,19 @@
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
+
 namespace audioapi {
+
+AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
+    const std::shared_ptr<AudioBufferQueueSourceNode> &node)
+    : AudioBufferBaseSourceNodeHostObject(node) {
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
+}
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
   auto audioBufferQueueSourceNode =

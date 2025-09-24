@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
 #include <jsi/jsi.h>
@@ -11,18 +10,14 @@
 namespace audioapi {
 using namespace facebook;
 
+class OfflineAudioContext;
+
 class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit OfflineAudioContextHostObject(
           const std::shared_ptr<OfflineAudioContext> &offlineAudioContext,
           jsi::Runtime *runtime,
-          const std::shared_ptr<react::CallInvoker> &callInvoker)
-      : BaseAudioContextHostObject(offlineAudioContext, runtime, callInvoker) {
-    addFunctions(
-      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
-      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
-      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, startRendering));
-  }
+          const std::shared_ptr<react::CallInvoker> &callInvoker);
 
   JSI_HOST_FUNCTION_DECL(resume);
   JSI_HOST_FUNCTION_DECL(suspend);

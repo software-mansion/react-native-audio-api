@@ -1,6 +1,19 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 
+#include <audioapi/core/AudioContext.h>
+
 namespace audioapi {
+
+AudioContextHostObject::AudioContextHostObject(
+    const std::shared_ptr<AudioContext> &audioContext,
+    jsi::Runtime *runtime,
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : BaseAudioContextHostObject(audioContext, runtime, callInvoker) {
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
+}
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);

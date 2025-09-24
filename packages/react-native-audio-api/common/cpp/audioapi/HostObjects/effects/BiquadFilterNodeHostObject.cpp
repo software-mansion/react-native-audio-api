@@ -1,6 +1,25 @@
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/core/effects/BiquadFilterNode.h>
+
 namespace audioapi {
+
+BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
+    const std::shared_ptr<BiquadFilterNode> &node)
+    : AudioNodeHostObject(node) {
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
+      JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),
+      JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, Q),
+      JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, gain),
+      JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, type));
+
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(BiquadFilterNodeHostObject, type));
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(BiquadFilterNodeHostObject, getFrequencyResponse));
+}
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, frequency) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);

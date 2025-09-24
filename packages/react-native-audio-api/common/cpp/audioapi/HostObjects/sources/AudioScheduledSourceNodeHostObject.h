@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
-#include <audioapi/core/sources/AudioScheduledSourceNode.h>
 
 #include <memory>
 #include <vector>
@@ -9,27 +8,14 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioScheduledSourceNode;
+
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
-      const std::shared_ptr<AudioScheduledSourceNode> &node)
-      : AudioNodeHostObject(node) {
-    addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
+      const std::shared_ptr<AudioScheduledSourceNode> &node);
 
-    addFunctions(
-        JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
-        JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
-  }
-
-  ~AudioScheduledSourceNodeHostObject() {
-    auto audioScheduledSourceNode =
-        std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-
-    // When JSI object is garbage collected (together with the eventual callback),
-    // underlying source node might still be active and try to call the non-existing callback.
-    audioScheduledSourceNode->clearOnEndedCallback();
-  }
+  ~AudioScheduledSourceNodeHostObject() override;
 
   JSI_PROPERTY_SETTER_DECL(onEnded);
 

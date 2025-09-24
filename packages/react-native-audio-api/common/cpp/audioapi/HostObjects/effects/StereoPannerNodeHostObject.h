@@ -1,8 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/core/effects/StereoPannerNode.h>
 
 #include <memory>
 #include <string>
@@ -11,13 +9,12 @@
 namespace audioapi {
 using namespace facebook;
 
+class StereoPannerNode;
+
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:
   explicit StereoPannerNodeHostObject(
-      const std::shared_ptr<StereoPannerNode> &node)
-      : AudioNodeHostObject(node) {
-    addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
-  }
+      const std::shared_ptr<StereoPannerNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(pan);
 };

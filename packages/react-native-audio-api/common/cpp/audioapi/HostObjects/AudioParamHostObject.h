@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/jsi/JsiHostObject.h>
-#include <audioapi/core/AudioParam.h>
 
 #include <jsi/jsi.h>
 #include <utility>
@@ -12,28 +11,11 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioParam;
+
 class AudioParamHostObject : public JsiHostObject {
  public:
-  explicit AudioParamHostObject(const std::shared_ptr<AudioParam> &param)
-      : param_(param) {
-    addGetters(
-        JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
-        JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
-        JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, minValue),
-        JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, maxValue));
-
-    addFunctions(
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueAtTime),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, linearRampToValueAtTime),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, exponentialRampToValueAtTime),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
-        JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
-
-    addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
-  }
-  friend class AudioNodeHostObject;
+  explicit AudioParamHostObject(const std::shared_ptr<AudioParam> &param);
 
   JSI_PROPERTY_GETTER_DECL(value);
   JSI_PROPERTY_GETTER_DECL(defaultValue);
@@ -51,6 +33,8 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(cancelAndHoldAtTime);
 
  private:
+  friend class AudioNodeHostObject;
+
   std::shared_ptr<AudioParam> param_;
 };
 } // namespace audioapi

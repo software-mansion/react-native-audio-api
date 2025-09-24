@@ -94,7 +94,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
           auto bufferLength = static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
 
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, audioEventHandlerRegistry, sampleRate, bufferLength);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
         });

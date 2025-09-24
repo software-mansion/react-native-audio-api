@@ -1,6 +1,33 @@
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
 
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/core/sources/AudioBufferSourceNode.h>
+
 namespace audioapi {
+
+AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
+    const std::shared_ptr<AudioBufferSourceNode> &node)
+    : AudioBufferBaseSourceNodeHostObject(node) {
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd));
+
+  addSetters(
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
+
+  // start method is overridden in this class
+  functions_->erase("start");
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
+      JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
+}
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
   auto audioBufferSourceNode =

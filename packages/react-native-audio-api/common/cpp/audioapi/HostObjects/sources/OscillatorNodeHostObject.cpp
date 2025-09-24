@@ -1,6 +1,23 @@
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
+#include <audioapi/core/sources/OscillatorNode.h>
+
 namespace audioapi {
+
+OscillatorNodeHostObject::OscillatorNodeHostObject(
+    const std::shared_ptr<OscillatorNode> &node)
+    : AudioScheduledSourceNodeHostObject(node) {
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, type));
+
+  addFunctions(JSI_EXPORT_FUNCTION(OscillatorNodeHostObject, setPeriodicWave));
+
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(OscillatorNodeHostObject, type));
+}
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, frequency) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);

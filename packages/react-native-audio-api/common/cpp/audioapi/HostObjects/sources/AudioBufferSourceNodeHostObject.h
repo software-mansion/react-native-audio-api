@@ -1,7 +1,5 @@
 #pragma once
 
-#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
@@ -10,32 +8,13 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioBufferSourceNode;
+
 class AudioBufferSourceNodeHostObject
     : public AudioBufferBaseSourceNodeHostObject {
  public:
   explicit AudioBufferSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferSourceNode> &node)
-      : AudioBufferBaseSourceNodeHostObject(node) {
-    addGetters(
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, buffer),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopEnd));
-
-    addSetters(
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
-        JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
-
-    // start method is overridden in this class
-    functions_->erase("start");
-
-    addFunctions(
-        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
-        JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
-    }
+      const std::shared_ptr<AudioBufferSourceNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(loopSkip);

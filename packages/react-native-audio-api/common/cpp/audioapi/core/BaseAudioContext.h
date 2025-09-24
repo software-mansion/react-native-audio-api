@@ -89,7 +89,7 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
-  virtual bool isDriverRunning() const = 0;
+  [[nodiscard]] virtual bool isDriverRunning() const = 0;
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;

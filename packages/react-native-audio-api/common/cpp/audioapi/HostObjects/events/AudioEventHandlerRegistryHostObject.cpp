@@ -1,6 +1,19 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
+#include <audioapi/events/AudioEventHandlerRegistry.h>
+
 namespace audioapi {
+
+AudioEventHandlerRegistryHostObject::AudioEventHandlerRegistryHostObject(
+    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
+  eventHandlerRegistry_ = eventHandlerRegistry;
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(
+          AudioEventHandlerRegistryHostObject, addAudioEventListener),
+      JSI_EXPORT_FUNCTION(
+          AudioEventHandlerRegistryHostObject, removeAudioEventListener));
+}
 
 JSI_HOST_FUNCTION_IMPL(
     AudioEventHandlerRegistryHostObject,

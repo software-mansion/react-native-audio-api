@@ -1,6 +1,20 @@
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/core/OfflineAudioContext.h>
+
 namespace audioapi {
+
+OfflineAudioContextHostObject::OfflineAudioContextHostObject(
+    const std::shared_ptr<OfflineAudioContext> &offlineAudioContext,
+    jsi::Runtime *runtime,
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : BaseAudioContextHostObject(offlineAudioContext, runtime, callInvoker) {
+  addFunctions(
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, startRendering));
+}
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   auto promise = promiseVendor_->createPromise(

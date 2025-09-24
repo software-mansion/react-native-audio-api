@@ -1,17 +1,6 @@
 #pragma once
 
-#include <jsi/jsi.h>
-
-#include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
-
-#ifdef ANDROID
-#include <audioapi/android/core/AndroidAudioRecorder.h>
-#else
-#include <audioapi/ios/core/IOSAudioRecorder.h>
-#endif
+#include <audioapi/jsi/JsiHostObject.h>
 
 #include <memory>
 #include <utility>
@@ -21,36 +10,15 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioRecorder;
+class AudioEventHandlerRegistry;
+
 class AudioRecorderHostObject : public JsiHostObject {
  public:
   explicit AudioRecorderHostObject(
-      jsi::Runtime *runtime,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
-      int bufferLength) {
-#ifdef ANDROID
-    audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
-      sampleRate,
-      bufferLength,
-      audioEventHandlerRegistry
-    );
-#else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>(
-      sampleRate,
-      bufferLength,
-      audioEventHandlerRegistry
-    );
-#endif
-
-    addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioRecorderHostObject, onAudioReady));
-
-    addFunctions(
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect)
-    );
-  }
+      int bufferLength);
 
   JSI_PROPERTY_SETTER_DECL(onAudioReady);
 

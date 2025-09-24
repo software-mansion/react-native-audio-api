@@ -1,6 +1,52 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
+#include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
+#include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
+#include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/GainNodeHostObject.h>
+#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
+#include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
+#include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
+#include <audioapi/core/BaseAudioContext.h>
+
 namespace audioapi {
+
+BaseAudioContextHostObject::BaseAudioContextHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    jsi::Runtime *runtime,
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : context_(context), callInvoker_(callInvoker) {
+  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioData),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
+      JSI_EXPORT_FUNCTION(
+          BaseAudioContextHostObject, decodePCMAudioDataInBase64));
+}
+
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   auto destination = std::make_shared<AudioDestinationNodeHostObject>(
       context_->getDestination());
@@ -37,7 +83,8 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
   auto streamer = context_->createStreamer();
   auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(streamer);
   auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
-  object.setExternalMemoryPressure(runtime, StreamerNode::getEstimatedSize());
+  object.setExternalMemoryPressure(
+      runtime, StreamerNodeHostObject::getSizeInBytes());
   return object;
 }
 
