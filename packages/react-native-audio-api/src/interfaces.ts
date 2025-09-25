@@ -14,6 +14,7 @@ export interface IBaseAudioContext {
   readonly sampleRate: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
+  readonly stretcher: IAudioStretcher;
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(): IOscillatorNode;
@@ -209,6 +210,13 @@ export interface IAudioDecoder {
   decodeWithMemoryBlock: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
   decodeWithFilePath: (sourcePath: string) => Promise<IAudioBuffer>;
   decodeWithPCMInBase64: (b64: string) => Promise<IAudioBuffer>;
+}
+
+export interface IAudioStretcher {
+  changePlaybackSpeed: (
+    arrayBuffer: AudioBuffer,
+    playbackSpeed: number
+  ) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioEventEmitter {

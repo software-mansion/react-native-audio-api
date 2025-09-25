@@ -12,7 +12,7 @@ class AudioStretcher {
   explicit AudioStretcher(float sampleRate) : sampleRate_(sampleRate) {}
 
   [[nodiscard]] std::shared_ptr<AudioBuffer> changePlaybackSpeed(
-      AudioBuffer &audioBuffer,
+      AudioBuffer buffer,
       float playbackSpeed) const;
 
  private:

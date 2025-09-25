@@ -18,11 +18,13 @@ import StreamerNode from './StreamerNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
 import AudioDecoder from './AudioDecoder';
+import AudioStretcher from './AudioStretcher';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
   readonly decoder: AudioDecoder;
+  readonly stretcher: AudioStretcher;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
@@ -30,6 +32,7 @@ export default class BaseAudioContext {
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
     this.decoder = new AudioDecoder(this.sampleRate);
+    this.stretcher = new AudioStretcher(this.sampleRate);
   }
 
   public get currentTime(): number {
@@ -48,6 +51,13 @@ export default class BaseAudioContext {
     } else {
       throw new TypeError('Input must be a string or ArrayBuffer');
     }
+  }
+
+  public async changePlaybackSpeed(
+    input: AudioBuffer,
+    playbackSpeed: number
+  ): Promise<AudioBuffer> {
+    return this.stretcher.changePlaybackSpeed(input, playbackSpeed);
   }
 
   createRecorderAdapter(): RecorderAdapterNode {
