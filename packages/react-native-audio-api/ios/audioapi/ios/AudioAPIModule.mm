@@ -41,14 +41,6 @@ using namespace worklets;
 #if defined(RCT_NEW_ARCH_ENABLED)
 @synthesize callInvoker = _callInvoker;
 @synthesize moduleRegistry = _moduleRegistry;
-
-- (instancetype)initWithModuleRegistry:(RCTModuleRegistry *)moduleRegistry
-{
-  if (self = [super init]) {
-    _moduleRegistry = moduleRegistry;
-  }
-  return self;
-}
 #endif // defined(RCT_NEW_ARCH_ENABLED)
 
 RCT_EXPORT_MODULE(AudioAPIModule);
