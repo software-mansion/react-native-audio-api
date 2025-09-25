@@ -1,4 +1,4 @@
-import { AudioContext, AudioManager, AudioDecoder } from 'react-native-audio-api';
+import { AudioContext, AudioManager } from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
@@ -8,7 +8,6 @@ class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
-  private readonly decoder: AudioDecoder;
 
   private isPlaying: boolean = false;
 
@@ -19,7 +18,6 @@ class AudioPlayer {
 
   constructor() {
     this.audioContext = new AudioContext({ initSuspended: true });
-    this.decoder = new AudioDecoder(this.audioContext.sampleRate);
   }
 
   play = async () => {
@@ -95,18 +93,11 @@ class AudioPlayer {
   loadBuffer = async (url: string) => {
     const buffer = await fetch(url)
       .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => this.decoder.decode(arrayBuffer))
+      .then((arrayBuffer) => this.audioContext.decode(arrayBuffer))
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
         return null;
       });
-    // const buffer = await fetch(url)
-    //   .then((response) => response.arrayBuffer())
-    //   .then((arrayBuffer) => this.audioContext.decode(arrayBuffer))
-    //   .catch((error) => {
-    //     console.error('Error decoding audio data source:', error);
-    //     return null;
-    //   });
 
     if (buffer) {
       this.audioBuffer = buffer;
