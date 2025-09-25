@@ -1,13 +1,10 @@
 #pragma once
 
-#include <jsi/jsi.h>
-
 #include <memory>
 #include <atomic>
 #include <mutex>
 
 namespace audioapi {
-using namespace facebook;
 
 class RecorderAdapterNode;
 class AudioBus;
