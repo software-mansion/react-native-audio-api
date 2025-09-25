@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Text, Button, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import {
   AudioContext,
   AudioManager,
@@ -7,17 +7,18 @@ import {
   RecorderAdapterNode,
   WorkletNode
 } from 'react-native-audio-api';
-import { Container } from "../../components";
+import { Container, Button } from "../../components";
 import { Extrapolation, useSharedValue } from "react-native-reanimated";
 import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolate,
 } from "react-native-reanimated";
+import { colors } from "../../styles";
 
 
 function Worklets() {
-  const SAMPLE_RATE = 16000;
+  const SAMPLE_RATE = 44100;
   const recorderRef = useRef<AudioRecorder | null>(null);
   const aCtxRef = useRef<AudioContext | null>(null);
   const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
@@ -59,15 +60,15 @@ function Worklets() {
         sum += audioData[0][i] * audioData[0][i];
       }
       const rms = Math.sqrt(sum / audioData[0].length);
-      const scaledAmplitude = Math.min(rms * 500, 1);
+      const scaledAmplitude = Math.min(rms * 1000, 1);
 
       console.log(`RMS: ${rms}, Scaled: ${scaledAmplitude}`);
 
-      bar0.value = bar1.value;
-      bar1.value = bar2.value;
-      bar3.value = bar2.value;
-      bar4.value = bar3.value;
-      bar2.value = scaledAmplitude;
+      bar0.value = withSpring(bar1.value, { damping: 20, stiffness: 150 });
+      bar1.value = withSpring(bar2.value, { damping: 20, stiffness: 150 });
+      bar3.value = withSpring(bar2.value, { damping: 20, stiffness: 150 });
+      bar4.value = withSpring(bar3.value, { damping: 20, stiffness: 150 });
+      bar2.value = withSpring(scaledAmplitude, { damping: 20, stiffness: 200 });
     };
 
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
@@ -94,11 +95,11 @@ function Worklets() {
     recorderAdapterRef.current = null;
     aCtxRef.current = null;
     console.log("Recording stopped");
-    bar0.value = 0;
-    bar1.value = 0;
-    bar2.value = 0;
-    bar3.value = 0;
-    bar4.value = 0;
+    bar0.value = withSpring(0, { damping: 20, stiffness: 100 });
+    bar1.value = withSpring(0, { damping: 20, stiffness: 100 });
+    bar2.value = withSpring(0, { damping: 20, stiffness: 100 });
+    bar3.value = withSpring(0, { damping: 20, stiffness: 100 });
+    bar4.value = withSpring(0, { damping: 20, stiffness: 100 });
   }
 
   const createBarStyle = (index: number) => {
@@ -123,10 +124,19 @@ function Worklets() {
         Extrapolation.CLAMP
       );
 
-      const backgroundColor = interpolate(
+      // Interpolate red component: 0 (quiet) -> 255 (loud)
+      const red = interpolate(
         amplitude,
-        [0, 0.5, 1],
-        [0, 0.5, 1],
+        [0, 1],
+        [0, 255],
+        Extrapolation.CLAMP
+      );
+
+      // Interpolate green component: 255 (quiet) -> 0 (loud)
+      const green = interpolate(
+        amplitude,
+        [0, 1],
+        [255, 0],
         Extrapolation.CLAMP
       );
 
@@ -134,19 +144,19 @@ function Worklets() {
       const opacity = 1 - (distanceFromCenter * 0.15);
 
       return {
-        height: withSpring(height, { damping: 20, stiffness: 200 }),
+        height,
         width: barWidth,
-        backgroundColor: `rgba(${Math.floor(backgroundColor * 255)}, ${Math.floor((1 - backgroundColor) * 255)}, 100, ${opacity})`,
+        backgroundColor: `rgba(${Math.floor(red)}, ${Math.floor(green)}, 0, ${opacity})`,
       };
     });
   };
 
   return (
     <Container>
-      <Text style={styles.title}>Audio Worklets Visualizer</Text>
-      <Text style={styles.subtitle}>Speak into the microphone to see the animation</Text>
+      <Text style={{ ...styles.title, color: colors.white}}>Audio Worklets Visualizer</Text>
+      <Text style={{ ...styles.subtitle, color: colors.white}}>Speak into the microphone to see the animation</Text>
 
-      <View style={styles.visualizer}>
+      <View style={{...styles.visualizer, backgroundColor: colors.white}}>
         <View style={styles.barsContainer}>
           {Array.from({ length: 5 }, (_, index) => (
             <Animated.View
@@ -157,8 +167,10 @@ function Worklets() {
         </View>
       </View>
 
-      <Button onPress={start} title="Start Recording" />
-      <Button onPress={stop} title="Stop Recording" />
+      <View style={styles.buttonsContainer}>
+        <Button onPress={start} title="Start Recording" />
+        <Button onPress={stop} title="Stop Recording" />
+      </View>
     </Container>
   );
 }
@@ -172,7 +184,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -181,7 +192,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     marginVertical: 30,
-    backgroundColor: '#f0f0f0',
     borderRadius: 10,
     padding: 20,
   },
@@ -195,6 +205,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minHeight: 10,
   },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  }
 });
 
 export default Worklets;
