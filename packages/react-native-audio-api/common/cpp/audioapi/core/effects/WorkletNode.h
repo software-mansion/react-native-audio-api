@@ -59,6 +59,6 @@ class WorkletNode : public AudioNode {
   size_t curBuffIndex_;
 };
 
-#endif
+#endif // RN_AUDIO_API_TEST
 
 } // namespace audioapi
