@@ -46,7 +46,7 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(AudioBuffer buf
       stretch_init(static_cast<int>(sampleRate_ / 333.0f), static_cast<int>(sampleRate_ / 55.0f), numChannels, 0x1);
 
   int maxOutputFrames = stretch_output_capacity(stretcher, static_cast<int>(numFrames), 1 / playbackSpeed);
-  std::vector<int16_t> stretchedBuffer(maxOutputFrames);
+  std::vector<int16_t> stretchedBuffer(maxOutputFrames * numChannels);
 
   NSLog(@"before stretch_samples");
   int outputFrames = stretch_samples(
