@@ -57,7 +57,7 @@ void WorkletNode::processNode(
     if (curBuffIndex_ == bufferLength_) {
       // Reset buffer index, channel buffers and execute worklet
       curBuffIndex_ = 0;
-      workletRunner_->executeOnRuntimeGuarded(
+      workletRunner_->executeOnRuntimeGuardedSync(
           [this, channelCount_](jsi::Runtime &uiRuntimeRaw) {
             /// Arguments preparation
             auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
@@ -73,10 +73,11 @@ void WorkletNode::processNode(
             jsArray.setExternalMemoryPressure(
                 uiRuntimeRaw, channelCount_ * buffRealLength_);
 
-            workletRunner_->executeWorkletSync(
+            workletRunner_->executeWorklet(
                 shareableWorklet_,
                 std::move(jsArray),
                 jsi::Value(uiRuntimeRaw, static_cast<int>(channelCount_)));
+            return jsi::Value::undefined();
           });
     }
   }

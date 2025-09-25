@@ -7,82 +7,10 @@
 #include <atomic>
 #include <memory>
 #include <utility>
-#include "SafeIncludes.h"
-
+#include <optional>
 
 namespace audioapi {
 using namespace facebook;
-
-class UiWorkletsRunner {
- public:
-    explicit UiWorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
-
-    inline jsi::Runtime* getJSIRuntime() const noexcept {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return nullptr;
-      }
-      #if RN_AUDIO_API_ENABLE_WORKLETS
-      return &strongRuntime->getJSIRuntime();
-      #else
-      return nullptr;
-      #endif
-    }
-
-    bool executeOnRuntimeGuarded(const std::function<void(jsi::Runtime&)>& job) const noexcept {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return false;
-      }
-      #if RN_AUDIO_API_ENABLE_WORKLETS
-      std::unique_lock<std::recursive_mutex> lock(*strongRuntime->runtimeMutex_);
-      jsi::Runtime& rt = strongRuntime->getJSIRuntime();
-      job(rt);
-      return true;
-      #else
-      return false;
-      #endif
-    }
-
-    template<typename... Args>
-    bool executeWorkletAsync(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return false;
-      }
-
-      #if RN_AUDIO_API_ENABLE_WORKLETS
-
-      /// TODO change to use spsc channel and managed thread
-      /// For now and test purposes it does the same thing as executeWorkletSync
-      strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
-      return true;
-
-      #else
-      return false;
-      #endif
-    }
-
-    template<typename... Args>
-    bool executeWorkletSync(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return false;
-      }
-
-      #if RN_AUDIO_API_ENABLE_WORKLETS
-
-      strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
-      return true;
-
-      #else
-      return false;
-      #endif
-    }
-
- private:
-    std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime_;
-};
 
 /*
 * # How to extract worklet from JavaScript argument
@@ -90,11 +18,56 @@ class UiWorkletsRunner {
 * To extract a shareable worklet from a JavaScript argument, use the following code:
 *
 * ```cpp
-* auto worklet = worklets::extractShareableWorkletFromArg(runtime, args[0]);
+* auto worklet = worklets::extractSerializableWorkletFromArg(runtime, args[0]);
 * ```
 *
 * This will return a shared pointer to the extracted worklet, or throw an error if the argument is invalid.
 */
 
+class UiWorkletsRunner {
+ public:
+    explicit UiWorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
+
+    /// @brief Execute a job on the UI runtime safely.
+    /// @param job
+    /// @return nullopt if the runtime is not available or the result of the job execution
+    /// @note Execution is synchronous
+    std::optional<jsi::Value> executeOnRuntimeGuardedSync(const std::function<jsi::Value(jsi::Runtime&)>&& job) const noexcept(noexcept(job)) {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
+         return std::nullopt;
+      }
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+      return strongRuntime->executeSync(std::move(job));
+      #else
+      return std::nullopt;
+      #endif
+    }
+
+    /// @brief Execute a worklet with the given arguments.
+    /// @tparam ...Args
+    /// @param shareableWorklet
+    /// @param ...args
+    /// @note Execution is synchronous, this method can be used in `executeOnRuntimeGuardedSync` and `...Async` methods arguments
+    /// @return nullopt if the runtime is not available or the result of the worklet execution
+    template<typename... Args>
+    std::optional<jsi::Value> executeWorklet(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
+      auto strongRuntime = weakUiRuntime_.lock();
+      if (strongRuntime == nullptr) {
+         return std::nullopt;
+      }
+
+      #if RN_AUDIO_API_ENABLE_WORKLETS
+
+      return strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
+
+      #else
+      return std::nullopt;
+      #endif
+    }
+
+ private:
+    std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime_;
+};
 
 } // namespace audioapi
