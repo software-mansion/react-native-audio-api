@@ -154,32 +154,51 @@ Supported file formats:
 - mp4
 :::
 
-### `decodeAudioData`
+### `decode`
+
+Lets you decode audio data. It supports various input types:
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">Parameter</th>
+      <th align="center">Type</th>
+      <th align="center">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3" align="center"><code>input</code></td>
+      <td align="center"><code>ArrayBuffer</code></td>
+      <td align="center">ArrayBuffer with audio data.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Path to audio file located on the device.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Base64-encoded PCM audio data. <MobileOnly /></td>
+    </tr>
+  </tbody>
+</table>
+
+#### Returns `Promise<AudioBuffer>`.
 
 <details>
-<summary>Example</summary>
+<summary>Example decoding with memory block</summary>
 ```tsx
 const url = ... // url to an audio
 
 const buffer = await fetch(url)
   .then((response) => response.arrayBuffer())
-  .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
+  .then((arrayBuffer) => this.audioContext.decode(arrayBuffer))
   .catch((error) => {
     console.error('Error decoding audio data source:', error);
     return null;
   });
 ```
 </details>
-
-The above method lets you decode audio data. It decodes with in memory audio data block.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `arrayBuffer` | `ArrayBuffer` | ArrayBuffer with audio data. |
-
-#### Returns `Promise<AudioBuffer>`.
-
-### `decodeAudioDataSource`
 
 <details>
 <summary>Example using expo-asset library</summary>
@@ -192,37 +211,18 @@ const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
       if (!asset.localUri) {
         throw new Error('Failed to load audio asset');
       }
-      return this.audioContext.decodeAudioDataSource(asset.localUri);
+      return this.audioContext.decode(asset.localUri);
     })
 ```
 </details>
 
-The above method lets you decode audio data file.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `sourcePath` | `string` | Path to audio file located on the device. |
-
-#### Returns `Promise<AudioBuffer>`.
-
-### `decodePCMInBase64Data` <MobileOnly />
-
 <details>
-<summary>Example</summary>
+<summary>Example decoding with data in base64 format </summary>
 ```tsx
 const data = ... // data encoded in base64 string
 const buffer = await this.audioContext.decodePCMInBase64Data(data);
 ```
 </details>
-
-The above method lets you decode audio data. It decodes with PCM data in Base64.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `base64` | `string` | Base64 string with audio data. |
-| `playbackRate` <Optional /> | `number` | Number that represents audio speed, which will be applied during decoding. |
-
-#### Returns `Promise<AudioBuffer>`.
 
 ## Remarks
 
