@@ -16,12 +16,19 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
+  createWorkletNode: (
+    shareableWorklet: any,
+    bufferLength: number,
+    inputChannelCount: number
+  ) => IWorkletNode;
   createOscillator(): IOscillatorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
-  createBufferQueueSource: () => IAudioBufferQueueSourceNode;
+  createBufferQueueSource: (
+    pitchCorrection: boolean
+  ) => IAudioBufferQueueSourceNode;
   createBuffer: (
     channels: number,
     length: number,
@@ -194,6 +201,8 @@ export interface IAnalyserNode extends IAudioNode {
 }
 
 export interface IRecorderAdapterNode extends IAudioNode {}
+
+export interface IWorkletNode extends IAudioNode {}
 
 export interface IAudioRecorder {
   start: () => void;

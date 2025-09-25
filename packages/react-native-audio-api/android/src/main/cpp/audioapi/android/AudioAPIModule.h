@@ -7,6 +7,7 @@
 #include <fbjni/fbjni.h>
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <memory>
 #include <utility>
 #include <unordered_map>
@@ -15,6 +16,7 @@ namespace audioapi {
 
 using namespace facebook;
 using namespace react;
+using namespace worklets;
 
 class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
  public:
@@ -23,6 +25,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   static jni::local_ref<AudioAPIModule::jhybriddata> initHybrid(
       jni::alias_ref<jhybridobject> jThis,
+      jni::alias_ref<jni::JObject> jWorkletsModule, // it will be null if RN_AUDIO_API_ENABLE_WORKLETS is false
       jlong jsContext,
       jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
           jsCallInvokerHolder);
@@ -37,13 +40,24 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   jni::global_ref<AudioAPIModule::javaobject> javaPart_;
   jsi::Runtime *jsiRuntime_;
+  #if RN_AUDIO_API_ENABLE_WORKLETS
+  std::weak_ptr<worklets::WorkletsModuleProxy> weakWorkletsModuleProxy_;
+  #endif
   std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
+  #if RN_AUDIO_API_ENABLE_WORKLETS
+  explicit AudioAPIModule(
+      jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
+      std::weak_ptr<worklets::WorkletsModuleProxy> weakWorkletsModuleProxy,
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
+  #else
   explicit AudioAPIModule(
       jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
+  #endif
 };
 
 } // namespace audioapi

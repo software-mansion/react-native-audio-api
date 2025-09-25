@@ -12,7 +12,14 @@ It connects to the audio graph through a [`RecorderAdapterNode`](/docs/sources/r
 
 ## Constructor
 
-[`AudioRecorder(options)`](/docs/inputs/audio-recorder#audiorecorderoptions)
+`AudioRecorder(options: AudioRecorderOptions)`
+
+```typescript
+interface AudioRecorderOptions {
+  sampleRate: number;
+  bufferLengthInSamples: number; //how many samples to be put in the buffer
+}
+```
 
 ## Example
 
@@ -76,7 +83,7 @@ Disconnects recorder from the currently connected adapter. It does not need to b
 
 ### `onAudioReady`
 
-Allows user to set a callback after every portion of data deliverance.
+Sets a callback after every portion of data deliverance.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
@@ -87,18 +94,6 @@ Allows user to set a callback after every portion of data deliverance.
 
 ## Remarks
 
-### `AudioRecorderOptions`
-
-<details>
-<summary>Type definitions</summary>
-```typescript
-interface AudioRecorderOptions {
-  sampleRate: number;
-  bufferLengthInSamples: number; //how many samples to be put in the buffer
-}
-```
-</details>
-
 ### `OnAudioReadyEventType`
 
 <details>
@@ -107,7 +102,6 @@ interface AudioRecorderOptions {
 interface OnAudioReadyEventType {
   buffer: AudioBuffer;
   numFrames: number; //number of frames in a buffer
-  when: number; //timestamp
 }
 ```
 </details>

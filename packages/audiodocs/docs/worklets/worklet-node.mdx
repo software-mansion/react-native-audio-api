@@ -1,0 +1,50 @@
+---
+sidebar_position: 2
+---
+
+import { ReadOnly } from '@site/src/components/Badges';
+
+# WorkletNode
+
+The `WorkletNode` interface represents a node in the audio processing graph that can execute a worklet.
+
+Worklets are a way to run JavaScript code in the audio rendering thread, allowing for low-latency audio processing. For more information, see our introduction [Introduction to worklets](/docs/worklets/introduction).
+This node lets you execute a worklet on the UI thread. bufferLength specifies the size of the buffer that will be passed to the worklet on each call. The inputChannelCount specifies the number of channels that will be passed to the worklet.
+
+## Constructor
+
+[`BaseAudioContext.createWorkletNode(worklet, bufferLength, inputChannelCount)`](/docs/core/base-audio-context#createworkletnode-)
+
+## Example
+```tsx
+import { AudioContext, AudioRecorder } from 'react-native-audio-api';
+
+/// This example shows how we can use a WorkletNode to process microphone audio data in real-time.
+function App() {
+    const recorder = new AudioRecorder({
+      sampleRate: 16000,
+      bufferLengthInSamples: 16000,
+    });
+
+    const audioContext = new AudioContext({ sampleRate: 16000 });
+    const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
+        'worklet'; 
+        // here you have access to the number of input channels and the audio data
+        // audio data is a two dimensional array where first index is the channel number and second is buffer of exactly bufferLength size
+        // !IMPORTANT: here you can only read audio data any modifications will not be reflected in the audio output of this node
+    };
+    const workletNode = audioContext.createWorkletNode(worklet, 1024, 2);
+    const adapterNode = audioContext.createRecorderAdapter();
+    
+    adapterNode.connect(workletNode);
+    workletNode.connect(audioContext.destination);
+    recorder.connect(adapterNode);
+    recorder.start();
+}
+```
+
+## Properties
+It has no own properties but inherits from `AudioNode`.
+
+## Methods
+It has no own methods but inherits from `AudioNode`.

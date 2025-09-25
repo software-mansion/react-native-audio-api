@@ -29,7 +29,7 @@ a.homepageButtonLink:hover {
   justify-content: center;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 568px) {
   .homepageButton,
   .homepageButtonLink {
     width: 100%;

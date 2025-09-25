@@ -24,8 +24,12 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/utils/AudioDecoder.cpp"
 )
 
+# exclude HostObjects from tests
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
+
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.h"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
@@ -56,7 +60,6 @@ target_include_directories(rnaudioapi PUBLIC
 target_include_directories(rnaudioapi_libs PUBLIC
   ${ROOT}/packages/react-native-audio-api/common/cpp
 )
-
 add_executable(
   tests
   OscillatorTest.cpp
@@ -64,6 +67,8 @@ add_executable(
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)
+add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
+add_compile_definitions(RN_AUDIO_API_TEST=1)
 
 target_link_libraries(tests
   rnaudioapi
