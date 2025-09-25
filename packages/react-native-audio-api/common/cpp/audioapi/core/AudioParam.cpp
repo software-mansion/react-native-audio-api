@@ -18,10 +18,11 @@ AudioParam::AudioParam(
       maxValue_(maxValue),
       eventsQueue_(),
       eventScheduler_(32),
-      audioBus_(std::make_shared<AudioBus>(
-          RENDER_QUANTUM_SIZE,
-          1,
-          context->getSampleRate())) {
+      audioBus_(
+          std::make_shared<AudioBus>(
+              RENDER_QUANTUM_SIZE,
+              1,
+              context->getSampleRate())) {
   inputBuses_.reserve(4);
   inputNodes_.reserve(4);
   startTime_ = 0;
