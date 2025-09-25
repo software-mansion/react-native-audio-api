@@ -1,6 +1,6 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
-#include <audioapi/core/Constants.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -75,10 +75,8 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     auto *outputChannel = bus->getChannel(0)->getData();
 
     circularBuffer_->pop_front(outputChannel, bufferLength_);
-    auto when = static_cast<double>(
-        oboeStream->getTimestamp(CLOCK_MONOTONIC).value().timestamp);
 
-    invokeOnAudioReadyCallback(bus, bufferLength_, when);
+    invokeOnAudioReadyCallback(bus, bufferLength_);
   }
 
   return DataCallbackResult::Continue;

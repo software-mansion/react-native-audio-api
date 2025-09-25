@@ -1,6 +1,5 @@
 .badge {
   display: inline-block;
-  border: 1px solid #ccc;
   color: var(--ifm-font-color-base);
   border-radius: 4rem;
   font-size: 12px;
@@ -11,6 +10,11 @@
 }
 
 .experimental {
-  color: var(--swm-sidebar-label-text-experimental);
-  background-color: var(--swm-sidebar-label-background-experimental);
+  color: var(--swm-off-white);
+  background-color: var(--swm-purple-light-100);
+}
+
+
+[data-theme='dark'] .experimental {
+  background-color: var(--swm-purple-dark-140);
 }

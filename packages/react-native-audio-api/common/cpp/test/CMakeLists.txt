@@ -24,6 +24,9 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AudioDecoder.cpp"
 )
 
+# exclude HostObjects from tests
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
+
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletNode.cpp"

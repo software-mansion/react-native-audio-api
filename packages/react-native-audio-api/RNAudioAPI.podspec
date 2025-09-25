@@ -20,12 +20,12 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
   s.subspec "audioapi" do |ss|
-    ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h}"
+    ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
     ss.subspec "ios" do |sss|
-      sss.source_files = "ios/audioapi/**/*.{mm,h,m}"
+      sss.source_files = "ios/audioapi/**/*.{mm,h,m,hpp}"
       sss.header_dir = "audioapi"
       sss.header_mappings_dir = "ios/audioapi"
     end
@@ -42,8 +42,11 @@ Pod::Spec.new do |s|
   # Assumes Pods dir is nested under ios project dir
   ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
   rn_audio_dir_relative = Pathname.new(__dir__).relative_path_from(ios_dir).to_s
-  external_dir = "common/cpp/audioapi/external"
-  lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir}/$(PLATFORM_NAME)"
+
+  external_dir_relative = "common/cpp/audioapi/external"
+  lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
+
+  external_dir = File.join(__dir__, "common/cpp/audioapi/external")
 
   s.ios.vendored_frameworks = [
     'common/cpp/audioapi/external/libavcodec.xcframework',
@@ -60,10 +63,10 @@ s.pod_target_xcconfig = {
     $(PODS_TARGET_SRCROOT)/ios
     $(PODS_ROOT)/Headers/Public/RNWorklets
     $(PODS_ROOT)/Headers/Private/React-Core
-    $(PODS_TARGET_SRCROOT)/#{external_dir}/include
-    $(PODS_TARGET_SRCROOT)/#{external_dir}/include/opus
-    $(PODS_TARGET_SRCROOT)/#{external_dir}/include/vorbis
-    $(PODS_TARGET_SRCROOT)/common/cpp/audioapi/external/ffmpeg_include
+    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include
+    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus
+    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
+    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include
   ].join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}",
   'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
@@ -78,7 +81,16 @@ s.user_target_xcconfig = {
     -force_load #{lib_dir}/libvorbis.a
     -force_load #{lib_dir}/libvorbisenc.a
     -force_load #{lib_dir}/libvorbisfile.a
-  ].join(" ")
+  ].join(" "),
+  'HEADER_SEARCH_PATHS' => %W[
+    $(inherited)
+    $(PODS_ROOT)/Headers/Public/RNAudioAPI
+    $(PODS_TARGET_SRCROOT)/common/cpp
+    #{external_dir}/include
+    #{external_dir}/include/opus
+    #{external_dir}/include/vorbis
+    #{external_dir}/ffmpeg_include
+  ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.

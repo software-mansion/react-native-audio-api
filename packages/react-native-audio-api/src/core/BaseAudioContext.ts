@@ -2,7 +2,7 @@ import { IBaseAudioContext } from '../interfaces';
 import {
   ContextState,
   PeriodicWaveConstraints,
-  AudioBufferSourceNodeOptions,
+  AudioBufferBaseSourceNodeOptions,
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
@@ -113,7 +113,7 @@ export default class BaseAudioContext {
   }
 
   createBufferSource(
-    options?: AudioBufferSourceNodeOptions
+    options?: AudioBufferBaseSourceNodeOptions
   ): AudioBufferSourceNode {
     const pitchCorrection = options?.pitchCorrection ?? false;
 
@@ -123,10 +123,14 @@ export default class BaseAudioContext {
     );
   }
 
-  createBufferQueueSource(): AudioBufferQueueSourceNode {
+  createBufferQueueSource(
+    options?: AudioBufferBaseSourceNodeOptions
+  ): AudioBufferQueueSourceNode {
+    const pitchCorrection = options?.pitchCorrection ?? false;
+
     return new AudioBufferQueueSourceNode(
       this,
-      this.context.createBufferQueueSource()
+      this.context.createBufferQueueSource(pitchCorrection)
     );
   }
 

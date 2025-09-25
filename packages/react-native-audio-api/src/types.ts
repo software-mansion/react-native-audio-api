@@ -43,7 +43,7 @@ export interface AudioRecorderOptions {
 
 export type WindowType = 'blackman' | 'hann';
 
-export interface AudioBufferSourceNodeOptions {
+export interface AudioBufferBaseSourceNodeOptions {
   pitchCorrection: boolean;
 }
 

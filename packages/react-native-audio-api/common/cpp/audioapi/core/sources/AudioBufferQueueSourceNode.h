@@ -17,14 +17,14 @@ class AudioParam;
 
 class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
-    explicit AudioBufferQueueSourceNode(BaseAudioContext *context);
+    explicit AudioBufferQueueSourceNode(BaseAudioContext *context, bool pitchCorrection);
     ~AudioBufferQueueSourceNode() override;
 
     void stop(double when) override;
     void pause();
 
     std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
-    void dequeueBuffer(const size_t bufferId);
+    void dequeueBuffer(size_t bufferId);
     void clearBuffers();
     void disable() override;
 
@@ -42,6 +42,12 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     double playedBuffersDuration_ = 0;
 
     void processWithoutInterpolation(
+            const std::shared_ptr<AudioBus>& processingBus,
+            size_t startOffset,
+            size_t offsetLength,
+            float playbackRate) override;
+
+    void processWithInterpolation(
             const std::shared_ptr<AudioBus>& processingBus,
             size_t startOffset,
             size_t offsetLength,

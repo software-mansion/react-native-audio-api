@@ -6,10 +6,10 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
-#include <audioapi/HostObjects/AudioRecorderHostObject.h>
+#include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
+#include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
@@ -113,7 +113,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
           auto bufferLength = static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
 
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, audioEventHandlerRegistry, sampleRate, bufferLength);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
         });
