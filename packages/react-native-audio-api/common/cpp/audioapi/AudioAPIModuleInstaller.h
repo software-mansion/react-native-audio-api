@@ -7,6 +7,7 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
+#include <audioapi/HostObjects/AudioDecoderHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
