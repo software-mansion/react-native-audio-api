@@ -21,6 +21,7 @@ namespace audioapi {
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
 std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const {
+#ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
   std::vector<int16_t> temp(CHUNK_SIZE * numChannels_);
   ma_uint64 outFramesRead = 0;
@@ -44,6 +45,9 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
   }
   return buffer;
+#else
+  return nullptr;
+#endif
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(
