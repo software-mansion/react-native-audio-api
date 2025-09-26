@@ -17,6 +17,10 @@ export default class AudioDecoder {
     let buffer;
     if (typeof input === 'string') {
       if (/\.(mp3|wav|flac|opus|ogg|m4a|aac|mp4)$/i.test(input)) {
+        // Remove the file:// prefix if it exists
+        if (input.startsWith('file://')) {
+          input = input.replace('file://', '');
+        }
         buffer = await this.decoder.decodeWithFilePath(input);
       } else {
         buffer = await this.decoder.decodeWithPCMInBase64(input);
