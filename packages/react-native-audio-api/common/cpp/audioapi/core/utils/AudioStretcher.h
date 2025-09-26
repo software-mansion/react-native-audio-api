@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 namespace audioapi {
 
@@ -17,6 +18,8 @@ class AudioStretcher {
 
  private:
   float sampleRate_;
+
+  std::vector<int16_t> castToInt16Buffer(const float *data, size_t size) const;
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * 32768.0f);
