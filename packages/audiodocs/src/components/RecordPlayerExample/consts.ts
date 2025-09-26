@@ -5,7 +5,7 @@ export const VINYL_CONSTANTS = {
   COVER_TOP_Y: 6,
   ANCHOR_Y: 20,
   RECORD_ROTATION_SPEED: 0.1,
-  GRAVITY: 0.001,
+  GRAVITY: 0.003,
   LERP_FACTOR_ACTIVE: 0.4,
   
   // audio

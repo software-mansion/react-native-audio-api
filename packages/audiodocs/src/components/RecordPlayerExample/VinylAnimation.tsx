@@ -1,17 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import {
-  AudioContext,
-  AudioBufferSourceNode,
-  BiquadFilterNode,
-  GainNode,
-  AudioBuffer,
-} from 'react-native-audio-api';
 
 // @ts-ignore
 import labelImage from '/static/img/logo.png';
@@ -26,14 +19,6 @@ interface SceneRefs {
   string: THREE.Mesh;
 }
 
-interface AudioRefs {
-  context: AudioContext;
-  bufferSource: AudioBufferSourceNode | null;
-  audioBuffer: AudioBuffer | null;
-  filter: BiquadFilterNode;
-  gain: GainNode;
-}
-
 interface AnimationState {
   isSliderPressed: boolean;
   targetCoverY: number;
@@ -45,8 +30,8 @@ interface AnimationState {
 export default function VinylPlayer(): React.ReactElement {
   const mountRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Animation state refs
+
+  // Animation state ref 
   const animationStateRef = useRef<AnimationState>({
     isSliderPressed: false,
     targetCoverY: 0,
@@ -55,30 +40,59 @@ export default function VinylPlayer(): React.ReactElement {
     fallVelocity: 0,
   });
 
-  // Scene object refs
+  // Scene object refs 
   const sceneRefsRef = useRef<SceneRefs | null>(null);
-  
-  // Audio refs
-  const audioRefsRef = useRef<AudioRefs | null>(null);
 
-  const playSound = async () => {
-    const audioRefs = audioRefsRef.current;
-    if (!audioRefs?.context || !audioRefs.audioBuffer || audioRefs.bufferSource) {
+  const { context, filter, gain } = useMemo(() => {
+    const ctx = new AudioContext();
+    const filterNode = ctx.createBiquadFilter();
+    filterNode.type = 'lowpass';
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
+    filterNode.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    return { context: ctx, filter: filterNode, gain: gainNode };
+  }, []);
+
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+
+  const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  useEffect(() => {
+    const fetchAudio = async () => {
+      try {
+        const buffer = await fetch('/react-native-audio-api/audio/music/pass-the-mayo.mp3')
+          .then((r) => r.arrayBuffer())
+          .then((ab) => context.decodeAudioData(ab));
+        setAudioBuffer(buffer);
+      } catch (error) {
+        console.warn('Failed to load audio:', error);
+      }
+    };
+
+    fetchAudio();
+
+    return () => {
+      context?.close();
+    };
+  }, [context]); 
+
+  const playSound = () => {
+    if (!context || !audioBuffer || bufferSourceRef.current) {
       return;
     }
-    const source = await audioRefs.context.createBufferSource();
-    source.buffer = audioRefs.audioBuffer;
+    const source = context.createBufferSource();
+    source.buffer = audioBuffer;
     source.loop = true;
-    audioRefs.bufferSource = source;
-    source.connect(audioRefs.filter);
+    source.connect(filter);
     source.start();
+    bufferSourceRef.current = source;
   };
 
   const stopSound = () => {
-    const audioRefs = audioRefsRef.current;
-    if (audioRefs?.bufferSource) {
-      audioRefs.bufferSource.stop();
-      audioRefs.bufferSource = null;
+    if (bufferSourceRef.current) {
+      bufferSourceRef.current.stop();
+      bufferSourceRef.current = null;
     }
   };
 
@@ -97,7 +111,7 @@ export default function VinylPlayer(): React.ReactElement {
     state.coverHeight = v;
     state.targetCoverY = (v / C.SLIDER_MAX) * C.SLIDER_MAX;
     
-    if (!audioRefsRef.current?.bufferSource) {
+    if (!bufferSourceRef.current) {
       playSound();
     }
   };
@@ -374,33 +388,6 @@ export default function VinylPlayer(): React.ReactElement {
     return { coverGroup, string, lineMaterial };
   };
 
-  const initializeAudio = async (): Promise<AudioRefs> => {
-    const ctx = new AudioContext();
-    const filterNode = ctx.createBiquadFilter();
-    filterNode.type = 'lowpass';
-    const gainNode = ctx.createGain();
-    gainNode.gain.value = 0;
-    filterNode.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    let audioBuffer: AudioBuffer | null = null;
-    try {
-      audioBuffer = await fetch('/react-native-audio-api/audio/music/pass-the-mayo.mp3')
-        .then((r) => r.arrayBuffer())
-        .then((ab) => ctx.decodeAudioData(ab));
-    } catch (error) {
-      console.warn('Failed to load audio:', error);
-    }
-
-    return {
-      context: ctx,
-      bufferSource: null,
-      audioBuffer,
-      filter: filterNode,
-      gain: gainNode,
-    };
-  };
-
   const startAnimationLoop = (
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
@@ -411,7 +398,6 @@ export default function VinylPlayer(): React.ReactElement {
       requestAnimationFrame(animate);
 
       const sceneRefs = sceneRefsRef.current;
-      const audioRefs = audioRefsRef.current;
       const state = animationStateRef.current;
 
       if (sceneRefs?.recordGroup) {
@@ -422,19 +408,15 @@ export default function VinylPlayer(): React.ReactElement {
         let newCoverY: number;
 
         if (state.isSliderPressed) {
-          // Dragging mode
           const currentY = sceneRefs.coverGroup.position.y;
           newCoverY = currentY + (state.targetCoverY - currentY) * C.LERP_FACTOR_ACTIVE;
           sceneRefs.coverGroup.position.y = newCoverY;
           state.fallVelocity = 0;
         } else {
-          // Falling mode
           const currentY = sceneRefs.coverGroup.position.y;
-          
           if (currentY > 0) {
             state.fallVelocity += C.GRAVITY;
             newCoverY = currentY - state.fallVelocity;
-            
             if (newCoverY < 0) {
               newCoverY = 0;
             }
@@ -451,17 +433,16 @@ export default function VinylPlayer(): React.ReactElement {
           }
         }
 
-        // Audio filter effect
-        if (audioRefs?.filter && audioRefs?.gain && audioRefs?.context) {
+        if (filter && gain && context) {
           const clampedY = Math.max(0, Math.min(newCoverY, C.COVER_HEIGHT_3D_MAX));
           const ratio = clampedY / C.COVER_HEIGHT_3D_MAX;
-          const currentTime = audioRefs.context.currentTime;
-          audioRefs.filter.frequency.setTargetAtTime(
+          const currentTime = context.currentTime;
+          filter.frequency.setTargetAtTime(
             C.FILTER_MIN_FREQ + ratio * (C.FILTER_MAX_FREQ - C.FILTER_MIN_FREQ),
             currentTime,
             C.AUDIO_TRANSITION_TIME
           );
-          audioRefs.gain.gain.setTargetAtTime(
+          gain.gain.setTargetAtTime(
             ratio * C.MAX_GAIN,
             currentTime,
             C.AUDIO_TRANSITION_TIME
@@ -472,7 +453,7 @@ export default function VinylPlayer(): React.ReactElement {
         
         const isOnGround = newCoverY < 0.01;
         if (isOnGround && !state.wasOnGround) {
-          if (audioRefs?.bufferSource) {
+          if (bufferSourceRef.current) {
             stopSound();
           }
         }
@@ -494,68 +475,53 @@ export default function VinylPlayer(): React.ReactElement {
     const currentMount = mountRef.current;
     if (!currentMount) return;
 
-    let cleanup: (() => void) | null = null;
+    const { scene, camera, renderer, controls } = initializeScene(currentMount);
+    initializeLighting(scene);
+    
+    const materials = createMaterials();
+    const recordGroup = createVinylPlayer(scene, materials);
+    const { coverGroup, string, lineMaterial } = createCoverBox(scene, renderer, materials);
 
-    const initializeApp = async () => {
-      const { scene, camera, renderer, controls } = initializeScene(currentMount);
-      initializeLighting(scene);
-      
-      const materials = createMaterials();
-      const recordGroup = createVinylPlayer(scene, materials);
-      const { coverGroup, string, lineMaterial } = createCoverBox(scene, renderer, materials);
+    sceneRefsRef.current = { recordGroup, coverGroup, string };
+    
+    startAnimationLoop(renderer, scene, camera, controls);
 
-      const audioRefs = await initializeAudio();
-      
-      sceneRefsRef.current = { recordGroup, coverGroup, string };
-      audioRefsRef.current = audioRefs;
-
-      startAnimationLoop(renderer, scene, camera, controls);
-
-      const handleResize = () => {
-        if (!currentMount) return;
-        camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        try {
-          const size = new THREE.Vector2();
-          renderer.getSize(size);
-          lineMaterial.resolution.set(size.x, size.y);
-        } catch (e) {
-          console.warn('Error updating line material resolution on resize:', e);
-        }
-      };
-      window.addEventListener('resize', handleResize);
-
-      // Cleanup 
-      cleanup = () => {
-        window.removeEventListener('resize', handleResize);
-        scene.traverse((object) => {
-          if (object instanceof THREE.Mesh) {
-            if (object.geometry) object.geometry.dispose();
-            if (Array.isArray(object.material)) {
-              object.material.forEach((material) => {
-                if (material.map) material.map.dispose();
-                material.dispose();
-              });
-            } else if (object.material) {
-              if (object.material.map) object.material.map.dispose();
-              object.material.dispose();
-            }
-          }
-        });
-        materials.labelTexture.dispose();
-        renderer.dispose();
-        if (currentMount && currentMount.contains(renderer.domElement)) {
-          currentMount.removeChild(renderer.domElement);
-        }
-        audioRefs.context?.close();
-      };
+    const handleResize = () => {
+      if (!currentMount) return;
+      camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+      try {
+        const size = new THREE.Vector2();
+        renderer.getSize(size);
+        lineMaterial.resolution.set(size.x, size.y);
+      } catch (e) {
+        console.warn('Error updating line material resolution on resize:', e);
+      }
     };
-
-    initializeApp();
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      cleanup?.();
+      window.removeEventListener('resize', handleResize);
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          if (object.geometry) object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((material) => {
+              if (material.map) material.map.dispose();
+              material.dispose();
+            });
+          } else if (object.material) {
+            if (object.material.map) object.material.map.dispose();
+            object.material.dispose();
+          }
+        }
+      });
+      materials.labelTexture.dispose();
+      renderer.dispose();
+      if (currentMount && currentMount.contains(renderer.domElement)) {
+        currentMount.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
