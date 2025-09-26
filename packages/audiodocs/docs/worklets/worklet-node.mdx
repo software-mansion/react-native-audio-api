@@ -8,7 +8,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 The `WorkletNode` interface represents a node in the audio processing graph that can execute a worklet.
 
-Worklets are a way to run JavaScript code in the audio rendering thread, allowing for low-latency audio processing. For more information, see our introduction [Introduction to worklets](/docs/worklets/introduction).
+Worklets are a way to run JavaScript code in the audio rendering thread, allowing for low-latency audio processing. For more information, see our introduction [Introduction to worklets](/docs/worklets/worklets-introduction).
 This node lets you execute a worklet on the UI thread. bufferLength specifies the size of the buffer that will be passed to the worklet on each call. The inputChannelCount specifies the number of channels that will be passed to the worklet.
 
 ## Constructor
@@ -28,14 +28,14 @@ function App() {
 
     const audioContext = new AudioContext({ sampleRate: 16000 });
     const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
-        'worklet'; 
+        'worklet';
         // here you have access to the number of input channels and the audio data
         // audio data is a two dimensional array where first index is the channel number and second is buffer of exactly bufferLength size
         // !IMPORTANT: here you can only read audio data any modifications will not be reflected in the audio output of this node
     };
     const workletNode = audioContext.createWorkletNode(worklet, 1024, 2);
     const adapterNode = audioContext.createRecorderAdapter();
-    
+
     adapterNode.connect(workletNode);
     workletNode.connect(audioContext.destination);
     recorder.connect(adapterNode);
