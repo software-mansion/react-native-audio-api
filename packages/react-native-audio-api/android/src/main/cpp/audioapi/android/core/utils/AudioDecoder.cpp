@@ -25,6 +25,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const {
   std::vector<int16_t> temp(CHUNK_SIZE * numChannels_);
   ma_uint64 outFramesRead = 0;
 
+#ifndef AUDIO_API_TEST_SUITE
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
     ma_decoder_read_pcm_frames(
@@ -43,6 +44,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const {
   if (outFramesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
   }
+#endif
   return buffer;
 }
 
@@ -67,9 +69,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     const std::string &path) const {
-  // if (path.starts_with("file://")) {
-  //   path = path.replace(0, 7, "");
-  // }
 #ifndef AUDIO_API_TEST_SUITE
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {

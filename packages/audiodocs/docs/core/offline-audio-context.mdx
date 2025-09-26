@@ -10,8 +10,15 @@ Instead, it processes the audio as quickly as possible and outputs the result to
 
 
 ## Constructor
-[`OfflineAudioContext(options)`](/docs/core/offline-audio-context#offlineaudiocontextoptions)
+`OfflineAudioContext(options: OfflineAudioContextOptions)`
 
+```typescript
+interface OfflineAudioContextOptions {
+  numberOfChannels: number;
+  length: number; // The length of the rendered AudioBuffer, in sample-frames
+  sampleRate: number;
+}
+```
 
 ## Properties
 
@@ -42,19 +49,3 @@ Resume time progression in audio context when it has been suspended.
 Starts rendering the audio, taking into account the current connections and the current scheduled changes.
 
 #### Returns `Promise<AudioBuffer>`.
-
-## Remarks
-
-### `OfflineAudioContextOptions`
-
-<details>
-<summary>Details</summary>
-```typescript
-interface OfflineAudioContextOptions {
-  numberOfChannels: number;
-  length: number; // The length of the rendered AudioBuffer, in sample-frames
-  sampleRate: number;
-}
-```
-
-</details>

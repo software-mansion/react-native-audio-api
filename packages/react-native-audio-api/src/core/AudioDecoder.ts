@@ -8,13 +8,19 @@ export default class AudioDecoder {
     this.decoder = global.createAudioDecoder(sampleRate);
   }
 
-  public decode(path: string): Promise<AudioBuffer>;
-  public decode(buffer: ArrayBuffer): Promise<AudioBuffer>;
+  public decodeAudioData(path: string): Promise<AudioBuffer>;
+  public decodeAudioData(buffer: ArrayBuffer): Promise<AudioBuffer>;
 
-  public async decode(input: string | ArrayBuffer): Promise<AudioBuffer> {
+  public async decodeAudioData(
+    input: string | ArrayBuffer
+  ): Promise<AudioBuffer> {
     let buffer;
     if (typeof input === 'string') {
       if (/\.(mp3|wav|flac|opus|ogg|m4a|aac|mp4)$/i.test(input)) {
+        // Remove the file:// prefix if it exists
+        if (input.startsWith('file://')) {
+          input = input.replace('file://', '');
+        }
         buffer = await this.decoder.decodeWithFilePath(input);
       } else {
         buffer = await this.decoder.decodeWithPCMInBase64(input);

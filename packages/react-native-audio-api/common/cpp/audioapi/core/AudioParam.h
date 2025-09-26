@@ -4,7 +4,7 @@
 #include <audioapi/core/utils/ParamChangeEvent.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/AudioNode.h>
-#include <audioapi/core/AudioParamEventQueue.h>
+#include <audioapi/core/utils/AudioParamEventQueue.h>
 
 #include <cstddef>
 #include <utility>

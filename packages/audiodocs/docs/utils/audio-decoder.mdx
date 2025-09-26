@@ -1,0 +1,104 @@
+---
+sidebar_position: 1
+---
+
+import { MobileOnly } from '@site/src/components/Badges';
+
+# AudioDecoder
+
+The `AudioDecoder` module lets you decode audio data independently, without creating an `AudioContext`.
+If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function.
+
+
+## Constructor
+
+`new AudioDecoder(sampleRate: number)`
+
+## Properties
+None. `AudioDecoder` has no own or inherited properties.
+
+## Methods
+
+:::caution
+Supported file formats:
+- aac
+- flac
+- m4a
+- mp3
+- mp4
+- ogg
+- opus
+- wav
+:::
+
+### `decodeAudioData`
+
+Lets you decode audio data. It supports various input types:
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">Parameter</th>
+      <th align="center">Type</th>
+      <th align="center">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3" align="center"><code>input</code></td>
+      <td align="center"><code>ArrayBuffer</code></td>
+      <td align="center">ArrayBuffer with audio data.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Path to audio file located on the device.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Base64-encoded PCM audio data. <MobileOnly /></td>
+    </tr>
+  </tbody>
+</table>
+
+#### Returns `Promise<AudioBuffer>`.
+
+<details>
+<summary>Example decoding with memory block</summary>
+```tsx
+const url = ... // url to an audio
+const decoder = new AudioDecoder(sampleRate)
+
+  const buffer = await fetch(url)
+    .then((response) => response.arrayBuffer())
+    .then((arrayBuffer) => decoder.decodeAudioData(arrayBuffer))
+    .catch((error) => {
+      console.error('Error decoding audio data source:', error);
+      return null;
+    });
+```
+</details>
+
+<details>
+<summary>Example using expo-asset library</summary>
+```tsx
+import { Asset } from 'expo-asset';
+
+const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
+    .downloadAsync()
+    .then((asset) =>  {
+      if (!asset.localUri) {
+        throw new Error('Failed to load audio asset');
+      }
+      return decoder.decodeAudioData(asset.localUri);
+    })
+```
+</details>
+
+<details>
+<summary>Example decoding with data in base64 format </summary>
+```tsx
+const data = ... // data encoded in base64 string
+const decoder = new AudioDecoder(sampleRate);
+const buffer = await decoder.decodeAudioData(data);
+```
+</details>

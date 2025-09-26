@@ -2,7 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   OfflineAudioContextOptions,
-  AudioBufferSourceNodeOptions,
+  AudioBufferBaseSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -72,7 +72,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   async createBufferSource(
-    options?: AudioBufferSourceNodeOptions
+    options?: AudioBufferBaseSourceNodeOptions
   ): Promise<AudioBufferSourceNode> {
     if (!options || !options.pitchCorrection) {
       return new AudioBufferSourceNode(

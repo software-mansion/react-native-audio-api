@@ -1,10 +1,15 @@
 import React from "react";
+
 import HomepageButton from "../HomepageButton";
-
 import styles from "./styles.module.css";
+import HeroSvg from './hero.svg';
 
-const Hero = () => (
+const Hero = () => {
+  return (
     <section className={styles.hero}>
+      <div className={styles.heroImageWrapper}>
+        <HeroSvg className={styles.heroImage} />
+      </div>
       <div className={styles.heading}>
         <div>
           <h1 className={styles.headingLabel}>
@@ -25,6 +30,7 @@ const Hero = () => (
         </div>
       </div>
     </section>
-);
+  );
+}
 
 export default Hero;

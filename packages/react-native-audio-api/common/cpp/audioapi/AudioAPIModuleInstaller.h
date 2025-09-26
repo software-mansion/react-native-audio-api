@@ -6,12 +6,14 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
-#include <audioapi/HostObjects/AudioRecorderHostObject.h>
+#include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 #include <audioapi/HostObjects/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/AudioStretcherHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/events/AudioEventHandlerRegistryHostObject.h>
+#include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
+
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
 
@@ -21,10 +23,16 @@ using namespace facebook;
 
 class AudioAPIModuleInstaller {
  public:
-  static void injectJSIBindings(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
-    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
+  static void injectJSIBindings(
+    jsi::Runtime *jsiRuntime,
+    const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
+    auto workletRunner = std::make_shared<UiWorkletsRunner>(uiRuntime);
+
+    auto createAudioContext = getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, workletRunner);
     auto createAudioRecorder = getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry);
-    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
+    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, workletRunner);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioStretcher = getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
@@ -39,12 +47,16 @@ class AudioAPIModuleInstaller {
   }
 
  private:
-  static jsi::Function getCreateAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+  static jsi::Function getCreateAudioContextFunction(
+    jsi::Runtime *jsiRuntime,
+    const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
         0,
-        [jsCallInvoker, audioEventHandlerRegistry](
+        [jsCallInvoker, audioEventHandlerRegistry, workletRunner](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -52,7 +64,7 @@ class AudioAPIModuleInstaller {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
           auto initSuspended = args[1].getBool();
-          audioContext = std::make_shared<AudioContext>(sampleRate, initSuspended, audioEventHandlerRegistry);
+          audioContext = std::make_shared<AudioContext>(sampleRate, initSuspended, audioEventHandlerRegistry, workletRunner);
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               audioContext, &runtime, jsCallInvoker);
@@ -62,12 +74,16 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCreateOfflineAudioContextFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<react::CallInvoker> &jsCallInvoker, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+  static jsi::Function getCreateOfflineAudioContextFunction(
+    jsi::Runtime *jsiRuntime,
+    const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
         0,
-        [jsCallInvoker, audioEventHandlerRegistry](
+        [jsCallInvoker, audioEventHandlerRegistry, workletRunner](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -76,7 +92,7 @@ class AudioAPIModuleInstaller {
             auto length = static_cast<size_t>(args[1].getNumber());
             auto sampleRate = static_cast<float>(args[2].getNumber());
 
-          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, audioEventHandlerRegistry);
+          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, audioEventHandlerRegistry, workletRunner);
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               offlineAudioContext, &runtime, jsCallInvoker);
 
@@ -85,7 +101,9 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCreateAudioRecorderFunction(jsi::Runtime *jsiRuntime, const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+  static jsi::Function getCreateAudioRecorderFunction(
+    jsi::Runtime *jsiRuntime,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
@@ -100,7 +118,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
           auto bufferLength = static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
 
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(&runtime, audioEventHandlerRegistry, sampleRate, bufferLength);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry, sampleRate, bufferLength);
 
           return jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
         });

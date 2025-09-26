@@ -49,7 +49,7 @@ const PlaybackSpeed: FC = () => {
     setIsLoading(true);
 
     try {
-      let buffer = await audioContext.decode(PCM_DATA);
+      let buffer = await audioContext.decodeAudioData(PCM_DATA);
       buffer = await audioContext.changePlaybackSpeed(
         buffer,
         audioSettings.PSOLA ? playbackSpeed : 1

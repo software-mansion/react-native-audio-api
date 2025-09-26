@@ -86,7 +86,7 @@ const AudioVisualizer: React.FC = () => {
 
     const buffer = await fetch(URL)
       .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => audioContextRef.current!.decode(arrayBuffer))
+      .then((arrayBuffer) => audioContextRef.current!.decodeAudioData(arrayBuffer))
       .catch((error) => {
         console.error('Error decoding audio data source:', error);
         return null;
