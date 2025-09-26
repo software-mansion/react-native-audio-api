@@ -61,9 +61,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(const 
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string &path) const
 {
-  // if (path.starts_with("file://")) {
-  //   path = path.replace(0, 7, "");
-  // }
   std::vector<int16_t> buffer;
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     buffer = ffmpegdecoding::decodeWithFilePath(path, numChannels_, static_cast<int>(sampleRate_));
