@@ -22,7 +22,27 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 ### <img src="https://img.shields.io/badge/Coming_in-0.9.0-orange" />
 
 - **JS Audio Worklets 🐎**<br />
-  Ability to run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
+  Run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
+
+### <img src="https://img.shields.io/badge/Coming_in-x.x.x-orange" />
+
+- **Convolver Node 🐐**<br />
+  Realistic reverb and spatial effects in the browser by applying impulse responses. It makes audio sound like it’s being played in real spaces, from small rooms to cathedrals, or through hardware like amps and speakers
+
+- **Decoding and utility modules 🔧**<br />
+  Decode and modify audio data without the need to create AudioContext first through a set of utility classes
+
+- **DynamicCompressorNode 〽️**<br />
+  Reduce the volume of loud sounds and boost quieter nodes to balance the audio signal, avoid clipping or distorted sounds
+
+- **Audio tag 🏷️**<br />
+  Simple ability to play and buffer audio, with all of the most commonly used functions, same as on the web, without the need to create and manipulate an audio graph.
+
+- **MIDI support 🎸**<br />
+  Complementary lib for react-native-audio-api, that will allow to communicate with MIDI devices or read/write MIDI files.
+
+- **Spatial Audio 🛢️**<br />
+  manipulate audio in 3D space
 
 ## Released
 
