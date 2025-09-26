@@ -1,6 +1,10 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import {
   AudioContext,
   AudioBufferSourceNode,
@@ -9,103 +13,123 @@ import {
   AudioBuffer,
 } from 'react-native-audio-api';
 
-import labelImage from '../../../static/img/logo.png';
+// @ts-ignore
+import labelImage from '/static/img/logo.png';
+// @ts-ignore
+import swmLogo from '/static/img/swm-text.png';
 import styles from './styles.module.css';
+import { VINYL_CONSTANTS as C } from './consts';
+
+interface SceneRefs {
+  recordGroup: THREE.Group;
+  coverGroup: THREE.Group;
+  string: THREE.Mesh;
+}
+
+interface AudioRefs {
+  context: AudioContext;
+  bufferSource: AudioBufferSourceNode | null;
+  audioBuffer: AudioBuffer | null;
+  filter: BiquadFilterNode;
+  gain: GainNode;
+}
+
+interface AnimationState {
+  isSliderPressed: boolean;
+  targetCoverY: number;
+  coverHeight: number;
+  wasOnGround: boolean;
+  fallVelocity: number;
+}
 
 export default function VinylPlayer(): React.ReactElement {
   const mountRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Animation state refs
+  const animationStateRef = useRef<AnimationState>({
+    isSliderPressed: false,
+    targetCoverY: 0,
+    coverHeight: 0,
+    wasOnGround: true,
+    fallVelocity: 0,
+  });
 
-  const [coverHeight, setCoverHeight] = useState(0);
-
-  const isSliderPressedRef = useRef(false);
-  const targetCoverY = useRef(0);
-  const recordGroupRef = useRef<THREE.Group | null>(null);
-  const coverGroupRef = useRef<THREE.Group | null>(null);
-  const stringRef = useRef<THREE.Mesh | null>(null);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
-  const filterRef = useRef<BiquadFilterNode | null>(null);
-  const gainRef = useRef<GainNode | null>(null);
-
-  const hitSoundBufferRef = useRef<AudioBuffer | null>(null);
-  const wasOnGroundRef = useRef(true);
+  // Scene object refs
+  const sceneRefsRef = useRef<SceneRefs | null>(null);
+  
+  // Audio refs
+  const audioRefsRef = useRef<AudioRefs | null>(null);
 
   const playSound = async () => {
-    if (
-      !audioContextRef.current ||
-      !audioBufferRef.current ||
-      bufferSourceRef.current
-    ) {
+    const audioRefs = audioRefsRef.current;
+    if (!audioRefs?.context || !audioRefs.audioBuffer || audioRefs.bufferSource) {
       return;
     }
-
-    const source = await audioContextRef.current.createBufferSource();
-    source.buffer = audioBufferRef.current;
+    const source = await audioRefs.context.createBufferSource();
+    source.buffer = audioRefs.audioBuffer;
     source.loop = true;
-    bufferSourceRef.current = source;
-    source.connect(filterRef.current!);
-    source.start();
-  };
-
-  const playHitSound = async () => {
-    if (!audioContextRef.current || !hitSoundBufferRef.current) {
-      return;
-    }
-    const source = await audioContextRef.current.createBufferSource();
-    source.buffer = hitSoundBufferRef.current;
-    source.connect(audioContextRef.current.destination);
+    audioRefs.bufferSource = source;
+    source.connect(audioRefs.filter);
     source.start();
   };
 
   const stopSound = () => {
-    if (bufferSourceRef.current) {
-      bufferSourceRef.current.stop();
-      bufferSourceRef.current = null;
+    const audioRefs = audioRefsRef.current;
+    if (audioRefs?.bufferSource) {
+      audioRefs.bufferSource.stop();
+      audioRefs.bufferSource = null;
     }
   };
 
   const handleSliderPress = () => {
-    isSliderPressedRef.current = true;
+    animationStateRef.current.isSliderPressed = true;
   };
 
   const handleSliderRelease = () => {
-    isSliderPressedRef.current = false;
-    targetCoverY.current = 0;
+    animationStateRef.current.isSliderPressed = false;
+    animationStateRef.current.targetCoverY = 0;
   };
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!bufferSourceRef.current) {
+    const v = Number(e.target.value);
+    const state = animationStateRef.current;
+    state.coverHeight = v;
+    state.targetCoverY = (v / C.SLIDER_MAX) * C.SLIDER_MAX;
+    
+    if (!audioRefsRef.current?.bufferSource) {
       playSound();
     }
-    setCoverHeight(Number(e.target.value));
   };
 
-  useEffect(() => {
-    const currentMount = mountRef.current;
-    if (!currentMount) return;
-
+  const initializeScene = (container: HTMLDivElement) => {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xe0e0e0);
     const camera = new THREE.PerspectiveCamera(
       75,
-      currentMount.clientWidth / currentMount.clientHeight,
+      container.clientWidth / container.clientHeight,
       0.1,
       1000
     );
     camera.position.set(8, 10, 12);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
-    currentMount.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
+    
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.target.set(0, 2, 0);
     controls.enabled = false;
+
+    return { scene, camera, renderer, controls };
+  };
+
+  const initializeLighting = (scene: THREE.Scene) => {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
+    
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(10, 15, 5);
     dirLight.castShadow = true;
@@ -115,403 +139,444 @@ export default function VinylPlayer(): React.ReactElement {
     dirLight.shadow.camera.right = 10;
     dirLight.shadow.bias = 0;
     scene.add(dirLight);
+  };
 
-    const bodyMaterial = new THREE.MeshStandardMaterial({
-      color: 'rgb(51, 48, 48)',
-      metalness: 0,
-      roughness: 0.6,
-    });
-    const boxMaterial = new THREE.MeshStandardMaterial({
-      color: '#33488e',
-      metalness: 0,
-      roughness: 0.7,
-    });
-    const trimMaterial = new THREE.MeshStandardMaterial({
-      color: 'rgb(255, 255, 255)',
-      metalness: 0,
-      roughness: 0.5,
-    });
-    const platterMaterial = new THREE.MeshStandardMaterial({
-      color: 'rgb(170, 170, 170)',
-      metalness: 0,
-      roughness: 0.6,
-    });
-    const recordMaterial = new THREE.MeshStandardMaterial({
-      color: 'rgb(26, 26, 26)',
-      roughness: 0.6,
-      metalness: 0.1,
-    });
+  const createMaterials = () => {
     const textureLoader = new THREE.TextureLoader();
     const labelTexture = textureLoader.load(labelImage);
     labelTexture.colorSpace = THREE.SRGBColorSpace;
-    const invisibleMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0,
-    });
-    const labelMaterial = new THREE.MeshStandardMaterial({ map: labelTexture });
 
-    const initAudio = async () => {
-      const ctx = new AudioContext();
-      audioContextRef.current = ctx;
-      const filterNode = ctx.createBiquadFilter();
-      filterNode.type = 'lowpass';
-      const gainNode = ctx.createGain();
-      gainNode.gain.value = 0;
-      filterNode.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      filterRef.current = filterNode;
-      gainRef.current = gainNode;
-      audioBufferRef.current = await fetch(
-        '/react-native-audio-api/audio/music/example-music-01.mp3'
-      )
-        .then((r) => r.arrayBuffer())
-        .then((ab) => ctx.decodeAudioData(ab))
-        .catch(() => null);
-      hitSoundBufferRef.current = await fetch(
-        '/react-native-audio-api/audio/sounds/suitcase-drop.wav'
-      )
-        .then((r) => r.arrayBuffer())
-        .then((ab) => ctx.decodeAudioData(ab))
-        .catch(() => null);
+    return {
+      body: new THREE.MeshStandardMaterial({
+        color: 'rgb(51, 48, 48)',
+        metalness: 0,
+        roughness: 0.6,
+      }),
+      box: new THREE.MeshStandardMaterial({
+        color: '#0a2688',
+        metalness: 0,
+        roughness: 0.7,
+      }),
+      platter: new THREE.MeshStandardMaterial({
+        color: 'rgb(170, 170, 170)',
+        metalness: 0,
+        roughness: 0.6,
+      }),
+      record: new THREE.MeshStandardMaterial({
+        color: 'rgb(26, 26, 26)',
+        roughness: 0.6,
+        metalness: 0.1,
+      }),
+      invisible: new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+      }),
+      label: new THREE.MeshStandardMaterial({ map: labelTexture }),
+      labelTexture,
     };
-    initAudio();
+  };
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(30, 30),
-      new THREE.MeshStandardMaterial({ color: 0xcfcfcf })
+  const createVinylPlayer = (scene: THREE.Scene, materials: ReturnType<typeof createMaterials>) => {
+    // Main body
+    const plinth = new THREE.Mesh(
+      new RoundedBoxGeometry(12, 2, 9, 4, 0.2),
+      materials.body
     );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(12, 2, 9), bodyMaterial);
     plinth.castShadow = true;
     plinth.receiveShadow = true;
+    plinth.position.y = 1;
     scene.add(plinth);
+
+    // Platter
     const platter = new THREE.Mesh(
       new THREE.CylinderGeometry(4, 4, 0.5, 64),
-      platterMaterial
+      materials.platter
     );
     platter.castShadow = true;
-    platter.position.y = 1.25;
+    platter.position.y = 2.25;
     scene.add(platter);
+
+    // Record group
     const recordGroup = new THREE.Group();
-    recordGroup.position.y = 1.5;
+    recordGroup.position.y = 2.55;
     scene.add(recordGroup);
-    recordGroupRef.current = recordGroup;
+
     const recordBase = new THREE.Mesh(
       new THREE.CylinderGeometry(3.95, 3.95, 0.1, 64),
-      recordMaterial
+      materials.record
     );
     recordBase.castShadow = true;
     recordGroup.add(recordBase);
+
     const label = new THREE.Mesh(
       new THREE.CylinderGeometry(1.5, 1.5, 0.11, 64),
-      labelMaterial
+      materials.label
     );
     label.castShadow = true;
     recordGroup.add(label);
+
+    // Grooves
     const NUM_GROOVES = 60;
     const START_RADIUS = 1.7;
     const END_RADIUS = 3.9;
     const GROOVE_THICKNESS = 0.008;
     for (let i = 0; i < NUM_GROOVES; i++) {
-      const radius =
-        START_RADIUS + (END_RADIUS - START_RADIUS) * (i / (NUM_GROOVES - 1));
-      const grooveGeometry = new THREE.TorusGeometry(
-        radius,
-        GROOVE_THICKNESS,
-        8,
-        100
-      );
-      const groove = new THREE.Mesh(grooveGeometry, recordMaterial);
+      const radius = START_RADIUS + (END_RADIUS - START_RADIUS) * (i / (NUM_GROOVES - 1));
+      const grooveGeometry = new THREE.TorusGeometry(radius, GROOVE_THICKNESS, 8, 100);
+      const groove = new THREE.Mesh(grooveGeometry, materials.record);
       groove.rotation.x = Math.PI / 2;
       groove.position.y = 0.05;
       recordGroup.add(groove);
     }
+
     const spindle = new THREE.Mesh(
       new THREE.CylinderGeometry(0.1, 0.1, 0.3, 16),
-      platterMaterial
+      materials.platter
     );
     spindle.castShadow = true;
     spindle.position.y = 0.1;
     recordGroup.add(spindle);
+
+    // Tonearm group
     const tonearmGroup = new THREE.Group();
-    tonearmGroup.position.set(4.5, 1, -2.5);
+    tonearmGroup.position.set(4.5, 2, -2.5);
     scene.add(tonearmGroup);
+
     const tonearmBase = new THREE.Mesh(
       new THREE.CylinderGeometry(0.6, 0.6, 1.2, 32),
-      platterMaterial
+      materials.platter
     );
     tonearmBase.castShadow = true;
     tonearmGroup.add(tonearmBase);
+
     const arm = new THREE.Mesh(
       new THREE.CylinderGeometry(0.15, 0.15, 7, 32),
-      platterMaterial
+      materials.platter
     );
     arm.castShadow = true;
     arm.rotation.z = Math.PI / 2;
     arm.position.set(-3.5, 0.8, 0);
     tonearmGroup.add(arm);
+
     const counterweight = new THREE.Mesh(
       new THREE.CylinderGeometry(0.4, 0.4, 1, 32),
-      platterMaterial
+      materials.platter
     );
     counterweight.castShadow = true;
     counterweight.rotation.z = Math.PI / 2;
     counterweight.position.set(0.5, 0.8, 0);
     tonearmGroup.add(counterweight);
+
     const headshell = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4, 0.3, 0.8),
-      bodyMaterial
+      new RoundedBoxGeometry(0.4, 0.3, 0.8, 2, 0.05),
+      materials.body
     );
     headshell.castShadow = true;
     headshell.position.set(-6.8, 0.8, 0);
     headshell.rotation.y = -0.15;
     tonearmGroup.add(headshell);
+
+    // Button
     const button = new THREE.Mesh(
       new THREE.CylinderGeometry(0.5, 0.5, 0.2, 32),
-      bodyMaterial
+      materials.body
     );
     button.castShadow = true;
-    button.position.set(-5, 1.1, 3.5);
+    button.position.set(-5, 2.1, 3.5);
     scene.add(button);
+
+    return recordGroup;
+  };
+
+  const createCoverBox = (scene: THREE.Scene, renderer: THREE.WebGLRenderer, materials: ReturnType<typeof createMaterials>) => {
     const coverGroup = new THREE.Group();
     scene.add(coverGroup);
-    coverGroupRef.current = coverGroup;
+
     const coverWidth = 13;
     const coverBoxHeight = 6;
     const coverDepth = 10;
-    const trimThickness = 0.35;
-    const coverGeometry = new THREE.BoxGeometry(
-      coverWidth,
-      coverBoxHeight,
-      coverDepth
-    );
+
+    const coverGeometry = new RoundedBoxGeometry(coverWidth, coverBoxHeight, coverDepth, 4, 0.2);
     const coverMaterials = [
-      boxMaterial,
-      boxMaterial,
-      boxMaterial,
-      invisibleMaterial,
-      boxMaterial,
-      boxMaterial,
+      materials.box, materials.box, materials.box,
+      materials.invisible, materials.box, materials.box,
     ];
     const cover = new THREE.Mesh(coverGeometry, coverMaterials);
     cover.scale.set(0.999, 0.999, 0.999);
     cover.castShadow = true;
     cover.position.y = coverBoxHeight / 2;
     coverGroup.add(cover);
-    const verticalTrimGeom = new THREE.BoxGeometry(
-      trimThickness,
-      coverBoxHeight,
-      trimThickness
-    );
-    const cornerX = coverWidth / 2 - trimThickness / 2;
-    const cornerZ = coverDepth / 2 - trimThickness / 2;
-    const trims = [];
-    trims.push(new THREE.Mesh(verticalTrimGeom, trimMaterial));
-    trims[0].position.set(cornerX, coverBoxHeight / 2, cornerZ);
-    trims.push(new THREE.Mesh(verticalTrimGeom, trimMaterial));
-    trims[1].position.set(-cornerX, coverBoxHeight / 2, cornerZ);
-    trims.push(new THREE.Mesh(verticalTrimGeom, trimMaterial));
-    trims[2].position.set(cornerX, coverBoxHeight / 2, -cornerZ);
-    trims.push(new THREE.Mesh(verticalTrimGeom, trimMaterial));
-    trims[3].position.set(-cornerX, coverBoxHeight / 2, -cornerZ);
-    const fbTrimGeom = new THREE.BoxGeometry(
-      coverWidth,
-      trimThickness,
-      trimThickness
-    );
-    const lrTrimGeom = new THREE.BoxGeometry(
-      trimThickness,
-      trimThickness,
-      coverDepth - 2 * trimThickness
-    );
-    const topY = coverBoxHeight - trimThickness / 2;
-    const bottomY = trimThickness / 2;
-    trims.push(new THREE.Mesh(fbTrimGeom, trimMaterial));
-    trims[4].position.set(0, topY, cornerZ);
-    trims.push(new THREE.Mesh(fbTrimGeom, trimMaterial));
-    trims[5].position.set(0, topY, -cornerZ);
-    trims.push(new THREE.Mesh(lrTrimGeom, trimMaterial));
-    trims[6].position.set(cornerX, topY, 0);
-    trims.push(new THREE.Mesh(lrTrimGeom, trimMaterial));
-    trims[7].position.set(-cornerX, topY, 0);
-    trims.push(new THREE.Mesh(fbTrimGeom, trimMaterial));
-    trims[8].position.set(0, bottomY, cornerZ);
-    trims.push(new THREE.Mesh(fbTrimGeom, trimMaterial));
-    trims[9].position.set(0, bottomY, -cornerZ);
-    trims.push(new THREE.Mesh(lrTrimGeom, trimMaterial));
-    trims[10].position.set(cornerX, bottomY, 0);
-    trims.push(new THREE.Mesh(lrTrimGeom, trimMaterial));
-    trims[11].position.set(-cornerX, bottomY, 0);
-    trims.forEach((trim) => {
-      trim.castShadow = true;
-      coverGroup.add(trim);
+
+    // SWM logo on box
+    const logoTexture = new THREE.TextureLoader().load(swmLogo);
+    logoTexture.colorSpace = THREE.SRGBColorSpace;
+    
+    const logoMaterialFront = new THREE.MeshBasicMaterial({
+      map: logoTexture,
+      transparent: true,
+      side: THREE.FrontSide,
     });
-    const ANCHOR_Y = 20;
-    const COVER_TOP_Y = coverBoxHeight;
-    const MAX_STRING_LENGTH = ANCHOR_Y - COVER_TOP_Y;
-    const stringGeometry = new THREE.CylinderGeometry(
-      0.1,
-      0.1,
-      MAX_STRING_LENGTH,
-      8
-    );
-    const string = new THREE.Mesh(stringGeometry, bodyMaterial);
-    stringRef.current = string;
+    const logoMaterialBack = new THREE.MeshBasicMaterial({
+      map: logoTexture,
+      transparent: true,
+      side: THREE.FrontSide,
+    });
+    
+    const logoWidth = coverWidth * 0.7;
+    const logoHeight = coverBoxHeight * 0.5;
+    const logoPlaneGeometry = new THREE.PlaneGeometry(logoWidth, logoHeight);
+    
+    const logoFront = new THREE.Mesh(logoPlaneGeometry, logoMaterialFront);
+    logoFront.position.set(0, coverBoxHeight / 2, coverDepth / 2 + 0.01);
+    coverGroup.add(logoFront);
+    
+    const logoBack = new THREE.Mesh(logoPlaneGeometry, logoMaterialBack);
+    logoBack.position.set(0, coverBoxHeight / 2, -coverDepth / 2 - 0.01);
+    logoBack.rotation.y = Math.PI;
+    coverGroup.add(logoBack);
+
+    // White trim outline
+    const outlineGeom = coverGeometry.clone();
+    outlineGeom.scale(1.002, 1.002, 1.002);
+    const threshold = 0.001;
+    const edgesGeom = new THREE.EdgesGeometry(outlineGeom, threshold);
+    const posAttr = edgesGeom.attributes.position;
+    const positions: number[] = [];
+    for (let i = 0; i < posAttr.count; i++) {
+      positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+    }
+
+    const segGeometry = new LineSegmentsGeometry();
+    segGeometry.setPositions(positions);
+
+    const lineMaterial = new LineMaterial({
+      color: 'rgba(215, 207, 207, 0.65)',
+      linewidth: 4,
+      dashed: false,
+      alphaToCoverage: false,
+    });
+
+    const size = new THREE.Vector2();
+    renderer.getSize(size);
+    lineMaterial.resolution.set(size.x, size.y);
+
+    const thickLines = new LineSegments2(segGeometry, lineMaterial);
+    thickLines.computeLineDistances();
+    thickLines.renderOrder = 999;
+    cover.add(thickLines);
+
+    // String that pulls the box
+    const MAX_STRING_LENGTH = C.ANCHOR_Y - C.COVER_TOP_Y;
+    const stringGeometry = new THREE.CylinderGeometry(0.1, 0.1, MAX_STRING_LENGTH, 8);
+    const string = new THREE.Mesh(stringGeometry, materials.body);
     coverGroup.add(string);
 
+    return { coverGroup, string, lineMaterial };
+  };
+
+  const initializeAudio = async (): Promise<AudioRefs> => {
+    const ctx = new AudioContext();
+    const filterNode = ctx.createBiquadFilter();
+    filterNode.type = 'lowpass';
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
+    filterNode.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    let audioBuffer: AudioBuffer | null = null;
+    try {
+      audioBuffer = await fetch('/react-native-audio-api/audio/music/pass-the-mayo.mp3')
+        .then((r) => r.arrayBuffer())
+        .then((ab) => ctx.decodeAudioData(ab));
+    } catch (error) {
+      console.warn('Failed to load audio:', error);
+    }
+
+    return {
+      context: ctx,
+      bufferSource: null,
+      audioBuffer,
+      filter: filterNode,
+      gain: gainNode,
+    };
+  };
+
+  const startAnimationLoop = (
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    controls: OrbitControls
+  ) => {
     const animate = () => {
       requestAnimationFrame(animate);
 
-      if (recordGroupRef.current) {
-        recordGroupRef.current.rotation.y += 0.1;
+      const sceneRefs = sceneRefsRef.current;
+      const audioRefs = audioRefsRef.current;
+      const state = animationStateRef.current;
+
+      if (sceneRefs?.recordGroup) {
+        sceneRefs.recordGroup.rotation.y += C.RECORD_ROTATION_SPEED;
       }
 
-      if (coverGroupRef.current && stringRef.current) {
-        const currentY = coverGroupRef.current.position.y;
-        const LERP_FACTOR_ACTIVE = 0.1;
-        const LERP_FACTOR_FALLING = 0.04;
-        const lerpFactor = isSliderPressedRef.current
-          ? LERP_FACTOR_ACTIVE
-          : LERP_FACTOR_FALLING;
-        coverGroupRef.current.position.y +=
-          (targetCoverY.current - currentY) * lerpFactor;
+      if (sceneRefs?.coverGroup && sceneRefs?.string) {
+        let newCoverY: number;
 
-        const newCoverY = coverGroupRef.current.position.y;
+        if (state.isSliderPressed) {
+          // Dragging mode
+          const currentY = sceneRefs.coverGroup.position.y;
+          newCoverY = currentY + (state.targetCoverY - currentY) * C.LERP_FACTOR_ACTIVE;
+          sceneRefs.coverGroup.position.y = newCoverY;
+          state.fallVelocity = 0;
+        } else {
+          // Falling mode
+          const currentY = sceneRefs.coverGroup.position.y;
+          
+          if (currentY > 0) {
+            state.fallVelocity += C.GRAVITY;
+            newCoverY = currentY - state.fallVelocity;
+            
+            if (newCoverY < 0) {
+              newCoverY = 0;
+            }
+            sceneRefs.coverGroup.position.y = newCoverY;
+          } else {
+            newCoverY = 0;
+            state.fallVelocity = 0;
+          }
 
-        if (targetCoverY.current === 0 && newCoverY < 0.09) {
-          coverGroupRef.current.position.y = 0;
-}
-
-        if (!isSliderPressedRef.current) {
-          const maxCoverHeight3D = 7; 
-          const maxSliderValue = 10; 
-          const newSliderValue = (newCoverY / maxCoverHeight3D) * maxSliderValue;
-          setCoverHeight(Math.max(0, newSliderValue)); 
+          const newSliderValue = (newCoverY / C.COVER_HEIGHT_3D_MAX) * C.SLIDER_MAX;
+          state.coverHeight = Math.max(0, newSliderValue);
+          if (inputRef.current) {
+            inputRef.current.value = String(state.coverHeight);
+          }
         }
 
-        if (filterRef.current && gainRef.current && audioContextRef.current) {
-          const maxCoverHeight3D = 7;
-          const clampedY = Math.max(0, Math.min(newCoverY, maxCoverHeight3D));
-          const ratio = clampedY / maxCoverHeight3D;
-          const currentTime = audioContextRef.current.currentTime;
-          filterRef.current.frequency.setTargetAtTime(
-            200 + ratio * (8000 - 200),
+        // Audio filter effect
+        if (audioRefs?.filter && audioRefs?.gain && audioRefs?.context) {
+          const clampedY = Math.max(0, Math.min(newCoverY, C.COVER_HEIGHT_3D_MAX));
+          const ratio = clampedY / C.COVER_HEIGHT_3D_MAX;
+          const currentTime = audioRefs.context.currentTime;
+          audioRefs.filter.frequency.setTargetAtTime(
+            C.FILTER_MIN_FREQ + ratio * (C.FILTER_MAX_FREQ - C.FILTER_MIN_FREQ),
             currentTime,
-            0.015
+            C.AUDIO_TRANSITION_TIME
           );
-          gainRef.current.gain.setTargetAtTime(
-            ratio * 0.5,
+          audioRefs.gain.gain.setTargetAtTime(
+            ratio * C.MAX_GAIN,
             currentTime,
-            0.015
+            C.AUDIO_TRANSITION_TIME
           );
         }
 
+        const MAX_STRING_LENGTH = C.ANCHOR_Y - C.COVER_TOP_Y;
+        
         const isOnGround = newCoverY < 0.01;
-        if (isOnGround && !wasOnGroundRef.current) {
-          playHitSound();
-          if (bufferSourceRef.current) {
+        if (isOnGround && !state.wasOnGround) {
+          if (audioRefs?.bufferSource) {
             stopSound();
           }
         }
-        wasOnGroundRef.current = isOnGround;
+        state.wasOnGround = isOnGround;
 
-        const newStringLength = ANCHOR_Y - (newCoverY + COVER_TOP_Y);
-        stringRef.current.scale.y = newStringLength / MAX_STRING_LENGTH;
-        stringRef.current.position.y = COVER_TOP_Y + newStringLength / 2;
+        const newStringLength = C.ANCHOR_Y - (newCoverY + C.COVER_TOP_Y);
+        sceneRefs.string.scale.y = newStringLength / MAX_STRING_LENGTH;
+        sceneRefs.string.position.y = C.COVER_TOP_Y + newStringLength / 2;
       }
 
       controls.update();
       renderer.render(scene, camera);
     };
-    animate();
 
-    const handleResize = () => {
-      if (!currentMount) return;
-      camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+    animate();
+  };
+
+  useEffect(() => {
+    const currentMount = mountRef.current;
+    if (!currentMount) return;
+
+    let cleanup: (() => void) | null = null;
+
+    const initializeApp = async () => {
+      const { scene, camera, renderer, controls } = initializeScene(currentMount);
+      initializeLighting(scene);
+      
+      const materials = createMaterials();
+      const recordGroup = createVinylPlayer(scene, materials);
+      const { coverGroup, string, lineMaterial } = createCoverBox(scene, renderer, materials);
+
+      const audioRefs = await initializeAudio();
+      
+      sceneRefsRef.current = { recordGroup, coverGroup, string };
+      audioRefsRef.current = audioRefs;
+
+      startAnimationLoop(renderer, scene, camera, controls);
+
+      const handleResize = () => {
+        if (!currentMount) return;
+        camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+        try {
+          const size = new THREE.Vector2();
+          renderer.getSize(size);
+          lineMaterial.resolution.set(size.x, size.y);
+        } catch (e) {
+          console.warn('Error updating line material resolution on resize:', e);
+        }
+      };
+      window.addEventListener('resize', handleResize);
+
+      // Cleanup 
+      cleanup = () => {
+        window.removeEventListener('resize', handleResize);
+        scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            if (object.geometry) object.geometry.dispose();
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material) => {
+                if (material.map) material.map.dispose();
+                material.dispose();
+              });
+            } else if (object.material) {
+              if (object.material.map) object.material.map.dispose();
+              object.material.dispose();
+            }
+          }
+        });
+        materials.labelTexture.dispose();
+        renderer.dispose();
+        if (currentMount && currentMount.contains(renderer.domElement)) {
+          currentMount.removeChild(renderer.domElement);
+        }
+        audioRefs.context?.close();
+      };
     };
-    window.addEventListener('resize', handleResize);
+
+    initializeApp();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          if (object.geometry) object.geometry.dispose();
-          if (Array.isArray(object.material)) {
-            object.material.forEach((material) => {
-              if (material.map) material.map.dispose();
-              material.dispose();
-            });
-          } else if (object.material) {
-            if (object.material.map) object.material.map.dispose();
-            object.material.dispose();
-          }
-        }
-      });
-      labelTexture.dispose();
-      renderer.dispose();
-      if (currentMount && currentMount.contains(renderer.domElement)) {
-        currentMount.removeChild(renderer.domElement);
-      }
-      audioContextRef.current?.close();
+      cleanup?.();
     };
   }, []);
 
-  useEffect(() => {
-    // Only update the target if the user is actively dragging the slider.
-    if (isSliderPressedRef.current) {
-      const maxCoverHeight3D = 7;
-      const maxSliderValue = 10;
-      targetCoverY.current = (coverHeight / maxSliderValue) * maxCoverHeight3D;
-    }
-  }, [coverHeight]);
-
   return (
-    <div
-      style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        ref={mountRef}
-        style={{
-          width: '100%',
-          height: '600px',
-          background: '#e0e0e0',
-        }}
-      />
-      <div
-        style={{
-          padding: '16px',
-          background: '#f0f0f0',
-          borderRadius: '8px',
-          marginTop: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-        }}
-      >
-        <span>Cover Down</span>
+    <div className={styles.container}>
+      <div ref={mountRef} className={styles.canvasContainer} />
+      <div className={styles.sliderContainer}>
         <input
+          ref={inputRef}
           type="range"
           min="0"
-          max="10"
-          step="0.1"
-          value={coverHeight}
+          max={C.SLIDER_MAX}
+          step="0.01"
+          defaultValue="0"
           onChange={handleSliderChange}
           onMouseDown={handleSliderPress}
           onMouseUp={handleSliderRelease}
           onTouchStart={handleSliderPress}
           onTouchEnd={handleSliderRelease}
-          style={{ width: '200px' }}
+          className={styles.slider}
         />
-        <span>Cover Up</span>
       </div>
     </div>
   );
