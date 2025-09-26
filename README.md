@@ -44,7 +44,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **Spatial Audio 🛢️**<br />
   manipulate audio in 3D space
 
-- ** Noise Cancellation 🦇**<br />
+- **Noise Cancellation 🦇**<br />
   System-based active noise and echo cancellation support
 
 ### Released
