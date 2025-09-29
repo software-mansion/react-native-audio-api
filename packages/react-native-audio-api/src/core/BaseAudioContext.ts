@@ -63,14 +63,6 @@ export default class BaseAudioContext {
             (buffer) => new Float32Array(buffer)
           );
           callback(floatAudioData, channelCount);
-
-          /// !IMPORTANT Workaround
-          /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
-          /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
-          /// So worklet will be called but any of its interactions with the UI thread will not be visible.
-
-          /// This forces to flush queue
-          requestAnimationFrame(() => {});
         }
       );
       return new WorkletNode(
