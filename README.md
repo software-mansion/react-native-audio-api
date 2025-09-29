@@ -21,8 +21,8 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 ### <img src="https://img.shields.io/badge/Coming_in-0.9.0-orange" />
 
-- **JS Audio Worklets 🐎**<br />
-  Run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
+- **JS Audio Worklets V1 🐎**<br />
+  Receive events and data callbacks from audio thread to synchronize with UI on UI thread.
 
 ### <img src="https://img.shields.io/badge/Coming_in-x.x.x-orange" />
 
@@ -46,6 +46,9 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 - **Noise Cancellation 🦇**<br />
   System-based active noise and echo cancellation support
+
+- **JS Audio Worklets V2 🐎**<br />
+  Customize the process pipeline with JS functions running on audio thread.
 
 ### Released
 
