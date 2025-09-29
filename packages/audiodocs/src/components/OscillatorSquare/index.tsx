@@ -55,8 +55,10 @@ const OscillatorSquare: React.FC = () => {
   const mGainRef = useRef<GainNode | null>(null);
   const mACtxRef = useRef<AudioContext | null>(null);
   const lfoRef = useRef<LFO | null>(null);
+
   const lowPassRef = useRef<BiquadFilterNode | null>(null);
   const lowPassFreqRef = useRef<number>(4000);
+
   const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const noiseGainRef = useRef<GainNode | null>(null);
 
@@ -66,34 +68,49 @@ const OscillatorSquare: React.FC = () => {
 
   const playKick = () => {
     const aCtx = mACtxRef.current;
-    if (!aCtx || !mGainRef.current) return;
-    const time = aCtx.currentTime, tone = 164, decay = 0.2, volume = 5;
+
+    if (!aCtx || !mGainRef.current) {
+      return;
+    }
+
+    const time = aCtx.currentTime;
+    const tone = 164;
+    const decay = 0.2;
+    const volume = 5;
+
     const oscillator = aCtx.createOscillator();
     const gain = aCtx.createGain();
+
     oscillator.frequency.setValueAtTime(0, time);
     oscillator.frequency.setValueAtTime(tone, time + 0.005);
     oscillator.frequency.exponentialRampToValueAtTime(10, time + decay);
+
     gain.gain.setValueAtTime(0, time);
     gain.gain.setValueAtTime(volume, time + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
+
     oscillator.connect(gain);
     gain.connect(aCtx.destination);
+
     oscillator.start(time);
     oscillator.stop(time + decay);
   };
 
   const createBrownianNoise = () => {
-    const aCtx = mACtxRef.current!;
+    const aCtx = mACtxRef.current;
     const bufferSize = 2 * aCtx.sampleRate;
+
     const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
     let lastOut = 0.0;
+
     for (let i = 0; i < bufferSize; i += 1) {
       const white = Math.random() * 2 - 1;
       output[i] = (lastOut + 0.02 * white) / 1.02;
       lastOut = output[i];
       output[i] *= 3.5;
     }
+
     return noiseBuffer;
   }
 
@@ -106,48 +123,71 @@ const OscillatorSquare: React.FC = () => {
 
   const onStart = (pointer: Point) => {
     const box = rectRef.current?.getBoundingClientRect();
+
     playKick();
     setIsPlaying(true);
 
-    setX(clamp(((pointer.x - (box?.x ?? 0)) / squareSize) * 100, 0, 100));
-    setY(clamp(((pointer.y - (box?.y ?? 0)) / squareSize) * 100, 0, 100));
+    setX(clamp(((pointer.x - box.x) / squareSize) * 100, 0, 100));
+    setY(clamp(((pointer.y - box.y) / squareSize) * 100, 0, 100));
 
     enableScrollBlock();
-  };
+  }
 
   const onMove = (pointer: Point) => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      return;
+    }
+
     const box = rectRef.current?.getBoundingClientRect();
-    if (!box) return;
-    setX(clamp((Math.floor(Math.min(pointer.x, box.x + box.width) - box.x) / squareSize) * 100, 0, 100));
-    setY(clamp((Math.floor(Math.min(pointer.y, box.y + box.height) - box.y) / squareSize) * 100, 0, 100));
-  };
+
+    setX(
+      clamp((Math.floor(Math.min(pointer.x, box.x + box.width) - box.x) / squareSize) * 100, 0, 100)
+    );
+    setY(
+      clamp((Math.floor(Math.min(pointer.y, box.y + box.height) - box.y) / squareSize) * 100, 0, 100)
+    );
+  }
 
   const onStop = () => {
     setIsPlaying(false);
     disableScrollBlock();
-  };
+  }
 
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+
     onStart({ x: e.clientX, y: e.clientY });
   };
-  const onMouseMove = (e: MouseEvent) => { 
-    e.preventDefault(); onMove({ x: e.clientX, y: e.clientY }); 
-  };
-  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => { 
-    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY }); 
-  };
-  const onTouchMove = (e: TouchEvent) => { 
-    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY }); 
+
+  const onMouseMove = (e: MouseEvent) => {
+    e.preventDefault();
+
+    onMove({ x: e.clientX, y: e.clientY });
   };
 
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  }
+
+  const onTouchMove = (e: TouchEvent) => {
+    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  }
+
   useEffect(() => {
-    if (!mGainRef.current || !mACtxRef.current) return;
+    if (!mGainRef.current || !mACtxRef.current) {
+      return;
+    }
+
     if (isPlaying) {
-      mGainRef.current.gain.linearRampToValueAtTime(0.5, mACtxRef.current.currentTime + 0.1);
+      mGainRef.current.gain.linearRampToValueAtTime(
+        0.5,
+        mACtxRef.current.currentTime + 0.1
+      );
     } else {
-      mGainRef.current.gain.linearRampToValueAtTime(0.0, mACtxRef.current.currentTime + 0.3);
+      mGainRef.current.gain.linearRampToValueAtTime(
+        0.0,
+        mACtxRef.current.currentTime + 0.3
+      );
     }
   }, [isPlaying]);
 
@@ -160,13 +200,20 @@ const OscillatorSquare: React.FC = () => {
 
   useEffect(() => {
     if (lfoRef.current) {
+      // https://www.wolframalpha.com/input?i=2*e%5E%282.35*x%29+-+2%2C+x+%3D+0+to+1
       lfoRef.current.setFrequency(2 * Math.exp((x / 100.0) * 2.35) - 0.5);
-      lfoRef.current.setAmplify(lowPassFreqRef.current - lowPassFreqRef.current * 0.9 * ((100 - x) / 100.0));
+
+      lfoRef.current.setAmplify(
+        lowPassFreqRef.current -
+        lowPassFreqRef.current * 0.9 * ((100 - x) / 100.0)
+      );
     }
   }, [x]);
 
   useEffect(() => {
-    if (noiseGainRef.current) noiseGainRef.current.gain.value = (200 - x - y) / 800;
+    if (noiseGainRef.current) {
+      noiseGainRef.current.gain.value = (200 - x - y) / 800;
+    }
   }, [x, y]);
 
   useEffect(() => {
@@ -181,6 +228,7 @@ const OscillatorSquare: React.FC = () => {
     const lfo = createLFO(aCtx);
     lfo.setFrequency(1);
     lfo.setAmplify(lowPassFreqRef.current - 20);
+
     lfoRef.current = lfo;
 
     const oscillator = aCtx.createOscillator();
@@ -194,6 +242,7 @@ const OscillatorSquare: React.FC = () => {
     sawOscillator.type = 'sawtooth';
     sawOscillator.frequency.value = 130.81;
     sawOscillator.detune.value = 5;
+
     sawOscillator.connect(gain);
 
     const lowPass = aCtx.createBiquadFilter();
@@ -213,6 +262,7 @@ const OscillatorSquare: React.FC = () => {
     noiseGain.gain.value = 0.0;
     noiseNode.connect(noiseGain);
     noiseGain.connect(masterGain);
+
     noiseGainRef.current = noiseGain;
     noiseNodeRef.current = noiseNode;
 
@@ -228,17 +278,17 @@ const OscillatorSquare: React.FC = () => {
     window.addEventListener('mouseup', onStop);
     window.addEventListener('touchend', onStop);
     window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, {passive: false});
 
     return () => {
       window.removeEventListener('mouseup', onStop);
       window.removeEventListener('touchend', onStop);
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('touchmove', onTouchMove as EventListener);
+      window.removeEventListener('touchmove', onTouchMove);
     };
   }, [isPlaying]);
 
-  useEffect(() => {
+    useEffect(() => {
     return () => {
       disableScrollBlock();
     };
