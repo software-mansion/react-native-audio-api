@@ -1,25 +1,50 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import styles from './OscillatorSquare.module.css'
 
-interface Point { x: number; y: number; }
-interface LFO { lfo: OscillatorNode; lfoAmplifier: GainNode; setFrequency: (v:number)=>void; setAmplify:(v:number)=>void; connect:(n:AudioNode|AudioParam)=>void; }
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface LFO {
+  lfo: OscillatorNode;
+  lfoAmplifier: GainNode;
+  setFrequency: (value: number) => void;
+  setAmplify: (value: number) => void;
+  connect: (node: AudioNode | AudioParam) => void;
+}
 
 const squareSize = 220;
 
 function createLFO(aCtx: AudioContext): LFO {
   const lfo = aCtx.createOscillator();
   const lfoAmplifier = aCtx.createGain();
+
   lfo.connect(lfoAmplifier);
   lfo.start();
+
   return {
-    lfo, lfoAmplifier,
-    setFrequency: (value:number) => { lfo.frequency.value = value; },
-    setAmplify: (value:number) => { lfoAmplifier.gain.value = value; },
-    connect: (node: AudioNode | AudioParam) => { lfoAmplifier.connect(node as any); },
+    lfo,
+    lfoAmplifier,
+    setFrequency: (value: number) => {
+      lfo.frequency.value = value;
+    },
+    setAmplify: (value: number) => {
+      lfoAmplifier.gain.value = value;
+    },
+    connect: (node: AudioNode | AudioParam) => {
+      if (node instanceof AudioNode) {
+        lfoAmplifier.connect(node);
+      } else {
+        lfoAmplifier.connect(node);
+      }
+    },
   };
 }
 
-function clamp(v: number, min = 0, max = 100) { return Math.max(Math.min(v, max), min); }
+function clamp(v: number, min: number = 0, max: number = 100): number {
+  return Math.max(Math.min(v, max), min);
+}
 
 const OscillatorSquare: React.FC = () => {
   const rectRef = useRef<HTMLDivElement | null>(null);
@@ -107,9 +132,15 @@ const OscillatorSquare: React.FC = () => {
     e.preventDefault();
     onStart({ x: e.clientX, y: e.clientY });
   };
-  const onMouseMove = (e: MouseEvent) => { e.preventDefault(); onMove({ x: e.clientX, y: e.clientY }); };
-  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => { onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY }); }
-  const onTouchMove = (e: TouchEvent) => { onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY }); }
+  const onMouseMove = (e: MouseEvent) => { 
+    e.preventDefault(); onMove({ x: e.clientX, y: e.clientY }); 
+  };
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => { 
+    onStart({ x: e.touches[0].clientX, y: e.touches[0].clientY }); 
+  };
+  const onTouchMove = (e: TouchEvent) => { 
+    onMove({ x: e.touches[0].clientX, y: e.touches[0].clientY }); 
+  };
 
   useEffect(() => {
     if (!mGainRef.current || !mACtxRef.current) return;
