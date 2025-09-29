@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 #include <memory>
 #include <functional>
@@ -14,7 +15,7 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const std::shared_ptr<UiWorkletsRunner> &workletRunner);
   ~AudioContext() override;
 
   void close();

@@ -12,13 +12,20 @@ import { useOscillatorPlayground } from '@site/src/components/InteractivePlaygro
 The `OscillatorNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
 Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If you want to play the same sound again you have to create a new one.
 
+<details open>
+<summary><code>OscillatorNode</code> interactive playground</summary>
+
+<InteractivePlayground usePlayground={useOscillatorPlayground} />
+
+</details>
+
 #### [`AudioNode`](/docs/core/audio-node#properties) properties
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
 
 ## Constructor
 
-[`BaseAudioContext.createOscillator(options)`](/docs/core/base-audio-context#createoscillator)
+[`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator)
 
 ## Example
 
@@ -39,17 +46,6 @@ function App() {
   oscillator.start(audioContextRef.current.currentTime);
 }
 ```
-## OscillatorNode Playground
-This is an interactive example demonstrating the OscillatorNode. You can adjust the parameters in real-time to hear and see how they affect the generated sound wave.
-
-
-
-<details open>
-<summary><code>OscillatorNode</code> interactive playground</summary>
-
-<InteractivePlayground usePlayground={useOscillatorPlayground} />
-
-</details>
 
 ## Properties
 

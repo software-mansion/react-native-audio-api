@@ -4,7 +4,7 @@ package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
-folly_flags = "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
+folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
@@ -42,18 +42,18 @@ Pod::Spec.new do |s|
   # Assumes Pods dir is nested under ios project dir
   ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
   rn_audio_dir_relative = Pathname.new(__dir__).relative_path_from(ios_dir).to_s
+
   external_dir_relative = "common/cpp/audioapi/external"
   lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
-  
+
   external_dir = File.join(__dir__, "common/cpp/audioapi/external")
-  
+
   s.ios.vendored_frameworks = [
     'common/cpp/audioapi/external/libavcodec.xcframework',
     'common/cpp/audioapi/external/libavformat.xcframework',
     'common/cpp/audioapi/external/libavutil.xcframework',
     'common/cpp/audioapi/external/libswresample.xcframework'
   ]
-  
 s.pod_target_xcconfig = {
   "USE_HEADERMAP" => "YES",
   "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
@@ -61,12 +61,15 @@ s.pod_target_xcconfig = {
   "HEADER_SEARCH_PATHS" => %W[
     $(PODS_TARGET_SRCROOT)/common/cpp
     $(PODS_TARGET_SRCROOT)/ios
+    $(PODS_ROOT)/Headers/Public/RNWorklets
+    $(PODS_ROOT)/Headers/Private/React-Core
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include
   ].join(" "),
-  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}",
+  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
 }
 
 s.user_target_xcconfig = {

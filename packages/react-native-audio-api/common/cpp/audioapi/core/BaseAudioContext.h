@@ -2,7 +2,8 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
-
+#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <functional>
 #include <memory>
@@ -31,11 +32,12 @@ class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WorkletNode;
 class StreamerNode;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const std::shared_ptr<UiWorkletsRunner> &workletRunner);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -45,6 +47,7 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
+  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, size_t bufferLength, size_t inputChannelCount);
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
@@ -89,10 +92,11 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
-  virtual bool isDriverRunning() const = 0;
+  [[nodiscard]] virtual bool isDriverRunning() const = 0;
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+    std::shared_ptr<UiWorkletsRunner> workletRunner_;
 };
 
 } // namespace audioapi

@@ -32,7 +32,7 @@ Schedules an instant change to the `value` at given `startTime`.
 
 If you need to call this function many times (especially more than 31 times), it is recommended to use the methods described below
 (such as [`linearRampToValueAtTime`](/docs/core/audio-param#linearramptovalueattime) or [`exponentialRampToValueAtTime`](/docs/core/audio-param#exponentialramptovalueattime)),
-as they are more efficient for continuous changes.
+as they are more efficient for continuous changes. For more specific use cases, you can schedule multiple value changes using [`setValueCurveAtTime`](/docs/core/audio-param#setvaluecurveattime).
 
 :::
 

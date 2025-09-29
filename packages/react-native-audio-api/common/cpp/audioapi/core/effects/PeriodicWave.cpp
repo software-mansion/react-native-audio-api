@@ -26,8 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <audioapi/core/Constants.h>
 #include <audioapi/core/effects/PeriodicWave.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 
 constexpr unsigned NumberOfOctaveBands = 3;

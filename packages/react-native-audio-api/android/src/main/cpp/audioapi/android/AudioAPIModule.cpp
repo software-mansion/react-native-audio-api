@@ -6,10 +6,16 @@ using namespace facebook::jni;
 
 AudioAPIModule::AudioAPIModule(
     jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
+#if RN_AUDIO_API_ENABLE_WORKLETS
+    std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy,
+#endif
     jsi::Runtime *jsiRuntime,
     const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
+#if RN_AUDIO_API_ENABLE_WORKLETS
+      weakWorkletsModuleProxy_(weakWorkletsModuleProxy),
+#endif
       jsCallInvoker_(jsCallInvoker) {
   audioEventHandlerRegistry_ =
       std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
@@ -17,12 +23,25 @@ AudioAPIModule::AudioAPIModule(
 
 jni::local_ref<AudioAPIModule::jhybriddata> AudioAPIModule::initHybrid(
     jni::alias_ref<jhybridobject> jThis,
+    jni::alias_ref<jni::JObject> jWorkletsModule,
     jlong jsContext,
     jni::alias_ref<facebook::react::CallInvokerHolder::javaobject>
         jsCallInvokerHolder) {
   auto jsCallInvoker = jsCallInvokerHolder->cthis()->getCallInvoker();
   auto rnRuntime = reinterpret_cast<jsi::Runtime *>(jsContext);
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  if (jWorkletsModule) {
+    auto castedModule =
+        jni::static_ref_cast<WorkletsModule::javaobject>(jWorkletsModule);
+    auto workletsModuleProxy = castedModule->cthis()->getWorkletsModuleProxy();
+    return makeCxxInstance(
+        jThis, workletsModuleProxy, rnRuntime, jsCallInvoker);
+  }
+  throw std::runtime_error(
+      "Worklets module is required but not provided from Java/Kotlin side");
+#else
   return makeCxxInstance(jThis, rnRuntime, jsCallInvoker);
+#endif
 }
 
 void AudioAPIModule::registerNatives() {
@@ -36,8 +55,17 @@ void AudioAPIModule::registerNatives() {
 }
 
 void AudioAPIModule::injectJSIBindings() {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  auto uiWorkletRuntime =
+      weakWorkletsModuleProxy_.lock()->getUIWorkletRuntime();
+#else
+  auto uiWorkletRuntime = nullptr;
+#endif
   AudioAPIModuleInstaller::injectJSIBindings(
-      jsiRuntime_, jsCallInvoker_, audioEventHandlerRegistry_);
+      jsiRuntime_,
+      jsCallInvoker_,
+      audioEventHandlerRegistry_,
+      uiWorkletRuntime);
 }
 
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(

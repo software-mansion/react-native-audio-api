@@ -15,6 +15,11 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
 
   createRecorderAdapter(): IRecorderAdapterNode;
+  createWorkletNode: (
+    shareableWorklet: any,
+    bufferLength: number,
+    inputChannelCount: number
+  ) => IWorkletNode;
   createOscillator(): IOscillatorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
@@ -201,6 +206,8 @@ export interface IAnalyserNode extends IAudioNode {
 }
 
 export interface IRecorderAdapterNode extends IAudioNode {}
+
+export interface IWorkletNode extends IAudioNode {}
 
 export interface IAudioRecorder {
   start: () => void;

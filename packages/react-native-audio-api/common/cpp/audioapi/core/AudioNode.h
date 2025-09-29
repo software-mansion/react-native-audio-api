@@ -2,7 +2,7 @@
 
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
-#include <audioapi/core/Constants.h>
+#include <audioapi/core/utils/Constants.h>
 
 #include <memory>
 #include <string>

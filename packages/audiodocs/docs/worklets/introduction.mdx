@@ -1,0 +1,58 @@
+---
+id: worklets-introduction
+sidebar_label: Introduction
+sidebar_position: 1
+---
+import { MobileOnly } from '@site/src/components/Badges';
+
+# RNWorklets Support <MobileOnly />
+
+The `RNWorklets` library was originally part of Reanimated until version 4.0.0; since then, it has become a separate library.
+
+To use the worklet features provided by `react-native-audio-api`, you need to install this library:
+
+```bash
+npm install react-native-worklets
+```
+> **Note**: You must install `react-native-worklets` version above or equal to `0.6.0`. This is very important. For maximum compatibility, we recommend using exactly version `0.6.0` for now as we are testing on this version.
+
+If the library is not installed, you will encounter runtime errors when trying to use features that depend on worklets and do not have documented fallback implementations.
+
+## What is a worklet?
+
+You can read more about worklets in the [RNWorklets documentation](https://docs.swmansion.com/react-native-worklets/).
+
+Simply put, a worklet is a piece of code that can be executed on a runtime different from the main JavaScript runtime (or more formally, the runtime on which the code was created).
+
+## What kind of worklets are used in react-native-audio-api?
+
+All of our worklets are currently executed on the UI runtime provided by the `RNWorklets` library.
+
+This allows the use of Reanimated utilities and features inside the worklets. Our main goal is to enable seamless integration with the UI - for example, creating animations from audio data.
+
+## How to use worklets in react-native-audio-api mindfully?
+
+Our API is specifically designed to support high throughput to enable audio playback at 44.1Hz, which is the default frequency for most modern devices.
+
+However, this introduces several limitations on what can be done inside a worklet. Since a worklet must be executed on the JavaScript runtime, each execution introduces latency.
+
+$$ 44.1\text{Hz} \equiv 44100\text{ samples} \equiv 1\text{ s} $$
+
+This means the sample rate indicates how many frames are processed in one second. Most features that allow using worklets as callbacks should also allow setting `bufferLength` for worklet input.
+
+If you set `bufferLength` to 128 (which is the default internal buffer size of our API used to process the graph), you must remember that your worklet should not take more than:
+
+$$ 1\text{ s} = 1000\text{ ms} $$
+
+$$ \frac{44100}{128} \approx 344 $$
+
+$$ \frac{1000\text{ ms}}{344} \approx 2.9\text{ ms} $$
+
+This means that if your worklet, plus the rest of the processing, takes more than 2.9ms, you may start to experience audio dropouts or other playback issues.
+
+### Recommendations
+
+- Use a larger `bufferLength`, like 256, 512 or even 1024 if you don't need more than 40fps.
+- Avoid blocking operations in the worklet (e.g., calling APIs - use JS callbacks for these instead).
+- Do not overuse worklets. Before creating 5 or 6, consider if it can be done with a single one. Creating chained nodes that invoke worklets increases latency linearly.
+- Measure performance and memory usage, and check logs to ensure you are not dropping frames.

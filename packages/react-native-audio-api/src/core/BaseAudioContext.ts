@@ -17,6 +17,8 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import StreamerNode from './StreamerNode';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
+import WorkletNode from './WorkletNode';
+import { isWorkletsAvailable, workletsModule } from '../utils';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -35,6 +37,55 @@ export default class BaseAudioContext {
 
   public get state(): ContextState {
     return this.context.state;
+  }
+
+  createWorkletNode(
+    callback: (audioData: Array<Float32Array>, channelCount: number) => void,
+    bufferLength: number,
+    inputChannelCount: number
+  ): WorkletNode {
+    if (inputChannelCount < 1 || inputChannelCount > 32) {
+      throw new NotSupportedError(
+        `The number of input channels provided (${inputChannelCount}) can not be less than 1 or greater than 32`
+      );
+    }
+    if (bufferLength < 1) {
+      throw new NotSupportedError(
+        `The buffer length provided (${bufferLength}) can not be less than 1`
+      );
+    }
+
+    if (isWorkletsAvailable) {
+      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
+          'worklet';
+          const floatAudioData: Array<Float32Array> = audioBuffers.map(
+            (buffer) => new Float32Array(buffer)
+          );
+          callback(floatAudioData, channelCount);
+
+          /// !IMPORTANT Workaround
+          /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
+          /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
+          /// So worklet will be called but any of its interactions with the UI thread will not be visible.
+
+          /// This forces to flush queue
+          requestAnimationFrame(() => {});
+        }
+      );
+      return new WorkletNode(
+        this,
+        this.context.createWorkletNode(
+          shareableWorklet,
+          bufferLength,
+          inputChannelCount
+        )
+      );
+    }
+    /// User does not have worklets as a dependency so he cannot use the worklet API.
+    throw new Error(
+      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
   }
 
   createRecorderAdapter(): RecorderAdapterNode {

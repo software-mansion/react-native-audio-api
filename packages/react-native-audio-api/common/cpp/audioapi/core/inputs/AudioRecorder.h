@@ -1,11 +1,11 @@
 #pragma once
 
-
 #include <memory>
-#include <mutex>
 #include <atomic>
+#include <mutex>
 
 namespace audioapi {
+
 class RecorderAdapterNode;
 class AudioBus;
 class CircularAudioArray;

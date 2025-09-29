@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>

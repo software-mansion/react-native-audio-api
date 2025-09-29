@@ -65,6 +65,15 @@ def resolveReactNativeDirectory() {
   )
 }
 
+def resolveReactNativeWorkletsDirectory() {
+  def rnWorklets = rootProject.subprojects.find { it.name == 'react-native-worklets' }
+  if (rnWorklets != null) {
+    return rnWorklets.projectDir
+  }
+
+  return null;
+}
+
 def toPlatformFileString(String path) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
       path = path.replace(File.separatorChar, '/' as char)
@@ -82,6 +91,8 @@ static def supportsNamespace() {
 }
 
 def reactNativeRootDir = resolveReactNativeDirectory()
+def reactNativeWorkletsRootDir = resolveReactNativeWorkletsDirectory()
+def isWorkletsAvailable = reactNativeWorkletsRootDir != null
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -112,17 +123,30 @@ android {
   defaultConfig {
     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+    
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+    buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
+
+
 
     externalNativeBuild {
       cmake {
         abiFilters (*reactNativeArchitectures())
-        arguments "-DANDROID_STL=c++_shared",
-                  "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
-                  "-DANDROID_TOOLCHAIN=clang",
-                  "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
+
+        def cmakeArgs = [
+          "-DANDROID_STL=c++_shared",
+          "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
+          "-DANDROID_TOOLCHAIN=clang",
+          "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
+          "-DRN_AUDIO_API_WORKLETS_ENABLED=${isWorkletsAvailable}",
                   "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
                   "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+        ]
+
+        if (isWorkletsAvailable) {
+          cmakeArgs << "-DREACT_NATIVE_WORKLETS_DIR=${toPlatformFileString(reactNativeWorkletsRootDir.path)}"
+        }
+        arguments = cmakeArgs
       }
     }
   }
@@ -225,7 +249,23 @@ dependencies {
   implementation 'com.facebook.fbjni:fbjni:0.6.0'
   implementation 'com.google.oboe:oboe:1.9.3'
   implementation 'androidx.media:media:1.7.0'
+
+  if (isWorkletsAvailable) {
+    implementation(rootProject.subprojects.find { it.name == 'react-native-worklets' })
+  }
 }
+
+if (isWorkletsAvailable) {
+  // Ensure worklets is built before react-native-audio-api
+  def rnWorkletsProject = rootProject.subprojects.find { it.name == 'react-native-worklets' }
+  evaluationDependsOn(rnWorkletsProject.path)
+
+  afterEvaluate {
+      tasks.getByName("buildCMakeDebug").dependsOn(rnWorkletsProject.tasks.getByName("mergeDebugNativeLibs"))
+      tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(rnWorkletsProject.tasks.getByName("mergeReleaseNativeLibs"))
+  }
+}
+
 
 def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
     // If you change the minimal React Native version remember to update Compatibility Table in docs

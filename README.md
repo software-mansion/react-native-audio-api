@@ -50,8 +50,6 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **JS Audio Worklets V2 🐎**<br />
   Customize the process pipeline with JS functions running on audio thread.
 
-### Released
-
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.8.0"><img src="https://img.shields.io/badge/Released_in-0.8.0-green" /></a>
 
 - **Decoding support for m4a/mp4/aac/ogg/opus 📁** <br />

@@ -58,6 +58,26 @@ Creates [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
 
+### `createWorkletNode` <MobileOnly />
+
+Creates [`WorkletNode`](/docs/worklets/worklet-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
+| `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
+| `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+| `NotSupportedError` | `bufferLength` < 1. |
+| `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
+
+#### Returns `WorkletNode`.
+
 ### `createBuffer`
 
 Creates [`AudioBuffer`](/docs/sources/audio-buffer).
@@ -84,7 +104,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/core/base-audio-context#audiobufferbasesourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
+| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
@@ -94,7 +114,7 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/core/base-audio-context#audiobufferbasesourcenodeoptions) | Dictionary object that specifies if pitch correction has to be available. |
+| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferQueueSourceNode`.
 
@@ -124,7 +144,7 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. |
+| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
 
 #### Errors
 
@@ -250,31 +270,4 @@ Decodes audio data. It decodes with PCM data in Base64.
   - `closed`
 
   The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
-</details>
-
-### `AudioBufferBaseSourceNodeOptions`
-
-<details>
-
-`AudioBufferBaseSourceNodeOptions` is a dictionary object specifies if pitch correction algorithm has to be available.
-
-```jsx
-interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean
-}
-```
-</details>
-
-### `PeriodicWaveConstraints`
-
-<details>
-
-`PeriodicWaveConstraints` is a dictionary object specifies whether normalization should be disabled during creating periodic wave. If not specified normalization is enabled.
-If normalized, periodic wave will have maximum peak value of 1 and minimum peak value of -1.
-
-```jsx
-interface PeriodicWaveConstraints {
-  disableNormalization: boolean;
-}
-```
 </details>
