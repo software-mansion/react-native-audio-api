@@ -67,6 +67,14 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
 | `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
 | `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
+| `runtimeKind` | `RuntimeKind` | The kind of runtime to use for the worklet. |
+
+#### RuntimeKind values
+
+| Name | Description |
+| :---: | :---- |
+| `UiRuntime` | The worklet will be executed in the UI thread. |
+| `AudioRuntime` | The worklet will be executed in the audio rendering thread. |
 
 #### Errors
 
@@ -77,6 +85,30 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
 
 #### Returns `WorkletNode`.
+
+### `createWorkletSourceNode` <MobileOnly />
+
+Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
+| `runtimeKind` | `RuntimeKind` | The kind of runtime to use for the worklet. |
+
+#### RuntimeKind values
+
+| Name | Description |
+| :---: | :---- |
+| `UiRuntime` | The worklet will be executed in the UI thread. |
+| `AudioRuntime` | The worklet will be executed in the audio rendering thread. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+
+#### Returns `WorkletSourceNode`.
 
 ### `createBuffer`
 
