@@ -11,6 +11,7 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/sources/StreamerNode.h>
+#include <audioapi/core/sources/WorkletSourceNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -60,6 +61,15 @@ double BaseAudioContext::getCurrentTime() const {
 
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
   return destination_;
+}
+
+std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
+    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+  auto workletSourceNode =
+      std::make_shared<WorkletSourceNode>(this, shareableWorklet, runtime);
+  nodeManager_->addSourceNode(workletSourceNode);
+  return workletSourceNode;
 }
 
 std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(

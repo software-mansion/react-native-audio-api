@@ -13,6 +13,7 @@
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
+#include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 
 namespace audioapi {
@@ -31,6 +32,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
   addFunctions(
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
@@ -65,6 +67,29 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
   return {context_->getCurrentTime()};
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  auto shareableWorklet =
+      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
+          runtime, args[0]);
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+
+  auto workletSourceNode =
+      context_->createWorkletSourceNode(shareableWorklet, workletRuntime);
+  auto workletSourceNodeHostObject =
+      std::make_shared<WorkletSourceNodeHostObject>(workletSourceNode);
+  return jsi::Object::createFromHostObject(
+      runtime, workletSourceNodeHostObject);
+#endif
+  return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {

@@ -20,6 +20,7 @@ import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
 import WorkletNode from './WorkletNode';
 import { isWorkletsAvailable, workletsModule } from '../utils';
+import WorkletSourceNode from './WorkletSourceNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -88,6 +89,44 @@ export default class BaseAudioContext {
     /// User does not have worklets as a dependency so he cannot use the worklet API.
     throw new Error(
       '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
+  }
+
+  createWorkletSourceNode(
+    callback: (
+      audioData: Array<Float32Array>,
+      framesToProcess: number,
+      currentTime: number,
+      startOffset: number
+    ) => void,
+    runtimeKind: AudioWorkletRuntimeKind = 'AudioRuntime'
+  ): WorkletSourceNode {
+    if (!isWorkletsAvailable) {
+      /// User does not have worklets as a dependency so he cannot use the worklet API.
+      throw new Error(
+        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+      );
+    }
+    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+      (
+        audioBuffers: Array<ArrayBuffer>,
+        framesToProcess: number,
+        currentTime: number,
+        startOffset: number
+      ) => {
+        'worklet';
+        const floatAudioData: Array<Float32Array> = audioBuffers.map(
+          (buffer) => new Float32Array(buffer)
+        );
+        callback(floatAudioData, framesToProcess, currentTime, startOffset);
+      }
+    );
+    return new WorkletSourceNode(
+      this,
+      this.context.createWorkletSourceNode(
+        shareableWorklet,
+        runtimeKind === 'UiRuntime'
+      )
     );
   }
 

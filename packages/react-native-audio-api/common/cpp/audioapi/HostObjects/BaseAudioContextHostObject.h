@@ -26,6 +26,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
+  JSI_HOST_FUNCTION_DECL(createWorkletSourceNode);
   JSI_HOST_FUNCTION_DECL(createWorkletNode);
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);
   JSI_HOST_FUNCTION_DECL(createOscillator);

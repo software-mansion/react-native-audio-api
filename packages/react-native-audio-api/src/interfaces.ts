@@ -15,6 +15,11 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
 
   createRecorderAdapter(): IRecorderAdapterNode;
+  createWorkletSourceNode(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    shareableWorklet: any,
+    shouldUseUiRuntime: boolean
+  ): IWorkletSourceNode;
   createWorkletNode: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shareableWorklet: any,
@@ -210,6 +215,8 @@ export interface IAnalyserNode extends IAudioNode {
 export interface IRecorderAdapterNode extends IAudioNode {}
 
 export interface IWorkletNode extends IAudioNode {}
+
+export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IAudioRecorder {
   start: () => void;

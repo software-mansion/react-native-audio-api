@@ -3,9 +3,8 @@ import { Text, View, StyleSheet } from 'react-native';
 import {
   AudioContext,
   AudioManager,
-  AudioRecorder,
-  RecorderAdapterNode,
-  WorkletNode
+  WorkletNode,
+  WorkletSourceNode
 } from 'react-native-audio-api';
 import { Container, Button } from "../../components";
 import { Extrapolation, useSharedValue } from "react-native-reanimated";
@@ -18,10 +17,9 @@ import { colors } from "../../styles";
 
 function Worklets() {
   const SAMPLE_RATE = 44100;
-  const recorderRef = useRef<AudioRecorder | null>(null);
   const aCtxRef = useRef<AudioContext | null>(null);
-  const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
   const workletNodeRef = useRef<WorkletNode | null>(null);
+  const workletSourceNodeRef = useRef<WorkletSourceNode | null>(null);
 
   const bar0 = useSharedValue(0);
   const bar1 = useSharedValue(0);
@@ -35,18 +33,17 @@ function Worklets() {
       iosMode: 'spokenAudio',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
-
-    AudioManager.requestRecordingPermissions();
-    recorderRef.current = new AudioRecorder({
-      sampleRate: SAMPLE_RATE,
-      bufferLengthInSamples: 1024,
-    });
   }, []);
 
   const start = () => {
-    if (!recorderRef.current) {
-      console.error("Recorder is not initialized");
-      return;
+
+    const sourceWorklet = (audioData: Array<Float32Array>, framesToProcess: number, currentTime: number, startOffset: number) => {
+      'worklet';
+      for (let i = 0; i < audioData.length; i++) {
+        for (let j = 0; j < framesToProcess; j++) {
+          audioData[i][j] = Math.sin((currentTime + startOffset + j));
+        }
+      }
     }
 
     const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
@@ -58,41 +55,32 @@ function Worklets() {
         sum += audioData[0][i] * audioData[0][i];
       }
       const rms = Math.sqrt(sum / audioData[0].length);
-      const scaledAmplitude = Math.min(rms * 1000, 1);
+      const scaledAmplitude = Math.min(rms * 10, 1);
 
-      console.log(`RMS: ${rms}, Scaled: ${scaledAmplitude}`);
+      // console.log(`RMS: ${rms}, Scaled: ${scaledAmplitude}`);
 
       bar0.value = withSpring(bar1.value, { damping: 20, stiffness: 150 });
       bar1.value = withSpring(bar2.value, { damping: 20, stiffness: 150 });
       bar3.value = withSpring(bar2.value, { damping: 20, stiffness: 150 });
       bar4.value = withSpring(bar3.value, { damping: 20, stiffness: 150 });
-      bar2.value = withSpring(scaledAmplitude, { damping: 20, stiffness: 200 });
+      bar2.value = withSpring(scaledAmplitude, { damping: 20, stiffness: 150 });
     };
 
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
-    recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
-    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 512, 1, 'UiRuntime');
-    recorderAdapterRef.current.connect(workletNodeRef.current);
+    workletSourceNodeRef.current = aCtxRef.current.createWorkletSourceNode(sourceWorklet, 'AudioRuntime');
+    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 256, 1, 'UiRuntime');
+    workletSourceNodeRef.current.connect(workletNodeRef.current);
     workletNodeRef.current.connect(aCtxRef.current.destination);
 
-    recorderRef.current.connect(recorderAdapterRef.current);
-    recorderRef.current.start();
-    console.log("Recording started");
-
+    workletSourceNodeRef.current.start();
     if (aCtxRef.current.state === 'suspended') {
       aCtxRef.current.resume();
     }
   }
 
   const stop = () => {
-    if (!recorderRef.current) {
-      console.error("Recorder is not initialized");
-      return;
-    }
-    recorderRef.current.stop();
-    recorderAdapterRef.current = null;
-    aCtxRef.current = null;
     console.log("Recording stopped");
+    workletSourceNodeRef.current?.stop();
     bar0.value = withSpring(0, { damping: 20, stiffness: 100 });
     bar1.value = withSpring(0, { damping: 20, stiffness: 100 });
     bar2.value = withSpring(0, { damping: 20, stiffness: 100 });

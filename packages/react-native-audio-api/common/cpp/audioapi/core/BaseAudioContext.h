@@ -31,6 +31,7 @@ class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WorkletSourceNode;
 class WorkletNode;
 class StreamerNode;
 
@@ -46,6 +47,7 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
+  std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
   std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime, size_t bufferLength, size_t inputChannelCount);
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<StreamerNode> createStreamer();
