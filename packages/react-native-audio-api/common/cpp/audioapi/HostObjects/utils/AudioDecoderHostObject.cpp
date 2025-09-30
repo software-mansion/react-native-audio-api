@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/jsi/JsiPromise.h>
 
@@ -14,10 +14,9 @@
 namespace audioapi {
 AudioDecoderHostObject::AudioDecoderHostObject(
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker,
-    float sampleRate) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-  decoder_ = std::make_shared<AudioDecoder>(sampleRate);
+  decoder_ = std::make_shared<AudioDecoder>();
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithPCMInBase64),
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithFilePath),
@@ -32,10 +31,16 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto data = arrayBuffer.data(runtime);
   auto size = static_cast<int>(arrayBuffer.size(runtime));
 
+  auto sampleRate = args[1].getNumber();
+
   auto promise = promiseVendor_->createPromise(
-      [this, data, size](std::shared_ptr<Promise> promise) {
-        std::thread([this, data, size, promise = std::move(promise)]() {
-          auto result = decoder_->decodeWithMemoryBlock(data, size);
+      [this, data, size, sampleRate](std::shared_ptr<Promise> promise) {
+        std::thread([this,
+                     data,
+                     size,
+                     sampleRate,
+                     promise = std::move(promise)]() {
+          auto result = decoder_->decodeWithMemoryBlock(data, size, sampleRate);
 
           if (!result) {
             promise->reject("Failed to decode audio data.");
@@ -60,11 +65,15 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto sourcePath = args[0].getString(runtime).utf8(runtime);
+  auto sampleRate = args[1].getNumber();
 
   auto promise = promiseVendor_->createPromise(
-      [this, sourcePath](std::shared_ptr<Promise> promise) {
-        std::thread([this, sourcePath, promise = std::move(promise)]() {
-          auto result = decoder_->decodeWithFilePath(sourcePath);
+      [this, sourcePath, sampleRate](std::shared_ptr<Promise> promise) {
+        std::thread([this,
+                     sourcePath,
+                     sampleRate,
+                     promise = std::move(promise)]() {
+          auto result = decoder_->decodeWithFilePath(sourcePath, sampleRate);
 
           if (!result) {
             promise->reject("Failed to decode audio data source.");
@@ -90,11 +99,21 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
   auto b64 = args[0].getString(runtime).utf8(runtime);
+  auto inputSampleRate = args[1].getNumber();
+  auto inputChannelCount = args[2].getNumber();
+  auto interleaved = args[3].getBool();
 
   auto promise = promiseVendor_->createPromise(
-      [this, b64](std::shared_ptr<Promise> promise) {
-        std::thread([this, b64, promise = std::move(promise)]() {
-          auto result = decoder_->decodeWithPCMInBase64(b64);
+      [this, b64, inputSampleRate, inputChannelCount, interleaved](
+          std::shared_ptr<Promise> promise) {
+        std::thread([this,
+                     b64,
+                     inputSampleRate,
+                     inputChannelCount,
+                     interleaved,
+                     promise = std::move(promise)]() {
+          auto result = decoder_->decodeWithPCMInBase64(
+              b64, inputSampleRate, inputChannelCount, interleaved);
 
           if (!result) {
             promise->reject("Failed to decode audio data source.");

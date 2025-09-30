@@ -215,9 +215,20 @@ export interface IAudioRecorder {
 }
 
 export interface IAudioDecoder {
-  decodeWithMemoryBlock: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
-  decodeWithFilePath: (sourcePath: string) => Promise<IAudioBuffer>;
-  decodeWithPCMInBase64: (b64: string) => Promise<IAudioBuffer>;
+  decodeWithMemoryBlock: (
+    arrayBuffer: ArrayBuffer,
+    sampleRate?: number
+  ) => Promise<IAudioBuffer>;
+  decodeWithFilePath: (
+    sourcePath: string,
+    sampleRate?: number
+  ) => Promise<IAudioBuffer>;
+  decodeWithPCMInBase64: (
+    b64: string,
+    inputSampleRate: number,
+    inputChannelCount: number,
+    interleaved?: boolean
+  ) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioEventEmitter {

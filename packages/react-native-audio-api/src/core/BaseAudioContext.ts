@@ -31,7 +31,7 @@ export default class BaseAudioContext {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
-    this.decoder = new AudioDecoder(this.sampleRate);
+    this.decoder = new AudioDecoder();
   }
 
   public get currentTime(): number {
@@ -43,15 +43,28 @@ export default class BaseAudioContext {
   }
 
   public async decodeAudioData(
-    input: string | ArrayBuffer
+    input: string | ArrayBuffer,
+    sampleRate?: number
   ): Promise<AudioBuffer> {
     if (typeof input === 'string') {
-      return this.decoder.decodeAudioData(input);
+      return this.decoder.decodeAudioData(input, sampleRate ?? this.sampleRate);
     } else if (input instanceof ArrayBuffer) {
-      return this.decoder.decodeAudioData(input);
+      return this.decoder.decodeAudioData(input, sampleRate ?? this.sampleRate);
     } else {
       throw new TypeError('Input must be a string or ArrayBuffer');
     }
+  }
+
+  public async decodePCMInBase64(
+    base64String: string,
+    inputSampleRate: number,
+    inputChannelCount: number
+  ): Promise<AudioBuffer> {
+    return this.decoder.decodePCMInBase64(
+      base64String,
+      inputSampleRate,
+      inputChannelCount
+    );
   }
 
   createWorkletNode(

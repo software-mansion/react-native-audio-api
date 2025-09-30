@@ -22,7 +22,7 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
-  var createAudioDecoder: (sampleRate: number) => IAudioDecoder;
+  var createAudioDecoder: () => IAudioDecoder;
 
   var AudioEventEmitter: IAudioEventEmitter;
 }

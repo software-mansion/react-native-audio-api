@@ -7,7 +7,7 @@ import { colors } from '../../styles';
 import BackgroundTimer from 'react-native-background-timer';
 
 const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+  'https://docs.swmansion.com/react-native-audio-api/audio/other/mixed-channels.opus';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);

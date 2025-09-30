@@ -18,10 +18,10 @@ namespace audioapi {
 // Decoding audio in fixed-size chunks because total frame count can't be
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
-std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const
+std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outputChannels)
 {
-  std::vector<int16_t> buffer;
-  std::vector<int16_t> temp(CHUNK_SIZE * numChannels_);
+  std::vector<float> buffer;
+  std::vector<float> temp(CHUNK_SIZE * outputChannels);
   ma_uint64 outFramesRead = 0;
 
   while (true) {
@@ -31,7 +31,7 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const
       break;
     }
 
-    buffer.insert(buffer.end(), temp.data(), temp.data() + tempFramesDecoded * numChannels_);
+    buffer.insert(buffer.end(), temp.data(), temp.data() + tempFramesDecoded * outputChannels);
     outFramesRead += tempFramesDecoded;
   }
 
@@ -41,37 +41,39 @@ std::vector<int16_t> AudioDecoder::readAllPcmFrames(ma_decoder &decoder) const
   return buffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromInt16Buffer(const std::vector<int16_t> &buffer) const
+std::shared_ptr<AudioBuffer>
+AudioDecoder::makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer, int outputSampleRate, int outputChannels)
 {
   if (buffer.empty()) {
     return nullptr;
   }
 
-  auto outputFrames = buffer.size() / numChannels_;
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels_, sampleRate_);
+  auto outputFrames = buffer.size() / outputChannels;
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, outputChannels, outputSampleRate);
 
-  for (int ch = 0; ch < numChannels_; ++ch) {
+  for (int ch = 0; ch < outputChannels; ++ch) {
     auto channelData = audioBus->getChannel(ch)->getData();
     for (int i = 0; i < outputFrames; ++i) {
-      channelData[i] = int16ToFloat(buffer[i * numChannels_ + ch]);
+      channelData[i] = buffer[i * outputChannels + ch];
     }
   }
   return std::make_shared<AudioBuffer>(audioBus);
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string &path) const
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate)
 {
-  std::vector<int16_t> buffer;
-  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-    buffer = ffmpegdecoding::decodeWithFilePath(path, numChannels_, static_cast<int>(sampleRate_));
-    if (buffer.empty()) {
-      NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
-      return nullptr;
-    }
-    return makeAudioBufferFromInt16Buffer(buffer);
-  }
+  std::vector<float> buffer;
+  // if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+  //   // TODO:
+  //   buffer = ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate));
+  //   if (buffer.empty()) {
+  //     NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
+  //     return nullptr;
+  //   }
+  //   return makeAudioBufferFromFloatBuffer(buffer);
+  // }
   ma_decoder decoder;
-  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
   ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
@@ -83,25 +85,29 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string 
     return nullptr;
   }
 
-  buffer = readAllPcmFrames(decoder);
+  auto outputSampleRate = static_cast<int>(decoder.outputSampleRate);
+  auto outputChannels = static_cast<int>(decoder.outputChannels);
+
+  buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromInt16Buffer(buffer);
+  return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size) const
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate)
 {
-  std::vector<int16_t> buffer;
+  std::vector<float> buffer;
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
-  if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
-    buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, numChannels_, static_cast<int>(sampleRate_));
-    if (buffer.empty()) {
-      NSLog(@"Failed to decode with FFmpeg");
-      return nullptr;
-    }
-    return makeAudioBufferFromInt16Buffer(buffer);
-  }
+  // if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
+  //   // TODO:
+  //   buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
+  //   if (buffer.empty()) {
+  //     NSLog(@"Failed to decode with FFmpeg");
+  //     return nullptr;
+  //   }
+  //   return makeAudioBufferFromFloatBuffer(buffer);
+  // }
   ma_decoder decoder;
-  ma_decoder_config config = ma_decoder_config_init(ma_format_s16, numChannels_, static_cast<int>(sampleRate_));
+  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
 
   ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
@@ -110,30 +116,46 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *dat
 
   if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
     NSLog(@"Failed to initialize decoder for memory block");
+    ma_decoder_uninit(&decoder);
     return nullptr;
   }
 
-  buffer = readAllPcmFrames(decoder);
+  auto outputSampleRate = static_cast<int>(decoder.outputSampleRate);
+  auto outputChannels = static_cast<int>(decoder.outputChannels);
+
+  buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromInt16Buffer(buffer);
+  return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(const std::string &data) const
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
+    const std::string &data,
+    float inputSampleRate,
+    int inputChannelCount,
+    bool interleaved)
 {
   auto decodedData = base64_decode(data, false);
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
-  size_t numFramesDecoded = decodedData.size() / 2;
+  size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));
 
-  auto audioBus = std::make_shared<AudioBus>(numFramesDecoded, numChannels_, sampleRate_);
-  auto leftChannelData = audioBus->getChannel(0)->getData();
-  auto rightChannelData = audioBus->getChannel(1)->getData();
+  auto audioBus = std::make_shared<AudioBus>(numFramesDecoded, inputChannelCount, inputSampleRate);
 
-  for (size_t i = 0; i < numFramesDecoded; ++i) {
-    float sample = int16ToFloat(static_cast<int16_t>((uint8Data[i * 2 + 1] << 8) | uint8Data[i * 2]));
-    leftChannelData[i] = sample;
-    rightChannelData[i] = sample;
+  for (int ch = 0; ch < inputChannelCount; ++ch) {
+    auto channelData = audioBus->getChannel(ch)->getData();
+
+    for (size_t i = 0; i < numFramesDecoded; ++i) {
+      size_t offset;
+      if (interleaved) {
+        // Ch1, Ch2, Ch1, Ch2, ...
+        offset = (i * inputChannelCount + ch) * sizeof(int16_t);
+      } else {
+        // Ch1, Ch1, Ch1, ..., Ch2, Ch2, Ch2, ...
+        offset = (ch * numFramesDecoded + i) * sizeof(int16_t);
+      }
+
+      channelData[i] = uint8ToFloat(uint8Data[offset], uint8Data[offset + 1]);
+    }
   }
-
   return std::make_shared<AudioBuffer>(audioBus);
 }
 
