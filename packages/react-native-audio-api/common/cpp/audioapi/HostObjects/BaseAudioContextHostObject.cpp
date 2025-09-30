@@ -14,7 +14,6 @@
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 namespace audioapi {
 

@@ -2,7 +2,7 @@
 
 
 #include <jsi/jsi.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/utils/AudioBus.h>
@@ -50,7 +50,7 @@ class WorkletNode : public AudioNode {
 
 
  private:
-  UiWorkletsRunner workletRunner_;
+  WorkletsRunner workletRunner_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<uint8_t*> buffs_;
 

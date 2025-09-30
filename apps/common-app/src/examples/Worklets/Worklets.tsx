@@ -15,12 +15,9 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { colors } from "../../styles";
-import { createWorkletRuntime, getRuntimeKind } from "react-native-worklets";
-
 
 function Worklets() {
   const SAMPLE_RATE = 44100;
-  const runtime = createWorkletRuntime({ name: 'AudioWorkletRuntime' });
   const recorderRef = useRef<AudioRecorder | null>(null);
   const aCtxRef = useRef<AudioContext | null>(null);
   const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);

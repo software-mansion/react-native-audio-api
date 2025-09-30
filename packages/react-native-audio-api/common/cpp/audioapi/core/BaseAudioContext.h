@@ -2,7 +2,6 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <functional>

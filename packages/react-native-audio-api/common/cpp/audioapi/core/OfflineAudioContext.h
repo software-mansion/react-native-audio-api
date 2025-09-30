@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BaseAudioContext.h"
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <mutex>
 #include <map>

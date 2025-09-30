@@ -24,9 +24,9 @@ using namespace facebook;
 * This will return a shared pointer to the extracted worklet, or throw an error if the argument is invalid.
 */
 
-class UiWorkletsRunner {
+class WorkletsRunner {
  public:
-    explicit UiWorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
+    explicit WorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
 
     /// @brief Execute a job on the UI runtime safely.
     /// @param job
