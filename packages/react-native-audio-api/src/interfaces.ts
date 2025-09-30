@@ -16,7 +16,9 @@ export interface IBaseAudioContext {
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createWorkletNode: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shareableWorklet: any,
+    shouldUseUiRuntime: boolean,
     bufferLength: number,
     inputChannelCount: number
   ) => IWorkletNode;

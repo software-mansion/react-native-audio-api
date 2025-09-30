@@ -5,12 +5,13 @@ namespace audioapi {
 WorkletNode::WorkletNode(
     BaseAudioContext *context,
     std::shared_ptr<worklets::SerializableWorklet> &worklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime,
     size_t bufferLength,
     size_t inputChannelCount)
     : AudioNode(context),
       buffRealLength_(bufferLength * sizeof(float)),
       bufferLength_(bufferLength),
-      workletRunner_(context->workletRunner_),
+      workletRunner_(runtime),
       shareableWorklet_(worklet),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
@@ -57,7 +58,7 @@ void WorkletNode::processNode(
     if (curBuffIndex_ == bufferLength_) {
       // Reset buffer index, channel buffers and execute worklet
       curBuffIndex_ = 0;
-      workletRunner_->executeOnRuntimeGuardedSync(
+      workletRunner_.executeOnRuntimeGuardedSync(
           [this, channelCount_](jsi::Runtime &uiRuntimeRaw) {
             /// Arguments preparation
             auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
@@ -73,7 +74,7 @@ void WorkletNode::processNode(
             jsArray.setExternalMemoryPressure(
                 uiRuntimeRaw, channelCount_ * buffRealLength_);
 
-            workletRunner_->executeWorklet(
+            workletRunner_.executeWorklet(
                 shareableWorklet_,
                 std::move(jsArray),
                 jsi::Value(uiRuntimeRaw, static_cast<int>(channelCount_)));

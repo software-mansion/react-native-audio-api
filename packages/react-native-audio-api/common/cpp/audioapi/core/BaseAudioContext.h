@@ -37,7 +37,7 @@ class StreamerNode;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const std::shared_ptr<UiWorkletsRunner> &workletRunner);
+  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -47,7 +47,7 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
-  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, size_t bufferLength, size_t inputChannelCount);
+  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime, size_t bufferLength, size_t inputChannelCount);
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
@@ -96,7 +96,7 @@ class BaseAudioContext {
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-    std::shared_ptr<UiWorkletsRunner> workletRunner_;
+    RuntimeRegistry runtimeRegistry_;
 };
 
 } // namespace audioapi

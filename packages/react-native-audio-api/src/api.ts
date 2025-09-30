@@ -11,12 +11,16 @@ import type {
 declare global {
   var createAudioContext: (
     sampleRate: number,
-    initSuspended: boolean
+    initSuspended: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    audioWorkletRuntime: any
   ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
-    sampleRate: number
+    sampleRate: number,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    audioWorkletRuntime: any
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;

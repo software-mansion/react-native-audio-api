@@ -15,8 +15,8 @@ AudioContext::AudioContext(
     bool initSuspended,
     const std::shared_ptr<IAudioEventHandlerRegistry>
         &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner)
-    : BaseAudioContext(audioEventHandlerRegistry, workletRunner) {
+    const RuntimeRegistry &runtimeRegistry)
+    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry) {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
       this->renderAudio(), sampleRate, destination_->getChannelCount());

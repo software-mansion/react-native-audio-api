@@ -15,10 +15,12 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { colors } from "../../styles";
+import { createWorkletRuntime, getRuntimeKind } from "react-native-worklets";
 
 
 function Worklets() {
   const SAMPLE_RATE = 44100;
+  const runtime = createWorkletRuntime({ name: 'AudioWorkletRuntime' });
   const recorderRef = useRef<AudioRecorder | null>(null);
   const aCtxRef = useRef<AudioContext | null>(null);
   const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
@@ -53,7 +55,6 @@ function Worklets() {
     const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
       'worklet';
 
-
       // Calculates RMS amplitude
       let sum = 0;
       for (let i = 0; i < audioData.length; i++) {
@@ -73,7 +74,7 @@ function Worklets() {
 
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     recorderAdapterRef.current = aCtxRef.current.createRecorderAdapter();
-    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 512, 1);
+    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 512, 1, 'UiRuntime');
     recorderAdapterRef.current.connect(workletNodeRef.current);
     workletNodeRef.current.connect(aCtxRef.current.destination);
 

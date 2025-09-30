@@ -24,12 +24,12 @@ namespace audioapi {
 BaseAudioContext::BaseAudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry>
         &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
+    const RuntimeRegistry &runtimeRegistry) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
 
   audioEventHandlerRegistry_ = audioEventHandlerRegistry;
-  workletRunner_ = workletRunner;
+  runtimeRegistry_ = runtimeRegistry;
 }
 
 std::string BaseAudioContext::getState() {
@@ -64,10 +64,11 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 
 std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime,
     size_t bufferLength,
     size_t inputChannelCount) {
   auto workletNode = std::make_shared<WorkletNode>(
-      this, shareableWorklet, bufferLength, inputChannelCount);
+      this, shareableWorklet, runtime, bufferLength, inputChannelCount);
   nodeManager_->addProcessingNode(workletNode);
   return workletNode;
 }

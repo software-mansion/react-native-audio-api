@@ -3,6 +3,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioBufferBaseSourceNodeOptions,
+  AudioWorkletRuntimeKind,
 } from '../types';
 import AudioDestinationNode from './AudioDestinationNode';
 import OscillatorNode from './OscillatorNode';
@@ -42,7 +43,8 @@ export default class BaseAudioContext {
   createWorkletNode(
     callback: (audioData: Array<Float32Array>, channelCount: number) => void,
     bufferLength: number,
-    inputChannelCount: number
+    inputChannelCount: number,
+    runtimeKind: AudioWorkletRuntimeKind = 'AudioRuntime'
   ): WorkletNode {
     if (inputChannelCount < 1 || inputChannelCount > 32) {
       throw new NotSupportedError(
@@ -77,6 +79,7 @@ export default class BaseAudioContext {
         this,
         this.context.createWorkletNode(
           shareableWorklet,
+          runtimeKind === 'UiRuntime',
           bufferLength,
           inputChannelCount
         )

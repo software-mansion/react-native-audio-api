@@ -20,9 +20,10 @@ class WorkletNode : public AudioNode {
   explicit WorkletNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
       size_t bufferLength,
       size_t inputChannelCount
-  ) : AudioNode(context) {}
+  ) : AudioNode(context), workletRunner_(runtime) {}
   ~WorkletNode() override = default;
 
  protected:
@@ -37,6 +38,7 @@ class WorkletNode : public AudioNode {
   explicit WorkletNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
       size_t bufferLength,
       size_t inputChannelCount
   );
@@ -48,7 +50,7 @@ class WorkletNode : public AudioNode {
 
 
  private:
-  std::shared_ptr<UiWorkletsRunner> workletRunner_;
+  UiWorkletsRunner workletRunner_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<uint8_t*> buffs_;
 

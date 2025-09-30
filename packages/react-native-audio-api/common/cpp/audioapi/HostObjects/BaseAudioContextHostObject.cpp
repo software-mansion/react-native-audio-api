@@ -73,11 +73,19 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
   auto shareableWorklet =
       worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
           runtime, args[0]);
-  auto bufferLength = static_cast<size_t>(args[1].getNumber());
-  auto inputChannelCount = static_cast<size_t>(args[2].getNumber());
+
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+  auto bufferLength = static_cast<size_t>(args[2].getNumber());
+  auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
 
   auto workletNode = context_->createWorkletNode(
-      shareableWorklet, bufferLength, inputChannelCount);
+      shareableWorklet, workletRuntime, bufferLength, inputChannelCount);
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
   return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
