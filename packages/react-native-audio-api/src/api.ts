@@ -60,7 +60,7 @@ export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as StreamerNode } from './core/StreamerNode';
 export { default as AudioManager } from './system';
-export { default as useSystemVolume } from './hooks/useSytemVolume';
+export { default as useSystemVolume } from './hooks/useSystemVolume';
 
 export {
   OscillatorType,
