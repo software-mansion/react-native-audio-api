@@ -62,10 +62,10 @@ export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
-export { default as AudioDecoder } from './core/AudioDecoder';
 export { default as StreamerNode } from './core/StreamerNode';
 export { default as AudioManager } from './system';
 export { default as useSystemVolume } from './hooks/useSytemVolume';
+export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 
 export {
   OscillatorType,

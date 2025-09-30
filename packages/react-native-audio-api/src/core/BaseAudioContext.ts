@@ -19,19 +19,17 @@ import { InvalidAccessError, NotSupportedError } from '../errors';
 import RecorderAdapterNode from './RecorderAdapterNode';
 import WorkletNode from './WorkletNode';
 import { isWorkletsAvailable, workletsModule } from '../utils';
-import AudioDecoder from './AudioDecoder';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  readonly decoder: AudioDecoder;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
-    this.decoder = new AudioDecoder();
   }
 
   public get currentTime(): number {
@@ -46,24 +44,23 @@ export default class BaseAudioContext {
     input: string | ArrayBuffer,
     sampleRate?: number
   ): Promise<AudioBuffer> {
-    if (typeof input === 'string') {
-      return this.decoder.decodeAudioData(input, sampleRate ?? this.sampleRate);
-    } else if (input instanceof ArrayBuffer) {
-      return this.decoder.decodeAudioData(input, sampleRate ?? this.sampleRate);
-    } else {
+    if (!(typeof input === 'string' || input instanceof ArrayBuffer)) {
       throw new TypeError('Input must be a string or ArrayBuffer');
     }
+    return await decodeAudioData(input, sampleRate ?? this.sampleRate);
   }
 
   public async decodePCMInBase64(
     base64String: string,
     inputSampleRate: number,
-    inputChannelCount: number
+    inputChannelCount: number,
+    interleaved: boolean = true
   ): Promise<AudioBuffer> {
-    return this.decoder.decodePCMInBase64(
+    return await decodePCMInBase64(
       base64String,
       inputSampleRate,
-      inputChannelCount
+      inputChannelCount,
+      interleaved
     );
   }
 

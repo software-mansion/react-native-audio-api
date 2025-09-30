@@ -1,24 +1,22 @@
 import { IAudioDecoder } from '../interfaces';
 import AudioBuffer from './AudioBuffer';
 
-export default class AudioDecoder {
+class AudioDecoder {
+  private static instance: AudioDecoder | null = null;
   protected readonly decoder: IAudioDecoder;
 
-  constructor() {
+  private constructor() {
     this.decoder = global.createAudioDecoder();
   }
 
-  public decodeAudioData(
-    path: string,
-    sampleRate?: number
-  ): Promise<AudioBuffer>;
+  public static getInstance(): AudioDecoder {
+    if (!AudioDecoder.instance) {
+      AudioDecoder.instance = new AudioDecoder();
+    }
+    return AudioDecoder.instance;
+  }
 
-  public decodeAudioData(
-    buffer: ArrayBuffer,
-    sampleRate?: number
-  ): Promise<AudioBuffer>;
-
-  public async decodeAudioData(
+  public async decodeAudioDataInstance(
     input: string | ArrayBuffer,
     sampleRate?: number
   ): Promise<AudioBuffer> {
@@ -42,11 +40,11 @@ export default class AudioDecoder {
     return new AudioBuffer(buffer);
   }
 
-  public async decodePCMInBase64(
+  public async decodePCMInBase64Instance(
     base64String: string,
     inputSampleRate: number,
     inputChannelCount: number,
-    interleaved: boolean = true
+    interleaved: boolean
   ): Promise<AudioBuffer> {
     const buffer = await this.decoder.decodeWithPCMInBase64(
       base64String,
@@ -56,4 +54,25 @@ export default class AudioDecoder {
     );
     return new AudioBuffer(buffer);
   }
+}
+
+export async function decodeAudioData(
+  input: string | ArrayBuffer,
+  sampleRate?: number
+): Promise<AudioBuffer> {
+  return AudioDecoder.getInstance().decodeAudioDataInstance(input, sampleRate);
+}
+
+export async function decodePCMInBase64(
+  base64String: string,
+  inputSampleRate: number,
+  inputChannelCount: number,
+  interleaved: boolean = true
+): Promise<AudioBuffer> {
+  return AudioDecoder.getInstance().decodePCMInBase64Instance(
+    base64String,
+    inputSampleRate,
+    inputChannelCount,
+    interleaved
+  );
 }
