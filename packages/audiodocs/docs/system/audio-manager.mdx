@@ -174,20 +174,20 @@ Adds callback to be invoked upon hearing an event.
 
 ### `requestRecordingPermissions`
 
-Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
+Brings up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
-Allows to check if permissions were previously granted.
+Checks if permissions were previously granted.
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `getDevicesInfo`
 
-Allows to check currently used and available devices.
+Checks currently used and available devices.
 
 #### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 

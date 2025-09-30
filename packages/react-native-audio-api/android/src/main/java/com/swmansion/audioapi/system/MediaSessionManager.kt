@@ -21,6 +21,7 @@ import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.core.NativeAudioPlayer
+import com.swmansion.audioapi.core.NativeAudioRecorder
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -42,6 +43,7 @@ object MediaSessionManager {
   private var isServiceRunning = false
   private val serviceStateLock = Any()
   private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
+  private val nativeAudioRecorders = mutableMapOf<String, NativeAudioRecorder>()
 
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
@@ -95,14 +97,25 @@ object MediaSessionManager {
     nativeAudioPlayers.remove(uuid)
   }
 
+  fun attachAudioRecorder(recorder: NativeAudioRecorder): String {
+    val uuid = UUID.randomUUID().toString()
+    nativeAudioRecorders[uuid] = recorder
+
+    return uuid
+  }
+
+  fun detachAudioRecorder(uuid: String) {
+    nativeAudioRecorders.remove(uuid)
+  }
+
   fun startForegroundServiceIfNecessary() {
-    if (nativeAudioPlayers.isNotEmpty()) {
+    if (nativeAudioPlayers.isNotEmpty() || nativeAudioRecorders.isNotEmpty()) {
       startForegroundService()
     }
   }
 
   fun stopForegroundServiceIfNecessary() {
-    if (nativeAudioPlayers.isEmpty()) {
+    if (nativeAudioPlayers.isEmpty() && nativeAudioRecorders.isEmpty()) {
       stopForegroundService()
     }
   }

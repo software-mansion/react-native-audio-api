@@ -62,6 +62,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
     };
 
     jsi::Object createEventObject(const std::unordered_map<std::string, EventValue> &body);
+    jsi::Object createEventObject(const std::unordered_map<std::string, EventValue> &body, size_t memoryPressure);
 };
 
 } // namespace audioapi

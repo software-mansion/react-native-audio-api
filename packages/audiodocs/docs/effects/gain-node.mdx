@@ -17,6 +17,12 @@ Direct gain modification often results in unpleasant 'clicks'. To avoid this eff
 
 ![gain-node](/img/gain-node.png)
 
+<details open>
+<summary><code>GainNode</code> interactive playground</summary>
+
+<InteractivePlayground usePlayground={useGainAdsrPlayground} />
+</details>
+
 #### [`AudioNode`](/docs/core/audio-node#properties) properties
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
@@ -34,18 +40,6 @@ The most common way of describing an envelope is ADSR. This acronym stands for: 
 ![ADSR Example](/img/ADSR.svg)
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
-
-## ADSR Playground
-
-This is an interactive example demonstrating the ADSR on GainNode. You can adjust the parameters in real-time to hear and see how they affect the generated sound wave.
-
-
-
-<details open>
-<summary><code>GainNode</code> interactive playground</summary>
-
-<InteractivePlayground usePlayground={useGainAdsrPlayground} />
-</details>
 
 ## Constructor
 

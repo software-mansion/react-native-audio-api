@@ -1,12 +1,17 @@
+import { AudioEventCallback, AudioEventName } from './events/types';
 import {
-  WindowType,
-  ContextState,
-  OscillatorType,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
+  ContextState,
+  OscillatorType,
+  WindowType,
 } from './types';
-import { AudioEventName, AudioEventCallback } from './events/types';
+
+export type ShareableWorkletCallback = (
+  audioBuffers: Array<ArrayBuffer>,
+  channelCount: number
+) => void;
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -15,12 +20,19 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
 
   createRecorderAdapter(): IRecorderAdapterNode;
+  createWorkletNode(
+    shareableWorklet: ShareableWorkletCallback,
+    bufferLength: number,
+    inputChannelCount: number
+  ): IWorkletNode;
   createOscillator(): IOscillatorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
-  createBufferQueueSource: () => IAudioBufferQueueSourceNode;
+  createBufferQueueSource: (
+    pitchCorrection: boolean
+  ) => IAudioBufferQueueSourceNode;
   createBuffer: (
     channels: number,
     length: number,
@@ -199,6 +211,8 @@ export interface IAnalyserNode extends IAudioNode {
 }
 
 export interface IRecorderAdapterNode extends IAudioNode {}
+
+export interface IWorkletNode extends IAudioNode {}
 
 export interface IAudioRecorder {
   start: () => void;

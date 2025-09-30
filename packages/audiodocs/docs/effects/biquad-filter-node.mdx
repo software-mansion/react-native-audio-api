@@ -6,6 +6,8 @@ import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 import InteractiveExample from '@site/src/components/InteractiveExample';
 import AudioApiExample from '@site/src/components/AudioApiExample'
+import VinylPlayer from '@site/src/components/RecordPlayerExample/VinylAnimation';
+
 
 # BiquadFilterNode
 
@@ -13,9 +15,7 @@ The `BiquadFilterNode` interface represents a low-order filter. It is an [`Audio
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
 
 
-import BiquadExample from '@site/src/examples/Biquad/BiquadExampleComponent';
-
-<AudioApiExample component={BiquadExample} />
+<VinylPlayer/>
 
 
 #### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties

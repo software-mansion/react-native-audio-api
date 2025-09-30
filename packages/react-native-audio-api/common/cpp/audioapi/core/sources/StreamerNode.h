@@ -43,14 +43,6 @@ class StreamerNode : public AudioScheduledSourceNode {
   bool initialize(const std::string& inputUrl);
   void stop(double when) override;
 
- private:
-  static constexpr int SIZE = 4'000'000; // 4MB
-
- public:
-  static constexpr int getEstimatedSize() {
-    return StreamerNode::SIZE;
-  } // in bytes
-
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 

@@ -1,22 +1,24 @@
+import { InvalidAccessError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
+  AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
-  AudioBufferSourceNodeOptions,
 } from '../types';
-import AudioDestinationNode from './AudioDestinationNode';
-import OscillatorNode from './OscillatorNode';
-import GainNode from './GainNode';
-import StereoPannerNode from './StereoPannerNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import AudioBuffer from './AudioBuffer';
-import PeriodicWave from './PeriodicWave';
+import { isWorkletsAvailable, workletsModule } from '../utils';
 import AnalyserNode from './AnalyserNode';
+import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
-import StreamerNode from './StreamerNode';
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
+import BiquadFilterNode from './BiquadFilterNode';
+import GainNode from './GainNode';
+import OscillatorNode from './OscillatorNode';
+import PeriodicWave from './PeriodicWave';
 import RecorderAdapterNode from './RecorderAdapterNode';
+import StereoPannerNode from './StereoPannerNode';
+import StreamerNode from './StreamerNode';
+import WorkletNode from './WorkletNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -35,6 +37,47 @@ export default class BaseAudioContext {
 
   public get state(): ContextState {
     return this.context.state;
+  }
+
+  createWorkletNode(
+    callback: (audioData: Array<Float32Array>, channelCount: number) => void,
+    bufferLength: number,
+    inputChannelCount: number
+  ): WorkletNode {
+    if (inputChannelCount < 1 || inputChannelCount > 32) {
+      throw new NotSupportedError(
+        `The number of input channels provided (${inputChannelCount}) can not be less than 1 or greater than 32`
+      );
+    }
+    if (bufferLength < 1) {
+      throw new NotSupportedError(
+        `The buffer length provided (${bufferLength}) can not be less than 1`
+      );
+    }
+
+    if (isWorkletsAvailable) {
+      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
+          'worklet';
+          const floatAudioData: Array<Float32Array> = audioBuffers.map(
+            (buffer) => new Float32Array(buffer)
+          );
+          callback(floatAudioData, channelCount);
+        }
+      );
+      return new WorkletNode(
+        this,
+        this.context.createWorkletNode(
+          shareableWorklet,
+          bufferLength,
+          inputChannelCount
+        )
+      );
+    }
+    /// User does not have worklets as a dependency so he cannot use the worklet API.
+    throw new Error(
+      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
   }
 
   createRecorderAdapter(): RecorderAdapterNode {
@@ -62,7 +105,7 @@ export default class BaseAudioContext {
   }
 
   createBufferSource(
-    options?: AudioBufferSourceNodeOptions
+    options?: AudioBufferBaseSourceNodeOptions
   ): AudioBufferSourceNode {
     const pitchCorrection = options?.pitchCorrection ?? false;
 
@@ -72,10 +115,14 @@ export default class BaseAudioContext {
     );
   }
 
-  createBufferQueueSource(): AudioBufferQueueSourceNode {
+  createBufferQueueSource(
+    options?: AudioBufferBaseSourceNodeOptions
+  ): AudioBufferQueueSourceNode {
+    const pitchCorrection = options?.pitchCorrection ?? false;
+
     return new AudioBufferQueueSourceNode(
       this,
-      this.context.createBufferQueueSource()
+      this.context.createBufferQueueSource(pitchCorrection)
     );
   }
 

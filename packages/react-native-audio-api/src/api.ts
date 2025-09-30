@@ -40,6 +40,7 @@ if (
   NativeAudioAPIModule.install();
 }
 
+export { default as WorkletNode } from './core/WorkletNode';
 export { default as RecorderAdapterNode } from './core/RecorderAdapterNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
@@ -59,7 +60,7 @@ export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as StreamerNode } from './core/StreamerNode';
 export { default as AudioManager } from './system';
-export { default as useSystemVolume } from './hooks/useSytemVolume';
+export { default as useSystemVolume } from './hooks/useSystemVolume';
 
 export {
   OscillatorType,

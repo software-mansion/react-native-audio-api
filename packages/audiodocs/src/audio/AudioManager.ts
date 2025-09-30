@@ -195,7 +195,7 @@ class AudioManager {
     source.buffer = buffer;
     source.loop = loop;
 
-    source.onEnded = this.onSoundEnded.bind(this, { id, onEnded });
+    source.onended = this.onSoundEnded.bind(this, { id, onEnded });
 
     const gainNode = this.aCtx.createGain();
     gainNode.gain.value = volume;
@@ -228,7 +228,7 @@ class AudioManager {
         return;
       }
 
-      source.sourceNode.onEnded = this.onSoundEnded.bind(this, {
+      source.sourceNode.onended = this.onSoundEnded.bind(this, {
         id,
         onEnded: () => { resolve(); },
       });

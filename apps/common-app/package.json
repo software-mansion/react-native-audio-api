@@ -14,11 +14,11 @@
     "react-native-audio-api": "workspace:*",
     "react-native-background-timer": "2.4.1",
     "react-native-gesture-handler": "2.28.0",
-    "react-native-reanimated": "4.0.2",
+    "react-native-reanimated": "4.1.2",
     "react-native-safe-area-context": "5.6.0",
     "react-native-screens": "4.14.1",
     "react-native-svg": "15.12.1",
-    "react-native-worklets": "0.4.2"
+    "react-native-worklets": "0.6.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
