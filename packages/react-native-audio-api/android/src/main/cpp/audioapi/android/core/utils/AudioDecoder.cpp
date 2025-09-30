@@ -75,22 +75,19 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     const std::string &path,
     float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
-  std::vector<float> buffer;
-  // if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-  //   // TODO:
-  //   buffer =
-  //       ffmpegdecoding::decodeWithFilePath(path,
-  //       static_cast<int>(sampleRate));
-  //   if (buffer.empty()) {
-  //     __android_log_print(
-  //         ANDROID_LOG_ERROR,
-  //         "AudioDecoder",
-  //         "Failed to decode with FFmpeg: %s",
-  //         path.c_str());
-  //     return nullptr;
-  //   }
-  //   return makeAudioBufferFromFloatBuffer(buffer);
-  // }
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+    auto buffer =
+        ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate));
+    if (buffer == nullptr) {
+      __android_log_print(
+          ANDROID_LOG_ERROR,
+          "AudioDecoder",
+          "Failed to decode with FFmpeg: %s",
+          path.c_str());
+      return nullptr;
+    }
+    return buffer;
+  }
   ma_decoder decoder;
   ma_decoder_config config =
       ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
@@ -114,7 +111,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
-  buffer = readAllPcmFrames(decoder, outputChannels);
+  std::vector<float> buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
   return makeAudioBufferFromFloatBuffer(
       buffer, outputSampleRate, outputChannels);
@@ -128,20 +125,18 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
     size_t size,
     float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
-  std::vector<float> buffer;
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
-  // if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
-  //     format == AudioFormat::AAC) {
-  //   // TODO:
-  //   buffer = ffmpegdecoding::decodeWithMemoryBlock(
-  //       data, size, static_cast<int>(sampleRate));
-  //   if (buffer.empty()) {
-  //     __android_log_print(
-  //         ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
-  //     return nullptr;
-  //   }
-  //   return makeAudioBufferFromFloatBuffer(buffer);
-  // }
+  if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
+      format == AudioFormat::AAC) {
+    auto buffer = ffmpegdecoding::decodeWithMemoryBlock(
+        data, size, static_cast<int>(sampleRate));
+    if (buffer == nullptr) {
+      __android_log_print(
+          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
+      return nullptr;
+    }
+    return buffer;
+  }
   ma_decoder decoder;
   ma_decoder_config config =
       ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
@@ -165,7 +160,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
-  buffer = readAllPcmFrames(decoder, outputChannels);
+  std::vector<float> buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
   return makeAudioBufferFromFloatBuffer(
       buffer, outputSampleRate, outputChannels);
