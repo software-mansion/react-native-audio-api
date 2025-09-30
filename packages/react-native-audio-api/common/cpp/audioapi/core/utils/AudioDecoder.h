@@ -11,7 +11,6 @@
 
 namespace audioapi {
 
-class AudioBus;
 class AudioBuffer;
 
 static constexpr int CHUNK_SIZE = 4096;
