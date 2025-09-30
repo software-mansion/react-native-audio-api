@@ -37,7 +37,7 @@ class AudioDecoder {
       int outputChannels);
   static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
       const std::vector<float> &buffer,
-      int outputSampleRate,
+      float outputSampleRate,
       int outputChannels);
 
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
@@ -98,7 +98,8 @@ class AudioDecoder {
     return static_cast<float>(sample) / 32768.0f;
   }
   [[nodiscard]] static inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
-    return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) / 32768.0f;
+    return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) /
+        32768.0f;
   }
 };
 

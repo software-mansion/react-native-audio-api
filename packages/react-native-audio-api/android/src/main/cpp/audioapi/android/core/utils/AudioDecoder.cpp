@@ -52,7 +52,7 @@ std::vector<float> AudioDecoder::readAllPcmFrames(
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
     const std::vector<float> &buffer,
-    int outputSampleRate,
+    float outputSampleRate,
     int outputChannels) {
   if (buffer.empty()) {
     return nullptr;
@@ -111,7 +111,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     return nullptr;
   }
 
-  auto outputSampleRate = static_cast<int>(decoder.outputSampleRate);
+  auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
   buffer = readAllPcmFrames(decoder, outputChannels);
@@ -162,7 +162,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
     return nullptr;
   }
 
-  auto outputSampleRate = static_cast<int>(decoder.outputSampleRate);
+  auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
   buffer = readAllPcmFrames(decoder, outputChannels);
