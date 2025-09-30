@@ -1,12 +1,28 @@
+import { AudioEventCallback, AudioEventName } from './events/types';
 import {
-  WindowType,
-  ContextState,
-  OscillatorType,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
+  ContextState,
+  OscillatorType,
+  WindowType,
 } from './types';
-import { AudioEventName, AudioEventCallback } from './events/types';
+
+export type WorkletNodeCallback = (
+  audioData: Array<ArrayBuffer>,
+  channelCount: number
+) => void;
+
+export type WorkletSourceNodeCallback = (
+  audioData: Array<ArrayBuffer>,
+  framesToProcess: number,
+  currentTime: number,
+  startOffset: number
+) => void;
+
+export type ShareableWorkletCallback =
+  | WorkletNodeCallback
+  | WorkletSourceNodeCallback;
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -16,17 +32,15 @@ export interface IBaseAudioContext {
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createWorkletSourceNode(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    shareableWorklet: any,
+    shareableWorklet: ShareableWorkletCallback,
     shouldUseUiRuntime: boolean
   ): IWorkletSourceNode;
-  createWorkletNode: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    shareableWorklet: any,
+  createWorkletNode(
+    shareableWorklet: ShareableWorkletCallback,
     shouldUseUiRuntime: boolean,
     bufferLength: number,
     inputChannelCount: number
-  ) => IWorkletNode;
+  ): IWorkletNode;
   createOscillator(): IOscillatorNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;

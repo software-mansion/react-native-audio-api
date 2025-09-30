@@ -32,6 +32,7 @@ function App() {
         // here you have access to the number of input channels and the audio data
         // audio data is a two dimensional array where first index is the channel number and second is buffer of exactly bufferLength size
         // !IMPORTANT: here you can only read audio data any modifications will not be reflected in the audio output of this node
+        // !VERY IMPORTANT: please read the Known Issue section below
     };
     const workletNode = audioContext.createWorkletNode(worklet, 1024, 2);
     const adapterNode = audioContext.createRecorderAdapter();
@@ -48,3 +49,14 @@ It has no own properties but inherits from `AudioNode`.
 
 ## Methods
 It has no own methods but inherits from `AudioNode`.
+
+## Known Issue
+It might happen that the worklet side effect is not visible on the UI. For example you have some animated style which depends on some shared value modified in the worklet.
+This is happening because microtask queue is not always being flushed properly, bla bla bla...
+
+To workaround this issue just add this line at the end of your worklet callback function:
+```ts
+requestAnimationFrame(() => {});
+```
+This will ensure that microtask queue is flushed and your UI will be updated properly. But be aware that this might have some performance implications so it is not included by default.
+So use this only after confirming that your worklet side effects are not visible on the UI.

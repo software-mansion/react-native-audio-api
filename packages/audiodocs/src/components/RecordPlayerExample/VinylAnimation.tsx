@@ -1,17 +1,18 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import MockAudioContext from '@site/src/audio/MockAudioContext';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 
 // @ts-ignore
 import labelImage from '/static/img/logo.png';
 // @ts-ignore
-import swmLogo from '/static/img/swm-text.png';
-import styles from './styles.module.css';
 import { VINYL_CONSTANTS as C } from './consts';
+import styles from './styles.module.css';
+import swmLogo from '/static/img/swm-text.png';
 
 interface SceneRefs {
   recordGroup: THREE.Group;
@@ -31,7 +32,7 @@ export default function VinylPlayer(): React.ReactElement {
   const mountRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Animation state ref 
+  // Animation state ref
   const animationStateRef = useRef<AnimationState>({
     isSliderPressed: false,
     targetCoverY: 0,
@@ -40,11 +41,12 @@ export default function VinylPlayer(): React.ReactElement {
     fallVelocity: 0,
   });
 
-  // Scene object refs 
+  // Scene object refs
   const sceneRefsRef = useRef<SceneRefs | null>(null);
 
   const { context, filter, gain } = useMemo(() => {
-    const ctx = new AudioContext();
+    const ctx = typeof window !== 'undefined' ? new AudioContext() :  MockAudioContext;
+
     const filterNode = ctx.createBiquadFilter();
     filterNode.type = 'lowpass';
     const gainNode = ctx.createGain();
@@ -75,7 +77,7 @@ export default function VinylPlayer(): React.ReactElement {
     return () => {
       context?.close();
     };
-  }, [context]); 
+  }, [context]);
 
   const playSound = () => {
     if (!context || !audioBuffer || bufferSourceRef.current) {
@@ -110,7 +112,7 @@ export default function VinylPlayer(): React.ReactElement {
     const state = animationStateRef.current;
     state.coverHeight = v;
     state.targetCoverY = (v / C.SLIDER_MAX) * C.SLIDER_MAX;
-    
+
     if (!bufferSourceRef.current) {
       playSound();
     }
@@ -125,13 +127,13 @@ export default function VinylPlayer(): React.ReactElement {
       1000
     );
     camera.position.set(8, 10, 12);
-    
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
-    
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.target.set(0, 2, 0);
@@ -143,7 +145,7 @@ export default function VinylPlayer(): React.ReactElement {
   const initializeLighting = (scene: THREE.Scene) => {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
-    
+
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(10, 15, 5);
     dirLight.castShadow = true;
@@ -324,7 +326,7 @@ export default function VinylPlayer(): React.ReactElement {
     // SWM logo on box
     const logoTexture = new THREE.TextureLoader().load(swmLogo);
     logoTexture.colorSpace = THREE.SRGBColorSpace;
-    
+
     const logoMaterialFront = new THREE.MeshBasicMaterial({
       map: logoTexture,
       transparent: true,
@@ -335,15 +337,15 @@ export default function VinylPlayer(): React.ReactElement {
       transparent: true,
       side: THREE.FrontSide,
     });
-    
+
     const logoWidth = coverWidth * 0.7;
     const logoHeight = coverBoxHeight * 0.5;
     const logoPlaneGeometry = new THREE.PlaneGeometry(logoWidth, logoHeight);
-    
+
     const logoFront = new THREE.Mesh(logoPlaneGeometry, logoMaterialFront);
     logoFront.position.set(0, coverBoxHeight / 2, coverDepth / 2 + 0.01);
     coverGroup.add(logoFront);
-    
+
     const logoBack = new THREE.Mesh(logoPlaneGeometry, logoMaterialBack);
     logoBack.position.set(0, coverBoxHeight / 2, -coverDepth / 2 - 0.01);
     logoBack.rotation.y = Math.PI;
@@ -450,7 +452,7 @@ export default function VinylPlayer(): React.ReactElement {
         }
 
         const MAX_STRING_LENGTH = C.ANCHOR_Y - C.COVER_TOP_Y;
-        
+
         const isOnGround = newCoverY < 0.01;
         if (isOnGround && !state.wasOnGround) {
           if (bufferSourceRef.current) {
@@ -477,13 +479,13 @@ export default function VinylPlayer(): React.ReactElement {
 
     const { scene, camera, renderer, controls } = initializeScene(currentMount);
     initializeLighting(scene);
-    
+
     const materials = createMaterials();
     const recordGroup = createVinylPlayer(scene, materials);
     const { coverGroup, string, lineMaterial } = createCoverBox(scene, renderer, materials);
 
     sceneRefsRef.current = { recordGroup, coverGroup, string };
-    
+
     startAnimationLoop(renderer, scene, camera, controls);
 
     const handleResize = () => {

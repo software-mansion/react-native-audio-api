@@ -1,26 +1,26 @@
+import { InvalidAccessError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
+  AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
-  AudioBufferBaseSourceNodeOptions,
   AudioWorkletRuntimeKind,
 } from '../types';
-import AudioDestinationNode from './AudioDestinationNode';
-import OscillatorNode from './OscillatorNode';
-import GainNode from './GainNode';
-import StereoPannerNode from './StereoPannerNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import AudioBuffer from './AudioBuffer';
-import PeriodicWave from './PeriodicWave';
-import AnalyserNode from './AnalyserNode';
-import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
-import StreamerNode from './StreamerNode';
-import { InvalidAccessError, NotSupportedError } from '../errors';
-import RecorderAdapterNode from './RecorderAdapterNode';
-import WorkletNode from './WorkletNode';
 import { isWorkletsAvailable, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
+import AnalyserNode from './AnalyserNode';
+import AudioBuffer from './AudioBuffer';
+import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
+import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
+import BiquadFilterNode from './BiquadFilterNode';
+import GainNode from './GainNode';
+import OscillatorNode from './OscillatorNode';
+import PeriodicWave from './PeriodicWave';
+import RecorderAdapterNode from './RecorderAdapterNode';
+import StereoPannerNode from './StereoPannerNode';
+import StreamerNode from './StreamerNode';
+import WorkletNode from './WorkletNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -66,14 +66,6 @@ export default class BaseAudioContext {
             (buffer) => new Float32Array(buffer)
           );
           callback(floatAudioData, channelCount);
-
-          /// !IMPORTANT Workaround
-          /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
-          /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
-          /// So worklet will be called but any of its interactions with the UI thread will not be visible.
-
-          /// This forces to flush queue
-          requestAnimationFrame(() => {});
         }
       );
       return new WorkletNode(
