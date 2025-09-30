@@ -20,7 +20,6 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
     std::shared_ptr<worklets::SerializableWorklet> &worklet,
     std::weak_ptr<worklets::WorkletRuntime> runtime
   );
-  ~WorkletSourceNode() override;
 
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
@@ -28,11 +27,6 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
   WorkletsRunner workletRunner_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<std::shared_ptr<AudioArrayBuffer>> outputBuffsHandles_;
-
-  /// @note jsi::Array does not have a default constructor, so we need to use placement new and manually call the destructor
-  uint8_t outputBuffersStorage_[sizeof(jsi::Array)];
-
-  jsi::Array& getOutputBuffers() { return *reinterpret_cast<jsi::Array*>(&outputBuffersStorage_); }
 };
 
 } // namespace audioapi

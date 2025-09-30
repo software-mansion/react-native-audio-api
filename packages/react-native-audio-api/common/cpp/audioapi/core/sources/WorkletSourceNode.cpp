@@ -21,11 +21,6 @@ WorkletSourceNode::WorkletSourceNode(
   }
 }
 
-WorkletSourceNode::~WorkletSourceNode() {
-  // Manually call destructors for jsi::Array
-  getOutputBuffers().~Array();
-}
-
 void WorkletSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
