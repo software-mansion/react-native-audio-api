@@ -26,7 +26,8 @@ Supported file formats:
 
 ### `decodeAudioData`
 
-Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio; if not provided, the original sample rate from the file is used.
+Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio;
+if not provided, the original sample rate from the file is used.
 
 <table>
   <thead>
@@ -109,7 +110,7 @@ Decodes base64-encoded PCM audio data.
 <summary>Example decoding with data in base64 format </summary>
 ```tsx
 const data = ... // data encoded in base64 string
-// data are interleaved (Channel1, Channel2, Channel1, Channel2, ...)
+// data is interleaved (Channel1, Channel2, Channel1, Channel2, ...)
 const buffer = await decodeAudioData(data, 4800, 2, true);
 ```
 </details>

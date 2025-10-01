@@ -19,9 +19,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
-import { isWorkletsAvailable, workletsModule } from '../utils';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
-
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -56,13 +54,13 @@ export default class BaseAudioContext {
     base64String: string,
     inputSampleRate: number,
     inputChannelCount: number,
-    interleaved: boolean = true
+    isInterleaved: boolean = true
   ): Promise<AudioBuffer> {
     return await decodePCMInBase64(
       base64String,
       inputSampleRate,
       inputChannelCount,
-      interleaved
+      isInterleaved
     );
   }
 
