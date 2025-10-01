@@ -67,12 +67,12 @@ export async function decodePCMInBase64(
   base64String: string,
   inputSampleRate: number,
   inputChannelCount: number,
-  interleaved: boolean = true
+  isInterleaved: boolean = true
 ): Promise<AudioBuffer> {
   return AudioDecoder.getInstance().decodePCMInBase64Instance(
     base64String,
     inputSampleRate,
     inputChannelCount,
-    interleaved
+    isInterleaved
   );
 }
