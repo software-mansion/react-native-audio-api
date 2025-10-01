@@ -9,8 +9,6 @@ ConstantSourceNode::ConstantSourceNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context) {
   offsetParam_ = std::make_shared<AudioParam>(
       1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  channelCount_ = 1;
-  channelCountMode_ = ChannelCountMode::EXPLICIT;
   isInitialized_ = true;
 }
 
