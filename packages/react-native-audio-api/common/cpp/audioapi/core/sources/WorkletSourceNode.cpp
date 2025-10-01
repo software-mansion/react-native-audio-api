@@ -1,4 +1,5 @@
 #include <audioapi/core/sources/WorkletSourceNode.h>
+#include <audioapi/core/utils/Constants.h>
 
 namespace audioapi {
 
@@ -15,9 +16,9 @@ WorkletSourceNode::WorkletSourceNode(
   size_t outputChannelCount = this->getChannelCount();
   outputBuffsHandles_.resize(outputChannelCount);
   for (size_t i = 0; i < outputChannelCount; ++i) {
-    auto buff = new uint8_t[128 * sizeof(float)];
-    outputBuffsHandles_[i] =
-        std::make_shared<AudioArrayBuffer>(buff, 128 * sizeof(float));
+    auto buff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
+    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
+        buff, RENDER_QUANTUM_SIZE * sizeof(float));
   }
 }
 
