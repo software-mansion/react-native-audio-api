@@ -26,6 +26,7 @@ export interface IBaseAudioContext {
     inputChannelCount: number
   ): IWorkletNode;
   createOscillator(): IOscillatorNode;
+  createConstantSource(): IConstantSourceNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -129,6 +130,10 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 
 export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
+}
+
+export interface IConstantSourceNode extends IAudioScheduledSourceNode {
+  readonly offset: IAudioParam;
 }
 
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
