@@ -19,6 +19,7 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 }
+class AudioBuffer;
 
 namespace audioapi::ffmpegdecoding {
 // Custom IO context for reading from memory
@@ -28,23 +29,47 @@ struct MemoryIOContext {
   size_t pos;
 };
 
+struct AudioStreamContext {
+  AVFormatContext *fmt_ctx = nullptr;
+  AVCodecContext *codec_ctx = nullptr;
+  int audio_stream_index = -1;
+};
+
 int read_packet(void *opaque, uint8_t *buf, int buf_size);
 int64_t seek_packet(void *opaque, int64_t offset, int whence);
-std::vector<int16_t> readAllPcmFrames(
+inline int findAudioStreamIndex(AVFormatContext *fmt_ctx);
+std::vector<float> readAllPcmFrames(
     AVFormatContext *fmt_ctx,
     AVCodecContext *codec_ctx,
     int out_sample_rate,
+    int output_channel_count,
     int audio_stream_index,
-    int channels,
     size_t &framesRead);
-std::vector<int16_t> decodeWithMemoryBlock(
-    const void *data,
-    size_t size,
-    const int channel_count,
+    
+void convertFrameToBuffer(
+    SwrContext *swr,
+    AVFrame *frame,
+    int output_channel_count,
+    std::vector<float> &buffer,
+    size_t &framesRead,
+    uint8_t **&resampled_data,
+    int &max_resampled_samples);
+bool setupDecoderContext(
+    AVFormatContext *fmt_ctx,
+    int &audio_stream_index,
+    std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)>
+        &codec_ctx);
+std::shared_ptr<AudioBuffer> decodeAudioFrames(
+    AVFormatContext *fmt_ctx,
+    AVCodecContext *codec_ctx,
+    int audio_stream_index,
     int sample_rate);
-std::vector<int16_t> decodeWithFilePath(
+
+std::shared_ptr<AudioBuffer>
+decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
+
+std::shared_ptr<AudioBuffer> decodeWithFilePath(
     const std::string &path,
-    const int channel_count,
     int sample_rate);
 
 } // namespace audioapi::ffmpegdecoding

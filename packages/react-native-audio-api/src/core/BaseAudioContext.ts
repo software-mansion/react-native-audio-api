@@ -1,31 +1,30 @@
+import { InvalidAccessError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
+  AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
-  AudioBufferBaseSourceNodeOptions,
 } from '../types';
-import AudioDestinationNode from './AudioDestinationNode';
-import OscillatorNode from './OscillatorNode';
-import GainNode from './GainNode';
-import StereoPannerNode from './StereoPannerNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import AudioBuffer from './AudioBuffer';
-import PeriodicWave from './PeriodicWave';
-import AnalyserNode from './AnalyserNode';
-import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
-import StreamerNode from './StreamerNode';
-import { InvalidAccessError, NotSupportedError } from '../errors';
-import RecorderAdapterNode from './RecorderAdapterNode';
-import WorkletNode from './WorkletNode';
 import { isWorkletsAvailable, workletsModule } from '../utils';
-import AudioDecoder from './AudioDecoder';
+import AnalyserNode from './AnalyserNode';
+import AudioBuffer from './AudioBuffer';
+import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
+import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
+import BiquadFilterNode from './BiquadFilterNode';
+import GainNode from './GainNode';
+import OscillatorNode from './OscillatorNode';
+import PeriodicWave from './PeriodicWave';
+import RecorderAdapterNode from './RecorderAdapterNode';
+import StereoPannerNode from './StereoPannerNode';
+import StreamerNode from './StreamerNode';
+import WorkletNode from './WorkletNode';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioStretcher from './AudioStretcher';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  readonly decoder: AudioDecoder;
   readonly stretcher: AudioStretcher;
   readonly context: IBaseAudioContext;
 
@@ -33,7 +32,6 @@ export default class BaseAudioContext {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
-    this.decoder = new AudioDecoder(this.sampleRate);
     this.stretcher = new AudioStretcher(this.sampleRate);
   }
 
@@ -46,15 +44,27 @@ export default class BaseAudioContext {
   }
 
   public async decodeAudioData(
-    input: string | ArrayBuffer
+    input: string | ArrayBuffer,
+    sampleRate?: number
   ): Promise<AudioBuffer> {
-    if (typeof input === 'string') {
-      return this.decoder.decodeAudioData(input);
-    } else if (input instanceof ArrayBuffer) {
-      return this.decoder.decodeAudioData(input);
-    } else {
+    if (!(typeof input === 'string' || input instanceof ArrayBuffer)) {
       throw new TypeError('Input must be a string or ArrayBuffer');
     }
+    return await decodeAudioData(input, sampleRate ?? this.sampleRate);
+  }
+
+  public async decodePCMInBase64(
+    base64String: string,
+    inputSampleRate: number,
+    inputChannelCount: number,
+    isInterleaved: boolean = true
+  ): Promise<AudioBuffer> {
+    return await decodePCMInBase64(
+      base64String,
+      inputSampleRate,
+      inputChannelCount,
+      isInterleaved
+    );
   }
 
   public async changePlaybackSpeed(
@@ -88,14 +98,6 @@ export default class BaseAudioContext {
             (buffer) => new Float32Array(buffer)
           );
           callback(floatAudioData, channelCount);
-
-          /// !IMPORTANT Workaround
-          /// This is required for now because the worklet is run using runGuarded in C++ which does not invoke any interaction with
-          /// the event queue which means if no task is being scheduled, the worklet's side effect won't happen.
-          /// So worklet will be called but any of its interactions with the UI thread will not be visible.
-
-          /// This forces to flush queue
-          requestAnimationFrame(() => {});
         }
       );
       return new WorkletNode(

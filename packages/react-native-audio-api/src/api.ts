@@ -23,7 +23,7 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
-  var createAudioDecoder: (sampleRate: number) => IAudioDecoder;
+  var createAudioDecoder: () => IAudioDecoder;
 
   var createAudioStretcher: (sampleRate: number) => IAudioStretcher;
 
@@ -66,11 +66,11 @@ export { default as GainNode } from './core/GainNode';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
-export { default as AudioDecoder } from './core/AudioDecoder';
 export { default as AudioStretcher } from './core/AudioStretcher';
 export { default as StreamerNode } from './core/StreamerNode';
 export { default as AudioManager } from './system';
-export { default as useSystemVolume } from './hooks/useSytemVolume';
+export { default as useSystemVolume } from './hooks/useSystemVolume';
+export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 
 export {
   OscillatorType,

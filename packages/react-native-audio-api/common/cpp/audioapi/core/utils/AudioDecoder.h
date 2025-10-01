@@ -10,30 +10,33 @@
 
 namespace audioapi {
 
-class AudioBus;
 class AudioBuffer;
 
 static constexpr int CHUNK_SIZE = 4096;
 
 class AudioDecoder {
  public:
-  explicit AudioDecoder(float sampleRate) : sampleRate_(sampleRate) {}
+  explicit AudioDecoder() {}
 
-  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithFilePath(
-      const std::string &path) const;
-  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(
-      const void *data,
-      size_t size) const;
-  [[nodiscard]] std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
-      const std::string &data) const;
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(
+      const std::string &path,
+      float sampleRate);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer>
+  decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
+      const std::string &data,
+      float inputSampleRate,
+      int inputChannelCount,
+      bool interleaved);
 
  private:
-  float sampleRate_;
-  int numChannels_ = 2;
-
-  std::vector<int16_t> readAllPcmFrames(ma_decoder &decoder) const;
-  std::shared_ptr<AudioBuffer> makeAudioBufferFromInt16Buffer(
-      const std::vector<int16_t> &buffer) const;
+  static std::vector<float> readAllPcmFrames(
+      ma_decoder &decoder,
+      int outputChannels);
+  static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
+      const std::vector<float> &buffer,
+      float outputSampleRate,
+      int outputChannels);
 
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
@@ -91,6 +94,10 @@ class AudioDecoder {
   }
   [[nodiscard]] static inline float int16ToFloat(int16_t sample) {
     return static_cast<float>(sample) / 32768.0f;
+  }
+  [[nodiscard]] static inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
+    return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) /
+        32768.0f;
   }
 };
 

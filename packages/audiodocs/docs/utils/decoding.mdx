@@ -1,0 +1,116 @@
+---
+sidebar_position: 1
+---
+
+import { Optional, MobileOnly } from '@site/src/components/Badges';
+
+# Decoding
+
+You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/audio-decoder#decodeaudiodata) and
+[`decodePCMInBase64`](/docs/utils/audio-decoder#decodepcminbase64).
+
+If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
+the decoded audio will then be automatically resampled to match the context's `sampleRate`.
+
+:::caution
+Supported file formats:
+- aac
+- flac
+- m4a
+- mp3
+- mp4
+- ogg
+- opus
+- wav
+:::
+
+### `decodeAudioData`
+
+Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio;
+if not provided, the original sample rate from the file is used.
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">Parameter</th>
+      <th align="center">Type</th>
+      <th align="center">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2" align="center"><code>input</code></td>
+      <td align="center"><code>ArrayBuffer</code></td>
+      <td align="center">ArrayBuffer with audio data.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Path to audio file located on the device.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>sampleRate</code><Optional /></td>
+      <td align="center"><code>number</code></td>
+      <td align="center">Target sample rate for the decoded audio.</td>
+    </tr>
+  </tbody>
+</table>
+
+#### Returns `Promise<AudioBuffer>`.
+
+<details>
+<summary>Example decoding with memory block</summary>
+```tsx
+const url = ... // url to an audio
+
+  const buffer = await fetch(url)
+    .then((response) => response.arrayBuffer())
+    // resample decoded audio to 48000 Hz
+    .then((arrayBuffer) => decodeAudioData(arrayBuffer, 48000))
+    .catch((error) => {
+      console.error('Error decoding audio data source:', error);
+      return null;
+    });
+```
+</details>
+
+<details>
+<summary>Example using expo-asset library</summary>
+```tsx
+import { Asset } from 'expo-asset';
+
+const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
+    .downloadAsync()
+    .then((asset) =>  {
+      if (!asset.localUri) {
+        throw new Error('Failed to load audio asset');
+      }
+      // sampleRate not provided, so file will be decoded in original sampleRate
+      return decodeAudioData(asset.localUri);
+    })
+```
+</details>
+
+### `decodePCMInBase64`
+
+Decodes base64-encoded PCM audio data.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base64String` | `string` | Base64-encoded PCM audio data. |
+| `inputSampleRate` | `number` | Sample rate of the input PCM data. |
+| `inputChannelCount` | `number` | Number of channels in the input PCM data. |
+| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+
+#### Returns `Promise<AudioBuffer>`
+
+
+<details>
+<summary>Example decoding with data in base64 format </summary>
+```tsx
+const data = ... // data encoded in base64 string
+// data is interleaved (Channel1, Channel2, Channel1, Channel2, ...)
+const buffer = await decodeAudioData(data, 4800, 2, true);
+```
+</details>

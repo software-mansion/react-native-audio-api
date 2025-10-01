@@ -17,8 +17,7 @@ class AudioDecoderHostObject : public JsiHostObject {
  public:
   explicit AudioDecoderHostObject(
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker,
-      float sampleRate);
+      const std::shared_ptr<react::CallInvoker> &callInvoker);
   JSI_HOST_FUNCTION_DECL(decodeWithMemoryBlock);
   JSI_HOST_FUNCTION_DECL(decodeWithFilePath);
   JSI_HOST_FUNCTION_DECL(decodeWithPCMInBase64);
