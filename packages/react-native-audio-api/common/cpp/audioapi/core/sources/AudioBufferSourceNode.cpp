@@ -168,7 +168,8 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  if (onLoopEndedCallbackId_ != 0) {
+  auto onLoopEndedCallbackId = onLoopEndedCallbackId_.load(std::memory_order_acquire);
+  if (onLoopEndedCallbackId != 0) {
     context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         "loopEnded", onLoopEndedCallbackId_, {});
   }
