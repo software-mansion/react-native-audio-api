@@ -17,8 +17,6 @@ class AudioStretcher {
       float playbackSpeed);
 
  private:
-  float sampleRate_;
-
   static std::vector<int16_t> castToInt16Buffer(AudioBuffer &buffer);
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
