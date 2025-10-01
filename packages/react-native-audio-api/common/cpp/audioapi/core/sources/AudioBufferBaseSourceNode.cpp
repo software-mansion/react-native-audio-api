@@ -28,12 +28,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
 }
 
 AudioBufferBaseSourceNode::~AudioBufferBaseSourceNode() {
-  if (onPositionChangedCallbackId_ != 0 &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
-    context_->audioEventHandlerRegistry_->unregisterHandler(
-        "positionChanged", onPositionChangedCallbackId_);
-    onPositionChangedCallbackId_ = 0;
-  }
+  clearOnPositionChangedCallback();
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {

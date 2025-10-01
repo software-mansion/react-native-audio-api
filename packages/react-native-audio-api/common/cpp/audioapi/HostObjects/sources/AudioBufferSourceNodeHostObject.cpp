@@ -19,7 +19,8 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
-      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd));
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onLoopEnded));
 
   // start method is overridden in this class
   functions_->erase("start");
@@ -27,6 +28,16 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
       JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer));
+}
+
+AudioBufferSourceNodeHostObject::~AudioBufferSourceNodeHostObject() {
+  auto audioBufferSourceNode =
+      std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+  // When JSI object is garbage collected (together with the eventual callback),
+  // underlying source node might still be active and try to call the
+  // non-existing callback.
+  audioBufferSourceNode->clearOnLoopEndedCallback();
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
@@ -92,6 +103,14 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
   auto audioBufferSourceNode =
       std::static_pointer_cast<AudioBufferSourceNode>(node_);
   audioBufferSourceNode->setLoopEnd(value.getNumber());
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
+  auto audioBufferSourceNode =
+      std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+  audioBufferSourceNode->setOnLoopEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {

@@ -140,6 +140,9 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
   start: (when?: number, offset?: number, duration?: number) => void;
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onLoopEnded: string;
 }
 
 export interface IAudioBufferQueueSourceNode

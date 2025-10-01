@@ -8,10 +8,10 @@ WorkletNode::WorkletNode(
     size_t bufferLength,
     size_t inputChannelCount)
     : AudioNode(context),
-      buffRealLength_(bufferLength * sizeof(float)),
-      bufferLength_(bufferLength),
       workletRunner_(context->workletRunner_),
       shareableWorklet_(worklet),
+      buffRealLength_(bufferLength * sizeof(float)),
+      bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
   buffs_.reserve(inputChannelCount_);
@@ -44,7 +44,8 @@ void WorkletNode::processNode(
       /// to   uint8_t* [curBuffIndex_, curBuffIndex_ + shouldProcess]
       /// from float* [processed, processed + shouldProcess]
       /// so as the we need to copy shouldProcess * sizeof(float) bytes
-      auto channelData = processingBus->getChannel(ch)->getData();
+      auto channelData =
+          processingBus->getChannel(static_cast<int>(ch))->getData();
       std::memcpy(
           /* dest */ buffs_[ch] + curBuffIndex_ * sizeof(float),
           /* src */ reinterpret_cast<const uint8_t *>(channelData + processed),
