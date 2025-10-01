@@ -20,19 +20,16 @@ import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
-import AudioStretcher from './AudioStretcher';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
-  readonly stretcher: AudioStretcher;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
     this.sampleRate = context.sampleRate;
-    this.stretcher = new AudioStretcher(this.sampleRate);
   }
 
   public get currentTime(): number {
@@ -65,13 +62,6 @@ export default class BaseAudioContext {
       inputChannelCount,
       isInterleaved
     );
-  }
-
-  public async changePlaybackSpeed(
-    input: AudioBuffer,
-    playbackSpeed: number
-  ): Promise<AudioBuffer> {
-    return this.stretcher.changePlaybackSpeed(input, playbackSpeed);
   }
 
   createWorkletNode(

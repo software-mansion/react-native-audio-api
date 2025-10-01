@@ -192,11 +192,9 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto sampleRate = static_cast<float>(args[0].getNumber());
-
           auto audioStretcherHostObject =
               std::make_shared<AudioStretcherHostObject>(
-                  &runtime, jsCallInvoker, sampleRate);
+                  &runtime, jsCallInvoker);
           return jsi::Object::createFromHostObject(
               runtime, audioStretcherHostObject);
         });

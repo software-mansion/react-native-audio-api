@@ -15,10 +15,9 @@ namespace audioapi {
 
 AudioStretcherHostObject::AudioStretcherHostObject(
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker,
-    float sampleRate) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-  stretcher_ = std::make_shared<AudioStretcher>(sampleRate);
+  stretcher_ = std::make_shared<AudioStretcher>();
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioStretcherHostObject, changePlaybackSpeed));
 }

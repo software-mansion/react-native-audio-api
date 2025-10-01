@@ -7,67 +7,55 @@
 
 namespace audioapi {
 
-std::vector<int16_t> AudioStretcher::castToInt16Buffer(const float *data, size_t size) const
+std::vector<int16_t> AudioStretcher::castToInt16Buffer(AudioBuffer &buffer)
 {
-  const size_t numChannels = 2;
-  std::vector<int16_t> int16Buffer(size);
+  const size_t numChannels = buffer.getNumberOfChannels();
+  const size_t numFrames = buffer.getLength();
 
-  for (size_t i = 0; i < size; ++i) {
-    int16Buffer[i] = floatToInt16(data[i]);
+  std::vector<int16_t> int16Buffer(numFrames * numChannels);
+
+  for (size_t ch = 0; ch < numChannels; ++ch) {
+    const float *channelData = buffer.getChannelData(ch);
+    for (size_t i = 0; i < numFrames; ++i) {
+      int16Buffer[i * numChannels + ch] = floatToInt16(channelData[i]);
+    }
   }
+
   return int16Buffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(AudioBuffer buffer, float playbackSpeed) const
+std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(AudioBuffer buffer, float playbackSpeed)
 {
-  // TODO: handle multiple channels
-  const size_t numChannels = 2;
-  const size_t numFrames = buffer.getLength() / numChannels;
+  const float sampleRate = buffer.getSampleRate();
+  const size_t outputChannels = buffer.getNumberOfChannels();
+  const size_t numFrames = buffer.getLength();
 
-  // if (playbackSpeed == 1.0f) {
-  //   auto audioBus =
-  //       std::make_shared<AudioBus>(numFrames, numChannels, sampleRate_);
-  //   auto leftChannelData = audioBus->getChannel(0)->getData();
-  //   auto rightChannelData = audioBus->getChannel(1)->getData();
+  if (playbackSpeed == 1.0f) {
+    return std::make_shared<AudioBuffer>(buffer);
+  }
 
-  //   for (size_t i = 0; i < numFrames; ++i) {
-  //     float sample = data[i];
-  //     leftChannelData[i] = sample;
-  //     rightChannelData[i] = sample;
-  //   }
-
-  //   return std::make_shared<AudioBuffer>(audioBus);
-  // }
-
-  std::vector<int16_t> int16Buffer = castToInt16Buffer(buffer.getChannelData(0), buffer.getLength());
+  std::vector<int16_t> int16Buffer = castToInt16Buffer(buffer);
 
   auto stretcher =
-      stretch_init(static_cast<int>(sampleRate_ / 333.0f), static_cast<int>(sampleRate_ / 55.0f), numChannels, 0x1);
+      stretch_init(static_cast<int>(sampleRate / 333.0f), static_cast<int>(sampleRate / 55.0f), outputChannels, 0x1);
 
   int maxOutputFrames = stretch_output_capacity(stretcher, static_cast<int>(numFrames), 1 / playbackSpeed);
-  std::vector<int16_t> stretchedBuffer(maxOutputFrames * numChannels);
+  std::vector<int16_t> stretchedBuffer(maxOutputFrames * outputChannels);
 
-  NSLog(
-      @"before stretch_samples numFrames: %d, maxOutputFrames: %d, in16Buffer size: %d",
-      (int)numFrames,
-      maxOutputFrames,
-      (int)int16Buffer.size());
   int outputFrames = stretch_samples(
       stretcher, int16Buffer.data(), static_cast<int>(numFrames), stretchedBuffer.data(), 1 / playbackSpeed);
-  NSLog(@"after stretch_samples");
 
   outputFrames += stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
-  stretchedBuffer.resize(outputFrames);
+  stretchedBuffer.resize(outputFrames * outputChannels);
   stretch_deinit(stretcher);
 
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, numChannels, sampleRate_);
-  auto leftChannelData = audioBus->getChannel(0)->getData();
-  auto rightChannelData = audioBus->getChannel(1)->getData();
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, outputChannels, sampleRate);
 
-  for (size_t i = 0; i < outputFrames; ++i) {
-    float sample = int16ToFloat(stretchedBuffer[i]);
-    leftChannelData[i] = sample;
-    rightChannelData[i] = sample;
+  for (int ch = 0; ch < outputChannels; ++ch) {
+    auto channelData = audioBus->getChannel(ch)->getData();
+    for (int i = 0; i < outputFrames; ++i) {
+      channelData[i] = int16ToFloat(stretchedBuffer[i * outputChannels + ch]);
+    }
   }
 
   return std::make_shared<AudioBuffer>(audioBus);

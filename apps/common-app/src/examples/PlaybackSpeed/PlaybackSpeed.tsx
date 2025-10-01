@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, changePlaybackSpeed } from 'react-native-audio-api';
 import type { AudioBufferSourceNode } from 'react-native-audio-api';
 import {
   PCM_DATA,
@@ -50,7 +50,7 @@ const PlaybackSpeed: FC = () => {
 
     try {
       let buffer = await audioContext.decodeAudioData(PCM_DATA);
-      buffer = await audioContext.changePlaybackSpeed(
+      buffer = await changePlaybackSpeed(
         buffer,
         audioSettings.PSOLA ? playbackSpeed : 1
       );

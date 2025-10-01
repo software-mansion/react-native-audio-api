@@ -1,14 +1,22 @@
 import { IAudioStretcher } from '../interfaces';
 import AudioBuffer from './AudioBuffer';
 
-export default class AudioStretcher {
+class AudioStretcher {
+  private static instance: AudioStretcher | null = null;
   protected readonly stretcher: IAudioStretcher;
 
-  constructor(sampleRate: number) {
-    this.stretcher = global.createAudioStretcher(sampleRate);
+  private constructor() {
+    this.stretcher = global.createAudioStretcher();
   }
 
-  public async changePlaybackSpeed(
+  public static getInstance(): AudioStretcher {
+    if (!AudioStretcher.instance) {
+      AudioStretcher.instance = new AudioStretcher();
+    }
+    return AudioStretcher.instance;
+  }
+
+  public async changePlaybackSpeedInstance(
     input: AudioBuffer,
     playbackSpeed: number
   ): Promise<AudioBuffer> {
@@ -22,4 +30,14 @@ export default class AudioStretcher {
     }
     return new AudioBuffer(buffer);
   }
+}
+
+export default async function changePlaybackSpeed(
+  input: AudioBuffer,
+  playbackSpeed: number
+): Promise<AudioBuffer> {
+  return AudioStretcher.getInstance().changePlaybackSpeedInstance(
+    input,
+    playbackSpeed
+  );
 }

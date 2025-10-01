@@ -10,16 +10,16 @@ class AudioBuffer;
 
 class AudioStretcher {
  public:
-  explicit AudioStretcher(float sampleRate) : sampleRate_(sampleRate) {}
+  explicit AudioStretcher() {}
 
-  [[nodiscard]] std::shared_ptr<AudioBuffer> changePlaybackSpeed(
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> changePlaybackSpeed(
       AudioBuffer buffer,
-      float playbackSpeed) const;
+      float playbackSpeed);
 
  private:
   float sampleRate_;
 
-  std::vector<int16_t> castToInt16Buffer(const float *data, size_t size) const;
+  static std::vector<int16_t> castToInt16Buffer(AudioBuffer &buffer);
 
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * 32768.0f);
