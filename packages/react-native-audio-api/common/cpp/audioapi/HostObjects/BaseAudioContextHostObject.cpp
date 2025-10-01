@@ -10,6 +10,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
@@ -36,6 +37,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -106,6 +108,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
   object.setExternalMemoryPressure(
       runtime, StreamerNodeHostObject::getSizeInBytes());
   return object;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
+  auto constantSource = context_->createConstantSource();
+  auto constantSourceHostObject =
+      std::make_shared<ConstantSourceNodeHostObject>(constantSource);
+  return jsi::Object::createFromHostObject(runtime, constantSourceHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
