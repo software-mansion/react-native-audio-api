@@ -1,0 +1,16 @@
+export const VINYL_CONSTANTS = {
+  // 3d model and animation
+  SLIDER_MAX: 10,
+  COVER_HEIGHT_3D_MAX: 10,
+  COVER_TOP_Y: 6,
+  ANCHOR_Y: 20,
+  RECORD_ROTATION_SPEED: 0.1,
+  GRAVITY: 0.003,
+  LERP_FACTOR_ACTIVE: 0.4,
+  
+  // audio
+  FILTER_MIN_FREQ: 200,
+  FILTER_MAX_FREQ: 8000,
+  AUDIO_TRANSITION_TIME: 0.015,
+  MAX_GAIN: 0.5,
+} as const;
