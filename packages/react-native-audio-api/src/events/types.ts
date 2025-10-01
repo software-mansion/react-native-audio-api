@@ -46,6 +46,7 @@ type SystemEvents = RemoteCommandEvents & {
 
 export interface OnEndedEventType extends EventEmptyType {
   bufferId: string | undefined;
+  isLast: boolean | undefined;
 }
 
 export interface OnAudioReadyEventType {
