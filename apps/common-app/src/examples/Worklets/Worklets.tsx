@@ -4,6 +4,7 @@ import {
   AudioContext,
   AudioManager,
   WorkletNode,
+  WorkletProcessingNode,
   WorkletSourceNode
 } from 'react-native-audio-api';
 import { Container, Button } from "../../components";
@@ -19,6 +20,7 @@ function Worklets() {
   const SAMPLE_RATE = 44100;
   const aCtxRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<WorkletNode | null>(null);
+  const workletProcessingNodeRef = useRef<WorkletProcessingNode | null>(null);
   const workletSourceNodeRef = useRef<WorkletSourceNode | null>(null);
 
   const bar0 = useSharedValue(0);
@@ -36,6 +38,18 @@ function Worklets() {
   }, []);
 
   const start = () => {
+
+    const processingWorklet = (inputAudioData: Array<Float32Array>, outputAudioData: Array<Float32Array>, framesToProcess: number, currentTime: number) => {
+      'worklet';
+      const gain = 0.5;
+      for (let channel = 0; channel < inputAudioData.length; channel++) {
+        const inputChannelData = inputAudioData[channel];
+        const outputChannelData = outputAudioData[channel];
+        for (let i = 0; i < framesToProcess; i++) {
+          outputChannelData[i] = inputChannelData[i] * gain;
+        }
+      }
+    };
 
     const sourceWorklet = (audioData: Array<Float32Array>, framesToProcess: number, currentTime: number, startOffset: number) => {
       'worklet';
@@ -69,6 +83,11 @@ function Worklets() {
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     workletSourceNodeRef.current = aCtxRef.current.createWorkletSourceNode(sourceWorklet, 'AudioRuntime');
     workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 256, 1, 'UiRuntime');
+    workletProcessingNodeRef.current = aCtxRef.current.createWorkletProcessingNode(processingWorklet, 'AudioRuntime');
+
+    // Connect nodes
+    workletSourceNodeRef.current.connect(workletProcessingNodeRef.current);
+    workletProcessingNodeRef.current.connect(workletNodeRef.current);
     workletSourceNodeRef.current.connect(workletNodeRef.current);
     workletNodeRef.current.connect(aCtxRef.current.destination);
 

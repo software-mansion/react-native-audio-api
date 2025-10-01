@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
 #include <audioapi/HostObjects/WorkletNodeHostObject.h>
+#include <audioapi/HostObjects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
@@ -34,6 +35,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
+      JSI_EXPORT_FUNCTION(
+          BaseAudioContextHostObject, createWorkletProcessingNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
@@ -113,6 +116,32 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
   return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+#endif
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(
+    BaseAudioContextHostObject,
+    createWorkletProcessingNode) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  auto shareableWorklet =
+      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
+          runtime, args[0]);
+
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+
+  auto workletProcessingNode =
+      context_->createWorkletProcessingNode(shareableWorklet, workletRuntime);
+  auto workletProcessingNodeHostObject =
+      std::make_shared<WorkletProcessingNodeHostObject>(workletProcessingNode);
+  return jsi::Object::createFromHostObject(
+      runtime, workletProcessingNodeHostObject);
 #endif
   return jsi::Value::undefined();
 }

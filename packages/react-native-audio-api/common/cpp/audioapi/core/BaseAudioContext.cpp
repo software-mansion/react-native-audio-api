@@ -5,6 +5,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
+#include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
@@ -81,6 +82,16 @@ std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
       this, shareableWorklet, runtime, bufferLength, inputChannelCount);
   nodeManager_->addProcessingNode(workletNode);
   return workletNode;
+}
+
+std::shared_ptr<WorkletProcessingNode>
+BaseAudioContext::createWorkletProcessingNode(
+    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+  auto workletProcessingNode =
+      std::make_shared<WorkletProcessingNode>(this, shareableWorklet, runtime);
+  nodeManager_->addProcessingNode(workletProcessingNode);
+  return workletProcessingNode;
 }
 
 std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {

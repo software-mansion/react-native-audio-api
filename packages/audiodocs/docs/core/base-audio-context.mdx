@@ -96,6 +96,23 @@ Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 
 #### Returns `WorkletSourceNode`.
 
+### `createWorkletProcessingNode` <MobileOnly />
+
+Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
+| `runtimeKind` | `RuntimeKind` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+
+#### Returns `WorkletProcessingNode`.
+
 ### `createBuffer`
 
 Creates [`AudioBuffer`](/docs/sources/audio-buffer).

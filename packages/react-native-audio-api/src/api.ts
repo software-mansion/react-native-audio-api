@@ -46,6 +46,7 @@ if (
 
 export { default as WorkletNode } from './core/WorkletNode';
 export { default as WorkletSourceNode } from './core/WorkletSourceNode';
+export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as RecorderAdapterNode } from './core/RecorderAdapterNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
