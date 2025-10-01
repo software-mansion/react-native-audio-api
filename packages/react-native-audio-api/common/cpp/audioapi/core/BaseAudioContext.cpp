@@ -8,6 +8,7 @@
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/sources/StreamerNode.h>
@@ -82,6 +83,12 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   auto oscillator = std::make_shared<OscillatorNode>(this);
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
+}
+
+std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
+  auto constantSource = std::make_shared<ConstantSourceNode>(this);
+  nodeManager_->addSourceNode(constantSource);
+  return constantSource;
 }
 
 #ifndef AUDIO_API_TEST_SUITE
