@@ -13,6 +13,20 @@
 
 namespace audioapi {
 
+#if RN_AUDIO_API_TEST
+class WorkletSourceNode : public AudioScheduledSourceNode {
+ public:
+  explicit WorkletSourceNode(
+    BaseAudioContext *context,
+    std::shared_ptr<worklets::SerializableWorklet> &worklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime
+  ) : AudioScheduledSourceNode(context) {}
+
+ protected:
+  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
+};
+#else
+
 class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
   explicit WorkletSourceNode(
@@ -28,5 +42,6 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<std::shared_ptr<AudioArrayBuffer>> outputBuffsHandles_;
 };
+#endif // RN_AUDIO_API_TEST
 
 } // namespace audioapi

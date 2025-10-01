@@ -1,5 +1,6 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
@@ -14,7 +15,7 @@ class GainTest : public ::testing::Test {
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_unique<audioapi::OfflineAudioContext>(
-        2, 5 * sampleRate, sampleRate, eventRegistry, nullptr);
+        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };
 

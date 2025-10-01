@@ -23,8 +23,7 @@ class WorkletNode : public AudioNode {
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       size_t bufferLength,
       size_t inputChannelCount
-  ) : AudioNode(context), workletRunner_(runtime) {}
-  ~WorkletNode() override = default;
+  ) : AudioNode(context) {}
 
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}

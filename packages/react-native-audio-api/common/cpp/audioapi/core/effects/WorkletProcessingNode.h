@@ -20,7 +20,7 @@ class WorkletProcessingNode : public AudioNode {
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime
-  ) : AudioNode(context), workletRunner_(runtime) {}
+  ) : AudioNode(context) {}
 
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
