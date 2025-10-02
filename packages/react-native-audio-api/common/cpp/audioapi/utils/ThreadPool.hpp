@@ -6,7 +6,6 @@
 #include <audioapi/utils/SpscChannel.hpp>
 
 namespace audioapi {
-using namespace audioapi::channels::spsc;
 
 /// @brief A simple thread pool implementation using lock-free SPSC channels for task scheduling and execution.
 /// @note The thread pool consists of a load balancer thread and multiple worker threads.
@@ -19,20 +18,20 @@ class ThreadPool {
   struct TaskEvent { std::function<void()> task; };
   using Event = std::variant<TaskEvent, StopEvent>;
 
-  using Sender = Sender<Event, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
-  using Receiver = Receiver<Event, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
+  using Sender = audioapi::channels::spsc::Sender<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Receiver = audioapi::channels::spsc::Receiver<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 public:
   /// @brief Construct a new ThreadPool
   /// @param numThreads The number of worker threads to create
   /// @param loadBalancerQueueSize The size of the load balancer's queue
   /// @param workerQueueSize The size of each worker thread's queue
   ThreadPool(size_t numThreads, size_t loadBalancerQueueSize = 32, size_t workerQueueSize = 32) {
-    auto [sender, receiver] = channel<Event, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
+    auto [sender, receiver] = audioapi::channels::spsc::channel<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
     loadBalancerSender = std::move(sender);
     std::vector<Sender> workerSenders;
     workerSenders.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
-      auto [workerSender, workerReceiver] = channel<Event, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
+      auto [workerSender, workerReceiver] = audioapi::channels::spsc::channel<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
       workers.emplace_back(&ThreadPool::workerThreadFunc, this, std::move(workerReceiver));
       workerSenders.emplace_back(std::move(workerSender));
     }
@@ -69,8 +68,7 @@ private:
       if (std::holds_alternative<StopEvent>(event)) {
         break;
       } else if (std::holds_alternative<TaskEvent>(event)) {
-        auto& taskEvent = std::get<TaskEvent>(event);
-        taskEvent.task();
+        std::get<TaskEvent>(event).task();
       }
     }
   }
@@ -90,7 +88,7 @@ private:
       } else if (std::holds_alternative<TaskEvent>(event)) {
         // Dispatch task to the next worker in round-robin fashion
         auto& taskEvent = std::get<TaskEvent>(event);
-        localWorkerSenders[nextWorker].send(taskEvent);
+        localWorkerSenders[nextWorker].send(std::move(taskEvent));
         nextWorker = (nextWorker + 1) % localWorkerSenders.size();
       }
     }
