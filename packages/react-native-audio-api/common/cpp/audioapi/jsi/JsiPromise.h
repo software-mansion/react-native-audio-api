@@ -47,7 +47,7 @@ class PromiseVendor {
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.
   /// @return The created promise.
   /// @note The function is executed on a different thread, and the promise is resolved or rejected based on the function's outcome.
-  /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only.
+  /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only. (comes from underlying ThreadPool implementation)
   /// @example
   /// ```cpp
   /// auto promise = promiseVendor_->createAsyncPromise(
