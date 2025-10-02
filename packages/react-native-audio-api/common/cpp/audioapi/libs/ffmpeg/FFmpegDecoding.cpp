@@ -12,6 +12,7 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <functional>
 
 namespace audioapi::ffmpegdecoding {
 
