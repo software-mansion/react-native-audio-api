@@ -60,11 +60,11 @@ void AudioParamEventQueue::cancelAndHoldAtTime(
 
   auto &back = eventQueue_.peekBackMut();
   back.setEndValue(back.getCalculateValue()(
-    back.getStartTime(),
-    back.getEndTime(),
-    back.getStartValue(),
-    back.getEndValue(),
-    cancelTime));
+      back.getStartTime(),
+      back.getEndTime(),
+      back.getStartValue(),
+      back.getEndValue(),
+      cancelTime));
   back.setEndTime(std::min(cancelTime, back.getEndTime()));
 }
 

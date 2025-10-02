@@ -220,7 +220,8 @@ void AudioParam::setValueCurveAtTime(
         // Calculate interpolation factor between adjacent array elements
         auto factor = static_cast<float>(
             (time - startTime) * static_cast<double>(length - 1) /
-                (endTime - startTime) - k);
+                (endTime - startTime) -
+            k);
         return dsp::linearInterpolate(values->data(), k, k + 1, factor);
       }
 
