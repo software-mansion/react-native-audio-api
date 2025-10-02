@@ -6,7 +6,7 @@ import { ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # WorkletSourceNode
 
-The `WorkletSourceNode` interface represents a scheduled source node in the audio processing graph that generates audio using a worklet function. It extends `AudioScheduledSourceNode`, providing the ability to start and stop audio generation at specific times.
+The `WorkletSourceNode` interface represents a scheduled source node in the audio processing graph that generates audio using a worklet function. It extends [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node), providing the ability to start and stop audio generation at specific times.
 
 This node allows you to generate audio procedurally using JavaScript worklets, making it perfect for creating custom synthesizers, audio generators, or real-time audio effects that produce sound rather than just process it.
 
@@ -14,7 +14,7 @@ For more information about worklets, see our [Introduction to worklets](/docs/wo
 
 ## Constructor
 
-[`BaseAudioContext.createWorkletSourceNode(worklet, runtimeKind)`](/docs/core/base-audio-context#createworkletsourcenode-)
+[`BaseAudioContext.createWorkletSourceNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletsourcenode-)
 
 ## Example
 
@@ -114,11 +114,11 @@ const worklet = (audioData, framesToProcess, currentTime, startOffset) => {
 
 ## Properties
 
-It has no own properties but inherits from `AudioScheduledSourceNode`.
+It has no own properties but inherits from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node).
 
 ## Methods
 
-It has no own methods but inherits from `AudioScheduledSourceNode`:
+It has no own methods but inherits from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node):
 
 ## Performance Considerations
 
@@ -128,7 +128,7 @@ Since `WorkletSourceNode` generates audio in real-time, performance is critical:
 - Avoid complex calculations that could cause audio dropouts
 - Consider using lookup tables for expensive operations like trigonometric functions
 - Test on target devices to ensure smooth audio generation
-- Use `AudioRuntime` for better performance, `UiRuntime` for UI integration
+- Use `AudioRuntime` for better performance, `UIRuntime` for UI integration
 
 ## Use Cases
 

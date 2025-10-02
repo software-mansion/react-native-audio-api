@@ -76,6 +76,7 @@ export {
   ContextState,
   WindowType,
   PeriodicWaveConstraints,
+  AudioWorkletRuntime,
 } from './types';
 
 export {

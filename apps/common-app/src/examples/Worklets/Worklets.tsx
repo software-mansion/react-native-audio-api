@@ -82,7 +82,7 @@ function Worklets() {
 
     aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     workletSourceNodeRef.current = aCtxRef.current.createWorkletSourceNode(sourceWorklet, 'AudioRuntime');
-    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 256, 1, 'UiRuntime');
+    workletNodeRef.current = aCtxRef.current.createWorkletNode(worklet, 256, 1, 'UIRuntime');
     workletProcessingNodeRef.current = aCtxRef.current.createWorkletProcessingNode(processingWorklet, 'AudioRuntime');
 
     // Connect nodes

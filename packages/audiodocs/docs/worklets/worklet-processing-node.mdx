@@ -6,7 +6,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
 
-The `WorkletProcessingNode` interface represents a node in the audio processing graph that can process audio using a worklet function. Unlike `WorkletNode` which only provides read-only access to audio data, `WorkletProcessingNode` allows you to modify the audio signal by providing both input and output buffers.
+The `WorkletProcessingNode` interface represents a node in the audio processing graph that can process audio using a worklet function. Unlike [`WorkletNode`](/docs/worklets/worklet-node) which only provides read-only access to audio data, `WorkletProcessingNode` allows you to modify the audio signal by providing both input and output buffers.
 
 This node lets you execute a worklet that receives input audio data and produces output audio data, making it perfect for creating custom audio effects, filters, and processors. The worklet processes the exact number of frames provided by the audio system in each call.
 
@@ -14,14 +14,14 @@ For more information about worklets, see our [Introduction to worklets](/docs/wo
 
 ## Constructor
 
-[`BaseAudioContext.createWorkletProcessingNode(worklet, runtimeKind)`](/docs/core/base-audio-context#createworkletprocessingnode-)
+[`BaseAudioContext.createWorkletProcessingNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletprocessingnode-)
 
 ## Example
 
 ```tsx
 import { AudioContext, AudioRecorder } from 'react-native-audio-api';
 
-/// This example shows how to create a simple gain effect using WorkletProcessingNode
+// This example shows how to create a simple gain effect using WorkletProcessingNode
 function App() {
     const recorder = new AudioRecorder({
       sampleRate: 16000,
@@ -117,11 +117,11 @@ const audioProcessor = (
 
 ## Properties
 
-It has no own properties but inherits from `AudioNode`.
+It has no own properties but inherits from [`AudioNode`](/docs/core/audio-node).
 
 ## Methods
 
-It has no own methods but inherits from `AudioNode`.
+It has no own methods but inherits from [`AudioNode`](/docs/core/audio-node).
 
 ## Performance Considerations
 
@@ -131,7 +131,7 @@ Since `WorkletProcessingNode` processes audio in real-time, performance is criti
 - Avoid complex calculations that could cause audio dropouts
 - Process samples in-place when possible
 - Consider using lookup tables for expensive operations
-- Use `AudioRuntime` for better performance, `UiRuntime` for UI integration
+- Use `AudioRuntime` for better performance, `UIRuntime` for UI integration
 - Test on target devices to ensure smooth audio processing
 
 ## Use Cases
@@ -141,18 +141,3 @@ Since `WorkletProcessingNode` processes audio in real-time, performance is criti
 - **Real-time Filters**: EQ, high-pass, low-pass, band-pass filters
 - **Custom Algorithms**: Noise reduction, pitch shifting, spectral processing
 - **Signal Analysis**: Feature extraction while passing audio through
-
-## Known Issue
-
-It might happen that the worklet side effect is not visible on the UI (when you are using UiRuntime kind). For example you have some animated style which depends on some shared value modified in the worklet.
-
-This is happening because the microtask queue is not always being flushed properly.
-
-To workaround this issue just add this line at the end of your worklet callback function:
-```ts
-requestAnimationFrame(() => {});
-```
-
-This will ensure that the microtask queue is flushed and your UI will be updated properly. But be aware that this might have some performance implications so it is not included by default.
-
-So use this only after confirming that your worklet side effects are not visible on the UI.

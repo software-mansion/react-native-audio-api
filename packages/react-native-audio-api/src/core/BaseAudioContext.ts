@@ -4,7 +4,7 @@ import {
   AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
-  AudioWorkletRuntimeKind,
+  AudioWorkletRuntime,
 } from '../types';
 import { isWorkletsAvailable, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
@@ -46,7 +46,7 @@ export default class BaseAudioContext {
     callback: (audioData: Array<Float32Array>, channelCount: number) => void,
     bufferLength: number,
     inputChannelCount: number,
-    runtimeKind: AudioWorkletRuntimeKind = 'AudioRuntime'
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletNode {
     if (inputChannelCount < 1 || inputChannelCount > 32) {
       throw new NotSupportedError(
@@ -73,7 +73,7 @@ export default class BaseAudioContext {
         this,
         this.context.createWorkletNode(
           shareableWorklet,
-          runtimeKind === 'UiRuntime',
+          workletRuntime === 'UIRuntime',
           bufferLength,
           inputChannelCount
         )
@@ -92,7 +92,7 @@ export default class BaseAudioContext {
       framesToProcess: number,
       currentTime: number
     ) => void,
-    runtimeKind: AudioWorkletRuntimeKind = 'AudioRuntime'
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletProcessingNode {
     if (isWorkletsAvailable) {
       const shareableWorklet = workletsModule.makeShareableCloneRecursive(
@@ -116,7 +116,7 @@ export default class BaseAudioContext {
         this,
         this.context.createWorkletProcessingNode(
           shareableWorklet,
-          runtimeKind === 'UiRuntime'
+          workletRuntime === 'UIRuntime'
         )
       );
     }
@@ -133,7 +133,7 @@ export default class BaseAudioContext {
       currentTime: number,
       startOffset: number
     ) => void,
-    runtimeKind: AudioWorkletRuntimeKind = 'AudioRuntime'
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletSourceNode {
     if (!isWorkletsAvailable) {
       /// User does not have worklets as a dependency so he cannot use the worklet API.
@@ -159,7 +159,7 @@ export default class BaseAudioContext {
       this,
       this.context.createWorkletSourceNode(
         shareableWorklet,
-        runtimeKind === 'UiRuntime'
+        workletRuntime === 'UIRuntime'
       )
     );
   }
