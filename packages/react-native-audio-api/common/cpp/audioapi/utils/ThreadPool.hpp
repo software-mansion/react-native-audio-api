@@ -18,20 +18,20 @@ class ThreadPool {
   struct TaskEvent { std::function<void()> task; };
   using Event = std::variant<TaskEvent, StopEvent>;
 
-  using Sender = audioapi::channels::spsc::Sender<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
-  using Receiver = audioapi::channels::spsc::Receiver<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Sender = channels::spsc::Sender<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Receiver = channels::spsc::Receiver<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 public:
   /// @brief Construct a new ThreadPool
   /// @param numThreads The number of worker threads to create
   /// @param loadBalancerQueueSize The size of the load balancer's queue
   /// @param workerQueueSize The size of each worker thread's queue
   ThreadPool(size_t numThreads, size_t loadBalancerQueueSize = 32, size_t workerQueueSize = 32) {
-    auto [sender, receiver] = audioapi::channels::spsc::channel<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
+    auto [sender, receiver] = channels::spsc::channel<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
     loadBalancerSender = std::move(sender);
     std::vector<Sender> workerSenders;
     workerSenders.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
-      auto [workerSender, workerReceiver] = audioapi::channels::spsc::channel<Event, audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL, audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
+      auto [workerSender, workerReceiver] = channels::spsc::channel<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
       workers.emplace_back(&ThreadPool::workerThreadFunc, this, std::move(workerReceiver));
       workerSenders.emplace_back(std::move(workerSender));
     }
@@ -65,9 +65,12 @@ private:
     Receiver localReceiver = std::move(receiver);
     while (true) {
       auto event = localReceiver.receive();
-      if (std::holds_alternative<StopEvent>(event)) {
+      /// We use [[unlikely]] and [[likely]] attributes to help the compiler optimize the branching.
+      /// we expect most of the time to receive TaskEvent, and rarely StopEvent.
+      /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
+      if (std::holds_alternative<StopEvent>(event)) [[ unlikely ]] {
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) {
+      } else if (std::holds_alternative<TaskEvent>(event)) [[ likely ]] {
         std::get<TaskEvent>(event).task();
       }
     }
@@ -79,13 +82,16 @@ private:
     size_t nextWorker = 0;
     while (true) {
       auto event = localReceiver.receive();
-      if (std::holds_alternative<StopEvent>(event)) {
+      /// We use [[unlikely]] and [[likely]] attributes to help the compiler optimize the branching.
+      /// we expect most of the time to receive TaskEvent, and rarely StopEvent.
+      /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
+      if (std::holds_alternative<StopEvent>(event)) [[ unlikely ]] {
         // Propagate stop event to all workers
         for (size_t i = 0; i < localWorkerSenders.size(); ++i) {
           localWorkerSenders[i].send(StopEvent{});
         }
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) {
+      } else if (std::holds_alternative<TaskEvent>(event)) [[ likely ]] {
         // Dispatch task to the next worker in round-robin fashion
         auto& taskEvent = std::get<TaskEvent>(event);
         localWorkerSenders[nextWorker].send(std::move(taskEvent));
