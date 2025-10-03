@@ -155,7 +155,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       buffers_.pop();
 
       std::unordered_map<std::string, EventValue> body = {
-          {"bufferId", std::to_string(bufferId)}};
+          {"bufferId", std::to_string(bufferId)}, {"isLast", buffers_.empty()}};
       context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
           "ended", onEndedCallbackId_, body);
 
