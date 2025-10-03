@@ -31,12 +31,12 @@ bool AudioParamEventQueue::popFront(ParamChangeEvent &event) {
 
 void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
   while (!eventQueue_.isEmpty()) {
-    auto &front = eventQueue_.peekBack();
-    if (front.getEndTime() < cancelTime) {
+    auto &back = eventQueue_.peekBack();
+    if (back.getEndTime() < cancelTime) {
       break;
     }
-    if (front.getStartTime() >= cancelTime ||
-        front.getType() == ParamChangeEventType::SET_VALUE_CURVE) {
+    if (back.getStartTime() >= cancelTime ||
+        back.getType() == ParamChangeEventType::SET_VALUE_CURVE) {
       eventQueue_.popBack();
     }
   }
@@ -46,8 +46,8 @@ void AudioParamEventQueue::cancelAndHoldAtTime(
     double cancelTime,
     double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
-    auto &front = eventQueue_.peekBack();
-    if (front.getEndTime() < cancelTime || front.getStartTime() <= cancelTime) {
+    auto &back = eventQueue_.peekBack();
+    if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {
       break;
     }
     eventQueue_.popBack();
@@ -59,6 +59,12 @@ void AudioParamEventQueue::cancelAndHoldAtTime(
   }
 
   auto &back = eventQueue_.peekBackMut();
+  back.setEndValue(back.getCalculateValue()(
+      back.getStartTime(),
+      back.getEndTime(),
+      back.getStartValue(),
+      back.getEndValue(),
+      cancelTime));
   back.setEndTime(std::min(cancelTime, back.getEndTime()));
 }
 

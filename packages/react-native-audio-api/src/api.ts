@@ -63,6 +63,7 @@ export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as StreamerNode } from './core/StreamerNode';
+export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as AudioManager } from './system';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';

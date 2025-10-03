@@ -12,6 +12,7 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import ConstantSourceNode from './ConstantSourceNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -115,6 +116,10 @@ export default class BaseAudioContext {
 
   createStreamer(): StreamerNode {
     return new StreamerNode(this, this.context.createStreamer());
+  }
+
+  createConstantSource(): ConstantSourceNode {
+    return new ConstantSourceNode(this, this.context.createConstantSource());
   }
 
   createGain(): GainNode {
