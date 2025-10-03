@@ -67,6 +67,7 @@ add_executable(
   OscillatorTest.cpp
   GainTest.cpp
   AudioParamTest.cpp
+  StereoPannerTest.cpp
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)

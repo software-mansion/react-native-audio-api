@@ -26,12 +26,13 @@ void StereoPannerNode::processNode(
   double deltaTime = 1.0 / context_->getSampleRate();
 
   AudioArray *left = processingBus->getChannelByType(AudioBus::ChannelLeft);
+  // TODO: REFACTOR - RIGHT CHANNEL RETURNS NULL WITH MONO INPUT
   AudioArray *right = processingBus->getChannelByType(AudioBus::ChannelRight);
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)
                             ->getChannel(0)
                             ->getData();
 
-  // Input is mono
+  // Input is mono - THIS IF IS UNREACHABLE
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < framesToProcess; i++) {
       auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
