@@ -29,6 +29,8 @@ AudioBufferSourceNode::~AudioBufferSourceNode() {
 
   buffer_.reset();
   alignedBus_.reset();
+
+  clearOnLoopEndedCallback();
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -123,6 +125,21 @@ void AudioBufferSourceNode::disable() {
   alignedBus_.reset();
 }
 
+void AudioBufferSourceNode::clearOnLoopEndedCallback() {
+  if (onLoopEndedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "loopEnded", onLoopEndedCallbackId_);
+  onLoopEndedCallbackId_ = 0;
+}
+
+void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
+  onLoopEndedCallbackId_ = callbackId;
+}
+
 void AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
@@ -148,6 +165,15 @@ void AudioBufferSourceNode::processNode(
 double AudioBufferSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(
       static_cast<int>(vReadIndex_), buffer_->getSampleRate());
+}
+
+void AudioBufferSourceNode::sendOnLoopEndedEvent() {
+  auto onLoopEndedCallbackId =
+      onLoopEndedCallbackId_.load(std::memory_order_acquire);
+  if (onLoopEndedCallbackId != 0) {
+    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "loopEnded", onLoopEndedCallbackId_, {});
+  }
 }
 
 /**
@@ -217,6 +243,8 @@ void AudioBufferSourceNode::processWithoutInterpolation(
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }
+
+      sendOnLoopEndedEvent();
     }
   }
 
@@ -278,6 +306,8 @@ void AudioBufferSourceNode::processWithInterpolation(
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }
+
+      sendOnLoopEndedEvent();
     }
   }
 }

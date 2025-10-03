@@ -21,7 +21,7 @@ extern "C" {
 }
 class AudioBuffer;
 
-namespace audioapi::ffmpegdecoding {
+namespace audioapi::ffmpegdecoder {
 // Custom IO context for reading from memory
 struct MemoryIOContext {
   const uint8_t *data;
@@ -45,7 +45,7 @@ std::vector<float> readAllPcmFrames(
     int output_channel_count,
     int audio_stream_index,
     size_t &framesRead);
-    
+
 void convertFrameToBuffer(
     SwrContext *swr,
     AVFrame *frame,
@@ -72,4 +72,4 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(
     const std::string &path,
     int sample_rate);
 
-} // namespace audioapi::ffmpegdecoding
+} // namespace audioapi::ffmpegdecoder

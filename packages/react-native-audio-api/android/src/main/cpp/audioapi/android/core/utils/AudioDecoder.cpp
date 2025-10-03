@@ -77,7 +77,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
 #ifndef AUDIO_API_TEST_SUITE
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     auto buffer =
-        ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate));
+        ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       __android_log_print(
           ANDROID_LOG_ERROR,
@@ -128,7 +128,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
       format == AudioFormat::AAC) {
-    auto buffer = ffmpegdecoding::decodeWithMemoryBlock(
+    auto buffer = ffmpegdecoder::decodeWithMemoryBlock(
         data, size, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       __android_log_print(

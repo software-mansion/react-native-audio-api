@@ -81,6 +81,8 @@ s.user_target_xcconfig = {
     -force_load #{lib_dir}/libvorbis.a
     -force_load #{lib_dir}/libvorbisenc.a
     -force_load #{lib_dir}/libvorbisfile.a
+    -force_load #{lib_dir}/libssl.a
+    -force_load #{lib_dir}/libcrypto.a
   ].join(" "),
   'HEADER_SEARCH_PATHS' => %W[
     $(inherited)

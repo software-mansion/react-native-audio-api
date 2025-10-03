@@ -99,6 +99,20 @@ Schedules `AudioBufferSourceNode` to start playback of audio data contained in t
 
 #### Returns `undefined`.
 
+## Events
+
+### `onLoopEnded`
+
+Sets (or remove) callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
+You can remove callback by passing `null`.
+
+
+```ts
+audioBufferSourceNode.onLoopEnded = () => { //setting callback
+  console.log("loop ended");
+};
+```
+
 ## Remarks
 
 #### `buffer`

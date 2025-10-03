@@ -65,7 +65,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate)
 {
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-    auto buffer = ffmpegdecoding::decodeWithFilePath(path, static_cast<int>(sampleRate));
+    auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       NSLog(@"Failed to decode with FFmpeg: %s", path.c_str());
       return nullptr;
@@ -97,7 +97,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *dat
 {
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
-    auto buffer = ffmpegdecoding::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
+    auto buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       NSLog(@"Failed to decode with FFmpeg");
       return nullptr;

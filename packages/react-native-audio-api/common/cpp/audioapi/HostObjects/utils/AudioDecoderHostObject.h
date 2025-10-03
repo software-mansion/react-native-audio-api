@@ -23,7 +23,6 @@ class AudioDecoderHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(decodeWithPCMInBase64);
 
  private:
-  std::shared_ptr<AudioDecoder> decoder_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 } // namespace audioapi

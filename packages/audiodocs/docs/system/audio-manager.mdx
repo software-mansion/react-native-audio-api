@@ -20,7 +20,7 @@ function App() {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
-      iosOptions: ['allowBluetooth', 'allowAirPlay'],
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     })
 
     // set info for track to be visible while device is locked
@@ -92,7 +92,7 @@ Resets all of the lock screen data.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
+| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
 
 #### Returns `undefined`
 
@@ -100,7 +100,7 @@ Resets all of the lock screen data.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| enabled | `boolean` | It is used to set/unset AVAudioSession activity |
+| enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
 #### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.
 
