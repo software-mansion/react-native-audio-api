@@ -22,6 +22,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import ConstantSourceNode from './ConstantSourceNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -174,6 +175,10 @@ export default class BaseAudioContext {
 
   createStreamer(): StreamerNode {
     return new StreamerNode(this, this.context.createStreamer());
+  }
+
+  createConstantSource(): ConstantSourceNode {
+    return new ConstantSourceNode(this, this.context.createConstantSource());
   }
 
   createGain(): GainNode {

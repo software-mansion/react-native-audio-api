@@ -20,6 +20,7 @@ class GainNode;
 class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
+class ConstantSourceNode;
 class StereoPannerNode;
 class AudioNodeManager;
 class BiquadFilterNode;
@@ -52,6 +53,7 @@ class BaseAudioContext {
   std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime, size_t bufferLength, size_t inputChannelCount);
   std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
   std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<ConstantSourceNode> createConstantSource();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();

@@ -34,6 +34,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset, double duration = -1);
   void disable() override;
 
+  void clearOnLoopEndedCallback();
+  void setOnLoopEndedCallbackId(uint64_t callbackId);
+
  protected:
   void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
   double getCurrentPosition() const override;
@@ -48,6 +51,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
+
+  std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
+  void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,

@@ -61,4 +61,57 @@ jsi::Value PromiseVendor::createPromise(
   return promiseCtor.callAsConstructor(runtime, runPromise);
 }
 
+jsi::Value PromiseVendor::createAsyncPromise(
+    std::function<std::variant<jsi::Value, std::string>(jsi::Runtime &)>
+        &&function) {
+  auto &runtime = *runtime_;
+  auto callInvoker = callInvoker_;
+  auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
+  auto promiseLambda = [callInvoker = std::move(callInvoker),
+                        function = std::move(function)](
+                           jsi::Runtime &runtime,
+                           const jsi::Value &thisValue,
+                           const jsi::Value *arguments,
+                           size_t count) -> jsi::Value {
+    auto resolveLocal = arguments[0].asObject(runtime).asFunction(runtime);
+    auto resolve = std::make_shared<jsi::Function>(std::move(resolveLocal));
+    auto rejectLocal = arguments[1].asObject(runtime).asFunction(runtime);
+    auto reject = std::make_shared<jsi::Function>(std::move(rejectLocal));
+
+    /// Here we can swap later for thread pool instead of creating a new thread
+    /// each time
+    std::thread(
+        [callInvoker = std::move(callInvoker),
+         function = std::move(function),
+         resolve = std::move(resolve),
+         reject = std::move(reject)](jsi::Runtime &runtime) {
+          auto result = function(runtime);
+          if (std::holds_alternative<jsi::Value>(result)) {
+            auto valueShared = std::make_shared<jsi::Value>(
+                std::move(std::get<jsi::Value>(result)));
+            callInvoker->invokeAsync(
+                [resolve, &runtime, valueShared]() -> void {
+                  resolve->call(runtime, *valueShared);
+                });
+          } else {
+            auto errorMessage = std::get<std::string>(result);
+            callInvoker->invokeAsync(
+                [reject, &runtime, errorMessage]() -> void {
+                  auto error = jsi::JSError(runtime, errorMessage);
+                  reject->call(runtime, error.value());
+                });
+          }
+        },
+        std::ref(runtime))
+        .detach();
+    return jsi::Value::undefined();
+  };
+  auto promiseFunction = jsi::Function::createFromHostFunction(
+      runtime,
+      jsi::PropNameID::forUtf8(runtime, "asyncPromise"),
+      2,
+      std::move(promiseLambda));
+  return promiseCtor.callAsConstructor(runtime, std::move(promiseFunction));
+}
+
 } // namespace audioapi

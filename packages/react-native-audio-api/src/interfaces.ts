@@ -54,6 +54,7 @@ export interface IBaseAudioContext {
     shouldUseUiRuntime: boolean
   ): IWorkletProcessingNode;
   createOscillator(): IOscillatorNode;
+  createConstantSource(): IConstantSourceNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -159,6 +160,10 @@ export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
 }
 
+export interface IConstantSourceNode extends IAudioScheduledSourceNode {
+  readonly offset: IAudioParam;
+}
+
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   buffer: IAudioBuffer | null;
   loop: boolean;
@@ -168,6 +173,9 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
   start: (when?: number, offset?: number, duration?: number) => void;
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onLoopEnded: string;
 }
 
 export interface IAudioBufferQueueSourceNode

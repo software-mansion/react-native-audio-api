@@ -11596,10 +11596,10 @@ react-loadable-ssr-addon-v5-slorber@^1.0.1:
   dependencies:
     "@types/react" "*"
 
-"react-native-audio-api@workspace:*":
-  version "0.7.2-nightly-c06331b-20250824"
-  resolved "https://registry.yarnpkg.com/react-native-audio-api/-/react-native-audio-api-0.7.2-nightly-c06331b-20250824.tgz#d9e836248070ce0900a88a724a9dbbcd7d344a62"
-  integrity sha512-1pJSF0PigT0De5YM3Ty+NqjPjn9JvYhXDB03KmuyBfuAPVKhv/rbfqEelwZ9q1K+AGekdZkkcb9KjtjgO/e7Xw==
+react-native-audio-api@*:
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/react-native-audio-api/-/react-native-audio-api-0.8.2.tgz#5deb4ffe07538b8d1c747af3903025632a23f6a2"
+  integrity sha512-p+a7gL1wy09yXoqUTYdO+tAQe/G7DpWFrFUDULu4dFUsyPaVd0T10Y7Nf5P391Ldg5A6F/aIfoUtKf150RyKmw==
 
 react-native-canvas@^0.1.40:
   version "0.1.40"
