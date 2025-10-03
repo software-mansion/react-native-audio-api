@@ -49,7 +49,12 @@ const PlaybackSpeed: FC = () => {
     setIsLoading(true);
 
     try {
-      const buffer = await audioContext.decodeAudioData(PCM_DATA);
+      const buffer = await audioContext.decodePCMInBase64(
+        PCM_DATA,
+        48000,
+        1,
+        true
+      );
 
       const source = audioContext.createBufferSource({
         pitchCorrection: audioSettings.PSOLA

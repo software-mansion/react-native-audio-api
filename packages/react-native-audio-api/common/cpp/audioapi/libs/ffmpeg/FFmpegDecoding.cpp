@@ -12,8 +12,9 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <functional>
 
-namespace audioapi::ffmpegdecoding {
+namespace audioapi::ffmpegdecoder {
 
 int read_packet(void *opaque, uint8_t *buf, int buf_size) {
   MemoryIOContext *ctx = static_cast<MemoryIOContext *>(opaque);
@@ -360,4 +361,4 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(
       fmt_ctx.get(), codec_ctx.get(), audio_stream_index, sample_rate);
 }
 
-} // namespace audioapi::ffmpegdecoding
+} // namespace audioapi::ffmpegdecoder
