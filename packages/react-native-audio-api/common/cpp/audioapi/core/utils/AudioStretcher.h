@@ -10,7 +10,7 @@ class AudioBuffer;
 
 class AudioStretcher {
  public:
-  explicit AudioStretcher() {}
+  AudioStretcher() = delete;
 
   [[nodiscard]] static std::shared_ptr<AudioBuffer> changePlaybackSpeed(
       AudioBuffer buffer,

@@ -21,7 +21,6 @@ class AudioStretcherHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(changePlaybackSpeed);
 
  private:
-  std::shared_ptr<AudioStretcher> stretcher_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 } // namespace audioapi

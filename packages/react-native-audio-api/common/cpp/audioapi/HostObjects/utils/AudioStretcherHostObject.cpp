@@ -17,7 +17,6 @@ AudioStretcherHostObject::AudioStretcherHostObject(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-  stretcher_ = std::make_shared<AudioStretcher>();
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioStretcherHostObject, changePlaybackSpeed));
 }
@@ -27,34 +26,25 @@ JSI_HOST_FUNCTION_IMPL(AudioStretcherHostObject, changePlaybackSpeed) {
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   auto playbackSpeed = static_cast<float>(args[1].asNumber());
 
-  auto promise = promiseVendor_->createPromise(
-      [this, audioBuffer, playbackSpeed](std::shared_ptr<Promise> promise) {
-        std::thread([this,
-                     audioBuffer,
-                     playbackSpeed,
-                     promise = std::move(promise)]() {
-          auto result = stretcher_->changePlaybackSpeed(
-              *audioBuffer->audioBuffer_, playbackSpeed);
+  return promiseVendor_->createAsyncPromise(
+      [audioBuffer, playbackSpeed](
+          jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+        auto result = AudioStretcher::changePlaybackSpeed(
+            *audioBuffer->audioBuffer_, playbackSpeed);
 
-          if (!result) {
-            promise->reject("Failed to change audio playback speed.");
-            return;
-          }
+        if (!result) {
+          return std::string("Failed to change audio playback speed.");
+        }
 
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject =
+            std::make_shared<AudioBufferHostObject>(result);
 
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
+        auto jsiObject =
+            jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+        jsiObject.setExternalMemoryPressure(
+            runtime, audioBufferHostObject->getSizeInBytes());
+        return jsiObject;
       });
-  return promise;
 }
 
 } // namespace audioapi
