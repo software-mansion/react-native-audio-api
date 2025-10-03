@@ -17,7 +17,7 @@ static constexpr int CHUNK_SIZE = 4096;
 
 class AudioDecoder {
  public:
-  explicit AudioDecoder() {}
+  AudioDecoder() = delete;
 
   [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, float sampleRate);
   [[nodiscard]] static std::shared_ptr<AudioBuffer>
