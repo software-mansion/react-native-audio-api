@@ -144,7 +144,8 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
   assert(processingBus != nullptr);
 
   // Finally, process the node itself.
-  return processNode(processingBus, framesToProcess);;
+  return processNode(processingBus, framesToProcess);
+  ;
 }
 
 bool AudioNode::isAlreadyProcessed() {
