@@ -21,7 +21,8 @@ class AudioBus;
 
 class BiquadFilterNode : public AudioNode {
 #ifdef AUDIO_API_TEST_SUITE
-  FRIEND_TEST(BiquadFilterTest, TestHighpassCoefficients);
+  friend class BiquadFilterTest;
+  FRIEND_TEST(BiquadFilterTest, TestLowpassCoefficients);
 #endif
 
  public:
