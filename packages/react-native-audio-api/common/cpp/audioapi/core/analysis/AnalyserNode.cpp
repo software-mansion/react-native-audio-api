@@ -143,7 +143,7 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   }
 }
 
-void AnalyserNode::processNode(
+std::shared_ptr<AudioBus> AnalyserNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   // Analyser should behave like a sniffer node, it should not modify the
@@ -156,6 +156,8 @@ void AnalyserNode::processNode(
       downMixBus_->getChannel(0)->getData(), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
+
+  return processingBus;
 }
 
 void AnalyserNode::doFFTAnalysis() {

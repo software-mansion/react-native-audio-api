@@ -7,7 +7,7 @@ MyProcessorNode::MyProcessorNode(BaseAudioContext *context)
     isInitialized_ = true;
 }
 
-void MyProcessorNode::processNode(const std::shared_ptr<AudioBus> &bus,
+std::shared_ptr<AudioBus> MyProcessorNode::processNode(const std::shared_ptr<AudioBus> &bus,
                                   int framesToProcess) {
     // put your processing logic here
 }

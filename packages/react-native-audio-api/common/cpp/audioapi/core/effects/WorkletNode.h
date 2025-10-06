@@ -26,7 +26,7 @@ class WorkletNode : public AudioNode {
   ) : AudioNode(context) {}
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override { return processingBus; }
 };
 #else
 
@@ -45,7 +45,7 @@ class WorkletNode : public AudioNode {
   ~WorkletNode() override;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
 
  private:

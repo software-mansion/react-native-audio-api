@@ -28,7 +28,7 @@ WorkletNode::~WorkletNode() {
   }
 }
 
-void WorkletNode::processNode(
+std::shared_ptr<AudioBus> WorkletNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t processed = 0;
@@ -82,6 +82,8 @@ void WorkletNode::processNode(
           });
     }
   }
+
+  return processingBus;
 }
 
 } // namespace audioapi
