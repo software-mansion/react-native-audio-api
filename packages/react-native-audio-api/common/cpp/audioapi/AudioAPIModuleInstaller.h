@@ -24,23 +24,17 @@ using namespace facebook;
 class AudioAPIModuleInstaller {
  public:
   static void injectJSIBindings(
-        jsi::Runtime *jsiRuntime,
-        const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-        const std::shared_ptr<AudioEventHandlerRegistry>
-
-          &audioEventHandlerRegistry,
-        std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+      const std::shared_ptr<AudioEventHandlerRegistry>
+        &audioEventHandlerRegistry,
+      std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
     auto createAudioContext = getCreateAudioContextFunction(
-
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioRecorder =
-
         getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(
-
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
-    auto createAudioDecoder =
-        getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioDecoder =
         getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioStretcher =
@@ -69,11 +63,11 @@ class AudioAPIModuleInstaller {
 
  private:
   static jsi::Function getCreateAudioContextFunction(
-        jsi::Runtime *jsiRuntime,
-        const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-        const std::shared_ptr<AudioEventHandlerRegistry>
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
+      const std::shared_ptr<AudioEventHandlerRegistry>
           &audioEventHandlerRegistry,
-        const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
+      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
