@@ -30,10 +30,10 @@ class TestableStereoPannerNode : public StereoPannerNode {
     getPanParam()->setValue(value);
   }
 
-  void processNode(
+  std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override {
-    StereoPannerNode::processNode(processingBus, framesToProcess);
+    return StereoPannerNode::processNode(processingBus, framesToProcess);
   }
 };
 
@@ -53,17 +53,21 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   for (size_t i = 0; i < bus->getSize(); ++i) {
     (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
   }
-  // TODO: IT FAILES WITH MONO INPUT BECAUSE RIGHT CHANNEL RETURNS NULL IN
-  // STEREO PANNER panNode->processNode(bus, FRAMES_TO_PROCESS);
-  // // x = (0.5 + 1) / 2 = 0.75
-  // // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
-  // // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
-  // for (size_t i = 0; i < bus->getSize(); ++i) {
-  //   EXPECT_NEAR((*bus->getChannelByType(AudioBus::ChannelLeft))[i], (i + 1) *
-  //   0.38268343236508984, 1e-4);
-  //   EXPECT_NEAR((*bus->getChannelByType(AudioBus::ChannelRight))[i], (i + 1)
-  //   * 0.9238795325112867, 1e-4);
-  // }
+
+  auto resultBus = panNode->processNode(bus, FRAMES_TO_PROCESS);
+  // x = (0.5 + 1) / 2 = 0.75
+  // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
+  // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_NEAR(
+        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (i + 1) * 0.38268343236508984,
+        1e-4);
+    EXPECT_NEAR(
+        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
+        (i + 1) * 0.9238795325112867,
+        1e-4);
+  }
 }
 
 TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
@@ -79,17 +83,17 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
     (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;
   }
 
-  panNode->processNode(bus, FRAMES_TO_PROCESS);
-  // // x = -0.5 + 1 = 0.5
-  // // gainL = cos(x * (π / 2)) = cos(0.5 * (π / 2)) = 0.7071067811865476
-  // // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
-  for (size_t i = 0; i < bus->getSize(); ++i) {
+  auto resultBus = panNode->processNode(bus, FRAMES_TO_PROCESS);
+  // x = -0.5 + 1 = 0.5
+  // gainL = cos(x * (π / 2)) = cos(0.5 * (π / 2)) = 0.7071067811865476
+  // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*bus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
         (i + 1) + (i + 1) * 0.7071067811865476,
         1e-4);
     EXPECT_NEAR(
-        (*bus->getChannelByType(AudioBus::ChannelRight))[i],
+        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
         (i + 1) * 0.7071067811865476,
         1e-4);
   }
@@ -108,17 +112,17 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
     (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;
   }
 
-  panNode->processNode(bus, FRAMES_TO_PROCESS);
-  // // x = 0.75
-  // // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
-  // // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
-  for (size_t i = 0; i < bus->getSize(); ++i) {
+  auto resultBus = panNode->processNode(bus, FRAMES_TO_PROCESS);
+  // x = 0.75
+  // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
+  // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*bus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
         (i + 1) * 0.38268343236508984,
         1e-4);
     EXPECT_NEAR(
-        (*bus->getChannelByType(AudioBus::ChannelRight))[i],
+        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
         (i + 1) + (i + 1) * 0.9238795325112867,
         1e-4);
   }
