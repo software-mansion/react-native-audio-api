@@ -9,7 +9,7 @@ public:
   explicit MyProcessorNode(BaseAudioContext *context);
 
 protected:
-  void processNode(const std::shared_ptr<AudioBus> &bus,
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &bus,
                    int framesToProcess) override;
 
 };

@@ -66,8 +66,10 @@ jsi::Value PromiseVendor::createAsyncPromise(
         &&function) {
   auto &runtime = *runtime_;
   auto callInvoker = callInvoker_;
+  auto threadPool = threadPool_;
   auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-  auto promiseLambda = [callInvoker = std::move(callInvoker),
+  auto promiseLambda = [threadPool = std::move(threadPool),
+                        callInvoker = std::move(callInvoker),
                         function = std::move(function)](
                            jsi::Runtime &runtime,
                            const jsi::Value &thisValue,
@@ -78,32 +80,26 @@ jsi::Value PromiseVendor::createAsyncPromise(
     auto rejectLocal = arguments[1].asObject(runtime).asFunction(runtime);
     auto reject = std::make_shared<jsi::Function>(std::move(rejectLocal));
 
-    /// Here we can swap later for thread pool instead of creating a new thread
-    /// each time
-    std::thread(
-        [callInvoker = std::move(callInvoker),
-         function = std::move(function),
-         resolve = std::move(resolve),
-         reject = std::move(reject)](jsi::Runtime &runtime) {
-          auto result = function(runtime);
-          if (std::holds_alternative<jsi::Value>(result)) {
-            auto valueShared = std::make_shared<jsi::Value>(
-                std::move(std::get<jsi::Value>(result)));
-            callInvoker->invokeAsync(
-                [resolve, &runtime, valueShared]() -> void {
-                  resolve->call(runtime, *valueShared);
-                });
-          } else {
-            auto errorMessage = std::get<std::string>(result);
-            callInvoker->invokeAsync(
-                [reject, &runtime, errorMessage]() -> void {
-                  auto error = jsi::JSError(runtime, errorMessage);
-                  reject->call(runtime, error.value());
-                });
-          }
-        },
-        std::ref(runtime))
-        .detach();
+    threadPool->schedule([callInvoker = std::move(callInvoker),
+                          function = std::move(function),
+                          resolve = std::move(resolve),
+                          reject = std::move(reject),
+                          &runtime]() {
+      auto result = function(runtime);
+      if (std::holds_alternative<jsi::Value>(result)) {
+        auto valueShared = std::make_shared<jsi::Value>(
+            std::move(std::get<jsi::Value>(result)));
+        callInvoker->invokeAsync([resolve, &runtime, valueShared]() -> void {
+          resolve->call(runtime, *valueShared);
+        });
+      } else {
+        auto errorMessage = std::get<std::string>(result);
+        callInvoker->invokeAsync([reject, &runtime, errorMessage]() -> void {
+          auto error = jsi::JSError(runtime, errorMessage);
+          reject->call(runtime, error.value());
+        });
+      }
+    });
     return jsi::Value::undefined();
   };
   auto promiseFunction = jsi::Function::createFromHostFunction(

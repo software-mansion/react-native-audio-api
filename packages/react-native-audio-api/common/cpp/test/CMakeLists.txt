@@ -30,6 +30,8 @@ list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletNode.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletProcessingNode.cpp"
+  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/WorkletSourceNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.h"
   "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
@@ -64,6 +66,8 @@ add_executable(
   tests
   OscillatorTest.cpp
   GainTest.cpp
+  AudioParamTest.cpp
+  StereoPannerTest.cpp
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)

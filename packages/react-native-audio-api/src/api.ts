@@ -13,12 +13,16 @@ import type {
 declare global {
   var createAudioContext: (
     sampleRate: number,
-    initSuspended: boolean
+    initSuspended: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    audioWorkletRuntime: any
   ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
-    sampleRate: number
+    sampleRate: number,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    audioWorkletRuntime: any
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
@@ -49,6 +53,8 @@ if (
 }
 
 export { default as WorkletNode } from './core/WorkletNode';
+export { default as WorkletSourceNode } from './core/WorkletSourceNode';
+export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as RecorderAdapterNode } from './core/RecorderAdapterNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
@@ -67,6 +73,7 @@ export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as StreamerNode } from './core/StreamerNode';
+export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as AudioManager } from './system';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
@@ -80,6 +87,7 @@ export {
   ContextState,
   WindowType,
   PeriodicWaveConstraints,
+  AudioWorkletRuntime,
 } from './types';
 
 export {

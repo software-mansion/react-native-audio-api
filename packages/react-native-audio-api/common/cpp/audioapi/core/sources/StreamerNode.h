@@ -44,7 +44,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   void stop(double when) override;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   #ifndef AUDIO_API_TEST_SUITE

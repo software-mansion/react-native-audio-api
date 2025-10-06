@@ -2,7 +2,6 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <cassert>
 #include <complex>
@@ -20,6 +19,7 @@ class GainNode;
 class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
+class ConstantSourceNode;
 class StereoPannerNode;
 class AudioNodeManager;
 class BiquadFilterNode;
@@ -30,12 +30,14 @@ class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WorkletSourceNode;
 class WorkletNode;
+class WorkletProcessingNode;
 class StreamerNode;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const std::shared_ptr<UiWorkletsRunner> &workletRunner);
+  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -45,8 +47,11 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
-  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, size_t bufferLength, size_t inputChannelCount);
+  std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
+  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime, size_t bufferLength, size_t inputChannelCount);
+  std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
   std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<ConstantSourceNode> createConstantSource();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
@@ -88,7 +93,7 @@ class BaseAudioContext {
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-    std::shared_ptr<UiWorkletsRunner> workletRunner_;
+    RuntimeRegistry runtimeRegistry_;
 };
 
 } // namespace audioapi

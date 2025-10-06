@@ -15,6 +15,7 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import ConstantSourceNode from './ConstantSourceNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -57,6 +58,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this, this.context.createOscillator());
+  }
+
+  createConstantSource(): ConstantSourceNode {
+    return new ConstantSourceNode(this, this.context.createConstantSource());
   }
 
   createGain(): GainNode {

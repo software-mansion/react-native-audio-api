@@ -23,7 +23,7 @@ void RecorderAdapterNode::init(size_t bufferSize) {
   buff_ = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
 }
 
-void RecorderAdapterNode::processNode(
+std::shared_ptr<AudioBus> RecorderAdapterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   float *outputChannel = processingBus->getChannel(0)->getData();
@@ -33,6 +33,8 @@ void RecorderAdapterNode::processNode(
     processingBus->getChannel(i)->copy(
         processingBus->getChannel(0), 0, framesToProcess);
   }
+
+  return processingBus;
 }
 
 void RecorderAdapterNode::readFrames(float *output, const size_t framesToRead) {

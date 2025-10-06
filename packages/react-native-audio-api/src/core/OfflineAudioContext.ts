@@ -3,11 +3,16 @@ import BaseAudioContext from './BaseAudioContext';
 import { OfflineAudioContextOptions } from '../types';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import AudioBuffer from './AudioBuffer';
+import { isWorkletsAvailable, workletsModule } from '../utils';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
   private isRendering: boolean;
   private duration: number;
+
+  // We need to keep here a reference to this runtime to better manage its lifecycle
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  private _audioRuntime: any;
 
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
@@ -16,10 +21,20 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg1?: number,
     arg2?: number
   ) {
+    let audioRuntime = null;
+    if (isWorkletsAvailable) {
+      audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
+    }
+
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;
       super(
-        global.createOfflineAudioContext(numberOfChannels, length, sampleRate)
+        global.createOfflineAudioContext(
+          numberOfChannels,
+          length,
+          sampleRate,
+          audioRuntime
+        )
       );
 
       this.duration = length / sampleRate;
@@ -28,7 +43,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
-      super(global.createOfflineAudioContext(arg0, arg1, arg2));
+      super(global.createOfflineAudioContext(arg0, arg1, arg2, audioRuntime));
       this.duration = arg1 / arg2;
     } else {
       throw new NotSupportedError('Invalid constructor arguments');
@@ -36,6 +51,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isSuspended = false;
     this.isRendering = false;
+    this._audioRuntime = audioRuntime;
   }
 
   async resume(): Promise<undefined> {

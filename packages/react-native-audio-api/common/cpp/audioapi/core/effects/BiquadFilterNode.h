@@ -33,7 +33,7 @@ class BiquadFilterNode : public AudioNode {
       int length);
 
  protected:
-  void processNode(
+  std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override;
 

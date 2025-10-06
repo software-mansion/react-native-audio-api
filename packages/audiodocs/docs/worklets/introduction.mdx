@@ -26,9 +26,27 @@ Simply put, a worklet is a piece of code that can be executed on a runtime diffe
 
 ## What kind of worklets are used in react-native-audio-api?
 
-All of our worklets are currently executed on the UI runtime provided by the `RNWorklets` library.
+We support two types of worklet runtimes, each optimized for different use cases:
 
-This allows the use of Reanimated utilities and features inside the worklets. Our main goal is to enable seamless integration with the UI - for example, creating animations from audio data.
+### UIRuntime
+Worklets executed on the UI runtime provided by the `RNWorklets` library. This allows the use of Reanimated utilities and features inside the worklets. The main goal is to enable seamless integration with the UI - for example, creating animations from audio data.
+
+**Use UIRuntime when:**
+- You need to update UI elements from audio data
+- Creating visualizations or animations based on audio
+- Integrating with Reanimated shared values
+- Performance is less critical than UI responsiveness
+
+### AudioRuntime
+Worklets executed on the audio rendering thread for maximum performance and minimal latency. This runtime is optimized for real-time audio processing where timing is critical.
+
+**Use AudioRuntime when:**
+- Performance and low latency are crucial
+- Processing audio in real-time without dropouts
+- Generating audio with precise timing
+- Audio processing doesn't need to interact with UI
+
+You can specify the runtime type when creating worklet nodes using the `workletRuntime` parameter.
 
 ## How to use worklets in react-native-audio-api mindfully?
 

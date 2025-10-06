@@ -2,7 +2,7 @@
 
 
 #include <jsi/jsi.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/utils/AudioBus.h>
@@ -20,13 +20,13 @@ class WorkletNode : public AudioNode {
   explicit WorkletNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
       size_t bufferLength,
       size_t inputChannelCount
   ) : AudioNode(context) {}
-  ~WorkletNode() override = default;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override { return processingBus; }
 };
 #else
 
@@ -37,6 +37,7 @@ class WorkletNode : public AudioNode {
   explicit WorkletNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
       size_t bufferLength,
       size_t inputChannelCount
   );
@@ -44,11 +45,11 @@ class WorkletNode : public AudioNode {
   ~WorkletNode() override;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
 
  private:
-  std::shared_ptr<UiWorkletsRunner> workletRunner_;
+  WorkletsRunner workletRunner_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<uint8_t*> buffs_;
 

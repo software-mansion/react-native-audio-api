@@ -8,6 +8,7 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import ConstantSourceNode from './ConstantSourceNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -18,6 +19,7 @@ export default interface BaseAudioContext {
   get currentTime(): number;
   get state(): ContextState;
   createOscillator(): OscillatorNode;
+  createConstantSource(): ConstantSourceNode;
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;

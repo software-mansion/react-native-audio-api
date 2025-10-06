@@ -47,7 +47,7 @@
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.5",
     "react-native": "^0.71.4",
-    "react-native-audio-api": "workspace:*",
+    "react-native-audio-api": "*",
     "react-native-canvas": "^0.1.40",
     "react-native-gesture-handler": "^2.16.0",
     "react-native-reanimated": "^4.0.3",

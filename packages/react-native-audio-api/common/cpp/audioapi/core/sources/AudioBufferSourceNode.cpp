@@ -140,14 +140,14 @@ void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
   onLoopEndedCallbackId_ = callbackId;
 }
 
-void AudioBufferSourceNode::processNode(
+std::shared_ptr<AudioBus> AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!alignedBus_) {
       processingBus->zero();
-      return;
+      return processingBus;
     }
 
     if (!pitchCorrection_) {
@@ -160,6 +160,8 @@ void AudioBufferSourceNode::processNode(
   } else {
     processingBus->zero();
   }
+
+  return processingBus;
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {

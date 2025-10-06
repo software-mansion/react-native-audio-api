@@ -8,10 +8,29 @@ import {
   WindowType,
 } from './types';
 
-export type ShareableWorkletCallback = (
-  audioBuffers: Array<ArrayBuffer>,
+export type WorkletNodeCallback = (
+  audioData: Array<ArrayBuffer>,
   channelCount: number
 ) => void;
+
+export type WorkletSourceNodeCallback = (
+  audioData: Array<ArrayBuffer>,
+  framesToProcess: number,
+  currentTime: number,
+  startOffset: number
+) => void;
+
+export type WorkletProcessingNodeCallback = (
+  inputData: Array<ArrayBuffer>,
+  outputData: Array<ArrayBuffer>,
+  framesToProcess: number,
+  currentTime: number
+) => void;
+
+export type ShareableWorkletCallback =
+  | WorkletNodeCallback
+  | WorkletSourceNodeCallback
+  | WorkletProcessingNodeCallback;
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
@@ -22,12 +41,22 @@ export interface IBaseAudioContext {
   readonly stretcher: IAudioStretcher;
 
   createRecorderAdapter(): IRecorderAdapterNode;
+  createWorkletSourceNode(
+    shareableWorklet: ShareableWorkletCallback,
+    shouldUseUiRuntime: boolean
+  ): IWorkletSourceNode;
   createWorkletNode(
     shareableWorklet: ShareableWorkletCallback,
+    shouldUseUiRuntime: boolean,
     bufferLength: number,
     inputChannelCount: number
   ): IWorkletNode;
+  createWorkletProcessingNode(
+    shareableWorklet: ShareableWorkletCallback,
+    shouldUseUiRuntime: boolean
+  ): IWorkletProcessingNode;
   createOscillator(): IOscillatorNode;
+  createConstantSource(): IConstantSourceNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
@@ -127,6 +156,10 @@ export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
 }
 
+export interface IConstantSourceNode extends IAudioScheduledSourceNode {
+  readonly offset: IAudioParam;
+}
+
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   buffer: IAudioBuffer | null;
   loop: boolean;
@@ -212,6 +245,10 @@ export interface IAnalyserNode extends IAudioNode {
 export interface IRecorderAdapterNode extends IAudioNode {}
 
 export interface IWorkletNode extends IAudioNode {}
+
+export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
+
+export interface IWorkletProcessingNode extends IAudioNode {}
 
 export interface IAudioRecorder {
   start: () => void;

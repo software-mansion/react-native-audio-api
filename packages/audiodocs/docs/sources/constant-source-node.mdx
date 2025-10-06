@@ -1,0 +1,84 @@
+---
+sidebar_position: 6
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# ConstantSourceNode
+
+The `ConstantSourceNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents an audio source, that outputs a single constant value.
+The `offset` parameter controls this value. Although the node is called "constant" its `offset` value can be automated to change over time, which makes it powerful tool
+for controlling multiple other [`AudioParam`](/docs/core/audio-param) values in an audio graph.
+Just like `AudioScheduledSourceNode`, it can be started only once.
+
+#### [`AudioNode`](/docs/core/audio-node#properties) properties
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createConstantSource()`](/docs/core/base-audio-context#createconstantsource)
+
+## Example
+
+```tsx
+import React, { useRef } from 'react';
+import { Text } from 'react-native';
+import {
+  AudioContext,
+  OscillatorNode, 
+  GainNode,
+  ConstantSourceNode
+} from 'react-native-audio-api';
+
+function App() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContext();
+  }
+  const audioContext = audioContextRef.current;
+
+  const oscillator1 = audioContext.createOscillator();
+  const oscillator2 = audioContext.createOscillator();
+  const gainNode1 = audioContext.createGain();
+  const gainNode2 = audioContext.createGain();
+  const constantSource = audioContext.createConstantSource();
+
+  oscillator1.frequency.value = 440;
+  oscillator2.frequency.value = 392;
+  constantSource.offset.value = 0.5;
+
+  oscillator1.connect(gainNode1);
+  gainNode1.connect(audioContext.destination);
+
+  oscillator2.connect(gainNode2);
+  gainNode2.connect(audioContext.destination);
+
+  // We connect the constant source to the gain nodes gain AudioParams 
+  // to control both of them at the same time
+  constantSource.connect(gainNode1.gain);
+  constantSource.connect(gainNode2.gain);
+
+  oscillator1.start(audioContext.currentTime);
+  oscillator2.start(audioContext.currentTime);
+  constantSource.start(audioContext.currentTime);
+}
+```
+
+## Properties
+
+It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+
+| Name | Type | Default value | Description |
+| :----: | :----: | :-------- | :------- |
+| `offset` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 1 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
+
+## Methods
+
+It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+
+## Remarks
+
+#### `offset`
+- Float. Default: 1.

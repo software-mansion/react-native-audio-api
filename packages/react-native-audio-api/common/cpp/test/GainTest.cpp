@@ -1,5 +1,6 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
@@ -14,7 +15,7 @@ class GainTest : public ::testing::Test {
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_unique<audioapi::OfflineAudioContext>(
-        2, 5 * sampleRate, sampleRate, eventRegistry, nullptr);
+        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };
 
@@ -27,10 +28,10 @@ class TestableGainNode : public audioapi::GainNode {
     getGainParam()->setValue(value);
   }
 
-  void processNode(
+  std::shared_ptr<audioapi::AudioBus> processNode(
       const std::shared_ptr<audioapi::AudioBus> &processingBus,
       int framesToProcess) override {
-    audioapi::GainNode::processNode(processingBus, framesToProcess);
+    return audioapi::GainNode::processNode(processingBus, framesToProcess);
   }
 };
 
@@ -51,9 +52,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
     bus->getChannel(0)->getData()[i] = i + 1;
   }
 
-  gainNode->processNode(bus, FRAMES_TO_PROCESS);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    EXPECT_FLOAT_EQ((*bus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
+  auto resultBus = gainNode->processNode(bus, FRAMES_TO_PROCESS);
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
   }
 }
 
@@ -70,9 +71,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     bus->getChannel(1)->getData()[i] = -i - 1;
   }
 
-  gainNode->processNode(bus, FRAMES_TO_PROCESS);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    EXPECT_FLOAT_EQ((*bus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
-    EXPECT_FLOAT_EQ((*bus->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
+  auto resultBus = gainNode->processNode(bus, FRAMES_TO_PROCESS);
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
+    EXPECT_FLOAT_EQ((*resultBus->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
   }
 }
