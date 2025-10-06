@@ -4,7 +4,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
-#include "MockAudioEventHandlerRegistry.h"
+#include <test/MockAudioEventHandlerRegistry.h>
 
 class GainTest : public ::testing::Test {
  protected:

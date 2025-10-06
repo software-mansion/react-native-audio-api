@@ -57,6 +57,8 @@ target_include_directories(rnaudioapi PUBLIC
   ${JSI_DIR}
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+  ${gtest_SOURCE_DIR}/include
+  ${gmock_SOURCE_DIR}/include
 )
 
 target_include_directories(rnaudioapi_libs PUBLIC
@@ -67,6 +69,8 @@ add_executable(
   OscillatorTest.cpp
   GainTest.cpp
   AudioParamTest.cpp
+  BiquadFilterTest.h
+  BiquadFilterTest.cpp
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)

@@ -2,7 +2,7 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
-#include "MockAudioEventHandlerRegistry.h"
+#include <test/MockAudioEventHandlerRegistry.h>
 
 class OscillatorTest : public ::testing::Test {
  protected:
