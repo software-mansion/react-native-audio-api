@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BaseAudioContext.h"
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <mutex>
 #include <map>
@@ -15,7 +15,7 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const std::shared_ptr<UiWorkletsRunner> &workletRunner);
+  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
   void resume();

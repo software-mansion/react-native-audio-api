@@ -43,3 +43,10 @@ class SerializableWorklet {
 };
 } // namespace worklets
 #endif
+
+/// @brief Struct to hold references to different runtimes used in the AudioAPI
+/// @note it is used to pass them around and avoid creating multiple instances of the same runtime
+struct RuntimeRegistry {
+  std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
+  std::weak_ptr<worklets::WorkletRuntime> audioRuntime;
+};

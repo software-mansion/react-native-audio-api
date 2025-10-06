@@ -4,8 +4,11 @@ import {
   AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
+  AudioWorkletRuntime,
 } from '../types';
 import { isWorkletsAvailable, workletsModule } from '../utils';
+import WorkletSourceNode from './WorkletSourceNode';
+import WorkletProcessingNode from './WorkletProcessingNode';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
@@ -68,7 +71,8 @@ export default class BaseAudioContext {
   createWorkletNode(
     callback: (audioData: Array<Float32Array>, channelCount: number) => void,
     bufferLength: number,
-    inputChannelCount: number
+    inputChannelCount: number,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletNode {
     if (inputChannelCount < 1 || inputChannelCount > 32) {
       throw new NotSupportedError(
@@ -95,6 +99,7 @@ export default class BaseAudioContext {
         this,
         this.context.createWorkletNode(
           shareableWorklet,
+          workletRuntime === 'UIRuntime',
           bufferLength,
           inputChannelCount
         )
@@ -103,6 +108,85 @@ export default class BaseAudioContext {
     /// User does not have worklets as a dependency so he cannot use the worklet API.
     throw new Error(
       '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
+  }
+
+  createWorkletProcessingNode(
+    callback: (
+      inputData: Array<Float32Array>,
+      outputData: Array<Float32Array>,
+      framesToProcess: number,
+      currentTime: number
+    ) => void,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
+  ): WorkletProcessingNode {
+    if (isWorkletsAvailable) {
+      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+        (
+          inputBuffers: Array<ArrayBuffer>,
+          outputBuffers: Array<ArrayBuffer>,
+          framesToProcess: number,
+          currentTime: number
+        ) => {
+          'worklet';
+          const inputData: Array<Float32Array> = inputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          const outputData: Array<Float32Array> = outputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          callback(inputData, outputData, framesToProcess, currentTime);
+        }
+      );
+      return new WorkletProcessingNode(
+        this,
+        this.context.createWorkletProcessingNode(
+          shareableWorklet,
+          workletRuntime === 'UIRuntime'
+        )
+      );
+    }
+    /// User does not have worklets as a dependency so he cannot use the worklet API.
+    throw new Error(
+      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
+  }
+
+  createWorkletSourceNode(
+    callback: (
+      audioData: Array<Float32Array>,
+      framesToProcess: number,
+      currentTime: number,
+      startOffset: number
+    ) => void,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
+  ): WorkletSourceNode {
+    if (!isWorkletsAvailable) {
+      /// User does not have worklets as a dependency so he cannot use the worklet API.
+      throw new Error(
+        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+      );
+    }
+    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+      (
+        audioBuffers: Array<ArrayBuffer>,
+        framesToProcess: number,
+        currentTime: number,
+        startOffset: number
+      ) => {
+        'worklet';
+        const floatAudioData: Array<Float32Array> = audioBuffers.map(
+          (buffer) => new Float32Array(buffer)
+        );
+        callback(floatAudioData, framesToProcess, currentTime, startOffset);
+      }
+    );
+    return new WorkletSourceNode(
+      this,
+      this.context.createWorkletSourceNode(
+        shareableWorklet,
+        workletRuntime === 'UIRuntime'
+      )
     );
   }
 

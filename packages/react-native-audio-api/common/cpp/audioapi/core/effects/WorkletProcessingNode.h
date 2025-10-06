@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <jsi/jsi.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/core/AudioNode.h>
@@ -15,14 +14,12 @@
 namespace audioapi {
 
 #if RN_AUDIO_API_TEST
-class WorkletNode : public AudioNode {
+class WorkletProcessingNode : public AudioNode {
  public:
-  explicit WorkletNode(
+  explicit WorkletProcessingNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      size_t bufferLength,
-      size_t inputChannelCount
+      std::weak_ptr<worklets::WorkletRuntime> runtime
   ) : AudioNode(context) {}
 
  protected:
@@ -32,32 +29,22 @@ class WorkletNode : public AudioNode {
 
 using namespace facebook;
 
-class WorkletNode : public AudioNode {
+class WorkletProcessingNode : public AudioNode {
  public:
-  explicit WorkletNode(
+  explicit WorkletProcessingNode(
       BaseAudioContext *context,
       std::shared_ptr<worklets::SerializableWorklet> &worklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      size_t bufferLength,
-      size_t inputChannelCount
+      std::weak_ptr<worklets::WorkletRuntime> runtime
   );
-
-  ~WorkletNode() override;
 
  protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
-
  private:
   WorkletsRunner workletRunner_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
-  std::vector<uint8_t*> buffs_;
-
-  /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer
-  size_t buffRealLength_;
-  size_t bufferLength_;
-  size_t inputChannelCount_;
-  size_t curBuffIndex_;
+  std::vector<std::shared_ptr<AudioArrayBuffer>> inputBuffsHandles_;
+  std::vector<std::shared_ptr<AudioArrayBuffer>> outputBuffsHandles_;
 };
 
 #endif // RN_AUDIO_API_TEST

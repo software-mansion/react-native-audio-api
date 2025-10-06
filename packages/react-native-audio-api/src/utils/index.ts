@@ -4,6 +4,9 @@ interface SimplifiedWorkletModule {
   makeShareableCloneRecursive: (
     workletCallback: ShareableWorkletCallback
   ) => ShareableWorkletCallback;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createWorkletRuntime: (options?: any) => any;
 }
 
 export function clamp(value: number, min: number, max: number): number {

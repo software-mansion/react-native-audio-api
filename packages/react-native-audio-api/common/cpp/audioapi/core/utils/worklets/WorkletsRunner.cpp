@@ -1,8 +1,8 @@
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
+#include <audioapi/core/utils/worklets/WorkletsRunner.h>
 
 namespace audioapi {
 
-UiWorkletsRunner::UiWorkletsRunner(
+WorkletsRunner::WorkletsRunner(
     std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept
     : weakUiRuntime_(std::move(weakUiRuntime)) {}
 

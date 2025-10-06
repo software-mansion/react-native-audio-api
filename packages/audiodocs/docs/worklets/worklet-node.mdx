@@ -13,13 +13,13 @@ This node lets you execute a worklet on the UI thread. bufferLength specifies th
 
 ## Constructor
 
-[`BaseAudioContext.createWorkletNode(worklet, bufferLength, inputChannelCount)`](/docs/core/base-audio-context#createworkletnode-)
+[`BaseAudioContext.createWorkletNode(worklet, bufferLength, inputChannelCount, workletRuntime)`](/docs/core/base-audio-context#createworkletnode-)
 
 ## Example
 ```tsx
 import { AudioContext, AudioRecorder } from 'react-native-audio-api';
 
-/// This example shows how we can use a WorkletNode to process microphone audio data in real-time.
+// This example shows how we can use a WorkletNode to process microphone audio data in real-time.
 function App() {
     const recorder = new AudioRecorder({
       sampleRate: 16000,
@@ -34,7 +34,7 @@ function App() {
         // !IMPORTANT: here you can only read audio data any modifications will not be reflected in the audio output of this node
         // !VERY IMPORTANT: please read the Known Issue section below
     };
-    const workletNode = audioContext.createWorkletNode(worklet, 1024, 2);
+    const workletNode = audioContext.createWorkletNode(worklet, 1024, 2, 'UIRuntime');
     const adapterNode = audioContext.createRecorderAdapter();
 
     adapterNode.connect(workletNode);
@@ -45,13 +45,13 @@ function App() {
 ```
 
 ## Properties
-It has no own properties but inherits from `AudioNode`.
+It has no own properties but inherits from [`AudioNode`](/docs/core/audio-node).
 
 ## Methods
-It has no own methods but inherits from `AudioNode`.
+It has no own methods but inherits from [`AudioNode`](/docs/core/audio-node).
 
 ## Known Issue
-It might happen that the worklet side effect is not visible on the UI. For example you have some animated style which depends on some shared value modified in the worklet.
+It might happen that the worklet side effect is not visible on the UI (when you are using UIRuntime kind). For example you have some animated style which depends on some shared value modified in the worklet.
 This is happening because microtask queue is not always being flushed properly, bla bla bla...
 
 To workaround this issue just add this line at the end of your worklet callback function:

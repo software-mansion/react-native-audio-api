@@ -38,7 +38,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
   double getCurrentPosition() const override;
 
  private:

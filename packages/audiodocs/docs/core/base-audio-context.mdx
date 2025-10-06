@@ -67,6 +67,7 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
 | `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
 | `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
+| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
 
 #### Errors
 
@@ -77,6 +78,40 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
 
 #### Returns `WorkletNode`.
+
+### `createWorkletSourceNode` <MobileOnly />
+
+Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
+| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+
+#### Returns `WorkletSourceNode`.
+
+### `createWorkletProcessingNode` <MobileOnly />
+
+Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
+
+| Parameters | Type | Description |
+| :---: | :---: | :---- |
+| `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
+| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `Error` | `react-native-worklet` is not found as dependency. |
+
+#### Returns `WorkletProcessingNode`.
 
 ### `createBuffer`
 

@@ -16,7 +16,7 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
-void GainNode::processNode(
+std::shared_ptr<AudioBus> GainNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   double time = context_->getCurrentTime();
@@ -28,6 +28,8 @@ void GainNode::processNode(
         processingBus->getChannel(i)->getData(),
         framesToProcess);
   }
+
+  return processingBus;
 }
 
 } // namespace audioapi

@@ -5,6 +5,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
+#include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
@@ -12,6 +13,8 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/sources/StreamerNode.h>
+#include <audioapi/core/sources/WorkletSourceNode.h>
+#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -24,12 +27,12 @@ namespace audioapi {
 BaseAudioContext::BaseAudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry>
         &audioEventHandlerRegistry,
-    const std::shared_ptr<UiWorkletsRunner> &workletRunner) {
+    const RuntimeRegistry &runtimeRegistry) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
 
   audioEventHandlerRegistry_ = audioEventHandlerRegistry;
-  workletRunner_ = workletRunner;
+  runtimeRegistry_ = runtimeRegistry;
 }
 
 std::string BaseAudioContext::getState() {
@@ -62,14 +65,34 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
   return destination_;
 }
 
+std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
+    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+  auto workletSourceNode =
+      std::make_shared<WorkletSourceNode>(this, shareableWorklet, runtime);
+  nodeManager_->addSourceNode(workletSourceNode);
+  return workletSourceNode;
+}
+
 std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime,
     size_t bufferLength,
     size_t inputChannelCount) {
   auto workletNode = std::make_shared<WorkletNode>(
-      this, shareableWorklet, bufferLength, inputChannelCount);
+      this, shareableWorklet, runtime, bufferLength, inputChannelCount);
   nodeManager_->addProcessingNode(workletNode);
   return workletNode;
+}
+
+std::shared_ptr<WorkletProcessingNode>
+BaseAudioContext::createWorkletProcessingNode(
+    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+  auto workletProcessingNode =
+      std::make_shared<WorkletProcessingNode>(this, shareableWorklet, runtime);
+  nodeManager_->addProcessingNode(workletProcessingNode);
+  return workletProcessingNode;
 }
 
 std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {

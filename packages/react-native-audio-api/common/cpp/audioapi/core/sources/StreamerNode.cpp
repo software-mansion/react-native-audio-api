@@ -147,12 +147,18 @@ void StreamerNode::streamAudio() {
   }
 }
 
-void StreamerNode::processNode(
+std::shared_ptr<AudioBus> StreamerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+
+  if (!isPlaying() && !isStopScheduled()) {
+    processingBus->zero();
+    return processingBus;
+  }
+
   // If we have enough buffered data, copy to output bus
   if (bufferedBusIndex_ >= framesToProcess) {
     Locker locker(mutex_);
@@ -169,6 +175,8 @@ void StreamerNode::processNode(
     }
     bufferedBusIndex_ -= offsetLength;
   }
+
+  return processingBus;
 }
 
 bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
