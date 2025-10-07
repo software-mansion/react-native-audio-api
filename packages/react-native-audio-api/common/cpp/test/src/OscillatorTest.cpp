@@ -2,17 +2,19 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
-#include "MockAudioEventHandlerRegistry.h"
+#include <test/src/MockAudioEventHandlerRegistry.h>
+
+using namespace audioapi;
 
 class OscillatorTest : public ::testing::Test {
  protected:
-  std::shared_ptr<audioapi::IAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<audioapi::OfflineAudioContext> context;
+  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::unique_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<audioapi::OfflineAudioContext>(
+    context = std::make_unique<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };

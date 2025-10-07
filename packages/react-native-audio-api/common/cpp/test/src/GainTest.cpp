@@ -4,34 +4,35 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
-#include "MockAudioEventHandlerRegistry.h"
+#include <test/src/MockAudioEventHandlerRegistry.h>
+
+using namespace audioapi;
 
 class GainTest : public ::testing::Test {
  protected:
-  std::shared_ptr<audioapi::IAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<audioapi::OfflineAudioContext> context;
+  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::unique_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<audioapi::OfflineAudioContext>(
+    context = std::make_unique<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };
 
-class TestableGainNode : public audioapi::GainNode {
+class TestableGainNode : public GainNode {
  public:
-  explicit TestableGainNode(audioapi::BaseAudioContext *context)
-      : audioapi::GainNode(context) {}
+  explicit TestableGainNode(BaseAudioContext *context) : GainNode(context) {}
 
   void setGainParam(float value) {
     getGainParam()->setValue(value);
   }
 
-  std::shared_ptr<audioapi::AudioBus> processNode(
-      const std::shared_ptr<audioapi::AudioBus> &processingBus,
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override {
-    return audioapi::GainNode::processNode(processingBus, framesToProcess);
+    return GainNode::processNode(processingBus, framesToProcess);
   }
 };
 

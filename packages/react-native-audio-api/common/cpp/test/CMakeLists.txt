@@ -62,12 +62,15 @@ target_include_directories(rnaudioapi PUBLIC
 target_include_directories(rnaudioapi_libs PUBLIC
   ${ROOT}/packages/react-native-audio-api/common/cpp
 )
+
+file(GLOB_RECURSE test_src
+  CONFIGURE_DEPENDS
+  "src/*.cpp"
+)
+
 add_executable(
   tests
-  OscillatorTest.cpp
-  GainTest.cpp
-  AudioParamTest.cpp
-  StereoPannerTest.cpp
+  ${test_src}
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)
