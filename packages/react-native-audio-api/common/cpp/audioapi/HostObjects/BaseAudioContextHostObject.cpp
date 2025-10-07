@@ -5,6 +5,7 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
@@ -49,6 +50,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
 }
 
@@ -261,5 +263,12 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
   auto analyser = context_->createAnalyser();
   auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
+  auto convolver = context_->createConvolver();
+  auto convolverHostObject =
+      std::make_shared<ConvolverNodeHostObject>(convolver);
+  return jsi::Object::createFromHostObject(runtime, convolverHostObject);
 }
 } // namespace audioapi

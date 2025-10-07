@@ -65,8 +65,11 @@ bool Convolver::init(
   _fftBuffer.resize(_segSize);
 
   // Debug: Print IR information
-  printf("Convolver init: irLen=%zu, blockSize=%zu, segCount=%zu\n", 
-         irLen, _blockSize, _segCount);
+  printf(
+      "Convolver init: irLen=%zu, blockSize=%zu, segCount=%zu\n",
+      irLen,
+      _blockSize,
+      _segCount);
   printf("First 10 IR samples: ");
   for (int i = 0; i < std::min(10, (int)irLen); ++i) {
     printf("%.6f ", ir[i]);

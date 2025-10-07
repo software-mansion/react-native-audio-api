@@ -7,10 +7,11 @@
 #include <iostream>
 
 namespace audioapi {
-ConvolverNode::ConvolverNode(BaseAudioContext *context) : AudioNode(context) {
-  normalize_ = true;
-  buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-  convolver_ = std::shared_ptr<Convolver>(nullptr);
+ConvolverNode::ConvolverNode(BaseAudioContext *context)
+    : AudioNode(context),
+      normalize_(true),
+      buffer_(nullptr),
+      convolver_(nullptr) {
   isInitialized_ = true;
 }
 
@@ -46,7 +47,7 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   }
 }
 
-void ConvolverNode::processNode(
+std::shared_ptr<AudioBus> ConvolverNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   printf("frames to process: %d\n", framesToProcess);
@@ -63,6 +64,7 @@ void ConvolverNode::processNode(
       processingBus->getChannel(channel)->copy(processingBus->getChannel(0));
     }
   }
+  return processingBus;
 }
 
 void ConvolverNode::calculateNormalizationScale() {

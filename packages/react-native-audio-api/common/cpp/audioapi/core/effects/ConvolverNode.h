@@ -22,7 +22,7 @@ class ConvolverNode : public AudioNode {
     void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
  protected:
-    void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   bool normalize_ = true;
