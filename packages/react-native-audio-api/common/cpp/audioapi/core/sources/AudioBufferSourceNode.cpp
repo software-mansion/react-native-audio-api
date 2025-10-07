@@ -29,8 +29,6 @@ AudioBufferSourceNode::~AudioBufferSourceNode() {
 
   buffer_.reset();
   alignedBus_.reset();
-
-  clearOnLoopEndedCallback();
 }
 
 bool AudioBufferSourceNode::getLoop() const {
