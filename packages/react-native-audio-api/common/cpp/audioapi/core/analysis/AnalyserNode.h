@@ -39,7 +39,7 @@ class AnalyserNode : public AudioNode {
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   int fftSize_;

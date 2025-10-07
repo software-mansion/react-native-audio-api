@@ -6,7 +6,6 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 
 namespace audioapi {
@@ -14,8 +13,9 @@ AudioContext::AudioContext(
     float sampleRate,
     bool initSuspended,
     const std::shared_ptr<IAudioEventHandlerRegistry>
-        &audioEventHandlerRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry) {
+        &audioEventHandlerRegistry,
+    const RuntimeRegistry &runtimeRegistry)
+    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry) {
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
       this->renderAudio(), sampleRate, destination_->getChannelCount());
@@ -25,7 +25,6 @@ AudioContext::AudioContext(
 #endif
 
   sampleRate_ = sampleRate;
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate);
 
   if (initSuspended) {
     playerHasBeenStarted_ = false;

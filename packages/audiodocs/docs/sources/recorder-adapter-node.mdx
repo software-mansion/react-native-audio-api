@@ -39,6 +39,6 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Remarks
-- Adapter without the recorder will produce silence
-- Adapter that is connected only to the recorder will work fine and keep small buffer of recorded Data
-- Adapter node will not be garbage collected until he is connected to either some destination or recorder
+- Adapter without a connected recorder will produce silence.
+- Adapter connected only to a recorder will function correctly and keep a small buffer of recorded data.
+- Adapter will not be garbage collected as long as it remains connected to either a destination or a recorder.

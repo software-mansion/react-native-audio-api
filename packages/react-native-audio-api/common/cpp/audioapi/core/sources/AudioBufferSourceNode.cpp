@@ -1,7 +1,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/Constants.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -13,12 +13,11 @@ namespace audioapi {
 AudioBufferSourceNode::AudioBufferSourceNode(
     BaseAudioContext *context,
     bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context),
+    : AudioBufferBaseSourceNode(context, pitchCorrection),
       loop_(false),
       loopSkip_(false),
       loopStart_(0),
-      loopEnd_(0),
-      pitchCorrection_(pitchCorrection) {
+      loopEnd_(0) {
   buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
   alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
 
@@ -30,6 +29,8 @@ AudioBufferSourceNode::~AudioBufferSourceNode() {
 
   buffer_.reset();
   alignedBus_.reset();
+
+  clearOnLoopEndedCallback();
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -124,14 +125,29 @@ void AudioBufferSourceNode::disable() {
   alignedBus_.reset();
 }
 
-void AudioBufferSourceNode::processNode(
+void AudioBufferSourceNode::clearOnLoopEndedCallback() {
+  if (onLoopEndedCallbackId_ == 0 || context_ == nullptr ||
+      context_->audioEventHandlerRegistry_ == nullptr) {
+    return;
+  }
+
+  context_->audioEventHandlerRegistry_->unregisterHandler(
+      "loopEnded", onLoopEndedCallbackId_);
+  onLoopEndedCallbackId_ = 0;
+}
+
+void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
+  onLoopEndedCallbackId_ = callbackId;
+}
+
+std::shared_ptr<AudioBus> AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!alignedBus_) {
       processingBus->zero();
-      return;
+      return processingBus;
     }
 
     if (!pitchCorrection_) {
@@ -144,6 +160,8 @@ void AudioBufferSourceNode::processNode(
   } else {
     processingBus->zero();
   }
+
+  return processingBus;
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
@@ -151,34 +169,18 @@ double AudioBufferSourceNode::getCurrentPosition() const {
       static_cast<int>(vReadIndex_), buffer_->getSampleRate());
 }
 
+void AudioBufferSourceNode::sendOnLoopEndedEvent() {
+  auto onLoopEndedCallbackId =
+      onLoopEndedCallbackId_.load(std::memory_order_acquire);
+  if (onLoopEndedCallbackId != 0) {
+    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "loopEnded", onLoopEndedCallbackId_, {});
+  }
+}
+
 /**
  * Helper functions
  */
-
-void AudioBufferSourceNode::processWithoutPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-
-  auto computedPlaybackRate = getComputedPlaybackRateValue(framesToProcess);
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
-
-  if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
-    return;
-  }
-
-  if (std::fabs(computedPlaybackRate) == 1.0) {
-    processWithoutInterpolation(
-        processingBus, startOffset, offsetLength, computedPlaybackRate);
-  } else {
-    processWithInterpolation(
-        processingBus, startOffset, offsetLength, computedPlaybackRate);
-  }
-
-  sendOnPositionChangedEvent();
-}
 
 void AudioBufferSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBus> &processingBus,
@@ -243,6 +245,8 @@ void AudioBufferSourceNode::processWithoutInterpolation(
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }
+
+      sendOnLoopEndedEvent();
     }
   }
 
@@ -304,21 +308,10 @@ void AudioBufferSourceNode::processWithInterpolation(
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }
+
+      sendOnLoopEndedEvent();
     }
   }
-}
-
-float AudioBufferSourceNode::getComputedPlaybackRateValue(int framesToProcess) {
-  auto time = context_->getCurrentTime();
-
-  auto sampleRateFactor =
-      alignedBus_->getSampleRate() / context_->getSampleRate();
-  auto playbackRate =
-      playbackRateParam_->processKRateParam(framesToProcess, time);
-  auto detune = std::pow(
-      2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
-
-  return playbackRate * sampleRateFactor * detune;
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame() {

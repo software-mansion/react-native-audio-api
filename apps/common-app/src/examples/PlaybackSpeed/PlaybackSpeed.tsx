@@ -49,9 +49,11 @@ const PlaybackSpeed: FC = () => {
     setIsLoading(true);
 
     try {
-      const buffer = await audioContext.decodePCMInBase64Data(
+      const buffer = await audioContext.decodePCMInBase64(
         PCM_DATA,
-        audioSettings.PSOLA ? playbackSpeed : 1
+        48000,
+        1,
+        true
       );
 
       const source = audioContext.createBufferSource({

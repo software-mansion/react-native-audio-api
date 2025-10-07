@@ -1,6 +1,6 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
-#include <audioapi/core/Constants.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -25,9 +25,13 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       ->setDataCallback(this)
       ->setSampleRate(static_cast<int>(sampleRate))
       ->openStream(mStream_);
+
+  nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
+  nativeAudioRecorder_.release();
+
   if (mStream_) {
     mStream_->requestStop();
     mStream_->close();
@@ -41,6 +45,7 @@ void AndroidAudioRecorder::start() {
   }
 
   if (mStream_) {
+    nativeAudioRecorder_->start();
     mStream_->requestStart();
   }
 
@@ -55,6 +60,7 @@ void AndroidAudioRecorder::stop() {
   isRunning_.store(false);
 
   if (mStream_) {
+    nativeAudioRecorder_->stop();
     mStream_->requestStop();
   }
 
@@ -75,10 +81,8 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     auto *outputChannel = bus->getChannel(0)->getData();
 
     circularBuffer_->pop_front(outputChannel, bufferLength_);
-    auto when = static_cast<double>(
-        oboeStream->getTimestamp(CLOCK_MONOTONIC).value().timestamp);
 
-    invokeOnAudioReadyCallback(bus, bufferLength_, when);
+    invokeOnAudioReadyCallback(bus, bufferLength_);
   }
 
   return DataCallbackResult::Continue;

@@ -7,12 +7,12 @@ import { ReadOnly, Optional } from '@site/src/components/Badges';
 # AudioBuffer
 
 The `AudioBuffer` interface represents a short audio asset, commonly shorter then one minute.
-It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://pl.wikipedia.org/wiki/PCM) values with a nominal range of [−1, 1] (but not limited to that range),
+It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [−1, 1] (but not limited to that range),
 specific sample rate which is the quantity of frames that will play in one second and length.
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using `decodeAudioData`, `decodeAudioDataSource`, `decodePCMInBase64Data` or from raw data using `constructor`.
+It can be created from audio file using [`decodeAudioData`](/docs/utils/audio-decoder#decodeaudiodata) or from raw data using `constructor`.
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).
 
 ## Constructor
@@ -21,26 +21,7 @@ Once you have data in `AudioBuffer`, audio can be played by passing it to [`Audi
 
 ## Decoding
 
-#### [`BaseAudioContext.decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata)
-
-```tsx
-const audioBuffer = await fetch(URL)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) =>
-        audioContextRef.current!.decodeAudioData(arrayBuffer)
-      )
-```
-
-#### [`BaseAudioContext.decodeAudioDataSource`](/docs/core/base-audio-context#decodeaudiodatasource)
-
-```tsx
-import * as FileSystem from 'expo-file-system';
-
-const audioBuffer = await FileSystem.downloadAsync(
-      URL,
-      `${FileSystem.documentDirectory}/example-music-01.mp3`
-    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
-```
+See example implementations in [`BaseAudioContext`](/docs/core/base-audio-context#decodeaudiodata) on how to decode data in various ways.
 
 ## Properties
 
@@ -55,11 +36,11 @@ const audioBuffer = await FileSystem.downloadAsync(
 
 ### `getChannelData`
 
-The above method returns modifiable array with PCM data from given channel.
+Gets modifiable array with PCM data from given channel.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
-| `channel` | `number` | Index of the `AudioBuffer's` channel from which data will be returned. |
+| `channel` | `number` | Index of the `AudioBuffer's` channel, from which data will be returned. |
 
 #### Errors:
 
@@ -71,12 +52,12 @@ The above method returns modifiable array with PCM data from given channel.
 
 ### `copyFromChannel`
 
-The above method copies data from given channel of the `AudioBuffer` to an array.
+Copies data from given channel of the `AudioBuffer` to an array.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |
 | `destination` | `Float32Array` | The array to which data will be copied. |
-| `channelNumber` | `number` | Index of the `AudioBuffer's` channel from which data will be copied. |
+| `channelNumber` | `number` | Index of the `AudioBuffer's` channel, from which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 
 #### Errors:
@@ -90,7 +71,7 @@ The above method copies data from given channel of the `AudioBuffer` to an array
 
 ### `copyToChannel`
 
-The above method copies data from given array to specified channel of the `AudioBuffer`.
+Copies data from given array to specified channel of the `AudioBuffer`.
 
 | Parameters | Type | Description |
 | :---: | :---: | :---- |

@@ -9,9 +9,14 @@ It is responsible for supervising and managing audio-processing graph.
 
 ## Constructor
 
-`new AudioContext()`
+`new AudioContext(options: AudioContextOptions)`
 
-[`new AudioContext(options: AudioContextOptions)`](/docs/core/audio-context#audiocontextoptions)
+```jsx
+interface AudioContextOptions {
+  sampleRate: number;
+  initSuspended: boolean;
+}
+```
 
 #### Errors
 
@@ -31,35 +36,20 @@ It inherits all methods from [`BaseAudioContext`](/docs/core/base-audio-context#
 
 ### `close`
 
-The above method lets you close the audio context, releasing any system audio resources that it uses.
+Closes the audio context, releasing any system audio resources that it uses.
 
 #### Returns `Promise<undefined>`.
 
 ### `suspend`
 
-The above method lets you suspend time progression in the audio context.
+Suspends time progression in the audio context.
 It is useful when your application will not use audio for a while.
 
-#### Returns `Promise<undefined>`.
+#### Returns `Promise<boolean>`.
 
 ### `resume`
 
-The above method lets resume time progression in audio context that previously has been suspended.
+Resumes a previously suspended audio context.
 
-#### Returns `Promise<undefined>`.
+#### Returns `Promise<boolean>`.
 
-
-## Remarks
-
-### `AudioContextOptions`
-
-<details>
-
-`AudioContextOptions` is a dictionary object specifies sample rate for the new context.
-
-```jsx
-interface AudioContextOptions {
-  sampleRate: number;
-}
-```
-</details>

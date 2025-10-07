@@ -14,6 +14,8 @@ export type BiquadFilterType =
 
 export type ContextState = 'running' | 'closed' | `suspended`;
 
+export type AudioWorkletRuntime = 'AudioRuntime' | 'UIRuntime';
+
 export type OscillatorType =
   | 'sine'
   | 'square'
@@ -43,7 +45,7 @@ export interface AudioRecorderOptions {
 
 export type WindowType = 'blackman' | 'hann';
 
-export interface AudioBufferSourceNodeOptions {
+export interface AudioBufferBaseSourceNodeOptions {
   pitchCorrection: boolean;
 }
 

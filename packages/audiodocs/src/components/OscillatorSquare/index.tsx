@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import styles from './OscillatorSquare.module.css'
 
 interface Point {
@@ -62,6 +62,10 @@ const OscillatorSquare: React.FC = () => {
   const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const noiseGainRef = useRef<GainNode | null>(null);
 
+  const preventScroll = useCallback((e: Event) => {
+    e.preventDefault();
+  }, []);
+
   const playKick = () => {
     const aCtx = mACtxRef.current;
 
@@ -110,6 +114,13 @@ const OscillatorSquare: React.FC = () => {
     return noiseBuffer;
   }
 
+  const enableScrollBlock = () => {
+    window.addEventListener('touchmove', preventScroll as EventListener, { passive: false });
+  };
+  const disableScrollBlock = () => {
+    window.removeEventListener('touchmove', preventScroll as EventListener);
+  };
+
   const onStart = (pointer: Point) => {
     const box = rectRef.current?.getBoundingClientRect();
 
@@ -118,7 +129,8 @@ const OscillatorSquare: React.FC = () => {
 
     setX(clamp(((pointer.x - box.x) / squareSize) * 100, 0, 100));
     setY(clamp(((pointer.y - box.y) / squareSize) * 100, 0, 100));
-    document.body.style.overflow = 'hidden';
+
+    enableScrollBlock();
   }
 
   const onMove = (pointer: Point) => {
@@ -138,7 +150,7 @@ const OscillatorSquare: React.FC = () => {
 
   const onStop = () => {
     setIsPlaying(false);
-    document.body.style.overflow = 'auto';
+    disableScrollBlock();
   }
 
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -266,7 +278,7 @@ const OscillatorSquare: React.FC = () => {
     window.addEventListener('mouseup', onStop);
     window.addEventListener('touchend', onStop);
     window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchmove', onTouchMove, {passive: false});
 
     return () => {
       window.removeEventListener('mouseup', onStop);
@@ -275,6 +287,12 @@ const OscillatorSquare: React.FC = () => {
       window.removeEventListener('touchmove', onTouchMove);
     };
   }, [isPlaying]);
+
+    useEffect(() => {
+    return () => {
+      disableScrollBlock();
+    };
+  }, [preventScroll]);
 
   return (
     <div className={styles.oscillatorContainer}>
@@ -286,6 +304,7 @@ const OscillatorSquare: React.FC = () => {
         style={{
           width: squareSize,
           height: squareSize,
+          touchAction: 'none',
           transform: `
             perspective(150px)
             rotateX(${(x / 100) * 10 - 5}deg)
@@ -313,7 +332,7 @@ const OscillatorSquare: React.FC = () => {
           />
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 

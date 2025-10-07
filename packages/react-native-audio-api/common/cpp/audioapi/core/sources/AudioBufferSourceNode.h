@@ -34,8 +34,11 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset, double duration = -1);
   void disable() override;
 
+  void clearOnLoopEndedCallback();
+  void setOnLoopEndedCallbackId(uint64_t callbackId);
+
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
   double getCurrentPosition() const override;
 
  private:
@@ -45,15 +48,12 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   double loopStart_;
   double loopEnd_;
 
-  // pitch correction
-  bool pitchCorrection_;
-
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
 
-  void processWithoutPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
-                                     int framesToProcess);
+  std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
+  void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus>& processingBus,
@@ -65,9 +65,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<AudioBus>& processingBus,
       size_t startOffset,
       size_t offsetLength,
-      float playbackRate);
-
-  float getComputedPlaybackRateValue(int framesToProcess);
+      float playbackRate) override;
 
   double getVirtualStartFrame();
   double getVirtualEndFrame();

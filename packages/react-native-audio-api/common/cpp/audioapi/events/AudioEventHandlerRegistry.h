@@ -53,8 +53,9 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
         "volumeChange",
     };
 
-    static constexpr std::array<std::string_view, 5> AUDIO_API_EVENT_NAMES = {
+    static constexpr std::array<std::string_view, 6> AUDIO_API_EVENT_NAMES = {
       "ended",
+      "loopEnded",
       "audioReady",
       "positionChanged",
       "audioError",
@@ -62,6 +63,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
     };
 
     jsi::Object createEventObject(const std::unordered_map<std::string, EventValue> &body);
+    jsi::Object createEventObject(const std::unordered_map<std::string, EventValue> &body, size_t memoryPressure);
 };
 
 } // namespace audioapi

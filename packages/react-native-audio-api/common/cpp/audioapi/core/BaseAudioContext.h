@@ -2,16 +2,15 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
-
-
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <cassert>
+#include <complex>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <complex>
-#include <cstddef>
-#include <cassert>
 
 namespace audioapi {
 
@@ -20,23 +19,26 @@ class GainNode;
 class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
+class ConstantSourceNode;
 class StereoPannerNode;
 class AudioNodeManager;
 class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
-class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class ConvolverNode;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WorkletSourceNode;
+class WorkletNode;
+class WorkletProcessingNode;
 class StreamerNode;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -46,13 +48,17 @@ class BaseAudioContext {
   std::shared_ptr<AudioDestinationNode> getDestination();
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
+  std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
+  std::shared_ptr<WorkletNode> createWorkletNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime, size_t bufferLength, size_t inputChannelCount);
+  std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet, std::weak_ptr<worklets::WorkletRuntime> runtime);
   std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<ConstantSourceNode> createConstantSource();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource();
+  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
@@ -61,10 +67,6 @@ class BaseAudioContext {
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
   std::shared_ptr<ConvolverNode> createConvolver();
-
-  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
-  std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
-  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data, float playbackSpeed);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;
@@ -79,9 +81,7 @@ class BaseAudioContext {
 
   std::shared_ptr<AudioDestinationNode> destination_;
   // init in AudioContext or OfflineContext constructor
-  std::shared_ptr<AudioDecoder> audioDecoder_ {};
-  // init in AudioContext or OfflineContext constructor
-  float sampleRate_ {};
+  float sampleRate_{};
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
@@ -91,10 +91,11 @@ class BaseAudioContext {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
-  virtual bool isDriverRunning() const = 0;
+  [[nodiscard]] virtual bool isDriverRunning() const = 0;
 
  public:
     std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+    RuntimeRegistry runtimeRegistry_;
 };
 
 } // namespace audioapi

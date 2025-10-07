@@ -1,0 +1,9 @@
+export const HANDLE_RADIUS = 4;
+export const HIT_PADDING = 8;
+export const MIN_TIME = 0.01;
+export const SUSTAIN_HOLD_TIME = 0.6;
+export const MAX_TIME = 4.0;
+export const VISUAL_SCALE = 0.5;
+export const ATTACK_MAX = 2;
+export const DECAY_MAX = 2;
+export const RELEASE_MAX = 3;

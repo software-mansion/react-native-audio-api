@@ -2,7 +2,7 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   OfflineAudioContextOptions,
-  AudioBufferSourceNodeOptions,
+  AudioBufferBaseSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -15,6 +15,7 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import ConstantSourceNode from './ConstantSourceNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -59,6 +60,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new OscillatorNode(this, this.context.createOscillator());
   }
 
+  createConstantSource(): ConstantSourceNode {
+    return new ConstantSourceNode(this, this.context.createConstantSource());
+  }
+
   createGain(): GainNode {
     return new GainNode(this, this.context.createGain());
   }
@@ -72,7 +77,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   async createBufferSource(
-    options?: AudioBufferSourceNodeOptions
+    options?: AudioBufferBaseSourceNodeOptions
   ): Promise<AudioBufferSourceNode> {
     if (!options || !options.pitchCorrection) {
       return new AudioBufferSourceNode(

@@ -54,12 +54,9 @@
   float inputSampleRate = self.inputFormat.sampleRate;
   float outputSampleRate = self.outputFormat.sampleRate;
 
-  AVAudioTime *time = [[AVAudioTime alloc] initWithAudioTimeStamp:timestamp sampleRate:outputSampleRate];
-
   if (inputSampleRate != outputSampleRate) {
     AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
                                                                   frameCapacity:frameCount];
-
     memcpy(
         inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
         inputData->mBuffers[0].mData,
@@ -79,19 +76,24 @@
       return inputBuffer;
     };
 
-    [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
+    /// IMPORTANT: AVAudioConverter leaks memory without autorelease pool
+    /// more details here: https://github.com/poneciak57/AVAudioConverter-memory-leak-repro-electric-boogaloo
+    /// we can try to remove it in the future or refactor to reuse buffers to minimize allocations
+    @autoreleasepool {
+      [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
+    }
 
     if (error) {
       NSLog(@"Error during audio conversion: %@", error.localizedDescription);
       return kAudioServicesBadSpecifierSizeError;
     }
 
-    self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength, time);
+    self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength);
 
     return kAudioServicesNoError;
   }
 
-  self.receiverBlock(inputData, frameCount, time);
+  self.receiverBlock(inputData, frameCount);
 
   return kAudioServicesNoError;
 }

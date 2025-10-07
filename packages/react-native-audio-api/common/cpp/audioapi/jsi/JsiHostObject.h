@@ -10,13 +10,8 @@
 #include <utility>
 #include <vector>
 
-#define JSI_HOST_FUNCTION(NAME)    \
-  jsi::Value NAME(                 \
-      jsi::Runtime &runtime,       \
-      const jsi::Value &thisValue, \
-      const jsi::Value *args,      \
-      size_t count)
-
+#define JSI_HOST_FUNCTION_DECL(name) jsi::Value name(jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
+#define JSI_HOST_FUNCTION_IMPL(CLASS, name) jsi::Value CLASS::name(jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
 #define JSI_EXPORT_FUNCTION(CLASS, FUNCTION)                                \
   std::make_pair(                                                           \
       std::string(#FUNCTION),                                               \
@@ -24,17 +19,16 @@
           jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>( \
           &CLASS::FUNCTION))
 
-#define JSI_PROPERTY_GETTER(name) jsi::Value name(jsi::Runtime &runtime)
-
+#define JSI_PROPERTY_GETTER_DECL(name) jsi::Value name(jsi::Runtime &runtime)
+#define JSI_PROPERTY_GETTER_IMPL(CLASS, name) jsi::Value CLASS::name(jsi::Runtime &runtime)
 #define JSI_EXPORT_PROPERTY_GETTER(CLASS, FUNCTION)               \
   std::make_pair(                                                 \
       std::string(#FUNCTION),                                     \
       static_cast<jsi::Value (JsiHostObject::*)(jsi::Runtime &)>( \
           &CLASS::FUNCTION))
 
-#define JSI_PROPERTY_SETTER(name) \
-  void name(jsi::Runtime &runtime, const jsi::Value &value)
-
+#define JSI_PROPERTY_SETTER_DECL(name) void name(jsi::Runtime &runtime, const jsi::Value &value)
+#define JSI_PROPERTY_SETTER_IMPL(CLASS, name) void CLASS::name(jsi::Runtime &runtime, const jsi::Value &value)
 #define JSI_EXPORT_PROPERTY_SETTER(CLASS, FUNCTION) \
   std::make_pair(                                   \
       std::string(#FUNCTION),                       \

@@ -1,7 +1,7 @@
 .toolbar {
   display: flex;
-  justify-content: space-between;
   margin-bottom: 12px;
+  width: 100%;
 }
 
 .eqButton {
@@ -11,7 +11,7 @@
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 576px) {
   .eqButton {
     display: none;
   }

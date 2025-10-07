@@ -1,0 +1,145 @@
+---
+sidebar_position: 3
+---
+
+import { ReadOnly, MobileOnly } from '@site/src/components/Badges';
+
+# WorkletSourceNode
+
+The `WorkletSourceNode` interface represents a scheduled source node in the audio processing graph that generates audio using a worklet function. It extends [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node), providing the ability to start and stop audio generation at specific times.
+
+This node allows you to generate audio procedurally using JavaScript worklets, making it perfect for creating custom synthesizers, audio generators, or real-time audio effects that produce sound rather than just process it.
+
+For more information about worklets, see our [Introduction to worklets](/docs/worklets/worklets-introduction).
+
+## Constructor
+
+[`BaseAudioContext.createWorkletSourceNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletsourcenode-)
+
+## Example
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+function App() {
+  const audioContext = new AudioContext({ sampleRate: 44100 });
+
+  // Create a simple sine wave generator worklet
+  const sineWaveWorklet = (
+    audioData: Array<Float32Array>,
+    framesToProcess: number,
+    currentTime: number,
+    startOffset: number
+  ) => {
+    'worklet';
+
+    const frequency = 440; // A4 note
+    const sampleRate = 44100;
+
+    // Generate audio for each channel
+    for (let channel = 0; channel < audioData.length; channel++) {
+      for (let i = 0; i < framesToProcess; i++) {
+        // Calculate the absolute time for this sample
+        const sampleTime = currentTime + (startOffset + i) / sampleRate;
+
+        // Generate sine wave
+        const phase = 2 * Math.PI * frequency * sampleTime;
+        audioData[channel][i] = Math.sin(phase) * 0.5; // 50% volume
+      }
+    }
+  };
+
+  const workletSourceNode = audioContext.createWorkletSourceNode(
+    sineWaveWorklet,
+    'AudioRuntime'
+  );
+
+  // Connect to output and start playback
+  workletSourceNode.connect(audioContext.destination);
+  workletSourceNode.start(); // Start immediately
+
+  // Stop after 2 seconds
+  setTimeout(() => {
+    workletSourceNode.stop();
+  }, 2000);
+}
+```
+
+## Worklet Parameters Explanation
+
+The worklet function receives four parameters:
+
+### `audioData: Array<Float32Array>`
+A two-dimensional array where:
+- First dimension represents the audio channel (0 = left, 1 = right for stereo)
+- Second dimension contains the audio samples for that channel
+- You must **write** audio data to these buffers to generate sound
+- The length of each `Float32Array` equals `framesToProcess`
+
+### `framesToProcess: number`
+The number of audio samples to generate in this call. This determines how many samples you need to fill in each channel's buffer.
+
+### `currentTime: number`
+The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
+
+### `startOffset: number`
+The sample offset within the current processing block where your generated audio should begin. This is particularly important for precise timing when the node starts or stops mid-block.
+
+## Understanding `startOffset` and `currentTime`
+
+The relationship between `currentTime` and `startOffset` is crucial for generating continuous audio:
+
+```tsx
+const worklet = (audioData, framesToProcess, currentTime, startOffset) => {
+  'worklet';
+
+  const sampleRate = 44100;
+
+  for (let i = 0; i < framesToProcess; i++) {
+    // Calculate the exact time for this sample
+    const sampleTime = currentTime + (startOffset + i) / sampleRate;
+
+    // Use sampleTime for phase calculations, LFOs, envelopes, etc.
+    const phase = 2 * Math.PI * frequency * sampleTime;
+    audioData[0][i] = Math.sin(phase);
+  }
+};
+```
+
+**Key points:**
+- `currentTime` represents the audio context time at the start of the processing block
+- `startOffset` tells you which sample within the block to start generating audio
+- The absolute time for sample `i` is: `currentTime + (startOffset + i) / sampleRate`
+- This ensures phase continuity and precise timing across processing blocks
+
+## Properties
+
+It has no own properties but inherits from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node).
+
+## Methods
+
+It has no own methods but inherits from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node):
+
+## Performance Considerations
+
+Since `WorkletSourceNode` generates audio in real-time, performance is critical:
+
+- Keep worklet functions lightweight and efficient
+- Avoid complex calculations that could cause audio dropouts
+- Consider using lookup tables for expensive operations like trigonometric functions
+- Test on target devices to ensure smooth audio generation
+- Use `AudioRuntime` for better performance, `UIRuntime` for UI integration
+
+## Use Cases
+
+- **Custom Synthesizers**: Generate waveforms, apply modulation, create complex timbres
+- **Audio Generators**: White noise, pink noise, test tones, sweeps
+- **Procedural Audio**: Dynamic soundscapes, generative music
+- **Real-time Effects**: Audio that responds to user input or external data
+- **Educational Tools**: Demonstrate audio synthesis concepts interactively
+
+## See Also
+
+- [WorkletNode](/docs/worklets/worklet-node) - For processing existing audio with worklets
+- [Introduction to worklets](/docs/worklets/worklets-introduction) - Understanding worklet fundamentals
+- [AudioScheduledSourceNode](/docs/sources/audio-scheduled-source-node) - Base class for scheduled sources

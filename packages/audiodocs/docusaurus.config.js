@@ -114,6 +114,9 @@ const config = {
       indexName: 'swmansion',
     },
   },
+    clientModules: [
+    require.resolve('./src/wasm-loader.js'),
+  ],
 
   plugins: [
     ...[

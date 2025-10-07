@@ -1,10 +1,11 @@
 /*
- * This file links to the FFmpeg library, which is licensed under the
- * GNU Lesser General Public License (LGPL) version 2.1 or later.
+ * This file dynamically links to the FFmpeg library, which is licensed under
+ * the GNU Lesser General Public License (LGPL) version 2.1 or later.
  *
- * Our own code in this file is licensed under the MIT License, but note
- * that linking with FFmpeg means you must comply with the terms of the
- * LGPL for FFmpeg itself.
+ * Our own code in this file is licensed under the MIT License and dynamic
+ * linking allows you to use this code without your entire project being subject
+ * to the terms of the LGPL. However, note that if you link statically to
+ * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
 #include <audioapi/core/BaseAudioContext.h>
@@ -146,12 +147,18 @@ void StreamerNode::streamAudio() {
   }
 }
 
-void StreamerNode::processNode(
+std::shared_ptr<AudioBus> StreamerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+
+  if (!isPlaying() && !isStopScheduled()) {
+    processingBus->zero();
+    return processingBus;
+  }
+
   // If we have enough buffered data, copy to output bus
   if (bufferedBusIndex_ >= framesToProcess) {
     Locker locker(mutex_);
@@ -168,6 +175,8 @@ void StreamerNode::processNode(
     }
     bufferedBusIndex_ -= offsetLength;
   }
+
+  return processingBus;
 }
 
 bool StreamerNode::processFrameWithResampler(AVFrame *frame) {

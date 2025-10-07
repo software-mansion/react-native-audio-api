@@ -6,6 +6,8 @@
 #include <functional>
 #include <memory>
 
+#include <audioapi/android/core/NativeAudioRecorder.hpp>
+
 namespace audioapi {
 
 using namespace oboe;
@@ -16,7 +18,8 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
  public:
     AndroidAudioRecorder(float sampleRate,
                          int bufferLength,
-                         const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+                         const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
+                        );
 
     ~AndroidAudioRecorder() override;
 
@@ -30,6 +33,8 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
 
  private:
     std::shared_ptr<AudioStream> mStream_;
+
+    facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 };
 
 } // namespace audioapi
