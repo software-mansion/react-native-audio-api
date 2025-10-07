@@ -156,7 +156,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
 
     // In case of debugging this, please increment the hours spent counter
 
-    // Hours spent on this: 5
+    // Hours spent on this: 8
     try {
       if (!handlerIt->second || !handlerIt->second->isFunction(*runtime_)) {
         // If the handler is not valid, we can skip it
