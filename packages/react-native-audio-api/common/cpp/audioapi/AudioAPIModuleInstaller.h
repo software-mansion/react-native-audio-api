@@ -27,7 +27,7 @@ class AudioAPIModuleInstaller {
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
       const std::shared_ptr<AudioEventHandlerRegistry>
-        &audioEventHandlerRegistry,
+          &audioEventHandlerRegistry,
       std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
     auto createAudioContext = getCreateAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);

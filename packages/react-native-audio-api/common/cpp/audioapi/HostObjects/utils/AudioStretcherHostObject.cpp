@@ -26,25 +26,33 @@ JSI_HOST_FUNCTION_IMPL(AudioStretcherHostObject, changePlaybackSpeed) {
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   auto playbackSpeed = static_cast<float>(args[1].asNumber());
 
-  return promiseVendor_->createAsyncPromise(
-      [audioBuffer, playbackSpeed](
-          jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        auto result = AudioStretcher::changePlaybackSpeed(
-            *audioBuffer->audioBuffer_, playbackSpeed);
+  auto promise = promiseVendor_->createPromise(
+      [audioBuffer, playbackSpeed](std::shared_ptr<Promise> promise) {
+        std::thread([audioBuffer,
+                     playbackSpeed,
+                     promise = std::move(promise)]() {
+          auto result = AudioStretcher::changePlaybackSpeed(
+              *audioBuffer->audioBuffer_, playbackSpeed);
 
-        if (!result) {
-          return std::string("Failed to change audio playback speed.");
-        }
+          if (!result) {
+            promise->reject("Failed to change audio playback speed.");
+            return;
+          }
 
-        auto audioBufferHostObject =
-            std::make_shared<AudioBufferHostObject>(result);
+          auto audioBufferHostObject =
+              std::make_shared<AudioBufferHostObject>(result);
 
-        auto jsiObject =
-            jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-        jsiObject.setExternalMemoryPressure(
-            runtime, audioBufferHostObject->getSizeInBytes());
-        return jsiObject;
+          promise->resolve([audioBufferHostObject = std::move(
+                                audioBufferHostObject)](jsi::Runtime &runtime) {
+            auto jsiObject = jsi::Object::createFromHostObject(
+                runtime, audioBufferHostObject);
+            jsiObject.setExternalMemoryPressure(
+                runtime, audioBufferHostObject->getSizeInBytes());
+            return jsiObject;
+          });
+        }).detach();
       });
+  return promise;
 }
 
 } // namespace audioapi
