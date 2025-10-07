@@ -4,6 +4,7 @@
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
+#include <audioapi/HostObjects/utils/AudioStretcherHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -36,6 +37,8 @@ class AudioAPIModuleInstaller {
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioDecoder =
         getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
+    auto createAudioStretcher =
+        getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
     jsiRuntime->global().setProperty(
         *jsiRuntime, "createAudioContext", createAudioContext);
@@ -45,6 +48,8 @@ class AudioAPIModuleInstaller {
         *jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
     jsiRuntime->global().setProperty(
         *jsiRuntime, "createAudioDecoder", createAudioDecoder);
+    jsiRuntime->global().setProperty(
+        *jsiRuntime, "createAudioStretcher", createAudioStretcher);
 
     auto audioEventHandlerRegistryHostObject =
         std::make_shared<AudioEventHandlerRegistryHostObject>(
@@ -188,6 +193,26 @@ class AudioAPIModuleInstaller {
               std::make_shared<AudioDecoderHostObject>(&runtime, jsCallInvoker);
           return jsi::Object::createFromHostObject(
               runtime, audioDecoderHostObject);
+        });
+  }
+
+  static jsi::Function getCreateAudioStretcherFunction(
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),
+        0,
+        [jsCallInvoker](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto audioStretcherHostObject =
+              std::make_shared<AudioStretcherHostObject>(
+                  &runtime, jsCallInvoker);
+          return jsi::Object::createFromHostObject(
+              runtime, audioStretcherHostObject);
         });
   }
 };

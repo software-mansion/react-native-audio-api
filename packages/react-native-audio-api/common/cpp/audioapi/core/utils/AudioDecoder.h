@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/types/AudioFormat.h>
-#include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <algorithm>
 #include <cstring>

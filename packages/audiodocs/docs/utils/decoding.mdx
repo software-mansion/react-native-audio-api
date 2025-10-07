@@ -6,8 +6,8 @@ import { Optional, MobileOnly } from '@site/src/components/Badges';
 
 # Decoding
 
-You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/audio-decoder#decodeaudiodata) and
-[`decodePCMInBase64`](/docs/utils/audio-decoder#decodepcminbase64).
+You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) and
+[`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64).
 
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
 the decoded audio will then be automatically resampled to match the context's `sampleRate`.

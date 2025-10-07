@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, changePlaybackSpeed } from 'react-native-audio-api';
 import type { AudioBufferSourceNode } from 'react-native-audio-api';
 import {
   PCM_DATA,
@@ -49,12 +49,14 @@ const PlaybackSpeed: FC = () => {
     setIsLoading(true);
 
     try {
-      const buffer = await audioContext.decodePCMInBase64(
-        PCM_DATA,
-        48000,
-        1,
-        true
-      );
+      const buffer = await audioContext
+        .decodePCMInBase64(PCM_DATA, 48000, 1, true)
+        .then((audioBuffer) =>
+          changePlaybackSpeed(
+            audioBuffer,
+            audioSettings.PSOLA ? playbackSpeed : 1
+          )
+        );
 
       const source = audioContext.createBufferSource({
         pitchCorrection: audioSettings.PSOLA
