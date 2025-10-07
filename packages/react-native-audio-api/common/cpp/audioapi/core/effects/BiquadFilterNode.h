@@ -23,6 +23,13 @@ class BiquadFilterNode : public AudioNode {
 #ifdef AUDIO_API_TEST_SUITE
   friend class BiquadFilterTest;
   FRIEND_TEST(BiquadFilterTest, TestLowpassCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestHighpassCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestBandpassCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestNotchCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestAllpassCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestPeakingCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestLowshelfCoefficients);
+  FRIEND_TEST(BiquadFilterTest, TestHighshelfCoefficients);
 #endif
 
  public:

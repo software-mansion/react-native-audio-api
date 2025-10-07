@@ -318,6 +318,9 @@ void BiquadFilterNode::applyFilter() {
   auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
 
+  // NyquistFrequency is half of the sample rate.
+  // Normalized frequency is therefore:
+  // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
   float normalizedFrequency = frequency / context_->getNyquistFrequency();
   if (detune != 0.0f) {
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
