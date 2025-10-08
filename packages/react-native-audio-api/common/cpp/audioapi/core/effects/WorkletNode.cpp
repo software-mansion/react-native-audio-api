@@ -15,7 +15,7 @@ WorkletNode::WorkletNode(
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
   bus_ = std::make_shared<AudioBus>(
-      bufferLength, context->getSampleRate(), inputChannelCount);
+      bufferLength, inputChannelCount, context->getSampleRate());
   isInitialized_ = true;
 }
 
