@@ -16,13 +16,12 @@ WorkletProcessingNode::WorkletProcessingNode(
   outputBuffsHandles_.resize(maxChannelCount);
 
   for (size_t i = 0; i < maxChannelCount; ++i) {
-    auto inputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        inputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto inputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(inputAudioArray);
 
-    auto outputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        outputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto outputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    outputBuffsHandles_[i] =
+        std::make_shared<AudioArrayBuffer>(outputAudioArray);
   }
 }
 

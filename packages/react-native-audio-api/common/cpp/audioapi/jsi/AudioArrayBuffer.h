@@ -1,6 +1,10 @@
 #pragma once
 
 #include <jsi/jsi.h>
+#include <audioapi/utils/AudioArray.h>
+
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -8,16 +12,12 @@ using namespace facebook;
 
 class AudioArrayBuffer : public jsi::MutableBuffer {
  public:
-  AudioArrayBuffer(uint8_t *data, size_t size): data_(data), size_(size) {}
-  ~AudioArrayBuffer() override {
-    if (data_ == nullptr) {
-      return;
-    }
-    delete[] data_;
-  }
+  explicit AudioArrayBuffer(const std::shared_ptr<AudioArray> &audioArray): audioArray_(audioArray) {}
+  ~AudioArrayBuffer() override = default;
+
   AudioArrayBuffer(AudioArrayBuffer &&other) noexcept
-      : data_(other.data_), size_(other.size_) {
-    other.data_ = nullptr;
+      : audioArray_(std::move(other.audioArray_)) {
+    other.audioArray_ = nullptr;
   }
 
   AudioArrayBuffer(const AudioArrayBuffer &) = delete;
@@ -28,8 +28,7 @@ class AudioArrayBuffer : public jsi::MutableBuffer {
   uint8_t *data() override;
 
  private:
-  uint8_t *data_;
-  const size_t size_;
+  std::shared_ptr<AudioArray> audioArray_;
 };
 
 } // namespace audioapi

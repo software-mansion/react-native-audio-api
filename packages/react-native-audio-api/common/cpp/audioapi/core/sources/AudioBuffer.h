@@ -10,6 +10,7 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioBufferHostObject;
 
 class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
@@ -37,6 +38,7 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  private:
   friend class AudioBufferSourceNode;
   friend class AudioBufferQueueSourceNode;
+  friend class AudioBufferHostObject;
 
   std::shared_ptr<AudioBus> bus_;
 };

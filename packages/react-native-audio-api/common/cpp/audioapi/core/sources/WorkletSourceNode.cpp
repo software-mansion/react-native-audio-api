@@ -16,9 +16,8 @@ WorkletSourceNode::WorkletSourceNode(
   size_t outputChannelCount = this->getChannelCount();
   outputBuffsHandles_.resize(outputChannelCount);
   for (size_t i = 0; i < outputChannelCount; ++i) {
-    auto buff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        buff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto audioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(audioArray);
   }
 }
 
