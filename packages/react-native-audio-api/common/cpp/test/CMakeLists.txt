@@ -12,6 +12,7 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
 )
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
@@ -69,8 +70,10 @@ add_executable(
   OscillatorTest.cpp
   GainTest.cpp
   AudioParamTest.cpp
-  BiquadFilterTest.h
-  BiquadFilterTest.cpp
+  biquad/BiquadFilterTest.cpp
+  biquad/BiquadFilterTest.h
+  biquad/BiquadFilter.cpp
+  biquad/BiquadFilter.h
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)
