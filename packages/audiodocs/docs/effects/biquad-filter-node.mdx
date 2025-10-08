@@ -66,7 +66,6 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 | `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
 | `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
 | `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
-| `length` | `number` | The number of frequency values to process. It should match the length of all input and output arrays. |
 
 #### Returns `undefined`.
 

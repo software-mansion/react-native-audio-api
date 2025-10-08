@@ -1,4 +1,7 @@
 #include <test/BiquadFilterTest.h>
+#include <algorithm>
+#include <cmath>
+#include <numbers>
 
 namespace audioapi {
 
@@ -10,170 +13,297 @@ struct BiquadCoefficients {
   float a2;
 };
 
-BiquadCoefficients normalizeCoefficients(float a0, BiquadCoefficients coeffs) {
-  return {
-      coeffs.b0 / a0,
-      coeffs.b1 / a0,
-      coeffs.b2 / a0,
-      coeffs.a1 / a0,
-      coeffs.a2 / a0,
-  };
+BiquadCoefficients normalizeCoefficients(
+    float b0,
+    float b1,
+    float b2,
+    float a0,
+    float a1,
+    float a2) {
+  return {b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0};
 }
 
-BiquadCoefficients
-calculateLowpassCoefficients(float frequency, float Q, float sampleRate) {
-  float omega = 2.0 * M_PI * frequency / sampleRate;
-  float alphaQdb = std::sin(omega) / (2.0 * std::pow(10.0f, Q / 20.0f));
+BiquadCoefficients calculateLowpassCoefficients(float cutoff, float Q) {
+  // Limit cutoff to 0 to 1.
+  cutoff = std::clamp(cutoff, 0.0f, 1.0f);
 
-  float b0 = (1.0 - std::cos(omega)) / 2.0;
-  float b1 = 1.0 - std::cos(omega);
-  float b2 = (1.0 - std::cos(omega)) / 2.0;
-  float a0 = 1.0 + alphaQdb;
-  float a1 = -2.0 * std::cos(omega);
-  float a2 = 1.0 - alphaQdb;
+  if (cutoff == 1) {
+    // When cutoff is 1, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  } else if (cutoff > 0) {
+    // Compute biquad coefficients for lowpass filter
 
-  // BiquadFilterNode stores normalized coefficients because
-  // the biquad transfer function requires them in that form
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
+    Q = std::pow(10, Q / 20);
+
+    float theta = std::numbers::pi * cutoff;
+    float alpha = std::sin(theta) / (2 * Q);
+    float cosw = std::cos(theta);
+    float beta = (1 - cosw) / 2;
+
+    float b0 = beta;
+    float b1 = 2 * beta;
+    float b2 = beta;
+
+    float a0 = 1 + alpha;
+    float a1 = -2 * cosw;
+    float a2 = 1 - alpha;
+
+    return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+  } else {
+    // When cutoff is zero, nothing gets through the filter, so set
+    // coefficients up correctly.
+    return normalizeCoefficients(0, 0, 0, 1, 0, 0);
+  }
 }
 
-BiquadCoefficients
-calculateHighpassCoefficients(float frequency, float Q, float sampleRate) {
-  float omega = 2.0 * M_PI * frequency / sampleRate;
-  float alphaQdb = std::sin(omega) / (2.0 * Q);
+BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q) {
+  // Limit cutoff to 0 to 1.
+  cutoff = std::clamp(cutoff, 0.0f, 1.0f);
 
-  float b0 = (1.0 + std::cos(omega)) / 2.0;
-  float b1 = -(1.0 + std::cos(omega));
-  float b2 = (1.0 + std::cos(omega)) / 2.0;
-  float a0 = 1.0 + alphaQdb;
-  float a1 = -2.0 * std::cos(omega);
-  float a2 = 1.0 - alphaQdb;
+  if (cutoff == 1) {
+    // The z-transform is 0.
+    return normalizeCoefficients(0, 0, 0, 1, 0, 0);
+  } else if (cutoff > 0) {
+    // Compute biquad coefficients for highpass filter
 
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
+    Q = std::pow(10, Q / 20);
+    float theta = std::numbers::pi * cutoff;
+    float alpha = std::sin(theta) / (2 * Q);
+    float cosw = std::cos(theta);
+    float beta = (1 + cosw) / 2;
+
+    float b0 = beta;
+    float b1 = -2 * beta;
+    float b2 = beta;
+
+    float a0 = 1 + alpha;
+    float a1 = -2 * cosw;
+    float a2 = 1 - alpha;
+
+    return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+  } else {
+    // When cutoff is zero, we need to be careful because the above
+    // gives a quadratic divided by the same quadratic, with poles
+    // and zeros on the unit circle in the same place. When cutoff
+    // is zero, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  }
 }
 
-BiquadCoefficients
-calculateBandpassCoefficients(float frequency, float Q, float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float alphaQ = std::sin(omega) / (2.0f * Q);
-
-  float b0 = alphaQ;
-  float b1 = 0.0f;
-  float b2 = -alphaQ;
-  float a0 = 1.0f + alphaQ;
-  float a1 = -2.0f * std::cos(omega);
-  float a2 = 1.0f - alphaQ;
-
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
-}
-
-BiquadCoefficients
-calculateNotchCoefficients(float frequency, float Q, float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float alphaQ = std::sin(omega) / (2.0f * Q);
-
-  float b0 = 1.0f;
-  float b1 = -2.0f * std::cos(omega);
-  float b2 = 1.0f;
-  float a0 = 1.0f + alphaQ;
-  float a1 = -2.0f * std::cos(omega);
-  float a2 = 1.0f - alphaQ;
-
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
-}
-
-BiquadCoefficients
-calculateAllpassCoefficients(float frequency, float Q, float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float alphaQ = std::sin(omega) / (2.0f * Q);
-
-  float b0 = 1.0f - alphaQ;
-  float b1 = -2.0f * std::cos(omega);
-  float b2 = 1.0f + alphaQ;
-  float a0 = 1.0f + alphaQ;
-  float a1 = -2.0f * std::cos(omega);
-  float a2 = 1.0f - alphaQ;
-
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
-}
-
-BiquadCoefficients calculatePeakingCoefficients(
+BiquadCoefficients calculateLowshelfCoefficients(
     float frequency,
-    float Q,
-    float gainDB,
-    float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float alphaQ = std::sin(omega) / (2.0f * Q);
-  float A = std::pow(10.0f, gainDB / 40.0f);
+    float db_gain) {
+  // Clip frequencies to between 0 and 1, inclusive.
+  frequency = std::clamp(frequency, 0.0f, 1.0f);
 
-  float b0 = 1.0f + alphaQ * A;
-  float b1 = -2.0f * std::cos(omega);
-  float b2 = 1.0f - alphaQ * A;
-  float a0 = 1.0f + alphaQ / A;
-  float a1 = -2.0f * std::cos(omega);
-  float a2 = 1.0f - alphaQ / A;
+  float a = std::pow(10, db_gain / 40);
 
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
-}
+  if (frequency == 1) {
+    // The z-transform is a constant gain.
+    return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
+  } else if (frequency > 0) {
+    float w0 = std::numbers::pi * frequency;
+    float s = 1; // filter slope (1 is max value)
+    float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    float k = std::cos(w0);
+    float k2 = 2 * sqrt(a) * alpha;
+    float a_plus_one = a + 1;
+    float a_minus_one = a - 1;
 
-BiquadCoefficients
-calculateLowshelfCoefficients(float frequency, float gainDB, float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float A = std::pow(10.0f, gainDB / 40.0f);
-  float S = 1.0f;
-  float alphaS = std::sin(omega) / 2.0f *
-      std::sqrt((A + (1.0f / A)) * ((1.0f / S) - 1) + 2.0f);
+    float b0 = a * (a_plus_one - a_minus_one * k + k2);
+    float b1 = 2 * a * (a_minus_one - a_plus_one * k);
+    float b2 = a * (a_plus_one - a_minus_one * k - k2);
+    float a0 = a_plus_one + a_minus_one * k + k2;
+    float a1 = -2 * (a_minus_one + a_plus_one * k);
+    float a2 = a_plus_one + a_minus_one * k - k2;
 
-  float b0 = A *
-      ((A + 1.0f) - (A - 1.0f) * std::cos(omega) +
-       2.0f * alphaS * std::sqrt(A));
-  float b1 = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * std::cos(omega));
-  float b2 = A *
-      ((A + 1.0f) - (A - 1.0f) * std::cos(omega) -
-       2.0f * alphaS * std::sqrt(A));
-  float a0 =
-      (A + 1.0f) + (A - 1.0f) * std::cos(omega) + 2.0f * alphaS * std::sqrt(A);
-  float a1 = -2.0f * ((A - 1.0f) + (A + 1.0f) * std::cos(omega));
-  float a2 =
-      (A + 1.0f) + (A - 1.0f) * std::cos(omega) - 2.0f * alphaS * std::sqrt(A);
-
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
+    return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+  } else {
+    // When frequency is 0, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  }
 }
 
 BiquadCoefficients calculateHighshelfCoefficients(
     float frequency,
-    float gainDB,
-    float sampleRate) {
-  float omega = 2.0f * M_PI * frequency / sampleRate;
-  float A = std::pow(10.0f, gainDB / 40.0f);
-  float S = 1.0f;
-  float alphaS = std::sin(omega) / 2.0f *
-      std::sqrt((A + (1.0f / A)) * ((1.0f / S) - 1) + 2.0f);
+    float db_gain) {
+  // Clip frequencies to between 0 and 1, inclusive.
+  frequency = std::clamp(frequency, 0.0f, 1.0f);
 
-  float b0 = A *
-      ((A + 1.0f) - (A - 1.0f) * std::cos(omega) +
-       2.0f * alphaS * std::sqrt(A));
-  float b1 = -2.0f * A * ((A - 1.0f) - (A + 1.0f) * std::cos(omega));
-  float b2 = A *
-      ((A + 1.0f) - (A - 1.0f) * std::cos(omega) -
-       2.0f * alphaS * std::sqrt(A));
-  float a0 =
-      (A + 1.0f) + (A - 1.0f) * std::cos(omega) + 2.0f * alphaS * std::sqrt(A);
-  float a1 = -2.0f * ((A - 1.0f) + (A + 1.0f) * std::cos(omega));
-  float a2 =
-      (A + 1.0f) + (A - 1.0f) * std::cos(omega) - 2.0f * alphaS * std::sqrt(A);
+  float a = std::pow(10, db_gain / 40);
 
-  return normalizeCoefficients(a0, {b0, b1, b2, a1, a2});
+  if (frequency == 1) {
+    // The z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  } else if (frequency > 0) {
+    float w0 = std::numbers::pi * frequency;
+    float s = 1; // filter slope (1 is max value)
+    float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    float k = std::cos(w0);
+    float k2 = 2 * sqrt(a) * alpha;
+    float a_plus_one = a + 1;
+    float a_minus_one = a - 1;
+
+    float b0 = a * (a_plus_one + a_minus_one * k + k2);
+    float b1 = -2 * a * (a_minus_one + a_plus_one * k);
+    float b2 = a * (a_plus_one + a_minus_one * k - k2);
+    float a0 = a_plus_one - a_minus_one * k + k2;
+    float a1 = 2 * (a_minus_one - a_plus_one * k);
+    float a2 = a_plus_one - a_minus_one * k - k2;
+
+    return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+  } else {
+    // When frequency = 0, the filter is just a gain, A^2.
+    return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
+  }
+}
+
+BiquadCoefficients
+calculatePeakingCoefficients(float frequency, float q, float db_gain) {
+  // Clip frequencies to between 0 and 1, inclusive.
+  frequency = std::clamp(frequency, 0.0f, 1.0f);
+
+  // Don't let Q go negative, which causes an unstable filter.
+  q = std::max(0.0f, q);
+
+  float a = std::pow(10, db_gain / 40);
+
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      float w0 = std::numbers::pi * frequency;
+      float alpha = std::sin(w0) / (2 * q);
+      float k = std::cos(w0);
+
+      float b0 = 1 + alpha * a;
+      float b1 = -2 * k;
+      float b2 = 1 - alpha * a;
+      float a0 = 1 + alpha / a;
+      float a1 = -2 * k;
+      float a2 = 1 - alpha / a;
+
+      return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+    } else {
+      // When Q = 0, the above formulas have problems. If we look at
+      // the z-transform, we can see that the limit as Q->0 is A^2, so
+      // set the filter that way.
+      return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
+    }
+  } else {
+    // When frequency is 0 or 1, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  }
+}
+
+BiquadCoefficients calculateAllpassCoefficients(float frequency, float q) {
+  // Clip frequencies to between 0 and 1, inclusive.
+  frequency = std::clamp(frequency, 0.0f, 1.0f);
+
+  // Don't let Q go negative, which causes an unstable filter.
+  q = std::max(0.0f, q);
+
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      float w0 = std::numbers::pi * frequency;
+      float alpha = std::sin(w0) / (2 * q);
+      float k = std::cos(w0);
+
+      float b0 = 1 - alpha;
+      float b1 = -2 * k;
+      float b2 = 1 + alpha;
+      float a0 = 1 + alpha;
+      float a1 = -2 * k;
+      float a2 = 1 - alpha;
+
+      return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+    } else {
+      // When Q = 0, the above formulas have problems. If we look at
+      // the z-transform, we can see that the limit as Q->0 is -1, so
+      // set the filter that way.
+      return normalizeCoefficients(-1, 0, 0, 1, 0, 0);
+    }
+  } else {
+    // When frequency is 0 or 1, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  }
+}
+
+BiquadCoefficients calculateNotchCoefficients(float frequency, float q) {
+  // Clip frequencies to between 0 and 1, inclusive.
+  frequency = std::clamp(frequency, 0.0f, 1.0f);
+
+  // Don't let Q go negative, which causes an unstable filter.
+  q = std::max(0.0f, q);
+
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      float w0 = std::numbers::pi * frequency;
+      float alpha = std::sin(w0) / (2 * q);
+      float k = std::cos(w0);
+
+      float b0 = 1;
+      float b1 = -2 * k;
+      float b2 = 1;
+      float a0 = 1 + alpha;
+      float a1 = -2 * k;
+      float a2 = 1 - alpha;
+
+      return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+    } else {
+      // When Q = 0, the above formulas have problems. If we look at
+      // the z-transform, we can see that the limit as Q->0 is 0, so
+      // set the filter that way.
+      return normalizeCoefficients(0, 0, 0, 1, 0, 0);
+    }
+  } else {
+    // When frequency is 0 or 1, the z-transform is 1.
+    return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+  }
+}
+
+BiquadCoefficients calculateBandpassCoefficients(float frequency, float q) {
+  // No negative frequencies allowed.
+  frequency = std::max(0.0f, frequency);
+
+  // Don't let Q go negative, which causes an unstable filter.
+  q = std::max(0.0f, q);
+
+  if (frequency > 0 && frequency < 1) {
+    float w0 = std::numbers::pi * frequency;
+    if (q > 0) {
+      float alpha = std::sin(w0) / (2 * q);
+      float k = std::cos(w0);
+
+      float b0 = alpha;
+      float b1 = 0;
+      float b2 = -alpha;
+      float a0 = 1 + alpha;
+      float a1 = -2 * k;
+      float a2 = 1 - alpha;
+
+      return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
+    } else {
+      // When Q = 0, the above formulas have problems. If we look at
+      // the z-transform, we can see that the limit as Q->0 is 1, so
+      // set the filter that way.
+      return normalizeCoefficients(1, 0, 0, 1, 0, 0);
+    }
+  } else {
+    // When the cutoff is zero, the z-transform approaches 0, if Q
+    // > 0. When both Q and cutoff are zero, the z-transform is
+    // pretty much undefined. What should we do in this case?
+    // For now, just make the filter 0. When the cutoff is 1, the
+    // z-transform also approaches 0.
+    return normalizeCoefficients(0, 0, 0, 1, 0, 0);
+  }
 }
 
 TEST_F(BiquadFilterTest, TestLowpassCoefficients) {
   float frequency = 1000.0f;
   float Q = 1.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setLowpassCoefficients(frequency, Q);
-  auto coeffs = calculateLowpassCoefficients(frequency, Q, sampleRate);
+  auto coeffs = calculateLowpassCoefficients(frequency, Q);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -185,11 +315,10 @@ TEST_F(BiquadFilterTest, TestLowpassCoefficients) {
 TEST_F(BiquadFilterTest, TestHighpassCoefficients) {
   float frequency = 500.0f;
   float Q = 0.75f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setHighpassCoefficients(frequency, Q);
-  auto coeffs = calculateHighpassCoefficients(frequency, Q, sampleRate);
+  auto coeffs = calculateHighpassCoefficients(frequency, Q);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -201,11 +330,10 @@ TEST_F(BiquadFilterTest, TestHighpassCoefficients) {
 TEST_F(BiquadFilterTest, TestBandpassCoefficients) {
   float frequency = 22000.0f;
   float Q = -20.4f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setBandpassCoefficients(frequency, Q);
-  auto coeffs = calculateBandpassCoefficients(frequency, Q, sampleRate);
+  auto coeffs = calculateBandpassCoefficients(frequency, Q);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -217,11 +345,10 @@ TEST_F(BiquadFilterTest, TestBandpassCoefficients) {
 TEST_F(BiquadFilterTest, TestNotchCoefficients) {
   float frequency = 1000.0f;
   float Q = 10.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setNotchCoefficients(frequency, Q);
-  auto coeffs = calculateNotchCoefficients(frequency, Q, sampleRate);
+  auto coeffs = calculateNotchCoefficients(frequency, Q);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -233,11 +360,10 @@ TEST_F(BiquadFilterTest, TestNotchCoefficients) {
 TEST_F(BiquadFilterTest, TestAllpassCoefficients) {
   float frequency = 1000.0f;
   float Q = 1.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setAllpassCoefficients(frequency, Q);
-  auto coeffs = calculateAllpassCoefficients(frequency, Q, sampleRate);
+  auto coeffs = calculateAllpassCoefficients(frequency, Q);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -250,11 +376,10 @@ TEST_F(BiquadFilterTest, TestPeakingCoefficients) {
   float frequency = 1000.0f;
   float Q = 1.0f;
   float gainDB = 3.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setPeakingCoefficients(frequency, Q, gainDB);
-  auto coeffs = calculatePeakingCoefficients(frequency, Q, gainDB, sampleRate);
+  auto coeffs = calculatePeakingCoefficients(frequency, Q, gainDB);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -266,11 +391,10 @@ TEST_F(BiquadFilterTest, TestPeakingCoefficients) {
 TEST_F(BiquadFilterTest, TestLowshelfCoefficients) {
   float frequency = 1000.0f;
   float gainDB = 3.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setLowshelfCoefficients(frequency, gainDB);
-  auto coeffs = calculateLowshelfCoefficients(frequency, gainDB, sampleRate);
+  auto coeffs = calculateLowshelfCoefficients(frequency, gainDB);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -282,11 +406,10 @@ TEST_F(BiquadFilterTest, TestLowshelfCoefficients) {
 TEST_F(BiquadFilterTest, TestHighshelfCoefficients) {
   float frequency = 1000.0f;
   float gainDB = 3.0f;
-  float sampleRate = context->getSampleRate();
   auto filterNode = std::make_shared<audioapi::BiquadFilterNode>(context.get());
 
   filterNode->setHighshelfCoefficients(frequency, gainDB);
-  auto coeffs = calculateHighshelfCoefficients(frequency, gainDB, sampleRate);
+  auto coeffs = calculateHighshelfCoefficients(frequency, gainDB);
 
   EXPECT_FLOAT_EQ(filterNode->b0_, coeffs.b0);
   EXPECT_FLOAT_EQ(filterNode->b1_, coeffs.b1);
@@ -294,4 +417,5 @@ TEST_F(BiquadFilterTest, TestHighshelfCoefficients) {
   EXPECT_FLOAT_EQ(filterNode->a1_, coeffs.a1);
   EXPECT_FLOAT_EQ(filterNode->a2_, coeffs.a2);
 }
+
 } // namespace audioapi
