@@ -3,7 +3,62 @@
 namespace audioapi {
 
 WorkletsRunner::WorkletsRunner(
-    std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept
-    : weakUiRuntime_(std::move(weakUiRuntime)) {}
+    std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
+    std::shared_ptr<worklets::SerializableWorklet> shareableWorklet,
+    bool shouldLockRuntime = true)
+    : weakRuntime_(std::move(weakRuntime)),
+      shouldLockRuntime(shouldLockRuntime) {
+  auto strongRuntime = weakRuntime_.lock();
+  if (strongRuntime == nullptr) {
+    return;
+  }
+  unsafeRuntimePtr = &strongRuntime->getJSIRuntime();
+  strongRuntime->executeSync(
+      [this, shareableWorklet](jsi::Runtime &rt) -> jsi::Value {
+        new (reinterpret_cast<jsi::Function *>(&unsafeWorklet))
+            jsi::Function(shareableWorklet->toJSValue(*unsafeRuntimePtr)
+                              .asObject(*unsafeRuntimePtr)
+                              .asFunction(*unsafeRuntimePtr));
+        return jsi::Value::undefined();
+      });
+  workletInitialized = true;
+}
+
+WorkletsRunner::~WorkletsRunner() {
+  if (!workletInitialized) {
+    return;
+  }
+  auto strongRuntime = weakRuntime_.lock();
+  if (strongRuntime == nullptr) {
+    // We cannot safely destroy the worklet without a valid runtime
+    return;
+  }
+  reinterpret_cast<jsi::Function *>(&unsafeWorklet)->~Function();
+  workletInitialized = false;
+}
+
+std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeGuarded(
+    const std::function<jsi::Value(jsi::Runtime &)> &&job) const
+    noexcept(noexcept(job)) {
+  auto strongRuntime = weakRuntime_.lock();
+  if (strongRuntime == nullptr) {
+    return std::nullopt;
+  }
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  return strongRuntime->executeSync(std::move(job));
+#else
+  return std::nullopt;
+#endif
+}
+
+std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeUnsafe(
+    const std::function<jsi::Value(jsi::Runtime &)> &&job) const
+    noexcept(noexcept(job)) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  return job(*unsafeRuntimePtr);
+#else
+  return std::nullopt;
+#endif
+};
 
 }; // namespace audioapi
