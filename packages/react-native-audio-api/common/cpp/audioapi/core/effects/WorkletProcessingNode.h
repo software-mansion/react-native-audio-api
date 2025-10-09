@@ -18,8 +18,7 @@ class WorkletProcessingNode : public AudioNode {
  public:
   explicit WorkletProcessingNode(
       BaseAudioContext *context,
-      std::shared_ptr<worklets::SerializableWorklet> &worklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime
+      WorkletsRunner &&workletRunner
   ) : AudioNode(context) {}
 
  protected:
@@ -33,8 +32,7 @@ class WorkletProcessingNode : public AudioNode {
  public:
   explicit WorkletProcessingNode(
       BaseAudioContext *context,
-      std::shared_ptr<worklets::SerializableWorklet> &worklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime
+      WorkletsRunner &&workletRunner
   );
 
  protected:
@@ -42,7 +40,6 @@ class WorkletProcessingNode : public AudioNode {
 
  private:
   WorkletsRunner workletRunner_;
-  std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<std::shared_ptr<AudioArrayBuffer>> inputBuffsHandles_;
   std::vector<std::shared_ptr<AudioArrayBuffer>> outputBuffsHandles_;
 };

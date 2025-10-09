@@ -5,7 +5,7 @@ namespace audioapi {
 WorkletsRunner::WorkletsRunner(
     std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
     std::shared_ptr<worklets::SerializableWorklet> shareableWorklet,
-    bool shouldLockRuntime = true)
+    bool shouldLockRuntime)
     : weakRuntime_(std::move(weakRuntime)),
       shouldLockRuntime(shouldLockRuntime) {
   auto strongRuntime = weakRuntime_.lock();
@@ -22,6 +22,18 @@ WorkletsRunner::WorkletsRunner(
         return jsi::Value::undefined();
       });
   workletInitialized = true;
+}
+
+WorkletsRunner::WorkletsRunner(WorkletsRunner &&other)
+    : weakRuntime_(std::move(other.weakRuntime_)),
+      unsafeRuntimePtr(other.unsafeRuntimePtr),
+      shouldLockRuntime(other.shouldLockRuntime),
+      workletInitialized(other.workletInitialized) {
+  if (workletInitialized) {
+    std::memcpy(&unsafeWorklet, &other.unsafeWorklet, sizeof(unsafeWorklet));
+    other.workletInitialized = false;
+    other.unsafeRuntimePtr = nullptr;
+  }
 }
 
 WorkletsRunner::~WorkletsRunner() {

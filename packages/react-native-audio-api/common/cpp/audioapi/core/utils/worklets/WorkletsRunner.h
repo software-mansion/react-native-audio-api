@@ -30,6 +30,7 @@ class WorkletsRunner {
     std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
     std::shared_ptr<worklets::SerializableWorklet> shareableWorklet,
     bool shouldLockRuntime = true);
+  WorkletsRunner(WorkletsRunner&&);
   ~WorkletsRunner();
 
   /// @brief Call the worklet function with the given arguments.
