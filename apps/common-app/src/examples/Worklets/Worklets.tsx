@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import {
   AudioContext,
@@ -23,6 +23,7 @@ function Worklets() {
   const workletNodeRef = useRef<WorkletNode | null>(null);
   const workletProcessingNodeRef = useRef<WorkletProcessingNode | null>(null);
   const workletSourceNodeRef = useRef<WorkletSourceNode | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const bar0 = useSharedValue(0);
   const bar1 = useSharedValue(0);
@@ -39,6 +40,7 @@ function Worklets() {
   }, []);
 
   const start = () => {
+    setIsPlaying(true);
     const processingWorklet = (
       inputAudioData: Array<Float32Array>,
       outputAudioData: Array<Float32Array>,
@@ -141,6 +143,7 @@ function Worklets() {
     bar2.value = withSpring(0, { damping: 20, stiffness: 100 });
     bar3.value = withSpring(0, { damping: 20, stiffness: 100 });
     bar4.value = withSpring(0, { damping: 20, stiffness: 100 });
+    setIsPlaying(false);
   };
 
   const createBarStyle = (index: number) => {
@@ -186,12 +189,10 @@ function Worklets() {
         Extrapolation.CLAMP
       );
 
-      const barWidth = 40 - distanceFromCenter * 5;
       const opacity = 1 - distanceFromCenter * 0.15;
 
       return {
         height,
-        width: barWidth,
         backgroundColor: `rgba(${Math.floor(red)}, ${Math.floor(green)}, 0, ${opacity})`,
       };
     });
@@ -218,8 +219,8 @@ function Worklets() {
       </View>
 
       <View style={styles.buttonsContainer}>
-        <Button onPress={start} title="Start Playing" />
-        <Button onPress={stop} title="Stop Playing" />
+        <Button onPress={start} title="Start Playing" disabled={isPlaying} />
+        <Button onPress={stop} title="Stop Playing" disabled={!isPlaying} />
       </View>
     </Container>
   );
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
   bar: {
     borderRadius: 20,
     minHeight: 10,
+    width: 40,
   },
   buttonsContainer: {
     flexDirection: 'row',
