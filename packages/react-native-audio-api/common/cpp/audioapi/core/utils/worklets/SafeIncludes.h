@@ -27,6 +27,11 @@
     #include <worklets/android/WorkletsModule.h>
   #endif
 #else
+
+#define RN_AUDIO_API_WORKLETS_DISABLED_ERROR \
+  throw std::runtime_error(               \
+      "Worklets are disabled. Please install react-native-worklets to enable them.");
+
 /// @brief Dummy implementation of worklets for non-worklet builds they should do nothing and mock necessary methods
 /// @note It helps to reduce compile time branching across codebase
 /// @note If you need to base some c++ implementation on if the worklets are enabled use `#if RN_AUDIO_API_ENABLE_WORKLETS`
@@ -36,12 +41,36 @@ using namespace facebook;
 class MessageQueueThread {};
 class WorkletsModuleProxy {};
 class WorkletRuntime {
-  explicit WorkletRuntime(uint64_t, const std::shared_ptr<MessageQueueThread> &, const std::string &, const bool);
+ public:
+  explicit WorkletRuntime(uint64_t, const std::shared_ptr<MessageQueueThread> &, const std::string &, const bool) {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  jsi::Runtime &getJSIRuntime() const {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  jsi::Value executeSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  jsi::Value executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  jsi::Value executeSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
 };
 class SerializableWorklet {
-  SerializableWorklet(jsi::Runtime*, const jsi::Object &);
+ public:
+  SerializableWorklet(jsi::Runtime*, const jsi::Object &) {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  jsi::Value toJSValue(jsi::Runtime &rt) {
+    RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
 };
 } // namespace worklets
+
+#undef RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+
 #endif
 
 /// @brief Struct to hold references to different runtimes used in the AudioAPI
