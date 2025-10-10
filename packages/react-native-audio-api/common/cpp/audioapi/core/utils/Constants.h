@@ -10,6 +10,10 @@ namespace audioapi {
 static constexpr int RENDER_QUANTUM_SIZE = 128;
 static constexpr size_t MAX_FFT_SIZE = 32768;
 
+// stretcher
+static constexpr float UPPER_FREQUENCY_LIMIT_DETECTION = 333.0f;
+static constexpr float LOWER_FREQUENCY_LIMIT_DETECTION = 55.0f;
+
 // general
 static constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
 static constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());

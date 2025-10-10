@@ -209,20 +209,51 @@ Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 :::caution
 Supported file formats:
-- mp3
-- wav
-- flac
-- opus
-- ogg
-- m4a
 - aac
+- flac
+- m4a
+- mp3
 - mp4
+- ogg
+- opus
+- wav
 :::
 
 ### `decodeAudioData`
 
+Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio.
+If not provided, the audio will be automatically resampled to match the audio context's `sampleRate`.
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">Parameter</th>
+      <th align="center">Type</th>
+      <th align="center">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2" align="center"><code>input</code></td>
+      <td align="center"><code>ArrayBuffer</code></td>
+      <td align="center">ArrayBuffer with audio data.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Path to audio file located on the device.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>sampleRate</code><Optional /></td>
+      <td align="center"><code>number</code></td>
+      <td align="center">Target sample rate for the decoded audio.</td>
+    </tr>
+  </tbody>
+</table>
+
+#### Returns `Promise<AudioBuffer>`.
+
 <details>
-<summary>Example</summary>
+<summary>Example decoding with memory block</summary>
 ```tsx
 const url = ... // url to an audio
 
@@ -236,16 +267,6 @@ const buffer = await fetch(url)
 ```
 </details>
 
-Decodes audio data. It decodes with in memory audio data block.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `arrayBuffer` | `ArrayBuffer` | ArrayBuffer with audio data. |
-
-#### Returns `Promise<AudioBuffer>`.
-
-### `decodeAudioDataSource`
-
 <details>
 <summary>Example using expo-asset library</summary>
 ```tsx
@@ -257,37 +278,34 @@ const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
       if (!asset.localUri) {
         throw new Error('Failed to load audio asset');
       }
-      return this.audioContext.decodeAudioDataSource(asset.localUri);
+      return this.audioContext.decodeAudioData(asset.localUri);
     })
 ```
 </details>
 
-Decodes audio data file.
+### `decodePCMInBase64`
 
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `sourcePath` | `string` | Path to audio file located on the device. |
+Decodes base64-encoded PCM audio data.
 
-#### Returns `Promise<AudioBuffer>`.
+#### Parameters
 
-### `decodePCMInBase64Data` <MobileOnly />
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base64String` | `string` | Base64-encoded PCM audio data. |
+| `inputSampleRate` | `number` | Sample rate of the input PCM data. |
+| `inputChannelCount` | `number` | Number of channels in the input PCM data. |
+| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+
+#### Returns `Promise<AudioBuffer>`
 
 <details>
-<summary>Example</summary>
+<summary>Example decoding with data in base64 format </summary>
 ```tsx
 const data = ... // data encoded in base64 string
-const buffer = await this.audioContext.decodePCMInBase64Data(data);
+// data is not interleaved (Channel1, Channel1, ..., Channel2, Channel2, ...)
+const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 ```
 </details>
-
-Decodes audio data. It decodes with PCM data in Base64.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `base64` | `string` | Base64 string with audio data. |
-| `playbackRate` <Optional /> | `number` | Number that represents audio speed, which will be applied during decoding. |
-
-#### Returns `Promise<AudioBuffer>`.
 
 ## Remarks
 

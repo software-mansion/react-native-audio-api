@@ -3,15 +3,14 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
-
+#include <cassert>
+#include <complex>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <complex>
-#include <cstddef>
-#include <cassert>
 
 namespace audioapi {
 
@@ -27,7 +26,6 @@ class BiquadFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
-class AudioDecoder;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
@@ -68,10 +66,6 @@ class BaseAudioContext {
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
 
-  std::shared_ptr<AudioBuffer> decodeAudioDataSource(const std::string &path);
-  std::shared_ptr<AudioBuffer> decodeAudioData(const void *data, size_t size);
-  std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(const std::string &data, float playbackSpeed);
-
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;
   AudioNodeManager *getNodeManager();
@@ -85,9 +79,7 @@ class BaseAudioContext {
 
   std::shared_ptr<AudioDestinationNode> destination_;
   // init in AudioContext or OfflineContext constructor
-  std::shared_ptr<AudioDecoder> audioDecoder_ {};
-  // init in AudioContext or OfflineContext constructor
-  float sampleRate_ {};
+  float sampleRate_{};
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 

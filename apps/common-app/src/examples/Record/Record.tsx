@@ -22,11 +22,15 @@ const Record: FC = () => {
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
 
   useEffect(() => {
-    AudioManager.requestRecordingPermissions();
-    recorderRef.current = new AudioRecorder({
-      sampleRate: SAMPLE_RATE,
-      bufferLengthInSamples: SAMPLE_RATE,
-    });
+    const setup = async () => {
+      await AudioManager.requestRecordingPermissions();
+      recorderRef.current = new AudioRecorder({
+        sampleRate: SAMPLE_RATE,
+        bufferLengthInSamples: SAMPLE_RATE,
+      });
+    };
+
+    setup();
     return () => {
       aCtxRef.current?.close();
       stopRecorder();
@@ -94,11 +98,7 @@ const Record: FC = () => {
     recorderRef.current.onAudioReady((event) => {
       const { buffer, numFrames } = event;
 
-      console.log(
-        'Audio recorder buffer ready:',
-        buffer.duration,
-        numFrames
-      );
+      console.log('Audio recorder buffer ready:', buffer.duration, numFrames);
       audioBuffersRef.current.push(buffer);
     });
 

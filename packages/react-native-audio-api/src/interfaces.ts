@@ -37,6 +37,8 @@ export interface IBaseAudioContext {
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
+  readonly decoder: IAudioDecoder;
+  readonly stretcher: IAudioStretcher;
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createWorkletSourceNode(
@@ -73,12 +75,6 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
-  decodeAudioDataSource: (sourcePath: string) => Promise<IAudioBuffer>;
-  decodeAudioData: (arrayBuffer: ArrayBuffer) => Promise<IAudioBuffer>;
-  decodePCMAudioDataInBase64: (
-    b64: string,
-    playbackRate: number
-  ) => Promise<IAudioBuffer>;
   createStreamer: () => IStreamerNode;
 }
 
@@ -262,6 +258,30 @@ export interface IAudioRecorder {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
+}
+
+export interface IAudioDecoder {
+  decodeWithMemoryBlock: (
+    arrayBuffer: ArrayBuffer,
+    sampleRate?: number
+  ) => Promise<IAudioBuffer>;
+  decodeWithFilePath: (
+    sourcePath: string,
+    sampleRate?: number
+  ) => Promise<IAudioBuffer>;
+  decodeWithPCMInBase64: (
+    b64: string,
+    inputSampleRate: number,
+    inputChannelCount: number,
+    interleaved?: boolean
+  ) => Promise<IAudioBuffer>;
+}
+
+export interface IAudioStretcher {
+  changePlaybackSpeed: (
+    arrayBuffer: AudioBuffer,
+    playbackSpeed: number
+  ) => Promise<IAudioBuffer>;
 }
 
 export interface IAudioEventEmitter {

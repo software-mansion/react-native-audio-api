@@ -176,41 +176,6 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   return analyser;
 }
 
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioDataSource(
-    const std::string &path) {
-  auto audioBus = audioDecoder_->decodeWithFilePath(path);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeAudioData(
-    const void *data,
-    size_t size) {
-  auto audioBus = audioDecoder_->decodeWithMemoryBlock(data, size);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::decodeWithPCMInBase64(
-    const std::string &data,
-    float playbackSpeed) {
-  auto audioBus = audioDecoder_->decodeWithPCMInBase64(data, playbackSpeed);
-
-  if (!audioBus) {
-    return nullptr;
-  }
-
-  return std::make_shared<AudioBuffer>(audioBus);
-}
-
 AudioNodeManager *BaseAudioContext::getNodeManager() {
   return nodeManager_.get();
 }

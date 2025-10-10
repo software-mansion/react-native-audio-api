@@ -28,6 +28,8 @@ extern "C" {
 #include <string>
 #include <atomic>
 
+static bool constexpr VERBOSE = false;
+
 namespace audioapi {
 
 class AudioBus;
@@ -44,7 +46,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   void stop(double when) override;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
   #ifndef AUDIO_API_TEST_SUITE
@@ -94,7 +96,7 @@ class StreamerNode : public AudioScheduledSourceNode {
 
   /**
    * @brief Open the input stream
-   * @param input_url The URL of the input stream
+   * @param inputUrl The URL of the input stream
    * @return true if successful, false otherwise
    * @note This function initializes the FFmpeg libraries and opens the input stream
    */

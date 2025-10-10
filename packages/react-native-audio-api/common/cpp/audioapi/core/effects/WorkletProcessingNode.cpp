@@ -26,7 +26,7 @@ WorkletProcessingNode::WorkletProcessingNode(
   }
 }
 
-void WorkletProcessingNode::processNode(
+std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t channelCount = std::min(
@@ -84,6 +84,8 @@ void WorkletProcessingNode::processNode(
       std::memset(channelData, 0, framesToProcess * sizeof(float));
     }
   }
+
+  return processingBus;
 }
 
 } // namespace audioapi

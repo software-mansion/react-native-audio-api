@@ -24,7 +24,7 @@ class AudioDestinationNode : public AudioNode {
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int) final {};
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int) final { return processingBus; };
 
  private:
   std::size_t currentSampleFrame_;

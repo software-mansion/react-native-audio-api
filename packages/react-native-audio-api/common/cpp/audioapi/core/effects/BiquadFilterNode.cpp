@@ -383,7 +383,7 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-void BiquadFilterNode::processNode(
+std::shared_ptr<AudioBus> BiquadFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   int numChannels = processingBus->getNumberOfChannels();
@@ -423,6 +423,8 @@ void BiquadFilterNode::processNode(
   x2_ = x2;
   y1_ = y1;
   y2_ = y2;
+
+  return processingBus;
 }
 
 } // namespace audioapi

@@ -1,0 +1,39 @@
+---
+sidebar_position: 2
+---
+
+import { Optional, MobileOnly } from '@site/src/components/Badges';
+
+# Time stretching
+
+You can change the playback speed of an audio buffer independently, without creating an AudioContext, using the exported function [`changePlaybackSpeed`](/docs/utils/decoding#decodeaudiodata).
+
+### `changePlaybackSpeed`
+
+Changes the playback speed of an audio buffer.
+
+| Parameter | Type | Description |
+| :----: | :----: | :-------- |
+| `input` | `AudioBuffer` | The audio buffer whose playback speed you want to change. |
+| `playbackSpeed` | `number` | The factor by which to change the playback speed. Values between [1.0, 2.0] speed up playback, values between [0.5, 1.0] slow it down. |
+
+
+#### Returns `Promise<AudioBuffer>`.
+
+<details>
+<summary>Example usage</summary>
+```tsx
+const url = ... // url to an audio
+const sampleRate = 48000
+
+const buffer = await fetch(url)
+  .then((response) => response.arrayBuffer())
+  .then((arrayBuffer) => decodeAudioData(arrayBuffer, sampleRate))
+  .then((audioBuffer) => changePlaybackSpeed(audioBuffer, 1.25))
+  .catch((error) => {
+    console.error('Error decoding audio data source:', error);
+    return null;
+  });
+```
+</details>
+

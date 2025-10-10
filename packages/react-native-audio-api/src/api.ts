@@ -2,7 +2,9 @@ import { NativeAudioAPIModule } from './specs';
 import { AudioRecorderOptions } from './types';
 import type {
   IAudioContext,
+  IAudioDecoder,
   IAudioRecorder,
+  IAudioStretcher,
   IOfflineAudioContext,
   IAudioEventEmitter,
 } from './interfaces';
@@ -25,6 +27,10 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
+  var createAudioDecoder: () => IAudioDecoder;
+
+  var createAudioStretcher: () => IAudioStretcher;
+
   var AudioEventEmitter: IAudioEventEmitter;
 }
 /* eslint-disable no-var */
@@ -33,6 +39,8 @@ if (
   global.createAudioContext == null ||
   global.createOfflineAudioContext == null ||
   global.createAudioRecorder == null ||
+  global.createAudioDecoder == null ||
+  global.createAudioStretcher == null ||
   global.AudioEventEmitter == null
 ) {
   if (!NativeAudioAPIModule) {
@@ -68,6 +76,8 @@ export { default as StreamerNode } from './core/StreamerNode';
 export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as AudioManager } from './system';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
+export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
+export { default as changePlaybackSpeed } from './core/AudioStretcher';
 
 export {
   OscillatorType,
