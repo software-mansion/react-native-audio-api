@@ -4,7 +4,7 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
-#include <test/MockAudioEventHandlerRegistry.h>
+#include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
 
 static constexpr int sampleRate = 44100;

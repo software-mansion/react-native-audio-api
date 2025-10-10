@@ -27,7 +27,7 @@
  */
 
 #include <assert.h>
-#include <test/biquad/BiquadFilterChromium.h>
+#include <test/src/biquad/BiquadFilterChromium.h>
 #include <algorithm>
 #include <cmath>
 #include <complex>

@@ -1,5 +1,5 @@
-#include <test/biquad/BiquadFilterChromium.h>
-#include <test/biquad/BiquadFilterTest.h>
+#include <test/src/biquad/BiquadFilterChromium.h>
+#include <test/src/biquad/BiquadFilterTest.h>
 
 namespace audioapi {
 
