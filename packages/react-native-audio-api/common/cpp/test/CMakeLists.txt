@@ -72,8 +72,8 @@ add_executable(
   AudioParamTest.cpp
   biquad/BiquadFilterTest.cpp
   biquad/BiquadFilterTest.h
-  biquad/BiquadFilter.cpp
-  biquad/BiquadFilter.h
+  biquad/BiquadFilterChromium.cpp
+  biquad/BiquadFilterChromium.h
 )
 
 add_compile_definitions(AUDIO_API_TEST_SUITE)
