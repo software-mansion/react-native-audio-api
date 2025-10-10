@@ -125,25 +125,20 @@ void StreamerNode::streamAudio() {
   while (streamFlag.load()) {
     if (pendingFrame_ != nullptr) {
       if (!processFrameWithResampler(pendingFrame_)) {
-        cleanup();
         return;
       }
     } else {
       if (av_read_frame(fmtCtx_, pkt_) < 0) {
-        cleanup();
         return;
       }
       if (pkt_->stream_index == audio_stream_index_) {
         if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
-          cleanup();
           return;
         }
         if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
-          cleanup();
           return;
         }
         if (!processFrameWithResampler(frame_)) {
-          cleanup();
           return;
         }
       }
@@ -286,11 +281,9 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   streamFlag.store(false);
-  // cleanup can be invoked also from the streaming thread so we need to ensure
-  // join is called only from js thread
-  if (streamingThread_.joinable()) {
-    streamingThread_.join();
-  }
+  // cleanup cannot be called from the streaming thread so there is no need to
+  // check if we are in the same thread
+  streamingThread_.join();
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }
