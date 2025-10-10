@@ -211,4 +211,48 @@ TEST_P(BiquadFilterGainTest, SetHighshelfCoefficients) {
   testHighshelf(frequency, gain);
 }
 
+TEST_F(BiquadFilterTest, GetFrequencyResponse) {
+  auto node = std::make_shared<BiquadFilterNode>(context.get());
+
+  float cutoff = 1000.0f;
+  float Q = 1.0f;
+  node->setLowpassCoefficients(cutoff, Q);
+  auto coeffs = calculateLowpassCoefficients(cutoff, Q);
+
+  std::vector<float> normalizedTestFrequencies = {
+      -0.00001f, 0.0f, 0.00001f, 0.25f, 0.5f, 0.75f, 1.0f, 1.00001f};
+
+  std::vector<float> magResponseNode(normalizedTestFrequencies.size());
+  std::vector<float> phaseResponseNode(normalizedTestFrequencies.size());
+  std::vector<float> magResponseRef(normalizedTestFrequencies.size());
+  std::vector<float> phaseResponseRef(normalizedTestFrequencies.size());
+
+  node->getFrequencyResponse(
+      normalizedTestFrequencies.data(),
+      magResponseNode.data(),
+      phaseResponseNode.data(),
+      normalizedTestFrequencies.size());
+  GetFrequencyResponse(
+      coeffs, normalizedTestFrequencies, magResponseRef, phaseResponseRef);
+
+  for (size_t i = 0; i < normalizedTestFrequencies.size(); ++i) {
+    float f = normalizedTestFrequencies[i];
+    if (std::isnan(magResponseRef[i])) {
+      EXPECT_TRUE(std::isnan(magResponseNode[i]))
+          << "Expected NaN at frequency " << f;
+    } else {
+      EXPECT_EQ(magResponseNode[i], magResponseRef[i])
+          << "Magnitude mismatch at " << f << " Hz";
+    }
+
+    if (std::isnan(phaseResponseRef[i])) {
+      EXPECT_TRUE(std::isnan(phaseResponseNode[i]))
+          << "Expected NaN at frequency " << f;
+    } else {
+      EXPECT_EQ(phaseResponseNode[i], phaseResponseRef[i])
+          << "Phase mismatch at " << f << " Hz";
+    }
+  }
+}
+
 } // namespace audioapi

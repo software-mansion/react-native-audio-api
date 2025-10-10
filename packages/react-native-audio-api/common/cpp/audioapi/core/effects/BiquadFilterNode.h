@@ -50,6 +50,7 @@ class AudioBus;
 class BiquadFilterNode : public AudioNode {
 #ifdef AUDIO_API_TEST_SUITE
   friend class BiquadFilterTest;
+    FRIEND_TEST(BiquadFilterTest, GetFrequencyResponse);
 #endif
 
  public:

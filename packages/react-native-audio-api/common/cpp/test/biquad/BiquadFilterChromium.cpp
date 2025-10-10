@@ -26,12 +26,66 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <test/biquad/BiquadFilterChromium.h>
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <numbers>
+#include <span>
 
 namespace audioapi {
+
+void GetFrequencyResponse(
+    const BiquadCoefficients &coeffs,
+    std::span<const float> frequency,
+    std::span<float> mag_response,
+    std::span<float> phase_response) {
+  assert(!frequency.empty());
+  assert(!mag_response.empty());
+  assert(!phase_response.empty());
+
+  // Evaluate the Z-transform of the filter at given normalized
+  // frequency from 0 to 1.  (1 corresponds to the Nyquist
+  // frequency.)
+  //
+  // The z-transform of the filter is
+  //
+  // H(z) = (b0 + b1*z^(-1) + b2*z^(-2))/(1 + a1*z^(-1) + a2*z^(-2))
+  //
+  // Evaluate as
+  //
+  // b0 + (b1 + b2*z1)*z1
+  // --------------------
+  // 1 + (a1 + a2*z1)*z1
+  //
+  // with z1 = 1/z and z = exp(j*pi*frequency). Hence z1 = exp(-j*pi*frequency)
+
+  double b0 = coeffs.b0;
+  double b1 = coeffs.b1;
+  double b2 = coeffs.b2;
+  double a1 = coeffs.a1;
+  double a2 = coeffs.a2;
+
+  for (size_t k = 0; k < frequency.size(); ++k) {
+    if (frequency[k] < 0 || frequency[k] > 1) {
+      // Out-of-bounds frequencies should return NaN.
+      mag_response[k] = std::nanf("");
+      phase_response[k] = std::nanf("");
+    } else {
+      double omega = -std::numbers::pi * frequency[k];
+      std::complex<double> z =
+          std::complex<double>(std::cos(omega), std::sin(omega));
+      std::complex<double> numerator = b0 + (b1 + b2 * z) * z;
+      std::complex<double> denominator =
+          std::complex<double>(1, 0) + (a1 + a2 * z) * z;
+      std::complex<double> response = numerator / denominator;
+      mag_response[k] = static_cast<float>(abs(response));
+      phase_response[k] =
+          static_cast<float>(std::atan2(imag(response), real(response)));
+    }
+  }
+}
 
 BiquadCoefficients normalizeCoefficients(
     float b0,

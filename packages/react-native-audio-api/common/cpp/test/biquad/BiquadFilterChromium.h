@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include <span>
+
 namespace audioapi {
 struct BiquadCoefficients {
   float b0;
@@ -36,6 +38,12 @@ struct BiquadCoefficients {
   float a1;
   float a2;
 };
+
+void GetFrequencyResponse(
+    const BiquadCoefficients &coeffs,
+    std::span<const float> frequency,
+    std::span<float> mag_response,
+    std::span<float> phase_response);
 
 BiquadCoefficients normalizeCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
 
