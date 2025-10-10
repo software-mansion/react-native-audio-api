@@ -44,12 +44,14 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   if (!openInput(input_url)) {
-    printf("Failed to open input\n");
+    if (VERBOSE)
+      printf("Failed to open input\n");
     return false;
   }
 
   if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
-    printf("Failed to find/setup audio stream\n");
+    if (VERBOSE)
+      printf("Failed to find/setup audio stream\n");
     cleanup();
     return false;
   }
@@ -58,7 +60,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   frame_ = av_frame_alloc();
 
   if (pkt_ == nullptr || frame_ == nullptr) {
-    printf("Failed to allocate packet or frame\n");
+    if (VERBOSE)
+      printf("Failed to allocate packet or frame\n");
     cleanup();
     return false;
   }
@@ -178,10 +181,11 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
     }
     bufferedBusIndex_ -= offsetLength;
   } else {
-    printf(
-        "Buffer underrun: have %zu, need %zu\n",
-        bufferedBusIndex_,
-        (size_t)framesToProcess);
+    if (VERBOSE)
+      printf(
+          "Buffer underrun: have %zu, need %zu\n",
+          bufferedBusIndex_,
+          (size_t)framesToProcess);
     processingBus->zero();
   }
 

@@ -28,6 +28,8 @@ extern "C" {
 #include <string>
 #include <atomic>
 
+static bool constexpr VERBOSE = false;
+
 namespace audioapi {
 
 class AudioBus;
