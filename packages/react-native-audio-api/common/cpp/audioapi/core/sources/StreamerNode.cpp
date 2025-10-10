@@ -44,10 +44,12 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   if (!openInput(input_url)) {
+    printf("Failed to open input\n");
     return false;
   }
 
   if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
+    printf("Failed to find/setup audio stream\n");
     cleanup();
     return false;
   }
@@ -56,6 +58,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
   frame_ = av_frame_alloc();
 
   if (pkt_ == nullptr || frame_ == nullptr) {
+    printf("Failed to allocate packet or frame\n");
     cleanup();
     return false;
   }
@@ -140,8 +143,8 @@ void StreamerNode::streamAudio() {
           cleanup();
           return;
         }
-        av_packet_unref(pkt_);
       }
+      av_packet_unref(pkt_);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
@@ -174,6 +177,12 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
           (maxBufferSize_ - offsetLength) * sizeof(float));
     }
     bufferedBusIndex_ -= offsetLength;
+  } else {
+    printf(
+        "Buffer underrun: have %zu, need %zu\n",
+        bufferedBusIndex_,
+        (size_t)framesToProcess);
+    processingBus->zero();
   }
 
   return processingBus;
@@ -273,7 +282,11 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   streamFlag.store(false);
-  streamingThread_.join();
+  // cleanup can be invoked also from the streaming thread so we need to ensure
+  // join is called only from js thread
+  if (streamingThread_.joinable()) {
+    streamingThread_.join();
+  }
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }

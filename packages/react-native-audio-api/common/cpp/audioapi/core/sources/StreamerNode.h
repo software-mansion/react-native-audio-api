@@ -94,7 +94,7 @@ class StreamerNode : public AudioScheduledSourceNode {
 
   /**
    * @brief Open the input stream
-   * @param input_url The URL of the input stream
+   * @param inputUrl The URL of the input stream
    * @return true if successful, false otherwise
    * @note This function initializes the FFmpeg libraries and opens the input stream
    */
