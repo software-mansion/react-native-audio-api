@@ -42,7 +42,7 @@ COMMON_CONFIG="
 --disable-audiotoolbox
 --disable-videotoolbox
 --disable-hwaccels
---enable-protocol=https,tls,tcp
+--enable-protocol=https,tls,tcp,http
 --enable-demuxer=hls
 --enable-demuxer=mov
 --enable-demuxer=mp3
