@@ -29,7 +29,7 @@ class ConvolverNode : public AudioNode {
   std::shared_ptr<AudioBuffer> buffer_;
   void calculateNormalizationScale();
   float scaleFactor_ = 1.0f;
-  float GainCalibration = 0.00125;
+  float GainCalibration = -58;
   float GainCalibrationSampleRate = 44100.0f;
   float MinPower = 0.000125;
   std::shared_ptr<Convolver> convolver_;

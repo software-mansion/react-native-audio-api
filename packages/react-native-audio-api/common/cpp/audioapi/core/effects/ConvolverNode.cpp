@@ -50,14 +50,15 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
 std::shared_ptr<AudioBus> ConvolverNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  printf("frames to process: %d\n", framesToProcess);
   convolver_->process(
       *processingBus->getChannel(0),
       *processingBus->getChannel(0),
       framesToProcess);
-  for (int i = 0; i < framesToProcess; i++) {
-    processingBus->getChannel(0)->getData()[i] *= scaleFactor_;
-  }
+  dsp::multiplyByScalar(
+      processingBus->getChannel(0)->getData(),
+      scaleFactor_,
+      processingBus->getChannel(0)->getData(),
+      framesToProcess);
   if (processingBus->getNumberOfChannels() > 1) {
     for (int channel = 1; channel < processingBus->getNumberOfChannels();
          ++channel) {
@@ -88,7 +89,7 @@ void ConvolverNode::calculateNormalizationScale() {
     power = MinPower;
   }
   scaleFactor_ = 1 / power;
-  scaleFactor_ *= GainCalibration;
+  scaleFactor_ *= std::powf(10, GainCalibration * 0.05);
   scaleFactor_ *= GainCalibrationSampleRate / buffer_->getSampleRate();
 
   if (numberOfChannels == 4)

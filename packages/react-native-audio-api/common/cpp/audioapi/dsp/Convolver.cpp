@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <chrono>
 #include <iostream>
+// #include <android/log.h>
 
 namespace audioapi {
 
@@ -113,10 +114,8 @@ void Convolver::process(
     return;
   }
 
-  // The input buffer acts as a 2B-point sliding window of the input signal.
-  // With each new input block, the right half of the input buffer is shifted
-  // to the left and the new block is stored in the right half.
-  memcpy(
+  // --- Stage 1: Input Buffering ---
+  memmove(
       _inputBuffer.getData(),
       _inputBuffer.getData() + _blockSize,
       _blockSize * sizeof(float));
@@ -125,62 +124,39 @@ void Convolver::process(
       input.getData(),
       std::min(len, _blockSize) * sizeof(float));
 
-  bool verbose = false;
-  if (verbose) {
-    for (int i = 0; i < _segSize; i++) {
-      printf("inputBuffer[%d]: %f\n", i, _inputBuffer.getData()[i]);
-    }
-  }
+  // --- Stage 2: Forward FFT ---
+  _fft->doFFT(
+      _inputBuffer.getData(),
+      _segments[_current]); // Note: .data() is needed here
 
-  // All contents (DFT spectra) in the FDL are shifted up by one slot.
-  // A 2B-point real-to-complex FFT is computed from the input buffer,
-  // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
-  // result is stored in the first FDL slot.
-  // _current marks first FDL slot, which is the current input block.
-  _fft->doFFT(_inputBuffer.getData(), _segments[_current]);
-  _fft->doInverseFFT(_segments[_current], _fftBuffer.getData());
-  for (int i = 0; i < _segSize; ++i) {
-    if (verbose) {
-      printf(
-          "fft[%d]: %f %f\n",
-          i,
-          _inputBuffer.getData()[i],
-          _fftBuffer.getData()[i]);
-    }
-  }
-
-  // The P sub filter spectra are pairwisely multiplied with the input spectra
-  // in the FDL. The results are accumulated in the frequency-domain.
-  std::fill(
-      _preMultiplied.begin(),
-      _preMultiplied.end(),
-      std::complex<float>(0.0f, 0.0f));
+  // --- Stage 3: Frequency-Domain Convolution ---
+  memset(
+      _preMultiplied.data(),
+      0,
+      _preMultiplied.size() * sizeof(std::complex<float>));
+#pragma unroll
   for (int i = 0; i < _segCount; ++i) {
     const int indexIr = i;
     const int indexAudio = (_current + i) % _segCount;
+    auto impulseResponseSegment = _segmentsIR[indexIr];
+    auto audioSegment = _segments[indexAudio];
+#pragma unroll
     for (int j = 0; j < _fftComplexSize; ++j) {
-      _preMultiplied[j] += _segmentsIR[indexIr][j] * _segments[indexAudio][j];
+      _preMultiplied[j] += impulseResponseSegment[j] * audioSegment[j];
     }
   }
-  // move pointer to the next FDL slot
-  _current = _current > 0 ? _current - 1 : _segCount - 1;
+  _current = (_current > 0) ? _current - 1 : _segCount - 1;
 
-  // Of the accumulated spectral convolutions, an 2B-point complex-to-real
-  // IFFT is computed. From the resulting 2B samples, the left half is
-  // discarded and the right half is returned as the next output block.
-  _fft->doInverseFFT(_preMultiplied, _fftBuffer.getData());
-  if (verbose) {
-    for (int i = 0; i < _fftComplexSize; i++) {
-      printf(
-          "premultiplied[%d]: %f + %fi\n",
-          i,
-          _preMultiplied[i].real(),
-          _preMultiplied[i].imag());
-    }
-    for (int i = 0; i < _segSize; i++) {
-      printf("fftBuffer[%d]: %f\n", i, _fftBuffer.getData()[i]);
-    }
-  }
+  // --- Stage 4: Inverse FFT ---
+  _fft->doInverseFFT(
+      _preMultiplied, _fftBuffer.getData()); // Note: .data() is needed here
+
+  // --- Stage 5: Scaling ---
+  const float scale = 1.0f / (float)_segSize;
+  dsp::multiplyByScalar(
+      _fftBuffer.getData(), scale, _fftBuffer.getData(), _segSize);
+
+  // --- Stage 6: Output Copy ---
   memcpy(
       output.getData(),
       _fftBuffer.getData() + _blockSize,
