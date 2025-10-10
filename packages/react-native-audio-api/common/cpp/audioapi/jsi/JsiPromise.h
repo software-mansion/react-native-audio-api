@@ -33,6 +33,8 @@ class Promise {
   std::function<void(const std::string &)> reject_;
 };
 
+using PromiseResolver = std::function<std::variant<jsi::Value, std::string>(jsi::Runtime&)>;
+
 class PromiseVendor {
  public:
   PromiseVendor(jsi::Runtime *runtime, const std::shared_ptr<react::CallInvoker> &callInvoker):
@@ -51,20 +53,30 @@ class PromiseVendor {
   /// @example
   /// ```cpp
   /// auto promise = promiseVendor_->createAsyncPromise(
-  ///     [](jsi::Runtime& rt) -> std::variant<jsi::Value, std::string> {
-  ///    // Simulate some heavy work
+  ///     []() -> PromiseResolver {
+  ///    // Simulate some heavy work on a background thread
   ///    std::this_thread::sleep_for(std::chrono::seconds(2));
-  ///    return jsi::String::createFromUtf8(rt, "Promise resolved successfully!");
+  ///    return [](jsi::Runtime &rt) -> std::variant<jsi::Value, std::string> {
+  ///      // Prepare and return the result on javascript thread
+  ///      return jsi::String::createFromUtf8(rt, "Promise resolved successfully!");
+  ///    };
   ///  }
   /// );
   ///
   /// return promise;
-  jsi::Value createAsyncPromise(std::function<std::variant<jsi::Value, std::string>(jsi::Runtime&)> &&function);
+  jsi::Value createAsyncPromise(std::function<PromiseResolver()> &&function);
 
  private:
   jsi::Runtime *runtime_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
   std::shared_ptr<ThreadPool> threadPool_;
+
+  static void asyncPromiseJob(
+    std::shared_ptr<react::CallInvoker> callInvoker,
+    std::function<PromiseResolver()> &&function,
+    std::shared_ptr<jsi::Function> &&resolve,
+    std::shared_ptr<jsi::Function> &&reject
+    );
 };
 
 } // namespace audioapi
