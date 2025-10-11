@@ -31,6 +31,7 @@
 #include <span>
 
 namespace audioapi {
+
 struct BiquadCoefficients {
   float b0;
   float b1;
@@ -39,7 +40,7 @@ struct BiquadCoefficients {
   float a2;
 };
 
-void GetFrequencyResponse(
+void getFrequencyResponse(
     const BiquadCoefficients &coeffs,
     std::span<const float> frequency,
     std::span<float> mag_response,

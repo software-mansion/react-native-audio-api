@@ -232,7 +232,7 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
       magResponseNode.data(),
       phaseResponseNode.data(),
       normalizedTestFrequencies.size());
-  GetFrequencyResponse(
+  getFrequencyResponse(
       coeffs, normalizedTestFrequencies, magResponseRef, phaseResponseRef);
 
   for (size_t i = 0; i < normalizedTestFrequencies.size(); ++i) {

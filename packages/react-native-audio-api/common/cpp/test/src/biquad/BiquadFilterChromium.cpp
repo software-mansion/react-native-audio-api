@@ -36,7 +36,7 @@
 
 namespace audioapi {
 
-void GetFrequencyResponse(
+void getFrequencyResponse(
     const BiquadCoefficients &coeffs,
     std::span<const float> frequency,
     std::span<float> mag_response,
