@@ -54,10 +54,9 @@ std::shared_ptr<AudioBus> WorkletNode::processNode(
                   std::make_shared<AudioArrayBuffer>(audioArray);
               auto arrayBuffer =
                   jsi::ArrayBuffer(uiRuntimeRaw, std::move(sharedAudioArray));
+              arrayBuffer.setExternalMemoryPressure(uiRuntimeRaw, sharedAudioArray->size());
               jsArray.setValueAtIndex(uiRuntimeRaw, ch, std::move(arrayBuffer));
             }
-            jsArray.setExternalMemoryPressure(
-                uiRuntimeRaw, channelCount_ * bufferLength_ * sizeof(float));
 
             bus_->zero();
 
