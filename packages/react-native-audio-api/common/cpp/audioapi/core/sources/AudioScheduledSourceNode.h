@@ -27,7 +27,6 @@ class AudioScheduledSourceNode : public AudioNode {
   // FINISHED: The node has finished playing.
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
-  ~AudioScheduledSourceNode() override;
 
   void start(double when);
   virtual void stop(double when);

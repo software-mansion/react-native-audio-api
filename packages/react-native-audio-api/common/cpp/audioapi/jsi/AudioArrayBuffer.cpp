@@ -3,11 +3,11 @@
 namespace audioapi {
 
 size_t AudioArrayBuffer::size() const {
-  return size_;
+  return audioArray_->getSize() * sizeof(float);
 }
 
 uint8_t *AudioArrayBuffer::data() {
-  return data_;
+  return reinterpret_cast<uint8_t *>(audioArray_->getData());
 }
 
 } // namespace audioapi

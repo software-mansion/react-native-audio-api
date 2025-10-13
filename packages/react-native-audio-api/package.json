@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"

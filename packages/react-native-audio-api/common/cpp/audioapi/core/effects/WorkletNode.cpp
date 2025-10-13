@@ -9,23 +9,14 @@ WorkletNode::WorkletNode(
     size_t bufferLength,
     size_t inputChannelCount)
     : AudioNode(context),
-      buffRealLength_(bufferLength * sizeof(float)),
-      bufferLength_(bufferLength),
       workletRunner_(runtime),
       shareableWorklet_(worklet),
+      bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
-  buffs_.reserve(inputChannelCount_);
-  for (size_t i = 0; i < inputChannelCount_; ++i) {
-    buffs_.emplace_back(new uint8_t[buffRealLength_]);
-  }
+  bus_ = std::make_shared<AudioBus>(
+      bufferLength, inputChannelCount, context->getSampleRate());
   isInitialized_ = true;
-}
-
-WorkletNode::~WorkletNode() {
-  for (auto &buff : buffs_) {
-    delete[] buff;
-  }
 }
 
 std::shared_ptr<AudioBus> WorkletNode::processNode(
@@ -40,17 +31,11 @@ std::shared_ptr<AudioBus> WorkletNode::processNode(
     size_t needsToProcess = framesToProcess - processed;
     size_t shouldProcess = std::min(framesToWorkletInvoke, needsToProcess);
 
-    for (size_t ch = 0; ch < channelCount_; ch++) {
-      /// here we copy
-      /// to   uint8_t* [curBuffIndex_, curBuffIndex_ + shouldProcess]
-      /// from float* [processed, processed + shouldProcess]
-      /// so as the we need to copy shouldProcess * sizeof(float) bytes
-      auto channelData = processingBus->getChannel(ch)->getData();
-      std::memcpy(
-          /* dest */ buffs_[ch] + curBuffIndex_ * sizeof(float),
-          /* src */ reinterpret_cast<const uint8_t *>(channelData + processed),
-          /* size */ shouldProcess * sizeof(float));
-    }
+    /// here we copy
+    /// to [curBuffIndex_, curBuffIndex_ + shouldProcess]
+    /// from [processed, processed + shouldProcess]
+    bus_->copy(processingBus.get(), processed, curBuffIndex_, shouldProcess);
+
     processed += shouldProcess;
     curBuffIndex_ += shouldProcess;
 
@@ -63,16 +48,18 @@ std::shared_ptr<AudioBus> WorkletNode::processNode(
             /// Arguments preparation
             auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
             for (size_t ch = 0; ch < channelCount_; ch++) {
-              uint8_t *buffPtr = buffs_[ch];
-              buffs_[ch] = new uint8_t[buffRealLength_];
+              auto audioArray = std::make_shared<AudioArray>(bufferLength_);
+              audioArray->copy(bus_->getChannel(ch));
               auto sharedAudioArray =
-                  std::make_shared<AudioArrayBuffer>(buffPtr, buffRealLength_);
+                  std::make_shared<AudioArrayBuffer>(audioArray);
               auto arrayBuffer =
                   jsi::ArrayBuffer(uiRuntimeRaw, std::move(sharedAudioArray));
+              arrayBuffer.setExternalMemoryPressure(
+                  uiRuntimeRaw, sharedAudioArray->size());
               jsArray.setValueAtIndex(uiRuntimeRaw, ch, std::move(arrayBuffer));
             }
-            jsArray.setExternalMemoryPressure(
-                uiRuntimeRaw, channelCount_ * buffRealLength_);
+
+            bus_->zero();
 
             workletRunner_.executeWorklet(
                 shareableWorklet_,

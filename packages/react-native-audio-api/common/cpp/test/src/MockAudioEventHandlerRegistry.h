@@ -6,9 +6,11 @@
 #include <string>
 #include <memory>
 
-using EventMap = std::unordered_map<std::string, audioapi::EventValue>;
+using namespace audioapi;
 
-class MockAudioEventHandlerRegistry : public audioapi::IAudioEventHandlerRegistry {
+using EventMap = std::unordered_map<std::string, EventValue>;
+
+class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
  public:
   MOCK_METHOD(uint64_t, registerHandler,
               (const std::string &eventName, const std::shared_ptr<facebook::jsi::Function> &handler), (override));

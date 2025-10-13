@@ -16,10 +16,6 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
 }
 
-AudioScheduledSourceNode::~AudioScheduledSourceNode() {
-  clearOnEndedCallback();
-}
-
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
