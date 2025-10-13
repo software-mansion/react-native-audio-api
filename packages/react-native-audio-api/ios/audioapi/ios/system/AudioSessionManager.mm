@@ -13,6 +13,9 @@
     self.allowHapticsAndSystemSoundsDuringRecording = false;
     self.hasDirtySettings = true;
     self.isActive = false;
+    bool res = [[AVAudioSession sharedInstance] setPreferredIOBufferDuration:(1280 / [self.audioSession sampleRate])
+                                                                       error:nil];
+    printf("result of preffered io buffer: %d", res);
   }
 
   return self;

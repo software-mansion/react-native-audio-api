@@ -65,6 +65,11 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
       processingBus->getChannel(channel)->copy(processingBus->getChannel(0));
     }
   }
+  dsp::multiplyByScalar(
+      processingBus->getChannel(0)->getData(),
+      2,
+      processingBus->getChannel(0)->getData(),
+      framesToProcess);
   return processingBus;
 }
 

@@ -148,13 +148,7 @@ void Convolver::process(
   _current = (_current > 0) ? _current - 1 : _segCount - 1;
 
   // --- Stage 4: Inverse FFT ---
-  _fft->doInverseFFT(
-      _preMultiplied, _fftBuffer.getData()); // Note: .data() is needed here
-
-  // --- Stage 5: Scaling ---
-  const float scale = 1.0f / (float)_segSize;
-  dsp::multiplyByScalar(
-      _fftBuffer.getData(), scale, _fftBuffer.getData(), _segSize);
+  _fft->doInverseFFT(_preMultiplied, _fftBuffer.getData());
 
   // --- Stage 6: Output Copy ---
   memcpy(
