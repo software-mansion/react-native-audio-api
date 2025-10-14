@@ -14,8 +14,8 @@ class AudioBuffer;
 class Convolver {
  public:
     Convolver();
-    bool init(size_t blockSize, const audioapi::AudioArray &ir, size_t irLen);
-    void process(const AudioArray &input, AudioArray &output, size_t len);
+    bool init(size_t blockSize, const AudioArray &ir, size_t irLen);
+    void process(const AudioArray &array);
     void reset();
  private:
     size_t _blockSize;
@@ -25,7 +25,7 @@ class Convolver {
     std::vector<std::vector<std::complex<float>>> _segments;
     std::vector<std::vector<std::complex<float>>> _segmentsIR;
     AudioArray _fftBuffer;
-    std::shared_ptr<audioapi::dsp::FFT> _fft;
+    std::shared_ptr<dsp::FFT> _fft;
     std::vector<std::complex<float>> _preMultiplied;
     size_t _current;
     AudioArray _inputBuffer;

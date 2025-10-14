@@ -23,16 +23,20 @@ class ConvolverNode : public AudioNode {
 
  protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
 
  private:
   bool normalize_ = true;
   std::shared_ptr<AudioBuffer> buffer_;
-  void calculateNormalizationScale();
+  std::shared_ptr<AudioBus> internalBuffer_;
+  int internalBufferIndex_ = 0;
+  float gainCalibrationSampleRate_;
   float scaleFactor_ = 1.0f;
-  float GainCalibration = -38;
-  float GainCalibrationSampleRate = 44100.0f;
-  float MinPower = 0.000125;
+  float gainCalibration_ = -58;
+  float minPower_ = 0.000125;
   std::shared_ptr<Convolver> convolver_;
+
+  void calculateNormalizationScale();
 };
 
 } // namespace audioapi

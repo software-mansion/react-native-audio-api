@@ -41,7 +41,7 @@ const Oscillator: FC = () => {
       };
       const rate = audioContextRef.current.sampleRate;
       const length = rate * duration;
-      const impulse = audioContextRef.current.createBuffer(2, length, rate);
+      const impulse = audioContextRef.current.createBuffer(1, length, rate);
 
       for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
         const channelData = impulse.getChannelData(channel);
@@ -50,14 +50,15 @@ const Oscillator: FC = () => {
             (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
         }
       }
-      console.log('Impulse response created');
       return impulse;
     }
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
 
-    if (!convolverRef.current) {
-      convolverRef.current = audioContextRef.current?.createConvolver()!!;
-      convolverRef.current.buffer = createImpulseResponse(1, 1);
-      console.log('Convolver node created');
+    if (!convolverRef.current && audioContextRef.current) {
+      convolverRef.current = audioContextRef.current.createConvolver();
+      convolverRef.current.buffer = createImpulseResponse(2, 1);
     }
 
     return () => {
@@ -136,7 +137,7 @@ const Oscillator: FC = () => {
       gainRef.current?.gain.setValueAtTime(0, audioContextRef.current?.currentTime!! + 2);
       oscillatorRef2.current?.start(audioContextRef.current?.currentTime!! + 2);
       oscillatorRef2.current?.connect(gainRef.current!);
-      oscillatorRef2.current?.stop(audioContextRef.current?.currentTime!! + 3);
+      oscillatorRef2.current?.stop(audioContextRef.current?.currentTime!! + 4);
     }
 
     setIsPlaying((prev) => !prev);

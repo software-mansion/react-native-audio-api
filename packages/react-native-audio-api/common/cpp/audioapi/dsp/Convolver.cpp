@@ -4,7 +4,6 @@
 #include <audioapi/utils/AudioArray.h>
 #include <chrono>
 #include <iostream>
-// #include <android/log.h>
 
 namespace audioapi {
 
@@ -47,7 +46,7 @@ bool Convolver::init(
 
   // Ignore zeros at the end of the impulse response because they only waste
   // computation time
-  while (irLen > 0 && ::fabs(ir[irLen - 1]) < 0.000001f) {
+  while (irLen > 0 && ::fabs(ir[irLen - 1]) < 10e-9) {
     --irLen;
   }
 
@@ -64,18 +63,6 @@ bool Convolver::init(
   _fftComplexSize = _segSize / 2 + 1;
   _fft = std::make_shared<dsp::FFT>((int)_segSize);
   _fftBuffer.resize(_segSize);
-
-  // Debug: Print IR information
-  printf(
-      "Convolver init: irLen=%zu, blockSize=%zu, segCount=%zu\n",
-      irLen,
-      _blockSize,
-      _segCount);
-  printf("First 10 IR samples: ");
-  for (int i = 0; i < std::min(10, (int)irLen); ++i) {
-    printf("%.6f ", ir[i]);
-  }
-  printf("\n");
 
   // segments preparation
   for (int i = 0; i < _segCount; ++i) {
@@ -105,31 +92,28 @@ bool Convolver::init(
   return true;
 }
 
-void Convolver::process(
-    const audioapi::AudioArray &input,
-    audioapi::AudioArray &output,
-    size_t len) {
-  if (_segCount == 0) {
-    output.zero();
-    return;
-  }
-
-  // --- Stage 1: Input Buffering ---
+void Convolver::process(const audioapi::AudioArray &array) {
+  // The input buffer acts as a 2B-point sliding window of the input signal.
+  // With each new input block, the right half of the input buffer is shifted
+  // to the left and the new block is stored in the right half.
   memmove(
       _inputBuffer.getData(),
       _inputBuffer.getData() + _blockSize,
       _blockSize * sizeof(float));
   memcpy(
       _inputBuffer.getData() + _blockSize,
-      input.getData(),
-      std::min(len, _blockSize) * sizeof(float));
+      array.getData(),
+      _blockSize * sizeof(float));
 
-  // --- Stage 2: Forward FFT ---
-  _fft->doFFT(
-      _inputBuffer.getData(),
-      _segments[_current]); // Note: .data() is needed here
+  // All contents (DFT spectra) in the FDL are shifted up by one slot.
+  // A 2B-point real-to-complex FFT is computed from the input buffer,
+  // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
+  // result is stored in the first FDL slot.
+  // _current marks first FDL slot, which is the current input block.
+  _fft->doFFT(_inputBuffer.getData(), _segments[_current]);
 
-  // --- Stage 3: Frequency-Domain Convolution ---
+  // The P sub filter spectra are pairwisely multiplied with the input spectra
+  // in the FDL. The results are accumulated in the frequency-domain.
   memset(
       _preMultiplied.data(),
       0,
@@ -140,20 +124,20 @@ void Convolver::process(
     const int indexAudio = (_current + i) % _segCount;
     auto impulseResponseSegment = _segmentsIR[indexIr];
     auto audioSegment = _segments[indexAudio];
-#pragma unroll
     for (int j = 0; j < _fftComplexSize; ++j) {
       _preMultiplied[j] += impulseResponseSegment[j] * audioSegment[j];
     }
   }
   _current = (_current > 0) ? _current - 1 : _segCount - 1;
 
-  // --- Stage 4: Inverse FFT ---
+  // Of the accumulated spectral convolutions, an 2B-point complex-to-real
+  // IFFT is computed. From the resulting 2B samples, the left half is
+  // discarded and the right half is returned as the next output block.
   _fft->doInverseFFT(_preMultiplied, _fftBuffer.getData());
 
-  // --- Stage 6: Output Copy ---
   memcpy(
-      output.getData(),
+      array.getData(),
       _fftBuffer.getData() + _blockSize,
-      std::min(len, _blockSize) * sizeof(float));
+      _blockSize * sizeof(float));
 }
 } // namespace audioapi
