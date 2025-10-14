@@ -172,15 +172,15 @@ BiquadCoefficients calculateLowshelfCoefficients(
 
   float a = std::pow(10, db_gain / 40);
 
-  if (frequency == 1) {
+  if (frequency == 1.0) {
     // The z-transform is a constant gain.
     return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
-  } else if (frequency > 0) {
+  } else if (frequency > 0.0) {
     float w0 = PI * frequency;
     float s = 1; // filter slope (1 is max value)
-    float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    float alpha = 0.5 * std::sin(w0) * std::sqrt((a + 1 / a) * (1 / s - 1) + 2);
     float k = std::cos(w0);
-    float k2 = 2 * sqrt(a) * alpha;
+    float k2 = 2 * std::sqrt(a) * alpha;
     float a_plus_one = a + 1;
     float a_minus_one = a - 1;
 
@@ -206,15 +206,15 @@ BiquadCoefficients calculateHighshelfCoefficients(
 
   float a = std::pow(10, db_gain / 40);
 
-  if (frequency == 1) {
+  if (frequency == 1.0) {
     // The z-transform is 1.
     return normalizeCoefficients(1, 0, 0, 1, 0, 0);
   } else if (frequency > 0) {
     float w0 = PI * frequency;
     float s = 1; // filter slope (1 is max value)
-    float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    float alpha = 0.5 * std::sin(w0) * std::sqrt((a + 1 / a) * (1 / s - 1) + 2);
     float k = std::cos(w0);
-    float k2 = 2 * sqrt(a) * alpha;
+    float k2 = 2 * std::sqrt(a) * alpha;
     float a_plus_one = a + 1;
     float a_minus_one = a - 1;
 
@@ -242,8 +242,8 @@ calculatePeakingCoefficients(float frequency, float q, float db_gain) {
 
   float a = std::pow(10, db_gain / 40);
 
-  if (frequency > 0 && frequency < 1) {
-    if (q > 0) {
+  if (frequency > 0.0 && frequency < 1.0) {
+    if (q > 0.0) {
       float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
@@ -275,8 +275,8 @@ BiquadCoefficients calculateAllpassCoefficients(float frequency, float q) {
   // Don't let Q go negative, which causes an unstable filter.
   q = std::max(0.0f, q);
 
-  if (frequency > 0 && frequency < 1) {
-    if (q > 0) {
+  if (frequency > 0.0 && frequency < 1.0) {
+    if (q > 0.0) {
       float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
@@ -308,8 +308,8 @@ BiquadCoefficients calculateNotchCoefficients(float frequency, float q) {
   // Don't let Q go negative, which causes an unstable filter.
   q = std::max(0.0f, q);
 
-  if (frequency > 0 && frequency < 1) {
-    if (q > 0) {
+  if (frequency > 0.0 && frequency < 1.0) {
+    if (q > 0.0) {
       float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
@@ -341,9 +341,9 @@ BiquadCoefficients calculateBandpassCoefficients(float frequency, float q) {
   // Don't let Q go negative, which causes an unstable filter.
   q = std::max(0.0f, q);
 
-  if (frequency > 0 && frequency < 1) {
+  if (frequency > 0.0 && frequency < 1.0) {
     float w0 = PI * frequency;
-    if (q > 0) {
+    if (q > 0.0) {
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
 
