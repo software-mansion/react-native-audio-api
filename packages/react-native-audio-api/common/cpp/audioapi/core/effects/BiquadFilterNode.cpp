@@ -121,7 +121,7 @@ void BiquadFilterNode::getFrequencyResponse(
     }
 
     auto omega = -PI * frequencyArray[i];
-    auto z = std::complex<float>(cos(omega), sin(omega));
+    auto z = std::complex<float>(std::cos(omega), std::sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
     magResponseOutput[i] = static_cast<float>(std::abs(response));

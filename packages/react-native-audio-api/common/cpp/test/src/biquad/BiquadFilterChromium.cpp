@@ -27,11 +27,11 @@
  */
 
 #include <assert.h>
+#include <audioapi/core/utils/Constants.h>
 #include <test/src/biquad/BiquadFilterChromium.h>
 #include <algorithm>
 #include <cmath>
 #include <complex>
-#include <numbers>
 #include <span>
 
 namespace audioapi {
@@ -68,12 +68,12 @@ void getFrequencyResponse(
   double a2 = coeffs.a2;
 
   for (size_t k = 0; k < frequency.size(); ++k) {
-    if (frequency[k] < 0 || frequency[k] > 1) {
+    if (frequency[k] < 0.0 || frequency[k] > 1.0) {
       // Out-of-bounds frequencies should return NaN.
       mag_response[k] = std::nanf("");
       phase_response[k] = std::nanf("");
     } else {
-      double omega = -std::numbers::pi * frequency[k];
+      double omega = -PI * frequency[k];
       std::complex<double> z =
           std::complex<double>(std::cos(omega), std::sin(omega));
       std::complex<double> numerator = b0 + (b1 + b2 * z) * z;
@@ -104,12 +104,12 @@ BiquadCoefficients calculateLowpassCoefficients(float cutoff, float Q) {
   if (cutoff == 1) {
     // When cutoff is 1, the z-transform is 1.
     return normalizeCoefficients(1, 0, 0, 1, 0, 0);
-  } else if (cutoff > 0) {
+  } else if (cutoff > 0.0) {
     // Compute biquad coefficients for lowpass filter
 
     Q = std::pow(10, Q / 20);
 
-    float theta = std::numbers::pi * cutoff;
+    float theta = PI * cutoff;
     float alpha = std::sin(theta) / (2 * Q);
     float cosw = std::cos(theta);
     float beta = (1 - cosw) / 2;
@@ -141,7 +141,7 @@ BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q) {
     // Compute biquad coefficients for highpass filter
 
     Q = std::pow(10, Q / 20);
-    float theta = std::numbers::pi * cutoff;
+    float theta = PI * cutoff;
     float alpha = std::sin(theta) / (2 * Q);
     float cosw = std::cos(theta);
     float beta = (1 + cosw) / 2;
@@ -176,7 +176,7 @@ BiquadCoefficients calculateLowshelfCoefficients(
     // The z-transform is a constant gain.
     return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
   } else if (frequency > 0) {
-    float w0 = std::numbers::pi * frequency;
+    float w0 = PI * frequency;
     float s = 1; // filter slope (1 is max value)
     float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
     float k = std::cos(w0);
@@ -210,7 +210,7 @@ BiquadCoefficients calculateHighshelfCoefficients(
     // The z-transform is 1.
     return normalizeCoefficients(1, 0, 0, 1, 0, 0);
   } else if (frequency > 0) {
-    float w0 = std::numbers::pi * frequency;
+    float w0 = PI * frequency;
     float s = 1; // filter slope (1 is max value)
     float alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
     float k = std::cos(w0);
@@ -244,7 +244,7 @@ calculatePeakingCoefficients(float frequency, float q, float db_gain) {
 
   if (frequency > 0 && frequency < 1) {
     if (q > 0) {
-      float w0 = std::numbers::pi * frequency;
+      float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
 
@@ -277,7 +277,7 @@ BiquadCoefficients calculateAllpassCoefficients(float frequency, float q) {
 
   if (frequency > 0 && frequency < 1) {
     if (q > 0) {
-      float w0 = std::numbers::pi * frequency;
+      float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
 
@@ -310,7 +310,7 @@ BiquadCoefficients calculateNotchCoefficients(float frequency, float q) {
 
   if (frequency > 0 && frequency < 1) {
     if (q > 0) {
-      float w0 = std::numbers::pi * frequency;
+      float w0 = PI * frequency;
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
 
@@ -342,7 +342,7 @@ BiquadCoefficients calculateBandpassCoefficients(float frequency, float q) {
   q = std::max(0.0f, q);
 
   if (frequency > 0 && frequency < 1) {
-    float w0 = std::numbers::pi * frequency;
+    float w0 = PI * frequency;
     if (q > 0) {
       float alpha = std::sin(w0) / (2 * q);
       float k = std::cos(w0);
