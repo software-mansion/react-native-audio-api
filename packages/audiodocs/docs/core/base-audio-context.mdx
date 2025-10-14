@@ -62,7 +62,7 @@ Creates [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 Creates [`WorkletNode`](/docs/worklets/worklet-node).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
 | `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
@@ -83,7 +83,7 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 
 Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
 | `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
@@ -100,7 +100,7 @@ Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 
 Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
 | `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
@@ -117,7 +117,7 @@ Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 
 Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `numOfChannels` | `number` | An integer representing the number of channels of the buffer. |
 | `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
@@ -137,7 +137,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
 
@@ -147,7 +147,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
 
@@ -181,7 +181,7 @@ Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
 
 Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
@@ -286,8 +286,6 @@ const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
 ### `decodePCMInBase64`
 
 Decodes base64-encoded PCM audio data.
-
-#### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

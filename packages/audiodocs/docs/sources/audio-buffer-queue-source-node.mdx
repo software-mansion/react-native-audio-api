@@ -59,7 +59,7 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Buffer with next data. |
 
@@ -69,7 +69,7 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 
 Removes a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `bufferId` | `string` | ID of the buffer to remove from the queue. It should be valid id provided by `enqueueBuffer` method. |
 
