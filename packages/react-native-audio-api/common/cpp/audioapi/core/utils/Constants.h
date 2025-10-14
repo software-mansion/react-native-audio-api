@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cmath>
 #include <numbers>
+#include <cmath>
 #include <limits>
 
 // https://webaudio.github.io/web-audio-api/
