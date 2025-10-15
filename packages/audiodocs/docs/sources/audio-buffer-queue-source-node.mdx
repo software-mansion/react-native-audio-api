@@ -81,6 +81,13 @@ Removes all buffers from the queue. Note that `onEnded` event will not be fired 
 
 #### Returns `undefined`.
 
+### `pause`
+
+Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,
+pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
+
+#### Returns `undefined`.
+
 ## Events
 
 ### `onEnded` <Overridden />
