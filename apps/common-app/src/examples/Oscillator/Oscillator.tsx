@@ -1,12 +1,13 @@
 import React, { useRef, useState, useEffect, FC } from 'react';
-import { StyleSheet, Text, View, Pressable, Image } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import {
   AudioContext,
   GainNode,
+  ConvolverNode,
   OscillatorNode,
   StereoPannerNode,
 } from 'react-native-audio-api';
-import type { OscillatorType, ConvolverNode } from 'react-native-audio-api';
+import type { OscillatorType } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
 import { layout, colors } from '../../styles';
@@ -29,16 +30,15 @@ const Oscillator: FC = () => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const oscillatorRef2 = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
   const convolverRef = useRef<ConvolverNode | null>(null);
 
   useEffect(() => {
-    function createImpulseResponse(duration = 2, decay = 2) {
+    function createImpulseResponse(duration = 1) {
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext();
-      };
+      }
       const rate = audioContextRef.current.sampleRate;
       const length = rate * duration;
       const impulse = audioContextRef.current.createBuffer(1, length, rate);
@@ -47,7 +47,7 @@ const Oscillator: FC = () => {
         const channelData = impulse.getChannelData(channel);
         for (let i = 0; i < length; i++) {
           channelData[i] =
-            (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+            (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
         }
       }
       return impulse;
@@ -58,7 +58,7 @@ const Oscillator: FC = () => {
 
     if (!convolverRef.current && audioContextRef.current) {
       convolverRef.current = audioContextRef.current.createConvolver();
-      convolverRef.current.buffer = createImpulseResponse(2, 1);
+      convolverRef.current.buffer = createImpulseResponse();
     }
 
     return () => {
@@ -72,9 +72,7 @@ const Oscillator: FC = () => {
     }
 
     oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef2.current = audioContextRef.current.createOscillator();
     oscillatorRef.current.frequency.value = frequency;
-    oscillatorRef2.current.frequency.value = frequency;
     oscillatorRef.current.detune.value = detune;
     oscillatorRef.current.type = oscillatorType;
 
@@ -129,15 +127,10 @@ const Oscillator: FC = () => {
   const handlePlayPause = (reverb: boolean) => {
     if (isPlaying) {
       oscillatorRef.current?.stop(0);
-      oscillatorRef2.current?.stop(0);
     } else {
       setup(reverb);
       oscillatorRef.current?.start(0);
-      oscillatorRef.current?.stop(audioContextRef.current?.currentTime!! + 2);
-      gainRef.current?.gain.setValueAtTime(0, audioContextRef.current?.currentTime!! + 2);
-      oscillatorRef2.current?.start(audioContextRef.current?.currentTime!! + 2);
-      oscillatorRef2.current?.connect(gainRef.current!);
-      oscillatorRef2.current?.stop(audioContextRef.current?.currentTime!! + 4);
+      oscillatorRef.current?.stop(audioContextRef.current!.currentTime + 1);
     }
 
     setIsPlaying((prev) => !prev);
@@ -153,6 +146,7 @@ const Oscillator: FC = () => {
   return (
     <Container centered>
       <Button onPress={() => handlePlayPause(false)} title={isPlaying ? 'Pause' : 'Play without reverb'} />
+      <Spacer.Vertical size={30} />
       <Button onPress={() => handlePlayPause(true)} title={isPlaying ? 'Pause' : 'Play reverb'} />
       <Spacer.Vertical size={49} />
       <Slider
