@@ -131,12 +131,12 @@ void ConvolverNode::calculateNormalizationScale() {
     power += channelPower;
   }
 
-  power = std::sqrtf(power / (numberOfChannels * length));
+  power = std::sqrt(power / (numberOfChannels * length));
   if (power < minPower_) {
     power = minPower_;
   }
   scaleFactor_ = 1 / power;
-  scaleFactor_ *= std::powf(10, gainCalibration_ * 0.05f);
+  scaleFactor_ *= std::pow(10, gainCalibration_ * 0.05f);
   scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 
   if (numberOfChannels == 4)
