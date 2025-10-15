@@ -19,12 +19,11 @@ void FFT::doFFT(float *in, std::vector<std::complex<float>> &out) {
       reinterpret_cast<float *>(&out[0]),
       work_,
       PFFFT_FORWARD);
-
-  // dsp::multiplyByScalar(
-  //     reinterpret_cast<float *>(&out[0]),
-  //     0.5f,
-  //     reinterpret_cast<float *>(&out[0]),
-  //     size_ * 2);
+  // this is a possible place for bugs and mistakes
+  // due to pffft implementation and how it stores results
+  // keep this information in mind
+  // out[0].real = DC component - should be pure real
+  // out[0].imag = Nyquist component - should be pure real
 }
 
 void FFT::doInverseFFT(std::vector<std::complex<float>> &in, float *out) {

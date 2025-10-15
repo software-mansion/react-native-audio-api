@@ -41,6 +41,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
  protected:
   friend class AudioNodeManager;
   friend class AudioDestinationNode;
+  friend class ConvolverNode;
 
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;
@@ -61,7 +62,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   bool isEnabled_ = true;
 
   std::size_t lastRenderedFrame_{SIZE_MAX};
-  virtual std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
 
  private:
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
@@ -69,6 +69,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   static std::string toString(ChannelCountMode mode);
   static std::string toString(ChannelInterpretation interpretation);
 
+  virtual std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
   virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>&, int) = 0;
 
   bool isAlreadyProcessed();
@@ -81,7 +82,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void disconnectParam(const std::shared_ptr<AudioParam> &param);
 
   void onInputEnabled();
-  void onInputDisabled();
+  virtual void onInputDisabled();
   void onInputConnected(AudioNode *node);
   void onInputDisconnected(AudioNode *node);
 

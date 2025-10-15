@@ -23,17 +23,20 @@ class ConvolverNode : public AudioNode {
 
  protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-  std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
 
  private:
+  std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
+  void onInputDisabled() override;
+  float gainCalibrationSampleRate_;
+  size_t remainingSegments_ = 0;
   bool normalize_ = true;
+  bool signaledToStop_ = false;
+  int internalBufferIndex_ = 0;
+  float scaleFactor_ = 1.0f;
+  float gainCalibration_ = -60; //magic number so that processed signal and dry signal have roughly the same volume
+  float minPower_ = 0.000125;
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> internalBuffer_;
-  int internalBufferIndex_ = 0;
-  float gainCalibrationSampleRate_;
-  float scaleFactor_ = 1.0f;
-  float gainCalibration_ = -58;
-  float minPower_ = 0.000125;
   std::shared_ptr<Convolver> convolver_;
 
   void calculateNormalizationScale();

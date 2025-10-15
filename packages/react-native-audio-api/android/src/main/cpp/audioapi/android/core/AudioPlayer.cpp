@@ -29,7 +29,6 @@ bool AudioPlayer::openAudioStream() {
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setDataCallback(this)
-      ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
       ->setSampleRate(static_cast<int>(sampleRate_))
       ->setErrorCallback(this);
 
@@ -105,6 +104,11 @@ DataCallbackResult AudioPlayer::onAudioReady(
   int processedFrames = 0;
 
   assert(buffer != nullptr);
+  __android_log_print(
+      ANDROID_LOG_DEBUG,
+      "AudioPlayer",
+      "onAudioReady: numFrames = %d",
+      numFrames);
 
   while (processedFrames < numFrames) {
     int framesToProcess =

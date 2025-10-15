@@ -17,7 +17,9 @@ class Convolver {
     bool init(size_t blockSize, const AudioArray &ir, size_t irLen);
     void process(const AudioArray &array);
     void reset();
+    inline size_t getSegCount() const { return _trueSegmentCount; }
  private:
+    size_t _trueSegmentCount;
     size_t _blockSize;
     size_t _segSize;
     size_t _segCount;

@@ -7,8 +7,6 @@
 #include <audioapi/utils/AudioArray.h>
 #include <iostream>
 
-static int counter = 0;
-
 namespace audioapi {
 ConvolverNode::ConvolverNode(BaseAudioContext *context)
     : AudioNode(context),
@@ -20,7 +18,7 @@ ConvolverNode::ConvolverNode(BaseAudioContext *context)
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  gainCalibrationSampleRate_ = 44100.0f;
+  gainCalibrationSampleRate_ = context->getSampleRate();
   isInitialized_ = true;
 }
 
@@ -51,10 +49,20 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
     convolver_ = std::make_shared<Convolver>();
     auto audioArray = AudioArray(buffer->getLength());
     memcpy(
-        audioArray.getData(), buffer->getChannelData(0), buffer->getLength());
+        audioArray.getData(),
+        buffer->getChannelData(0),
+        buffer->getLength() * sizeof(float));
     convolver_->init(RENDER_QUANTUM_SIZE, audioArray, audioArray.getSize());
     internalBuffer_ = std::make_shared<AudioBus>(
         RENDER_QUANTUM_SIZE * 2, 1, buffer->getSampleRate());
+  }
+}
+
+void ConvolverNode::onInputDisabled() {
+  numberOfEnabledInputNodes_ -= 1;
+  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
+    signaledToStop_ = true;
+    remainingSegments_ = convolver_->getSegCount();
   }
 }
 
@@ -71,6 +79,16 @@ std::shared_ptr<AudioBus> ConvolverNode::processInputs(
 std::shared_ptr<AudioBus> ConvolverNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
+  if (signaledToStop_) {
+    if (remainingSegments_ > 0) {
+      remainingSegments_--;
+    } else {
+      disable();
+      signaledToStop_ = false;
+      internalBufferIndex_ = 0;
+      return processingBus;
+    }
+  }
   if (internalBufferIndex_ < framesToProcess) {
     convolver_->process(*processingBus->getChannel(0));
 
@@ -118,7 +136,7 @@ void ConvolverNode::calculateNormalizationScale() {
     power = minPower_;
   }
   scaleFactor_ = 1 / power;
-  scaleFactor_ *= std::powf(10, gainCalibration_ * 0.05);
+  scaleFactor_ *= std::powf(10, gainCalibration_ * 0.05f);
   scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 
   if (numberOfChannels == 4)

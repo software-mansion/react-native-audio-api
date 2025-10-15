@@ -46,7 +46,9 @@ bool Convolver::init(
 
   // Ignore zeros at the end of the impulse response because they only waste
   // computation time
-  while (irLen > 0 && ::fabs(ir[irLen - 1]) < 10e-9) {
+  _blockSize = blockSize;
+  _trueSegmentCount = (size_t)(std::ceil((float)irLen / (float)_blockSize));
+  while (irLen > 0 && ::fabs(ir[irLen - 1]) < 10e-3) {
     --irLen;
   }
 
@@ -54,7 +56,6 @@ bool Convolver::init(
     return true;
   }
 
-  _blockSize = blockSize;
   // The length-N is split into P = N/B length-B sub filters
   _segCount = (size_t)(std::ceil((float)irLen / (float)_blockSize));
   _segSize = 2 * _blockSize;
@@ -74,14 +75,20 @@ bool Convolver::init(
   // ir preparation
   for (int i = 0; i < _segCount; ++i) {
     std::vector<std::complex<float>> segment(_fftComplexSize);
+    const size_t remainingSamples = irLen - (i * _blockSize);
+    const size_t samplesToCopy = std::min(_blockSize, remainingSamples);
+
+    if (samplesToCopy > 0) {
+      memcpy(
+          _fftBuffer.getData(),
+          ir.getData() + i * _blockSize,
+          samplesToCopy * sizeof(float));
+    }
     // Each sub filter is zero-padded to length 2B and transformed using a
     // 2B-point real-to-complex FFT.
-    memcpy(
-        _fftBuffer.getData(),
-        ir.getData() + i * _blockSize,
-        _blockSize * sizeof(float));
     memset(_fftBuffer.getData() + _blockSize, 0, _blockSize * sizeof(float));
     _fft->doFFT(_fftBuffer.getData(), segment);
+    segment.at(0).imag(0.0f); // ensure DC component is real
     _segmentsIR.push_back(segment);
   }
 
@@ -106,11 +113,13 @@ void Convolver::process(const audioapi::AudioArray &array) {
       _blockSize * sizeof(float));
 
   // All contents (DFT spectra) in the FDL are shifted up by one slot.
+  _current = (_current > 0) ? _current - 1 : _segCount - 1;
   // A 2B-point real-to-complex FFT is computed from the input buffer,
   // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
   // result is stored in the first FDL slot.
   // _current marks first FDL slot, which is the current input block.
   _fft->doFFT(_inputBuffer.getData(), _segments[_current]);
+  _segments[_current][0].imag(0.0f); // ensure DC component is real
 
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
@@ -120,16 +129,13 @@ void Convolver::process(const audioapi::AudioArray &array) {
       _preMultiplied.size() * sizeof(std::complex<float>));
 #pragma unroll
   for (int i = 0; i < _segCount; ++i) {
-    const int indexIr = i;
     const int indexAudio = (_current + i) % _segCount;
-    auto impulseResponseSegment = _segmentsIR[indexIr];
-    auto audioSegment = _segments[indexAudio];
+    const auto &impulseResponseSegment = _segmentsIR[i];
+    const auto &audioSegment = _segments[indexAudio];
     for (int j = 0; j < _fftComplexSize; ++j) {
       _preMultiplied[j] += impulseResponseSegment[j] * audioSegment[j];
     }
   }
-  _current = (_current > 0) ? _current - 1 : _segCount - 1;
-
   // Of the accumulated spectral convolutions, an 2B-point complex-to-real
   // IFFT is computed. From the resulting 2B samples, the left half is
   // discarded and the right half is returned as the next output block.
