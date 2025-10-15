@@ -32,25 +32,32 @@
 
 namespace audioapi {
 
+constexpr double kPiDouble = M_PI;
+
 struct BiquadCoefficients {
-  float b0;
-  float b1;
-  float b2;
-  float a1;
-  float a2;
+  double b0;
+  double b1;
+  double b2;
+  double a1;
+  double a2;
 };
 
-void getFrequencyResponse(const BiquadCoefficients &coeffs, std::span<const float> frequency, std::span<float> mag_response, std::span<float> phase_response);
+void getFrequencyResponse(
+    const BiquadCoefficients &coeffs,
+    std::span<const float> frequency,
+    std::span<float> mag_response,
+    std::span<float> phase_response,
+    float nyquistFrequency);
 
-BiquadCoefficients normalizeCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
+BiquadCoefficients normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
 
-BiquadCoefficients calculateLowpassCoefficients(float cutoff, float Q);
-BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q);
-BiquadCoefficients calculateBandpassCoefficients(float frequency, float Q);
-BiquadCoefficients calculateNotchCoefficients(float frequency, float Q);
-BiquadCoefficients calculateAllpassCoefficients(float frequency, float Q);
-BiquadCoefficients calculatePeakingCoefficients(float frequency, float Q, float db_gain);
-BiquadCoefficients calculateLowshelfCoefficients(float frequency, float db_gain);
-BiquadCoefficients calculateHighshelfCoefficients(float frequency, float db_gain);
+BiquadCoefficients calculateLowpassCoefficients(double cutoff, double Q);
+BiquadCoefficients calculateHighpassCoefficients(double cutoff, double Q);
+BiquadCoefficients calculateBandpassCoefficients(double frequency, double Q);
+BiquadCoefficients calculateNotchCoefficients(double frequency, double Q);
+BiquadCoefficients calculateAllpassCoefficients(double frequency, double Q);
+BiquadCoefficients calculatePeakingCoefficients(double frequency, double Q, double db_gain);
+BiquadCoefficients calculateLowshelfCoefficients(double frequency, double db_gain);
+BiquadCoefficients calculateHighshelfCoefficients(double frequency, double db_gain);
 
 } // namespace audioapi

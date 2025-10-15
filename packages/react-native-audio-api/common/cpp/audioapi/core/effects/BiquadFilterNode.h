@@ -66,7 +66,7 @@ class BiquadFilterNode : public AudioNode {
       const float *frequencyArray,
       float *magResponseOutput,
       float *phaseResponseOutput,
-      int length);
+      size_t length);
 
  protected:
   std::shared_ptr<AudioBus> processNode(

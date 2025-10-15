@@ -36,14 +36,26 @@
 
 namespace audioapi {
 
+// Compute 10^x = exp(x*log(10))
+static double pow10(double x) {
+  return std::exp(x * 2.30258509299404568402);
+}
+
 void getFrequencyResponse(
     const BiquadCoefficients &coeffs,
     std::span<const float> frequency,
     std::span<float> mag_response,
-    std::span<float> phase_response) {
+    std::span<float> phase_response,
+    float nyquistFrequency) {
   assert(!frequency.empty());
   assert(!mag_response.empty());
   assert(!phase_response.empty());
+
+  std::vector<float> normalizedFreq(frequency.size());
+  for (size_t i = 0; i < frequency.size(); ++i) {
+    // normalizedFreq[i] = frequency[i] / nyquistFrequency;
+    normalizedFreq[i] = frequency[i];
+  }
 
   // Evaluate the Z-transform of the filter at given normalized
   // frequency from 0 to 1.  (1 corresponds to the Nyquist
@@ -67,13 +79,13 @@ void getFrequencyResponse(
   double a1 = coeffs.a1;
   double a2 = coeffs.a2;
 
-  for (size_t k = 0; k < frequency.size(); ++k) {
-    if (frequency[k] < 0.0 || frequency[k] > 1.0) {
+  for (size_t k = 0; k < normalizedFreq.size(); ++k) {
+    if (normalizedFreq[k] < 0.0 || normalizedFreq[k] > 1.0) {
       // Out-of-bounds frequencies should return NaN.
       mag_response[k] = std::nanf("");
       phase_response[k] = std::nanf("");
     } else {
-      double omega = -PI * frequency[k];
+      double omega = -PI * normalizedFreq[k];
       std::complex<double> z =
           std::complex<double>(std::cos(omega), std::sin(omega));
       std::complex<double> numerator = b0 + (b1 + b2 * z) * z;
@@ -88,39 +100,41 @@ void getFrequencyResponse(
 }
 
 BiquadCoefficients normalizeCoefficients(
-    float b0,
-    float b1,
-    float b2,
-    float a0,
-    float a1,
-    float a2) {
+    double b0,
+    double b1,
+    double b2,
+    double a0,
+    double a1,
+    double a2) {
   return BiquadCoefficients{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0};
 }
 
-BiquadCoefficients calculateLowpassCoefficients(float cutoff, float Q) {
+BiquadCoefficients calculateLowpassCoefficients(
+    double cutoff,
+    double resonance) {
   // Limit cutoff to 0 to 1.
-  cutoff = std::clamp(cutoff, 0.0f, 1.0f);
+  cutoff = std::clamp(cutoff, 0.0, 1.0);
 
   if (cutoff == 1) {
     // When cutoff is 1, the z-transform is 1.
     return normalizeCoefficients(1, 0, 0, 1, 0, 0);
-  } else if (cutoff > 0.0) {
+  } else if (cutoff > 0) {
     // Compute biquad coefficients for lowpass filter
 
-    Q = std::pow(10, Q / 20);
+    resonance = pow10(resonance / 20);
 
-    float theta = PI * cutoff;
-    float alpha = std::sin(theta) / (2 * Q);
-    float cosw = std::cos(theta);
-    float beta = (1 - cosw) / 2;
+    double theta = kPiDouble * cutoff;
+    double alpha = std::sin(theta) / (2 * resonance);
+    double cosw = std::cos(theta);
+    double beta = (1 - cosw) / 2;
 
-    float b0 = beta;
-    float b1 = 2 * beta;
-    float b2 = beta;
+    double b0 = beta;
+    double b1 = 2 * beta;
+    double b2 = beta;
 
-    float a0 = 1 + alpha;
-    float a1 = -2 * cosw;
-    float a2 = 1 - alpha;
+    double a0 = 1 + alpha;
+    double a1 = -2 * cosw;
+    double a2 = 1 - alpha;
 
     return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
   } else {
@@ -130,9 +144,11 @@ BiquadCoefficients calculateLowpassCoefficients(float cutoff, float Q) {
   }
 }
 
-BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q) {
+BiquadCoefficients calculateHighpassCoefficients(
+    double cutoff,
+    double resonance) {
   // Limit cutoff to 0 to 1.
-  cutoff = std::clamp(cutoff, 0.0f, 1.0f);
+  cutoff = std::clamp(cutoff, 0.0, 1.0);
 
   if (cutoff == 1) {
     // The z-transform is 0.
@@ -140,19 +156,19 @@ BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q) {
   } else if (cutoff > 0) {
     // Compute biquad coefficients for highpass filter
 
-    Q = std::pow(10, Q / 20);
-    float theta = PI * cutoff;
-    float alpha = std::sin(theta) / (2 * Q);
-    float cosw = std::cos(theta);
-    float beta = (1 + cosw) / 2;
+    resonance = pow10(resonance / 20);
+    double theta = kPiDouble * cutoff;
+    double alpha = std::sin(theta) / (2 * resonance);
+    double cosw = std::cos(theta);
+    double beta = (1 + cosw) / 2;
 
-    float b0 = beta;
-    float b1 = -2 * beta;
-    float b2 = beta;
+    double b0 = beta;
+    double b1 = -2 * beta;
+    double b2 = beta;
 
-    float a0 = 1 + alpha;
-    float a1 = -2 * cosw;
-    float a2 = 1 - alpha;
+    double a0 = 1 + alpha;
+    double a1 = -2 * cosw;
+    double a2 = 1 - alpha;
 
     return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
   } else {
@@ -165,31 +181,31 @@ BiquadCoefficients calculateHighpassCoefficients(float cutoff, float Q) {
 }
 
 BiquadCoefficients calculateLowshelfCoefficients(
-    float frequency,
-    float db_gain) {
+    double frequency,
+    double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  frequency = std::clamp(frequency, 0.0, 1.0);
 
-  float a = std::pow(10, db_gain / 40);
+  double a = pow10(db_gain / 40);
 
-  if (frequency == 1.0) {
+  if (frequency == 1) {
     // The z-transform is a constant gain.
     return normalizeCoefficients(a * a, 0, 0, 1, 0, 0);
-  } else if (frequency > 0.0) {
-    float w0 = PI * frequency;
-    float s = 1; // filter slope (1 is max value)
-    float alpha = 0.5 * std::sin(w0) * std::sqrt((a + 1 / a) * (1 / s - 1) + 2);
-    float k = std::cos(w0);
-    float k2 = 2 * std::sqrt(a) * alpha;
-    float a_plus_one = a + 1;
-    float a_minus_one = a - 1;
+  } else if (frequency > 0) {
+    double w0 = kPiDouble * frequency;
+    double s = 1; // filter slope (1 is max value)
+    double alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    double k = std::cos(w0);
+    double k2 = 2 * sqrt(a) * alpha;
+    double a_plus_one = a + 1;
+    double a_minus_one = a - 1;
 
-    float b0 = a * (a_plus_one - a_minus_one * k + k2);
-    float b1 = 2 * a * (a_minus_one - a_plus_one * k);
-    float b2 = a * (a_plus_one - a_minus_one * k - k2);
-    float a0 = a_plus_one + a_minus_one * k + k2;
-    float a1 = -2 * (a_minus_one + a_plus_one * k);
-    float a2 = a_plus_one + a_minus_one * k - k2;
+    double b0 = a * (a_plus_one - a_minus_one * k + k2);
+    double b1 = 2 * a * (a_minus_one - a_plus_one * k);
+    double b2 = a * (a_plus_one - a_minus_one * k - k2);
+    double a0 = a_plus_one + a_minus_one * k + k2;
+    double a1 = -2 * (a_minus_one + a_plus_one * k);
+    double a2 = a_plus_one + a_minus_one * k - k2;
 
     return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
   } else {
@@ -199,31 +215,31 @@ BiquadCoefficients calculateLowshelfCoefficients(
 }
 
 BiquadCoefficients calculateHighshelfCoefficients(
-    float frequency,
-    float db_gain) {
+    double frequency,
+    double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  frequency = std::clamp(frequency, 0.0, 1.0);
 
-  float a = std::pow(10, db_gain / 40);
+  double a = pow10(db_gain / 40);
 
-  if (frequency == 1.0) {
+  if (frequency == 1) {
     // The z-transform is 1.
     return normalizeCoefficients(1, 0, 0, 1, 0, 0);
   } else if (frequency > 0) {
-    float w0 = PI * frequency;
-    float s = 1; // filter slope (1 is max value)
-    float alpha = 0.5 * std::sin(w0) * std::sqrt((a + 1 / a) * (1 / s - 1) + 2);
-    float k = std::cos(w0);
-    float k2 = 2 * std::sqrt(a) * alpha;
-    float a_plus_one = a + 1;
-    float a_minus_one = a - 1;
+    double w0 = kPiDouble * frequency;
+    double s = 1; // filter slope (1 is max value)
+    double alpha = 0.5 * std::sin(w0) * sqrt((a + 1 / a) * (1 / s - 1) + 2);
+    double k = std::cos(w0);
+    double k2 = 2 * sqrt(a) * alpha;
+    double a_plus_one = a + 1;
+    double a_minus_one = a - 1;
 
-    float b0 = a * (a_plus_one + a_minus_one * k + k2);
-    float b1 = -2 * a * (a_minus_one + a_plus_one * k);
-    float b2 = a * (a_plus_one + a_minus_one * k - k2);
-    float a0 = a_plus_one - a_minus_one * k + k2;
-    float a1 = 2 * (a_minus_one - a_plus_one * k);
-    float a2 = a_plus_one - a_minus_one * k - k2;
+    double b0 = a * (a_plus_one + a_minus_one * k + k2);
+    double b1 = -2 * a * (a_minus_one + a_plus_one * k);
+    double b2 = a * (a_plus_one + a_minus_one * k - k2);
+    double a0 = a_plus_one - a_minus_one * k + k2;
+    double a1 = 2 * (a_minus_one - a_plus_one * k);
+    double a2 = a_plus_one - a_minus_one * k - k2;
 
     return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
   } else {
@@ -233,27 +249,27 @@ BiquadCoefficients calculateHighshelfCoefficients(
 }
 
 BiquadCoefficients
-calculatePeakingCoefficients(float frequency, float q, float db_gain) {
+calculatePeakingCoefficients(double frequency, double q, double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  frequency = std::clamp(frequency, 0.0, 1.0);
 
   // Don't let Q go negative, which causes an unstable filter.
-  q = std::max(0.0f, q);
+  q = std::max(0.0, q);
 
-  float a = std::pow(10, db_gain / 40);
+  double a = pow10(db_gain / 40);
 
-  if (frequency > 0.0 && frequency < 1.0) {
-    if (q > 0.0) {
-      float w0 = PI * frequency;
-      float alpha = std::sin(w0) / (2 * q);
-      float k = std::cos(w0);
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      double w0 = kPiDouble * frequency;
+      double alpha = std::sin(w0) / (2 * q);
+      double k = std::cos(w0);
 
-      float b0 = 1 + alpha * a;
-      float b1 = -2 * k;
-      float b2 = 1 - alpha * a;
-      float a0 = 1 + alpha / a;
-      float a1 = -2 * k;
-      float a2 = 1 - alpha / a;
+      double b0 = 1 + alpha * a;
+      double b1 = -2 * k;
+      double b2 = 1 - alpha * a;
+      double a0 = 1 + alpha / a;
+      double a1 = -2 * k;
+      double a2 = 1 - alpha / a;
 
       return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
     } else {
@@ -268,25 +284,25 @@ calculatePeakingCoefficients(float frequency, float q, float db_gain) {
   }
 }
 
-BiquadCoefficients calculateAllpassCoefficients(float frequency, float q) {
+BiquadCoefficients calculateAllpassCoefficients(double frequency, double q) {
   // Clip frequencies to between 0 and 1, inclusive.
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  frequency = std::clamp(frequency, 0.0, 1.0);
 
   // Don't let Q go negative, which causes an unstable filter.
-  q = std::max(0.0f, q);
+  q = std::max(0.0, q);
 
-  if (frequency > 0.0 && frequency < 1.0) {
-    if (q > 0.0) {
-      float w0 = PI * frequency;
-      float alpha = std::sin(w0) / (2 * q);
-      float k = std::cos(w0);
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      double w0 = kPiDouble * frequency;
+      double alpha = std::sin(w0) / (2 * q);
+      double k = std::cos(w0);
 
-      float b0 = 1 - alpha;
-      float b1 = -2 * k;
-      float b2 = 1 + alpha;
-      float a0 = 1 + alpha;
-      float a1 = -2 * k;
-      float a2 = 1 - alpha;
+      double b0 = 1 - alpha;
+      double b1 = -2 * k;
+      double b2 = 1 + alpha;
+      double a0 = 1 + alpha;
+      double a1 = -2 * k;
+      double a2 = 1 - alpha;
 
       return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
     } else {
@@ -301,25 +317,25 @@ BiquadCoefficients calculateAllpassCoefficients(float frequency, float q) {
   }
 }
 
-BiquadCoefficients calculateNotchCoefficients(float frequency, float q) {
+BiquadCoefficients calculateNotchCoefficients(double frequency, double q) {
   // Clip frequencies to between 0 and 1, inclusive.
-  frequency = std::clamp(frequency, 0.0f, 1.0f);
+  frequency = std::clamp(frequency, 0.0, 1.0);
 
   // Don't let Q go negative, which causes an unstable filter.
-  q = std::max(0.0f, q);
+  q = std::max(0.0, q);
 
-  if (frequency > 0.0 && frequency < 1.0) {
-    if (q > 0.0) {
-      float w0 = PI * frequency;
-      float alpha = std::sin(w0) / (2 * q);
-      float k = std::cos(w0);
+  if (frequency > 0 && frequency < 1) {
+    if (q > 0) {
+      double w0 = kPiDouble * frequency;
+      double alpha = std::sin(w0) / (2 * q);
+      double k = std::cos(w0);
 
-      float b0 = 1;
-      float b1 = -2 * k;
-      float b2 = 1;
-      float a0 = 1 + alpha;
-      float a1 = -2 * k;
-      float a2 = 1 - alpha;
+      double b0 = 1;
+      double b1 = -2 * k;
+      double b2 = 1;
+      double a0 = 1 + alpha;
+      double a1 = -2 * k;
+      double a2 = 1 - alpha;
 
       return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
     } else {
@@ -334,25 +350,25 @@ BiquadCoefficients calculateNotchCoefficients(float frequency, float q) {
   }
 }
 
-BiquadCoefficients calculateBandpassCoefficients(float frequency, float q) {
+BiquadCoefficients calculateBandpassCoefficients(double frequency, double q) {
   // No negative frequencies allowed.
-  frequency = std::max(0.0f, frequency);
+  frequency = std::max(0.0, frequency);
 
   // Don't let Q go negative, which causes an unstable filter.
-  q = std::max(0.0f, q);
+  q = std::max(0.0, q);
 
-  if (frequency > 0.0 && frequency < 1.0) {
-    float w0 = PI * frequency;
-    if (q > 0.0) {
-      float alpha = std::sin(w0) / (2 * q);
-      float k = std::cos(w0);
+  if (frequency > 0 && frequency < 1) {
+    double w0 = kPiDouble * frequency;
+    if (q > 0) {
+      double alpha = std::sin(w0) / (2 * q);
+      double k = std::cos(w0);
 
-      float b0 = alpha;
-      float b1 = 0;
-      float b2 = -alpha;
-      float a0 = 1 + alpha;
-      float a1 = -2 * k;
-      float a2 = 1 - alpha;
+      double b0 = alpha;
+      double b1 = 0;
+      double b2 = -alpha;
+      double a0 = 1 + alpha;
+      double a1 = -2 * k;
+      double a2 = 1 - alpha;
 
       return normalizeCoefficients(b0, b1, b2, a0, a1, a2);
     } else {
@@ -370,5 +386,4 @@ BiquadCoefficients calculateBandpassCoefficients(float frequency, float q) {
     return normalizeCoefficients(0, 0, 0, 1, 0, 0);
   }
 }
-
 } // namespace audioapi

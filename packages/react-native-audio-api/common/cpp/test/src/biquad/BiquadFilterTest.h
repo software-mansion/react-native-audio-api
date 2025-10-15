@@ -8,6 +8,8 @@
 #include <memory>
 
 static constexpr int sampleRate = 44100;
+static constexpr float nyquistFrequency = sampleRate / 2.0f;
+static constexpr float tolerance = 0.0001f;
 
 namespace audioapi {
 class BiquadFilterTest : public ::testing::Test {
@@ -20,7 +22,7 @@ class BiquadFilterTest : public ::testing::Test {
     context = std::make_unique<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  void expectCoefficientsEqual(const std::shared_ptr<BiquadFilterNode> &node, const BiquadCoefficients &expected);
+  void expectCoefficientsNear(const std::shared_ptr<BiquadFilterNode> &node, const BiquadCoefficients &expected);
   void testLowpass(float frequency, float Q);
   void testHighpass(float frequency, float Q);
   void testBandpass(float frequency, float Q);
@@ -31,7 +33,8 @@ class BiquadFilterTest : public ::testing::Test {
   void testHighshelf(float frequency, float gain);
 };
 
-class BiquadFilterQTest : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
+class BiquadFilterQTestLowpassHighpass : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
+class BiquadFilterQTestRestTypes : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
 class BiquadFilterFrequencyTest : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
 class BiquadFilterGainTest : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
 } // namespace audioapi

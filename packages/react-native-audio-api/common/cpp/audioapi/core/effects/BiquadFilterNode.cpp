@@ -104,7 +104,9 @@ void BiquadFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
-    const int length) {
+    const size_t length) {
+  applyFilter();
+
   // Local copies for micro-optimization
   float b0 = b0_;
   float b1 = b1_;
@@ -112,15 +114,21 @@ void BiquadFilterNode::getFrequencyResponse(
   float a1 = a1_;
   float a2 = a2_;
 
+  float nyquist = context_->getNyquistFrequency();
+
   for (size_t i = 0; i < length; i++) {
-    if (frequencyArray[i] < 0.0f || frequencyArray[i] > 1.0f) {
+    // Convert from frequency in Hz to normalized frequency [0, 1]
+    // float normalizedFreq = frequencyArray[i] / nyquist;
+     float normalizedFreq = frequencyArray[i];
+
+    if (normalizedFreq < 0.0f || normalizedFreq > 1.0f) {
       // Out-of-bounds frequencies should return NaN.
       magResponseOutput[i] = std::nanf("");
       phaseResponseOutput[i] = std::nanf("");
       continue;
     }
 
-    auto omega = -PI * frequencyArray[i];
+    auto omega = -PI * normalizedFreq;
     auto z = std::complex<float>(std::cos(omega), std::sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
         (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
@@ -157,7 +165,6 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
     return;
   }
 
-  Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
   float theta = PI * frequency;
@@ -179,7 +186,6 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
     return;
   }
 
-  Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
   float theta = PI * frequency;
