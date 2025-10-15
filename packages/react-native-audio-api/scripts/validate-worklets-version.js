@@ -8,7 +8,7 @@ const validWorkletsVersions = [
 function validateVersion() {
   let workletsVersion;
   try {
-    const { version } = require('react-native-audio-worklets/package.json');
+    const { version } = require('react-native-worklets/package.json');
     workletsVersion = version;
   } catch (e) {
     return false;

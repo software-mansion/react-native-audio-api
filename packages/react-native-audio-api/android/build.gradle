@@ -74,6 +74,30 @@ def resolveReactNativeWorkletsDirectory() {
   return null;
 }
 
+def validateWorkletsVersion() {
+  def validationScript = file("${projectDir}/../scripts/validate-worklets-version.js")
+  if (!validationScript.exists()) {
+    logger.error("[AudioAPI] Worklets validation script not found at ${validationScript.absolutePath}")
+    return false
+  }
+
+  try {
+    def process = ["node", validationScript.absolutePath].execute()
+    process.waitForProcessOutput(System.out, System.err)
+    def exitCode = process.exitValue()
+
+    if (exitCode == 0) {
+      return true
+    } else {
+      logger.warn("[AudioAPI] Worklets version validation failed")
+      return false
+    }
+  } catch (Exception e) {
+    logger.error("[AudioAPI] Failed to validate worklets version: ${e.message}")
+    return false
+  }
+}
+
 def toPlatformFileString(String path) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
       path = path.replace(File.separatorChar, '/' as char)
@@ -92,7 +116,7 @@ static def supportsNamespace() {
 
 def reactNativeRootDir = resolveReactNativeDirectory()
 def reactNativeWorkletsRootDir = resolveReactNativeWorkletsDirectory()
-def isWorkletsAvailable = reactNativeWorkletsRootDir != null
+def isWorkletsAvailable = reactNativeWorkletsRootDir != null && validateWorkletsVersion()
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -123,7 +147,7 @@ android {
   defaultConfig {
     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
-    
+
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
     buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
 
