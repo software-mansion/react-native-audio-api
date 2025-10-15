@@ -16,10 +16,7 @@ export function clamp(value: number, min: number, max: number): number {
 export let isWorkletsAvailable = false;
 export let isWorkletsVersionSupported = false;
 export let workletsVersion = 'unknown';
-export const supportedWorkletsVersions = [
-  '0.6.0',
-  '0.6.1'
-];
+export const supportedWorkletsVersions = ['0.6.0', '0.6.1'];
 export let workletsModule: SimplifiedWorkletModule;
 
 export function assertWorkletsEnabled() {
