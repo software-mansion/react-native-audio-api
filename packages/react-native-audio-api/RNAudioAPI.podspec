@@ -1,4 +1,5 @@
 require "json"
+require_relative './scripts/rnaa_utils'
 
 package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
@@ -7,6 +8,8 @@ $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
+
+worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
