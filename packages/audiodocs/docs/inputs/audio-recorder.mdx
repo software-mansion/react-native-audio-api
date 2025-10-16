@@ -69,7 +69,7 @@ Stops recording.
 Connects recorder to the adapter. If the recorder is already connected, it will switch to the new adapter (it is equivalent to calling disconnect() previously).
 Be careful `RecorderAdapterNode` can be connected only once. You can't connect same adapter twice (even to different recorders).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `node` | [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) | Adapter that we want to connect to. |
 
@@ -85,7 +85,7 @@ Disconnects recorder from the currently connected adapter. It does not need to b
 
 Sets a callback after every portion of data deliverance.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `callback` | [`(OnAudioReadyEventType => void)`](/docs/inputs/audio-recorder#onaudioreadyeventtype) | The callback function to handle audio data. |
 

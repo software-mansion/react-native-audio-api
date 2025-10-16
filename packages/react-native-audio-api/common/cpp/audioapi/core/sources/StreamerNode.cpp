@@ -44,10 +44,14 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   if (!openInput(input_url)) {
+    if (VERBOSE)
+      printf("Failed to open input\n");
     return false;
   }
 
   if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
+    if (VERBOSE)
+      printf("Failed to find/setup audio stream\n");
     cleanup();
     return false;
   }
@@ -56,6 +60,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   frame_ = av_frame_alloc();
 
   if (pkt_ == nullptr || frame_ == nullptr) {
+    if (VERBOSE)
+      printf("Failed to allocate packet or frame\n");
     cleanup();
     return false;
   }
@@ -119,40 +125,41 @@ void StreamerNode::streamAudio() {
   while (streamFlag.load()) {
     if (pendingFrame_ != nullptr) {
       if (!processFrameWithResampler(pendingFrame_)) {
-        cleanup();
         return;
       }
     } else {
       if (av_read_frame(fmtCtx_, pkt_) < 0) {
-        cleanup();
         return;
       }
       if (pkt_->stream_index == audio_stream_index_) {
         if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
-          cleanup();
           return;
         }
         if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
-          cleanup();
           return;
         }
         if (!processFrameWithResampler(frame_)) {
-          cleanup();
           return;
         }
-        av_packet_unref(pkt_);
       }
+      av_packet_unref(pkt_);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }
 
-void StreamerNode::processNode(
+std::shared_ptr<AudioBus> StreamerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+
+  if (!isPlaying() && !isStopScheduled()) {
+    processingBus->zero();
+    return processingBus;
+  }
+
   // If we have enough buffered data, copy to output bus
   if (bufferedBusIndex_ >= framesToProcess) {
     Locker locker(mutex_);
@@ -168,7 +175,16 @@ void StreamerNode::processNode(
           (maxBufferSize_ - offsetLength) * sizeof(float));
     }
     bufferedBusIndex_ -= offsetLength;
+  } else {
+    if (VERBOSE)
+      printf(
+          "Buffer underrun: have %zu, need %zu\n",
+          bufferedBusIndex_,
+          (size_t)framesToProcess);
+    processingBus->zero();
   }
+
+  return processingBus;
 }
 
 bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
@@ -265,6 +281,8 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   streamFlag.store(false);
+  // cleanup cannot be called from the streaming thread so there is no need to
+  // check if we are in the same thread
   streamingThread_.join();
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);

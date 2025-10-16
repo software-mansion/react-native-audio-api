@@ -2,7 +2,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
-#include "MockAudioEventHandlerRegistry.h"
+#include <test/src/MockAudioEventHandlerRegistry.h>
 
 using namespace audioapi;
 

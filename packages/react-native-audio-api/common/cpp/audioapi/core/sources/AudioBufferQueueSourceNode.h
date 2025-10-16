@@ -29,7 +29,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     void disable() override;
 
  protected:
-    void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+    std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
     double getCurrentPosition() const override;
 
  private:

@@ -21,6 +21,9 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
 
+  audioBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+
   isInitialized_ = true;
 }
 
@@ -47,7 +50,7 @@ void OscillatorNode::setPeriodicWave(
   type_ = OscillatorType::CUSTOM;
 }
 
-void OscillatorNode::processNode(
+std::shared_ptr<AudioBus> OscillatorNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
@@ -57,7 +60,7 @@ void OscillatorNode::processNode(
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
-    return;
+    return processingBus;
   }
 
   auto time = context_->getCurrentTime() +
@@ -89,6 +92,8 @@ void OscillatorNode::processNode(
   }
 
   handleStopScheduled();
+
+  return processingBus;
 }
 
 } // namespace audioapi

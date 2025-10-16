@@ -25,7 +25,7 @@ class WorkletNode : public AudioNode {
   ) : AudioNode(context) {}
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override {}
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override { return processingBus; }
 };
 #else
 
@@ -40,18 +40,17 @@ class WorkletNode : public AudioNode {
       WorkletsRunner &&workletRunner
   );
 
-  ~WorkletNode() override;
+  ~WorkletNode() override = default;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
 
  private:
   WorkletsRunner workletRunner_;
-  std::vector<uint8_t*> buffs_;
+  std::shared_ptr<AudioBus> bus_;
 
   /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer
-  size_t buffRealLength_;
   size_t bufferLength_;
   size_t inputChannelCount_;
   size_t curBuffIndex_;

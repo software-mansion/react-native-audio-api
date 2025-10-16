@@ -34,6 +34,7 @@ class AudioBus {
   [[nodiscard]] size_t getSize() const;
   [[nodiscard]] AudioArray *getChannel(int index) const;
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
+  [[nodiscard]] std::shared_ptr<AudioArray> getSharedChannel(int index) const;
 
   AudioArray &operator[](size_t index);
   const AudioArray &operator[](size_t index) const;

@@ -15,17 +15,16 @@ WorkletProcessingNode::WorkletProcessingNode(
   outputBuffsHandles_.resize(maxChannelCount);
 
   for (size_t i = 0; i < maxChannelCount; ++i) {
-    auto inputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        inputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto inputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(inputAudioArray);
 
-    auto outputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        outputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto outputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    outputBuffsHandles_[i] =
+        std::make_shared<AudioArrayBuffer>(outputAudioArray);
   }
 }
 
-void WorkletProcessingNode::processNode(
+std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t channelCount = std::min(
@@ -83,6 +82,8 @@ void WorkletProcessingNode::processNode(
       std::memset(channelData, 0, framesToProcess * sizeof(float));
     }
   }
+
+  return processingBus;
 }
 
 } // namespace audioapi

@@ -16,7 +16,7 @@ std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-void ConstantSourceNode::processNode(
+std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
@@ -26,7 +26,7 @@ void ConstantSourceNode::processNode(
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
-    return;
+    return processingBus;
   }
 
   auto offsetBus = offsetParam_->processARateParam(
@@ -47,5 +47,7 @@ void ConstantSourceNode::processNode(
   if (isStopScheduled()) {
     handleStopScheduled();
   }
+
+  return processingBus;
 }
 } // namespace audioapi

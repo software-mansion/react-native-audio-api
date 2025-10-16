@@ -11,10 +11,10 @@ trap cleanup EXIT
 
 cd packages/react-native-audio-api/common/cpp/test
 
-cmake -S . -B build
+cmake -S . -B build -Wno-dev
 
 cd build
-make -j4
+make -j10
 ./tests
 cd ..
 

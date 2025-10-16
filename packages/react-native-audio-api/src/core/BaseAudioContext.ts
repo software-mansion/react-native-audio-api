@@ -15,6 +15,7 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import ConstantSourceNode from './ConstantSourceNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -22,7 +23,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
-import ConstantSourceNode from './ConstantSourceNode';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -41,6 +42,30 @@ export default class BaseAudioContext {
 
   public get state(): ContextState {
     return this.context.state;
+  }
+
+  public async decodeAudioData(
+    input: string | ArrayBuffer,
+    sampleRate?: number
+  ): Promise<AudioBuffer> {
+    if (!(typeof input === 'string' || input instanceof ArrayBuffer)) {
+      throw new TypeError('Input must be a string or ArrayBuffer');
+    }
+    return await decodeAudioData(input, sampleRate ?? this.sampleRate);
+  }
+
+  public async decodePCMInBase64(
+    base64String: string,
+    inputSampleRate: number,
+    inputChannelCount: number,
+    isInterleaved: boolean = true
+  ): Promise<AudioBuffer> {
+    return await decodePCMInBase64(
+      base64String,
+      inputSampleRate,
+      inputChannelCount,
+      isInterleaved
+    );
   }
 
   createWorkletNode(
@@ -263,33 +288,5 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  /** Decodes audio data from a local file path. */
-  async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
-    // Remove the file:// prefix if it exists
-    if (sourcePath.startsWith('file://')) {
-      sourcePath = sourcePath.replace('file://', '');
-    }
-
-    return new AudioBuffer(
-      await this.context.decodeAudioDataSource(sourcePath)
-    );
-  }
-
-  /** Decodes audio data from an ArrayBuffer. */
-  async decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodeAudioData(new Uint8Array(data))
-    );
-  }
-
-  async decodePCMInBase64Data(
-    base64: string,
-    playbackRate: number = 1.0
-  ): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodePCMAudioDataInBase64(base64, playbackRate)
-    );
   }
 }

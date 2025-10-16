@@ -14,18 +14,17 @@ WorkletSourceNode::WorkletSourceNode(
   size_t outputChannelCount = this->getChannelCount();
   outputBuffsHandles_.resize(outputChannelCount);
   for (size_t i = 0; i < outputChannelCount; ++i) {
-    auto buff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        buff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto audioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(audioArray);
   }
 }
 
-void WorkletSourceNode::processNode(
+std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   if (isUnscheduled() || isFinished() || !isEnabled()) {
     processingBus->zero();
-    return;
+    return processingBus;
   }
 
   size_t startOffset = 0;
@@ -36,7 +35,7 @@ void WorkletSourceNode::processNode(
 
   if (nonSilentFramesToProcess == 0) {
     processingBus->zero();
-    return;
+    return processingBus;
   }
 
   size_t outputChannelCount = processingBus->getNumberOfChannels();
@@ -63,7 +62,7 @@ void WorkletSourceNode::processNode(
   // It might happen if the runtime is not available
   if (!result.has_value()) {
     processingBus->zero();
-    return;
+    return processingBus;
   }
 
   // Copy the processed data back to the AudioBus
@@ -76,6 +75,8 @@ void WorkletSourceNode::processNode(
   }
 
   handleStopScheduled();
+
+  return processingBus;
 }
 
 } // namespace audioapi

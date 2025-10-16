@@ -19,17 +19,19 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-void StereoPannerNode::processNode(
+std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
-  AudioArray *left = processingBus->getChannelByType(AudioBus::ChannelLeft);
-  AudioArray *right = processingBus->getChannelByType(AudioBus::ChannelRight);
+  auto *inputLeft = processingBus->getChannelByType(AudioBus::ChannelLeft);
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)
                             ->getChannel(0)
                             ->getData();
+
+  auto *outputLeft = audioBus_->getChannelByType(AudioBus::ChannelLeft);
+  auto *outputRight = audioBus_->getChannelByType(AudioBus::ChannelRight);
 
   // Input is mono
   if (processingBus->getNumberOfChannels() == 1) {
@@ -40,13 +42,14 @@ void StereoPannerNode::processNode(
       auto gainL = static_cast<float>(cos(x * PI / 2));
       auto gainR = static_cast<float>(sin(x * PI / 2));
 
-      float input = (*left)[i];
+      float input = (*inputLeft)[i];
 
-      (*left)[i] = input * gainL;
-      (*right)[i] = input * gainR;
+      (*outputLeft)[i] = input * gainL;
+      (*outputRight)[i] = input * gainR;
       time += deltaTime;
     }
   } else { // Input is stereo
+    auto *inputRight = processingBus->getChannelByType(AudioBus::ChannelRight);
     for (int i = 0; i < framesToProcess; i++) {
       auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       auto x = (pan <= 0 ? pan + 1 : pan);
@@ -54,20 +57,22 @@ void StereoPannerNode::processNode(
       auto gainL = static_cast<float>(cos(x * PI / 2));
       auto gainR = static_cast<float>(sin(x * PI / 2));
 
-      float inputL = (*left)[i];
-      float inputR = (*right)[i];
+      float inputL = (*inputLeft)[i];
+      float inputR = (*inputRight)[i];
 
       if (pan <= 0) {
-        (*left)[i] = inputL + inputR * gainL;
-        (*right)[i] = inputR * gainR;
+        (*outputLeft)[i] = inputL + inputR * gainL;
+        (*outputRight)[i] = inputR * gainR;
       } else {
-        (*left)[i] = inputL * gainL;
-        (*right)[i] = inputR + inputL * gainR;
+        (*outputLeft)[i] = inputL * gainL;
+        (*outputRight)[i] = inputR + inputL * gainR;
       }
 
       time += deltaTime;
     }
   }
+
+  return audioBus_;
 }
 
 } // namespace audioapi
