@@ -77,5 +77,5 @@ class SerializableWorklet {
 /// @note it is used to pass them around and avoid creating multiple instances of the same runtime
 struct RuntimeRegistry {
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
-  std::weak_ptr<worklets::WorkletRuntime> audioRuntime;
+  std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
 };
