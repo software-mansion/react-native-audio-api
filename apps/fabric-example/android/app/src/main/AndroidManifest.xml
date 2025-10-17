@@ -14,6 +14,7 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
+      android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
         <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.MediaNotificationManager$AudioForegroundService" android:foregroundServiceType="mediaPlayback" />
       <activity
