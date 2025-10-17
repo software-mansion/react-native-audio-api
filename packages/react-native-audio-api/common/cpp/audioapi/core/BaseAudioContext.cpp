@@ -178,8 +178,11 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   return analyser;
 }
 
-std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver() {
-  auto convolver = std::make_shared<ConvolverNode>(this);
+std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
+    std::shared_ptr<AudioBuffer> buffer,
+    bool disableNormalization) {
+  auto convolver =
+      std::make_shared<ConvolverNode>(this, buffer, disableNormalization);
   nodeManager_->addProcessingNode(convolver);
   return convolver;
 }

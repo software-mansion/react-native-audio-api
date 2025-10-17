@@ -99,7 +99,7 @@ bool Convolver::init(
   return true;
 }
 
-void Convolver::process(const audioapi::AudioArray &array) {
+void Convolver::process(float *data, float *outputData) {
   // The input buffer acts as a 2B-point sliding window of the input signal.
   // With each new input block, the right half of the input buffer is shifted
   // to the left and the new block is stored in the right half.
@@ -107,10 +107,7 @@ void Convolver::process(const audioapi::AudioArray &array) {
       _inputBuffer.getData(),
       _inputBuffer.getData() + _blockSize,
       _blockSize * sizeof(float));
-  memcpy(
-      _inputBuffer.getData() + _blockSize,
-      array.getData(),
-      _blockSize * sizeof(float));
+  memcpy(_inputBuffer.getData() + _blockSize, data, _blockSize * sizeof(float));
 
   // All contents (DFT spectra) in the FDL are shifted up by one slot.
   _current = (_current > 0) ? _current - 1 : _segCount - 1;
@@ -142,7 +139,7 @@ void Convolver::process(const audioapi::AudioArray &array) {
   _fft->doInverseFFT(_preMultiplied, _fftBuffer.getData());
 
   memcpy(
-      array.getData(),
+      outputData,
       _fftBuffer.getData() + _blockSize,
       _blockSize * sizeof(float));
 }

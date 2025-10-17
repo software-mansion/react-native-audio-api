@@ -14,7 +14,7 @@ class AudioBuffer;
 
 class ConvolverNode : public AudioNode {
  public:
-    explicit ConvolverNode(BaseAudioContext *context);
+    explicit ConvolverNode(BaseAudioContext *context, std::shared_ptr<AudioBuffer> buffer, bool disableNormalization);
 
     [[nodiscard]] bool getNormalize_() const;
     [[nodiscard]] const std::shared_ptr<AudioBuffer> &getBuffer() const;
@@ -33,13 +33,15 @@ class ConvolverNode : public AudioNode {
   bool signaledToStop_ = false;
   int internalBufferIndex_ = 0;
   float scaleFactor_ = 1.0f;
-  float gainCalibration_ = -60; //magic number so that processed signal and dry signal have roughly the same volume
+  float gainCalibration_ = -62; //magic number so that processed signal and dry signal have roughly the same volume
   float minPower_ = 0.000125;
+  float thirdChannelData_[RENDER_QUANTUM_SIZE];
+  float fourthChannelData_[RENDER_QUANTUM_SIZE];
   std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> internalBuffer_;
-  std::shared_ptr<Convolver> convolver_;
-
+  std::vector<Convolver> convolvers_;
   void calculateNormalizationScale();
+  void performConvolution(const std::shared_ptr<AudioBus>& processingBus);
 };
 
 } // namespace audioapi

@@ -6,19 +6,24 @@
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioArray.h>
 #include <iostream>
+#include <thread>
 
 namespace audioapi {
-ConvolverNode::ConvolverNode(BaseAudioContext *context)
+ConvolverNode::ConvolverNode(
+    BaseAudioContext *context,
+    std::shared_ptr<AudioBuffer> buffer,
+    bool disableNormalization)
     : AudioNode(context),
       normalize_(true),
       buffer_(nullptr),
-      convolver_(nullptr),
       internalBuffer_(nullptr) {
-  channelCount_ = 1;
+  channelCount_ = 2;
+  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
+  normalize_ = !disableNormalization;
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   gainCalibrationSampleRate_ = context->getSampleRate();
+  setBuffer(buffer);
   isInitialized_ = true;
 }
 
@@ -42,19 +47,36 @@ void ConvolverNode::setNormalize(bool normalize) {
 }
 
 void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  if (buffer_ != buffer) {
+  if (buffer_ != buffer && buffer != nullptr) {
     buffer_ = buffer;
     if (normalize_)
       calculateNormalizationScale();
-    convolver_ = std::make_shared<Convolver>();
-    auto audioArray = AudioArray(buffer->getLength());
-    memcpy(
-        audioArray.getData(),
-        buffer->getChannelData(0),
-        buffer->getLength() * sizeof(float));
-    convolver_->init(RENDER_QUANTUM_SIZE, audioArray, audioArray.getSize());
+    convolvers_.clear();
+    for (int i = 0; i < 2; ++i) {
+      convolvers_.emplace_back();
+      AudioArray channelData(buffer->getLength());
+      int channelNumber = buffer->getNumberOfChannels() == 2 ? i : 0;
+      memcpy(
+          channelData.getData(),
+          buffer->getChannelData(channelNumber),
+          buffer->getLength() * sizeof(float));
+      convolvers_.back().init(
+          RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+    }
+    if (buffer->getNumberOfChannels() == 4) {
+      for (int i = 2; i < 4; ++i) {
+        convolvers_.emplace_back();
+        AudioArray channelData(buffer->getLength());
+        memcpy(
+            channelData.getData(),
+            buffer->getChannelData(i),
+            buffer->getLength() * sizeof(float));
+        convolvers_.back().init(
+            RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+      }
+    }
     internalBuffer_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE * 2, 1, buffer->getSampleRate());
+        RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
   }
 }
 
@@ -62,7 +84,7 @@ void ConvolverNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signaledToStop_ = true;
-    remainingSegments_ = convolver_->getSegCount();
+    remainingSegments_ = convolvers_.at(0).getSegCount();
   }
 }
 
@@ -90,29 +112,34 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
     }
   }
   if (internalBufferIndex_ < framesToProcess) {
-    convolver_->process(*processingBus->getChannel(0));
+    performConvolution(processingBus);
 
     internalBuffer_->copy(
-        processingBus.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
+        audioBus_.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
   }
-  processingBus->zero();
-  processingBus->copy(internalBuffer_.get(), 0, 0, framesToProcess);
+  audioBus_->zero();
+  audioBus_->copy(internalBuffer_.get(), 0, 0, framesToProcess);
   int remainingFrames = internalBufferIndex_ - framesToProcess;
   if (remainingFrames > 0) {
-    memmove(
-        internalBuffer_->getChannel(0)->getData(),
-        internalBuffer_->getChannel(0)->getData() + framesToProcess,
-        remainingFrames * sizeof(float));
+    for (int i = 0; i < internalBuffer_->getNumberOfChannels(); ++i) {
+      memmove(
+          internalBuffer_->getChannel(i)->getData(),
+          internalBuffer_->getChannel(i)->getData() + framesToProcess,
+          remainingFrames * sizeof(float));
+    }
   }
   internalBufferIndex_ -= framesToProcess;
 
-  dsp::multiplyByScalar(
-      processingBus->getChannel(0)->getData(),
-      scaleFactor_,
-      processingBus->getChannel(0)->getData(),
-      framesToProcess);
-  return processingBus;
+  for (int i = 0; i < processingBus->getNumberOfChannels(); ++i) {
+    dsp::multiplyByScalar(
+        processingBus->getChannel(i)->getData(),
+        scaleFactor_,
+        processingBus->getChannel(i)->getData(),
+        framesToProcess);
+  }
+
+  return audioBus_;
 }
 
 void ConvolverNode::calculateNormalizationScale() {
@@ -141,5 +168,97 @@ void ConvolverNode::calculateNormalizationScale() {
 
   if (numberOfChannels == 4)
     scaleFactor_ *= 0.5;
+}
+
+void ConvolverNode::performConvolution(
+    const std::shared_ptr<AudioBus> &processingBus) {
+  std::vector<std::thread> threads;
+  if (processingBus->getNumberOfChannels() == 1) {
+    if (convolvers_.size() == 1) {
+      convolvers_[0].process(
+          processingBus->getChannel(0)->getData(),
+          audioBus_->getChannel(0)->getData());
+    } else if (convolvers_.size() == 2) {
+      for (int i = 0; i < convolvers_.size(); ++i) {
+        threads.emplace_back([this, i, processingBus]() {
+          convolvers_[i].process(
+              processingBus->getChannel(0)->getData(),
+              audioBus_->getChannel(i)->getData());
+        });
+      }
+    } else { // convolvers.size() == 4
+      for (int i = 0; i < 2; ++i) {
+        threads.emplace_back([this, i, processingBus]() {
+          convolvers_[i].process(
+              processingBus->getChannel(0)->getData(),
+              audioBus_->getChannel(i)->getData());
+        });
+      }
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[2].process(
+            processingBus->getChannel(0)->getData(), thirdChannelData_);
+      });
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[3].process(
+            processingBus->getChannel(0)->getData(), fourthChannelData_);
+      });
+    }
+  } else if (processingBus->getNumberOfChannels() == 2) {
+    if (convolvers_.size() == 2) {
+      for (int i = 0; i < 2; ++i) {
+        threads.emplace_back([this, i, processingBus]() {
+          convolvers_[i].process(
+              processingBus->getChannel(i)->getData(),
+              audioBus_->getChannel(i)->getData());
+        });
+      }
+    } else { // convolvers.size() == 4
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[0].process(
+            processingBus->getChannel(0)->getData(),
+            audioBus_->getChannel(0)->getData());
+      });
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[1].process(
+            processingBus->getChannel(0)->getData(), fourthChannelData_);
+      });
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[2].process(
+            processingBus->getChannel(1)->getData(), thirdChannelData_);
+      });
+      threads.emplace_back([this, processingBus]() {
+        convolvers_[3].process(
+            processingBus->getChannel(1)->getData(),
+            audioBus_->getChannel(1)->getData());
+      });
+    }
+  }
+  if (!threads.empty()) {
+    for (auto &thread : threads) {
+      thread.join();
+    }
+  }
+  if (convolvers_.size() == 4) {
+    dsp::add(
+        audioBus_->getChannel(0)->getData(),
+        thirdChannelData_,
+        audioBus_->getChannel(0)->getData(),
+        RENDER_QUANTUM_SIZE);
+    dsp::multiplyByScalar(
+        audioBus_->getChannel(0)->getData(),
+        0.5f,
+        audioBus_->getChannel(0)->getData(),
+        RENDER_QUANTUM_SIZE);
+    dsp::add(
+        audioBus_->getChannel(1)->getData(),
+        fourthChannelData_,
+        audioBus_->getChannel(1)->getData(),
+        RENDER_QUANTUM_SIZE);
+    dsp::multiplyByScalar(
+        audioBus_->getChannel(1)->getData(),
+        0.5f,
+        audioBus_->getChannel(1)->getData(),
+        RENDER_QUANTUM_SIZE);
+  }
 }
 } // namespace audioapi

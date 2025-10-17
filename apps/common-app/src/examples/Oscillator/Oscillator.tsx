@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import {
   AudioContext,
   GainNode,
-  ConvolverNode,
   OscillatorNode,
   StereoPannerNode,
 } from 'react-native-audio-api';
@@ -32,41 +31,8 @@ const Oscillator: FC = () => {
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
-  const convolverRef = useRef<ConvolverNode | null>(null);
 
-  useEffect(() => {
-    function createImpulseResponse(duration = 1) {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
-      const rate = audioContextRef.current.sampleRate;
-      const length = rate * duration;
-      const impulse = audioContextRef.current.createBuffer(1, length, rate);
-
-      for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
-        const channelData = impulse.getChannelData(channel);
-        for (let i = 0; i < length; i++) {
-          channelData[i] =
-            (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
-        }
-      }
-      return impulse;
-    }
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    if (!convolverRef.current && audioContextRef.current) {
-      convolverRef.current = audioContextRef.current.createConvolver();
-      convolverRef.current.buffer = createImpulseResponse();
-    }
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
-
-  const setup = (reverb: boolean) => {
+  const setup = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext();
     }
@@ -84,12 +50,7 @@ const Oscillator: FC = () => {
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(panRef.current);
-    if (convolverRef.current && reverb) {
-      panRef.current.connect(convolverRef.current);
-      convolverRef.current.connect(audioContextRef.current.destination);
-    } else {
-      panRef.current.connect(audioContextRef.current.destination);
-    }
+    panRef.current.connect(audioContextRef.current.destination);
   };
 
   const handleGainChange = (newValue: number) => {
@@ -124,13 +85,12 @@ const Oscillator: FC = () => {
     }
   };
 
-  const handlePlayPause = (reverb: boolean) => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       oscillatorRef.current?.stop(0);
     } else {
-      setup(reverb);
+      setup();
       oscillatorRef.current?.start(0);
-      oscillatorRef.current?.stop(audioContextRef.current!.currentTime + 1);
     }
 
     setIsPlaying((prev) => !prev);
@@ -143,11 +103,19 @@ const Oscillator: FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
   return (
     <Container centered>
-      <Button onPress={() => handlePlayPause(false)} title={isPlaying ? 'Pause' : 'Play without reverb'} />
-      <Spacer.Vertical size={30} />
-      <Button onPress={() => handlePlayPause(true)} title={isPlaying ? 'Pause' : 'Play reverb'} />
+      <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
       <Spacer.Vertical size={49} />
       <Slider
         label="Gain"
