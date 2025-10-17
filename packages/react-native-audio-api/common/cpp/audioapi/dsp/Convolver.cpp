@@ -25,12 +25,12 @@ void Convolver::reset() {
   _segSize = 0;
   _segCount = 0;
   _fftComplexSize = 0;
+  _current = 0;
+  _fft = nullptr;
   _segments.clear();
   _segmentsIR.clear();
-  _fftBuffer.zero();
-  _fft = nullptr;
   _preMultiplied.clear();
-  _current = 0;
+  _fftBuffer.zero();
   _inputBuffer.zero();
 }
 

@@ -15,7 +15,6 @@ class Convolver {
  public:
     Convolver();
     bool init(size_t blockSize, const AudioArray &ir, size_t irLen);
-    // Process input data in place if outputData is nullptr, otherwise write to outputData
     void process(float* inputData, float* outputData);
     void reset();
     inline size_t getSegCount() const { return _trueSegmentCount; }

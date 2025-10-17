@@ -137,9 +137,9 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+| Type | Description |
+| :---: | :---- |
+| [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) <Optional /> | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
@@ -147,9 +147,9 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `pitchCorrection` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+| Type | Description |
+| :---: | :---- |
+| [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) <Optional /> | Dictionary object that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferQueueSourceNode`.
 
@@ -158,6 +158,23 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 Creates [`GainNode`](/docs/effects/gain-node).
 
 #### Returns `GainNode`.
+
+
+### `createConvolver`
+
+Creates [`ConvolverNode`](/docs/effects/convolver-node).
+
+| Type | Description |
+| :---: | :---- |
+| [`ConvolverNodeOptions`](/docs/effects/convolver-node#constructor) <Optional /> | Dictionary object that specifies associated buffer and normalization. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | `numOfChannels` of buffer is not 1, 2 or 4. |
+
+#### Returns `ConvolverNode`.
 
 ### `createOscillator`
 

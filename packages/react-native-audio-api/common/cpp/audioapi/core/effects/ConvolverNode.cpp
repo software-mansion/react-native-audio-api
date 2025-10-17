@@ -14,16 +14,19 @@ ConvolverNode::ConvolverNode(
     std::shared_ptr<AudioBuffer> buffer,
     bool disableNormalization)
     : AudioNode(context),
-      normalize_(true),
       buffer_(nullptr),
-      internalBuffer_(nullptr) {
+      internalBuffer_(nullptr),
+      signalledToStop_(false),
+      remainingSegments_(0),
+      internalBufferIndex_(0),
+      scaleFactor_(1.0f) {
   channelCount_ = 2;
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   normalize_ = !disableNormalization;
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   gainCalibrationSampleRate_ = context->getSampleRate();
   setBuffer(buffer);
+  audioBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   isInitialized_ = true;
 }
 
@@ -83,7 +86,7 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
 void ConvolverNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    signaledToStop_ = true;
+    signalledToStop_ = true;
     remainingSegments_ = convolvers_.at(0).getSegCount();
   }
 }
@@ -101,18 +104,18 @@ std::shared_ptr<AudioBus> ConvolverNode::processInputs(
 std::shared_ptr<AudioBus> ConvolverNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (signaledToStop_) {
+  if (signalledToStop_) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;
     } else {
       disable();
-      signaledToStop_ = false;
+      signalledToStop_ = false;
       internalBufferIndex_ = 0;
       return processingBus;
     }
   }
   if (internalBufferIndex_ < framesToProcess) {
-    performConvolution(processingBus);
+    performConvolution(processingBus); // result returned to audioBus_
 
     internalBuffer_->copy(
         audioBus_.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
@@ -131,11 +134,11 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
   }
   internalBufferIndex_ -= framesToProcess;
 
-  for (int i = 0; i < processingBus->getNumberOfChannels(); ++i) {
+  for (int i = 0; i < audioBus_->getNumberOfChannels(); ++i) {
     dsp::multiplyByScalar(
-        processingBus->getChannel(i)->getData(),
+        audioBus_->getChannel(i)->getData(),
         scaleFactor_,
-        processingBus->getChannel(i)->getData(),
+        audioBus_->getChannel(i)->getData(),
         framesToProcess);
   }
 
@@ -159,14 +162,15 @@ void ConvolverNode::calculateNormalizationScale() {
   }
 
   power = std::sqrt(power / (numberOfChannels * length));
-  if (power < minPower_) {
-    power = minPower_;
+  if (power < MIN_IR_POWER) {
+    power = MIN_IR_POWER;
   }
   scaleFactor_ = 1 / power;
-  scaleFactor_ *= std::pow(10, gainCalibration_ * 0.05f);
+  scaleFactor_ *= std::pow(10, GAIN_CALIBRATION * 0.05f);
   scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 
-  if (numberOfChannels == 4)
+  if (numberOfChannels == 4) // signal from two channels will be added to one,
+                             // thus 0.5 multiplication
     scaleFactor_ *= 0.5;
 }
 
@@ -186,7 +190,7 @@ void ConvolverNode::performConvolution(
               audioBus_->getChannel(i)->getData());
         });
       }
-    } else { // convolvers.size() == 4
+    } else { // 4 channel IR
       for (int i = 0; i < 2; ++i) {
         threads.emplace_back([this, i, processingBus]() {
           convolvers_[i].process(
@@ -212,7 +216,7 @@ void ConvolverNode::performConvolution(
               audioBus_->getChannel(i)->getData());
         });
       }
-    } else { // convolvers.size() == 4
+    } else { // 4 channel IR
       threads.emplace_back([this, processingBus]() {
         convolvers_[0].process(
             processingBus->getChannel(0)->getData(),
@@ -244,19 +248,9 @@ void ConvolverNode::performConvolution(
         thirdChannelData_,
         audioBus_->getChannel(0)->getData(),
         RENDER_QUANTUM_SIZE);
-    dsp::multiplyByScalar(
-        audioBus_->getChannel(0)->getData(),
-        0.5f,
-        audioBus_->getChannel(0)->getData(),
-        RENDER_QUANTUM_SIZE);
     dsp::add(
         audioBus_->getChannel(1)->getData(),
         fourthChannelData_,
-        audioBus_->getChannel(1)->getData(),
-        RENDER_QUANTUM_SIZE);
-    dsp::multiplyByScalar(
-        audioBus_->getChannel(1)->getData(),
-        0.5f,
         audioBus_->getChannel(1)->getData(),
         RENDER_QUANTUM_SIZE);
   }

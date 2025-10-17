@@ -104,11 +104,6 @@ DataCallbackResult AudioPlayer::onAudioReady(
   int processedFrames = 0;
 
   assert(buffer != nullptr);
-  __android_log_print(
-      ANDROID_LOG_DEBUG,
-      "AudioPlayer",
-      "onAudioReady: numFrames = %d",
-      numFrames);
 
   while (processedFrames < numFrames) {
     int framesToProcess =
