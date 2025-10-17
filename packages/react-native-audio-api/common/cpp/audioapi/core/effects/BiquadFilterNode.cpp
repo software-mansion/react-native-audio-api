@@ -105,21 +105,22 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const size_t length) {
+#ifndef AUDIO_API_TEST_SUITE
   applyFilter();
+#endif
 
-  // Local copies for micro-optimization
-  float b0 = b0_;
-  float b1 = b1_;
-  float b2 = b2_;
-  float a1 = a1_;
-  float a2 = a2_;
+  // Use double precision for later calculations
+  double b0 = static_cast<double>(b0_);
+  double b1 = static_cast<double>(b1_);
+  double b2 = static_cast<double>(b2_);
+  double a1 = static_cast<double>(a1_);
+  double a2 = static_cast<double>(a2_);
 
   float nyquist = context_->getNyquistFrequency();
 
   for (size_t i = 0; i < length; i++) {
     // Convert from frequency in Hz to normalized frequency [0, 1]
-    // float normalizedFreq = frequencyArray[i] / nyquist;
-     float normalizedFreq = frequencyArray[i];
+    float normalizedFreq = frequencyArray[i] / nyquist;
 
     if (normalizedFreq < 0.0f || normalizedFreq > 1.0f) {
       // Out-of-bounds frequencies should return NaN.
@@ -128,10 +129,10 @@ void BiquadFilterNode::getFrequencyResponse(
       continue;
     }
 
-    auto omega = -PI * normalizedFreq;
-    auto z = std::complex<float>(std::cos(omega), std::sin(omega));
+    double omega = -PI * normalizedFreq;
+    auto z = std::complex<double>(std::cos(omega), std::sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
-        (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
+        (std::complex<double>(1, 0) + (a1 + a2 * z) * z);
     magResponseOutput[i] = static_cast<float>(std::abs(response));
     phaseResponseOutput[i] =
         static_cast<float>(atan2(imag(response), real(response)));

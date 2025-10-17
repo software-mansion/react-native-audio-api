@@ -53,8 +53,7 @@ void getFrequencyResponse(
 
   std::vector<float> normalizedFreq(frequency.size());
   for (size_t i = 0; i < frequency.size(); ++i) {
-    // normalizedFreq[i] = frequency[i] / nyquistFrequency;
-    normalizedFreq[i] = frequency[i];
+    normalizedFreq[i] = frequency[i] / nyquistFrequency;
   }
 
   // Evaluate the Z-transform of the filter at given normalized
