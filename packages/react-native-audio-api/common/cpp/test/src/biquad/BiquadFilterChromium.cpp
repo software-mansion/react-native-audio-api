@@ -33,6 +33,7 @@
 #include <cmath>
 #include <complex>
 #include <span>
+#include <vector>
 
 namespace audioapi {
 

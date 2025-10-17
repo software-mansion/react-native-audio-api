@@ -28,11 +28,12 @@
 
 #pragma once
 
+#include <numbers>
 #include <span>
 
 namespace audioapi {
 
-constexpr double kPiDouble = M_PI;
+constexpr double kPiDouble = std::numbers::pi_v<double>;
 
 struct BiquadCoefficients {
   double b0;
