@@ -32,11 +32,19 @@ function Worklets() {
   const bar4 = useSharedValue(0);
 
   useEffect(() => {
+    if (!aCtxRef.current) {
+      aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
+    }
+
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
+
+    return () => {
+      aCtxRef.current?.close();
+    };
   }, []);
 
   const start = () => {
@@ -45,7 +53,7 @@ function Worklets() {
       inputAudioData: Array<Float32Array>,
       outputAudioData: Array<Float32Array>,
       framesToProcess: number,
-      currentTime: number
+      _currentTime: number
     ) => {
       'worklet';
       const gain = 0.5;
@@ -62,7 +70,7 @@ function Worklets() {
       audioData: Array<Float32Array>,
       framesToProcess: number,
       currentTime: number,
-      startOffset: number
+      _startOffset: number
     ) => {
       'worklet';
       const frequency = 440; // A4 note
@@ -70,20 +78,24 @@ function Worklets() {
 
       const modulationFreq = 2; // 2 Hz modulation
       const modulationDepth = 0.8;
-      const amplitudeModulation = Math.sin(2 * Math.PI * modulationFreq * currentTime);
-      const dynamicAmplitude = baseAmplitude * (1 + modulationDepth * amplitudeModulation);
+      const amplitudeModulation = Math.sin(
+        2 * Math.PI * modulationFreq * currentTime
+      );
+      const dynamicAmplitude =
+        baseAmplitude * (1 + modulationDepth * amplitudeModulation);
 
       for (let channel = 0; channel < audioData.length; channel++) {
         for (let sample = 0; sample < framesToProcess; sample++) {
           // Calculate phase based on sample position and time
-          const phase = 2 * Math.PI * frequency * (currentTime + sample / SAMPLE_RATE);
+          const phase =
+            2 * Math.PI * frequency * (currentTime + sample / SAMPLE_RATE);
           audioData[channel][sample] = dynamicAmplitude * Math.sin(phase);
         }
       }
     };
     const worklet = (
       audioData: Array<Float32Array>,
-      inputChannelCount: number
+      _inputChannelCount: number
     ) => {
       'worklet';
 
@@ -106,7 +118,10 @@ function Worklets() {
       bar2.value = withSpring(scaledAmplitude, { damping: 15, stiffness: 200 });
     };
 
-    aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
+    if (!aCtxRef.current) {
+      aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
+    }
+
     workletSourceNodeRef.current = aCtxRef.current.createWorkletSourceNode(
       sourceWorklet,
       'AudioRuntime'
