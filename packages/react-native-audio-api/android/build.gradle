@@ -277,6 +277,7 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 }
 
 task downloadPrebuiltBinaries(type: Exec) {
+  commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
   commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
   args 'android'
 }
