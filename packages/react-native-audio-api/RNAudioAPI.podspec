@@ -35,9 +35,10 @@ Pod::Spec.new do |s|
 
   s.compiler_flags = "#{folly_flags}"
 
-  # s.prepare_command = <<-CMD TODO: re-add when we have prebuilt libs put somewhere public
-  #   ruby -r './scripts/download-audioapi-libs.rb'
-  # CMD
+  s.prepare_command = <<-CMD
+    chmod +x scripts/download-prebuilt-binaries.sh
+    scripts/download-prebuilt-binaries.sh ios
+  CMD
 
   # Assumes Pods dir is nested under ios project dir
   ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
