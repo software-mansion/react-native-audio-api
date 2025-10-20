@@ -277,8 +277,7 @@ decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
   MemoryIOContext io_ctx{static_cast<const uint8_t *>(data), size, 0};
 
   constexpr size_t buffer_size = 4096;
-  auto io_buffer = std::unique_ptr<uint8_t, decltype(&av_free)>(
-      static_cast<uint8_t *>(av_malloc(buffer_size)), &av_free);
+  uint8_t *io_buffer = static_cast<uint8_t *>(av_malloc(buffer_size));
   if (io_buffer == nullptr) {
     return nullptr;
   }
@@ -286,7 +285,7 @@ decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
   auto avio_ctx =
       std::unique_ptr<AVIOContext, std::function<void(AVIOContext *)>>(
           avio_alloc_context(
-              io_buffer.get(),
+              io_buffer,
               buffer_size,
               0,
               &io_ctx,
