@@ -50,9 +50,8 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   if (mStream_) {
-    jni::ThreadScope::WithClassLoader([this]() {
-      nativeAudioPlayer_->start();
-    });
+    jni::ThreadScope::WithClassLoader(
+        [this]() { nativeAudioPlayer_->start(); });
     auto result = mStream_->requestStart();
     return result == oboe::Result::OK;
   }
@@ -62,9 +61,7 @@ bool AudioPlayer::start() {
 
 void AudioPlayer::stop() {
   if (mStream_) {
-    jni::ThreadScope::WithClassLoader([this]() {
-      nativeAudioPlayer_->stop();
-    });
+    jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->stop(); });
     mStream_->requestStop();
   }
 }
