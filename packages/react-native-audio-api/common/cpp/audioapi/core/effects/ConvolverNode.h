@@ -36,8 +36,7 @@ class ConvolverNode : public AudioNode {
   bool normalize_;
   bool signalledToStop_;
   float scaleFactor_;
-  float thirdChannelData_[RENDER_QUANTUM_SIZE];
-  float fourthChannelData_[RENDER_QUANTUM_SIZE];
+  std::shared_ptr<AudioBus>intermediateBus_;
 
   // impulse response buffer
   std::shared_ptr<AudioBuffer> buffer_;

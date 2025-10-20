@@ -1,3 +1,6 @@
+// implementation of linear convolution algorithm described in this paper:
+// https://publications.rwth-aachen.de/record/466561/files/466561.pdf page 110
+
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -124,6 +127,8 @@ void Convolver::process(float *data, float *outputData) {
       _preMultiplied.data(),
       0,
       _preMultiplied.size() * sizeof(std::complex<float>));
+// this is a bottleneck of the algorithm
+// todo: try to optimize it (SIMD, multithreading)1
 #pragma unroll
   for (int i = 0; i < _segCount; ++i) {
     const int indexAudio = (_current + i) % _segCount;
