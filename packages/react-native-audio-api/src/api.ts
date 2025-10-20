@@ -91,6 +91,16 @@ export {
 } from './types';
 
 export {
+  IOSCategory,
+  IOSMode,
+  IOSOption,
+  SessionOptions,
+  MediaState,
+  LockScreenInfo,
+  PermissionStatus,
+} from './system/types';
+
+export {
   IndexSizeError,
   InvalidAccessError,
   InvalidStateError,

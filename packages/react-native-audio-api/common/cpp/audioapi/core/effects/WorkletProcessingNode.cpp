@@ -5,9 +5,8 @@ namespace audioapi {
 
 WorkletProcessingNode::WorkletProcessingNode(
     BaseAudioContext *context,
-    std::shared_ptr<worklets::SerializableWorklet> &worklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime)
-    : AudioNode(context), workletRunner_(runtime), shareableWorklet_(worklet) {
+    WorkletsRunner &&workletRunner)
+    : AudioNode(context), workletRunner_(std::move(workletRunner)) {
   isInitialized_ = true;
 
   // Pre-allocate buffers for max 128 frames and 2 channels (stereo)
@@ -16,13 +15,12 @@ WorkletProcessingNode::WorkletProcessingNode(
   outputBuffsHandles_.resize(maxChannelCount);
 
   for (size_t i = 0; i < maxChannelCount; ++i) {
-    auto inputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        inputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto inputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(inputAudioArray);
 
-    auto outputBuff = new uint8_t[RENDER_QUANTUM_SIZE * sizeof(float)];
-    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(
-        outputBuff, RENDER_QUANTUM_SIZE * sizeof(float));
+    auto outputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
+    outputBuffsHandles_[i] =
+        std::make_shared<AudioArrayBuffer>(outputAudioArray);
   }
 }
 
@@ -43,8 +41,8 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
   }
 
   // Execute the worklet
-  auto result = workletRunner_.executeOnRuntimeGuardedSync(
-      [this, channelCount, framesToProcess](jsi::Runtime &rt) {
+  auto result = workletRunner_.executeOnRuntimeSync(
+      [this, channelCount, framesToProcess](jsi::Runtime &rt) -> jsi::Value {
         auto inputJsArray = jsi::Array(rt, channelCount);
         auto outputJsArray = jsi::Array(rt, channelCount);
 
@@ -59,14 +57,14 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
           outputJsArray.setValueAtIndex(rt, ch, outputArrayBuffer);
         }
 
-        return workletRunner_
-            .executeWorklet(
-                shareableWorklet_,
-                inputJsArray,
-                outputJsArray,
-                jsi::Value(rt, static_cast<int>(framesToProcess)),
-                jsi::Value(rt, this->context_->getCurrentTime()))
-            .value_or(jsi::Value::undefined());
+        // We call unsafely here because we are already on the runtime thread
+        // and the runtime is locked by executeOnRuntimeSync (if
+        // shouldLockRuntime is true)
+        return workletRunner_.callUnsafe(
+            inputJsArray,
+            outputJsArray,
+            jsi::Value(rt, static_cast<int>(framesToProcess)),
+            jsi::Value(rt, this->context_->getCurrentTime()));
       });
 
   // Copy processed output data back to the processing bus or zero on failure

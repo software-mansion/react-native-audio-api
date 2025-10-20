@@ -76,7 +76,7 @@ function App() {
 
 ### `setLockScreenInfo`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :-----: |
 | `info` | [`LockScreenInfo`](/docs/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
 
@@ -90,7 +90,7 @@ Resets all of the lock screen data.
 
 ### `setAudioSessionOptions` <OnlyiOS />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
 
@@ -98,7 +98,7 @@ Resets all of the lock screen data.
 
 ### `setAudioSessionActivity` <OnlyiOS />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
@@ -110,7 +110,7 @@ Resets all of the lock screen data.
 
 ### `observeAudioInterruptions`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing audio interruptions |
 
@@ -118,7 +118,7 @@ Resets all of the lock screen data.
 
 ### `activelyReclaimSession` <OnlyiOS /> <Experimental />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable session spoofing |
 
@@ -136,7 +136,7 @@ interval polling to check if other audio is playing.
 
 ### `observeVolumeChanges`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes |
 
@@ -146,7 +146,7 @@ interval polling to check if other audio is playing.
 
 Enables emition of some system events.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`RemoteCommandEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
 | `enabled` | `boolean` | Indicates the start or the end of event emission |
@@ -165,7 +165,7 @@ with proper parameters.
 
 Adds callback to be invoked upon hearing an event.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`SystemEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
 | `callback` | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |

@@ -10,10 +10,6 @@ import {
 } from '../utils';
 
 export default class AudioContext extends BaseAudioContext {
-  // We need to keep here a reference to this runtime to better manage its lifecycle
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-  private _audioRuntime: any = null;
-
   constructor(options?: AudioContextOptions) {
     if (
       options &&
@@ -37,7 +33,6 @@ export default class AudioContext extends BaseAudioContext {
         audioRuntime
       )
     );
-    this._audioRuntime = audioRuntime;
   }
 
   async close(): Promise<void> {

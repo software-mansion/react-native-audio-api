@@ -18,8 +18,7 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
   explicit WorkletSourceNode(
     BaseAudioContext *context,
-    std::shared_ptr<worklets::SerializableWorklet> &worklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime
+    WorkletsRunner &&workletRunner
   ) : AudioScheduledSourceNode(context) {}
 
  protected:
@@ -31,15 +30,13 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
   explicit WorkletSourceNode(
     BaseAudioContext *context,
-    std::shared_ptr<worklets::SerializableWorklet> &worklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime
+    WorkletsRunner &&workletRunner
   );
 
  protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
  private:
   WorkletsRunner workletRunner_;
-  std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   std::vector<std::shared_ptr<AudioArrayBuffer>> outputBuffsHandles_;
 };
 #endif // RN_AUDIO_API_TEST

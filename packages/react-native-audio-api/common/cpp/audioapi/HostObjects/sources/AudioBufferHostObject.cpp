@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 
 #include <audioapi/jsi/AudioArrayBuffer.h>
+#include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
 
@@ -42,14 +43,8 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto channel = static_cast<int>(args[0].getNumber());
-  auto channelData =
-      reinterpret_cast<uint8_t *>(audioBuffer_->getChannelData(channel));
-  auto length = static_cast<int>(audioBuffer_->getLength());
-  auto size = static_cast<int>(length * sizeof(float));
-
-  // reading or writing from this ArrayBuffer could cause a crash
-  // if underlying channelData is deallocated
-  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(channelData, size);
+  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(
+      audioBuffer_->bus_->getSharedChannel(channel));
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
   auto float32ArrayCtor =

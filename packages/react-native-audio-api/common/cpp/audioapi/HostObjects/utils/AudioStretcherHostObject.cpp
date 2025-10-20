@@ -1,5 +1,3 @@
-#pragma once
-
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioStretcherHostObject.h>
 #include <audioapi/core/utils/AudioStretcher.h>

@@ -128,6 +128,10 @@ AudioArray *AudioBus::getChannelByType(int channelType) const {
   }
 }
 
+std::shared_ptr<AudioArray> AudioBus::getSharedChannel(int index) const {
+  return channels_[index];
+}
+
 AudioArray &AudioBus::operator[](size_t index) {
   return *channels_[index];
 }

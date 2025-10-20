@@ -32,13 +32,13 @@ interface IStretcherNode extends globalThis.AudioNode {
   addEventListener: (
     type: string,
     listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions | undefined
+    options?: boolean | AddEventListenerOptions
   ) => void;
   dispatchEvent: (event: Event) => boolean;
   removeEventListener: (
     type: string,
     callback: EventListenerOrEventListenerObject | null,
-    options?: boolean | EventListenerOptions | undefined
+    options?: boolean | EventListenerOptions
   ) => void;
 
   addBuffers(channels: Float32Array[]): void;

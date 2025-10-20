@@ -40,6 +40,7 @@ try {
   );
   isWorkletsAvailable = true;
   workletsVersion = workletsModuleJson.version;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 } catch (error) {
   isWorkletsAvailable = false;
 }
