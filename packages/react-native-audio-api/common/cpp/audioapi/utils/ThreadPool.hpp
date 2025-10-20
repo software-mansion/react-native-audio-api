@@ -3,6 +3,8 @@
 #include <vector>
 #include <functional>
 #include <variant>
+
+#include <audioapi/utils/MoveOnlyFunction.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
 namespace audioapi {
@@ -15,7 +17,7 @@ namespace audioapi {
 /// @note IMPORTANT: ThreadPool is not thread-safe and events should be scheduled from a single thread only.
 class ThreadPool {
   struct StopEvent {};
-  struct TaskEvent { std::function<void()> task; };
+  struct TaskEvent { audioapi::move_only_function<void()> task; };
   using Event = std::variant<TaskEvent, StopEvent>;
 
   using Sender = channels::spsc::Sender<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>;
@@ -46,14 +48,21 @@ public:
   }
 
   /// @brief Schedule a task to be executed by the thread pool
-  /// @param task The task to be executed
+  /// @tparam Func The type of the task function
+  /// @tparam Args The types of the task function arguments
+  /// @param task The task function to be executed
+  /// @param args The arguments to be passed to the task function
   /// @note This function is lock-free and most of the time wait-free, but may block if the load balancer queue is full.
-  /// @note Please remember that the task will be executed in a different thread, so make sure to capture any required variables by value.
+  /// @note Please remember that the task will be executed in a different thread, so make sure to pass any required variables by value or with std::move.
   /// @note The task should not throw exceptions, as they will not be caught.
   /// @note The task should end at some point, otherwise the thread pool will never be able to shut down.
   /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only.
-  void schedule(std::function<void()> &&task) noexcept {
-    loadBalancerSender.send(TaskEvent{std::move(task)});
+  template<typename Func, typename ... Args, typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
+  void schedule(Func &&task, Args &&... args) noexcept {
+    auto boundTask = [f = std::forward<Func>(task), ...capturedArgs = std::forward<Args>(args)]() mutable {
+      f(std::forward<Args>(capturedArgs)...);
+    };
+    loadBalancerSender.send(TaskEvent{audioapi::move_only_function<void()>(std::move(boundTask))});
   }
 
 private:

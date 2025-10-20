@@ -5,9 +5,8 @@ namespace audioapi {
 
 WorkletProcessingNode::WorkletProcessingNode(
     BaseAudioContext *context,
-    std::shared_ptr<worklets::SerializableWorklet> &worklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime)
-    : AudioNode(context), workletRunner_(runtime), shareableWorklet_(worklet) {
+    WorkletsRunner &&workletRunner)
+    : AudioNode(context), workletRunner_(std::move(workletRunner)) {
   isInitialized_ = true;
 
   // Pre-allocate buffers for max 128 frames and 2 channels (stereo)
@@ -42,8 +41,8 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
   }
 
   // Execute the worklet
-  auto result = workletRunner_.executeOnRuntimeGuardedSync(
-      [this, channelCount, framesToProcess](jsi::Runtime &rt) {
+  auto result = workletRunner_.executeOnRuntimeSync(
+      [this, channelCount, framesToProcess](jsi::Runtime &rt) -> jsi::Value {
         auto inputJsArray = jsi::Array(rt, channelCount);
         auto outputJsArray = jsi::Array(rt, channelCount);
 
@@ -58,14 +57,14 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
           outputJsArray.setValueAtIndex(rt, ch, outputArrayBuffer);
         }
 
-        return workletRunner_
-            .executeWorklet(
-                shareableWorklet_,
-                inputJsArray,
-                outputJsArray,
-                jsi::Value(rt, static_cast<int>(framesToProcess)),
-                jsi::Value(rt, this->context_->getCurrentTime()))
-            .value_or(jsi::Value::undefined());
+        // We call unsafely here because we are already on the runtime thread
+        // and the runtime is locked by executeOnRuntimeSync (if
+        // shouldLockRuntime is true)
+        return workletRunner_.callUnsafe(
+            inputJsArray,
+            outputJsArray,
+            jsi::Value(rt, static_cast<int>(framesToProcess)),
+            jsi::Value(rt, this->context_->getCurrentTime()));
       });
 
   // Copy processed output data back to the processing bus or zero on failure

@@ -30,29 +30,30 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
 
   auto sampleRate = args[1].getNumber();
 
-  auto promise = promiseVendor_->createPromise(
-      [data, size, sampleRate](std::shared_ptr<Promise> promise) {
-        std::thread([data, size, sampleRate, promise = std::move(promise)]() {
-          auto result =
-              AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
+  auto promise = promiseVendor_->createAsyncPromise(
+      [data, size, sampleRate]() -> PromiseResolver {
+        auto result =
+            AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
 
-          if (!result) {
-            promise->reject("Failed to decode audio data.");
-            return;
-          }
+        if (!result) {
+          return [](jsi::Runtime &runtime)
+                     -> std::variant<jsi::Value, std::string> {
+            return std::string("Failed to decode audio data.");
+          };
+        }
 
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject =
+            std::make_shared<AudioBufferHostObject>(result);
 
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
+        return [audioBufferHostObject =
+                    std::move(audioBufferHostObject)](jsi::Runtime &runtime)
+                   -> std::variant<jsi::Value, std::string> {
+          auto jsiObject =
+              jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          jsiObject.setExternalMemoryPressure(
+              runtime, audioBufferHostObject->getSizeInBytes());
+          return jsiObject;
+        };
       });
   return promise;
 }
@@ -61,29 +62,29 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto sourcePath = args[0].getString(runtime).utf8(runtime);
   auto sampleRate = args[1].getNumber();
 
-  auto promise = promiseVendor_->createPromise(
-      [sourcePath, sampleRate](std::shared_ptr<Promise> promise) {
-        std::thread([sourcePath, sampleRate, promise = std::move(promise)]() {
-          auto result =
-              AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
+  auto promise = promiseVendor_->createAsyncPromise(
+      [sourcePath, sampleRate]() -> PromiseResolver {
+        auto result = AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
 
-          if (!result) {
-            promise->reject("Failed to decode audio data source.");
-            return;
-          }
+        if (!result) {
+          return [](jsi::Runtime &runtime)
+                     -> std::variant<jsi::Value, std::string> {
+            return std::string("Failed to decode audio data source.");
+          };
+        }
 
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject =
+            std::make_shared<AudioBufferHostObject>(result);
 
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
+        return [audioBufferHostObject =
+                    std::move(audioBufferHostObject)](jsi::Runtime &runtime)
+                   -> std::variant<jsi::Value, std::string> {
+          auto jsiObject =
+              jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          jsiObject.setExternalMemoryPressure(
+              runtime, audioBufferHostObject->getSizeInBytes());
+          return jsiObject;
+        };
       });
 
   return promise;
@@ -95,34 +96,31 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
   auto inputChannelCount = args[2].getNumber();
   auto interleaved = args[3].getBool();
 
-  auto promise = promiseVendor_->createPromise(
-      [b64, inputSampleRate, inputChannelCount, interleaved](
-          std::shared_ptr<Promise> promise) {
-        std::thread([b64,
-                     inputSampleRate,
-                     inputChannelCount,
-                     interleaved,
-                     promise = std::move(promise)]() {
-          auto result = AudioDecoder::decodeWithPCMInBase64(
-              b64, inputSampleRate, inputChannelCount, interleaved);
+  auto promise = promiseVendor_->createAsyncPromise(
+      [b64, inputSampleRate, inputChannelCount, interleaved]()
+          -> PromiseResolver {
+        auto result = AudioDecoder::decodeWithPCMInBase64(
+            b64, inputSampleRate, inputChannelCount, interleaved);
 
-          if (!result) {
-            promise->reject("Failed to decode audio data source.");
-            return;
-          }
+        if (!result) {
+          return [](jsi::Runtime &runtime)
+                     -> std::variant<jsi::Value, std::string> {
+            return std::string("Failed to decode audio data source.");
+          };
+        }
 
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject =
+            std::make_shared<AudioBufferHostObject>(result);
 
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
+        return [audioBufferHostObject =
+                    std::move(audioBufferHostObject)](jsi::Runtime &runtime)
+                   -> std::variant<jsi::Value, std::string> {
+          auto jsiObject =
+              jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          jsiObject.setExternalMemoryPressure(
+              runtime, audioBufferHostObject->getSizeInBytes());
+          return jsiObject;
+        };
       });
 
   return promise;

@@ -38,7 +38,7 @@ as they are more efficient for continuous changes. For more specific use cases, 
 
 ![](/img/setValueAtTime.png)
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will be set at given time |
 | `startTime` | `number` | The time, in seconds, at which the change in value is going to happen. |
@@ -58,7 +58,7 @@ The change begins at the time designated for the previous event. It follows a li
 
 ![](/img/linearRampToValueAtTime.png)
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value, the `AudioParam` will ramp to by given time. |
 | `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
@@ -78,7 +78,7 @@ The change begins at the time designated for the previous event. It follows an e
 
 ![](/img/exponentialRampToValueAtTime.png)
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will ramp to by given time. |
 | `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
@@ -98,7 +98,7 @@ This method is useful for decay or release portions of [ADSR envelopes](/docs/ef
 
 ![](/img/setTargetAtTime.png)
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `target` | `number` | A float representing the value to which the `AudioParam` will start transitioning. |
 | `startTime` | `number` | The time, in seconds, at which exponential transition will begin. |
@@ -119,7 +119,7 @@ Schedules the parameters's value change following a curve defined by given array
 
 ![](/img/setValueCurveAtTime.png)
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `values` | `Float32Array` | The array of values defining a curve, which change will follow. |
 | `startTime` | `number` | The time, in seconds, at which change will begin. |
@@ -137,7 +137,7 @@ Schedules the parameters's value change following a curve defined by given array
 
 Cancels all scheduled changes after given cancel time.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
 
@@ -153,7 +153,7 @@ Cancels all scheduled changes after given cancel time.
 
 Cancels all scheduled changes after given cancel time, but holds its value at given cancel time until further changes appear.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
 

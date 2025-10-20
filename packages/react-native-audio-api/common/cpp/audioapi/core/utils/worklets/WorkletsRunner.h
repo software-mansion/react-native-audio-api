@@ -26,48 +26,62 @@ using namespace facebook;
 
 class WorkletsRunner {
  public:
-    explicit WorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime) noexcept;
+  explicit WorkletsRunner(
+    std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
+    std::shared_ptr<worklets::SerializableWorklet> shareableWorklet,
+    bool shouldLockRuntime = true);
+  WorkletsRunner(WorkletsRunner&&);
+  ~WorkletsRunner();
 
-    /// @brief Execute a job on the UI runtime safely.
-    /// @param job
-    /// @return nullopt if the runtime is not available or the result of the job execution
-    /// @note Execution is synchronous
-    std::optional<jsi::Value> executeOnRuntimeGuardedSync(const std::function<jsi::Value(jsi::Runtime&)>&& job) const noexcept(noexcept(job)) {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return std::nullopt;
-      }
-      #if RN_AUDIO_API_ENABLE_WORKLETS
-      return strongRuntime->executeSync(std::move(job));
-      #else
-      return std::nullopt;
-      #endif
-    }
+  /// @brief Call the worklet function with the given arguments.
+  /// @tparam ...Args
+  /// @param ...args
+  /// @return The result of the worklet function call.
+  /// @note This method is unsafe and should be used with caution. It assumes that the runtime and worklet are valid and runtime is locked.
+  template<typename... Args>
+  inline jsi::Value callUnsafe(Args&&... args) {
+    return getUnsafeWorklet().call(*unsafeRuntimePtr, std::forward<Args>(args)...);
+  }
 
-    /// @brief Execute a worklet with the given arguments.
-    /// @tparam ...Args
-    /// @param shareableWorklet
-    /// @param ...args
-    /// @note Execution is synchronous, this method can be used in `executeOnRuntimeGuardedSync` and `...Async` methods arguments
-    /// @return nullopt if the runtime is not available or the result of the worklet execution
-    template<typename... Args>
-    std::optional<jsi::Value> executeWorklet(const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet, Args&&... args) {
-      auto strongRuntime = weakUiRuntime_.lock();
-      if (strongRuntime == nullptr) {
-         return std::nullopt;
-      }
 
-      #if RN_AUDIO_API_ENABLE_WORKLETS
+  /// @brief Call the worklet function with the given arguments.
+  /// @tparam ...Args
+  /// @param ...args
+  /// @return The result of the worklet function call.
+  /// @note This method is safe and will check if the runtime is available before calling the worklet. If the runtime is not available, it will return nullopt.
+  template<typename... Args>
+  inline std::optional<jsi::Value> call(Args&&... args) {
+    return executeOnRuntimeGuarded([this, args...](jsi::Runtime &rt) -> jsi::Value {
+      return callUnsafe(std::forward<Args>(args)...);
+    });
+  }
 
-      return strongRuntime->runGuarded(shareableWorklet, std::forward<Args>(args)...);
-
-      #else
-      return std::nullopt;
-      #endif
-    }
+  /// @brief Execute a job on the UI runtime safely.
+  /// @param job
+  /// @return nullopt if the runtime is not available or the result of the job execution
+  /// @note Execution is synchronous and will be guarded if shouldLockRuntime is true.
+  inline std::optional<jsi::Value> executeOnRuntimeSync(const std::function<jsi::Value(jsi::Runtime&)>&& job) const noexcept(noexcept(job)) {
+    if (shouldLockRuntime) return executeOnRuntimeGuarded(std::move(job));
+    else return executeOnRuntimeUnsafe(std::move(job));
+  }
 
  private:
-    std::weak_ptr<worklets::WorkletRuntime> weakUiRuntime_;
+  std::weak_ptr<worklets::WorkletRuntime> weakRuntime_;
+  jsi::Runtime* unsafeRuntimePtr = nullptr;
+
+  /// @note We want to avoid automatic destruction as
+  /// when runtime is destroyed, underlying pointer will be invalid
+  char unsafeWorklet[sizeof(jsi::Function)];
+  bool workletInitialized = false;
+  bool shouldLockRuntime = true;
+
+  inline jsi::Function &getUnsafeWorklet() {
+    return *reinterpret_cast<jsi::Function*>(&unsafeWorklet);
+  }
+
+  std::optional<jsi::Value> executeOnRuntimeGuarded(const std::function<jsi::Value(jsi::Runtime&)>&& job) const noexcept(noexcept(job));
+
+  std::optional<jsi::Value> executeOnRuntimeUnsafe(const std::function<jsi::Value(jsi::Runtime&)>&& job) const noexcept(noexcept(job));
 };
 
 } // namespace audioapi

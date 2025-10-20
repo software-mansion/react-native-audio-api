@@ -28,7 +28,7 @@ See example implementations in [`BaseAudioContext`](/docs/core/base-audio-contex
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `sampleRate` | `number` | Float value representing sample rate of the PCM data stored in the buffer. | <ReadOnly /> |
-| `length` | `length` | Integer value representing length of the PCM data stored in the buffer. | <ReadOnly /> |
+| `length` | `number` | Integer value representing length of the PCM data stored in the buffer. | <ReadOnly /> |
 | `duration` | `number` | Double value representing duration, in seconds, of the PCM data stored in the buffer. | <ReadOnly /> |
 | `numberOfChannels` | `number` | Integer value representing the number of audio channels of the PCM data stored in the buffer. | <ReadOnly /> |
 
@@ -38,7 +38,7 @@ See example implementations in [`BaseAudioContext`](/docs/core/base-audio-contex
 
 Gets modifiable array with PCM data from given channel.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `channel` | `number` | Index of the `AudioBuffer's` channel, from which data will be returned. |
 
@@ -54,7 +54,7 @@ Gets modifiable array with PCM data from given channel.
 
 Copies data from given channel of the `AudioBuffer` to an array.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `destination` | `Float32Array` | The array to which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel, from which data will be copied. |
@@ -73,7 +73,7 @@ Copies data from given channel of the `AudioBuffer` to an array.
 
 Copies data from given array to specified channel of the `AudioBuffer`.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `source` | `Float32Array` | The array from which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel to which data will be copied. |
