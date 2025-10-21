@@ -9,6 +9,15 @@
   margin: 0 0.25rem;
 }
 
+.basic {
+  color: var(--swm-off-white);
+  background-color: var(--swm-blue-light-100);
+}
+
+[data-theme='dark'] .basic {
+  background-color: var(--swm-blue-dark-140);
+}
+
 .experimental {
   color: var(--swm-off-white);
   background-color: var(--swm-purple-light-100);
