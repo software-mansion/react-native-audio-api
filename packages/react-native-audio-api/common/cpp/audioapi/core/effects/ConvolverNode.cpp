@@ -56,28 +56,26 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
     if (normalize_)
       calculateNormalizationScale();
     convolvers_.clear();
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < buffer->getNumberOfChannels(); ++i) {
       convolvers_.emplace_back();
       AudioArray channelData(buffer->getLength());
-      int channelNumber = buffer->getNumberOfChannels() == 2 ? i : 0;
       memcpy(
           channelData.getData(),
-          buffer->getChannelData(channelNumber),
+          buffer->getChannelData(i),
           buffer->getLength() * sizeof(float));
       convolvers_.back().init(
           RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
     }
-    if (buffer->getNumberOfChannels() == 4) {
-      for (int i = 2; i < 4; ++i) {
-        convolvers_.emplace_back();
-        AudioArray channelData(buffer->getLength());
-        memcpy(
-            channelData.getData(),
-            buffer->getChannelData(i),
-            buffer->getLength() * sizeof(float));
-        convolvers_.back().init(
-            RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
-      }
+    if (buffer->getNumberOfChannels() == 1) {
+      // add one more convolver, because right now input is always stereo
+      convolvers_.emplace_back();
+      AudioArray channelData(buffer->getLength());
+      memcpy(
+          channelData.getData(),
+          buffer->getChannelData(0),
+          buffer->getLength() * sizeof(float));
+      convolvers_.back().init(
+          RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
     }
     internalBuffer_ = std::make_shared<AudioBus>(
         RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
@@ -181,67 +179,30 @@ void ConvolverNode::performConvolution(
     const std::shared_ptr<AudioBus> &processingBus) {
   std::vector<std::thread> threads;
   if (processingBus->getNumberOfChannels() == 1) {
-    if (convolvers_.size() == 1) {
-      convolvers_[0].process(
-          processingBus->getChannel(0)->getData(),
-          intermediateBus_->getChannel(0)->getData());
-    } else if (convolvers_.size() == 2) {
-      for (int i = 0; i < convolvers_.size(); ++i) {
-        threads.emplace_back([this, i, processingBus]() {
-          convolvers_[i].process(
-              processingBus->getChannel(0)->getData(),
-              intermediateBus_->getChannel(i)->getData());
-        });
-      }
-    } else { // 4 channel IR
-      for (int i = 0; i < 2; ++i) {
-        threads.emplace_back([this, i, processingBus]() {
-          convolvers_[i].process(
-              processingBus->getChannel(0)->getData(),
-              intermediateBus_->getChannel(i)->getData());
-        });
-      }
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[2].process(
+    for (int i = 0; i < convolvers_.size(); ++i) {
+      threads.emplace_back([this, i, processingBus]() {
+        convolvers_[i].process(
             processingBus->getChannel(0)->getData(),
-            intermediateBus_->getChannel(2)->getData());
-      });
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[3].process(
-            processingBus->getChannel(0)->getData(),
-            intermediateBus_->getChannel(3)->getData());
+            intermediateBus_->getChannel(i)->getData());
       });
     }
   } else if (processingBus->getNumberOfChannels() == 2) {
+    std::vector<int> inputChannelMap;
+    std::vector<int> outputChannelMap;
     if (convolvers_.size() == 2) {
-      for (int i = 0; i < 2; ++i) {
-        threads.emplace_back([this, i, processingBus]() {
-          convolvers_[i].process(
-              processingBus->getChannel(i)->getData(),
-              intermediateBus_->getChannel(i)->getData());
-        });
-      }
+      inputChannelMap = {0, 1};
+      outputChannelMap = {0, 1};
     } else { // 4 channel IR
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[0].process(
-            processingBus->getChannel(0)->getData(),
-            intermediateBus_->getChannel(0)->getData());
-      });
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[1].process(
-            processingBus->getChannel(0)->getData(),
-            intermediateBus_->getChannel(3)->getData());
-      });
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[2].process(
-            processingBus->getChannel(1)->getData(),
-            intermediateBus_->getChannel(2)->getData());
-      });
-      threads.emplace_back([this, processingBus]() {
-        convolvers_[3].process(
-            processingBus->getChannel(1)->getData(),
-            intermediateBus_->getChannel(1)->getData());
-      });
+      inputChannelMap = {0, 0, 1, 1};
+      outputChannelMap = {0, 3, 2, 1};
+    }
+    for (int i = 0; i < convolvers_.size(); ++i) {
+      threads.emplace_back(
+          [this, i, inputChannelMap, outputChannelMap, &processingBus]() {
+            convolvers_[i].process(
+                processingBus->getChannel(inputChannelMap[i])->getData(),
+                intermediateBus_->getChannel(outputChannelMap[i])->getData());
+          });
     }
   }
   if (!threads.empty()) {
