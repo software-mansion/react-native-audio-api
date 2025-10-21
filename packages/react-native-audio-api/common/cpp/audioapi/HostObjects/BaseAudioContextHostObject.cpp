@@ -77,14 +77,15 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
           runtime, args[0]);
   std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
   auto shouldUseUiRuntime = args[1].getBool();
+  auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
     workletRuntime = context_->runtimeRegistry_.uiRuntime;
   } else {
     workletRuntime = context_->runtimeRegistry_.audioRuntime;
   }
 
-  auto workletSourceNode =
-      context_->createWorkletSourceNode(shareableWorklet, workletRuntime);
+  auto workletSourceNode = context_->createWorkletSourceNode(
+      shareableWorklet, workletRuntime, shouldLockRuntime);
   auto workletSourceNodeHostObject =
       std::make_shared<WorkletSourceNodeHostObject>(workletSourceNode);
   return jsi::Object::createFromHostObject(
@@ -101,6 +102,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
 
   std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
   auto shouldUseUiRuntime = args[1].getBool();
+  auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
     workletRuntime = context_->runtimeRegistry_.uiRuntime;
   } else {
@@ -110,7 +112,11 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
   auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
 
   auto workletNode = context_->createWorkletNode(
-      shareableWorklet, workletRuntime, bufferLength, inputChannelCount);
+      shareableWorklet,
+      workletRuntime,
+      bufferLength,
+      inputChannelCount,
+      shouldLockRuntime);
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
   return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
@@ -128,14 +134,15 @@ JSI_HOST_FUNCTION_IMPL(
 
   std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
   auto shouldUseUiRuntime = args[1].getBool();
+  auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
     workletRuntime = context_->runtimeRegistry_.uiRuntime;
   } else {
     workletRuntime = context_->runtimeRegistry_.audioRuntime;
   }
 
-  auto workletProcessingNode =
-      context_->createWorkletProcessingNode(shareableWorklet, workletRuntime);
+  auto workletProcessingNode = context_->createWorkletProcessingNode(
+      shareableWorklet, workletRuntime, shouldLockRuntime);
   auto workletProcessingNodeHostObject =
       std::make_shared<WorkletProcessingNodeHostObject>(workletProcessingNode);
   return jsi::Object::createFromHostObject(

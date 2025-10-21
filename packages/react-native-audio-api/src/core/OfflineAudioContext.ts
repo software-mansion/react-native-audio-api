@@ -10,10 +10,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
   private isRendering: boolean;
   private duration: number;
 
-  // We need to keep here a reference to this runtime to better manage its lifecycle
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-  private _audioRuntime: any;
-
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
   constructor(
@@ -51,7 +47,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isSuspended = false;
     this.isRendering = false;
-    this._audioRuntime = audioRuntime;
   }
 
   async resume(): Promise<undefined> {

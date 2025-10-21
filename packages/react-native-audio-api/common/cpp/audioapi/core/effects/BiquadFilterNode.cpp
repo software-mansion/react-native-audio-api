@@ -1,3 +1,31 @@
+/*
+ * Copyright (C) 2010 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1.  Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 2.  Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
+ *     its contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL APPLE OR ITS CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
@@ -13,14 +41,14 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
   frequencyParam_ = std::make_shared<AudioParam>(
       350.0, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0,
+      0.0f,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
   QParam_ = std::make_shared<AudioParam>(
-      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      1.0f, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      0.0,
+      0.0f,
       MOST_NEGATIVE_SINGLE_FLOAT,
       40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
       context);
@@ -76,27 +104,35 @@ void BiquadFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
-    const int length) {
+    const size_t length) {
+#ifndef AUDIO_API_TEST_SUITE
   applyFilter();
+#endif
 
-  // Local copies for micro-optimization
-  float b0 = b0_;
-  float b1 = b1_;
-  float b2 = b2_;
-  float a1 = a1_;
-  float a2 = a2_;
+  // Use double precision for later calculations
+  double b0 = static_cast<double>(b0_);
+  double b1 = static_cast<double>(b1_);
+  double b2 = static_cast<double>(b2_);
+  double a1 = static_cast<double>(a1_);
+  double a2 = static_cast<double>(a2_);
+
+  float nyquist = context_->getNyquistFrequency();
 
   for (size_t i = 0; i < length; i++) {
-    if (frequencyArray[i] < 0.0 || frequencyArray[i] > 1.0) {
+    // Convert from frequency in Hz to normalized frequency [0, 1]
+    float normalizedFreq = frequencyArray[i] / nyquist;
+
+    if (normalizedFreq < 0.0f || normalizedFreq > 1.0f) {
+      // Out-of-bounds frequencies should return NaN.
       magResponseOutput[i] = std::nanf("");
       phaseResponseOutput[i] = std::nanf("");
       continue;
     }
 
-    auto omega = -PI * frequencyArray[i] / context_->getNyquistFrequency();
-    auto z = std::complex<float>(cos(omega), sin(omega));
+    double omega = -PI * normalizedFreq;
+    auto z = std::complex<double>(std::cos(omega), std::sin(omega));
     auto response = (b0 + (b1 + b2 * z) * z) /
-        (std::complex<float>(1, 0) + (a1 + a2 * z) * z);
+        (std::complex<double>(1, 0) + (a1 + a2 * z) * z);
     magResponseOutput[i] = static_cast<float>(std::abs(response));
     phaseResponseOutput[i] =
         static_cast<float>(atan2(imag(response), real(response)));
@@ -120,17 +156,16 @@ void BiquadFilterNode::setNormalizedCoefficients(
 
 void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
   // Limit frequency to [0, 1] range
-  if (frequency >= 1.0) {
+  if (frequency >= 1.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (frequency <= 0.0) {
+  if (frequency <= 0.0f) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
   float theta = PI * frequency;
@@ -143,16 +178,15 @@ void BiquadFilterNode::setLowpassCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
-  if (frequency >= 1.0) {
+  if (frequency >= 1.0f) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
-  if (frequency <= 0.0) {
+  if (frequency <= 0.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  Q = std::max(0.0f, Q);
   float g = std::pow(10.0f, 0.05f * Q);
 
   float theta = PI * frequency;
@@ -166,13 +200,13 @@ void BiquadFilterNode::setHighpassCoefficients(float frequency, float Q) {
 
 void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
   // Limit frequency to [0, 1] range
-  if (frequency <= 0.0 || frequency >= 1.0) {
+  if (frequency <= 0.0f || frequency >= 1.0f) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
   // Limit Q to positive values
-  if (Q <= 0.0) {
+  if (Q <= 0.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -188,12 +222,12 @@ void BiquadFilterNode::setBandpassCoefficients(float frequency, float Q) {
 void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
   float A = std::pow(10.0f, gain / 40.0f);
 
-  if (frequency >= 1.0) {
+  if (frequency >= 1.0f) {
     setNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (frequency <= 0.0) {
+  if (frequency <= 0.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -215,12 +249,12 @@ void BiquadFilterNode::setLowshelfCoefficients(float frequency, float gain) {
 void BiquadFilterNode::setHighshelfCoefficients(float frequency, float gain) {
   float A = std::pow(10.0f, gain / 40.0f);
 
-  if (frequency >= 1.0) {
+  if (frequency >= 1.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (frequency <= 0.0) {
+  if (frequency <= 0.0f) {
     setNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -247,12 +281,12 @@ void BiquadFilterNode::setPeakingCoefficients(
     float gain) {
   float A = std::pow(10.0f, gain / 40.0f);
 
-  if (frequency <= 0.0 || frequency >= 1.0) {
+  if (frequency <= 0.0f || frequency >= 1.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (Q <= 0.0) {
+  if (Q <= 0.0f) {
     setNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -271,12 +305,12 @@ void BiquadFilterNode::setPeakingCoefficients(
 }
 
 void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
-  if (frequency <= 0.0 || frequency >= 1.0) {
+  if (frequency <= 0.0f || frequency >= 1.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (Q <= 0.0) {
+  if (Q <= 0.0f) {
     setNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -290,12 +324,12 @@ void BiquadFilterNode::setNotchCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
-  if (frequency <= 0.0 || frequency >= 1.0) {
+  if (frequency <= 0.0f || frequency >= 1.0f) {
     setNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (Q <= 0.0) {
+  if (Q <= 0.0f) {
     setNormalizedCoefficients(-1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     return;
   }
@@ -318,6 +352,9 @@ void BiquadFilterNode::applyFilter() {
   auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
 
+  // NyquistFrequency is half of the sample rate.
+  // Normalized frequency is therefore:
+  // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
   float normalizedFrequency = frequency / context_->getNyquistFrequency();
   if (detune != 0.0f) {
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);

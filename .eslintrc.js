@@ -22,6 +22,8 @@ module.exports = {
         '@typescript-eslint/no-unsafe-return': 'off',
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+        '@typescript-eslint/no-empty-object-type': 'off',
         '@typescript-eslint/no-explicit-any': 'warn',
         '@typescript-eslint/ban-ts-comment': [
           'error',

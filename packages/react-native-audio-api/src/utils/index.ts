@@ -19,6 +19,7 @@ export let workletsModule: SimplifiedWorkletModule;
 try {
   workletsModule = require('react-native-worklets');
   isWorkletsAvailable = true;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 } catch (error) {
   isWorkletsAvailable = false;
 }

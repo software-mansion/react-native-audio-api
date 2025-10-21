@@ -12,6 +12,7 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
 )
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
@@ -57,6 +58,8 @@ target_include_directories(rnaudioapi PUBLIC
   ${JSI_DIR}
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+  ${gtest_SOURCE_DIR}/include
+  ${gmock_SOURCE_DIR}/include
 )
 
 target_include_directories(rnaudioapi_libs PUBLIC
