@@ -177,11 +177,15 @@ Adds callback to be invoked upon hearing an event.
 Brings up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
+
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
 Checks if permissions were previously granted.
+
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 

@@ -23,7 +23,13 @@ const Record: FC = () => {
 
   useEffect(() => {
     const setup = async () => {
-      await AudioManager.requestRecordingPermissions();
+      try {
+        await AudioManager.requestRecordingPermissions();
+      } catch (err) {
+        console.log(err);
+        console.error('Recording permission denied', err);
+        return;
+      }
       recorderRef.current = new AudioRecorder({
         sampleRate: SAMPLE_RATE,
         bufferLengthInSamples: SAMPLE_RATE,
