@@ -4,7 +4,6 @@ import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
 import {
-  isWorkletsAvailable,
   isWorkletsVersionSupported,
   workletsModule,
 } from '../utils';
@@ -22,7 +21,7 @@ export default class AudioContext extends BaseAudioContext {
     }
     let audioRuntime = null;
 
-    if (isWorkletsAvailable && isWorkletsVersionSupported) {
+    if (isWorkletsVersionSupported) {
       audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
     }
 

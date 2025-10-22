@@ -4,7 +4,6 @@ import { OfflineAudioContextOptions } from '../types';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import AudioBuffer from './AudioBuffer';
 import {
-  isWorkletsAvailable,
   isWorkletsVersionSupported,
   workletsModule,
 } from '../utils';
@@ -22,7 +21,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg2?: number
   ) {
     let audioRuntime = null;
-    if (isWorkletsAvailable && isWorkletsVersionSupported) {
+    if (isWorkletsVersionSupported) {
       audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
     }
 
