@@ -13,7 +13,7 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-export let isWorkletsAvailable = false;
+let isWorkletsAvailable = false;
 export let isWorkletsVersionSupported = false;
 export let workletsVersion = 'unknown';
 export const supportedWorkletsVersions = ['0.6.0', '0.6.1'];
