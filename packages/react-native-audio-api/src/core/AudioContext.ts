@@ -3,10 +3,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import { NotSupportedError } from '../errors';
-import {
-  isWorkletsVersionSupported,
-  workletsModule,
-} from '../utils';
+import { isWorkletsVersionSupported, workletsModule } from '../utils';
 
 export default class AudioContext extends BaseAudioContext {
   constructor(options?: AudioContextOptions) {

@@ -3,10 +3,7 @@ import BaseAudioContext from './BaseAudioContext';
 import { OfflineAudioContextOptions } from '../types';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import AudioBuffer from './AudioBuffer';
-import {
-  isWorkletsVersionSupported,
-  workletsModule,
-} from '../utils';
+import { isWorkletsVersionSupported, workletsModule } from '../utils';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
