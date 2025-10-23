@@ -56,7 +56,6 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVCodecParameters* codecpar_;
   AVPacket* pkt_;
   AVFrame* frame_; // Frame that is currently being processed
-  AVFrame* pendingFrame_; // Frame that is saved if bufferedBus is full
   std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
   size_t bufferedBusIndex_; // index in the buffered bus where we write the next frame
   size_t maxBufferSize_; // maximum size of the buffered bus
@@ -64,10 +63,11 @@ class StreamerNode : public AudioScheduledSourceNode {
   SwrContext* swrCtx_;
   uint8_t** resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
   int maxResampledSamples_;
-  std::mutex mutex_;
+  std::mutex bufferMutex_;
+  std::condition_variable busCv_;
   std::thread streamingThread_;
   std::atomic<bool> streamFlag; // Flag to control the streaming thread
-  static constexpr float BUFFER_LENGTH_SECONDS = 5.0f; // Length of the buffer in seconds
+  static constexpr float BUFFER_LENGTH_SECONDS = 1.0f; // Length of the buffer in seconds
   static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
 
   /**

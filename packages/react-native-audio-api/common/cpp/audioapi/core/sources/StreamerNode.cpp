@@ -25,7 +25,6 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       codecpar_(nullptr),
       pkt_(nullptr),
       frame_(nullptr),
-      pendingFrame_(nullptr),
       bufferedBus_(nullptr),
       bufferedBusIndex_(0),
       maxBufferSize_(0),
@@ -84,6 +83,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
 void StreamerNode::stop(double when) {
   AudioScheduledSourceNode::stop(when);
   streamFlag.store(false);
+  busCv_.notify_one();
 }
 
 bool StreamerNode::setupResampler() {
@@ -123,28 +123,21 @@ bool StreamerNode::setupResampler() {
 
 void StreamerNode::streamAudio() {
   while (streamFlag.load()) {
-    if (pendingFrame_ != nullptr) {
-      if (!processFrameWithResampler(pendingFrame_)) {
-        return;
-      }
-    } else {
-      if (av_read_frame(fmtCtx_, pkt_) < 0) {
-        return;
-      }
-      if (pkt_->stream_index == audio_stream_index_) {
-        if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
-          return;
-        }
-        if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
-          return;
-        }
-        if (!processFrameWithResampler(frame_)) {
-          return;
-        }
-      }
-      av_packet_unref(pkt_);
+    if (av_read_frame(fmtCtx_, pkt_) < 0) {
+      return;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if (pkt_->stream_index == audio_stream_index_) {
+      if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
+        return;
+      }
+      if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
+        return;
+      }
+      if (!processFrameWithResampler(frame_)) {
+        return;
+      }
+    }
+    av_packet_unref(pkt_);
   }
 }
 
@@ -160,30 +153,33 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
     return processingBus;
   }
 
-  // If we have enough buffered data, copy to output bus
-  if (bufferedBusIndex_ >= framesToProcess) {
-    Locker locker(mutex_);
-    for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
-      memcpy(
-          processingBus->getChannel(ch)->getData(),
-          bufferedBus_->getChannel(ch)->getData(),
-          offsetLength * sizeof(float));
+  {
+    Locker locker(bufferMutex_);
+    // If we have enough buffered data, copy to output bus
+    if (bufferedBusIndex_ >= framesToProcess) {
+      for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
+        memcpy(
+            processingBus->getChannel(ch)->getData(),
+            bufferedBus_->getChannel(ch)->getData(),
+            offsetLength * sizeof(float));
 
-      memmove(
-          bufferedBus_->getChannel(ch)->getData(),
-          bufferedBus_->getChannel(ch)->getData() + offsetLength,
-          (maxBufferSize_ - offsetLength) * sizeof(float));
+        memmove(
+            bufferedBus_->getChannel(ch)->getData(),
+            bufferedBus_->getChannel(ch)->getData() + offsetLength,
+            (maxBufferSize_ - offsetLength) * sizeof(float));
+      }
+      bufferedBusIndex_ -= offsetLength;
+    } else {
+      if (VERBOSE)
+        printf(
+            "Buffer underrun: have %zu, need %zu\n",
+            bufferedBusIndex_,
+            (size_t)framesToProcess);
+      processingBus->zero();
     }
-    bufferedBusIndex_ -= offsetLength;
-  } else {
-    if (VERBOSE)
-      printf(
-          "Buffer underrun: have %zu, need %zu\n",
-          bufferedBusIndex_,
-          (size_t)framesToProcess);
-    processingBus->zero();
   }
 
+  busCv_.notify_one();
   return processingBus;
 }
 
@@ -220,16 +216,17 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
     return false;
   }
 
-  // Check if converted data fits in buffer
-  if (bufferedBusIndex_ + converted_samples > maxBufferSize_) {
-    pendingFrame_ = frame;
+  std::unique_lock<std::mutex> lock(bufferMutex_);
+  busCv_.wait(lock, [&] {
+    // Check if converted data fits in buffer or if we would like to finish
+    return (bufferedBusIndex_ + converted_samples) <= maxBufferSize_ ||
+        !streamFlag.load();
+  });
+  // if we would like to finish dont copy anything
+  if (!streamFlag.load()) {
     return true;
-  } else {
-    pendingFrame_ = nullptr;
   }
-
   // Copy converted data to our buffer
-  Locker locker(mutex_);
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
     float *dst = bufferedBus_->getChannel(ch)->getData() + bufferedBusIndex_;
@@ -281,6 +278,7 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   streamFlag.store(false);
+  busCv_.notify_one();
   // cleanup cannot be called from the streaming thread so there is no need to
   // check if we are in the same thread
   streamingThread_.join();

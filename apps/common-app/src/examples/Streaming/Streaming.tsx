@@ -36,7 +36,7 @@ const Streaming: FC = () => {
     }
     streamerRef.current = aCtxRef.current.createStreamer();
 
-    streamerRef.current.initialize('https://stream.radioparadise.com/aac-320');
+    streamerRef.current.initialize('https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8');
     streamerRef.current.connect(gainRef.current);
     gainRef.current.connect(aCtxRef.current.destination);
     streamerRef.current.start(aCtxRef.current.currentTime);
@@ -57,7 +57,7 @@ const Streaming: FC = () => {
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Button title="Start streaming" onPress={startStreaming} />
         <Button title="Stop streaming" onPress={stopStreaming} />
-        <Button title="Volume to 0.5" onPress={() => { 
+        <Button title="Volume to 0.5" onPress={() => {
           if (gainRef.current) {
             gainRef.current.gain.value = 0.5;
           }
