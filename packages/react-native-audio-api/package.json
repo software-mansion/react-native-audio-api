@@ -35,6 +35,8 @@
     "!**/.*",
     "!**/node_modules",
     "scripts/setup-rn-audio-api-web.js",
+    "scripts/rnaa_utils.rb",
+    "scripts/validate-worklets-version.js",
     "app.plugin.js"
   ],
   "scripts": {
