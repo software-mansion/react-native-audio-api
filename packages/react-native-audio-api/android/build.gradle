@@ -301,10 +301,16 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
     }
 }
 
+task downloadPrebuiltBinaries(type: Exec) {
+  commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
+  commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
+  args 'android'
+}
+
 // Make preBuild depend on the download task
 tasks.preBuild {
     dependsOn assertMinimalReactNativeVersion
-    // dependsOn downloadStaticPrebuiltLibraries TODO: re-add when we have prebuilt libs put somewhere public
+    dependsOn downloadPrebuiltBinaries
 }
 
 task cleanCmakeCache() {

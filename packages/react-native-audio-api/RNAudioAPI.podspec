@@ -38,9 +38,10 @@ Pod::Spec.new do |s|
 
   s.compiler_flags = "#{folly_flags}"
 
-  # s.prepare_command = <<-CMD TODO: re-add when we have prebuilt libs put somewhere public
-  #   ruby -r './scripts/download-audioapi-libs.rb'
-  # CMD
+  s.prepare_command = <<-CMD
+    chmod +x scripts/download-prebuilt-binaries.sh
+    scripts/download-prebuilt-binaries.sh ios
+  CMD
 
   # Assumes Pods dir is nested under ios project dir
   ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
@@ -71,8 +72,8 @@ s.pod_target_xcconfig = {
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include
   ].join(" "),
-  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}",
-  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag}",
+  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag}",
 }
 
 s.user_target_xcconfig = {
