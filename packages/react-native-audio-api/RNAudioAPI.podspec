@@ -71,8 +71,8 @@ s.pod_target_xcconfig = {
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include
   ].join(" "),
-  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}",
-  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag}"
+  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag}",
+  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag}",
 }
 
 s.user_target_xcconfig = {
