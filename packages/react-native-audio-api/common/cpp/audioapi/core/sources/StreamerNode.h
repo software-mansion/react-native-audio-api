@@ -27,8 +27,19 @@ extern "C" {
 #include <memory>
 #include <string>
 #include <atomic>
+#include <SpscChannel.hpp>
 
-static bool constexpr VERBOSE = false;
+static constexpr bool VERBOSE = false;
+static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+    audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
+    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+
+struct StreamingData{
+  std::shared_ptr<audioapi::AudioBus> bus;
+  size_t size;
+};
+
 
 namespace audioapi {
 
@@ -56,19 +67,21 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVCodecParameters* codecpar_;
   AVPacket* pkt_;
   AVFrame* frame_; // Frame that is currently being processed
-  std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusIndex_; // index in the buffered bus where we write the next frame
-  size_t maxBufferSize_; // maximum size of the buffered bus
-  int audio_stream_index_; // index of the audio stream channel in the input
   SwrContext* swrCtx_;
   uint8_t** resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
+
+  std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
+  size_t bufferedBusSize_; // index in the buffered bus where we write the next frame
+  size_t maxBufferSize_; // maximum size of the buffered bus
+  int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
-  std::mutex bufferMutex_;
-  std::condition_variable busCv_;
+  size_t processedSamples_;
+
   std::thread streamingThread_;
   std::atomic<bool> streamFlag; // Flag to control the streaming thread
-  static constexpr float BUFFER_LENGTH_SECONDS = 1.0f; // Length of the buffer in seconds
   static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
+  channels::spsc::Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> sender_;
+  channels::spsc::Receiver<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> receiver_;
 
   /**
    * @brief Setting up the resampler
