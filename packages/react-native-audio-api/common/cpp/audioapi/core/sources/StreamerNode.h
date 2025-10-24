@@ -35,6 +35,8 @@ static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_O
 static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 
+static constexpr int CHANNEL_CAPACITY = 32;
+
 struct StreamingData{
   std::shared_ptr<audioapi::AudioBus> bus;
   size_t size;
