@@ -27,14 +27,16 @@ extern "C" {
 #include <memory>
 #include <string>
 #include <atomic>
+#ifndef AUDIO_API_TEST_SUITE
 #include <SpscChannel.hpp>
 
-static constexpr bool VERBOSE = false;
 static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
 static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+#endif
 
+static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;
 
 struct StreamingData{
