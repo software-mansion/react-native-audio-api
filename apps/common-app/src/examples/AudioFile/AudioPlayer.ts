@@ -107,7 +107,7 @@ class AudioPlayer {
     }
   };
 
-  reset = () => {
+  reset = async () => {
     if (this.sourceNode) {
       this.sourceNode.onEnded = null;
       this.sourceNode.onPositionChanged = null;
@@ -119,6 +119,8 @@ class AudioPlayer {
     this.seekOffset = 0;
     this.playbackRate = 1;
     this.isPlaying = false;
+
+    await this.audioContext.suspend();
   };
 
   setOnPositionChanged = (
