@@ -8,7 +8,7 @@
 #include <vector>
 
 static constexpr int GAIN_CALIBRATION = -58; // magic number so that processed signal and dry signal have roughly the same volume
-static constexpr int MIN_IR_POWER = 0.000125;
+static constexpr double MIN_IR_POWER = 0.000125;
 
 namespace audioapi {
 

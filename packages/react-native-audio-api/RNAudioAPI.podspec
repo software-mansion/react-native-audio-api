@@ -4,7 +4,7 @@ package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
-folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
+folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32 -O2"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
@@ -28,6 +28,13 @@ Pod::Spec.new do |s|
       sss.source_files = "ios/audioapi/**/*.{mm,h,m,hpp}"
       sss.header_dir = "audioapi"
       sss.header_mappings_dir = "ios/audioapi"
+    end
+
+    ss.subspec "audioapi_dsp" do |sss|
+      sss.source_files = "common/cpp/audioapi/dsp/**/*.{cpp}"
+      sss.header_dir = "audioapi/dsp"
+      sss.header_mappings_dir = "common/cpp/audioapi/dsp"
+      sss.compiler_flags = "-O3"
     end
   end
 
