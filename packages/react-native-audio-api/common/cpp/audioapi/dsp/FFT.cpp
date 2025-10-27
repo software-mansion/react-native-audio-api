@@ -12,29 +12,4 @@ FFT::~FFT() {
   pffft_aligned_free(work_);
 }
 
-void FFT::doFFT(float *in, std::vector<std::complex<float>> &out) {
-  pffft_transform_ordered(
-      pffftSetup_,
-      in,
-      reinterpret_cast<float *>(&out[0]),
-      work_,
-      PFFFT_FORWARD);
-  // this is a possible place for bugs and mistakes
-  // due to pffft implementation and how it stores results
-  // keep this information in mind
-  // out[0].real = DC component - should be pure real
-  // out[0].imag = Nyquist component - should be pure real
-}
-
-void FFT::doInverseFFT(std::vector<std::complex<float>> &in, float *out) {
-  pffft_transform_ordered(
-      pffftSetup_,
-      reinterpret_cast<float *>(&in[0]),
-      out,
-      work_,
-      PFFFT_BACKWARD);
-
-  dsp::multiplyByScalar(out, 1.0f / static_cast<float>(size_), out, size_);
-}
-
 } // namespace audioapi::dsp
