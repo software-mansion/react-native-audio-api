@@ -7,6 +7,8 @@
 #include <memory>
 #include <vector>
 
+#include <audioapi/utils/ThreadPool.hpp>
+
 static constexpr int GAIN_CALIBRATION = -58; // magic number so that processed signal and dry signal have roughly the same volume
 static constexpr double MIN_IR_POWER = 0.000125;
 
@@ -44,6 +46,7 @@ class ConvolverNode : public AudioNode {
   std::shared_ptr<AudioBus> internalBuffer_;
   // vectors of convolvers, one per channel
   std::vector<Convolver> convolvers_;
+  std::shared_ptr<ThreadPool> threadPool_;
 
   void calculateNormalizationScale();
   void performConvolution(const std::shared_ptr<AudioBus>& processingBus);

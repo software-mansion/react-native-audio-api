@@ -55,6 +55,7 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
     buffer_ = buffer;
     if (normalize_)
       calculateNormalizationScale();
+    threadPool_ = std::make_shared<ThreadPool>(4);
     convolvers_.clear();
     for (int i = 0; i < buffer->getNumberOfChannels(); ++i) {
       convolvers_.emplace_back();
@@ -177,10 +178,9 @@ void ConvolverNode::calculateNormalizationScale() {
 
 void ConvolverNode::performConvolution(
     const std::shared_ptr<AudioBus> &processingBus) {
-  std::vector<std::thread> threads;
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threads.emplace_back([this, i, processingBus]() {
+      threadPool_->schedule([&, i] {
         convolvers_[i].process(
             processingBus->getChannel(0)->getData(),
             intermediateBus_->getChannel(i)->getData());
@@ -197,18 +197,14 @@ void ConvolverNode::performConvolution(
       outputChannelMap = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threads.emplace_back(
-          [this, i, inputChannelMap, outputChannelMap, &processingBus]() {
+      threadPool_->schedule(
+          [this, i, inputChannelMap, outputChannelMap, &processingBus] {
             convolvers_[i].process(
                 processingBus->getChannel(inputChannelMap[i])->getData(),
                 intermediateBus_->getChannel(outputChannelMap[i])->getData());
           });
     }
   }
-  if (!threads.empty()) {
-    for (auto &thread : threads) {
-      thread.join();
-    }
-  }
+  threadPool_->wait();
 }
 } // namespace audioapi
