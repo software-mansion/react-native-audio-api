@@ -28,7 +28,7 @@ extern "C" {
 #include <string>
 #include <atomic>
 #ifndef AUDIO_API_TEST_SUITE
-#include <SpscChannel.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 
 static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
