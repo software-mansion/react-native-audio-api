@@ -67,7 +67,7 @@ JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
                                   .getArrayBuffer(runtime);
   auto frequencyArray =
       reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
-  auto length = static_cast<int>(arrayBufferFrequency.size(runtime));
+  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime));
 
   auto arrayBufferMag = args[1]
                             .getObject(runtime)

@@ -56,7 +56,7 @@ float AudioParam::getValueAtTime(double time) {
 void AudioParam::setValueAtTime(float value, double startTime) {
   auto event = [value, startTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
-    if (startTime <= param.getQueueEndTime()) {
+    if (startTime < param.getQueueEndTime()) {
       return;
     }
 
@@ -87,7 +87,7 @@ void AudioParam::setValueAtTime(float value, double startTime) {
 void AudioParam::linearRampToValueAtTime(float value, double endTime) {
   auto event = [value, endTime](AudioParam &param) {
     // Ignore events scheduled before the end of existing automation
-    if (endTime <= param.getQueueEndTime()) {
+    if (endTime < param.getQueueEndTime()) {
       return;
     }
 

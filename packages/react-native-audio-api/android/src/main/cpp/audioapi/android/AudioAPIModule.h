@@ -34,6 +34,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
 
   void injectJSIBindings();
   void invokeHandlerWithEventNameAndEventBody(jni::alias_ref<jni::JString> eventName, jni::alias_ref<jni::JMap<jstring, jobject>> eventBody);
+  void closeAllContexts();
 
  private:
   friend HybridBase;

@@ -1,6 +1,8 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
+import com.facebook.react.bridge.LifecycleEventListener
+import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -16,7 +18,8 @@ import java.lang.ref.WeakReference
 @ReactModule(name = AudioAPIModule.NAME)
 class AudioAPIModule(
   reactContext: ReactApplicationContext,
-) : NativeAudioAPIModuleSpec(reactContext) {
+) : NativeAudioAPIModuleSpec(reactContext),
+  LifecycleEventListener {
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
@@ -24,6 +27,7 @@ class AudioAPIModule(
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
 
   private val mHybridData: HybridData
+  private var reanimatedModule: NativeModule? = null
 
   external fun initHybrid(
     workletsModule: Any?,
@@ -37,6 +41,8 @@ class AudioAPIModule(
     eventName: String,
     eventBody: Map<String, Any>,
   )
+
+  private external fun closeAllContexts()
 
   init {
     try {
@@ -62,6 +68,28 @@ class AudioAPIModule(
     injectJSIBindings()
 
     return true
+  }
+
+  override fun onHostResume() {
+    // do nothing
+  }
+
+  override fun onHostPause() {
+    // do nothing
+  }
+
+  override fun onHostDestroy() {
+    closeAllContexts()
+  }
+
+  override fun initialize() {
+    reactContext.get()?.addLifecycleEventListener(this)
+  }
+
+  override fun invalidate() {
+    closeAllContexts()
+    reactContext.get()?.removeLifecycleEventListener(this)
+    // think about cleaning up resources, singletons etc.
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()

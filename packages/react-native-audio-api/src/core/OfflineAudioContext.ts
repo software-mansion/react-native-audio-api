@@ -3,7 +3,7 @@ import BaseAudioContext from './BaseAudioContext';
 import { OfflineAudioContextOptions } from '../types';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import AudioBuffer from './AudioBuffer';
-import { isWorkletsAvailable, workletsModule } from '../utils';
+import { isWorkletsVersionSupported, workletsModule } from '../utils';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
@@ -18,7 +18,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg2?: number
   ) {
     let audioRuntime = null;
-    if (isWorkletsAvailable) {
+    if (isWorkletsVersionSupported) {
       audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
     }
 

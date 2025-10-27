@@ -213,6 +213,15 @@
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
+  id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+  // if there is no entry NSMicrophoneUsageDescription calling requestRecordPermission will quit an app
+  if (value == nil) {
+    reject(
+        nil,
+        @"There is no NSMicrophoneUsageDescription entry in info.plist file. App cannot access microphone without it.",
+        nil);
+    return;
+  }
   if (@available(iOS 17, *)) {
     [AVAudioSession.sharedInstance requestRecordPermission:^(BOOL granted) {
       if (granted) {
