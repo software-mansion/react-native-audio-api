@@ -263,7 +263,10 @@ class MediaNotificationManager(
       stopForegroundService()
     }
 
-    override fun onTimeout(startId: Int, fgsType: Int) {
+    override fun onTimeout(
+      startId: Int,
+      fgsType: Int,
+    ) {
       stopForegroundService()
     }
   }
