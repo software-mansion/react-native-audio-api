@@ -91,7 +91,11 @@ class AudioPlayer {
   };
 
   loadBuffer = async (url: string) => {
-    const buffer = await fetch(url)
+    const buffer = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+      },
+    })
       .then((response) => response.arrayBuffer())
       .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
       .catch((error) => {
