@@ -91,3 +91,8 @@ compile_commands.json
 openssl-prebuilt/
 prebuilt_libs/
 output/
+
+# External libs
+packages/react-native-audio-api/android/src/main/jniLibs/
+packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
+packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework
