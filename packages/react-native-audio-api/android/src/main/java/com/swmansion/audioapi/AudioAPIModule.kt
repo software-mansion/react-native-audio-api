@@ -1,6 +1,5 @@
 package com.swmansion.audioapi
 
-import android.util.Log
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.NativeModule
