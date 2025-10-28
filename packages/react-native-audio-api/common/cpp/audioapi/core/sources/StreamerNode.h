@@ -11,6 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/utils/AudioBus.h>
 
 #ifndef AUDIO_API_TEST_SUITE
 extern "C" {
@@ -27,6 +28,7 @@ extern "C" {
 #include <memory>
 #include <string>
 #include <atomic>
+#include <utility>
 #ifndef AUDIO_API_TEST_SUITE
 #include <audioapi/utils/SpscChannel.hpp>
 
@@ -40,10 +42,21 @@ static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;
 
 struct StreamingData{
-  std::shared_ptr<audioapi::AudioBus> bus;
+  audioapi::AudioBus bus;
   size_t size;
+  StreamingData() = default;
+  StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
+  StreamingData(const StreamingData& data) : bus(data.bus), size(data.size) {}
+  StreamingData(StreamingData&& data) noexcept : bus(std::move(data.bus)), size(data.size) {}
+  StreamingData& operator=(const StreamingData& data) {
+    if (this == &data) {
+      return *this;
+    }
+    bus = data.bus;
+    size = data.size;
+    return *this;
+  }
 };
-
 
 namespace audioapi {
 
@@ -75,8 +88,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   uint8_t** resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
   std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusSize_; // index in the buffered bus where we write the next frame
-  size_t maxBufferSize_; // maximum size of the buffered bus
+  size_t bufferedBusSize_; // size of currently buffered bus
   int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;

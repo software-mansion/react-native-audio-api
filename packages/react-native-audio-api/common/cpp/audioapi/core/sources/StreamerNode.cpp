@@ -26,7 +26,6 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       pkt_(nullptr),
       frame_(nullptr),
       bufferedBus_(nullptr),
-      maxBufferSize_(0),
       audio_stream_index_(-1),
       swrCtx_(nullptr),
       resampledData_(nullptr),
@@ -173,7 +172,7 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
     }
     StreamingData data;
     receiver_.try_receive(data);
-    bufferedBus_ = std::move(data.bus);
+    bufferedBus_ = std::make_shared<AudioBus>(std::move(data.bus));
     bufferedBusSize_ = data.size;
     processedSamples_ = 0;
   }
@@ -227,16 +226,17 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
   if (!streamFlag.load(std::memory_order_acquire)) {
     return true;
   }
-  std::shared_ptr<AudioBus> bus = std::make_shared<AudioBus>(
-      converted_samples,
+  auto bus = AudioBus(
+      static_cast<size_t>(converted_samples),
       codecCtx_->ch_layout.nb_channels,
       context_->getSampleRate());
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
-    float *dst = bus->getChannel(ch)->getData();
+    float *dst = bus.getChannel(ch)->getData();
     memcpy(dst, src, converted_samples * sizeof(float));
   }
-  sender_.send({bus, static_cast<size_t>(converted_samples)});
+  StreamingData data{bus, static_cast<size_t>(converted_samples)};
+  sender_.send(std::move(data));
   return true;
 }
 
