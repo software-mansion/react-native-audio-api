@@ -235,7 +235,7 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
     float *dst = bus.getChannel(ch)->getData();
     memcpy(dst, src, converted_samples * sizeof(float));
   }
-  StreamingData data{bus, static_cast<size_t>(converted_samples)};
+  StreamingData data{std::move(bus), static_cast<size_t>(converted_samples)};
   sender_.send(std::move(data));
   return true;
 }

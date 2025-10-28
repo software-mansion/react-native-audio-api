@@ -39,7 +39,6 @@ AudioBus::AudioBus(AudioBus &&other) noexcept
       numberOfChannels_(other.numberOfChannels_),
       sampleRate_(other.sampleRate_),
       size_(other.size_) {
-  other.channels_.clear();
   other.numberOfChannels_ = 0;
   other.sampleRate_ = 0.0f;
   other.size_ = 0;
