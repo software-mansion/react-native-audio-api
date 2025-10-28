@@ -50,8 +50,6 @@ Pod::Spec.new do |s|
   external_dir_relative = "common/cpp/audioapi/external"
   lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
 
-  external_dir = File.join(__dir__, "common/cpp/audioapi/external")
-
   s.ios.vendored_frameworks = [
     'common/cpp/audioapi/external/libavcodec.xcframework',
     'common/cpp/audioapi/external/libavformat.xcframework',
@@ -92,10 +90,6 @@ s.user_target_xcconfig = {
     $(inherited)
     $(PODS_ROOT)/Headers/Public/RNAudioAPI
     $(PODS_TARGET_SRCROOT)/common/cpp
-    #{external_dir}/include
-    #{external_dir}/include/opus
-    #{external_dir}/include/vorbis
-    #{external_dir}/ffmpeg_include
   ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
