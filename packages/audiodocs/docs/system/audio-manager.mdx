@@ -102,7 +102,16 @@ Resets all of the lock screen data.
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
-#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.
+#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.'
+
+### `disableSessionManagement` <OnlyiOS />
+
+#### Returns `undefined`.
+
+Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
+Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package, 
+commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
+Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
 
 ### `getDevicePreferredSampleRate`
 
