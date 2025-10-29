@@ -33,6 +33,5 @@ interface ConvolverNodeOptions {
 It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties) and has no individual ones.
 
 :::caution
-Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease duration of impulse response buffer. 
-Responses that have duration greater than `sampleRate` are not recommended, however it all depends on your specific use-case.
+Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease the duration of impulse response buffer.
 :::
