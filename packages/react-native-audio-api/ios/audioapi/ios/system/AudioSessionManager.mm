@@ -13,6 +13,7 @@
     self.allowHapticsAndSystemSoundsDuringRecording = false;
     self.hasDirtySettings = true;
     self.isActive = false;
+    self.shouldManageSession = true;
   }
 
   return self;
@@ -135,6 +136,9 @@
 
 - (bool)setActive:(bool)active
 {
+  if (!self.shouldManageSession) {
+    return true;
+  }
   if (active == self.isActive) {
     return true;
   }
@@ -162,6 +166,11 @@
 
 - (bool)configureAudioSession
 {
+  if (!self.shouldManageSession) {
+    NSLog(@"[AudioSessionManager] Skipping AVAudioSession configuration, shouldManageSession is false");
+    return true;
+  }
+
   if (![self hasDirtySettings]) {
     return true;
   }
@@ -209,6 +218,12 @@
 {
   self.hasDirtySettings = true;
   self.isActive = false;
+}
+
+- (void)disableSessionManagement
+{
+  self.shouldManageSession = false;
+  self.hasDirtySettings = false;
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

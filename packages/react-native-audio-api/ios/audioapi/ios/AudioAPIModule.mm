@@ -118,6 +118,9 @@ RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
         reject)
 {
+  if (!self.audioSessionManager.shouldManageSession) {
+    [self.audioSessionManager setShouldManageSession:true];
+  }
   if ([self.audioSessionManager setActive:enabled]) {
     resolve(@"true");
     return;
@@ -130,6 +133,9 @@ RCT_EXPORT_METHOD(
     setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
         options allowHaptics : (BOOL)allowHaptics)
 {
+  if (!self.audioSessionManager.shouldManageSession) {
+    [self.audioSessionManager setShouldManageSession:true];
+  }
   [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options allowHaptics:allowHaptics];
 }
 
@@ -180,6 +186,11 @@ RCT_EXPORT_METHOD(
     getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(disableSessionManagement)
+{
+  [self.audioSessionManager disableSessionManagement];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
