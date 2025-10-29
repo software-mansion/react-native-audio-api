@@ -4,9 +4,9 @@
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
-#include <memory>
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
+#include <memory>
 #include <string>
 
 namespace audioapi {
@@ -24,6 +24,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   [[nodiscard]] double getLoopStart() const;
   [[nodiscard]] double getLoopEnd() const;
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
+  [[nodiscard]] double getInputLatency() const;
 
   void setLoop(bool loop);
   void setLoopSkip(bool loopSkip);
@@ -38,7 +39,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) override;
   double getCurrentPosition() const override;
 
  private:
@@ -56,13 +57,13 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
-      const std::shared_ptr<AudioBus>& processingBus,
+      const std::shared_ptr<AudioBus> &processingBus,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;
 
   void processWithInterpolation(
-      const std::shared_ptr<AudioBus>& processingBus,
+      const std::shared_ptr<AudioBus> &processingBus,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;

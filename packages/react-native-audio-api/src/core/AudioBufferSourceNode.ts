@@ -118,4 +118,8 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     (this.node as IAudioBufferSourceNode).onLoopEnded =
       this.onLoopEndedSubscription.subscriptionId;
   }
+
+  public getInputLatency(): number {
+    return (this.node as IAudioBufferSourceNode).getInputLatency();
+  }
 }
