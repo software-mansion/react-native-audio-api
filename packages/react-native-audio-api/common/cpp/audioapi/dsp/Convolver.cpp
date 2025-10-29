@@ -192,8 +192,7 @@ void Convolver::process(float *data, float *outputData) {
       _preMultiplied.data(),
       0,
       _preMultiplied.size() * sizeof(std::complex<float>));
-// this is a bottleneck of the algorithm
-#pragma unroll
+  // this is a bottleneck of the algorithm
   for (int i = 0; i < _segCount; ++i) {
     const int indexAudio = (_current + i) % _segCount;
     const auto &impulseResponseSegment = _segmentsIR[i];
