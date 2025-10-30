@@ -2,6 +2,7 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
@@ -180,6 +181,15 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
+}
+
+std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
+    std::shared_ptr<AudioBuffer> buffer,
+    bool disableNormalization) {
+  auto convolver =
+      std::make_shared<ConvolverNode>(this, buffer, disableNormalization);
+  nodeManager_->addProcessingNode(convolver);
+  return convolver;
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {

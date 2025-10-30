@@ -34,6 +34,34 @@ AudioBus::AudioBus(const AudioBus &other) {
   }
 }
 
+AudioBus::AudioBus(AudioBus &&other) noexcept
+    : channels_(std::move(other.channels_)),
+      numberOfChannels_(other.numberOfChannels_),
+      sampleRate_(other.sampleRate_),
+      size_(other.size_) {
+  other.numberOfChannels_ = 0;
+  other.sampleRate_ = 0.0f;
+  other.size_ = 0;
+}
+
+AudioBus &AudioBus::operator=(const AudioBus &other) {
+  if (this == &other) {
+    return *this;
+  }
+
+  numberOfChannels_ = other.numberOfChannels_;
+  sampleRate_ = other.sampleRate_;
+  size_ = other.size_;
+
+  createChannels();
+
+  for (int i = 0; i < numberOfChannels_; i += 1) {
+    channels_[i] = std::make_shared<AudioArray>(*other.channels_[i]);
+  }
+
+  return *this;
+}
+
 AudioBus::~AudioBus() {
   channels_.clear();
 }

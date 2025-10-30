@@ -28,6 +28,7 @@ class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
+class ConvolverNode;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
 class WorkletSourceNode;
@@ -76,6 +77,7 @@ class BaseAudioContext {
       bool disableNormalization,
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser();
+  std::shared_ptr<ConvolverNode> createConvolver(std::shared_ptr<AudioBuffer> buffer, bool disableNormalization);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

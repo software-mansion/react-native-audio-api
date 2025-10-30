@@ -1,6 +1,6 @@
 {
   "name": "rn-audioapi-custom-node-generator",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A cli generator for custom node used by react-native-audio-api",
   "main": "lib/generator.js",
   "bin": {

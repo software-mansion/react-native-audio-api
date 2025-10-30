@@ -18,6 +18,8 @@ import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
+import ConvolverNode from './ConvolverNode';
+import { ConvolverNodeOptions } from './ConvolverNodeOptions';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -74,6 +76,29 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
+    if (options?.buffer) {
+      const numberOfChannels = options.buffer.numberOfChannels;
+      if (
+        numberOfChannels !== 1 &&
+        numberOfChannels !== 2 &&
+        numberOfChannels !== 4
+      ) {
+        throw new NotSupportedError(
+          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
+        );
+      }
+    }
+    const buffer = options?.buffer ?? null;
+    const disableNormalization = options?.disableNormalization ?? false;
+    return new ConvolverNode(
+      this,
+      this.context.createConvolver(),
+      buffer,
+      disableNormalization
+    );
   }
 
   async createBufferSource(

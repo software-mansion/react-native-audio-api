@@ -24,8 +24,11 @@ class AudioBus {
     ChannelSurroundRight = 5,
   };
 
+  explicit AudioBus() = default;
   explicit AudioBus(size_t size, int numberOfChannels, float sampleRate);
   AudioBus(const AudioBus &other);
+  AudioBus(AudioBus &&other) noexcept;
+  AudioBus& operator=(const AudioBus& other);
 
   ~AudioBus();
 

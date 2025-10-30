@@ -32,6 +32,13 @@ Pod::Spec.new do |s|
       sss.header_dir = "audioapi"
       sss.header_mappings_dir = "ios/audioapi"
     end
+
+    ss.subspec "audioapi_dsp" do |sss|
+      sss.source_files = "common/cpp/audioapi/dsp/**/*.{cpp}"
+      sss.header_dir = "audioapi/dsp"
+      sss.header_mappings_dir = "common/cpp/audioapi/dsp"
+      sss.compiler_flags = "-O3"
+    end
   end
 
   s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate', 'MediaPlayer', 'AVFoundation'
@@ -49,8 +56,6 @@ Pod::Spec.new do |s|
 
   external_dir_relative = "common/cpp/audioapi/external"
   lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
-
-  external_dir = File.join(__dir__, "common/cpp/audioapi/external")
 
   s.ios.vendored_frameworks = [
     'common/cpp/audioapi/external/libavcodec.xcframework',
@@ -92,10 +97,6 @@ s.user_target_xcconfig = {
     $(inherited)
     $(PODS_ROOT)/Headers/Public/RNAudioAPI
     $(PODS_TARGET_SRCROOT)/common/cpp
-    #{external_dir}/include
-    #{external_dir}/include/opus
-    #{external_dir}/include/vorbis
-    #{external_dir}/ffmpeg_include
   ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.

@@ -9,6 +9,7 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import ConvolverNode from './ConvolverNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -23,6 +24,7 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
+  createConvolver(): ConvolverNode;
   createBufferSource(): Promise<AudioBufferSourceNode>;
   createBuffer(
     numOfChannels: number,

@@ -19,35 +19,37 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
+
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/*.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/utils/AudioDecoder.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/*.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/android/src/main/cpp/audioapi/android/core/utils/AudioDecoder.cpp"
 )
 
 # exclude HostObjects from tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletNode.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/effects/WorkletProcessingNode.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/WorkletSourceNode.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/sources/StreamerNode.h"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.h"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/effects/WorkletNode.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/effects/WorkletProcessingNode.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/WorkletSourceNode.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/StreamerNode.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/StreamerNode.h"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.h"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
   CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/*.c"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/*.h"
 )
 
 list(REMOVE_ITEM RNAUDIOAPI_LIBS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.c"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.c"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
 )
 
 add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})
