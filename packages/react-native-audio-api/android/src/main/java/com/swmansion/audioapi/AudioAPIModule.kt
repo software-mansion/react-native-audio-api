@@ -110,6 +110,10 @@ class AudioAPIModule(
     // noting to do here
   }
 
+  override fun disableSessionManagement() {
+    // nothing to do here
+  }
+
   override fun setLockScreenInfo(info: ReadableMap?) {
     MediaSessionManager.setLockScreenInfo(info)
   }
