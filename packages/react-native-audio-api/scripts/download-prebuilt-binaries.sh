@@ -2,7 +2,7 @@
 # Script to download and unzip prebuilt native binaries for React Native.
 
 MAIN_DOWNLOAD_URL="https://github.com/software-mansion-labs/rn-audio-libs/releases/download"
-TAG="v1.0.0"
+TAG="v2.0.0"
 DOWNLOAD_NAMES=(
     "armeabi-v7a.zip" "arm64-v8a.zip" "x86.zip" "x86_64.zip"
     "ffmpeg_ios.zip" "iphoneos.zip" "iphonesimulator.zip" "jniLibs.zip"
