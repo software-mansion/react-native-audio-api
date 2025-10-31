@@ -9,7 +9,7 @@ import { oscillatorTestWithDetune, oscillatorTestWithGain, oscillatorTestWithSte
 import { streamerTest } from './StreamingTest';
 import { workletTest } from './WorkletsTest';
 import { recorderTest, recorderPlaybackTest } from './RecorderTest';
-import { audioBufferFormatsTest, audioBufferChannelsTest } from './AudioBufferTest';
+import { audioBufferFormatsTest, audioBufferChannelsTest, audioBufferBase64Test } from './AudioBufferTest';
 
 import { View, Text, Button } from 'react-native';
 
@@ -78,6 +78,7 @@ const Test: FC = () => {
     setIsTesting(true);
     await audioBufferChannelsTest(audioContextRef, setTestingInfo);
     await audioBufferFormatsTest(audioContextRef, setTestingInfo);
+    await audioBufferBase64Test(audioContextRef, setTestingInfo);
     setIsTesting(false);
   }
 

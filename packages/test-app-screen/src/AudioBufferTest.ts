@@ -1,4 +1,5 @@
 import { AudioContext, AudioBuffer } from "react-native-audio-api";
+import { PCM_DATA } from "./Base64Data";
 
 const SUPPORTED_FORMATS = ['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4'];
 const EXPECTED_BUFFER_DURATION = 16;
@@ -88,7 +89,7 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.buffer = audioBuffer;
             bufferSource.connect(audioContextRef.current!.destination);
             bufferSource.start();
-            await new Promise(resolve => setTimeout(resolve, (expectedDuration + 1) * 1000));
+            await new Promise(resolve => setTimeout(resolve, 4000));
             if (channels === Object.keys(CHANNELS_MAP).length) {
               bufferSource.onEnded = () => {
                 setTestingInfo('Audio buffer channels test completed.');
@@ -101,4 +102,16 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
         }
       })
   }
+}
+
+export const audioBufferBase64Test = async (audioContextRef: React.RefObject<AudioContext | null>, setTestingInfo: (value: React.SetStateAction<string>) => void) => {
+  const audioBuffer = await audioContextRef.current!.decodePCMInBase64(PCM_DATA, 48000, 1, true);
+  const bufferSource = audioContextRef.current!.createBufferSource();
+  bufferSource.buffer = audioBuffer;
+  bufferSource.connect(audioContextRef.current!.destination);
+  bufferSource.start();
+  bufferSource.stop(audioContextRef.current!.currentTime + 5);
+  setTestingInfo('Playing audio buffer decoded from Base64 PCM data');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  setTestingInfo('Audio buffer Base64 test completed.');
 }
