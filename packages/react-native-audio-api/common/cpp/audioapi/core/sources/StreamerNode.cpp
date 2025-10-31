@@ -76,18 +76,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   receiver_ = std::move(receiver);
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
-  streamFlag.store(true, std::memory_order_release);
   isInitialized_ = true;
   return true;
-}
-
-void StreamerNode::stop(double when) {
-  AudioScheduledSourceNode::stop(when);
-  streamFlag.store(false, std::memory_order_release);
-  StreamingData dummy;
-  while (receiver_.try_receive(dummy) ==
-         channels::spsc::ResponseStatus::SUCCESS)
-    ; // clear the receiver
 }
 
 bool StreamerNode::setupResampler() {
@@ -126,7 +116,7 @@ bool StreamerNode::setupResampler() {
 }
 
 void StreamerNode::streamAudio() {
-  while (streamFlag.load(std::memory_order_acquire)) {
+  while (!isNodeFinished_.load(std::memory_order_acquire)) {
     if (av_read_frame(fmtCtx_, pkt_) < 0) {
       return;
     }
@@ -143,6 +133,10 @@ void StreamerNode::streamAudio() {
     }
     av_packet_unref(pkt_);
   }
+  StreamingData dummy;
+  while (receiver_.try_receive(dummy) ==
+         channels::spsc::ResponseStatus::SUCCESS)
+    ; // clear the receiver
 }
 
 std::shared_ptr<AudioBus> StreamerNode::processNode(
@@ -151,6 +145,7 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
@@ -171,10 +166,14 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
       alreadyProcessed += bufferRemaining;
     }
     StreamingData data;
-    receiver_.try_receive(data);
-    bufferedBus_ = std::make_shared<AudioBus>(std::move(data.bus));
-    bufferedBusSize_ = data.size;
-    processedSamples_ = 0;
+    auto res = receiver_.try_receive(data);
+    if (res == channels::spsc::ResponseStatus::SUCCESS) {
+      bufferedBus_ = std::make_shared<AudioBus>(std::move(data.bus));
+      bufferedBusSize_ = data.size;
+      processedSamples_ = 0;
+    } else {
+      bufferedBus_ = nullptr;
+    }
   }
   if (bufferedBus_ != nullptr) {
     for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
@@ -223,7 +222,7 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
   }
 
   // if we would like to finish dont copy anything
-  if (!streamFlag.load(std::memory_order_acquire)) {
+  if (this->isFinished()) {
     return true;
   }
   auto bus = AudioBus(
@@ -281,7 +280,7 @@ bool StreamerNode::setupDecoder() {
 }
 
 void StreamerNode::cleanup() {
-  streamFlag.store(false, std::memory_order_release);
+  this->playbackState_ = PlaybackState::FINISHED;
   // cleanup cannot be called from the streaming thread so there is no need to
   // check if we are in the same thread
   streamingThread_.join();
