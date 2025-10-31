@@ -28,7 +28,8 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, start),
       JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, setBuffer),
-      JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, getInputLatency));
+      JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, getInputLatency),
+      JSI_EXPORT_FUNCTION(AudioBufferSourceNodeHostObject, getOutputLatency));
 }
 
 AudioBufferSourceNodeHostObject::~AudioBufferSourceNodeHostObject() {
@@ -155,6 +156,13 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, getInputLatency) {
       std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
   return audioBufferSourceNode->getInputLatency();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, getOutputLatency) {
+  auto audioBufferSourceNode =
+      std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+  return audioBufferSourceNode->getOutputLatency();
 }
 
 } // namespace audioapi

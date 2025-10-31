@@ -59,6 +59,14 @@ double AudioBufferSourceNode::getInputLatency() const {
   return 0;
 }
 
+double AudioBufferSourceNode::getOutputLatency() const {
+  if (pitchCorrection_) {
+    return static_cast<double>(stretch_->outputLatency()) /
+        context_->getSampleRate();
+  }
+  return 0;
+}
+
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
 }
@@ -90,8 +98,21 @@ void AudioBufferSourceNode::setBuffer(
   }
 
   buffer_ = buffer;
-  alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
   channelCount_ = buffer_->getNumberOfChannels();
+
+  if (pitchCorrection_) {
+    int extraTailFrames = static_cast<int>(
+        (getInputLatency() + getOutputLatency()) * context_->getSampleRate());
+    size_t totalSize = buffer_->getLength() + extraTailFrames;
+
+    alignedBus_ = std::make_shared<AudioBus>(
+        totalSize, channelCount_, buffer_->getSampleRate());
+    alignedBus_->copy(buffer_->bus_.get(), 0, 0, buffer_->getLength());
+
+    alignedBus_->zero(buffer_->getLength(), extraTailFrames);
+  } else {
+    alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
+  }
 
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());

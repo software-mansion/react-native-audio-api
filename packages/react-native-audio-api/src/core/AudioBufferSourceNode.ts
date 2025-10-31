@@ -122,4 +122,8 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   public getInputLatency(): number {
     return (this.node as IAudioBufferSourceNode).getInputLatency();
   }
+
+  public getOutputLatency(): number {
+    return (this.node as IAudioBufferSourceNode).getOutputLatency();
+  }
 }
