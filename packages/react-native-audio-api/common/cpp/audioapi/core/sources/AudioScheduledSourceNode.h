@@ -16,7 +16,7 @@
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
