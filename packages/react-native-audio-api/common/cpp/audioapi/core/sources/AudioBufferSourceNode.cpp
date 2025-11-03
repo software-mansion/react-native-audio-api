@@ -100,6 +100,8 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer;
   channelCount_ = buffer_->getNumberOfChannels();
 
+  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
+
   if (pitchCorrection_) {
     int extraTailFrames = static_cast<int>(
         (getInputLatency() + getOutputLatency()) * context_->getSampleRate());
@@ -120,8 +122,6 @@ void AudioBufferSourceNode::setBuffer(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
-
-  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
