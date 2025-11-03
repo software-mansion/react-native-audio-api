@@ -1,5 +1,5 @@
 import { AudioContext, AudioBuffer } from "react-native-audio-api";
-import { PCM_DATA } from "./Base64Data";
+import { PCM_DATA } from "./constants";
 
 const SUPPORTED_FORMATS = ['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4'];
 const EXPECTED_BUFFER_DURATION = 16;
