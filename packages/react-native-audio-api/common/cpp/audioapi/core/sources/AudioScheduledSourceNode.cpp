@@ -47,11 +47,12 @@ bool AudioScheduledSourceNode::isStopScheduled() {
 }
 
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
-    auto oldCallbackId = onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  auto oldCallbackId =
+      onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
-    if (oldCallbackId != 0) {
-        audioEventHandlerRegistry_->unregisterHandler("ended", oldCallbackId);
-    }
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler("ended", oldCallbackId);
+  }
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -154,11 +155,11 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-    auto onEndedCallbackId = onEndedCallbackId_.load(std::memory_order_acquire);
-    if (onEndedCallbackId != 0) {
-        audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-                "ended", onEndedCallbackId, {});
-    }
+  auto onEndedCallbackId = onEndedCallbackId_.load(std::memory_order_acquire);
+  if (onEndedCallbackId != 0) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "ended", onEndedCallbackId, {});
+  }
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

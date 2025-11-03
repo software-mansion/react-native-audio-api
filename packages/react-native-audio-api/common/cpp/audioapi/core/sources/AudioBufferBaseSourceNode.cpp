@@ -38,11 +38,13 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam()
 
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
     uint64_t callbackId) {
-    auto oldCallbackId = onPositionChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  auto oldCallbackId = onPositionChangedCallbackId_.exchange(
+      callbackId, std::memory_order_acq_rel);
 
-    if (oldCallbackId != 0) {
-        audioEventHandlerRegistry_->unregisterHandler("positionChanged", oldCallbackId);
-    }
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler(
+        "positionChanged", oldCallbackId);
+  }
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
@@ -60,7 +62,7 @@ std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   auto onPositionChangedCallbackId =
-            onPositionChangedCallbackId_.load(std::memory_order_acquire);
+      onPositionChangedCallbackId_.load(std::memory_order_acquire);
 
   if (onPositionChangedCallbackId != 0 &&
       onPositionChangedTime_ > onPositionChangedInterval_) {
