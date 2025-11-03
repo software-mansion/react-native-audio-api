@@ -11,7 +11,7 @@
 namespace audioapi {
 ConvolverNode::ConvolverNode(
     BaseAudioContext *context,
-    const std::shared_ptr<AudioBuffer>& buffer,
+    const std::shared_ptr<AudioBuffer> &buffer,
     bool disableNormalization)
     : AudioNode(context),
       remainingSegments_(0),

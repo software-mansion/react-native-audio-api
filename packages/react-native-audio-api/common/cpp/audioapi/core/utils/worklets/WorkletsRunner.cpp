@@ -4,7 +4,7 @@ namespace audioapi {
 
 WorkletsRunner::WorkletsRunner(
     std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
-    const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet,
+    const std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
     bool shouldLockRuntime)
     : weakRuntime_(std::move(weakRuntime)),
       shouldLockRuntime(shouldLockRuntime) {
