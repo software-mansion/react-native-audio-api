@@ -37,7 +37,7 @@ AudioBufferSourceNodeHostObject::~AudioBufferSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  audioBufferSourceNode->clearOnLoopEndedCallback();
+  audioBufferSourceNode->setOnLoopEndedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
