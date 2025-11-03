@@ -69,6 +69,7 @@ struct RuntimeRegistry {
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
   std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
 
+#if ANDROID
     ~RuntimeRegistry() {
         jni::ThreadScope::WithClassLoader(
             [this]() {
@@ -76,4 +77,5 @@ struct RuntimeRegistry {
                 audioRuntime.reset();
             });
     }
+#endif
 };
