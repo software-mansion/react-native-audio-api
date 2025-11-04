@@ -78,18 +78,13 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;
-  
-  printf("Render quantum: currentSampleFrame = %zu, framesToProcess = %d\n", 
-         context_->getCurrentSampleFrame(), framesToProcess);
+
 
   size_t startFrame =
       std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
   size_t stopFrame = stopTime_ == -1.0
       ? std::numeric_limits<size_t>::max()
       : dsp::timeToSampleFrame(stopTime_, sampleRate);
-  printf("updatePlaybackInfo: stopTime_ = %f, stopFrame = %zu, firstFrame = %zu, lastFrame = %zu\n", 
-         stopTime_, stopFrame, firstFrame, lastFrame);
-  std::cout << stopFrame << std::endl;
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
