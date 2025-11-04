@@ -45,6 +45,10 @@ class AudioManager {
     );
   }
 
+  disableSessionManagement() {
+    NativeAudioAPIModule!.disableSessionManagement();
+  }
+
   setLockScreenInfo(info: LockScreenInfo) {
     NativeAudioAPIModule!.setLockScreenInfo(info);
   }

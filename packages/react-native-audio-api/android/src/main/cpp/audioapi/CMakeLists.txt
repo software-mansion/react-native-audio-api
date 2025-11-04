@@ -3,13 +3,16 @@ cmake_minimum_required(VERSION 3.12.0)
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
+set_source_files_properties(
+  ${COMMON_CPP_SOURCES}/dsp/*.cpp
+  PROPERTIES
+  COMPILE_FLAGS "-O3"
+)
+
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
 set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 

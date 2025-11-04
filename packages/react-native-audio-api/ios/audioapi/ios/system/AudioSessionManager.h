@@ -14,6 +14,7 @@
 @property (nonatomic, assign) AVAudioSessionCategory sessionCategory;
 @property (nonatomic, assign) AVAudioSessionCategoryOptions sessionOptions;
 @property (nonatomic, assign) bool allowHapticsAndSystemSoundsDuringRecording;
+@property (nonatomic, assign) bool shouldManageSession;
 
 - (instancetype)init;
 - (void)cleanup;
@@ -27,6 +28,7 @@
                        options:(NSArray *)options
                   allowHaptics:(BOOL)allowHaptics;
 - (bool)setActive:(bool)active;
+- (void)disableSessionManagement;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;

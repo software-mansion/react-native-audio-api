@@ -4,6 +4,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <jni.h>
 
 namespace audioapi {
 
@@ -49,7 +50,8 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   if (mStream_) {
-    nativeAudioPlayer_->start();
+    jni::ThreadScope::WithClassLoader(
+        [this]() { nativeAudioPlayer_->start(); });
     auto result = mStream_->requestStart();
     return result == oboe::Result::OK;
   }
@@ -59,7 +61,7 @@ bool AudioPlayer::start() {
 
 void AudioPlayer::stop() {
   if (mStream_) {
-    nativeAudioPlayer_->stop();
+    jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->stop(); });
     mStream_->requestStop();
   }
 }

@@ -3,16 +3,12 @@ import BaseAudioContext from './BaseAudioContext';
 import { OfflineAudioContextOptions } from '../types';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import AudioBuffer from './AudioBuffer';
-import { isWorkletsAvailable, workletsModule } from '../utils';
+import { isWorkletsVersionSupported, workletsModule } from '../utils';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
   private isRendering: boolean;
   private duration: number;
-
-  // We need to keep here a reference to this runtime to better manage its lifecycle
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-  private _audioRuntime: any;
 
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
@@ -22,7 +18,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg2?: number
   ) {
     let audioRuntime = null;
-    if (isWorkletsAvailable) {
+    if (isWorkletsVersionSupported) {
       audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
     }
 
@@ -51,7 +47,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isSuspended = false;
     this.isRendering = false;
-    this._audioRuntime = audioRuntime;
   }
 
   async resume(): Promise<undefined> {

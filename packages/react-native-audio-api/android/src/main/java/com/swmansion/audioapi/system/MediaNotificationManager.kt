@@ -258,5 +258,16 @@ class MediaNotificationManager(
       }
       super.onDestroy()
     }
+
+    override fun onTimeout(startId: Int) {
+      stopForegroundService()
+    }
+
+    override fun onTimeout(
+      startId: Int,
+      fgsType: Int,
+    ) {
+      stopForegroundService()
+    }
   }
 }

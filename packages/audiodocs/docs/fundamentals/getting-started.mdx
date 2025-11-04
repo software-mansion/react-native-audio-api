@@ -92,6 +92,14 @@ export default {
 ```
 </details>
 
+#### Special permissions
+
+If you plan to use [`AudioRecorder`](/docs/inputs/audio-recorder) entry `iosMicrophonePermission` and `android.permission.RECORD_AUDIO` in `androidPermissions` section is **MANDATORY**.
+
+:::info
+If your app is not managed by expo, see [non-expo-permissions page](/docs/other/non-expo-permissions) how to handle permissions.
+:::
+
 Read more about plugin [here](/docs/other/audio-api-plugin)!
 
 ### Step 3: Wrap metro config with Audio API wrapper (recommended)
@@ -110,6 +118,15 @@ const config = {
 
 module.exports = wrapWithAudioAPIMetroConfig(config);
 ```
+
+### Possible additional dependencies
+
+If you plan to use any of [`WorkletNode`](/docs/worklets/worklet-node), [`WorkletSourceNode`](/docs/worklets/worklet-source-node), [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node), it is required to have
+`react-native-worklets` library set up with version <u>0.6.0</u> or higher. See [worklets getting-started page](https://docs.swmansion.com/react-native-worklets/docs/) for info how to do it.
+
+:::info
+If you are not planning to use any of mentioned nodes, `react-native-worklets` dependency is **OPTIONAL** and your app will build successfully without them.
+:::
 
 ### Usage with expo
 

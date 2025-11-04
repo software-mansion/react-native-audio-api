@@ -1,5 +1,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
@@ -221,6 +222,10 @@ inline bool AudioNodeManager::nodeCanBeDestructed(
   if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
     return node.use_count() == 1 &&
         (node->isUnscheduled() || node->isFinished());
+  } else if constexpr (std::is_base_of_v<
+                           ConvolverNode,
+                           U>) { // convolver overrides disabling behavior
+    return node.use_count() == 1 && !node->isEnabled();
   }
   return node.use_count() == 1;
 }

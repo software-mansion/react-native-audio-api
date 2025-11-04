@@ -6,6 +6,10 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
 
+:::warning
+This node is dependent on `react-native-worklets` and you need to install them in order to use this node. Refer to [getting-started page](/docs/fundamentals/getting-started#possible-additional-dependencies) for more info.
+:::
+
 The `WorkletProcessingNode` interface represents a node in the audio processing graph that can process audio using a worklet function. Unlike [`WorkletNode`](/docs/worklets/worklet-node) which only provides read-only access to audio data, `WorkletProcessingNode` allows you to modify the audio signal by providing both input and output buffers.
 
 This node lets you execute a worklet that receives input audio data and produces output audio data, making it perfect for creating custom audio effects, filters, and processors. The worklet processes the exact number of frames provided by the audio system in each call.

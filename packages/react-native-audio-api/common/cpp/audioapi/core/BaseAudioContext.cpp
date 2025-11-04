@@ -2,6 +2,7 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
@@ -67,9 +68,11 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
 
 std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+    std::weak_ptr<worklets::WorkletRuntime> runtime,
+    bool shouldLockRuntime) {
+  WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
   auto workletSourceNode =
-      std::make_shared<WorkletSourceNode>(this, shareableWorklet, runtime);
+      std::make_shared<WorkletSourceNode>(this, std::move(workletRunner));
   nodeManager_->addSourceNode(workletSourceNode);
   return workletSourceNode;
 }
@@ -78,9 +81,11 @@ std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
     std::weak_ptr<worklets::WorkletRuntime> runtime,
     size_t bufferLength,
-    size_t inputChannelCount) {
+    size_t inputChannelCount,
+    bool shouldLockRuntime) {
+  WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
   auto workletNode = std::make_shared<WorkletNode>(
-      this, shareableWorklet, runtime, bufferLength, inputChannelCount);
+      this, bufferLength, inputChannelCount, std::move(workletRunner));
   nodeManager_->addProcessingNode(workletNode);
   return workletNode;
 }
@@ -88,9 +93,11 @@ std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
 std::shared_ptr<WorkletProcessingNode>
 BaseAudioContext::createWorkletProcessingNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime) {
+    std::weak_ptr<worklets::WorkletRuntime> runtime,
+    bool shouldLockRuntime) {
+  WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
   auto workletProcessingNode =
-      std::make_shared<WorkletProcessingNode>(this, shareableWorklet, runtime);
+      std::make_shared<WorkletProcessingNode>(this, std::move(workletRunner));
   nodeManager_->addProcessingNode(workletProcessingNode);
   return workletProcessingNode;
 }
@@ -174,6 +181,15 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
   auto analyser = std::make_shared<AnalyserNode>(this);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
+}
+
+std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
+    std::shared_ptr<AudioBuffer> buffer,
+    bool disableNormalization) {
+  auto convolver =
+      std::make_shared<ConvolverNode>(this, buffer, disableNormalization);
+  nodeManager_->addProcessingNode(convolver);
+  return convolver;
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {

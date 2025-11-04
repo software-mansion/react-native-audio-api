@@ -13,6 +13,7 @@
     self.allowHapticsAndSystemSoundsDuringRecording = false;
     self.hasDirtySettings = true;
     self.isActive = false;
+    self.shouldManageSession = true;
   }
 
   return self;
@@ -135,6 +136,9 @@
 
 - (bool)setActive:(bool)active
 {
+  if (!self.shouldManageSession) {
+    return true;
+  }
   if (active == self.isActive) {
     return true;
   }
@@ -162,6 +166,11 @@
 
 - (bool)configureAudioSession
 {
+  if (!self.shouldManageSession) {
+    NSLog(@"[AudioSessionManager] Skipping AVAudioSession configuration, shouldManageSession is false");
+    return true;
+  }
+
   if (![self hasDirtySettings]) {
     return true;
   }
@@ -211,8 +220,23 @@
   self.isActive = false;
 }
 
+- (void)disableSessionManagement
+{
+  self.shouldManageSession = false;
+  self.hasDirtySettings = false;
+}
+
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
+  id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+  // if there is no entry NSMicrophoneUsageDescription calling requestRecordPermission will quit an app
+  if (value == nil) {
+    reject(
+        nil,
+        @"There is no NSMicrophoneUsageDescription entry in info.plist file. App cannot access microphone without it.",
+        nil);
+    return;
+  }
   if (@available(iOS 17, *)) {
     [AVAudioSession.sharedInstance requestRecordPermission:^(BOOL granted) {
       if (granted) {

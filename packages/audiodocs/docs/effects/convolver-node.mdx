@@ -1,0 +1,37 @@
+---
+sidebar_position: 5
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+
+# ConvolverNode
+
+The `ConvolverNode` interface represents a linear convolution effect, that can be applied to a signal given an impulse response.
+This is the easiest way to achieve `echo` or [`reverb`](https://en.wikipedia.org/wiki/Reverb_effect) effects.
+
+#### [`AudioNode`](/docs/core/audio-node#properties) properties
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"clamped-max"} channelInterpretation={"speakers"} />
+
+:::info
+Convolver is a node with tail-time, which means, that it continues to output non-silent audio with zero input for the length of the buffer.
+:::
+
+## Constructor
+
+[`BaseAudioContext.createConvolver(options: ConvolverNodeOptions)`](/docs/core/base-audio-context#createconvolver)
+
+```jsx
+interface ConvolverNodeOptions {
+  buffer?: AudioBuffer | null; // impulse response
+  disableNormalization?: boolean; // if normalization of output should be applied, true by default
+}
+```
+
+## Properties
+
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties) and has no individual ones.
+
+:::caution
+Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease the duration of impulse response buffer.
+:::

@@ -7,6 +7,10 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
+:::warning
+To access microphone you need to make sure your app has met required conditions to do so. Refer to [permission section](/docs/fundamentals/getting-started#special-permissions) for more info.
+:::
+
 `AudioRecorder` provides a simple way to manage audio recording.
 It connects to the audio graph through a [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) and triggers events when new audio data is ready.
 

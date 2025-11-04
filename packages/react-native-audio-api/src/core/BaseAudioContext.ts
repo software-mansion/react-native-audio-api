@@ -5,13 +5,15 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioWorkletRuntime,
+  ConvolverNodeOptions,
 } from '../types';
-import { isWorkletsAvailable, workletsModule } from '../utils';
+import { assertWorkletsEnabled, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
 import WorkletProcessingNode from './WorkletProcessingNode';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
+import ConvolverNode from './ConvolverNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -84,30 +86,24 @@ export default class BaseAudioContext {
         `The buffer length provided (${bufferLength}) can not be less than 1`
       );
     }
-
-    if (isWorkletsAvailable) {
-      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
-          'worklet';
-          const floatAudioData: Array<Float32Array> = audioBuffers.map(
-            (buffer) => new Float32Array(buffer)
-          );
-          callback(floatAudioData, channelCount);
-        }
-      );
-      return new WorkletNode(
-        this,
-        this.context.createWorkletNode(
-          shareableWorklet,
-          workletRuntime === 'UIRuntime',
-          bufferLength,
-          inputChannelCount
-        )
-      );
-    }
-    /// User does not have worklets as a dependency so he cannot use the worklet API.
-    throw new Error(
-      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    assertWorkletsEnabled();
+    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+      (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
+        'worklet';
+        const floatAudioData: Array<Float32Array> = audioBuffers.map(
+          (buffer) => new Float32Array(buffer)
+        );
+        callback(floatAudioData, channelCount);
+      }
+    );
+    return new WorkletNode(
+      this,
+      this.context.createWorkletNode(
+        shareableWorklet,
+        workletRuntime === 'UIRuntime',
+        bufferLength,
+        inputChannelCount
+      )
     );
   }
 
@@ -120,35 +116,30 @@ export default class BaseAudioContext {
     ) => void,
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletProcessingNode {
-    if (isWorkletsAvailable) {
-      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-        (
-          inputBuffers: Array<ArrayBuffer>,
-          outputBuffers: Array<ArrayBuffer>,
-          framesToProcess: number,
-          currentTime: number
-        ) => {
-          'worklet';
-          const inputData: Array<Float32Array> = inputBuffers.map(
-            (buffer) => new Float32Array(buffer, 0, framesToProcess)
-          );
-          const outputData: Array<Float32Array> = outputBuffers.map(
-            (buffer) => new Float32Array(buffer, 0, framesToProcess)
-          );
-          callback(inputData, outputData, framesToProcess, currentTime);
-        }
-      );
-      return new WorkletProcessingNode(
-        this,
-        this.context.createWorkletProcessingNode(
-          shareableWorklet,
-          workletRuntime === 'UIRuntime'
-        )
-      );
-    }
-    /// User does not have worklets as a dependency so he cannot use the worklet API.
-    throw new Error(
-      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    assertWorkletsEnabled();
+    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+      (
+        inputBuffers: Array<ArrayBuffer>,
+        outputBuffers: Array<ArrayBuffer>,
+        framesToProcess: number,
+        currentTime: number
+      ) => {
+        'worklet';
+        const inputData: Array<Float32Array> = inputBuffers.map(
+          (buffer) => new Float32Array(buffer, 0, framesToProcess)
+        );
+        const outputData: Array<Float32Array> = outputBuffers.map(
+          (buffer) => new Float32Array(buffer, 0, framesToProcess)
+        );
+        callback(inputData, outputData, framesToProcess, currentTime);
+      }
+    );
+    return new WorkletProcessingNode(
+      this,
+      this.context.createWorkletProcessingNode(
+        shareableWorklet,
+        workletRuntime === 'UIRuntime'
+      )
     );
   }
 
@@ -161,12 +152,7 @@ export default class BaseAudioContext {
     ) => void,
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletSourceNode {
-    if (!isWorkletsAvailable) {
-      /// User does not have worklets as a dependency so he cannot use the worklet API.
-      throw new Error(
-        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
-      );
-    }
+    assertWorkletsEnabled();
     const shareableWorklet = workletsModule.makeShareableCloneRecursive(
       (
         audioBuffers: Array<ArrayBuffer>,
@@ -288,5 +274,26 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
+    if (options?.buffer) {
+      const numberOfChannels = options.buffer.numberOfChannels;
+      if (
+        numberOfChannels !== 1 &&
+        numberOfChannels !== 2 &&
+        numberOfChannels !== 4
+      ) {
+        throw new NotSupportedError(
+          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
+        );
+      }
+    }
+    const buffer = options?.buffer ?? null;
+    const disableNormalization = options?.disableNormalization ?? false;
+    return new ConvolverNode(
+      this,
+      this.context.createConvolver(buffer?.buffer, disableNormalization)
+    );
   }
 }
