@@ -28,7 +28,7 @@ class AudioScheduledSourceNode : public AudioNode {
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
-  void start(double when);
+  virtual void start(double when);
   virtual void stop(double when);
 
   bool isUnscheduled();

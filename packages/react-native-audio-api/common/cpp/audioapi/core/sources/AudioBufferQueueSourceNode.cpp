@@ -31,6 +31,11 @@ void AudioBufferQueueSourceNode::stop(double when) {
   isPaused_ = false;
 }
 
+void AudioBufferQueueSourceNode::start(double when) {
+  isPaused_ = false;
+  AudioScheduledSourceNode::start(when);
+}
+
 void AudioBufferQueueSourceNode::pause() {
   AudioScheduledSourceNode::stop(0.0);
   isPaused_ = true;

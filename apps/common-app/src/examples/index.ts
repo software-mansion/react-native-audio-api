@@ -11,6 +11,7 @@ import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
+import PauseResumeBug from './PauseResumeBug/PauseResumeBug';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -25,6 +26,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  PauseResumeBug: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -103,5 +105,11 @@ export const Examples: Example[] = [
     title: 'Streamer',
     subtitle: 'Stream audio from a URL',
     screen: Streaming,
-  }
+  },
+  {
+    key: 'PauseResumeBug',
+    title: 'Pause/Resume Bug',
+    subtitle: 'Reproduce AudioBufferQueueSourceNode pause/resume bug',
+    screen: PauseResumeBug,
+  },
 ] as const;
