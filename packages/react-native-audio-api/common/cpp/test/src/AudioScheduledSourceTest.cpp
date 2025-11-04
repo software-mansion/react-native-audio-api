@@ -9,7 +9,7 @@
 using namespace audioapi;
 static constexpr int SAMPLE_RATE = 44100;
 static constexpr int RENDER_QUANTUM = 128;
-static constexpr double START_TIME =
+static constexpr double RENDER_QUANTUM_TIME =
     static_cast<double>(RENDER_QUANTUM) / SAMPLE_RATE;
 
 class AudioScheduledSourceTest : public ::testing::Test {
@@ -66,7 +66,7 @@ TEST_F(AudioScheduledSourceTest, IsUnscheduledStateSetCorrectly) {
       sourceNode.getPlaybackState(),
       AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
 
-  sourceNode.start(START_TIME);
+  sourceNode.start(RENDER_QUANTUM_TIME);
   EXPECT_NE(
       sourceNode.getPlaybackState(),
       AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
@@ -74,12 +74,12 @@ TEST_F(AudioScheduledSourceTest, IsUnscheduledStateSetCorrectly) {
 
 TEST_F(AudioScheduledSourceTest, IsScheduledStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
-  sourceNode.start(START_TIME);
+  sourceNode.start(RENDER_QUANTUM_TIME);
   EXPECT_EQ(
       sourceNode.getPlaybackState(),
       AudioScheduledSourceNode::PlaybackState::SCHEDULED);
 
-  sourceNode.playFrames(RENDER_QUANTUM - 1);
+  sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(
       sourceNode.getPlaybackState(),
       AudioScheduledSourceNode::PlaybackState::SCHEDULED);
@@ -92,13 +92,8 @@ TEST_F(AudioScheduledSourceTest, IsScheduledStateSetCorrectly) {
 
 TEST_F(AudioScheduledSourceTest, IsPlayingStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
-  sourceNode.start(START_TIME);
-  sourceNode.stop(START_TIME * 2);
-
-  sourceNode.playFrames(RENDER_QUANTUM);
-  EXPECT_EQ(
-      sourceNode.getPlaybackState(),
-      AudioScheduledSourceNode::PlaybackState::PLAYING);
+  sourceNode.start(0);
+  sourceNode.stop(RENDER_QUANTUM_TIME);
 
   sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(
@@ -114,7 +109,7 @@ TEST_F(AudioScheduledSourceTest, IsPlayingStateSetCorrectly) {
 TEST_F(AudioScheduledSourceTest, IsStopScheduledStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(0);
-  sourceNode.stop(START_TIME);
+  sourceNode.stop(RENDER_QUANTUM_TIME);
   sourceNode.playFrames(1); // start playing
   sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(
@@ -130,7 +125,7 @@ TEST_F(AudioScheduledSourceTest, IsStopScheduledStateSetCorrectly) {
 TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(0);
-  sourceNode.stop(START_TIME);
+  sourceNode.stop(RENDER_QUANTUM_TIME);
   sourceNode.playFrames(1); // start playing
 
   EXPECT_CALL(

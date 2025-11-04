@@ -76,7 +76,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   auto sampleRate = context_->getSampleRate();
 
   size_t firstFrame = context_->getCurrentSampleFrame();
-  size_t lastFrame = firstFrame + framesToProcess;
+  size_t lastFrame = firstFrame + framesToProcess - 1;
 
   size_t startFrame =
       std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
@@ -105,7 +105,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
     nonSilentFramesToProcess =
-        std::max(std::min(lastFrame, stopFrame), startFrame) - startFrame;
+        std::max(std::min(lastFrame, stopFrame) + 1, startFrame) - startFrame;
 
     assert(startOffset <= framesToProcess);
     assert(nonSilentFramesToProcess <= framesToProcess);
@@ -124,7 +124,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
-  if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+  if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
