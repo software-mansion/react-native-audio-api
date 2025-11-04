@@ -8,8 +8,9 @@
 
 using namespace audioapi;
 static constexpr int SAMPLE_RATE = 44100;
-static constexpr double START_TIME = 0.5;
-static constexpr double STOP_TIME = 0.6;
+static constexpr int RENDER_QUANTUM = 128;
+static constexpr double START_TIME =
+    static_cast<double>(RENDER_QUANTUM) / SAMPLE_RATE;
 
 class AudioScheduledSourceTest : public ::testing::Test {
  protected:
@@ -61,63 +62,82 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
 
 TEST_F(AudioScheduledSourceTest, IsUnscheduledStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
-  EXPECT_TRUE(sourceNode.isUnscheduled());
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
 
-  sourceNode.start(0.5);
-  EXPECT_FALSE(sourceNode.isUnscheduled());
+  sourceNode.start(START_TIME);
+  EXPECT_NE(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
 }
 
 TEST_F(AudioScheduledSourceTest, IsScheduledStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(START_TIME);
-  EXPECT_TRUE(sourceNode.isScheduled());
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::SCHEDULED);
 
-  sourceNode.playFrames(SAMPLE_RATE * START_TIME - 1);
-  EXPECT_TRUE(sourceNode.isScheduled());
+  sourceNode.playFrames(RENDER_QUANTUM - 1);
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::SCHEDULED);
 
   sourceNode.playFrames(1);
-  EXPECT_FALSE(sourceNode.isScheduled());
+  EXPECT_NE(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::SCHEDULED);
 }
 
 TEST_F(AudioScheduledSourceTest, IsPlayingStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(START_TIME);
-  sourceNode.stop(START_TIME + 0.1);
+  sourceNode.stop(START_TIME * 2);
 
-  sourceNode.playFrames(SAMPLE_RATE * START_TIME);
-  EXPECT_TRUE(sourceNode.isPlaying());
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::PLAYING);
 
-  sourceNode.playFrames(SAMPLE_RATE * 0.1 - 1);
-  EXPECT_TRUE(sourceNode.isPlaying());
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::PLAYING);
 
   sourceNode.playFrames(1);
-  EXPECT_FALSE(sourceNode.isPlaying());
+  EXPECT_NE(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::PLAYING);
 }
 
 TEST_F(AudioScheduledSourceTest, IsStopScheduledStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(0);
-  sourceNode.stop(STOP_TIME);
+  sourceNode.stop(START_TIME);
   sourceNode.playFrames(1); // start playing
-
-  sourceNode.playFrames(SAMPLE_RATE * STOP_TIME);
-  EXPECT_TRUE(sourceNode.isStopScheduled());
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::STOP_SCHEDULED);
 
   sourceNode.playFrames(1);
-  EXPECT_FALSE(sourceNode.isStopScheduled());
+  EXPECT_NE(
+      sourceNode.getPlaybackState(),
+      AudioScheduledSourceNode::PlaybackState::STOP_SCHEDULED);
 }
 
 TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   auto sourceNode = TestableAudioScheduledSourceNode(context.get());
   sourceNode.start(0);
-  sourceNode.stop(STOP_TIME);
+  sourceNode.stop(START_TIME);
   sourceNode.playFrames(1); // start playing
 
   EXPECT_CALL(
       *eventRegistry,
       invokeHandlerWithEventBody("ended", testing::_, testing::_))
       .Times(1);
-  sourceNode.playFrames(SAMPLE_RATE * STOP_TIME);
+  sourceNode.playFrames(RENDER_QUANTUM);
   sourceNode.playFrames(1);
   EXPECT_TRUE(sourceNode.isFinished());
 }
