@@ -5,6 +5,10 @@
 #include <string>
 #include <memory>
 
+#if ANDROID
+  #include <fbjni/detail/Environment.h>
+#endif
+
 #ifndef RN_AUDIO_API_TEST
   #define RN_AUDIO_API_TEST 0
 #endif
@@ -71,7 +75,7 @@ struct RuntimeRegistry {
 
 #if ANDROID
     ~RuntimeRegistry() {
-        jni::ThreadScope::WithClassLoader(
+        facebook::jni::ThreadScope::WithClassLoader(
             [this]() {
                 uiRuntime.reset();
                 audioRuntime.reset();
