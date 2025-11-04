@@ -124,7 +124,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
-  if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+  if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
@@ -137,7 +137,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   }
 
   // mark as finished in first silent render quantum
-  if (stopFrame < firstFrame) {
+  if (stopFrame <= firstFrame) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
 
