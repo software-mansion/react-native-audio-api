@@ -21,6 +21,13 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
+
+    int extraTailFrames =
+        static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
+    tailBuffer_ = std::make_shared<AudioBuffer>(
+        channelCount_, extraTailFrames, context_->getSampleRate());
+
+    tailBuffer_->bus_->zero();
   }
 
   isInitialized_ = true;
@@ -167,23 +174,18 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
           "ended", onEndedCallbackId_, body);
 
-      if (buffers_.empty() && addExtraTailFrames_) {
-        int extraTailFrames = static_cast<int>(
-            stretch_->inputLatency() + stretch_->outputLatency());
-        auto tailBuffer = std::make_shared<AudioBuffer>(
-            channelCount_, extraTailFrames, context_->getSampleRate());
+      if (buffers_.empty()) {
+        if (addExtraTailFrames_) {
+          buffers_.emplace(bufferId_, tailBuffer_);
+          bufferId_++;
 
-        tailBuffer->bus_->zero();
+          addExtraTailFrames_ = false;
+        } else if (buffers_.empty()) {
+          processingBus->zero(writeIndex, framesLeft);
+          readIndex = 0;
 
-        buffers_.emplace(bufferId_, tailBuffer);
-        bufferId_++;
-
-        addExtraTailFrames_ = false;
-      } else if (buffers_.empty()) {
-        processingBus->zero(writeIndex, framesLeft);
-        readIndex = 0;
-
-        break;
+          break;
+        }
       }
 
       data = buffers_.front();
