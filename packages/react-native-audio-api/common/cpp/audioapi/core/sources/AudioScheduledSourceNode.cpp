@@ -19,7 +19,6 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
-  stopTime_ = -1.0;
 }
 
 void AudioScheduledSourceNode::stop(double when) {

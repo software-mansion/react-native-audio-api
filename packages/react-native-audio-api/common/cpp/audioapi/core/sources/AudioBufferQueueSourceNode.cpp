@@ -33,6 +33,7 @@ void AudioBufferQueueSourceNode::stop(double when) {
 
 void AudioBufferQueueSourceNode::start(double when) {
   isPaused_ = false;
+  stopTime_ = -1.0;
   AudioScheduledSourceNode::start(when);
 }
 
@@ -84,7 +85,8 @@ void AudioBufferQueueSourceNode::disable() {
     playbackState_ = PlaybackState::UNSCHEDULED;
     startTime_ = -1.0;
     stopTime_ = -1.0;
-
+    isPaused_ = false;
+    
     return;
   }
 
