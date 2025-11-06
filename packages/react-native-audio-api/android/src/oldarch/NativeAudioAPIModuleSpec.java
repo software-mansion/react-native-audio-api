@@ -52,6 +52,10 @@
 
    @ReactMethod
    @DoNotStrip
+   public abstract void disableSessionManagement();
+
+   @ReactMethod
+   @DoNotStrip
    public abstract void setLockScreenInfo(ReadableMap info);
 
    @ReactMethod

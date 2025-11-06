@@ -71,7 +71,6 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @brief Initialize all necessary ffmpeg components for streaming audio
   */
   bool initialize(const std::string& inputUrl);
-  void stop(double when) override;
 
  protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
@@ -94,7 +93,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   size_t processedSamples_;
 
   std::thread streamingThread_;
-  std::atomic<bool> streamFlag; // Flag to control the streaming thread
+  std::atomic<bool> isNodeFinished_; // Flag to control the streaming thread
   static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
   channels::spsc::Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> sender_;
   channels::spsc::Receiver<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> receiver_;

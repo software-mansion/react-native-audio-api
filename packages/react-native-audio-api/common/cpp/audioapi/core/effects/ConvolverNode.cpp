@@ -11,16 +11,16 @@
 namespace audioapi {
 ConvolverNode::ConvolverNode(
     BaseAudioContext *context,
-    std::shared_ptr<AudioBuffer> buffer,
+    const std::shared_ptr<AudioBuffer> &buffer,
     bool disableNormalization)
     : AudioNode(context),
-      buffer_(nullptr),
-      internalBuffer_(nullptr),
-      signalledToStop_(false),
       remainingSegments_(0),
       internalBufferIndex_(0),
+      signalledToStop_(false),
       scaleFactor_(1.0f),
-      intermediateBus_(nullptr) {
+      intermediateBus_(nullptr),
+      buffer_(nullptr),
+      internalBuffer_(nullptr) {
   channelCount_ = 2;
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   normalize_ = !disableNormalization;

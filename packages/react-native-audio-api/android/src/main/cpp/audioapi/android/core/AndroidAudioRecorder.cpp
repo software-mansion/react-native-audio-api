@@ -45,7 +45,8 @@ void AndroidAudioRecorder::start() {
   }
 
   if (mStream_) {
-    nativeAudioRecorder_->start();
+    jni::ThreadScope::WithClassLoader(
+        [this]() { nativeAudioRecorder_->start(); });
     mStream_->requestStart();
   }
 
@@ -60,7 +61,8 @@ void AndroidAudioRecorder::stop() {
   isRunning_.store(false);
 
   if (mStream_) {
-    nativeAudioRecorder_->stop();
+    jni::ThreadScope::WithClassLoader(
+        [this]() { nativeAudioRecorder_->stop(); });
     mStream_->requestStop();
   }
 

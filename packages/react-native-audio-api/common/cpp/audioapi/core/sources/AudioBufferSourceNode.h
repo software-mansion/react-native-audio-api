@@ -34,7 +34,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset, double duration = -1);
   void disable() override;
 
-  void clearOnLoopEndedCallback();
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
  protected:

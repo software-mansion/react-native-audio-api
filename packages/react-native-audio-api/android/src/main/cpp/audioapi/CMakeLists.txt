@@ -14,9 +14,6 @@ set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
 set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
-
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
 foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)

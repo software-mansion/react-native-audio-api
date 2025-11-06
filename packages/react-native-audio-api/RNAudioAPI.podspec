@@ -58,10 +58,10 @@ Pod::Spec.new do |s|
   lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
 
   s.ios.vendored_frameworks = [
-    'common/cpp/audioapi/external/libavcodec.xcframework',
-    'common/cpp/audioapi/external/libavformat.xcframework',
-    'common/cpp/audioapi/external/libavutil.xcframework',
-    'common/cpp/audioapi/external/libswresample.xcframework'
+    'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
+    'common/cpp/audioapi/external/ffmpeg_ios/libavformat.xcframework',
+    'common/cpp/audioapi/external/ffmpeg_ios/libavutil.xcframework',
+    'common/cpp/audioapi/external/ffmpeg_ios/libswresample.xcframework'
   ]
 s.pod_target_xcconfig = {
   "USE_HEADERMAP" => "YES",

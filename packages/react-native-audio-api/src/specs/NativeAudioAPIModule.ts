@@ -15,6 +15,7 @@ interface Spec extends TurboModule {
     options: Array<string>,
     allowHaptics: boolean
   ): void;
+  disableSessionManagement(): void;
 
   // Lock Screen Info
   setLockScreenInfo(info: {
