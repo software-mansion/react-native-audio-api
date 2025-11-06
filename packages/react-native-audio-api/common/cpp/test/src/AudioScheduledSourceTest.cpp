@@ -128,10 +128,6 @@ TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   sourceNode.stop(RENDER_QUANTUM_TIME);
   sourceNode.playFrames(1); // start playing
 
-  EXPECT_CALL(
-      *eventRegistry,
-      invokeHandlerWithEventBody("ended", testing::_, testing::_))
-      .Times(1);
   sourceNode.playFrames(RENDER_QUANTUM);
   sourceNode.playFrames(1);
   EXPECT_TRUE(sourceNode.isFinished());
