@@ -14,7 +14,7 @@ static constexpr float tolerance = 0.0001f;
 namespace audioapi {
 class BiquadFilterTest : public ::testing::Test {
  protected:
-  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::unique_ptr<OfflineAudioContext> context;
 
   void SetUp() override {

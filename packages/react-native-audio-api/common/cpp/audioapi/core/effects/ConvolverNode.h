@@ -19,7 +19,7 @@ class AudioBuffer;
 
 class ConvolverNode : public AudioNode {
  public:
-    explicit ConvolverNode(BaseAudioContext *context, std::shared_ptr<AudioBuffer> buffer, bool disableNormalization);
+    explicit ConvolverNode(BaseAudioContext *context, const std::shared_ptr<AudioBuffer>& buffer, bool disableNormalization);
 
     [[nodiscard]] bool getNormalize_() const;
     [[nodiscard]] const std::shared_ptr<AudioBuffer> &getBuffer() const;

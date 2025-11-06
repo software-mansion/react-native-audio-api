@@ -21,8 +21,8 @@ function validateVersion() {
 }
 
 if (!validateVersion()) {
-  console.error(
-    'Incompatible version of react-native-audio-worklets detected. Please install a compatible version.',
+  console.warn(
+    '[RNAudioApi] Incompatible version of react-native-audio-worklets detected. Please install a compatible version if you want to use worklet nodes in react-native-audio-api.',
   );
   process.exit(1);
 }

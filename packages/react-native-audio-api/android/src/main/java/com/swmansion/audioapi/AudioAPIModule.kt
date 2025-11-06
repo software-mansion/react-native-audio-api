@@ -2,7 +2,6 @@ package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.LifecycleEventListener
-import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -27,7 +26,6 @@ class AudioAPIModule(
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
 
   private val mHybridData: HybridData
-  private var reanimatedModule: NativeModule? = null
 
   external fun initHybrid(
     workletsModule: Any?,

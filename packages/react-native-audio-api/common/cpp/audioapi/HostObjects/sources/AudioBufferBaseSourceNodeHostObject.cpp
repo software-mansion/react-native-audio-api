@@ -28,7 +28,7 @@ AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  sourceNode->clearOnPositionChangedCallback();
+  sourceNode->setOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {

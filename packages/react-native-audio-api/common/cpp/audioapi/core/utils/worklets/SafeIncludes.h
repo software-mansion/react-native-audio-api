@@ -5,6 +5,10 @@
 #include <string>
 #include <memory>
 
+#if ANDROID
+  #include <fbjni/detail/Environment.h>
+#endif
+
 #ifndef RN_AUDIO_API_TEST
   #define RN_AUDIO_API_TEST 0
 #endif
@@ -68,4 +72,14 @@ class SerializableWorklet {
 struct RuntimeRegistry {
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
   std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
+
+#if ANDROID
+    ~RuntimeRegistry() {
+        facebook::jni::ThreadScope::WithClassLoader(
+            [this]() {
+                uiRuntime.reset();
+                audioRuntime.reset();
+            });
+    }
+#endif
 };

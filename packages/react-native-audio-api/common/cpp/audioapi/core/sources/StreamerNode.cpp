@@ -25,10 +25,10 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       codecpar_(nullptr),
       pkt_(nullptr),
       frame_(nullptr),
-      bufferedBus_(nullptr),
-      audio_stream_index_(-1),
       swrCtx_(nullptr),
       resampledData_(nullptr),
+      bufferedBus_(nullptr),
+      audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {}
 

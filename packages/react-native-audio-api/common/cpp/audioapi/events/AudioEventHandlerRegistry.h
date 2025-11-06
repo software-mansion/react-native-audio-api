@@ -20,7 +20,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
   explicit AudioEventHandlerRegistry(
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
-  ~AudioEventHandlerRegistry();
+  ~AudioEventHandlerRegistry() override;
 
   uint64_t registerHandler(const std::string &eventName, const std::shared_ptr<jsi::Function> &handler) override;
   void unregisterHandler(const std::string &eventName, uint64_t listenerId) override;
