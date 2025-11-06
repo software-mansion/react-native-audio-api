@@ -3290,6 +3290,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/semver@npm:7.7.1":
+  version: 7.7.1
+  resolution: "@types/semver@npm:7.7.1"
+  checksum: 10/8f09e7e6ca3ded67d78ba7a8f7535c8d9cf8ced83c52e7f3ac3c281fe8c689c3fe475d199d94390dc04fc681d51f2358b430bb7b2e21c62de24f2bee2c719068
+  languageName: node
+  linkType: hard
+
 "@types/semver@npm:^7.3.12":
   version: 7.7.0
   resolution: "@types/semver@npm:7.7.0"
@@ -10906,6 +10913,7 @@ __metadata:
     "@types/node": "npm:^18.0.0"
     "@types/react": "npm:^19.1.1"
     "@types/react-test-renderer": "npm:^19.1.0"
+    "@types/semver": "npm:7.7.1"
     babel-plugin-module-resolver: "npm:^4.1.0"
     commitlint: "npm:^17.0.2"
     del-cli: "npm:^5.1.0"
