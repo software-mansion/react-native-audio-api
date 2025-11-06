@@ -5,44 +5,6 @@ namespace audioapi {
 
 using namespace facebook;
 
-jsi::Value PromiseVendor::createPromise(
-    const std::function<void(std::shared_ptr<Promise>)> &function) {
-  if (runtime_ == nullptr) {
-    throw std::runtime_error("Runtime was null!");
-  }
-
-  auto &runtime = *runtime_;
-  auto callInvoker = callInvoker_;
-
-  // get Promise constructor
-  auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-
-  // create a "run" function (first Promise arg)
-  auto runPromise = jsi::Function::createFromHostFunction(
-      runtime,
-      jsi::PropNameID::forUtf8(runtime, "runPromise"),
-      2,
-      [callInvoker, function](
-          jsi::Runtime &runtime,
-          const jsi::Value &thisValue,
-          const jsi::Value *arguments,
-          size_t count) mutable -> jsi::Value {
-        auto resolveLocal = arguments[0].asObject(runtime).asFunction(runtime);
-        auto rejectLocal = arguments[1].asObject(runtime).asFunction(runtime);
-
-        auto promise = std::make_shared<Promise>(
-            std::move(callInvoker),
-            std::move(resolveLocal),
-            std::move(rejectLocal));
-        function(promise);
-
-        return jsi::Value::undefined();
-      });
-
-  // return new Promise((resolve, reject) => ...)
-  return promiseCtor.callAsConstructor(runtime, runPromise);
-}
-
 jsi::Value PromiseVendor::createAsyncPromise(
     std::function<PromiseResolver()> &&function) {
   auto &runtime = *runtime_;
