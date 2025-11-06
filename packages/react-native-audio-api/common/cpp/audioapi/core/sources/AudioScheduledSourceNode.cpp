@@ -78,7 +78,6 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess;
 
-
   size_t startFrame =
       std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
   size_t stopFrame = stopTime_ == -1.0

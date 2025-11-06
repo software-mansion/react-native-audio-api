@@ -86,7 +86,7 @@ void AudioBufferQueueSourceNode::disable() {
     startTime_ = -1.0;
     stopTime_ = -1.0;
     isPaused_ = false;
-    
+
     return;
   }
 
