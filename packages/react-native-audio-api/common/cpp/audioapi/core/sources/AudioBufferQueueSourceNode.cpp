@@ -41,8 +41,8 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
   }
 
   offset = std::min(offset, buffers_.front().second->getDuration());
-  vReadIndex_ = static_cast<double>(
-      buffers_.front().second->getSampleRate() * offset);
+  vReadIndex_ =
+      static_cast<double>(buffers_.front().second->getSampleRate() * offset);
 }
 
 void AudioBufferQueueSourceNode::pause() {
