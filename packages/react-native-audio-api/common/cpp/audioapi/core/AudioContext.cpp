@@ -51,17 +51,13 @@ bool AudioContext::resume() {
     return true;
   }
 
-  if (!playerHasBeenStarted_) {
-    if (audioPlayer_->start()) {
-      playerHasBeenStarted_ = true;
-      state_ = ContextState::RUNNING;
-      return true;
-    }
-  } else {
-    if (audioPlayer_->resume()) {
-      state_ = ContextState::RUNNING;
-      return true;
-    }
+  if (!playerHasBeenStarted_ && audioPlayer_->start()) {
+    playerHasBeenStarted_ = true;
+    state_ = ContextState::RUNNING;
+    return true;
+  } else if (playerHasBeenStarted_ && audioPlayer_->resume()) {
+    state_ = ContextState::RUNNING;
+    return true;
   }
 
   return false;
