@@ -20,9 +20,6 @@ user experience, and maintainability. Here are some key best practices to consid
   Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
   Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to [`state_paused`](/docs/system/audio-manager#lockscreeninfo).
 
-- **Create AudioContext with initSuspended**: When creating a new instance of `AudioContext`, consider setting the `initSuspended` option to `true`.
-  This ensures that the audio context starts in a suspended state. This is particularly useful for applications that do not want to interrupt other audio applications upon launch.
-
 ## React hooks vs React Native Audio API
 
 - **Create singleton class to manage audio layer**: Instead of storing `AudioContext` or nodes directly in your React components using `useState` or `useRef`,
