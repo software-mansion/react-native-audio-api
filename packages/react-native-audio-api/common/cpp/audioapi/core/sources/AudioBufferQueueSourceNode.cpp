@@ -31,10 +31,18 @@ void AudioBufferQueueSourceNode::stop(double when) {
   isPaused_ = false;
 }
 
-void AudioBufferQueueSourceNode::start(double when) {
+void AudioBufferQueueSourceNode::start(double when, double offset) {
   isPaused_ = false;
   stopTime_ = -1.0;
   AudioScheduledSourceNode::start(when);
+
+  if (buffers_.empty()) {
+    return;
+  }
+
+  offset = std::min(offset, buffers_.front().second->getDuration());
+  vReadIndex_ = static_cast<double>(
+      buffers_.front().second->getSampleRate() * offset);
 }
 
 void AudioBufferQueueSourceNode::pause() {

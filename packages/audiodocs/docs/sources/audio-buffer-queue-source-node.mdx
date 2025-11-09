@@ -81,6 +81,16 @@ Removes all buffers from the queue. Note that `onEnded` event will not be fired 
 
 #### Returns `undefined`.
 
+### `start` <Overridden /> {#start}
+
+Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](/docs/sources/audio-buffer), or starts to play immediately.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to 0, the node starts playing immediately. <br /> Default: `0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
+
+
 ### `pause`
 
 Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,

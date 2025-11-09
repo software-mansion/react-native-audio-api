@@ -21,7 +21,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     ~AudioBufferQueueSourceNode() override;
 
     void stop(double when) override;
-    void start(double when) override;
+
+    using AudioScheduledSourceNode::start;
+    void start(double when, double offset);
     void pause();
 
     std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);

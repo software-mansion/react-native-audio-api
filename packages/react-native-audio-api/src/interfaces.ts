@@ -187,6 +187,7 @@ export interface IAudioBufferQueueSourceNode
 
   // returns bufferId
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
+  start: (when?: number, offset?: number) => void;
   pause: () => void;
 }
 

@@ -8,11 +8,26 @@ namespace audioapi {
 AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
     const std::shared_ptr<AudioBufferQueueSourceNode> &node)
     : AudioBufferBaseSourceNodeHostObject(node) {
+  functions_->erase("start");
+
   addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
+  auto when = args[0].getNumber();
+  auto offset = args[1].getNumber();
+
+  auto audioBufferQueueSourceNode =
+      std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+
+  audioBufferQueueSourceNode->start(when, offset);
+
+  return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
@@ -41,7 +56,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {
   auto audioBufferQueueSourceNode =
       std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-  auto bufferId = args[0].getNumber();
+  auto bufferId = static_cast<size_t>(args[0].getNumber());
 
   audioBufferQueueSourceNode->dequeueBuffer(bufferId);
 
