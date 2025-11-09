@@ -24,7 +24,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST
   if (auto context = dynamic_cast<AudioContext *>(context_)) {
-      context->start();
+    context->start();
   }
 #endif
 
