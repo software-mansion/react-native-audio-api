@@ -22,6 +22,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   void setOnPositionChangedCallbackId(uint64_t callbackId);
   void setOnPositionChangedInterval(int interval);
   [[nodiscard]] int getOnPositionChangedInterval() const;
+  [[nodiscard]] double getInputLatency() const;
+  [[nodiscard]] double getOutputLatency() const;
 
  protected:
     // pitch correction

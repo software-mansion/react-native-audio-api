@@ -24,8 +24,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   [[nodiscard]] double getLoopStart() const;
   [[nodiscard]] double getLoopEnd() const;
   [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
-  [[nodiscard]] double getInputLatency() const;
-  [[nodiscard]] double getOutputLatency() const;
 
   void setLoop(bool loop);
   void setLoopSkip(bool loopSkip);

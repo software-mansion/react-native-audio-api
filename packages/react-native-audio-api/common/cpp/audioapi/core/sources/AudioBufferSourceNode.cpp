@@ -51,22 +51,6 @@ std::shared_ptr<AudioBuffer> AudioBufferSourceNode::getBuffer() const {
   return buffer_;
 }
 
-double AudioBufferSourceNode::getInputLatency() const {
-  if (pitchCorrection_) {
-    return static_cast<double>(stretch_->inputLatency()) /
-        context_->getSampleRate();
-  }
-  return 0;
-}
-
-double AudioBufferSourceNode::getOutputLatency() const {
-  if (pitchCorrection_) {
-    return static_cast<double>(stretch_->outputLatency()) /
-        context_->getSampleRate();
-  }
-  return 0;
-}
-
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
 }

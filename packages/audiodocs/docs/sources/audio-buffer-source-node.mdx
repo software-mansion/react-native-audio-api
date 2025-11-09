@@ -42,7 +42,9 @@ interface AudioBufferBaseSourceNodeOptions {
 :::caution
 The pitch correction algorithm introduces processing latency.
 As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
-For more details, see [getLatency()](/docs/sources/audio-buffer-source-node#getlatency).
+For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+
+If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node)
 :::
 
 ## Example
@@ -104,33 +106,6 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 | `InvalidStateError` | If node has already been started once. |
 
 #### Returns `undefined`.
-
-
-### `getLatency`
-
-Returns the playback latency introduced by the pitch correction algorithm, in seconds.
-When scheduling precise playback times, start input samples this many seconds earlier to compensate for processing delay.
-Typically around `0.06s` when pitch correction is enabled, and `0` otherwise.
-
-If you plan to play multiple buffers one after another, consider using [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node)
-
-
-#### Returns `number`.
-
-<details>
-<summary>Example usage</summary>
-```tsx
-const source = audioContext.createBufferSource({ pitchCorrection: true });
-source.buffer = buffer;
-source.connect(audioContext.destination);
-
-const latency = source.getLatency();
-
-// Schedule playback slightly earlier to compensate for latency
-const startTime = audioContext.currentTime + 1.0; // play in 1 second
-source.start(startTime - latency);
-```
-</details>
 
 
 ## Events

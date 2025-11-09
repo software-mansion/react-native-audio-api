@@ -32,8 +32,6 @@ class AudioBufferSourceNodeHostObject
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(setBuffer);
-  JSI_HOST_FUNCTION_DECL(getInputLatency);
-  JSI_HOST_FUNCTION_DECL(getOutputLatency);
 };
 
 } // namespace audioapi

@@ -60,6 +60,22 @@ std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
   return bufferLock_;
 }
 
+double AudioBufferBaseSourceNode::getInputLatency() const {
+  if (pitchCorrection_) {
+    return static_cast<double>(stretch_->inputLatency()) /
+        context_->getSampleRate();
+  }
+  return 0;
+}
+
+double AudioBufferBaseSourceNode::getOutputLatency() const {
+  if (pitchCorrection_) {
+    return static_cast<double>(stretch_->outputLatency()) /
+        context_->getSampleRate();
+  }
+  return 0;
+}
+
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   auto onPositionChangedCallbackId =
       onPositionChangedCallbackId_.load(std::memory_order_acquire);

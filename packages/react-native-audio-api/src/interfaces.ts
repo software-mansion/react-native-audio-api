@@ -144,6 +144,9 @@ export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
 
+  getInputLatency: () => number;
+  getOutputLatency: () => number;
+
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
   // set how often the onPositionChanged event is called
@@ -175,8 +178,6 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
 
   start: (when?: number, offset?: number, duration?: number) => void;
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
-  getInputLatency: () => number;
-  getOutputLatency: () => number;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onLoopEnded: string;

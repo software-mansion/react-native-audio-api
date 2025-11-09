@@ -24,6 +24,9 @@ class AudioBufferBaseSourceNodeHostObject
 
     JSI_PROPERTY_SETTER_DECL(onPositionChanged);
     JSI_PROPERTY_SETTER_DECL(onPositionChangedInterval);
+
+    JSI_HOST_FUNCTION_DECL(getInputLatency);
+    JSI_HOST_FUNCTION_DECL(getOutputLatency);
 };
 
 } // namespace audioapi

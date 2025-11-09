@@ -22,6 +22,12 @@ interface AudioBufferBaseSourceNodeOptions {
 }
 ```
 
+:::caution
+The pitch correction algorithm introduces processing latency.
+As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
+For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+:::
+
 ## Example
 
 ```tsx
