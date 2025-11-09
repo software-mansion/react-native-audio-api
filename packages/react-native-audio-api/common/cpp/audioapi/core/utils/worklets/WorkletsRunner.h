@@ -28,7 +28,7 @@ class WorkletsRunner {
  public:
   explicit WorkletsRunner(
     std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
-    std::shared_ptr<worklets::SerializableWorklet> shareableWorklet,
+    const std::shared_ptr<worklets::SerializableWorklet>& shareableWorklet,
     bool shouldLockRuntime = true);
   WorkletsRunner(WorkletsRunner&&);
   ~WorkletsRunner();

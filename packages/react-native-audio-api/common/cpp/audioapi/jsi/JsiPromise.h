@@ -17,20 +17,45 @@ namespace audioapi {
 using namespace facebook;
 
 class Promise {
+  struct Inner {
+    std::shared_ptr<react::CallInvoker> callInvoker;
+    jsi::Function resolve;
+    jsi::Function reject;
+  };
+
  public:
-  Promise(std::function<void(const std::function<jsi::Value(jsi::Runtime&)>)> resolve, std::function<void(const std::string &)> reject) : resolve_(std::move(resolve)), reject_(std::move(reject)) {}
+    explicit Promise(std::shared_ptr<react::CallInvoker> &&callInvoker, jsi::Function &&resolve, jsi::Function &&reject):
+      inner_(std::make_shared<Inner>(Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
 
-  void resolve(const std::function<jsi::Value(jsi::Runtime&)> &resolver) {
-    resolve_(std::forward<const std::function<jsi::Value(jsi::Runtime&)>>(resolver));
-  }
+    Promise(const Promise &other) {
+      inner_ = other.inner_;
+    }
+    Promise(Promise &&other) noexcept : inner_(std::move(other.inner_)) {}
+    Promise& operator=(Promise &&other) noexcept {
+      if (this != &other) {
+        inner_ = std::move(other.inner_);
+      }
+      return *this;
+    }
 
-  void reject(const std::string &errorMessage) {
-    reject_(errorMessage);
-  }
+    void resolve(const std::function<jsi::Value(jsi::Runtime&)> &&resolver) const {
+      auto inner = inner_;
+      inner->callInvoker->invokeAsync([inner = std::move(inner), resolver = std::forward<decltype(resolver)>(resolver)](jsi::Runtime &runtime) -> void {
+        auto valueShared = std::make_shared<jsi::Value>(resolver(runtime));
+        inner->resolve.call(runtime, *valueShared);
+      });
+    }
+
+    void reject(const std::string &errorMessage) const {
+      auto inner = inner_;
+      inner->callInvoker->invokeAsync([inner = std::move(inner), errorMessage](jsi::Runtime &runtime) -> void {
+        auto error = jsi::JSError(runtime, errorMessage);
+        inner->reject.call(runtime, error.value());
+      });
+    }
 
  private:
-  std::function<void(const std::function<jsi::Value(jsi::Runtime&)>)> resolve_;
-  std::function<void(const std::string &)> reject_;
+  std::shared_ptr<Inner> inner_;
 };
 
 using PromiseResolver = std::function<std::variant<jsi::Value, std::string>(jsi::Runtime&)>;
@@ -42,8 +67,6 @@ class PromiseVendor {
       audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
       audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
       audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
-
-  jsi::Value createPromise(const std::function<void(std::shared_ptr<Promise>)> &function);
 
   /// @brief Creates an asynchronous promise.
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.
@@ -65,6 +88,13 @@ class PromiseVendor {
   ///
   /// return promise;
   jsi::Value createAsyncPromise(std::function<PromiseResolver()> &&function);
+
+  /// @brief Creates an asynchronous promise.
+  /// @param function The function to execute asynchronously. It receives a Promise object to resolve or reject the promise.
+  /// @return The created promise.
+  /// @note The function is executed on a different thread, the promise should be resolved or rejected using the provided Promise object.
+  /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only. (comes from underlying ThreadPool implementation)
+  jsi::Value createAsyncPromise(std::function<void(Promise&&)> &&function);
 
  private:
   jsi::Runtime *runtime_;

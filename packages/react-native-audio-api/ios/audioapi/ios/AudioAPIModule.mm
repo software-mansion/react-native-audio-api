@@ -118,15 +118,16 @@ RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
         reject)
 {
-  if (!self.audioSessionManager.shouldManageSession) {
-    [self.audioSessionManager setShouldManageSession:true];
-  }
-  if ([self.audioSessionManager setActive:enabled]) {
-    resolve(@"true");
-    return;
-  }
-
-  resolve(@"false");
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    if (!self.audioSessionManager.shouldManageSession) {
+      [self.audioSessionManager setShouldManageSession:true];
+    }
+    if ([self.audioSessionManager setActive:enabled]) {
+      resolve(@"true");
+      return;
+    }
+    resolve(@"false");
+  });
 }
 
 RCT_EXPORT_METHOD(
@@ -173,19 +174,25 @@ RCT_EXPORT_METHOD(
     requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
         reject)
 {
-  [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
     checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
     getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(disableSessionManagement)
@@ -231,6 +238,11 @@ RCT_EXPORT_METHOD(disableSessionManagement)
   if (_eventHandler != nullptr) {
     _eventHandler->invokeHandlerWithEventBody(name, body);
   }
+}
+
+- (dispatch_queue_t)methodQueue
+{
+  return dispatch_queue_create("swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
 }
 
 @end

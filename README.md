@@ -19,18 +19,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 ### Planned
 
-### <img src="https://img.shields.io/badge/Coming_in-0.9.0-orange" />
-
-- **JS Audio Worklets V1 🐎**<br />
-  Receive events and data callbacks from audio thread to synchronize with UI on UI thread.
-
 ### <img src="https://img.shields.io/badge/Coming_in-x.x.x-orange" />
-
-- **Convolver Node 🐐**<br />
-  Realistic reverb and spatial effects in the browser by applying impulse responses. It makes audio sound like it’s being played in real spaces, from small rooms to cathedrals, or through hardware like amps and speakers
-
-- **Decoding and utility modules 🔧**<br />
-  Decode and modify audio data without the need to create AudioContext first through a set of utility classes
 
 - **DynamicCompressorNode 〽️**<br />
   Reduce the volume of loud sounds and boost quieter nodes to balance the audio signal, avoid clipping or distorted sounds
@@ -47,8 +36,21 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **Noise Cancellation 🦇**<br />
   System-based active noise and echo cancellation support
 
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.10.0"><img src="https://img.shields.io/badge/Released_in-0.10.0-green" /></a>
+
+- **Decoding and utility modules 🔧**<br />
+  Decode and modify audio data without the need to create AudioContext first through a set of utility classes
+
+- **Convolver Node 🐐**<br />
+  Realistic reverb and spatial effects in the browser by applying impulse responses. It makes audio sound like it’s being played in real spaces, from small rooms to cathedrals, or through hardware like amps and speakers
+
 - **JS Audio Worklets V2 🐎**<br />
   Customize the process pipeline with JS functions running on audio thread.
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.9.0"><img src="https://img.shields.io/badge/Released_in-0.9.0-green" /></a>
+
+- **JS Audio Worklets V1 🐎**<br />
+  Receive events and data callbacks from audio thread to synchronize with UI on UI thread.
 
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.8.0"><img src="https://img.shields.io/badge/Released_in-0.8.0-green" /></a>
 

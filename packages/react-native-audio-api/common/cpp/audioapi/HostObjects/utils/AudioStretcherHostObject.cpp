@@ -24,32 +24,21 @@ JSI_HOST_FUNCTION_IMPL(AudioStretcherHostObject, changePlaybackSpeed) {
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   auto playbackSpeed = static_cast<float>(args[1].asNumber());
 
-  auto promise = promiseVendor_->createPromise(
-      [audioBuffer, playbackSpeed](std::shared_ptr<Promise> promise) {
-        std::thread([audioBuffer,
-                     playbackSpeed,
-                     promise = std::move(promise)]() {
-          auto result = AudioStretcher::changePlaybackSpeed(
-              *audioBuffer->audioBuffer_, playbackSpeed);
+  auto promise = promiseVendor_->createAsyncPromise([=]() -> PromiseResolver {
+    auto result = AudioStretcher::changePlaybackSpeed(
+        *audioBuffer->audioBuffer_, playbackSpeed);
 
-          if (!result) {
-            promise->reject("Failed to change audio playback speed.");
-            return;
-          }
-
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(result);
-
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
-      });
+    if (result == nullptr) {
+      return [](jsi::Runtime &runtime) {
+        return std::string("Failed to change audio playback speed.");
+      };
+    }
+    return [result](jsi::Runtime &runtime) {
+      auto audioBufferHostObject =
+          std::make_shared<AudioBufferHostObject>(result);
+      return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+    };
+  });
   return promise;
 }
 

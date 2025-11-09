@@ -17,8 +17,8 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
   MOCK_METHOD(void, unregisterHandler,
               (const std::string &eventName, uint64_t listenerId), (override));
 
-  MOCK_METHOD(void, invokeHandlerWithEventBody,
-              (const std::string &eventName, const EventMap &body), (override));
-  MOCK_METHOD(void, invokeHandlerWithEventBody,
-              (const std::string &eventName, uint64_t listenerId, const EventMap &body), (override));
+  MOCK_METHOD2(invokeHandlerWithEventBody, void
+              (const std::string &eventName, const EventMap &body));
+  MOCK_METHOD3(invokeHandlerWithEventBody, void
+              (const std::string &eventName, uint64_t listenerId, const EventMap &body));
 };

@@ -10,7 +10,7 @@ using namespace audioapi;
 
 class ConstantSourceTest : public ::testing::Test {
  protected:
-  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::unique_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 

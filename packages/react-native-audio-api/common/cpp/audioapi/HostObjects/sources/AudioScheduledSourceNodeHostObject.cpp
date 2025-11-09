@@ -22,7 +22,7 @@ AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  audioScheduledSourceNode->clearOnEndedCallback();
+  audioScheduledSourceNode->setOnEndedCallbackId(0);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onEnded) {
