@@ -96,12 +96,11 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
-          auto initSuspended = args[1].getBool();
 
           #if RN_AUDIO_API_ENABLE_WORKLETS
               auto runtimeRegistry = RuntimeRegistry{
                   .uiRuntime = uiRuntime,
-                  .audioRuntime = worklets::extractWorkletRuntime(runtime, args[2])
+                  .audioRuntime = worklets::extractWorkletRuntime(runtime, args[1])
               };
           #else
               auto runtimeRegistry = RuntimeRegistry{};
@@ -109,7 +108,6 @@ class AudioAPIModuleInstaller {
 
           audioContext = std::make_shared<AudioContext>(
               sampleRate,
-              initSuspended,
               audioEventHandlerRegistry,
               runtimeRegistry);
           AudioAPIModuleInstaller::contexts_.push_back(audioContext);

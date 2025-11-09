@@ -13,7 +13,6 @@ import type {
 declare global {
   var createAudioContext: (
     sampleRate: number,
-    initSuspended: boolean,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     audioWorkletRuntime: any
   ) => IAudioContext;

@@ -11,7 +11,6 @@
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
-    bool initSuspended,
     const std::shared_ptr<IAudioEventHandlerRegistry>
         &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
@@ -25,17 +24,8 @@ AudioContext::AudioContext(
 #endif
 
   sampleRate_ = sampleRate;
-
-  if (initSuspended) {
-    playerHasBeenStarted_ = false;
-    state_ = ContextState::SUSPENDED;
-
-    return;
-  }
-
-  playerHasBeenStarted_ = true;
-  audioPlayer_->start();
-  state_ = ContextState::RUNNING;
+  playerHasBeenStarted_ = false;
+  state_ = ContextState::SUSPENDED;
 }
 
 AudioContext::~AudioContext() {
@@ -67,13 +57,11 @@ bool AudioContext::resume() {
       state_ = ContextState::RUNNING;
       return true;
     }
-
-    return false;
-  }
-
-  if (audioPlayer_->resume()) {
-    state_ = ContextState::RUNNING;
-    return true;
+  } else {
+    if (audioPlayer_->resume()) {
+      state_ = ContextState::RUNNING;
+      return true;
+    }
   }
 
   return false;
@@ -92,6 +80,13 @@ bool AudioContext::suspend() {
 
   state_ = ContextState::SUSPENDED;
   return true;
+}
+
+void AudioContext::start() {
+  if (!playerHasBeenStarted_ && audioPlayer_->start()) {
+    playerHasBeenStarted_ = true;
+    state_ = ContextState::RUNNING;
+  }
 }
 
 std::function<void(std::shared_ptr<AudioBus>, int)>
