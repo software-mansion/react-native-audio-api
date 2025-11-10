@@ -15,7 +15,10 @@
 
     __weak typeof(self) weakSelf = self;
     self.renderBlock = ^OSStatus(
-        BOOL *isSilence, const AudioTimeStamp *timestamp, AVAudioFrameCount frameCount, AudioBufferList *outputData) {
+        BOOL *isSilence,
+        const AudioTimeStamp *timestamp,
+        AVAudioFrameCount frameCount,
+        AudioBufferList *outputData) {
       if (outputData->mNumberBuffers != weakSelf.channelCount) {
         return kAudioServicesBadPropertySizeError;
       }
@@ -25,8 +28,11 @@
       return kAudioServicesNoError;
     };
 
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate channels:self.channelCount];
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format renderBlock:self.renderBlock];
+    _format = [[AVAudioFormat alloc]
+        initStandardFormatWithSampleRate:self.sampleRate
+                                channels:self.channelCount];
+    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
+                                                renderBlock:self.renderBlock];
   }
 
   return self;
@@ -47,7 +53,8 @@
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
   [audioEngine stopEngine];
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
+  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode
+                                             format:self.format];
   return [audioEngine startIfNecessary];
 }
 

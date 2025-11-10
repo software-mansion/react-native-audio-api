@@ -20,7 +20,9 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext]() {
     audioContext->resume();
-    return [](jsi::Runtime &runtime) { return jsi::Value::undefined(); };
+    return [](jsi::Runtime &runtime) {
+      return jsi::Value::undefined();
+    };
   });
 
   return promise;

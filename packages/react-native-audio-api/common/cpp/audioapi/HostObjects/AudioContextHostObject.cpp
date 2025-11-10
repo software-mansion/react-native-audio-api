@@ -33,7 +33,9 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   auto promise = promiseVendor_->createAsyncPromise(
       [audioContext = std::move(audioContext)]() {
         auto result = audioContext->resume();
-        return [result](jsi::Runtime &runtime) { return jsi::Value(result); };
+        return [result](jsi::Runtime &runtime) {
+          return jsi::Value(result);
+        };
       });
   return promise;
 }
@@ -43,7 +45,9 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   auto promise = promiseVendor_->createAsyncPromise(
       [audioContext = std::move(audioContext)]() {
         auto result = audioContext->suspend();
-        return [result](jsi::Runtime &runtime) { return jsi::Value(result); };
+        return [result](jsi::Runtime &runtime) {
+          return jsi::Value(result);
+        };
       });
 
   return promise;
