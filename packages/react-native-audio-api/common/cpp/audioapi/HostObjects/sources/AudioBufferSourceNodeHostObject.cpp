@@ -64,7 +64,10 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, buffer) {
   }
 
   auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-  return jsi::Object::createFromHostObject(runtime, bufferHostObject);
+  auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
+  jsiObject.setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes() + 16);
+  return jsiObject;
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loopStart) {

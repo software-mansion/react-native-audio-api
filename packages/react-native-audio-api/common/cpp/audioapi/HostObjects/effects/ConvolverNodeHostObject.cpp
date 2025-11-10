@@ -11,9 +11,8 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, buffer));
-  addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(ConvolverNodeHostObject, normalize),
-      JSI_EXPORT_PROPERTY_SETTER(ConvolverNodeHostObject, buffer));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(ConvolverNodeHostObject, normalize));
+  addFunctions(JSI_EXPORT_FUNCTION(ConvolverNodeHostObject, setBuffer));
 }
 
 JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, normalize) {
@@ -25,7 +24,10 @@ JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, buffer) {
   auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
   auto buffer = convolverNode->getBuffer();
   auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-  return jsi::Object::createFromHostObject(runtime, bufferHostObject);
+  auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
+  jsiObject.setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes() + 16);
+  return jsiObject;
 }
 
 JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
@@ -33,15 +35,18 @@ JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
   convolverNode->setNormalize(value.getBool());
 }
 
-JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, buffer) {
+JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
-  if (value.isNull()) {
+  if (args[0].isUndefined()) {
     convolverNode->setBuffer(nullptr);
-    return;
+    return jsi::Value::undefined();
   }
 
   auto bufferHostObject =
-      value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+      args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   convolverNode->setBuffer(bufferHostObject->audioBuffer_);
+  thisValue.asObject(runtime).setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes() + 16);
+  return jsi::Value::undefined();
 }
 } // namespace audioapi

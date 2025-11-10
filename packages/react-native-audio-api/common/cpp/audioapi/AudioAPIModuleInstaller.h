@@ -192,8 +192,12 @@ class AudioAPIModuleInstaller {
               std::make_shared<AudioRecorderHostObject>(
                   audioEventHandlerRegistry, sampleRate, bufferLength);
 
-          return jsi::Object::createFromHostObject(
+          auto jsiObject = jsi::Object::createFromHostObject(
               runtime, audioRecorderHostObject);
+          jsiObject.setExternalMemoryPressure(
+              runtime, 4 * bufferLength); // rough estimate of underlying buffer
+
+          return jsiObject;
         });
   }
 

@@ -121,7 +121,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
       shouldLockRuntime);
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
-  return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+  auto jsiObject =
+      jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+  jsiObject.setExternalMemoryPressure(
+      runtime,
+      4 * bufferLength *
+          inputChannelCount); // rough estimate of underlying buffer
+  return jsiObject;
 #endif
   return jsi::Value::undefined();
 }
@@ -285,6 +291,14 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   }
   auto convolverHostObject =
       std::make_shared<ConvolverNodeHostObject>(convolver);
-  return jsi::Object::createFromHostObject(runtime, convolverHostObject);
+  auto jsiObject =
+      jsi::Object::createFromHostObject(runtime, convolverHostObject);
+  if (!args[0].isUndefined()) {
+    auto bufferHostObject =
+        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    jsiObject.setExternalMemoryPressure(
+        runtime, bufferHostObject->getSizeInBytes());
+  }
+  return jsiObject;
 }
 } // namespace audioapi
