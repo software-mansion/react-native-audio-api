@@ -184,7 +184,7 @@ void AudioParam::setTargetAtTime(
         startTime, // SetTarget events have infinite duration conceptually
         param.getQueueEndValue(),
         param.getQueueEndValue(), // End value is not meaningful for
-        // infinite events
+                                  // infinite events
         std::move(calculateValue),
         ParamChangeEventType::SET_TARGET));
   };

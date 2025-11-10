@@ -247,7 +247,8 @@
 {
   id value = [[NSBundle mainBundle]
       objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
-  // if there is no entry NSMicrophoneUsageDescription calling requestRecordPermission will quit an app
+  // if there is no entry NSMicrophoneUsageDescription calling
+  // requestRecordPermission will quit an app
   if (value == nil) {
     reject(
         nil,

@@ -314,7 +314,7 @@ void add(
     }
 
   } else if (source2Aligned && !destAligned) { // source2 aligned but dest not
-    // aligned
+                                               // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       pSource2 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector2));
@@ -327,7 +327,7 @@ void add(
     }
 
   } else if (!source2Aligned && destAligned) { // source2 not aligned but dest
-    // aligned
+                                               // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       source2 = _mm_loadu_ps(inputVector2);
@@ -339,7 +339,7 @@ void add(
       outputVector += 4;
     }
   } else if (!source2Aligned && !destAligned) { // both source2 and dest not
-    // aligned
+                                                // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       source2 = _mm_loadu_ps(inputVector2);
@@ -418,7 +418,7 @@ void subtract(
       outputVector += 4;
     }
   } else if (source2Aligned && !destAligned) { // source2 aligned but dest not
-    // aligned
+                                               // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       pSource2 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector2));
@@ -430,7 +430,7 @@ void subtract(
       outputVector += 4;
     }
   } else if (!source2Aligned && destAligned) { // source2 not aligned but dest
-    // aligned
+                                               // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       source2 = _mm_loadu_ps(inputVector2);
@@ -442,7 +442,7 @@ void subtract(
       outputVector += 4;
     }
   } else if (!source2Aligned && !destAligned) { // both source2 and dest not
-    // aligned
+                                                // aligned
     while (group--) {
       pSource1 = reinterpret_cast<__m128 *>(const_cast<float *>(inputVector1));
       source2 = _mm_loadu_ps(inputVector2);

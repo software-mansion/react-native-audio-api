@@ -311,7 +311,7 @@ float PeriodicWave::doInterpolation(
     higherWaveDataSample =
         (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
   } else if (phaseIncrement >= interpolate3Point) { // 3-point Lagrange
-    // interpolation
+                                                    // interpolation
     int indices[3];
 
     for (int i = 0; i < 3; i++) {

@@ -26,7 +26,7 @@ using namespace worklets;
 
 #if defined(RCT_NEW_ARCH_ENABLED)
 // nothing
-#else // defined(RCT_NEW_ARCH_ENABLED)
+#else  // defined(RCT_NEW_ARCH_ENABLED)
 @interface RCTBridge (RCTTurboModule)
 - (std::shared_ptr<facebook::react::CallInvoker>)jsCallInvoker;
 - (void)_tryAndHandleError:(dispatch_block_t)block;
@@ -74,7 +74,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
 #if defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = _callInvoker.callInvoker;
-#else // defined(RCT_NEW_ARCH_ENABLED)
+#else  // defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = self.bridge.jsCallInvoker;
 #endif // defined(RCT_NEW_ARCH_ENABLED)
 

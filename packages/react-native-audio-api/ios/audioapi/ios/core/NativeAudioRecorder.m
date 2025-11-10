@@ -89,8 +89,10 @@
     };
 
     /// IMPORTANT: AVAudioConverter leaks memory without autorelease pool
-    /// more details here: https://github.com/poneciak57/AVAudioConverter-memory-leak-repro-electric-boogaloo
-    /// we can try to remove it in the future or refactor to reuse buffers to minimize allocations
+    /// more details here:
+    /// https://github.com/poneciak57/AVAudioConverter-memory-leak-repro-electric-boogaloo
+    /// we can try to remove it in the future or refactor to reuse buffers to
+    /// minimize allocations
     @autoreleasepool {
       [self.audioConverter convertToBuffer:outputBuffer
                                      error:&error
@@ -117,13 +119,15 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  // AudioEngine allows us to attach and connect nodes at runtime but with few limitations
-  // in this case if it is the first recorder node and player started the engine we need to restart.
-  // It can be optimized by tracking if we haven't break rules of at runtime modifications from docs
+  // AudioEngine allows us to attach and connect nodes at runtime but with few
+  // limitations in this case if it is the first recorder node and player
+  // started the engine we need to restart. It can be optimized by tracking if
+  // we haven't break rules of at runtime modifications from docs
   // https://developer.apple.com/documentation/avfaudio/avaudioengine?language=objc
   //
-  // Currently we are restarting because we do not see any significant performance issue and case when
-  // you will need to start and stop recorder very frequently
+  // Currently we are restarting because we do not see any significant
+  // performance issue and case when you will need to start and stop recorder
+  // very frequently
   [audioEngine stopEngine];
   [audioEngine attachInputNode:self.sinkNode];
   [audioEngine startIfNecessary];

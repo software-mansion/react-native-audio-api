@@ -89,18 +89,18 @@ INSTANTIATE_TEST_SUITE_P(
     Frequencies,
     BiquadFilterFrequencyTest,
     ::testing::Values(
-        0.0f, // 0 Hz - the filter should block all input signal
-        10.0f, // very low frequency
+        0.0f,   // 0 Hz - the filter should block all input signal
+        10.0f,  // very low frequency
         350.0f, // default
         nyquistFrequency - 0.0001f, // frequency near Nyquist
-        nyquistFrequency)); // maximal frequency
+        nyquistFrequency));         // maximal frequency
 
 INSTANTIATE_TEST_SUITE_P(
     QEdgeCases,
     BiquadFilterQTestLowpassHighpass,
     ::testing::Values(
-        -770.63678f, // min value for lowpass and highpass
-        0.0f, // default
+        -770.63678f,  // min value for lowpass and highpass
+        0.0f,         // default
         770.63678f)); // max value for lowpass and highpass
 
 INSTANTIATE_TEST_SUITE_P(
