@@ -3,6 +3,7 @@ import {
   PeriodicWaveConstraints,
   OfflineAudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
+  BiquadFilterNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -74,8 +75,22 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new StereoPannerNode(this, this.context.createStereoPanner());
   }
 
-  createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  createBiquadFilter(options?: BiquadFilterNodeOptions): BiquadFilterNode {
+    const biquadFilterType = options?.type ?? 'lowpass';
+    const Q = options?.Q ?? 1;
+    const detune = options?.detune ?? 0;
+    const frequency = options?.frequency ?? 350;
+    const gain = options?.gain ?? 0;
+
+    return new BiquadFilterNode(
+      this,
+      this.context.createBiquadFilter(),
+      biquadFilterType,
+      Q,
+      detune,
+      frequency,
+      gain
+    );
   }
 
   createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
