@@ -23,7 +23,17 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 
 ## Constructor
 
-[`BaseAudioContext.createBiquadFilter()`](/docs/core/base-audio-context#createbiquadfilter)
+[`BaseAudioContext.createBiquadFilter(options: BiquadFilterNodeOptions)`](/docs/core/base-audio-context#createbiquadfilter)
+
+```jsx
+interface BiquadFilterNodeOptions {
+  type?: BiquadFilterType;
+  Q?: number;
+  detune?: number;
+  frequency?: number;
+  gain?: number;
+}
+```
 
 ## Properties
 
