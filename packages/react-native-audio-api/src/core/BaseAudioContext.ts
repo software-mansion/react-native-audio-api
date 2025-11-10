@@ -25,6 +25,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import IIRFilterNode from './IIRFilterNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
@@ -202,6 +203,17 @@ export default class BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createIIRFilter(
+    feedforward: Float32Array,
+    feedback: Float32Array
+  ): IIRFilterNode {
+    // add throwing errors
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(feedforward, feedback)
+    );
   }
 
   createBufferSource(
