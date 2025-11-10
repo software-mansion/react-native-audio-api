@@ -15,13 +15,13 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
+  explicit AudioContext(float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
 
   void close();
   bool resume();
   bool suspend();
-
+  bool start();
 
  private:
 #ifdef ANDROID

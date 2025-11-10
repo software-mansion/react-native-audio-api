@@ -17,7 +17,7 @@ class AudioPlayer {
   private onPositionChanged: ((offset: number) => void) | null = null;
 
   constructor() {
-    this.audioContext = new AudioContext({ initSuspended: true });
+    this.audioContext = new AudioContext();
   }
 
   play = async () => {
@@ -93,7 +93,8 @@ class AudioPlayer {
   loadBuffer = async (url: string) => {
     const buffer = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+        'User-Agent':
+          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
       },
     })
       .then((response) => response.arrayBuffer())

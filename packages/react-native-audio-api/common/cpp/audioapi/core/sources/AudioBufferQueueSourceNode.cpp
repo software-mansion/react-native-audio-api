@@ -17,6 +17,19 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
   buffers_ = {};
   stretch_->presetDefault(channelCount_, context_->getSampleRate());
 
+  if (pitchCorrection) {
+    // If pitch correction is enabled, add extra frames at the end
+    // to compensate for processing latency.
+    addExtraTailFrames_ = true;
+
+    int extraTailFrames =
+        static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
+    tailBuffer_ = std::make_shared<AudioBuffer>(
+        channelCount_, extraTailFrames, context_->getSampleRate());
+
+    tailBuffer_->bus_->zero();
+  }
+
   isInitialized_ = true;
 }
 
@@ -29,6 +42,20 @@ AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
 void AudioBufferQueueSourceNode::stop(double when) {
   AudioScheduledSourceNode::stop(when);
   isPaused_ = false;
+}
+
+void AudioBufferQueueSourceNode::start(double when, double offset) {
+  isPaused_ = false;
+  stopTime_ = -1.0;
+  AudioScheduledSourceNode::start(when);
+
+  if (buffers_.empty()) {
+    return;
+  }
+
+  offset = std::min(offset, buffers_.front().second->getDuration());
+  vReadIndex_ =
+      static_cast<double>(buffers_.front().second->getSampleRate() * offset);
 }
 
 void AudioBufferQueueSourceNode::pause() {
@@ -79,6 +106,7 @@ void AudioBufferQueueSourceNode::disable() {
     playbackState_ = PlaybackState::UNSCHEDULED;
     startTime_ = -1.0;
     stopTime_ = -1.0;
+    isPaused_ = false;
 
     return;
   }
@@ -162,10 +190,17 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
           "ended", onEndedCallbackId_, body);
 
       if (buffers_.empty()) {
-        processingBus->zero(writeIndex, framesLeft);
-        readIndex = 0;
+        if (addExtraTailFrames_) {
+          buffers_.emplace(bufferId_, tailBuffer_);
+          bufferId_++;
 
-        break;
+          addExtraTailFrames_ = false;
+        } else if (buffers_.empty()) {
+          processingBus->zero(writeIndex, framesLeft);
+          readIndex = 0;
+
+          break;
+        }
       }
 
       data = buffers_.front();

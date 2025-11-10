@@ -21,6 +21,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     ~AudioBufferQueueSourceNode() override;
 
     void stop(double when) override;
+
+    using AudioScheduledSourceNode::start;
+    void start(double when, double offset);
     void pause();
 
     std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
@@ -38,6 +41,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
     size_t bufferId_ = 0;
 
     bool isPaused_ = false;
+    bool addExtraTailFrames_ = false;
+    std::shared_ptr<AudioBuffer> tailBuffer_;
 
     double playedBuffersDuration_ = 0;
 

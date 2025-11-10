@@ -16,6 +16,7 @@ class AudioBufferQueueSourceNodeHostObject
     explicit AudioBufferQueueSourceNodeHostObject(
             const std::shared_ptr<AudioBufferQueueSourceNode> &node);
 
+    JSI_HOST_FUNCTION_DECL(start);
     JSI_HOST_FUNCTION_DECL(pause);
     JSI_HOST_FUNCTION_DECL(enqueueBuffer);
     JSI_HOST_FUNCTION_DECL(dequeueBuffer);

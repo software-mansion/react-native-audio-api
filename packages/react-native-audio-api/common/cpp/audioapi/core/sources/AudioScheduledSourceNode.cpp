@@ -6,6 +6,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#if !RN_AUDIO_API_TEST
+#include <audioapi/core/AudioContext.h>
+#endif
+
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
@@ -18,6 +22,12 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 }
 
 void AudioScheduledSourceNode::start(double when) {
+#if !RN_AUDIO_API_TEST
+  if (auto context = dynamic_cast<AudioContext *>(context_)) {
+    context->start();
+  }
+#endif
+
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
 }
@@ -78,7 +88,6 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   size_t stopFrame = stopTime_ == -1.0
       ? std::numeric_limits<size_t>::max()
       : dsp::timeToSampleFrame(stopTime_, sampleRate);
-
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;

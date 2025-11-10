@@ -23,8 +23,31 @@ It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio
 
 ## Methods
 
-`AudioBufferBaseSourceNode` does not define any additional methods.
 It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+
+### `getLatency`
+
+Returns the playback latency introduced by the pitch correction algorithm, in seconds.
+When scheduling precise playback times, start input samples this many seconds earlier to compensate for processing delay.
+Typically around `0.06s` when pitch correction is enabled, and `0` otherwise.
+
+#### Returns `number`.
+
+<details>
+<summary>Example usage</summary>
+```tsx
+const source = audioContext.createBufferSource({ pitchCorrection: true });
+source.buffer = buffer;
+source.connect(audioContext.destination);
+
+const latency = source.getLatency();
+
+// Schedule playback slightly earlier to compensate for latency
+const startTime = audioContext.currentTime + 1.0; // play in 1 second
+source.start(startTime - latency);
+```
+</details>
+
 
 ## Events
 
