@@ -21,7 +21,7 @@ class AudioContext : public BaseAudioContext {
   void close();
   bool resume();
   bool suspend();
-  void start();
+  bool start();
 
  private:
 #ifdef ANDROID
