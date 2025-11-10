@@ -125,7 +125,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
       jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
   jsiObject.setExternalMemoryPressure(
       runtime,
-      4 * bufferLength *
+      sizeof(float) * bufferLength *
           inputChannelCount); // rough estimate of underlying buffer
   return jsiObject;
 #endif

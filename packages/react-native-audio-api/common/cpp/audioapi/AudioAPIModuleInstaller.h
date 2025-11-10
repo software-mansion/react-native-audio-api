@@ -193,7 +193,7 @@ class AudioAPIModuleInstaller {
           auto jsiObject = jsi::Object::createFromHostObject(
               runtime, audioRecorderHostObject);
           jsiObject.setExternalMemoryPressure(
-              runtime, 4 * bufferLength); // rough estimate of underlying buffer
+              runtime, sizeof(float) * bufferLength); // rough estimate of underlying buffer
 
           return jsiObject;
         });
