@@ -101,6 +101,14 @@ class AudioManager {
     return NativeAudioAPIModule!.checkRecordingPermissions();
   }
 
+  async requestNotificationPermissions(): Promise<PermissionStatus> {
+    return NativeAudioAPIModule!.requestNotificationPermissions();
+  }
+
+  async checkNotificationPermissions(): Promise<PermissionStatus> {
+    return NativeAudioAPIModule!.checkNotificationPermissions();
+  }
+
   async getDevicesInfo(): Promise<AudioDevicesInfo> {
     return NativeAudioAPIModule!.getDevicesInfo();
   }

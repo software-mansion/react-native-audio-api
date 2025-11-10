@@ -32,9 +32,30 @@ interface Spec extends TurboModule {
   // Permissions
   requestRecordingPermissions(): Promise<PermissionStatus>;
   checkRecordingPermissions(): Promise<PermissionStatus>;
+  requestNotificationPermissions(): Promise<PermissionStatus>;
+  checkNotificationPermissions(): Promise<PermissionStatus>;
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
+
+  // New notification system
+  registerNotification(
+    type: string,
+    key: string
+  ): Promise<{ success: boolean; error?: string }>;
+  showNotification(
+    key: string,
+    options: { [key: string]: string | boolean | number | undefined }
+  ): Promise<{ success: boolean; error?: string }>;
+  updateNotification(
+    key: string,
+    options: { [key: string]: string | boolean | number | undefined }
+  ): Promise<{ success: boolean; error?: string }>;
+  hideNotification(key: string): Promise<{ success: boolean; error?: string }>;
+  unregisterNotification(
+    key: string
+  ): Promise<{ success: boolean; error?: string }>;
+  isNotificationActive(key: string): Promise<boolean>;
 }
 
 const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule');

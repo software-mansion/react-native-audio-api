@@ -23,6 +23,8 @@ import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.core.NativeAudioPlayer
 import com.swmansion.audioapi.core.NativeAudioRecorder
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
+import com.swmansion.audioapi.system.notification.NotificationRegistry
+import com.swmansion.audioapi.system.notification.SimpleNotification
 import java.lang.ref.WeakReference
 import java.util.UUID
 
@@ -39,6 +41,9 @@ object MediaSessionManager {
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
+
+  // New notification system
+  private lateinit var notificationRegistry: NotificationRegistry
 
   private var isServiceRunning = false
   private val serviceStateLock = Any()
@@ -84,6 +89,9 @@ object MediaSessionManager {
     this.audioFocusListener =
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
+
+    // Initialize new notification system
+    this.notificationRegistry = NotificationRegistry(this.reactContext)
   }
 
   fun attachAudioPlayer(player: NativeAudioPlayer): String {
@@ -211,6 +219,41 @@ object MediaSessionManager {
       "Denied"
     }
 
+  fun requestNotificationPermissions(permissionListener: PermissionListener) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      val permissionAwareActivity = reactContext.get()!!.currentActivity as PermissionAwareActivity
+      permissionAwareActivity.requestPermissions(
+        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+        PermissionRequestListener.NOTIFICATION_REQUEST_CODE,
+        permissionListener,
+      )
+    } else {
+      // For Android < 13, permission is granted by default
+      val result = Arguments.createMap()
+      result.putString("status", "Granted")
+      permissionListener.onRequestPermissionsResult(
+        PermissionRequestListener.NOTIFICATION_REQUEST_CODE,
+        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+        intArrayOf(PackageManager.PERMISSION_GRANTED),
+      )
+    }
+  }
+
+  fun checkNotificationPermissions(): String {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      return if (reactContext.get()!!.checkSelfPermission(
+          Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+      ) {
+        "Granted"
+      } else {
+        "Denied"
+      }
+    }
+    // For Android < 13, permission is granted by default
+    return "Granted"
+  }
+
   @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {
     val notificationManager =
@@ -267,4 +310,42 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
       else -> "Other (${device.type})"
     }
+
+  // New notification system methods
+  fun registerNotification(
+    type: String,
+    key: String,
+  ) {
+    val notification =
+      when (type) {
+        "simple" -> SimpleNotification(reactContext)
+        else -> throw IllegalArgumentException("Unknown notification type: $type")
+      }
+
+    notificationRegistry.registerNotification(key, notification)
+  }
+
+  fun showNotification(
+    key: String,
+    options: ReadableMap?,
+  ) {
+    notificationRegistry.showNotification(key, options)
+  }
+
+  fun updateNotification(
+    key: String,
+    options: ReadableMap?,
+  ) {
+    notificationRegistry.updateNotification(key, options)
+  }
+
+  fun hideNotification(key: String) {
+    notificationRegistry.hideNotification(key)
+  }
+
+  fun unregisterNotification(key: String) {
+    notificationRegistry.unregisterNotification(key)
+  }
+
+  fun isNotificationActive(key: String): Boolean = notificationRegistry.isNotificationActive(key)
 }
