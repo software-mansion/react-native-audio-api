@@ -63,8 +63,8 @@ export interface IBaseAudioContext {
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createIIRFilter: (
-    feedforward: Float32Array,
-    feedback: Float32Array
+    feedforward: number[],
+    feedback: number[]
   ) => IIIRFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (

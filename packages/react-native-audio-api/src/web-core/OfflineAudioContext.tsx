@@ -11,6 +11,7 @@ import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -76,6 +77,13 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(feedforward, feedback)
+    );
   }
 
   createConvolver(options?: ConvolverNodeOptions): ConvolverNode {

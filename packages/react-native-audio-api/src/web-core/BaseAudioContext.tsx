@@ -4,6 +4,7 @@ import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -24,6 +25,7 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
   createConvolver(): ConvolverNode;
   createBufferSource(): Promise<AudioBufferSourceNode>;
   createBuffer(

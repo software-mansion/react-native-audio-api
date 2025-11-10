@@ -205,10 +205,7 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createIIRFilter(
-    feedforward: Float32Array,
-    feedback: Float32Array
-  ): IIRFilterNode {
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
     // add throwing errors
     return new IIRFilterNode(
       this,
