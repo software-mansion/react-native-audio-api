@@ -54,7 +54,13 @@ class BiquadFilterNode : public AudioNode {
 #endif
 
  public:
-  explicit BiquadFilterNode(BaseAudioContext *context);
+  explicit BiquadFilterNode(
+      BaseAudioContext *context,
+      std::string biquadFilterType,
+      float Q,
+      float detune,
+      float frequency,
+      float gain);
 
   [[nodiscard]] std::string getType();
   void setType(const std::string &type);
@@ -69,9 +75,7 @@ class BiquadFilterNode : public AudioNode {
       size_t length);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
-      int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
@@ -95,8 +99,7 @@ class BiquadFilterNode : public AudioNode {
 
   static BiquadFilterType fromString(const std::string &type) {
     std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
     if (lowerType == "lowpass")
       return BiquadFilterType::LOWPASS;
@@ -141,13 +144,7 @@ class BiquadFilterNode : public AudioNode {
     }
   }
 
-  void setNormalizedCoefficients(
-      float b0,
-      float b1,
-      float b2,
-      float a0,
-      float a1,
-      float a2);
+  void setNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
   void setLowpassCoefficients(float frequency, float Q);
   void setHighpassCoefficients(float frequency, float Q);
   void setBandpassCoefficients(float frequency, float Q);

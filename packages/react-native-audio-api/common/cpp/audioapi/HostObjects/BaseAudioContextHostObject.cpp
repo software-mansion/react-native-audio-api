@@ -18,6 +18,7 @@
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
 #include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/types/BiquadFilterType.h>
 
 namespace audioapi {
 
@@ -197,7 +198,14 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
-  auto biquadFilter = context_->createBiquadFilter();
+  auto filterType = args[0].getString(runtime).utf8(runtime);
+  auto Q = static_cast<float>(args[1].asNumber());
+  auto detune = static_cast<float>(args[2].asNumber());
+  auto frequency = static_cast<float>(args[3].asNumber());
+  auto gain = static_cast<float>(args[4].asNumber());
+
+  auto biquadFilter =
+      context_->createBiquadFilter(filterType, Q, detune, frequency, gain);
   auto biquadFilterHostObject =
       std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);

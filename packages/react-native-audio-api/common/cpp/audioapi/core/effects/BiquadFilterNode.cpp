@@ -36,23 +36,29 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context)
+BiquadFilterNode::BiquadFilterNode(
+    BaseAudioContext *context,
+    std::string biquadFilterType,
+    float Q,
+    float detune,
+    float frequency,
+    float gain)
     : AudioNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      350.0, 0.0f, context->getNyquistFrequency(), context);
+      frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0f,
+      detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
   QParam_ = std::make_shared<AudioParam>(
-      1.0f, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      0.0f,
+      gain,
       MOST_NEGATIVE_SINGLE_FLOAT,
       40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
       context);
-  type_ = BiquadFilterType::LOWPASS;
+  type_ = BiquadFilterNode::fromString(biquadFilterType);
   isInitialized_ = true;
   channelCountMode_ = ChannelCountMode::MAX;
 }

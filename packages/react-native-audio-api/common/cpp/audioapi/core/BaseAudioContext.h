@@ -67,7 +67,7 @@ class BaseAudioContext {
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter();
+  std::shared_ptr<BiquadFilterNode> createBiquadFilter(std::string biquadFilterType, float Q, float detune, float frequency, float gain);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>

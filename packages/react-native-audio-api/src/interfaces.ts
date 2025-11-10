@@ -61,7 +61,13 @@ export interface IBaseAudioContext {
   createConstantSource(): IConstantSourceNode;
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
-  createBiquadFilter: () => IBiquadFilterNode;
+  createBiquadFilter: (
+    type: BiquadFilterType,
+    Q: number,
+    detune: number,
+    frequency: number,
+    gain: number
+  ) => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (
     pitchCorrection: boolean

@@ -57,3 +57,11 @@ export interface ConvolverNodeOptions {
   buffer?: AudioBuffer | null;
   disableNormalization?: boolean;
 }
+
+export interface BiquadFilterNodeOptions {
+  type?: BiquadFilterType;
+  Q?: number;
+  detune?: number;
+  frequency?: number;
+  gain?: number;
+}
