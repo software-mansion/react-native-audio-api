@@ -10,7 +10,12 @@ import type {
 
 /// Manager for media playback notifications with controls and MediaSession integration.
 class PlaybackNotificationManager
-  implements NotificationManager<PlaybackNotificationInfo, PlaybackNotificationInfo, PlaybackNotificationEventName>
+  implements
+    NotificationManager<
+      PlaybackNotificationInfo,
+      PlaybackNotificationInfo,
+      PlaybackNotificationEventName
+    >
 {
   private notificationKey = 'playback';
   private isRegistered = false;
@@ -166,7 +171,9 @@ class PlaybackNotificationManager
       return false;
     }
 
-    return await NativeAudioAPIModule.isNotificationActive(this.notificationKey);
+    return await NativeAudioAPIModule.isNotificationActive(
+      this.notificationKey
+    );
   }
 
   /// Add an event listener for notification actions.

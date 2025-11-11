@@ -23,9 +23,7 @@ class NotificationRegistry(
     // Store last built notifications for foreground service access
     private val builtNotifications = mutableMapOf<Int, Notification>()
 
-    fun getBuiltNotification(notificationId: Int): Notification? {
-      return builtNotifications[notificationId]
-    }
+    fun getBuiltNotification(notificationId: Int): Notification? = builtNotifications[notificationId]
   }
 
   private val notifications = mutableMapOf<String, BaseNotification>()

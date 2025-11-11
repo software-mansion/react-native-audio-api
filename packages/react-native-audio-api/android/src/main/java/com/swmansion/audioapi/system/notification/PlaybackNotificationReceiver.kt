@@ -21,7 +21,10 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
     }
   }
 
-  override fun onReceive(context: Context?, intent: Intent?) {
+  override fun onReceive(
+    context: Context?,
+    intent: Intent?,
+  ) {
     if (intent?.action == ACTION_NOTIFICATION_DISMISSED) {
       Log.d(TAG, "Notification dismissed by user")
       audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationDismissed", mapOf())

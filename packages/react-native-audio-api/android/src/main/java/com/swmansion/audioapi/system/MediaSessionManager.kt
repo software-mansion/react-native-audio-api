@@ -24,9 +24,9 @@ import com.swmansion.audioapi.core.NativeAudioPlayer
 import com.swmansion.audioapi.core.NativeAudioRecorder
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
-import com.swmansion.audioapi.system.notification.SimpleNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
+import com.swmansion.audioapi.system.notification.SimpleNotification
 import java.lang.ref.WeakReference
 import java.util.UUID
 

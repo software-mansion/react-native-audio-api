@@ -81,9 +81,7 @@ export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { default as changePlaybackSpeed } from './core/AudioStretcher';
 
 // Notification System
-export {
-  PlaybackNotificationManager,
-} from './system/notification';
+export { PlaybackNotificationManager } from './system/notification';
 
 export {
   OscillatorType,

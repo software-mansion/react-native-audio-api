@@ -63,8 +63,9 @@ class ForegroundNotificationService : Service() {
           val notification = NotificationRegistry.getBuiltNotification(notificationId)
 
           if (notification == null) {
-            val errorMsg = "Notification with ID $notificationId not found in registry. " +
-              "Make sure to call showNotification() before starting foreground service."
+            val errorMsg =
+              "Notification with ID $notificationId not found in registry. " +
+                "Make sure to call showNotification() before starting foreground service."
             Log.e(TAG, errorMsg)
             throw IllegalStateException(errorMsg)
           }

@@ -5,7 +5,12 @@ import type { NotificationManager, SimpleNotificationOptions } from './types';
 /// Simple notification manager for basic notifications with title and text.
 /// Implements the generic NotificationManager interface.
 class SimpleNotificationManager
-  implements NotificationManager<SimpleNotificationOptions, SimpleNotificationOptions, never>
+  implements
+    NotificationManager<
+      SimpleNotificationOptions,
+      SimpleNotificationOptions,
+      never
+    >
 {
   private notificationKey = 'simple';
   private isRegistered = false;
@@ -136,7 +141,9 @@ class SimpleNotificationManager
       return false;
     }
 
-    return await NativeAudioAPIModule.isNotificationActive(this.notificationKey);
+    return await NativeAudioAPIModule.isNotificationActive(
+      this.notificationKey
+    );
   }
 
   /// Add an event listener (SimpleNotification doesn't emit events).
@@ -146,7 +153,10 @@ class SimpleNotificationManager
   ): AudioEventSubscription {
     // SimpleNotification doesn't emit events, return a no-op subscription
     console.warn('SimpleNotification does not support event listeners');
-    return this.audioEventEmitter.addAudioEventListener('playbackNotificationPlay' as any, () => {});
+    return this.audioEventEmitter.addAudioEventListener(
+      'playbackNotificationPlay' as any,
+      () => {}
+    );
   }
 
   /// Remove an event listener.

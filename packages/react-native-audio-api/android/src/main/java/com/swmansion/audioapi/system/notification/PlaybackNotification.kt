@@ -120,34 +120,38 @@ class PlaybackNotification(
     )
 
     // Create notification builder
-    notificationBuilder = NotificationCompat.Builder(context, channelId)
-      .setSmallIcon(android.R.drawable.ic_media_play)
-      .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-      .setOngoing(true) // Make it persistent (can't swipe away)
+    notificationBuilder =
+      NotificationCompat
+        .Builder(context, channelId)
+        .setSmallIcon(android.R.drawable.ic_media_play)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        .setOngoing(true) // Make it persistent (can't swipe away)
 
     // Set content intent to open app
     val packageName = context.packageName
     val openAppIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     if (openAppIntent != null) {
-      val pendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        openAppIntent,
-        PendingIntent.FLAG_IMMUTABLE,
-      )
+      val pendingIntent =
+        PendingIntent.getActivity(
+          context,
+          0,
+          openAppIntent,
+          PendingIntent.FLAG_IMMUTABLE,
+        )
       notificationBuilder?.setContentIntent(pendingIntent)
     }
 
     // Set delete intent to handle dismissal
     val deleteIntent = Intent(PlaybackNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
     deleteIntent.setPackage(context.packageName)
-    val deletePendingIntent = PendingIntent.getBroadcast(
-      context,
-      notificationId,
-      deleteIntent,
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
+    val deletePendingIntent =
+      PendingIntent.getBroadcast(
+        context,
+        notificationId,
+        deleteIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      )
     notificationBuilder?.setDeleteIntent(deletePendingIntent)
 
     // Enable default controls
@@ -253,11 +257,13 @@ class PlaybackNotification(
     }
 
     // Build MediaMetadata
-    val metadataBuilder = MediaMetadataCompat.Builder()
-      .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-      .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-      .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
-      .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+    val metadataBuilder =
+      MediaMetadataCompat
+        .Builder()
+        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
 
     // Update notification builder
     notificationBuilder?.setContentTitle(title)
@@ -279,19 +285,20 @@ class PlaybackNotification(
       }
 
       if (artworkUrl != null) {
-        artworkThread = Thread {
-          try {
-            val bitmap = loadArtwork(artworkUrl, isLocal)
-            if (bitmap != null) {
-              artwork = bitmap
-              metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
-              notificationBuilder?.setLargeIcon(bitmap)
+        artworkThread =
+          Thread {
+            try {
+              val bitmap = loadArtwork(artworkUrl, isLocal)
+              if (bitmap != null) {
+                artwork = bitmap
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
+                notificationBuilder?.setLargeIcon(bitmap)
+              }
+              artworkThread = null
+            } catch (e: Exception) {
+              Log.e(TAG, "Error loading artwork: ${e.message}", e)
             }
-            artworkThread = null
-          } catch (e: Exception) {
-            Log.e(TAG, "Error loading artwork: ${e.message}", e)
           }
-        }
         artworkThread?.start()
       }
     }
@@ -302,32 +309,36 @@ class PlaybackNotification(
     return buildNotification()
   }
 
-  private fun buildNotification(): Notification {
-    return notificationBuilder?.build()
+  private fun buildNotification(): Notification =
+    notificationBuilder?.build()
       ?: throw IllegalStateException("Notification not initialized. Call init() first.")
-  }
 
   /**
    * Enable or disable a specific control action.
    */
-  private fun enableControl(name: String, enabled: Boolean) {
-    val controlValue = when (name) {
-      "play" -> PlaybackStateCompat.ACTION_PLAY
-      "pause" -> PlaybackStateCompat.ACTION_PAUSE
-      "next" -> PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-      "previous" -> PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-      "skipForward" -> PlaybackStateCompat.ACTION_FAST_FORWARD
-      "skipBackward" -> PlaybackStateCompat.ACTION_REWIND
-      else -> 0L
-    }
+  private fun enableControl(
+    name: String,
+    enabled: Boolean,
+  ) {
+    val controlValue =
+      when (name) {
+        "play" -> PlaybackStateCompat.ACTION_PLAY
+        "pause" -> PlaybackStateCompat.ACTION_PAUSE
+        "next" -> PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+        "previous" -> PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+        "skipForward" -> PlaybackStateCompat.ACTION_FAST_FORWARD
+        "skipBackward" -> PlaybackStateCompat.ACTION_REWIND
+        else -> 0L
+      }
 
     if (controlValue == 0L) return
 
-    enabledControls = if (enabled) {
-      enabledControls or controlValue
-    } else {
-      enabledControls and controlValue.inv()
-    }
+    enabledControls =
+      if (enabled) {
+        enabledControls or controlValue
+      } else {
+        enabledControls and controlValue.inv()
+      }
 
     // Update actions
     updateActions()
@@ -342,47 +353,53 @@ class PlaybackNotification(
     val context = reactContext.get() ?: return
     val packageName = context.packageName
 
-    playAction = createAction(
-      "play",
-      "Play",
-      android.R.drawable.ic_media_play,
-      PlaybackStateCompat.ACTION_PLAY,
-    )
+    playAction =
+      createAction(
+        "play",
+        "Play",
+        android.R.drawable.ic_media_play,
+        PlaybackStateCompat.ACTION_PLAY,
+      )
 
-    pauseAction = createAction(
-      "pause",
-      "Pause",
-      android.R.drawable.ic_media_pause,
-      PlaybackStateCompat.ACTION_PAUSE,
-    )
+    pauseAction =
+      createAction(
+        "pause",
+        "Pause",
+        android.R.drawable.ic_media_pause,
+        PlaybackStateCompat.ACTION_PAUSE,
+      )
 
-    nextAction = createAction(
-      "next",
-      "Next",
-      android.R.drawable.ic_media_next,
-      PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
-    )
+    nextAction =
+      createAction(
+        "next",
+        "Next",
+        android.R.drawable.ic_media_next,
+        PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
+      )
 
-    previousAction = createAction(
-      "previous",
-      "Previous",
-      android.R.drawable.ic_media_previous,
-      PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-    )
+    previousAction =
+      createAction(
+        "previous",
+        "Previous",
+        android.R.drawable.ic_media_previous,
+        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
+      )
 
-    skipForwardAction = createAction(
-      "skip_forward",
-      "Skip Forward",
-      android.R.drawable.ic_media_ff,
-      PlaybackStateCompat.ACTION_FAST_FORWARD,
-    )
+    skipForwardAction =
+      createAction(
+        "skip_forward",
+        "Skip Forward",
+        android.R.drawable.ic_media_ff,
+        PlaybackStateCompat.ACTION_FAST_FORWARD,
+      )
 
-    skipBackwardAction = createAction(
-      "skip_backward",
-      "Skip Backward",
-      android.R.drawable.ic_media_rew,
-      PlaybackStateCompat.ACTION_REWIND,
-    )
+    skipBackwardAction =
+      createAction(
+        "skip_backward",
+        "Skip Backward",
+        android.R.drawable.ic_media_rew,
+        PlaybackStateCompat.ACTION_REWIND,
+      )
   }
 
   private fun createAction(
@@ -402,12 +419,13 @@ class PlaybackNotification(
     intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
     intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, context.packageName)
 
-    val pendingIntent = PendingIntent.getBroadcast(
-      context,
-      keyCode,
-      intent,
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
+    val pendingIntent =
+      PendingIntent.getBroadcast(
+        context,
+        keyCode,
+        intent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      )
 
     return NotificationCompat.Action(icon, title, pendingIntent)
   }
@@ -471,13 +489,18 @@ class PlaybackNotification(
     notificationBuilder?.setStyle(style)
   }
 
-  private fun loadArtwork(url: String, isLocal: Boolean): Bitmap? {
+  private fun loadArtwork(
+    url: String,
+    isLocal: Boolean,
+  ): Bitmap? {
     val context = reactContext.get() ?: return null
 
     return try {
       if (isLocal && !url.startsWith("http")) {
         // Load local resource
-        val helper = com.facebook.react.views.imagehelper.ResourceDrawableIdHelper.getInstance()
+        val helper =
+          com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
+            .getInstance()
         val drawable = helper.getResourceDrawable(context, url)
 
         if (drawable is BitmapDrawable) {
@@ -507,15 +530,17 @@ class PlaybackNotification(
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val context = reactContext.get() ?: return
 
-      val channel = android.app.NotificationChannel(
-        channelId,
-        "Audio Playback",
-        android.app.NotificationManager.IMPORTANCE_LOW,
-      ).apply {
-        description = "Media playback controls and information"
-        setShowBadge(false)
-        lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-      }
+      val channel =
+        android.app
+          .NotificationChannel(
+            channelId,
+            "Audio Playback",
+            android.app.NotificationManager.IMPORTANCE_LOW,
+          ).apply {
+            description = "Media playback controls and information"
+            setShowBadge(false)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+          }
 
       val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

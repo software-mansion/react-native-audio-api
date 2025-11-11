@@ -1,9 +1,12 @@
 import type { AudioEventSubscription } from '../../events';
 
-
 /// Generic notification manager interface that all notification managers should implement.
 /// Provides a consistent API for managing notification lifecycle and events.
-export interface NotificationManager<TShowOptions, TUpdateOptions, TEventName extends string = string> {
+export interface NotificationManager<
+  TShowOptions,
+  TUpdateOptions,
+  TEventName extends string = string,
+> {
   /// Register the notification (must be called before showing).
   register(): Promise<void>;
 
