@@ -1,8 +1,4 @@
-import {
-  AudioContext,
-  AudioManager,
-  IIRFilterNode,
-} from 'react-native-audio-api';
+import { AudioContext, AudioManager } from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
@@ -12,27 +8,17 @@ class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
-  private filterNode: IIRFilterNode | null = null;
 
   private isPlaying: boolean = false;
-  private filterEnabled: boolean = false;
 
   private offset: number = 0;
   private seekOffset: number = 0;
   private playbackRate: number = 1;
   private onPositionChanged: ((offset: number) => void) | null = null;
 
-  private readonly feedforward: number[] = [0.0050662636, 0.0101325272, 0.0050662636];
-  private readonly feedback: number[] = [1.0632762845, -1.9797349456, 0.9367237155];
-
   constructor() {
     this.audioContext = new AudioContext();
   }
-
-  toggleFilter = () => {
-    this.filterEnabled = !this.filterEnabled;
-    console.log(`IIRFilter ${this.filterEnabled ? 'enabled' : 'disabled'}`);
-  };
 
   play = async () => {
     if (this.isPlaying) {
@@ -57,19 +43,7 @@ class AudioPlayer {
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
 
-    if (this.filterEnabled) {
-      this.filterNode = this.audioContext.createIIRFilter(
-        this.feedforward,
-        this.feedback
-      );
-      this.sourceNode.connect(this.filterNode);
-      console.log('after connection');
-      this.filterNode.connect(this.audioContext.destination);
-    } else {
-      this.sourceNode.connect(this.audioContext.destination);
-      console.log('after disconnection');
-    }
-
+    this.sourceNode.connect(this.audioContext.destination);
     if (this.seekOffset !== 0) {
       this.offset = Math.max(this.seekOffset + this.offset, 0);
       this.seekOffset = 0;
@@ -144,8 +118,6 @@ class AudioPlayer {
       this.sourceNode.onPositionChanged = null;
       this.sourceNode.stop(this.audioContext.currentTime);
     }
-
-    this.filterNode = null;
     this.audioBuffer = null;
     this.sourceNode = null;
     this.offset = 0;

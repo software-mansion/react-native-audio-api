@@ -1,4 +1,8 @@
-import { InvalidAccessError, InvalidStateError, NotSupportedError } from '../errors';
+import {
+  InvalidAccessError,
+  InvalidStateError,
+  NotSupportedError,
+} from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,

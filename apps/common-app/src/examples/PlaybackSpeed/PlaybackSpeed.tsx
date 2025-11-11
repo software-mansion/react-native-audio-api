@@ -1,105 +1,145 @@
-import React, { useState, FC, useRef, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  FC,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Container, Button } from '../../components';
+import { Container, Button, Spacer, Slider, Select } from '../../components';
+import { AudioContext, changePlaybackSpeed } from 'react-native-audio-api';
+import type { AudioBufferSourceNode } from 'react-native-audio-api';
 import {
-  AudioContext,
-  AudioBufferSourceNode,
-  AudioBuffer,
-} from 'react-native-audio-api';
-
-const URL =
-  'https://github.com/mdn/webaudio-examples/raw/refs/heads/main/iirfilter-node/outfoxing.mp3';
+  PCM_DATA,
+  labelWidth,
+  PLAYBACK_SPEED_CONFIG,
+  SAMPLE_RATE,
+} from './constants';
+import { TimeStretchingAlgorithm, TIME_STRETCHING_OPTIONS } from './types';
+import { getAudioSettings } from './helpers';
 
 const PlaybackSpeed: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(
+    PLAYBACK_SPEED_CONFIG.default
+  );
+  const [timeStretchingAlgorithm, setTimeStretchingAlgorithm] =
+    useState<TimeStretchingAlgorithm>('linear');
+
   const aCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const isPlayingRef = useRef(false);
 
-  const feedforward: number[] = [0.0050662636, 0.0101325272, 0.0050662636];
-  const feedback: number[] = [1.0632762845, -1.9797349456, 0.9367237155];
+  const audioSettings = useMemo(
+    () => getAudioSettings(timeStretchingAlgorithm),
+    [timeStretchingAlgorithm]
+  );
 
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  const getAudioContext = useCallback(() => {
+  const initializeAudioContext = useCallback(() => {
     if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext();
+      aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     }
     return aCtxRef.current;
   }, []);
 
-  const stopPlayback = useCallback(() => {
-    sourceRef.current?.stop();
-    sourceRef.current = null;
-    setIsPlaying(false);
-    isPlayingRef.current = false;
-  }, []);
+  const createSource = useCallback(async (): Promise<AudioBufferSourceNode> => {
+    const audioContext = initializeAudioContext();
 
-  const loadBuffer = useCallback(async () => {
-    const audioContext = getAudioContext();
-    const buffer = await fetch(URL, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
-      },
-    })
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
-      .catch((error) => {
-        console.error('Error decoding audio data source:', error);
-        return null;
+    setIsLoading(true);
+
+    try {
+      const buffer = await audioContext
+        .decodePCMInBase64(PCM_DATA, 48000, 1, true)
+        .then((audioBuffer) =>
+          changePlaybackSpeed(
+            audioBuffer,
+            audioSettings.PSOLA ? playbackSpeed : 1
+          )
+        );
+
+      const source = audioContext.createBufferSource({
+        pitchCorrection: audioSettings.PSOLA
+          ? false
+          : audioSettings.pitchCorrection,
       });
 
-    return buffer;
-  }, [getAudioContext]);
+      source.buffer = buffer;
+      source.playbackRate.value = audioSettings.PSOLA ? 1 : playbackSpeed;
+      source.loop = true;
 
-  const playWithoutFilter = useCallback(async () => {
-    setIsPlaying(true);
-    isPlayingRef.current = true;
-    const audioContext = getAudioContext();
-    const buffer = await loadBuffer();
-    if (!buffer) return;
+      return source;
+    } catch (error) {
+      console.error('Failed to create audio source:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [audioSettings, playbackSpeed, initializeAudioContext]);
 
-    const src = audioContext.createBufferSource();
-    src.buffer = buffer;
-    src.loop = false;
-    src.connect(audioContext.destination);
-    src.playbackRate.value = 1;
+  const stopPlayback = useCallback(() => {
+    if (sourceRef.current) {
+      sourceRef.current.onEnded = null;
+      sourceRef.current.stop();
+      sourceRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
 
-    src.start();
-    src.onEnded = stopPlayback;
+  const startPlayback = useCallback(async () => {
+    try {
+      const audioContext = initializeAudioContext();
+      const source = await createSource();
 
-    setIsLoading(false);
-  }, [getAudioContext, loadBuffer, stopPlayback]);
+      sourceRef.current = source;
 
+      sourceRef.current.onEnded = () => {
+        setIsPlaying(false);
+        sourceRef.current = null;
+      };
 
-  const playWithFilter = useCallback(async () => {
-    setIsPlaying(true);
-    isPlayingRef.current = true;
-    const audioContext = getAudioContext();
-    const buffer = await loadBuffer();
-    if (!buffer) return;
+      sourceRef.current.connect(audioContext.destination);
+      sourceRef.current.start(audioContext.currentTime);
 
-    const filterNode = audioContext.createIIRFilter(feedforward, feedback);
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to start playback:', error);
+      setIsPlaying(false);
+    }
+  }, [createSource, initializeAudioContext]);
 
-    const src = audioContext.createBufferSource();
-    src.buffer = buffer;
-    src.loop = false;
-    console.log('1');
-    src.connect(filterNode);
-    console.log('2');
-    filterNode.connect(audioContext.destination);
-    console.log('3');
+  const togglePlayPause = useCallback(async () => {
+    if (isPlaying) {
+      stopPlayback();
+    } else {
+      await startPlayback();
+    }
+  }, [isPlaying, stopPlayback, startPlayback]);
 
-    src.start();
-    console.log('4');
-    src.onEnded = stopPlayback;
+  const handlePlaybackSpeedChange = useCallback(
+    (newSpeed: number) => {
+      if (audioSettings.PSOLA) {
+        stopPlayback();
+      } else {
+        if (aCtxRef.current && sourceRef.current) {
+          sourceRef.current.playbackRate.value = newSpeed;
+        }
+      }
 
-    setIsLoading(false);
-  }, [feedback, feedforward, getAudioContext, loadBuffer, stopPlayback]);
+      setPlaybackSpeed(newSpeed);
+    },
+    [audioSettings, stopPlayback]
+  );
+
+  const handleTimeStretchingAlgorithmChange = useCallback(
+    (newMode: TimeStretchingAlgorithm) => {
+      setTimeStretchingAlgorithm(newMode);
+      if (isPlaying) {
+        stopPlayback();
+      }
+    },
+    [isPlaying, stopPlayback]
+  );
 
   useEffect(() => {
     return () => {
@@ -111,18 +151,31 @@ const PlaybackSpeed: FC = () => {
 
   return (
     <Container>
-      <View style={styles.buttonsContainer}>
-        <Button
-          title="Without"
-          onPress={() => playWithoutFilter()}
-          disabled={isLoading || isPlaying}
+      <View style={styles.algorithmSelectContainer}>
+        <Select
+          value={timeStretchingAlgorithm}
+          options={TIME_STRETCHING_OPTIONS}
+          onChange={handleTimeStretchingAlgorithmChange}
         />
       </View>
-      <View style={styles.buttonsContainer}>
+
+      <View style={styles.controlsContainer}>
         <Button
-          title="Filter"
-          onPress={() => playWithFilter()}
-          disabled={isLoading || isPlaying}
+          title={isPlaying ? 'Stop' : 'Play'}
+          onPress={togglePlayPause}
+          disabled={isLoading}
+        />
+
+        <Spacer.Vertical size={20} />
+
+        <Slider
+          label="Playback Speed"
+          value={playbackSpeed}
+          onValueChange={handlePlaybackSpeedChange}
+          min={PLAYBACK_SPEED_CONFIG.min}
+          max={PLAYBACK_SPEED_CONFIG.max}
+          step={PLAYBACK_SPEED_CONFIG.step}
+          minLabelWidth={labelWidth}
         />
       </View>
     </Container>
@@ -130,11 +183,14 @@ const PlaybackSpeed: FC = () => {
 };
 
 const styles = StyleSheet.create({
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 60,
+  algorithmSelectContainer: {
+    paddingTop: 20,
     paddingHorizontal: 20,
+  },
+  controlsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
