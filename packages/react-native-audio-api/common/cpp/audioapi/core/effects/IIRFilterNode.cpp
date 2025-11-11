@@ -27,6 +27,7 @@
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <iostream>
 
 namespace audioapi {
 
@@ -37,6 +38,9 @@ IIRFilterNode::IIRFilterNode(
     : AudioNode(context) {
   isInitialized_ = true;
   channelCountMode_ = ChannelCountMode::MAX;
+
+  x_.resize(IIRFilterNode::bufferLength, 0.0f);
+  y_.resize(IIRFilterNode::bufferLength, 0.0f);
 }
 
 // Compute Z-transform of the filter
@@ -94,6 +98,8 @@ void IIRFilterNode::getFrequencyResponse(
 std::shared_ptr<AudioBus> IIRFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
+
+  std::cout<<"processing"<<std::endl;
   int numChannels = processingBus->getNumberOfChannels();
 
   size_t forwardLength = feedforward_.size();
@@ -111,8 +117,8 @@ std::shared_ptr<AudioBus> IIRFilterNode::processNode(
         yn -= feedback_[k] * y_[(n - k) & (IIRFilterNode::bufferLength - 1)];
       }
 
-      x_[n] = channelData[n];
-      y_[n] = yn;
+      x_[n & (IIRFilterNode::bufferLength - 1)] = channelData[n];
+      y_[n & (IIRFilterNode::bufferLength - 1)] = yn;
 
       channelData[n] = yn;
     }

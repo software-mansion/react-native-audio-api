@@ -1,4 +1,4 @@
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import { InvalidAccessError, InvalidStateError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,
@@ -206,7 +206,30 @@ export default class BaseAudioContext {
   }
 
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
-    // add throwing errors
+    // TODO: magic number
+    if (feedforward.length < 1 || feedforward.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`
+      );
+    }
+    if (feedback.length < 1 || feedback.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedback array has length (${feedback.length}) outside the range [1, 20]`
+      );
+    }
+
+    if (feedforward.every((value) => value === 0)) {
+      throw new InvalidStateError(
+        `Feedforward array must contain at least one non-zero value`
+      );
+    }
+
+    if (feedback[0] === 0) {
+      throw new InvalidStateError(
+        `First value of feedback array cannot be zero`
+      );
+    }
+
     return new IIRFilterNode(
       this,
       this.context.createIIRFilter(feedforward, feedback)

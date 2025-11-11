@@ -206,7 +206,28 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createIIRFilter) {
-  auto iirFilter = context_->createIIRFilter();
+  auto feedforwardArray = args[0].asObject(runtime).asArray(runtime);
+  auto feedbackArray = args[1].asObject(runtime).asArray(runtime);
+
+  size_t feedforwardLength = feedforwardArray.length(runtime);
+  size_t feedbackLength = feedbackArray.length(runtime);
+
+  std::vector<float> feedforward;
+  std::vector<float> feedback;
+
+  feedforward.reserve(feedforwardLength);
+  feedback.reserve(feedbackLength);
+
+  for (size_t i = 0; i < feedforwardLength; ++i) {
+    feedforward.push_back(
+        feedforwardArray.getValueAtIndex(runtime, i).asNumber());
+  }
+
+  for (size_t i = 0; i < feedbackLength; ++i) {
+    feedback.push_back(feedbackArray.getValueAtIndex(runtime, i).asNumber());
+  }
+
+  auto iirFilter = context_->createIIRFilter(feedforward, feedback);
   auto iirFilterHostObject =
       std::make_shared<IIRFilterNodeHostObject>(iirFilter);
   return jsi::Object::createFromHostObject(runtime, iirFilterHostObject);

@@ -147,8 +147,10 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   return biquadFilter;
 }
 
-std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter() {
-  auto iirFilter = std::make_shared<IIRFilterNode>(this);
+std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
+    const std::vector<float> &feedforward,
+    const std::vector<float> &feedback) {
+  auto iirFilter = std::make_shared<IIRFilterNode>(this, feedforward, feedback);
   nodeManager_->addProcessingNode(iirFilter);
   return iirFilter;
 }

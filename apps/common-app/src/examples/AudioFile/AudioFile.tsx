@@ -7,12 +7,13 @@ import { colors } from '../../styles';
 import BackgroundTimer from 'react-native-background-timer';
 
 const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+  'https://github.com/mdn/webaudio-examples/raw/refs/heads/main/iirfilter-node/outfoxing.mp3';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [positionPercentage, setPositionPercentage] = useState(0);
+  const [isFilterEnabled, setIsFilterEnabled] = useState(false);
 
   const togglePlayPause = async () => {
     if (isPlaying) {
@@ -30,6 +31,11 @@ const AudioFile: FC = () => {
     }
 
     setIsPlaying((prev) => !prev);
+  };
+
+  const toggleFilter = () => {
+    AudioPlayer.toggleFilter();
+    setIsFilterEnabled((prev) => !prev);
   };
 
   const fetchAudioBuffer = useCallback(async () => {
@@ -122,6 +128,14 @@ const AudioFile: FC = () => {
         onPress={togglePlayPause}
         disabled={isLoading}
       />
+      <Spacer.Vertical size={20} />
+
+      <Button
+        title={isFilterEnabled ? 'Disable Filter' : 'Enable Filter'}
+        onPress={toggleFilter}
+        disabled={isLoading}
+      />
+
       <Spacer.Vertical size={20} />
       <View style={styles.progressContainer}>
         <View
