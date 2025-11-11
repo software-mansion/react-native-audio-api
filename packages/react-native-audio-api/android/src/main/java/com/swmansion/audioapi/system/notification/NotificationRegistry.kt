@@ -13,13 +13,19 @@ import java.lang.ref.WeakReference
 
 /**
  * Central notification registry that manages multiple notification instances.
- * Provides a clean API for creating, updating, and removing notifications.
  */
 class NotificationRegistry(
   private val reactContext: WeakReference<ReactApplicationContext>,
 ) {
   companion object {
     private const val TAG = "NotificationRegistry"
+
+    // Store last built notifications for foreground service access
+    private val builtNotifications = mutableMapOf<Int, Notification>()
+
+    fun getBuiltNotification(notificationId: Int): Notification? {
+      return builtNotifications[notificationId]
+    }
   }
 
   private val notifications = mutableMapOf<String, BaseNotification>()
@@ -80,7 +86,19 @@ class NotificationRegistry(
       return
     }
 
-    showNotification(key, options)
+    val notification = notifications[key]
+    if (notification == null) {
+      Log.w(TAG, "Notification not found: $key")
+      return
+    }
+
+    try {
+      val builtNotification = notification.update(options)
+      displayNotification(notification.getNotificationId(), builtNotification)
+      Log.d(TAG, "Updated notification: $key")
+    } catch (e: Exception) {
+      Log.e(TAG, "Error updating notification $key: ${e.message}", e)
+    }
   }
 
   /**
@@ -136,6 +154,7 @@ class NotificationRegistry(
     }
     notifications.clear()
     activeNotifications.clear()
+    builtNotifications.clear()
     Log.d(TAG, "Cleaned up all notifications")
   }
 
@@ -146,6 +165,9 @@ class NotificationRegistry(
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
     Log.d(TAG, "Displaying notification with ID: $id")
     try {
+      // Store notification for foreground service access
+      builtNotifications[id] = notification
+
       NotificationManagerCompat.from(context).notify(id, notification)
       Log.d(TAG, "Notification posted successfully with ID: $id")
     } catch (e: Exception) {
@@ -156,6 +178,8 @@ class NotificationRegistry(
   private fun cancelNotification(id: Int) {
     val context = reactContext.get() ?: return
     NotificationManagerCompat.from(context).cancel(id)
+    // Clean up stored notification
+    builtNotifications.remove(id)
   }
 
   /**

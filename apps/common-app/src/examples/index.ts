@@ -11,6 +11,7 @@ import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
+import { PlaybackNotificationExample } from './PlaybackNotification/PlaybackNotification';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -25,6 +26,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  PlaybackNotification: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -103,5 +105,11 @@ export const Examples: Example[] = [
     title: 'Streamer',
     subtitle: 'Stream audio from a URL',
     screen: Streaming,
+  },
+  {
+    key: 'PlaybackNotification',
+    title: 'Playback Notification',
+    subtitle: 'Media playback notification with controls',
+    screen: PlaybackNotificationExample,
   }
 ] as const;

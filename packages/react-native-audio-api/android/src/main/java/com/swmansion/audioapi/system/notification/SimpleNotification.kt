@@ -47,6 +47,11 @@ class SimpleNotification(
     return buildNotification()
   }
 
+  override fun update(options: ReadableMap?): Notification {
+    // Update works the same as init for simple notifications
+    return init(options)
+  }
+
   override fun reset() {
     // Reset to default values
     title = "Audio Playing"

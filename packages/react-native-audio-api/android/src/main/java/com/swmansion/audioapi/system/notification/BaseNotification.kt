@@ -19,6 +19,15 @@ interface BaseNotification {
   fun init(options: ReadableMap?): Notification
 
   /**
+   * Update the notification with new options.
+   * This method should rebuild the notification with updated data.
+   *
+   * @param options New configuration options from JavaScript side
+   * @return The updated Notification ready to be shown
+   */
+  fun update(options: ReadableMap?): Notification
+
+  /**
    * Reset the notification to its initial state.
    * This should clear any stored data and stop any ongoing processes.
    */

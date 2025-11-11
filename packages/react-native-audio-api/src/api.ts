@@ -80,6 +80,11 @@ export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { default as changePlaybackSpeed } from './core/AudioStretcher';
 
+// Notification System
+export {
+  PlaybackNotificationManager,
+} from './system/notification';
+
 export {
   OscillatorType,
   BiquadFilterType,
@@ -100,6 +105,14 @@ export {
   LockScreenInfo,
   PermissionStatus,
 } from './system/types';
+
+export {
+  NotificationManager,
+  PlaybackNotificationInfo,
+  PlaybackControlName,
+  PlaybackNotificationEventName,
+  SimpleNotificationOptions,
+} from './system/notification';
 
 export {
   IndexSizeError,

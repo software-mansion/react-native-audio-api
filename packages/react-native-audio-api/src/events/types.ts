@@ -38,11 +38,22 @@ interface RemoteCommandEvents {
   remoteChangePlaybackPosition: EventTypeWithValue;
 }
 
-type SystemEvents = RemoteCommandEvents & {
-  volumeChange: EventTypeWithValue;
-  interruption: OnInterruptionEventType;
-  routeChange: OnRouteChangeEventType;
-};
+interface PlaybackNotificationEvents {
+  playbackNotificationPlay: EventEmptyType;
+  playbackNotificationPause: EventEmptyType;
+  playbackNotificationNext: EventEmptyType;
+  playbackNotificationPrevious: EventEmptyType;
+  playbackNotificationSkipForward: EventTypeWithValue;
+  playbackNotificationSkipBackward: EventTypeWithValue;
+  playbackNotificationDismissed: EventEmptyType;
+}
+
+type SystemEvents = RemoteCommandEvents &
+  PlaybackNotificationEvents & {
+    volumeChange: EventTypeWithValue;
+    interruption: OnInterruptionEventType;
+    routeChange: OnRouteChangeEventType;
+  };
 
 export interface OnEndedEventType extends EventEmptyType {
   bufferId: string | undefined;

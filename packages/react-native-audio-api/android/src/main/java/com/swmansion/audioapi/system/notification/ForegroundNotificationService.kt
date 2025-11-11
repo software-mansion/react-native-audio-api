@@ -59,8 +59,15 @@ class ForegroundNotificationService : Service() {
     synchronized(serviceLock) {
       if (!isServiceStarted) {
         try {
-          // TODO retrieve actual notification from NotificationRegistry
-          val notification = createDummyNotification(notificationId)
+          // Retrieve actual notification from NotificationRegistry
+          val notification = NotificationRegistry.getBuiltNotification(notificationId)
+
+          if (notification == null) {
+            val errorMsg = "Notification with ID $notificationId not found in registry. " +
+              "Make sure to call showNotification() before starting foreground service."
+            Log.e(TAG, errorMsg)
+            throw IllegalStateException(errorMsg)
+          }
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -76,6 +83,7 @@ class ForegroundNotificationService : Service() {
           Log.d(TAG, "Foreground service started with notification: $notificationKey")
         } catch (e: Exception) {
           Log.e(TAG, "Error starting foreground service: ${e.message}", e)
+          throw e
         }
       }
     }
@@ -104,16 +112,5 @@ class ForegroundNotificationService : Service() {
       isServiceStarted = false
     }
     super.onDestroy()
-  }
-
-  private fun createDummyNotification(notificationId: Int): Notification {
-    // TODO This is a placeholder - in a real implementation, we'd need to pass
-    // the actual notification or retrieve it from a shared location
-    return Notification
-      .Builder(this, SimpleNotification.CHANNEL_ID)
-      .setContentTitle("Audio Service")
-      .setContentText("Running in background")
-      .setSmallIcon(android.R.drawable.ic_media_play)
-      .build()
   }
 }

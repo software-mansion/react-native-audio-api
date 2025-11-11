@@ -25,6 +25,8 @@ import com.swmansion.audioapi.core.NativeAudioRecorder
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
 import com.swmansion.audioapi.system.notification.SimpleNotification
+import com.swmansion.audioapi.system.notification.PlaybackNotification
+import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
 import java.lang.ref.WeakReference
 import java.util.UUID
 
@@ -41,6 +43,7 @@ object MediaSessionManager {
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
+  private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
@@ -69,6 +72,10 @@ object MediaSessionManager {
       MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(this.mediaNotificationManager), this.audioAPIModule)
     this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.mediaNotificationManager)))
 
+    // Set up PlaybackNotificationReceiver
+    PlaybackNotificationReceiver.setAudioAPIModule(audioAPIModule.get())
+    this.playbackNotificationReceiver = PlaybackNotificationReceiver()
+
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
     filter.addAction(MediaNotificationManager.MEDIA_BUTTON)
@@ -82,6 +89,19 @@ object MediaSessionManager {
         this.reactContext.get()!!,
         mediaReceiver,
         filter,
+        ContextCompat.RECEIVER_NOT_EXPORTED,
+      )
+    }
+
+    // Register PlaybackNotificationReceiver separately
+    val playbackFilter = IntentFilter(PlaybackNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      this.reactContext.get()!!.registerReceiver(playbackNotificationReceiver, playbackFilter, Context.RECEIVER_NOT_EXPORTED)
+    } else {
+      ContextCompat.registerReceiver(
+        this.reactContext.get()!!,
+        playbackNotificationReceiver,
+        playbackFilter,
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
     }
@@ -319,6 +339,7 @@ object MediaSessionManager {
     val notification =
       when (type) {
         "simple" -> SimpleNotification(reactContext)
+        "playback" -> PlaybackNotification(reactContext, audioAPIModule, 100, "audio_playback")
         else -> throw IllegalArgumentException("Unknown notification type: $type")
       }
 
