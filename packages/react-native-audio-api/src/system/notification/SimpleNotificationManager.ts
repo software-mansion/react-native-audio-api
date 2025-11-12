@@ -149,12 +149,13 @@ class SimpleNotificationManager
   /// Add an event listener (SimpleNotification doesn't emit events).
   addEventListener<T extends never>(
     _eventName: T,
-    _callback: (event: any) => void
+    _callback: (event: never) => void
   ): AudioEventSubscription {
     // SimpleNotification doesn't emit events, return a no-op subscription
     console.warn('SimpleNotification does not support event listeners');
     return this.audioEventEmitter.addAudioEventListener(
-      'playbackNotificationPlay' as any,
+      // Using a valid event name for the no-op subscription
+      'playbackNotificationPlay',
       () => {}
     );
   }

@@ -49,6 +49,8 @@ class PlaybackNotification(
   private var mediaSession: MediaSessionCompat? = null
   private var notificationBuilder: NotificationCompat.Builder? = null
   private var playbackStateBuilder: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
+  private var playbackState: PlaybackStateCompat = playbackStateBuilder.build()
+  private var playbackPlayingState: Int = PlaybackStateCompat.STATE_PAUSED
 
   private var enabledControls: Long = 0
   private var isPlaying: Boolean = false
@@ -192,7 +194,8 @@ class PlaybackNotification(
 
     playbackStateBuilder.setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
     playbackStateBuilder.setActions(enabledControls)
-    mediaSession?.setPlaybackState(playbackStateBuilder.build())
+    playbackState = playbackStateBuilder.build()
+    mediaSession?.setPlaybackState(playbackState)
     mediaSession?.isActive = false
     mediaSession?.release()
     mediaSession = null
@@ -236,22 +239,37 @@ class PlaybackNotification(
 
     if (options.hasKey("elapsedTime")) {
       elapsedTime = (options.getDouble("elapsedTime") * 1000).toLong()
+    } else {
+      // Use the current position from the media session controller (live calculated position)
+      val controllerPosition = mediaSession?.controller?.playbackState?.position
+      if (controllerPosition != null && controllerPosition > 0) {
+        elapsedTime = controllerPosition
+      }
     }
 
     if (options.hasKey("speed")) {
       speed = options.getDouble("speed").toFloat()
+    } else {
+      // Use the current speed from the media session controller
+      val controllerSpeed = mediaSession?.controller?.playbackState?.playbackSpeed
+      if (controllerSpeed != null && controllerSpeed > 0) {
+        speed = controllerSpeed
+      }
+    }
+
+    // Ensure speed is at least 1.0 when playing
+    if (isPlaying && speed == 0f) {
+      speed = 1.0f
     }
 
     // Update playback state
     if (options.hasKey("state")) {
       when (options.getString("state")) {
         "playing" -> {
-          isPlaying = true
-          updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+          playbackPlayingState = PlaybackStateCompat.STATE_PLAYING
         }
         "paused" -> {
-          isPlaying = false
-          updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+          playbackPlayingState = PlaybackStateCompat.STATE_PAUSED
         }
       }
     }
@@ -303,6 +321,7 @@ class PlaybackNotification(
       }
     }
 
+    updatePlaybackState(playbackPlayingState)
     mediaSession?.setMetadata(metadataBuilder.build())
     mediaSession?.isActive = true
 
@@ -346,7 +365,8 @@ class PlaybackNotification(
 
     // Update playback state with new controls
     playbackStateBuilder.setActions(enabledControls)
-    mediaSession?.setPlaybackState(playbackStateBuilder.build())
+    playbackState = playbackStateBuilder.build()
+    mediaSession?.setPlaybackState(playbackState)
   }
 
   private fun updateActions() {
@@ -435,7 +455,13 @@ class PlaybackNotification(
 
     playbackStateBuilder.setState(state, elapsedTime, speed)
     playbackStateBuilder.setActions(enabledControls)
-    mediaSession?.setPlaybackState(playbackStateBuilder.build())
+    playbackState = playbackStateBuilder.build()
+    if (mediaSession != null) {
+      Log.d(TAG, "mediaSession is not null")
+    } else {
+      Log.d(TAG, "mediaSession is null")
+    }
+    mediaSession?.setPlaybackState(playbackState)
 
     // Update ongoing state - only persistent when playing
     notificationBuilder?.setOngoing(isPlaying)

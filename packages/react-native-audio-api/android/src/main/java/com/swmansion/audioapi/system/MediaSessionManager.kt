@@ -37,19 +37,13 @@ object MediaSessionManager {
   const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
-  private lateinit var mediaSession: MediaSessionCompat
-  lateinit var mediaNotificationManager: MediaNotificationManager
-  private lateinit var lockScreenManager: LockScreenManager
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
-  private lateinit var mediaReceiver: MediaReceiver
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
 
-  private var isServiceRunning = false
-  private val serviceStateLock = Any()
   private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
   private val nativeAudioRecorders = mutableMapOf<String, NativeAudioRecorder>()
 
@@ -60,40 +54,16 @@ object MediaSessionManager {
     this.audioAPIModule = audioAPIModule
     this.reactContext = reactContext
     this.audioManager = reactContext.get()?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    this.mediaSession = MediaSessionCompat(reactContext.get()!!, "MediaSessionManager")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
     }
 
-    this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
-    this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
-    this.mediaReceiver =
-      MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(this.mediaNotificationManager), this.audioAPIModule)
-    this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.mediaNotificationManager)))
-
     // Set up PlaybackNotificationReceiver
     PlaybackNotificationReceiver.setAudioAPIModule(audioAPIModule.get())
     this.playbackNotificationReceiver = PlaybackNotificationReceiver()
 
-    val filter = IntentFilter()
-    filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
-    filter.addAction(MediaNotificationManager.MEDIA_BUTTON)
-    filter.addAction(Intent.ACTION_MEDIA_BUTTON)
-    filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      this.reactContext.get()!!.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
-    } else {
-      ContextCompat.registerReceiver(
-        this.reactContext.get()!!,
-        mediaReceiver,
-        filter,
-        ContextCompat.RECEIVER_NOT_EXPORTED,
-      )
-    }
-
-    // Register PlaybackNotificationReceiver separately
+    // Register PlaybackNotificationReceiver
     val playbackFilter = IntentFilter(PlaybackNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       this.reactContext.get()!!.registerReceiver(playbackNotificationReceiver, playbackFilter, Context.RECEIVER_NOT_EXPORTED)
@@ -107,7 +77,7 @@ object MediaSessionManager {
     }
 
     this.audioFocusListener =
-      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
+      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
     // Initialize new notification system
@@ -149,49 +119,32 @@ object MediaSessionManager {
   }
 
   private fun startForegroundService() {
-    synchronized(serviceStateLock) {
-      if (isServiceRunning || reactContext.get() == null) {
-        return
-      }
-
-      val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-      intent.action = MediaNotificationManager.ForegroundAction.START_FOREGROUND.name
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        ContextCompat.startForegroundService(reactContext.get()!!, intent)
-      } else {
-        reactContext.get()!!.startService(intent)
-      }
-      isServiceRunning = true
-    }
+    // No longer needed with new notification system
   }
 
   private fun stopForegroundService() {
-    synchronized(serviceStateLock) {
-      if (!isServiceRunning || reactContext.get() == null) {
-        return
-      }
-
-      val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
-      intent.action = MediaNotificationManager.ForegroundAction.STOP_FOREGROUND.name
-      reactContext.get()!!.startService(intent)
-      isServiceRunning = false
-    }
+    // No longer needed with new notification system
   }
 
+  // Deprecated - kept for backward compatibility
+  @Deprecated("Use new PlaybackNotification system instead")
   fun setLockScreenInfo(info: ReadableMap?) {
-    lockScreenManager.setLockScreenInfo(info)
+    // No-op: Old system removed
   }
 
+  // Deprecated - kept for backward compatibility
+  @Deprecated("Use new PlaybackNotification system instead")
   fun resetLockScreenInfo() {
-    lockScreenManager.resetLockScreenInfo()
+    // No-op: Old system removed
   }
 
+  // Deprecated - kept for backward compatibility
+  @Deprecated("Use new PlaybackNotification system instead")
   fun enableRemoteCommand(
     name: String,
     enabled: Boolean,
   ) {
-    lockScreenManager.enableRemoteCommand(name, enabled)
+    // No-op: Old system removed
   }
 
   fun getDevicePreferredSampleRate(): Double {

@@ -1,14 +1,5 @@
-import {
-  SessionOptions,
-  LockScreenInfo,
-  PermissionStatus,
-  AudioDevicesInfo,
-} from './types';
-import {
-  SystemEventName,
-  SystemEventCallback,
-  RemoteCommandEventName,
-} from '../events/types';
+import { SessionOptions, PermissionStatus, AudioDevicesInfo } from './types';
+import { SystemEventName, SystemEventCallback } from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
@@ -49,14 +40,6 @@ class AudioManager {
     NativeAudioAPIModule!.disableSessionManagement();
   }
 
-  setLockScreenInfo(info: LockScreenInfo) {
-    NativeAudioAPIModule!.setLockScreenInfo(info);
-  }
-
-  resetLockScreenInfo() {
-    NativeAudioAPIModule!.resetLockScreenInfo();
-  }
-
   observeAudioInterruptions(enabled: boolean) {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
@@ -80,10 +63,6 @@ class AudioManager {
 
   observeVolumeChanges(enabled: boolean) {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
-  }
-
-  enableRemoteCommand(name: RemoteCommandEventName, enabled: boolean) {
-    NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
   }
 
   addSystemEventListener<Name extends SystemEventName>(

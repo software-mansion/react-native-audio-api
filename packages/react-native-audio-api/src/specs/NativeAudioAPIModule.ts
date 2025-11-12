@@ -17,14 +17,7 @@ interface Spec extends TurboModule {
   ): void;
   disableSessionManagement(): void;
 
-  // Lock Screen Info
-  setLockScreenInfo(info: {
-    [key: string]: string | boolean | number | undefined;
-  }): void;
-  resetLockScreenInfo(): void;
-
   // Remote commands, system events and interruptions
-  enableRemoteCommand(name: string, enabled: boolean): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;

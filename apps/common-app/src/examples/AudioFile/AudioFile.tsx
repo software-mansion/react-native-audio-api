@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, FC } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { AudioManager } from 'react-native-audio-api';
+import { AudioManager, PlaybackNotificationManager } from 'react-native-audio-api';
 import { Container, Button, Spacer } from '../../components';
 import AudioPlayer from './AudioPlayer';
 import { colors } from '../../styles';
@@ -13,6 +13,7 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [positionPercentage, setPositionPercentage] = useState(0);
+  const [shouldResume, setShouldResume] = useState(false);
 
   const togglePlayPause = async () => {
     if (isPlaying) {
@@ -41,76 +42,103 @@ const AudioFile: FC = () => {
   }, []);
 
   useEffect(() => {
-    AudioManager.setLockScreenInfo({
-      title: 'Audio file',
-      artist: 'Software Mansion',
-      album: 'Audio API',
-      duration: 10,
-    });
+    // Register notification first
+    const setupNotification = async () => {
+      try {
+        await PlaybackNotificationManager.register();
 
-    AudioManager.enableRemoteCommand('remotePlay', true);
-    AudioManager.enableRemoteCommand('remotePause', true);
-    AudioManager.enableRemoteCommand('remoteSkipForward', true);
-    AudioManager.enableRemoteCommand('remoteSkipBackward', true);
+        // Load audio buffer first
+        await fetchAudioBuffer();
+
+        // Show notification with correct duration after buffer is loaded
+        const duration = AudioPlayer.getDuration();
+        await PlaybackNotificationManager.show({
+          title: 'Audio file',
+          artist: 'Software Mansion',
+          album: 'Audio API',
+          duration: duration,
+          state: 'paused',
+          elapsedTime: 0,
+        });
+      } catch (error) {
+        console.error('Failed to setup notification:', error);
+      }
+    };
+
+    setupNotification();
+
     AudioManager.observeAudioInterruptions(true);
     AudioManager.activelyReclaimSession(true);
 
-    const remotePlaySubscription = AudioManager.addSystemEventListener(
-      'remotePlay',
+    // Listen to notification control events
+    const playListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationPlay',
       () => {
         AudioPlayer.play();
         setIsPlaying(true);
       }
     );
 
-    const remotePauseSubscription = AudioManager.addSystemEventListener(
-      'remotePause',
+    const pauseListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationPause',
       () => {
         AudioPlayer.pause();
         setIsPlaying(false);
       }
     );
 
-    const remoteSkipForwardSubscription = AudioManager.addSystemEventListener(
-      'remoteSkipForward',
+    const skipForwardListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSkipForward',
       (event) => {
         AudioPlayer.seekBy(event.value);
       }
     );
 
-    const remoteSkipBackwardSubscription = AudioManager.addSystemEventListener(
-      'remoteSkipBackward',
+    const skipBackwardListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSkipBackward',
       (event) => {
         AudioPlayer.seekBy(-event.value);
       }
     );
 
+    // Keep interruption handling through AudioManager
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       async (event) => {
         if (event.type === 'began') {
-          await AudioPlayer.pause();
-          setIsPlaying(false);
-        } else if (event.type === 'ended' && event.shouldResume) {
-          BackgroundTimer.setTimeout(async () => {
-            AudioManager.setAudioSessionActivity(true);
-            await AudioPlayer.play();
-            setIsPlaying(true);
-          }, 1000);
+          // Store whether we were playing before interruption
+          setShouldResume(isPlaying && event.isTransient);
+
+          if (isPlaying) {
+            await AudioPlayer.pause();
+            setIsPlaying(false);
+          }
+        } else if (event.type === 'ended') {
+
+          if (shouldResume) {
+            BackgroundTimer.setTimeout(async () => {
+              AudioManager.setAudioSessionActivity(true);
+              await AudioPlayer.play();
+              setIsPlaying(true);
+              console.log('Auto-resumed after transient interruption');
+            }, 500);
+          }
+
+          // Reset the flag
+          setShouldResume(false);
         }
       }
     );
 
-    fetchAudioBuffer();
-
     return () => {
-      remotePlaySubscription?.remove();
-      remotePauseSubscription?.remove();
-      remoteSkipForwardSubscription?.remove();
-      remoteSkipBackwardSubscription?.remove();
+      playListener.remove();
+      pauseListener.remove();
+      skipForwardListener.remove();
+      skipBackwardListener.remove();
       interruptionSubscription?.remove();
-      AudioManager.resetLockScreenInfo();
+      PlaybackNotificationManager.unregister();
       AudioPlayer.reset();
+      console.log('Cleanup AudioFile component');
     };
   }, [fetchAudioBuffer]);
 

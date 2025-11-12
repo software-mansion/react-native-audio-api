@@ -28,7 +28,7 @@ export interface NotificationManager<
   /// Add an event listener for notification events.
   addEventListener<T extends TEventName>(
     eventName: T,
-    callback: (event: any) => void
+    callback: (event: unknown) => void
   ): AudioEventSubscription;
 
   /// Remove an event listener.

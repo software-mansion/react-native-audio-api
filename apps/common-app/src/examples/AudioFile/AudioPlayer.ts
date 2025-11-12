@@ -1,9 +1,12 @@
-import { AudioContext, AudioManager } from 'react-native-audio-api';
+import { AudioContext, PlaybackNotificationManager } from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
 } from 'react-native-audio-api';
 
+
+// 1. Pasek sie nie updatuje podczas robienia pause play
+// 2. Pierwszy play nie pokazuje widgeta dopiero stop go pokazuje
 class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
@@ -58,8 +61,8 @@ class AudioPlayer {
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
-    AudioManager.setLockScreenInfo({
-      state: 'state_playing',
+    PlaybackNotificationManager.update({
+      state: 'playing'
     });
   };
 
@@ -71,8 +74,8 @@ class AudioPlayer {
 
     this.sourceNode?.stop(this.audioContext.currentTime);
 
-    AudioManager.setLockScreenInfo({
-      state: 'state_paused',
+    PlaybackNotificationManager.update({
+      state: 'paused'
     });
 
     await this.audioContext.suspend();
@@ -131,6 +134,10 @@ class AudioPlayer {
     callback: null | ((offset: number) => void) = null
   ) => {
     this.onPositionChanged = callback;
+  };
+
+  getDuration = (): number => {
+    return this.audioBuffer?.duration ?? 0;
   };
 }
 

@@ -11,50 +11,35 @@ import java.util.HashMap
 class AudioFocusListener(
   private val audioManager: WeakReference<AudioManager>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
-  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : AudioManager.OnAudioFocusChangeListener {
-  private var playOnAudioFocus: Boolean = false
   private var focusRequest: AudioFocusRequest? = null
 
   override fun onAudioFocusChange(focusChange: Int) {
     Log.d("AudioFocusListener", "onAudioFocusChange: $focusChange")
     when (focusChange) {
       AudioManager.AUDIOFOCUS_LOSS -> {
-        playOnAudioFocus = false
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("shouldResume", false)
+            put("isTransient", false)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-        playOnAudioFocus = lockScreenManager.get()?.isPlaying == true
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("shouldResume", playOnAudioFocus)
+            put("isTransient", true)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
       AudioManager.AUDIOFOCUS_GAIN -> {
-        if (playOnAudioFocus) {
-          val body =
-            HashMap<String, Any>().apply {
-              put("type", "ended")
-              put("shouldResume", true)
-            }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
-        } else {
-          val body =
-            HashMap<String, Any>().apply {
-              put("type", "ended")
-              put("shouldResume", false)
-            }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
-        }
-
-        playOnAudioFocus = false
+        val body =
+          HashMap<String, Any>().apply {
+            put("type", "ended")
+            put("isTransient", false)
+          }
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
     }
   }

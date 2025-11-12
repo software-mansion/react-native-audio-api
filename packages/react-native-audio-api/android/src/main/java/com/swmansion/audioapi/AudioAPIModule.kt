@@ -113,21 +113,6 @@ class AudioAPIModule(
     // nothing to do here
   }
 
-  override fun setLockScreenInfo(info: ReadableMap?) {
-    MediaSessionManager.setLockScreenInfo(info)
-  }
-
-  override fun resetLockScreenInfo() {
-    MediaSessionManager.resetLockScreenInfo()
-  }
-
-  override fun enableRemoteCommand(
-    name: String?,
-    enabled: Boolean,
-  ) {
-    MediaSessionManager.enableRemoteCommand(name!!, enabled)
-  }
-
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
