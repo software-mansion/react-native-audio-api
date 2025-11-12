@@ -4,9 +4,6 @@ import type {
   AudioBuffer,
 } from 'react-native-audio-api';
 
-
-// 1. Pasek sie nie updatuje podczas robienia pause play
-// 2. Pierwszy play nie pokazuje widgeta dopiero stop go pokazuje
 class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
