@@ -16,6 +16,7 @@ namespace audioapi {
 
 class AudioBus;
 class GainNode;
+class DelayNode;
 class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
@@ -66,6 +67,7 @@ class BaseAudioContext {
   std::shared_ptr<ConstantSourceNode> createConstantSource();
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain();
+  std::shared_ptr<DelayNode> createDelay(float maxDelayTime);
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);

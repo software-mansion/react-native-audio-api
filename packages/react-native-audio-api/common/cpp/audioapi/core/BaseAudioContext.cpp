@@ -3,6 +3,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/ConvolverNode.h>
+#include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
@@ -132,6 +133,12 @@ std::shared_ptr<GainNode> BaseAudioContext::createGain() {
   auto gain = std::make_shared<GainNode>(this);
   nodeManager_->addProcessingNode(gain);
   return gain;
+}
+
+std::shared_ptr<DelayNode> BaseAudioContext::createDelay(float maxDelayTime) {
+  auto delay = std::make_shared<DelayNode>(this, maxDelayTime);
+  nodeManager_->addProcessingNode(delay);
+  return delay;
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {

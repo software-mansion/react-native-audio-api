@@ -10,6 +10,7 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -22,6 +23,7 @@ export default interface BaseAudioContext {
   createOscillator(): OscillatorNode;
   createConstantSource(): ConstantSourceNode;
   createGain(): GainNode;
+  createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
   createConvolver(): ConvolverNode;

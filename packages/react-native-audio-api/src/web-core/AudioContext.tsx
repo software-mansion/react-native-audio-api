@@ -16,6 +16,7 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 import { ConvolverNodeOptions } from './ConvolverNodeOptions';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
@@ -62,6 +63,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createGain(): GainNode {
     return new GainNode(this, this.context.createGain());
+  }
+
+  createDelay(maxDelayTime?: number): DelayNode {
+    return new DelayNode(this, this.context.createDelay(maxDelayTime));
   }
 
   createStereoPanner(): StereoPannerNode {

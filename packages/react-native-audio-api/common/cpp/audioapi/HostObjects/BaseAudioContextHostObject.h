@@ -42,6 +42,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(createPeriodicWave);
   JSI_HOST_FUNCTION_DECL(createAnalyser);
   JSI_HOST_FUNCTION_DECL(createConvolver);
+  JSI_HOST_FUNCTION_DECL(createDelay);
 
   std::shared_ptr<BaseAudioContext> context_;
 

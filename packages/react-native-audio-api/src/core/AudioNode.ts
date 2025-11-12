@@ -23,7 +23,7 @@ export default class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+  public connect(destination: AudioNode | AudioParam): AudioNode {
     if (this.context !== destination.context) {
       throw new InvalidAccessError(
         'Source and destination are from different BaseAudioContexts'
@@ -36,7 +36,7 @@ export default class AudioNode {
       this.node.connect(destination.node);
     }
 
-    return destination;
+    return destination instanceof AudioNode ? destination : this;
   }
 
   public disconnect(destination?: AudioNode | AudioParam): void {

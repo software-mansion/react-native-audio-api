@@ -25,6 +25,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import DelayNode from './DelayNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
@@ -194,6 +195,11 @@ export default class BaseAudioContext {
 
   createGain(): GainNode {
     return new GainNode(this, this.context.createGain());
+  }
+
+  createDelay(maxDelayTime?: number): DelayNode {
+    const maxTime = maxDelayTime ?? 1.0;
+    return new DelayNode(this, this.context.createDelay(maxTime));
   }
 
   createStereoPanner(): StereoPannerNode {

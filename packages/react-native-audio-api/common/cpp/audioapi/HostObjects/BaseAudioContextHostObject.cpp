@@ -6,6 +6,7 @@
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
+#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
@@ -44,6 +45,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
@@ -187,6 +189,17 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   auto gain = context_->createGain();
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
+  auto maxDelayTime = static_cast<float>(args[0].getNumber());
+  auto delayNode = context_->createDelay(maxDelayTime);
+  auto delayNodeHostObject = std::make_shared<DelayNodeHostObject>(delayNode);
+  auto jsiObject =
+      jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
+  jsiObject.setExternalMemoryPressure(
+      runtime, sizeof(float) * this->context_->getSampleRate() * maxDelayTime);
+  return jsiObject;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
