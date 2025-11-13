@@ -74,20 +74,6 @@ function App() {
 
 ## Methods
 
-### `setLockScreenInfo`
-
-| Parameter | Type | Description |
-| :---: | :---: | :-----: |
-| `info` | [`LockScreenInfo`](/docs/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
-
-#### Returns `undefined`
-
-### `resetLockScreenInfo`
-
-Resets all of the lock screen data.
-
-#### Returns `undefined`
-
 ### `setAudioSessionOptions` <OnlyiOS />
 
 | Parameter | Type | Description |
@@ -151,24 +137,6 @@ interval polling to check if other audio is playing.
 
 #### Returns `undefined`
 
-### `enableRemoteCommand`
-
-Enables emition of some system events.
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `name` | [`RemoteCommandEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
-| `enabled` | `boolean` | Indicates the start or the end of event emission |
-
-#### Returns `undefined`
-
-:::info
-
-If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/docs/system/audio-manager#addsystemeventlistener)
-with proper parameters.
-
-:::
-
 
 ### `addSystemEventListener`
 
@@ -198,6 +166,19 @@ Checks if permissions were previously granted.
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
+### `requestNotificationPermissions`
+
+Brings up the system notification permissions pop-up on demand. The pop-up automatically shows if notification data
+is directly requested, but sometimes it is better to ask beforehand.
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+### `checkRecordingPermissions`
+
+Checks if permissions were previously granted.
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
 ### `getDevicesInfo`
 
 Checks currently used and available devices.
@@ -205,32 +186,6 @@ Checks currently used and available devices.
 #### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 
 ## Remarks
-
-### `LockScreenInfo`
-
-<details>
-<summary>Type definitions</summary>
-```typescript
-interface BaseLockScreenInfo {
-  [key: string]: string | boolean | number | undefined;
-}
-
-//state_playing if track is played, state_paused otherwise
-type MediaState = 'state_playing' | 'state_paused';
-
-interface LockScreenInfo extends BaseLockScreenInfo {
-  title?: string; //title of the track
-  artwork?: string; //uri to the artwork
-  artist?: string; //name of the artist
-  album?: string; //name of the album
-  duration?: number; //duration in seconds
-  description?: string; // android only, description of the track
-  state?: MediaState;
-  speed?: number; //playback rate
-  elapsedTime?: number; //elapsed time of an audio in seconds
-}
-```
-</details>
 
 ### `SessionOptions`
 
@@ -288,7 +243,7 @@ interface EventTypeWithValue {
 
 interface OnInterruptionEventType {
   type: 'ended' | 'began'; //if interruption event has started or ended
-  shouldResume: boolean; //if we should resume playing after interruption
+  isTransient: boolean; //if the interruption was temporary
 }
 
 interface OnRouteChangeEventType {
@@ -320,7 +275,18 @@ interface RemoteCommandEvents {
   remoteChangePlaybackPosition: EventTypeWithValue;
 }
 
-type SystemEvents = RemoteCommandEvents & {
+interface PlaybackNotificationEvents {
+  playbackNotificationPlay: EventEmptyType;
+  playbackNotificationPause: EventEmptyType;
+  playbackNotificationNext: EventEmptyType;
+  playbackNotificationPrevious: EventEmptyType;
+  playbackNotificationSkipForward: EventTypeWithValue;
+  playbackNotificationSkipBackward: EventTypeWithValue;
+  playbackNotificationDismissed: EventEmptyType;
+}
+
+type SystemEvents = RemoteCommandEvents & 
+  PlaybackNotificationEvents & {
   volumeChange: EventTypeWithValue; //triggered when volume level is changed
   interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
   routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
