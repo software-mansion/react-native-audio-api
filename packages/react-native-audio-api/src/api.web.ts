@@ -32,8 +32,6 @@ export {
   IOSMode,
   IOSOption,
   SessionOptions,
-  MediaState,
-  LockScreenInfo,
   PermissionStatus,
 } from './system/types';
 

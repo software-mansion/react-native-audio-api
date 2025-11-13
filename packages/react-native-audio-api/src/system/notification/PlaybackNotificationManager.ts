@@ -1,11 +1,11 @@
 import { NativeAudioAPIModule } from '../../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
-import type { SystemEventCallback } from '../../events/types';
 import type {
   NotificationManager,
   PlaybackNotificationInfo,
   PlaybackControlName,
   PlaybackNotificationEventName,
+  NotificationEvents,
 } from './types';
 
 /// Manager for media playback notifications with controls and MediaSession integration.
@@ -179,7 +179,7 @@ class PlaybackNotificationManager
   /// Add an event listener for notification actions.
   addEventListener<T extends PlaybackNotificationEventName>(
     eventName: T,
-    callback: SystemEventCallback<T>
+    callback: (event: NotificationEvents[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
   }

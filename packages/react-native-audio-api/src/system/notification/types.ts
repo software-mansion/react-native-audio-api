@@ -1,11 +1,12 @@
 import type { AudioEventSubscription } from '../../events';
+import { EventEmptyType, EventTypeWithValue } from '../../events/types';
 
 /// Generic notification manager interface that all notification managers should implement.
 /// Provides a consistent API for managing notification lifecycle and events.
 export interface NotificationManager<
   TShowOptions,
   TUpdateOptions,
-  TEventName extends string = string,
+  TEventName extends NotificationEventName,
 > {
   /// Register the notification (must be called before showing).
   register(): Promise<void>;
@@ -28,7 +29,7 @@ export interface NotificationManager<
   /// Add an event listener for notification events.
   addEventListener<T extends TEventName>(
     eventName: T,
-    callback: (event: unknown) => void
+    callback: NotificationCallback<T>
   ): AudioEventSubscription;
 
   /// Remove an event listener.
@@ -57,14 +58,24 @@ export type PlaybackControlName =
   | 'skipBackward';
 
 /// Event names for playback notification actions.
-export type PlaybackNotificationEventName =
-  | 'playbackNotificationPlay'
-  | 'playbackNotificationPause'
-  | 'playbackNotificationNext'
-  | 'playbackNotificationPrevious'
-  | 'playbackNotificationSkipForward'
-  | 'playbackNotificationSkipBackward'
-  | 'playbackNotificationDismissed';
+interface PlaybackNotificationEvent {
+  playbackNotificationPlay: EventEmptyType;
+  playbackNotificationPause: EventEmptyType;
+  playbackNotificationNext: EventEmptyType;
+  playbackNotificationPrevious: EventEmptyType;
+  playbackNotificationSkipForward: EventTypeWithValue;
+  playbackNotificationSkipBackward: EventTypeWithValue;
+  playbackNotificationDismissed: EventEmptyType;
+}
+
+export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
+
+export type NotificationEvents = PlaybackNotificationEvent;
+export type NotificationEventName = keyof NotificationEvents;
+
+export type NotificationCallback<Name extends NotificationEventName> = (
+  event: NotificationEvents[Name]
+) => void;
 
 /// Options for a simple notification with title and text.
 export interface SimpleNotificationOptions {

@@ -4,6 +4,7 @@ import type { NotificationManager, SimpleNotificationOptions } from './types';
 
 /// Simple notification manager for basic notifications with title and text.
 /// Implements the generic NotificationManager interface.
+// It is only a showcase
 class SimpleNotificationManager
   implements
     NotificationManager<

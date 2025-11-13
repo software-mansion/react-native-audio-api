@@ -34,24 +34,6 @@ export interface SessionOptions {
   iosAllowHaptics?: boolean;
 }
 
-export type MediaState = 'state_playing' | 'state_paused';
-
-interface BaseLockScreenInfo {
-  [key: string]: string | boolean | number | undefined;
-}
-
-export interface LockScreenInfo extends BaseLockScreenInfo {
-  title?: string;
-  artwork?: string;
-  artist?: string;
-  album?: string;
-  duration?: number;
-  description?: string; // android only
-  state?: MediaState;
-  speed?: number;
-  elapsedTime?: number;
-}
-
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
 export interface AudioDeviceInfo {
