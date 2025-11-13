@@ -16,51 +16,7 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 ## Example
 
 ```tsx
-import { PlaybackNotificationManager } from 'react-native-audio-api';
-import { useEffect } from 'react';
-
-function AudioPlayer() {
-  useEffect(() => {
-    // Register the notification
-    PlaybackNotificationManager.register();
-
-    // Show initial notification
-    PlaybackNotificationManager.show({
-      title: 'My Song',
-      artist: 'Artist Name',
-      album: 'Album Name',
-      duration: 180,
-    });
-
-    // Add event listeners for controls
-    const playListener = PlaybackNotificationManager.addEventListener(
-      'playbackNotificationPlay',
-      () => {
-        // Handle play action
-        PlaybackNotificationManager.update({ state: 'playing' });
-      }
-    );
-
-    const pauseListener = PlaybackNotificationManager.addEventListener(
-      'playbackNotificationPause',
-      () => {
-        // Handle pause action
-        PlaybackNotificationManager.update({ state: 'paused' });
-      }
-    );
-
-    return () => {
-      playListener.remove();
-      pauseListener.remove();
-      PlaybackNotificationManager.unregister();
-    };
-  }, []);
-
-  // Update playback position
-  const updateProgress = (elapsedTime: number) => {
-    PlaybackNotificationManager.update({ elapsedTime });
-  };
-}
+// TO DO
 ```
 
 ## Methods
@@ -190,16 +146,19 @@ interface PlaybackNotificationInfo {
 
 <details>
   <summary>Type definitions</summary>
-  ```typescript
-  type PlaybackNotificationEventName =
-    | 'playbackNotificationPlay'
-    | 'playbackNotificationPause'
-    | 'playbackNotificationNext'
-    | 'playbackNotificationPrevious'
-    | 'playbackNotificationSkipForward'
-    | 'playbackNotificationSkipBackward'
-    | 'playbackNotificationDismissed'; 
-    ```
+```typescript
+    interface PlaybackNotificationEvent {
+      playbackNotificationPlay: EventEmptyType;
+      playbackNotificationPause: EventEmptyType;
+      playbackNotificationNext: EventEmptyType;
+      playbackNotificationPrevious: EventEmptyType;
+      playbackNotificationSkipForward: EventTypeWithValue;
+      playbackNotificationSkipBackward: EventTypeWithValue;
+      playbackNotificationDismissed: EventEmptyType;
+    }
+
+    type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
+  ```
 </details>
 
 ```

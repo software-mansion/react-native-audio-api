@@ -243,7 +243,7 @@ interface EventTypeWithValue {
 
 interface OnInterruptionEventType {
   type: 'ended' | 'began'; //if interruption event has started or ended
-  isTransient: boolean; //if we should resume playing after interruption
+  isTransient: boolean; //if the interruption was temporary
 }
 
 interface OnRouteChangeEventType {
