@@ -1,0 +1,167 @@
+---
+sidebar_position: 4
+---
+
+import {
+  Optional,
+  ReadOnly,
+  OnlyiOS,
+  Experimental,
+} from '@site/src/components/Badges';
+
+# RecordingNotificationManager
+
+The `RecordingNotificationManager` provides recording session integration and recording controls for your audio application. It manages system-level recording notifications with controls like start and stop functionality.
+
+## Example
+
+```tsx
+// TODO
+```
+
+## Methods
+
+### `register`
+
+Register the recording notification with the system. Must be called before showing any notification.
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                 |
+| :--------: | :---------------------------------------------------------- |
+|  `Error`   | NativeAudioAPIModule is not available or registration fails |
+
+### `show`
+
+Display the notification with initial metadata.
+
+| Parameter |                                                 Type                                                 | Description                   |
+| :-------: | :--------------------------------------------------------------------------------------------------: | :---------------------------- |
+|  `info`   | [`RecordingNotificationInfo`](/docs/system/recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                        |
+| :--------: | :----------------------------------------------------------------- |
+|  `Error`   | Notification must be registered first or native module unavailable |
+
+### `update`
+
+Update the notification with new metadata or state.
+
+| Parameter |                                                 Type                                                 | Description                   |
+| :-------: | :--------------------------------------------------------------------------------------------------: | :---------------------------- |
+|  `info`   | [`RecordingNotificationInfo`](/docs/system/recording-notification-manager#recordingnotificationinfo) | Updated notification metadata |
+
+#### Returns `Promise<void>`.
+
+### `hide`
+
+Hide the notification. Can be shown again later by calling `show()`.
+
+#### Returns `Promise<void>`.
+
+### `unregister`
+
+Unregister the notification from the system. Must call `register()` again to use.
+
+#### Returns `Promise<void>`.
+
+### `enableControl`
+
+Enable or disable specific recording controls.
+
+| Parameter |                                            Type                                            | Description                           |
+| :-------: | :----------------------------------------------------------------------------------------: | :------------------------------------ |
+| `control` | [`RecordingControlName`](/docs/system/recording-notification-manager#recordingcontrolname) | The control to enable/disable         |
+| `enabled` |                                         `boolean`                                          | Whether the control should be enabled |
+
+#### Returns `Promise<void>`.
+
+### `isActive`
+
+Check if the notification is currently active and visible.
+
+#### Returns `Promise<boolean>`.
+
+### `addEventListener`
+
+Add an event listener for notification actions.
+
+|  Parameter  |                                                      Type                                                      | Description             |
+| :---------: | :------------------------------------------------------------------------------------------------------------: | :---------------------- |
+| `eventName` | [`RecordingNotificationEventName`](/docs/system/recording-notification-manager#recordingnotificationeventname) | The event to listen for |
+| `callback`  |           [`NotificationCallback`](/docs/system/recording-notification-manager#notificationcallback)           | Callback function       |
+
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+
+### `removeEventListener`
+
+Remove an event listener.
+
+|   Parameter    |                                     Type                                      | Description                |
+| :------------: | :---------------------------------------------------------------------------: | :------------------------- |
+| `subscription` | [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) | The subscription to remove |
+
+## Remarks
+
+### `RecordingNotificationInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface RecordingNotificationInfo {
+  title?: string;
+  artwork?: string | { uri: string };
+  state?: 'recording' | 'stopped';
+}
+```
+</details>
+
+### `RecordingControlName`
+
+<details>
+  <summary>Type definitions</summary>
+  ```typescript 
+  type RecordingControlName = 'start' | 'stop';
+   ```
+</details>
+
+### `RecordingNotificationEventName`
+
+<details>
+  <summary>Type definitions</summary>
+  ```typescript 
+  interface RecordingNotificationEvent {
+    recordingNotificationStart: EventEmptyType;
+    recordingNotificationStop: EventEmptyType;
+    recordingNotificationDismissed: EventEmptyType;
+  }
+
+  type RecordingNotificationEventName = keyof RecordingNotificationEvent;
+ 
+  ```
+</details>
+
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationEvents = PlaybackNotificationEvent & RecordingNotificationEvent;
+
+type NotificationEventName = keyof NotificationEvents;
+
+type NotificationCallback<Name extends NotificationEventName> = (
+  event: NotificationEvents[Name]
+) => void;
+```
+</details>
+
+
+
+
