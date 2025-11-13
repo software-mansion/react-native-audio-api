@@ -1,0 +1,205 @@
+---
+sidebar_position: 2
+---
+
+import {
+  Optional,
+  ReadOnly,
+  OnlyiOS,
+  Experimental,
+} from '@site/src/components/Badges';
+
+# PlaybackNotificationManager
+
+The `PlaybackNotificationManager` provides media session integration and playback controls for your audio application. It manages system-level media notifications with controls like play, pause, next, previous, and seek functionality.
+
+## Example
+
+```tsx
+import { PlaybackNotificationManager } from 'react-native-audio-api';
+import { useEffect } from 'react';
+
+function AudioPlayer() {
+  useEffect(() => {
+    // Register the notification
+    PlaybackNotificationManager.register();
+
+    // Show initial notification
+    PlaybackNotificationManager.show({
+      title: 'My Song',
+      artist: 'Artist Name',
+      album: 'Album Name',
+      duration: 180,
+    });
+
+    // Add event listeners for controls
+    const playListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationPlay',
+      () => {
+        // Handle play action
+        PlaybackNotificationManager.update({ state: 'playing' });
+      }
+    );
+
+    const pauseListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationPause',
+      () => {
+        // Handle pause action
+        PlaybackNotificationManager.update({ state: 'paused' });
+      }
+    );
+
+    return () => {
+      playListener.remove();
+      pauseListener.remove();
+      PlaybackNotificationManager.unregister();
+    };
+  }, []);
+
+  // Update playback position
+  const updateProgress = (elapsedTime: number) => {
+    PlaybackNotificationManager.update({ elapsedTime });
+  };
+}
+```
+
+## Methods
+
+### `register`
+
+Register the playback notification with the system. Must be called before showing any notification.
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                 |
+| :--------: | :---------------------------------------------------------- |
+|  `Error`   | NativeAudioAPIModule is not available or registration fails |
+
+### `show`
+
+Display the notification with initial metadata.
+
+| Parameter |                                               Type                                                | Description                   |
+| :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
+|  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                        |
+| :--------: | :----------------------------------------------------------------- |
+|  `Error`   | Notification must be registered first or native module unavailable |
+
+### `update`
+
+Update the notification with new metadata or state.
+
+| Parameter |                                               Type                                                | Description                   |
+| :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
+|  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Updated notification metadata |
+
+#### Returns `Promise<void>`.
+
+### `hide`
+
+Hide the notification. Can be shown again later by calling `show()`.
+
+#### Returns `Promise<void>`.
+
+### `unregister`
+
+Unregister the notification from the system. Must call `register()` again to use.
+
+#### Returns `Promise<void>`.
+
+### `enableControl`
+
+Enable or disable specific playback controls.
+
+| Parameter |                                          Type                                           | Description                           |
+| :-------: | :-------------------------------------------------------------------------------------: | :------------------------------------ |
+| `control` | [`PlaybackControlName`](/docs/system/playback-notification-manager#playbackcontrolname) | The control to enable/disable         |
+| `enabled` |                                        `boolean`                                        | Whether the control should be enabled |
+
+#### Returns `Promise<void>`.
+
+### `isActive`
+
+Check if the notification is currently active and visible.
+
+#### Returns `Promise<boolean>`.
+
+### `addEventListener`
+
+Add an event listener for notification actions.
+
+|  Parameter  |                                                    Type                                                     | Description             |
+| :---------: | :---------------------------------------------------------------------------------------------------------: | :---------------------- |
+| `eventName` | [`PlaybackNotificationEventName`](/docs/system/playback-notification-manager#playbacknotificationeventname) | The event to listen for |
+| `callback`  |         [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname)         | Callback function       |
+
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+
+### `removeEventListener`
+
+Remove an event listener.
+
+|   Parameter    |                                     Type                                      | Description                |
+| :------------: | :---------------------------------------------------------------------------: | :------------------------- |
+| `subscription` | [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) | The subscription to remove |
+
+## Remarks
+
+### `PlaybackNotificationInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface PlaybackNotificationInfo {
+  title?: string;
+  artist?: string;
+  album?: string;
+  artwork?: string | { uri: string };
+  duration?: number;
+  elapsedTime?: number;
+  speed?: number;
+  state?: 'playing' | 'paused';
+}
+```
+</details>
+
+### `PlaybackControlName`
+
+<details>
+  <summary>Type definitions</summary>
+  ```typescript
+  type PlaybackControlName =
+    | 'play'
+    | 'pause'
+    | 'next'
+    | 'previous'
+    | 'skipForward'
+    | 'skipBackward';
+  ```
+</details>
+
+### `PlaybackNotificationEventName`
+
+<details>
+  <summary>Type definitions</summary>
+  ```typescript
+  type PlaybackNotificationEventName =
+    | 'playbackNotificationPlay'
+    | 'playbackNotificationPause'
+    | 'playbackNotificationNext'
+    | 'playbackNotificationPrevious'
+    | 'playbackNotificationSkipForward'
+    | 'playbackNotificationSkipBackward'
+    | 'playbackNotificationDismissed'; 
+    ```
+</details>
+
+```

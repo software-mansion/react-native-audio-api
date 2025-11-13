@@ -1,0 +1,176 @@
+---
+sidebar_position: 3
+---
+
+import {
+  Optional,
+  ReadOnly,
+  OnlyiOS,
+  Experimental,
+} from '@site/src/components/Badges';
+
+# SimpleNotificationManager
+
+The `SimpleNotificationManager` provides basic notification functionality for displaying simple notifications with title and text. It's designed for use cases where you need to show basic status notifications without media controls.
+
+## Example
+
+```tsx
+import { SimpleNotificationManager } from 'react-native-audio-api';
+import { useEffect } from 'react';
+
+function AudioProcessor() {
+  const showProcessingNotification = async () => {
+    try {
+      // Register the notification
+      await SimpleNotificationManager.register();
+
+      // Show processing notification
+      await SimpleNotificationManager.show({
+        title: 'Processing Audio',
+        text: 'Please wait while we process your audio file...',
+      });
+
+      // Update when complete
+      setTimeout(async () => {
+        await SimpleNotificationManager.update({
+          title: 'Processing Complete',
+          text: 'Your audio has been processed successfully!',
+        });
+
+        // Hide after a delay
+        setTimeout(async () => {
+          await SimpleNotificationManager.hide();
+          await SimpleNotificationManager.unregister();
+        }, 3000);
+      }, 5000);
+    } catch (error) {
+      console.error('Notification error:', error);
+    }
+  };
+
+  return <button onClick={showProcessingNotification}>Start Processing</button>;
+}
+```
+
+## Methods
+
+### `register`
+
+Register the simple notification with the system. Must be called before showing any notification.
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                 |
+| :--------: | :---------------------------------------------------------- |
+|  `Error`   | NativeAudioAPIModule is not available or registration fails |
+
+### `show`
+
+Display the notification with initial options.
+
+| Parameter |                                               Type                                                | Description                  |
+| :-------: | :-----------------------------------------------------------------------------------------------: | :--------------------------- |
+| `options` | [`SimpleNotificationOptions`](/docs/system/simple-notification-manager#simplenotificationoptions) | Initial notification options |
+
+#### Returns `Promise<void>`.
+
+#### Errors
+
+| Error type | Description                                                        |
+| :--------: | :----------------------------------------------------------------- |
+|  `Error`   | Notification must be registered first or native module unavailable |
+
+### `update`
+
+Update the notification with new options.
+
+| Parameter |                                               Type                                                | Description                  |
+| :-------: | :-----------------------------------------------------------------------------------------------: | :--------------------------- |
+| `options` | [`SimpleNotificationOptions`](/docs/system/simple-notification-manager#simplenotificationoptions) | Updated notification options |
+
+#### Returns `Promise<void>`.
+
+### `hide`
+
+Hide the notification. Can be shown again later by calling `show()`.
+
+#### Returns `Promise<void>`.
+
+### `unregister`
+
+Unregister the notification from the system. Must call `register()` again to use.
+
+#### Returns `Promise<void>`.
+
+### `isActive`
+
+Check if the notification is currently active and visible.
+
+#### Returns `Promise<boolean>`.
+
+### `addEventListener`
+
+Add an event listener for notification actions. Note: SimpleNotificationManager does not emit events, so this method provides a no-op subscription.
+
+|  Parameter  |           Type           | Description           |
+| :---------: | :----------------------: | :-------------------- |
+| `eventName` |         `never`          | No events are emitted |
+| `callback`  | `(event: never) => void` | Callback function     |
+
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+
+#### Note
+
+This method will log a warning since SimpleNotificationManager does not support event listeners.
+
+### `removeEventListener`
+
+Remove an event listener.
+
+|   Parameter    |                                     Type                                      | Description                |
+| :------------: | :---------------------------------------------------------------------------: | :------------------------- |
+| `subscription` | [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) | The subscription to remove |
+
+## Remarks
+
+### `SimpleNotificationOptions`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface SimpleNotificationOptions {
+  title?: string;
+  text?: string;
+}
+```
+</details>
+
+## Use Cases
+
+SimpleNotificationManager is ideal for:
+
+- Status updates during audio processing
+- Progress notifications
+- Simple alerts and confirmations
+- Background task status updates
+
+## Limitations
+
+- No interactive controls
+- No event emission
+- Basic styling only
+- Limited to title and text content
+
+## Comparison with PlaybackNotificationManager
+
+|      Feature      | SimpleNotificationManager | PlaybackNotificationManager |
+| :---------------: | :-----------------------: | :-------------------------: |
+|  Media Controls   |            ❌             |             ✅              |
+|  Event Listeners  |            ❌             |             ✅              |
+|  Artwork Support  |            ❌             |             ✅              |
+| Progress Tracking |            ❌             |             ✅              |
+|    Basic Text     |            ✅             |             ✅              |
+|    Simplicity     |            ✅             |             ❌              |
