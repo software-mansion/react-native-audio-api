@@ -75,7 +75,10 @@ class RecordingNotification(
     // Set up media session callbacks
     mediaSession?.setCallback(
       object : MediaSessionCompat.Callback() {
-        override fun onCustomAction(action: String, extras: android.os.Bundle?) {
+        override fun onCustomAction(
+          action: String,
+          extras: android.os.Bundle?,
+        ) {
           Log.d(TAG, "MediaSession: onCustomAction ($action)")
           when (action) {
             "START_RECORDING" -> {
@@ -267,19 +270,23 @@ class RecordingNotification(
     // Add only the appropriate custom action based on current state
     if (!isRecording && (enabledControls and PlaybackStateCompat.ACTION_PLAY) != 0L) {
       // Show START button when not recording
-      val startAction = PlaybackStateCompat.CustomAction.Builder(
-        "START_RECORDING",
-        "Start Recording",
-        android.R.drawable.ic_btn_speak_now
-      ).build()
+      val startAction =
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "START_RECORDING",
+            "Start Recording",
+            android.R.drawable.ic_btn_speak_now,
+          ).build()
       playbackStateBuilder.addCustomAction(startAction)
     } else if (isRecording && (enabledControls and PlaybackStateCompat.ACTION_PAUSE) != 0L) {
       // Show STOP button when recording
-      val stopAction = PlaybackStateCompat.CustomAction.Builder(
-        "STOP_RECORDING",
-        "Stop Recording",
-        android.R.drawable.ic_media_pause
-      ).build()
+      val stopAction =
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "STOP_RECORDING",
+            "Stop Recording",
+            android.R.drawable.ic_media_pause,
+          ).build()
       playbackStateBuilder.addCustomAction(stopAction)
     }
 
