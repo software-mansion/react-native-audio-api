@@ -59,7 +59,8 @@ class AudioPlayer {
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
     PlaybackNotificationManager.update({
-      state: 'playing'
+      state: 'playing',
+      elapsedTime: this.offset,
     });
   };
 
@@ -72,7 +73,8 @@ class AudioPlayer {
     this.sourceNode?.stop(this.audioContext.currentTime);
 
     PlaybackNotificationManager.update({
-      state: 'paused'
+      state: 'paused',
+      elapsedTime: this.offset,
     });
 
     await this.audioContext.suspend();

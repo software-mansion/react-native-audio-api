@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { PlaybackNotificationManager, AudioManager } from 'react-native-audio-api';
+import { PlaybackNotificationManager, AudioManager, AudioContext } from 'react-native-audio-api';
 import type { PermissionStatus } from 'react-native-audio-api';
 import { Container } from '../../components';
 import { colors } from '../../styles';
@@ -10,8 +10,13 @@ export const PlaybackNotificationExample: React.FC = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isShown, setIsShown] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
+    // Create AudioContext in suspended state
+    // Will be resumed when showing notification
+    audioContextRef.current = new AudioContext({ initSuspended: true });
+
     checkPermissions();
 
     // Add event listeners for notification actions
@@ -80,6 +85,12 @@ export const PlaybackNotificationExample: React.FC = () => {
       skipForwardListener.remove();
       skipBackwardListener.remove();
       dismissListener.remove();
+
+      // Cleanup AudioContext
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -105,16 +116,21 @@ export const PlaybackNotificationExample: React.FC = () => {
 
   const handleShow = async () => {
     try {
+      // Resume audio context to activate audio session on iOS
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
       await PlaybackNotificationManager.show({
         title: 'My Audio Track',
         artist: 'Artist Name',
         album: 'Album Name',
-        state: 'paused',
+        state: 'playing',
         duration: 180,
         elapsedTime: 0,
       });
       setIsShown(true);
-      setIsPlaying(false);
+      setIsPlaying(true);
       console.log('Playback notification shown');
     } catch (error) {
       console.error('Failed to show:', error);
@@ -162,6 +178,12 @@ export const PlaybackNotificationExample: React.FC = () => {
   const handleHide = async () => {
     try {
       await PlaybackNotificationManager.hide();
+
+      // Suspend audio context to deactivate audio session on iOS
+      if (audioContextRef.current?.state === 'running') {
+        await audioContextRef.current.suspend();
+      }
+
       setIsShown(false);
       setIsPlaying(false);
       console.log('Playback notification hidden');

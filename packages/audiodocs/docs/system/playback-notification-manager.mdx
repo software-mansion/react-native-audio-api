@@ -13,6 +13,21 @@ import {
 
 The `PlaybackNotificationManager` provides media session integration and playback controls for your audio application. It manages system-level media notifications with controls like play, pause, next, previous, and seek functionality.
 
+:::info Platform Differences
+
+**iOS Requirements:**
+- Notification controls only appear when an active `AudioContext` is running
+- `show()`, `update()` or `hide()` only update metadata - they don't control notification visibility
+- The notification automatically appears/disappears based on audio session state
+- To show: create and resume an AudioContext
+- To hide: suspend or close the AudioContext
+
+**Android:**
+- Notification visibility is directly controlled by `show()` and `hide()` methods
+- Works independently of AudioContext state
+
+:::
+
 ## Example
 
 ```tsx
@@ -37,6 +52,10 @@ Register the playback notification with the system. Must be called before showin
 
 Display the notification with initial metadata.
 
+:::note iOS Behavior
+On iOS, this method only sets the metadata. The notification controls will only appear when an `AudioContext` is actively running. Make sure to create and resume an AudioContext before calling `show()`.
+:::
+
 | Parameter |                                               Type                                                | Description                   |
 | :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
 |  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
@@ -53,6 +72,10 @@ Display the notification with initial metadata.
 
 Update the notification with new metadata or state.
 
+:::note iOS Behavior
+On iOS, this method only updates the metadata. It does not control notification visibility - controls remain visible as long as the AudioContext is running.
+:::
+
 | Parameter |                                               Type                                                | Description                   |
 | :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
 |  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Updated notification metadata |
@@ -62,6 +85,10 @@ Update the notification with new metadata or state.
 ### `hide`
 
 Hide the notification. Can be shown again later by calling `show()`.
+
+:::note iOS Behavior
+On iOS, this method clears the metadata but does not hide the notification controls. To completely hide controls on iOS, you must suspend or close the AudioContext.
+:::
 
 #### Returns `Promise<void>`.
 
@@ -120,6 +147,8 @@ interface PlaybackNotificationInfo {
   album?: string;
   artwork?: string | { uri: string };
   duration?: number;
+
+  // IOS: elapsed time does not update automatically, must be set manually on each state change
   elapsedTime?: number;
   speed?: number;
   state?: 'playing' | 'paused';

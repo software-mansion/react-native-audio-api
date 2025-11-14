@@ -13,6 +13,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/system/notification/NotificationRegistry.h>
 
 #import <audioapi/events/AudioEventHandlerRegistry.h>
 
@@ -51,6 +52,7 @@ RCT_EXPORT_MODULE(AudioAPIModule);
   [self.notificationManager cleanup];
   [self.audioSessionManager cleanup];
   [self.lockScreenManager cleanup];
+  [self.notificationRegistry cleanup];
 
   _eventHandler = nullptr;
 
@@ -65,6 +67,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
   self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
   self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
+  self.notificationRegistry = [[NotificationRegistry alloc] initWithAudioAPIModule:self];
 
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
 
@@ -139,21 +142,6 @@ RCT_EXPORT_METHOD(
   [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options allowHaptics:allowHaptics];
 }
 
-RCT_EXPORT_METHOD(setLockScreenInfo : (NSDictionary *)info)
-{
-  [self.lockScreenManager setLockScreenInfo:info];
-}
-
-RCT_EXPORT_METHOD(resetLockScreenInfo)
-{
-  [self.lockScreenManager resetLockScreenInfo];
-}
-
-RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled)
-{
-  [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
-}
-
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
 {
   [self.notificationManager observeAudioInterruptions:enabled];
@@ -183,6 +171,23 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
+    requestNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+{
+  // iOS doesn't require explicit notification permissions for media controls
+  // MPNowPlayingInfoCenter and MPRemoteCommandCenter work without permissions
+  // Return 'granted' to match the spec interface
+  resolve(@"granted");
+}
+
+RCT_EXPORT_METHOD(
+    checkNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+{
+  // iOS doesn't require explicit notification permissions for media controls
+  // Return 'granted' to match the spec interface
+  resolve(@"granted");
+}
+
+RCT_EXPORT_METHOD(
     getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   [self.audioSessionManager getDevicesInfo:resolve reject:reject];
@@ -191,6 +196,89 @@ RCT_EXPORT_METHOD(
 RCT_EXPORT_METHOD(disableSessionManagement)
 {
   [self.audioSessionManager disableSessionManagement];
+}
+
+// New notification system methods
+RCT_EXPORT_METHOD(
+    registerNotification : (NSString *)type
+    key : (NSString *)key
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL success = [self.notificationRegistry registerNotificationType:type withKey:key];
+
+  if (success) {
+    resolve(@{@"success" : @YES});
+  } else {
+    resolve(@{@"success" : @NO, @"error" : @"Failed to register notification"});
+  }
+}
+
+RCT_EXPORT_METHOD(
+    showNotification : (NSString *)key
+    options : (NSDictionary *)options
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL success = [self.notificationRegistry showNotificationWithKey:key options:options];
+
+  if (success) {
+    resolve(@{@"success" : @YES});
+  } else {
+    resolve(@{@"success" : @NO, @"error" : @"Failed to show notification"});
+  }
+}
+
+RCT_EXPORT_METHOD(
+    updateNotification : (NSString *)key
+    options : (NSDictionary *)options
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL success = [self.notificationRegistry updateNotificationWithKey:key options:options];
+
+  if (success) {
+    resolve(@{@"success" : @YES});
+  } else {
+    resolve(@{@"success" : @NO, @"error" : @"Failed to update notification"});
+  }
+}
+
+RCT_EXPORT_METHOD(
+    hideNotification : (NSString *)key
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
+
+  if (success) {
+    resolve(@{@"success" : @YES});
+  } else {
+    resolve(@{@"success" : @NO, @"error" : @"Failed to hide notification"});
+  }
+}
+
+RCT_EXPORT_METHOD(
+    unregisterNotification : (NSString *)key
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL success = [self.notificationRegistry unregisterNotificationWithKey:key];
+
+  if (success) {
+    resolve(@{@"success" : @YES});
+  } else {
+    resolve(@{@"success" : @NO, @"error" : @"Failed to unregister notification"});
+  }
+}
+
+RCT_EXPORT_METHOD(
+    isNotificationActive : (NSString *)key
+    resolve : (RCTPromiseResolveBlock)resolve
+    reject : (RCTPromiseRejectBlock)reject)
+{
+  BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];
+  resolve(@(isActive));
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED

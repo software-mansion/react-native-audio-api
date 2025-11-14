@@ -58,6 +58,7 @@ const AudioFile: FC = () => {
           album: 'Audio API',
           duration: duration,
           state: 'paused',
+          speed: 1.0,
           elapsedTime: 0,
         });
       } catch (error) {
