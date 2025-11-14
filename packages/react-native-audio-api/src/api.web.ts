@@ -36,6 +36,13 @@ export {
 } from './system/types';
 
 export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+} from './web-system';
+
+export * from './system/notification/types';
+
+export {
   IndexSizeError,
   InvalidAccessError,
   InvalidStateError,
