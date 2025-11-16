@@ -1,6 +1,6 @@
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 #import <audioapi/ios/system/notification/PlaybackNotification.h>
-#import <audioapi/ios/AudioAPIModule.h>
 
 @implementation NotificationRegistry {
   NSMutableDictionary<NSString *, id<BaseNotification>> *_notifications;

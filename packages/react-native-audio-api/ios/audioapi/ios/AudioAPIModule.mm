@@ -171,7 +171,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    requestNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    requestNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+        reject)
 {
   // iOS doesn't require explicit notification permissions for media controls
   // MPNowPlayingInfoCenter and MPRemoteCommandCenter work without permissions
@@ -180,7 +181,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    checkNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    checkNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
+        reject)
 {
   // iOS doesn't require explicit notification permissions for media controls
   // Return 'granted' to match the spec interface
@@ -200,10 +202,8 @@ RCT_EXPORT_METHOD(disableSessionManagement)
 
 // New notification system methods
 RCT_EXPORT_METHOD(
-    registerNotification : (NSString *)type
-    key : (NSString *)key
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    registerNotification : (NSString *)type key : (NSString *)key resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
 {
   BOOL success = [self.notificationRegistry registerNotificationType:type withKey:key];
 
@@ -215,10 +215,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    showNotification : (NSString *)key
-    options : (NSDictionary *)options
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    showNotification : (NSString *)key options : (NSDictionary *)options resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
 {
   BOOL success = [self.notificationRegistry showNotificationWithKey:key options:options];
 
@@ -230,10 +228,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    updateNotification : (NSString *)key
-    options : (NSDictionary *)options
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    updateNotification : (NSString *)key options : (NSDictionary *)options resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
 {
   BOOL success = [self.notificationRegistry updateNotificationWithKey:key options:options];
 
@@ -245,9 +241,7 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    hideNotification : (NSString *)key
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    hideNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
 {
   BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
 
@@ -259,9 +253,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    unregisterNotification : (NSString *)key
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    unregisterNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
+        reject)
 {
   BOOL success = [self.notificationRegistry unregisterNotificationWithKey:key];
 
@@ -273,9 +266,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    isNotificationActive : (NSString *)key
-    resolve : (RCTPromiseResolveBlock)resolve
-    reject : (RCTPromiseRejectBlock)reject)
+    isNotificationActive : (NSString *)key resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
+        reject)
 {
   BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];
   resolve(@(isActive));

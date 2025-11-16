@@ -1,5 +1,5 @@
-#import <audioapi/ios/system/notification/PlaybackNotification.h>
 #import <audioapi/ios/AudioAPIModule.h>
+#import <audioapi/ios/system/notification/PlaybackNotification.h>
 
 #define NOW_PLAYING_INFO_KEYS                                     \
   @{                                                              \
@@ -219,8 +219,7 @@
   }
 
   MPNowPlayingInfoCenter *center = [MPNowPlayingInfoCenter defaultCenter];
-  if ([artworkUrl isEqualToString:self.artworkUrl] &&
-      center.nowPlayingInfo[MPMediaItemPropertyArtwork] != nil) {
+  if ([artworkUrl isEqualToString:self.artworkUrl] && center.nowPlayingInfo[MPMediaItemPropertyArtwork] != nil) {
     return;
   }
 
@@ -251,17 +250,15 @@
       if (imageData) {
         image = [UIImage imageWithData:imageData];
       }
-    }
-    @catch (NSException *exception) {
+    } @catch (NSException *exception) {
       // Failed to load artwork
     }
 
     if (image) {
-      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc]
-                                     initWithBoundsSize:image.size
-                                     requestHandler:^UIImage * _Nonnull(CGSize size) {
-        return image;
-      }];
+      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
+                                                                    requestHandler:^UIImage *_Nonnull(CGSize size) {
+                                                                      return image;
+                                                                    }];
 
       dispatch_async(dispatch_get_main_queue(), ^{
         NSMutableDictionary *nowPlayingInfo = [center.nowPlayingInfo mutableCopy];
@@ -318,17 +315,19 @@
   } else if ([name isEqualToString:@"previous"]) {
     [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
   } else if ([name isEqualToString:@"skipForward"]) {
-    remoteCenter.skipForwardCommand.preferredIntervals = @[@(15)];
+    remoteCenter.skipForwardCommand.preferredIntervals = @[ @(15) ];
     [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
   } else if ([name isEqualToString:@"skipBackward"]) {
-    remoteCenter.skipBackwardCommand.preferredIntervals = @[@(15)];
+    remoteCenter.skipBackwardCommand.preferredIntervals = @[ @(15) ];
     [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
   } else if ([name isEqualToString:@"seekForward"]) {
     [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
   } else if ([name isEqualToString:@"seekBackward"]) {
     [self enableCommand:remoteCenter.seekBackwardCommand withSelector:@selector(onSeekBackward:) enabled:enabled];
   } else if ([name isEqualToString:@"seek"]) {
-    [self enableCommand:remoteCenter.changePlaybackPositionCommand withSelector:@selector(onChangePlaybackPosition:) enabled:enabled];
+    [self enableCommand:remoteCenter.changePlaybackPositionCommand
+           withSelector:@selector(onChangePlaybackPosition:)
+                enabled:enabled];
   }
 }
 
