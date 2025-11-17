@@ -198,7 +198,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
   auto jsiObject =
       jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
   jsiObject.setExternalMemoryPressure(
-      runtime, sizeof(float) * this->context_->getSampleRate() * maxDelayTime);
+      runtime, delayNodeHostObject->getSizeInBytes());
   return jsiObject;
 }
 

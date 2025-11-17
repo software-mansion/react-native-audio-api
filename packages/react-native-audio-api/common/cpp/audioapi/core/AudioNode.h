@@ -42,6 +42,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioNodeManager;
   friend class AudioDestinationNode;
   friend class ConvolverNode;
+  friend class DelayNodeHostObject;
 
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;

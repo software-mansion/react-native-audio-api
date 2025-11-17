@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 
 namespace audioapi {
@@ -8,6 +9,12 @@ namespace audioapi {
 DelayNodeHostObject::DelayNodeHostObject(const std::shared_ptr<DelayNode> &node)
     : AudioNodeHostObject(node) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
+}
+
+size_t DelayNodeHostObject::getSizeInBytes() const {
+  auto delayNode = std::static_pointer_cast<DelayNode>(node_);
+  return sizeof(float) * delayNode->context_->getSampleRate() *
+      delayNode->getDelayTimeParam()->getMaxValue();
 }
 
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
