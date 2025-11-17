@@ -86,32 +86,22 @@ void getFrequencyResponse(
       phase_response[k] = std::nanf("");
     } else {
       double omega = -PI * normalizedFreq[k];
-      std::complex<double> z =
-          std::complex<double>(std::cos(omega), std::sin(omega));
+      std::complex<double> z = std::complex<double>(std::cos(omega), std::sin(omega));
       std::complex<double> numerator = b0 + (b1 + b2 * z) * z;
-      std::complex<double> denominator =
-          std::complex<double>(1, 0) + (a1 + a2 * z) * z;
+      std::complex<double> denominator = std::complex<double>(1, 0) + (a1 + a2 * z) * z;
       std::complex<double> response = numerator / denominator;
       mag_response[k] = static_cast<float>(abs(response));
-      phase_response[k] =
-          static_cast<float>(std::atan2(imag(response), real(response)));
+      phase_response[k] = static_cast<float>(std::atan2(imag(response), real(response)));
     }
   }
 }
 
-BiquadCoefficients normalizeCoefficients(
-    double b0,
-    double b1,
-    double b2,
-    double a0,
-    double a1,
-    double a2) {
+BiquadCoefficients
+normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2) {
   return BiquadCoefficients{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0};
 }
 
-BiquadCoefficients calculateLowpassCoefficients(
-    double cutoff,
-    double resonance) {
+BiquadCoefficients calculateLowpassCoefficients(double cutoff, double resonance) {
   // Limit cutoff to 0 to 1.
   cutoff = std::clamp(cutoff, 0.0, 1.0);
 
@@ -144,9 +134,7 @@ BiquadCoefficients calculateLowpassCoefficients(
   }
 }
 
-BiquadCoefficients calculateHighpassCoefficients(
-    double cutoff,
-    double resonance) {
+BiquadCoefficients calculateHighpassCoefficients(double cutoff, double resonance) {
   // Limit cutoff to 0 to 1.
   cutoff = std::clamp(cutoff, 0.0, 1.0);
 
@@ -180,9 +168,7 @@ BiquadCoefficients calculateHighpassCoefficients(
   }
 }
 
-BiquadCoefficients calculateLowshelfCoefficients(
-    double frequency,
-    double db_gain) {
+BiquadCoefficients calculateLowshelfCoefficients(double frequency, double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
   frequency = std::clamp(frequency, 0.0, 1.0);
 
@@ -214,9 +200,7 @@ BiquadCoefficients calculateLowshelfCoefficients(
   }
 }
 
-BiquadCoefficients calculateHighshelfCoefficients(
-    double frequency,
-    double db_gain) {
+BiquadCoefficients calculateHighshelfCoefficients(double frequency, double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
   frequency = std::clamp(frequency, 0.0, 1.0);
 
@@ -248,8 +232,7 @@ BiquadCoefficients calculateHighshelfCoefficients(
   }
 }
 
-BiquadCoefficients
-calculatePeakingCoefficients(double frequency, double q, double db_gain) {
+BiquadCoefficients calculatePeakingCoefficients(double frequency, double q, double db_gain) {
   // Clip frequencies to between 0 and 1, inclusive.
   frequency = std::clamp(frequency, 0.0, 1.0);
 

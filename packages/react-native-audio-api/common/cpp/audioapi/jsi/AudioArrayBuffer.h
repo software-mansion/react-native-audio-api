@@ -16,8 +16,7 @@ class AudioArrayBuffer : public jsi::MutableBuffer {
       : audioArray_(audioArray) {}
   ~AudioArrayBuffer() override = default;
 
-  AudioArrayBuffer(AudioArrayBuffer &&other) noexcept
-      : audioArray_(std::move(other.audioArray_)) {
+  AudioArrayBuffer(AudioArrayBuffer &&other) noexcept : audioArray_(std::move(other.audioArray_)) {
     other.audioArray_ = nullptr;
   }
 

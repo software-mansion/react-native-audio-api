@@ -13,12 +13,11 @@
 @class AudioSessionManager;
 @class LockScreenManager;
 
-@interface AudioAPIModule
-    : RCTEventEmitter
+@interface AudioAPIModule : RCTEventEmitter
 #ifdef RCT_NEW_ARCH_ENABLED
-      <NativeAudioAPIModuleSpec, RCTCallInvokerModule, RCTInvalidating>
+                            <NativeAudioAPIModuleSpec, RCTCallInvokerModule, RCTInvalidating>
 #else
-      <RCTBridgeModule>
+                            <RCTBridgeModule>
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioEngine *audioEngine;
@@ -26,7 +25,6 @@
 @property (nonatomic, strong) AudioSessionManager *audioSessionManager;
 @property (nonatomic, strong) LockScreenManager *lockScreenManager;
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName
-                         eventBody:(NSDictionary *)eventBody;
+- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody;
 
 @end

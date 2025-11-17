@@ -66,11 +66,7 @@ class AudioBus {
 
   void copy(const AudioBus *source);
   void copy(const AudioBus *source, size_t start, size_t length);
-  void copy(
-      const AudioBus *source,
-      size_t sourceStart,
-      size_t destinationStart,
-      size_t length);
+  void copy(const AudioBus *source, size_t sourceStart, size_t destinationStart, size_t length);
 
  private:
   std::vector<std::shared_ptr<AudioArray>> channels_;
@@ -85,11 +81,8 @@ class AudioBus {
       size_t sourceStart,
       size_t destinationStart,
       size_t length) const;
-  void sumByUpMixing(
-      const AudioBus *source,
-      size_t sourceStart,
-      size_t destinationStart,
-      size_t length);
+  void
+  sumByUpMixing(const AudioBus *source, size_t sourceStart, size_t destinationStart, size_t length);
   void sumByDownMixing(
       const AudioBus *source,
       size_t sourceStart,

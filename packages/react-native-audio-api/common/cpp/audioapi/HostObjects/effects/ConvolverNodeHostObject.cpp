@@ -6,8 +6,7 @@
 
 namespace audioapi {
 
-ConvolverNodeHostObject::ConvolverNodeHostObject(
-    const std::shared_ptr<ConvolverNode> &node)
+ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<ConvolverNode> &node)
     : AudioNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
@@ -41,8 +40,7 @@ JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, buffer) {
     return;
   }
 
-  auto bufferHostObject =
-      value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+  auto bufferHostObject = value.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   convolverNode->setBuffer(bufferHostObject->audioBuffer_);
 }
 } // namespace audioapi

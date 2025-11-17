@@ -11,8 +11,7 @@ using namespace facebook;
 
 class AudioDestinationNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit AudioDestinationNodeHostObject(
-      const std::shared_ptr<AudioDestinationNode> &node)
+  explicit AudioDestinationNodeHostObject(const std::shared_ptr<AudioDestinationNode> &node)
       : AudioNodeHostObject(node) {}
 };
 } // namespace audioapi

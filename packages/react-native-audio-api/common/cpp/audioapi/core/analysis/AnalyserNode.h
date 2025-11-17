@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/dsp/FFT.h>
 
+#include <algorithm>
 #include <complex>
 #include <cstddef>
 #include <memory>
@@ -63,8 +64,7 @@ class AnalyserNode : public AudioNode {
 
   static WindowType fromString(const std::string &type) {
     std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
     if (lowerType == "blackman") {
       return WindowType::BLACKMAN;
     }

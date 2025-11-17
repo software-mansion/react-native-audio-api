@@ -11,8 +11,7 @@
 namespace audioapi {
 
 using OfflineAudioContextSuspendCallback = std::function<void()>;
-using OfflineAudioContextResultCallback =
-    std::function<void(std::shared_ptr<AudioBuffer>)>;
+using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<AudioBuffer>)>;
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
@@ -20,8 +19,7 @@ class OfflineAudioContext : public BaseAudioContext {
       int numberOfChannels,
       size_t length,
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry>
-          &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
@@ -33,8 +31,7 @@ class OfflineAudioContext : public BaseAudioContext {
  private:
   std::mutex mutex_;
 
-  std::unordered_map<size_t, OfflineAudioContextSuspendCallback>
-      scheduledSuspends_;
+  std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
   size_t length_;

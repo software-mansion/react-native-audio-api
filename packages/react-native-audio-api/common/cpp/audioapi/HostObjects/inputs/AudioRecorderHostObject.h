@@ -16,8 +16,7 @@ class AudioEventHandlerRegistry;
 class AudioRecorderHostObject : public JsiHostObject {
  public:
   explicit AudioRecorderHostObject(
-      const std::shared_ptr<AudioEventHandlerRegistry>
-          &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       int bufferLength);
 

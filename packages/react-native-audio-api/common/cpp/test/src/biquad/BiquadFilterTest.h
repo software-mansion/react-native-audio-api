@@ -36,15 +36,12 @@ class BiquadFilterTest : public ::testing::Test {
   void testHighshelf(float frequency, float gain);
 };
 
-class BiquadFilterQTestLowpassHighpass
-    : public BiquadFilterTest,
-      public ::testing::WithParamInterface<float> {};
+class BiquadFilterQTestLowpassHighpass : public BiquadFilterTest,
+                                         public ::testing::WithParamInterface<float> {};
 class BiquadFilterQTestRestTypes : public BiquadFilterTest,
-                                   public ::testing::WithParamInterface<float> {
-};
+                                   public ::testing::WithParamInterface<float> {};
 class BiquadFilterFrequencyTest : public BiquadFilterTest,
-                                  public ::testing::WithParamInterface<float> {
-};
+                                  public ::testing::WithParamInterface<float> {};
 class BiquadFilterGainTest : public BiquadFilterTest,
                              public ::testing::WithParamInterface<float> {};
 } // namespace audioapi

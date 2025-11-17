@@ -21,8 +21,7 @@ WorkletProcessingNode::WorkletProcessingNode(
     inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(inputAudioArray);
 
     auto outputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
-    outputBuffsHandles_[i] =
-        std::make_shared<AudioArrayBuffer>(outputAudioArray);
+    outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(outputAudioArray);
   }
 }
 
@@ -54,8 +53,7 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
           inputJsArray.setValueAtIndex(rt, ch, inputArrayBuffer);
 
           // Create output array buffer
-          auto outputArrayBuffer =
-              jsi::ArrayBuffer(rt, outputBuffsHandles_[ch]);
+          auto outputArrayBuffer = jsi::ArrayBuffer(rt, outputBuffsHandles_[ch]);
           outputJsArray.setValueAtIndex(rt, ch, outputArrayBuffer);
         }
 

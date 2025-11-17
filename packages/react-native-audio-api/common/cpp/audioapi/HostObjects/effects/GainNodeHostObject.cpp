@@ -13,8 +13,7 @@ GainNodeHostObject::GainNodeHostObject(const std::shared_ptr<GainNode> &node)
 
 JSI_PROPERTY_GETTER_IMPL(GainNodeHostObject, gain) {
   auto gainNode = std::static_pointer_cast<GainNode>(node_);
-  auto gainParam =
-      std::make_shared<AudioParamHostObject>(gainNode->getGainParam());
+  auto gainParam = std::make_shared<AudioParamHostObject>(gainNode->getGainParam());
   return jsi::Object::createFromHostObject(runtime, gainParam);
 }
 

@@ -14,9 +14,7 @@ class AudioParam;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferBaseSourceNode(
-      BaseAudioContext *context,
-      bool pitchCorrection);
+  explicit AudioBufferBaseSourceNode(BaseAudioContext *context, bool pitchCorrection);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;

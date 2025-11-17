@@ -133,8 +133,7 @@ class AudioParam {
   }
 
   /// @brief Process all scheduled events.
-  inline void processScheduledEvents() noexcept(
-      noexcept(eventScheduler_.processAllEvents(*this))) {
+  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this))) {
     eventScheduler_.processAllEvents(*this);
   }
 

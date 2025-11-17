@@ -35,8 +35,7 @@ class AudioNodeDestructor {
 
   /// @brief Processes audio nodes for deconstruction.
   /// @param receiver The receiver channel for incoming audio nodes.
-  void process(
-      channels::spsc::Receiver<AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> &&receiver);
+  void process(channels::spsc::Receiver<AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> &&receiver);
 };
 
 #undef AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS

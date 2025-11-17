@@ -15,8 +15,7 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
   MOCK_METHOD(
       uint64_t,
       registerHandler,
-      (const std::string &eventName,
-       const std::shared_ptr<facebook::jsi::Function> &handler),
+      (const std::string &eventName, const std::shared_ptr<facebook::jsi::Function> &handler),
       (override));
   MOCK_METHOD(
       void,
@@ -29,8 +28,5 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
       void(const std::string &eventName, const EventMap &body));
   MOCK_METHOD3(
       invokeHandlerWithEventBody,
-      void(
-          const std::string &eventName,
-          uint64_t listenerId,
-          const EventMap &body));
+      void(const std::string &eventName, uint64_t listenerId, const EventMap &body));
 };

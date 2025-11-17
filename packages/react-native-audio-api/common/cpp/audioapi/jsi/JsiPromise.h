@@ -28,10 +28,8 @@ class Promise {
       jsi::Function &&resolve,
       jsi::Function &&reject)
       : inner_(
-            std::make_shared<Inner>(Inner{
-                std::move(callInvoker),
-                std::move(resolve),
-                std::move(reject)})) {}
+            std::make_shared<Inner>(
+                Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
 
   Promise(const Promise &other) {
     inner_ = other.inner_;
@@ -44,13 +42,11 @@ class Promise {
     return *this;
   }
 
-  void resolve(
-      const std::function<jsi::Value(jsi::Runtime &)> &&resolver) const {
+  void resolve(const std::function<jsi::Value(jsi::Runtime &)> &&resolver) const {
     auto inner = inner_;
     inner->callInvoker->invokeAsync(
         [inner = std::move(inner),
-         resolver = std::forward<decltype(resolver)>(resolver)](
-            jsi::Runtime &runtime) -> void {
+         resolver = std::forward<decltype(resolver)>(resolver)](jsi::Runtime &runtime) -> void {
           auto valueShared = std::make_shared<jsi::Value>(resolver(runtime));
           inner->resolve.call(runtime, *valueShared);
         });
@@ -59,8 +55,7 @@ class Promise {
   void reject(const std::string &errorMessage) const {
     auto inner = inner_;
     inner->callInvoker->invokeAsync(
-        [inner = std::move(inner),
-         errorMessage](jsi::Runtime &runtime) -> void {
+        [inner = std::move(inner), errorMessage](jsi::Runtime &runtime) -> void {
           auto error = jsi::JSError(runtime, errorMessage);
           inner->reject.call(runtime, error.value());
         });
@@ -70,14 +65,11 @@ class Promise {
   std::shared_ptr<Inner> inner_;
 };
 
-using PromiseResolver =
-    std::function<std::variant<jsi::Value, std::string>(jsi::Runtime &)>;
+using PromiseResolver = std::function<std::variant<jsi::Value, std::string>(jsi::Runtime &)>;
 
 class PromiseVendor {
  public:
-  PromiseVendor(
-      jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker)
+  PromiseVendor(jsi::Runtime *runtime, const std::shared_ptr<react::CallInvoker> &callInvoker)
       : runtime_(runtime),
         callInvoker_(callInvoker),
         threadPool_(

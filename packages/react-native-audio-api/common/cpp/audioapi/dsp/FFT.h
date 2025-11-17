@@ -19,11 +19,7 @@ class FFT {
   template <typename Allocator>
   void doFFT(float *in, std::vector<std::complex<float>, Allocator> &out) {
     pffft_transform_ordered(
-        pffftSetup_,
-        in,
-        reinterpret_cast<float *>(&out[0]),
-        work_,
-        PFFFT_FORWARD);
+        pffftSetup_, in, reinterpret_cast<float *>(&out[0]), work_, PFFFT_FORWARD);
     // this is a possible place for bugs and mistakes
     // due to pffft implementation and how it stores results
     // keep this information in mind
@@ -32,15 +28,9 @@ class FFT {
   }
 
   template <typename Allocator>
-  void doInverseFFT(
-      std::vector<std::complex<float>, Allocator> &in,
-      float *out) {
+  void doInverseFFT(std::vector<std::complex<float>, Allocator> &in, float *out) {
     pffft_transform_ordered(
-        pffftSetup_,
-        reinterpret_cast<float *>(&in[0]),
-        out,
-        work_,
-        PFFFT_BACKWARD);
+        pffftSetup_, reinterpret_cast<float *>(&in[0]), out, work_, PFFFT_BACKWARD);
 
     dsp::multiplyByScalar(out, 1.0f / static_cast<float>(size_), out, size_);
   }

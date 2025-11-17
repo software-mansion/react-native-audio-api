@@ -32,12 +32,10 @@ extern "C" {
 #ifndef AUDIO_API_TEST_SUITE
 #include <audioapi/utils/SpscChannel.hpp>
 
-static constexpr audioapi::channels::spsc::OverflowStrategy
-    STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
-        audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-static constexpr audioapi::channels::spsc::WaitStrategy
-    STREAMER_NODE_SPSC_WAIT_STRATEGY =
-        audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+    audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
+    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 #endif
 
 static constexpr bool VERBOSE = false;
@@ -49,8 +47,7 @@ struct StreamingData {
   StreamingData() = default;
   StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
   StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
-  StreamingData(StreamingData &&data) noexcept
-      : bus(std::move(data.bus)), size(data.size) {}
+  StreamingData(StreamingData &&data) noexcept : bus(std::move(data.bus)), size(data.size) {}
   StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
@@ -89,24 +86,20 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVPacket *pkt_;
   AVFrame *frame_; // Frame that is currently being processed
   SwrContext *swrCtx_;
-  uint8_t **
-      resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
+  uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
   std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
   size_t bufferedBusSize_;                // size of currently buffered bus
-  int audio_stream_index_; // index of the audio stream channel in the input
+  int audio_stream_index_;                // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
   std::thread streamingThread_;
-  std::atomic<bool> isNodeFinished_; // Flag to control the streaming thread
-  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES =
-      8192; // Initial size for resampled data
-  channels::spsc::Sender<
-      StreamingData,
-      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
-      STREAMER_NODE_SPSC_WAIT_STRATEGY>
-      sender_;
+  std::atomic<bool> isNodeFinished_;                         // Flag to control the streaming thread
+  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
+  channels::spsc::
+      Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY>
+          sender_;
   channels::spsc::Receiver<
       StreamingData,
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,

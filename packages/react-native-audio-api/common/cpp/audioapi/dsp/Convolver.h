@@ -13,8 +13,8 @@ namespace audioapi {
 class AudioBuffer;
 
 class Convolver {
-  using aligned_vec_complex = std::
-      vector<std::complex<float>, AlignedAllocator<std::complex<float>, 16>>;
+  using aligned_vec_complex =
+      std::vector<std::complex<float>, AlignedAllocator<std::complex<float>, 16>>;
 
  public:
   Convolver();

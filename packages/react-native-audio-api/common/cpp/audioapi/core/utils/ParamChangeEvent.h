@@ -16,8 +16,7 @@ class ParamChangeEvent {
       double endTime,
       float startValue,
       float endValue,
-      std::function<float(double, double, float, float, double)>
-          &&calculateValue,
+      std::function<float(double, double, float, float, double)> &&calculateValue,
       ParamChangeEventType type);
 
   ParamChangeEvent(const ParamChangeEvent &other) = delete;
@@ -54,8 +53,7 @@ class ParamChangeEvent {
   [[nodiscard]] inline float getStartValue() const noexcept {
     return startValue_;
   }
-  [[nodiscard]] inline const std::function<
-      float(double, double, float, float, double)> &
+  [[nodiscard]] inline const std::function<float(double, double, float, float, double)> &
   getCalculateValue() const noexcept {
     return calculateValue_;
   }

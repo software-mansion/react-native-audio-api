@@ -35,9 +35,7 @@
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject;
 
-- (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve
-                reject:(RCTPromiseRejectBlock)reject;
-- (NSArray<NSDictionary *> *)parseDeviceList:
-    (NSArray<AVAudioSessionPortDescription *> *)devices;
+- (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;
 
 @end

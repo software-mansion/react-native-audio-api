@@ -12,8 +12,7 @@ class WindowFunction {
 
   virtual void apply(float *data, int size) const = 0;
   // forces STFT perfect-reconstruction (WOLA) on an existing window, for a given STFT interval.
-  static void
-  forcePerfectReconstruction(float *data, int windowLength, int interval);
+  static void forcePerfectReconstruction(float *data, int windowLength, int interval);
 
  protected:
   // 1/L = amplitude
@@ -45,10 +44,8 @@ class Kaiser : public WindowFunction {
   explicit Kaiser(float beta, float amplitude = 1.0f)
       : WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta)) {}
 
-  static Kaiser withBandwidth(
-      float bandwidth,
-      bool heuristicOptimal = false,
-      float amplitude = 1.0f) {
+  static Kaiser
+  withBandwidth(float bandwidth, bool heuristicOptimal = false, float amplitude = 1.0f) {
     return Kaiser(bandwidthToBeta(bandwidth, heuristicOptimal), amplitude);
   }
 
@@ -83,9 +80,7 @@ class ApproximateConfinedGaussian : public WindowFunction {
   explicit ApproximateConfinedGaussian(float sigma, float amplitude = 1.0f)
       : WindowFunction(amplitude), gaussianFactor_(0.0625f / (sigma * sigma)) {}
 
-  static ApproximateConfinedGaussian withBandwidth(
-      float bandwidth,
-      float amplitude = 1.0f) {
+  static ApproximateConfinedGaussian withBandwidth(float bandwidth, float amplitude = 1.0f) {
     return ApproximateConfinedGaussian(bandwidthToSigma(bandwidth), amplitude);
   }
 

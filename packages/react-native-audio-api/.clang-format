@@ -1,5 +1,5 @@
 ---
-ColumnLimit: 80
+ColumnLimit: 100
 AccessModifierOffset: -1
 AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: false

@@ -16,9 +16,7 @@ class AudioParam;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(
-      BaseAudioContext *context,
-      bool pitchCorrection);
+  explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;

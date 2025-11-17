@@ -40,8 +40,7 @@ class WorkletsRunner {
   /// @note This method is unsafe and should be used with caution. It assumes that the runtime and worklet are valid and runtime is locked.
   template <typename... Args>
   inline jsi::Value callUnsafe(Args &&...args) {
-    return getUnsafeWorklet().call(
-        *unsafeRuntimePtr, std::forward<Args>(args)...);
+    return getUnsafeWorklet().call(*unsafeRuntimePtr, std::forward<Args>(args)...);
   }
 
   /// @brief Call the worklet function with the given arguments.
@@ -51,10 +50,9 @@ class WorkletsRunner {
   /// @note This method is safe and will check if the runtime is available before calling the worklet. If the runtime is not available, it will return nullopt.
   template <typename... Args>
   inline std::optional<jsi::Value> call(Args &&...args) {
-    return executeOnRuntimeGuarded(
-        [this, args...](jsi::Runtime &rt) -> jsi::Value {
-          return callUnsafe(std::forward<Args>(args)...);
-        });
+    return executeOnRuntimeGuarded([this, args...](jsi::Runtime &rt) -> jsi::Value {
+      return callUnsafe(std::forward<Args>(args)...);
+    });
   }
 
   /// @brief Execute a job on the UI runtime safely.
@@ -62,8 +60,7 @@ class WorkletsRunner {
   /// @return nullopt if the runtime is not available or the result of the job execution
   /// @note Execution is synchronous and will be guarded if shouldLockRuntime is true.
   inline std::optional<jsi::Value> executeOnRuntimeSync(
-      const std::function<jsi::Value(jsi::Runtime &)> &&job) const
-      noexcept(noexcept(job)) {
+      const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job)) {
     if (shouldLockRuntime)
       return executeOnRuntimeGuarded(std::move(job));
     else
@@ -85,12 +82,10 @@ class WorkletsRunner {
   }
 
   std::optional<jsi::Value> executeOnRuntimeGuarded(
-      const std::function<jsi::Value(jsi::Runtime &)> &&job) const
-      noexcept(noexcept(job));
+      const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job));
 
   std::optional<jsi::Value> executeOnRuntimeUnsafe(
-      const std::function<jsi::Value(jsi::Runtime &)> &&job) const
-      noexcept(noexcept(job));
+      const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job));
 };
 
 } // namespace audioapi

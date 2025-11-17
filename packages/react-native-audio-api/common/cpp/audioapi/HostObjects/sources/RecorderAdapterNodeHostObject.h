@@ -14,8 +14,7 @@ class AudioRecorderHostObject;
 
 class RecorderAdapterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit RecorderAdapterNodeHostObject(
-      const std::shared_ptr<RecorderAdapterNode> &node)
+  explicit RecorderAdapterNodeHostObject(const std::shared_ptr<RecorderAdapterNode> &node)
       : AudioNodeHostObject(node) {}
 
  private:

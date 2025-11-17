@@ -17,8 +17,7 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry>
-          &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
 

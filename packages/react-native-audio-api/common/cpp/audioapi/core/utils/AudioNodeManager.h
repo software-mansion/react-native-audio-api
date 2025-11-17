@@ -50,10 +50,7 @@ class AudioNodeManager {
 
     Event(Event &&other);
     Event &operator=(Event &&other);
-    Event()
-        : type(ConnectionType::CONNECT),
-          payloadType(EventPayloadType::NODES),
-          payload() {}
+    Event() : type(ConnectionType::CONNECT), payloadType(EventPayloadType::NODES), payload() {}
     ~Event();
   };
 

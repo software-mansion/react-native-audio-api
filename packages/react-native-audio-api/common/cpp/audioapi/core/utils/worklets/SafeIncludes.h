@@ -40,9 +40,8 @@ class WorkletRuntime {
       uint64_t,
       const std::shared_ptr<MessageQueueThread> &,
       const std::string &,
-      const bool){
-      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Runtime &getJSIRuntime()
-      const {throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
+      const bool){throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Runtime &getJSIRuntime() const {
+      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
       executeSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
           throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
       executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
@@ -54,8 +53,7 @@ class WorkletRuntime {
 class SerializableWorklet {
  public:
   SerializableWorklet(jsi::Runtime *, const jsi::Object &){
-      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
-      toJSValue(jsi::Runtime &rt) {
+      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value toJSValue(jsi::Runtime &rt) {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
 };

@@ -10,11 +10,9 @@ using namespace facebook;
 
 class AudioBufferSourceNode;
 
-class AudioBufferSourceNodeHostObject
-    : public AudioBufferBaseSourceNodeHostObject {
+class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
-  explicit AudioBufferSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferSourceNode> &node);
+  explicit AudioBufferSourceNodeHostObject(const std::shared_ptr<AudioBufferSourceNode> &node);
 
   ~AudioBufferSourceNodeHostObject() override;
 

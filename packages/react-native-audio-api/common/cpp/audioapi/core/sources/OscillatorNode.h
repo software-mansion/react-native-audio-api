@@ -5,6 +5,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -37,8 +38,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
 
   static OscillatorType fromString(const std::string &type) {
     std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
     if (lowerType == "sine")
       return OscillatorType::SINE;

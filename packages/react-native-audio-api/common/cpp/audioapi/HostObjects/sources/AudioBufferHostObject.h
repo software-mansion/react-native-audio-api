@@ -16,8 +16,7 @@ class AudioBufferHostObject : public JsiHostObject {
  public:
   std::shared_ptr<AudioBuffer> audioBuffer_;
 
-  explicit AudioBufferHostObject(
-      const std::shared_ptr<AudioBuffer> &audioBuffer);
+  explicit AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer);
   AudioBufferHostObject(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject &operator=(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject(AudioBufferHostObject &&other) noexcept;
@@ -30,8 +29,7 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   [[nodiscard]] inline size_t getSizeInBytes() const {
-    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() *
-        sizeof(float);
+    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() * sizeof(float);
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

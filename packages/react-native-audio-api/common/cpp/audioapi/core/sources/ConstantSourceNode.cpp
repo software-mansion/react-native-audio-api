@@ -30,13 +30,11 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     return processingBus;
   }
 
-  auto offsetBus = offsetParam_->processARateParam(
-      framesToProcess, context_->getCurrentTime());
+  auto offsetBus = offsetParam_->processARateParam(framesToProcess, context_->getCurrentTime());
 
   auto offsetChannelData = offsetBus->getChannel(0)->getData();
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels();
-       ++channel) {
+  for (int channel = 0; channel < processingBus->getNumberOfChannels(); ++channel) {
     auto outputChannelData = processingBus->getChannel(channel)->getData();
 
     std::copy(

@@ -39,8 +39,7 @@ class StreamerNode;
 class BaseAudioContext {
  public:
   explicit BaseAudioContext(
-      const std::shared_ptr<IAudioEventHandlerRegistry>
-          &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
@@ -71,10 +70,8 @@ class BaseAudioContext {
   std::shared_ptr<GainNode> createGain();
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
-      bool pitchCorrection);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
-      bool pitchCorrection);
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
+  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(

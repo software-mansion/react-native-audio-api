@@ -17,15 +17,12 @@ class AudioRecorder {
   explicit AudioRecorder(
       float sampleRate,
       int bufferLength,
-      const std::shared_ptr<AudioEventHandlerRegistry>
-          &audioEventHandlerRegistry);
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
 
   virtual ~AudioRecorder() = default;
 
   void setOnAudioReadyCallbackId(uint64_t callbackId);
-  void invokeOnAudioReadyCallback(
-      const std::shared_ptr<AudioBus> &bus,
-      int numFrames);
+  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
   void sendRemainingData();
 
   /// @brief

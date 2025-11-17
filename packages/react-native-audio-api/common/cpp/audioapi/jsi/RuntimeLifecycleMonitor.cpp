@@ -6,10 +6,7 @@
 
 namespace audioapi {
 
-static std::unordered_map<
-    jsi::Runtime *,
-    std::unordered_set<RuntimeLifecycleListener *>>
-    listeners;
+static std::unordered_map<jsi::Runtime *, std::unordered_set<RuntimeLifecycleListener *>> listeners;
 
 struct RuntimeLifecycleMonitorObject : public jsi::HostObject {
   jsi::Runtime *rt_;
@@ -25,9 +22,7 @@ struct RuntimeLifecycleMonitorObject : public jsi::HostObject {
   }
 };
 
-void RuntimeLifecycleMonitor::addListener(
-    jsi::Runtime &rt,
-    RuntimeLifecycleListener *listener) {
+void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {
     // We install a global host object in the provided runtime, this way we can
@@ -47,9 +42,7 @@ void RuntimeLifecycleMonitor::addListener(
   }
 }
 
-void RuntimeLifecycleMonitor::removeListener(
-    jsi::Runtime &rt,
-    RuntimeLifecycleListener *listener) {
+void RuntimeLifecycleMonitor::removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {
     // nothing to do here

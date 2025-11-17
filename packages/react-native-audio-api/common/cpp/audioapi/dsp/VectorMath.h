@@ -67,9 +67,7 @@ void multiply(
     size_t numberOfElementsToProcess);
 
 // Finds the maximum magnitude of a float vector.
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess);
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
 
 void linearToDecibels(
     const float *inputVector,

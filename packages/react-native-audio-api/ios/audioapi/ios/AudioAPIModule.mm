@@ -62,15 +62,11 @@ RCT_EXPORT_MODULE(AudioAPIModule);
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
-  self.audioEngine = [[AudioEngine alloc]
-      initWithAudioSessionManager:self.audioSessionManager];
-  self.lockScreenManager =
-      [[LockScreenManager alloc] initWithAudioAPIModule:self];
-  self.notificationManager =
-      [[NotificationManager alloc] initWithAudioAPIModule:self];
+  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
+  self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
+  self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
 
-  auto jsiRuntime =
-      reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
+  auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
 
 #if defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = _callInvoker.callInvoker;
@@ -80,12 +76,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   assert(jsiRuntime != nullptr);
 
-  _eventHandler =
-      std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
+  _eventHandler = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  WorkletsModule *workletsModule =
-      [_moduleRegistry moduleForName:"WorkletsModule"];
+  WorkletsModule *workletsModule = [_moduleRegistry moduleForName:"WorkletsModule"];
 
   if (!workletsModule) {
     NSLog(@"WorkletsModule not found in module registry");
@@ -109,8 +103,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(
       jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
 #else
-  audioapi::AudioAPIModuleInstaller::injectJSIBindings(
-      jsiRuntime, jsCallInvoker, _eventHandler);
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
 #endif
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
@@ -126,22 +119,21 @@ RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        if (!self.audioSessionManager.shouldManageSession) {
-          [self.audioSessionManager setShouldManageSession:true];
-        }
-        if ([self.audioSessionManager setActive:enabled]) {
-          resolve(@"true");
-          return;
-        }
-        resolve(@"false");
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    if (!self.audioSessionManager.shouldManageSession) {
+      [self.audioSessionManager setShouldManageSession:true];
+    }
+    if ([self.audioSessionManager setActive:enabled]) {
+      resolve(@"true");
+      return;
+    }
+    resolve(@"false");
+  });
 }
 
 RCT_EXPORT_METHOD(
-    setAudioSessionOptions : (NSString *)category mode : (NSString *)
-        mode options : (NSArray *)options allowHaptics : (BOOL)allowHaptics)
+    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
+        options allowHaptics : (BOOL)allowHaptics)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -162,8 +154,7 @@ RCT_EXPORT_METHOD(resetLockScreenInfo)
   [self.lockScreenManager resetLockScreenInfo];
 }
 
-RCT_EXPORT_METHOD(
-    enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled)
+RCT_EXPORT_METHOD(enableRemoteCommand : (NSString *)name enabled : (BOOL)enabled)
 {
   [self.lockScreenManager enableRemoteCommand:name enabled:enabled];
 }
@@ -187,31 +178,27 @@ RCT_EXPORT_METHOD(
     requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
         resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [self.audioSessionManager requestRecordingPermissions:resolve
-                                                       reject:reject];
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
     checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
         resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [self.audioSessionManager checkRecordingPermissions:resolve
-                                                     reject:reject];
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
     getDevicesInfo : (nonnull RCTPromiseResolveBlock)
         resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
-      ^{ [self.audioSessionManager getDevicesInfo:resolve reject:reject]; });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(disableSessionManagement)
@@ -227,8 +214,7 @@ RCT_EXPORT_METHOD(disableSessionManagement)
 }
 #endif // RCT_NEW_ARCH_ENABLED
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName
-                         eventBody:(NSDictionary *)eventBody
+- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody
 {
   auto name = [eventName UTF8String];
 
@@ -262,8 +248,7 @@ RCT_EXPORT_METHOD(disableSessionManagement)
 
 - (dispatch_queue_t)methodQueue
 {
-  return dispatch_queue_create(
-      "swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
+  return dispatch_queue_create("swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
 }
 
 @end

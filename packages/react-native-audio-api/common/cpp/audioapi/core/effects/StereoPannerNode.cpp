@@ -9,8 +9,7 @@
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
-    : AudioNode(context) {
+StereoPannerNode::StereoPannerNode(BaseAudioContext *context) : AudioNode(context) {
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   panParam_ = std::make_shared<AudioParam>(0.0, -1.0f, 1.0f, context);
   isInitialized_ = true;
@@ -27,9 +26,8 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
   double deltaTime = 1.0 / context_->getSampleRate();
 
   auto *inputLeft = processingBus->getChannelByType(AudioBus::ChannelLeft);
-  auto panParamValues = panParam_->processARateParam(framesToProcess, time)
-                            ->getChannel(0)
-                            ->getData();
+  auto panParamValues =
+      panParam_->processARateParam(framesToProcess, time)->getChannel(0)->getData();
 
   auto *outputLeft = audioBus_->getChannelByType(AudioBus::ChannelLeft);
   auto *outputRight = audioBus_->getChannelByType(AudioBus::ChannelRight);
