@@ -50,6 +50,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
   auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 
+  float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
+
   return float32Array;
 }
 

@@ -195,8 +195,10 @@ export interface IAudioBufferQueueSourceNode
 }
 
 export interface IConvolverNode extends IAudioNode {
-  buffer: IAudioBuffer | null;
+  readonly buffer: IAudioBuffer | null;
   normalize: boolean;
+
+  setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 
 export interface IAudioBuffer {
