@@ -112,19 +112,12 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
   auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
 
   auto workletNode = context_->createWorkletNode(
-      shareableWorklet,
-      workletRuntime,
-      bufferLength,
-      inputChannelCount,
-      shouldLockRuntime);
-  auto workletNodeHostObject =
-      std::make_shared<WorkletNodeHostObject>(workletNode);
-  auto jsiObject =
-      jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+      shareableWorklet, workletRuntime, bufferLength, inputChannelCount, shouldLockRuntime);
+  auto workletNodeHostObject = std::make_shared<WorkletNodeHostObject>(workletNode);
+  auto jsiObject = jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
   jsiObject.setExternalMemoryPressure(
       runtime,
-      sizeof(float) * bufferLength *
-          inputChannelCount); // rough estimate of underlying buffer
+      sizeof(float) * bufferLength * inputChannelCount); // rough estimate of underlying buffer
   return jsiObject;
 #endif
   return jsi::Value::undefined();
@@ -264,15 +257,11 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
     auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
     convolver = context_->createConvolver(bufferHostObject->audioBuffer_, disableNormalization);
   }
-  auto convolverHostObject =
-      std::make_shared<ConvolverNodeHostObject>(convolver);
-  auto jsiObject =
-      jsi::Object::createFromHostObject(runtime, convolverHostObject);
+  auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(convolver);
+  auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);
   if (!args[0].isUndefined()) {
-    auto bufferHostObject =
-        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    jsiObject.setExternalMemoryPressure(
-        runtime, bufferHostObject->getSizeInBytes());
+    auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
   }
   return jsiObject;
 }
