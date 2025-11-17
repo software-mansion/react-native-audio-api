@@ -13,7 +13,7 @@ DelayNode::DelayNode(BaseAudioContext *context, float maxDelayTime)
       static_cast<size_t>(
           maxDelayTime * context->getSampleRate() +
           1), // +1 to enable delayTime equal to maxDelayTime
-      channelCount_,
+      2,
       context->getSampleRate());
   isInitialized_ = true;
 }
@@ -30,61 +30,58 @@ void DelayNode::onInputDisabled() {
   }
 }
 
+// delay buffer always has 2 channels, mix if needed
 std::shared_ptr<AudioBus> DelayNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  // Mismatched channel count, mix delay buffer to match processing bus
-  if (processingBus->getNumberOfChannels() !=
-      delayBuffer_->getNumberOfChannels()) {
-    AudioBus mixedDelayBuffer(
-        delayBuffer_->getSize(),
-        processingBus->getNumberOfChannels(),
-        context_->getSampleRate());
-    mixedDelayBuffer.zero();
-    mixedDelayBuffer.sum(delayBuffer_.get());
-    delayBuffer_ = std::make_shared<AudioBus>(mixedDelayBuffer);
-  }
   if (signalledToStop_) {
     if (remainingFrames_ > 0) {
-      for (int frame = 0; frame < std::min(framesToProcess, remainingFrames_);
-           ++frame) {
-        for (int channel = 0; channel < processingBus->getNumberOfChannels();
-             ++channel) {
-          processingBus->getChannel(channel)->getData()[frame] =
-              delayBuffer_->getChannel(channel)->getData()[readIndex_];
-        }
-        readIndex_ = (readIndex_ + 1) % delayBuffer_->getSize();
+      if (readIndex_ + framesToProcess >= delayBuffer_->getSize()) {
+        size_t framesToEnd = delayBuffer_->getSize() - readIndex_;
+        processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToEnd);
+        delayBuffer_->zero(readIndex_, framesToEnd);
+        readIndex_ = 0;
+        framesToProcess -= framesToEnd;
+        remainingFrames_ -= framesToEnd;
       }
+      processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToProcess);
+      delayBuffer_->zero(readIndex_, framesToProcess);
       remainingFrames_ -= framesToProcess;
+      readIndex_ += framesToProcess;
     } else {
       disable();
       signalledToStop_ = false;
     }
     return processingBus;
   }
-  double time = context_->getCurrentTime();
-  auto delayTimeParamValues =
-      delayTimeParam_->processARateParam(framesToProcess, time);
-  auto sampleRate = context_->getSampleRate();
-  for (int frame = 0; frame < framesToProcess; ++frame) {
-    float delayTime = (*delayTimeParamValues->getChannel(0))[frame];
-    size_t delaySamples = static_cast<size_t>(delayTime * sampleRate);
-    size_t writeIndex = (readIndex_ + delaySamples) % delayBuffer_->getSize();
-
-    for (int channel = 0; channel < processingBus->getNumberOfChannels();
-         ++channel) {
-      // Write the current input sample into the delay buffer
-      float inputSample = processingBus->getChannel(channel)->getData()[frame];
-      delayBuffer_->getChannel(channel)->getData()[writeIndex] = inputSample;
-
-      // Output the delayed sample
-      float delayedSample =
-          delayBuffer_->getChannel(channel)->getData()[readIndex_];
-      processingBus->getChannel(channel)->getData()[frame] = delayedSample;
-    }
-
-    readIndex_ = (readIndex_ + 1) % delayBuffer_->getSize();
+  auto delayTime = delayTimeParam_->processKRateParam(
+      framesToProcess, context_->getCurrentTime());
+  size_t processingBusStartIndex = 0;
+  size_t writeIndex =
+      static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
+      delayBuffer_->getSize();
+  int framesToWrite = framesToProcess;
+  if (writeIndex + framesToWrite >= delayBuffer_->getSize()) {
+    int framesToCopy = writeIndex + framesToWrite - delayBuffer_->getSize();
+    delayBuffer_->sum(
+        processingBus.get(), processingBusStartIndex, writeIndex, framesToCopy);
+    writeIndex = 0;
+    processingBusStartIndex += framesToCopy;
+    framesToWrite -= framesToCopy;
   }
+  delayBuffer_->sum(
+      processingBus.get(), processingBusStartIndex, writeIndex, framesToWrite);
+  processingBus->zero();
+  if (readIndex_ + framesToProcess >= delayBuffer_->getSize()) {
+    size_t framesToEnd = delayBuffer_->getSize() - readIndex_;
+    processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToEnd);
+    readIndex_ = 0;
+    framesToProcess -= framesToEnd;
+    delayBuffer_->zero(readIndex_, framesToEnd);
+  }
+  processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToProcess);
+  delayBuffer_->zero(readIndex_, framesToProcess);
+  readIndex_ += framesToProcess;
   return processingBus;
 }
 
