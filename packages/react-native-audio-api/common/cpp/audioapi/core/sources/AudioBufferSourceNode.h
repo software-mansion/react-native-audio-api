@@ -16,7 +16,9 @@ class AudioParam;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  explicit AudioBufferSourceNode(
+      BaseAudioContext *context,
+      bool pitchCorrection);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
@@ -38,7 +40,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
   double getCurrentPosition() const override;
 
  private:

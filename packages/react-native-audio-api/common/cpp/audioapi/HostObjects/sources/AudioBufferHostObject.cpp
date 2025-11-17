@@ -3,6 +3,9 @@
 #include <audioapi/jsi/AudioArrayBuffer.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <memory>
+#include <utility>
+
 namespace audioapi {
 
 AudioBufferHostObject::AudioBufferHostObject(

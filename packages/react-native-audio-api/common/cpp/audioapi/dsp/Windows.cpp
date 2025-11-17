@@ -1,5 +1,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/Windows.h>
+#include <algorithm>
 
 namespace audioapi::dsp {
 

@@ -6,7 +6,9 @@
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioArray.h>
 #include <iostream>
+#include <memory>
 #include <thread>
+#include <vector>
 
 namespace audioapi {
 ConvolverNode::ConvolverNode(

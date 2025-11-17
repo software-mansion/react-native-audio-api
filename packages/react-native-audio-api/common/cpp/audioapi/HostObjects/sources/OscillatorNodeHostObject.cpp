@@ -3,6 +3,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <memory>
 
 namespace audioapi {
 

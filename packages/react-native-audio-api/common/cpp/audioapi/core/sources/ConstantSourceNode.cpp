@@ -3,6 +3,7 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 
 namespace audioapi {
 ConstantSourceNode::ConstantSourceNode(BaseAudioContext *context)

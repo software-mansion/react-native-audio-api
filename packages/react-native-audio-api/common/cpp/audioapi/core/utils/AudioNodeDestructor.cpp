@@ -1,6 +1,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/AudioNodeDestructor.h>
 #include <audioapi/core/utils/Locker.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 

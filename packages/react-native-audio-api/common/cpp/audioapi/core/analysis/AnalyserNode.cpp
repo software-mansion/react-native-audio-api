@@ -6,6 +6,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)

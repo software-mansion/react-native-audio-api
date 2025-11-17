@@ -3,6 +3,8 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 

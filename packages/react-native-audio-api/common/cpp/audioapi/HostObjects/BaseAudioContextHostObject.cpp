@@ -19,6 +19,9 @@
 #include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 
+#include <memory>
+#include <vector>
+
 namespace audioapi {
 
 BaseAudioContextHostObject::BaseAudioContextHostObject(

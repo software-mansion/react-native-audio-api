@@ -1,4 +1,8 @@
 #include <audioapi/core/effects/WorkletNode.h>
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 

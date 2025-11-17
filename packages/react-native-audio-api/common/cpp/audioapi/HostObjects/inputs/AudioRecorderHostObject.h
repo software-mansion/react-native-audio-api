@@ -2,10 +2,10 @@
 
 #include <audioapi/jsi/JsiHostObject.h>
 
+#include <cstdio>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <cstdio>
 
 namespace audioapi {
 using namespace facebook;
@@ -16,7 +16,8 @@ class AudioEventHandlerRegistry;
 class AudioRecorderHostObject : public JsiHostObject {
  public:
   explicit AudioRecorderHostObject(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioEventHandlerRegistry>
+          &audioEventHandlerRegistry,
       float sampleRate,
       int bufferLength);
 

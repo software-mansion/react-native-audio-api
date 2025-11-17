@@ -4,6 +4,9 @@
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
 

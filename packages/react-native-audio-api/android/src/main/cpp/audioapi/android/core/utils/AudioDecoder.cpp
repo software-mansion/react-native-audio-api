@@ -15,6 +15,10 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif
 
+#include <memory>
+#include <string>
+#include <vector>
+
 namespace audioapi {
 
 // Decoding audio in fixed-size chunks because total frame count can't be

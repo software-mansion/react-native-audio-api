@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 namespace audioapi {
@@ -15,15 +15,17 @@ class AudioEventHandlerRegistry;
 class AudioRecorder {
  public:
   explicit AudioRecorder(
-    float sampleRate,
-    int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
-  );
+      float sampleRate,
+      int bufferLength,
+      const std::shared_ptr<AudioEventHandlerRegistry>
+          &audioEventHandlerRegistry);
 
   virtual ~AudioRecorder() = default;
 
   void setOnAudioReadyCallbackId(uint64_t callbackId);
-  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
+  void invokeOnAudioReadyCallback(
+      const std::shared_ptr<AudioBus> &bus,
+      int numFrames);
   void sendRemainingData();
 
   /// @brief

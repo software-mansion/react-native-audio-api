@@ -15,6 +15,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <chrono>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
 StreamerNode::StreamerNode(BaseAudioContext *context)

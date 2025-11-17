@@ -1,4 +1,8 @@
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 namespace audioapi {
 

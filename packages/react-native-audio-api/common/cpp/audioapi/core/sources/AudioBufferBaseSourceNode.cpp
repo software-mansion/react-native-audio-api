@@ -5,6 +5,9 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(

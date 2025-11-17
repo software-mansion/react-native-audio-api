@@ -74,7 +74,7 @@ class AudioAPIModuleInstaller {
       }
 
       it = contexts_.erase(it);
-    --it;
+      --it;
     }
   }
 
@@ -97,19 +97,17 @@ class AudioAPIModuleInstaller {
           std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
-          #if RN_AUDIO_API_ENABLE_WORKLETS
-              auto runtimeRegistry = RuntimeRegistry{
-                  .uiRuntime = uiRuntime,
-                  .audioRuntime = worklets::extractWorkletRuntime(runtime, args[1])
-              };
-          #else
-              auto runtimeRegistry = RuntimeRegistry{};
-          #endif
+#if RN_AUDIO_API_ENABLE_WORKLETS
+          auto runtimeRegistry = RuntimeRegistry{
+              .uiRuntime = uiRuntime,
+              .audioRuntime =
+                  worklets::extractWorkletRuntime(runtime, args[1])};
+#else
+          auto runtimeRegistry = RuntimeRegistry{};
+#endif
 
           audioContext = std::make_shared<AudioContext>(
-              sampleRate,
-              audioEventHandlerRegistry,
-              runtimeRegistry);
+              sampleRate, audioEventHandlerRegistry, runtimeRegistry);
           AudioAPIModuleInstaller::contexts_.push_back(audioContext);
 
           auto audioContextHostObject =
@@ -140,28 +138,28 @@ class AudioAPIModuleInstaller {
           auto length = static_cast<size_t>(args[1].getNumber());
           auto sampleRate = static_cast<float>(args[2].getNumber());
 
-            #if RN_AUDIO_API_ENABLE_WORKLETS
-                auto runtimeRegistry = RuntimeRegistry{
-                    .uiRuntime = uiRuntime,
-                    .audioRuntime = worklets::extractWorkletRuntime(runtime, args[3])
-                };
-            #else
-            auto runtimeRegistry = RuntimeRegistry{};
-            #endif
+#if RN_AUDIO_API_ENABLE_WORKLETS
+          auto runtimeRegistry = RuntimeRegistry{
+              .uiRuntime = uiRuntime,
+              .audioRuntime =
+                  worklets::extractWorkletRuntime(runtime, args[3])};
+#else
+          auto runtimeRegistry = RuntimeRegistry{};
+#endif
 
-            auto offlineAudioContext = std::make_shared<OfflineAudioContext>(
+          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(
               numberOfChannels,
               length,
               sampleRate,
               audioEventHandlerRegistry,
               runtimeRegistry);
 
-            auto audioContextHostObject =
+          auto audioContextHostObject =
               std::make_shared<OfflineAudioContextHostObject>(
-                    offlineAudioContext, &runtime, jsCallInvoker);
+                  offlineAudioContext, &runtime, jsCallInvoker);
 
-            return jsi::Object::createFromHostObject(
-                runtime, audioContextHostObject);
+          return jsi::Object::createFromHostObject(
+              runtime, audioContextHostObject);
         });
   }
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <algorithm>
-#include <memory>
 #include <cstddef>
 #include <cstring>
+#include <memory>
 
 namespace audioapi {
 

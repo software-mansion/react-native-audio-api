@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <memory>
 
 namespace audioapi {
 

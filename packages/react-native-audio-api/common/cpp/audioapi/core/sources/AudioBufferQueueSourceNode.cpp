@@ -8,6 +8,13 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <algorithm>
+#include <memory>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(

@@ -2,9 +2,9 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.h>
-#include <stdexcept>
 #include <atomic>
 #include <mutex>
+#include <stdexcept>
 
 namespace audioapi {
 
@@ -16,7 +16,8 @@ namespace audioapi {
 class CircularOverflowableAudioArray : public AudioArray {
  public:
   explicit CircularOverflowableAudioArray(size_t size);
-  CircularOverflowableAudioArray(const CircularOverflowableAudioArray &other) = delete;
+  CircularOverflowableAudioArray(const CircularOverflowableAudioArray &other) =
+      delete;
   ~CircularOverflowableAudioArray() = default;
 
   /// @brief Writes data to the circular buffer.
@@ -32,7 +33,7 @@ class CircularOverflowableAudioArray : public AudioArray {
   size_t read(float *output, size_t size) const;
 
  private:
-  std::atomic<size_t> vWriteIndex_ = { 0 };
+  std::atomic<size_t> vWriteIndex_ = {0};
   mutable size_t vReadIndex_ = 0; // it is only used after acquiring readLock_
   mutable std::mutex readLock_;
 

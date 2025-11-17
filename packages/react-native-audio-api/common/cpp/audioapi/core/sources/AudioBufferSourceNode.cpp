@@ -7,6 +7,8 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <algorithm>
+#include <memory>
 
 namespace audioapi {
 
@@ -209,7 +211,8 @@ void AudioBufferSourceNode::processWithoutInterpolation(
       ((readIndex >= frameEnd && direction == 1) ||
        (readIndex < frameStart && direction == -1))) {
     readIndex = frameStart +
-        ((long long int)readIndex - (long long int)frameStart) % frameDelta;
+        (static_cast<int64_t>(readIndex) - static_cast<int64_t>(frameStart)) %
+            frameDelta;
   }
 
   while (framesLeft > 0) {

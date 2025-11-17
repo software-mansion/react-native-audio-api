@@ -29,6 +29,9 @@
 #include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
+#include <memory>
+#include <vector>
 
 constexpr unsigned NumberOfOctaveBands = 3;
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
@@ -121,8 +124,8 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
   auto cullingScale = std::pow(2, -centsToCull / 1200);
 
   // The very top range will have all the partials culled.
-  int numberOfPartials =
-      int(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
+  int numberOfPartials = static_cast<int>(
+      static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
 
   return numberOfPartials;
 }

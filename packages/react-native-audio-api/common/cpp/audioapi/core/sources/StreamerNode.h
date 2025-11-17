@@ -15,40 +15,43 @@
 
 #ifndef AUDIO_API_TEST_SUITE
 extern "C" {
-  #include <libavformat/avformat.h>
-  #include <libavcodec/avcodec.h>
-  #include <libavutil/samplefmt.h>
-  #include <libavutil/channel_layout.h>
-  #include <libavutil/opt.h>
-  #include <libswresample/swresample.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/opt.h>
+#include <libavutil/samplefmt.h>
+#include <libswresample/swresample.h>
 }
 #endif
 
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <string>
-#include <atomic>
 #include <utility>
 #ifndef AUDIO_API_TEST_SUITE
 #include <audioapi/utils/SpscChannel.hpp>
 
-static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
-    audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
-    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+static constexpr audioapi::channels::spsc::OverflowStrategy
+    STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+        audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+static constexpr audioapi::channels::spsc::WaitStrategy
+    STREAMER_NODE_SPSC_WAIT_STRATEGY =
+        audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 #endif
 
 static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;
 
-struct StreamingData{
+struct StreamingData {
   audioapi::AudioBus bus;
   size_t size;
   StreamingData() = default;
   StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
-  StreamingData(const StreamingData& data) : bus(data.bus), size(data.size) {}
-  StreamingData(StreamingData&& data) noexcept : bus(std::move(data.bus)), size(data.size) {}
-  StreamingData& operator=(const StreamingData& data) {
+  StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
+  StreamingData(StreamingData &&data) noexcept
+      : bus(std::move(data.bus)), size(data.size) {}
+  StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
     }
@@ -70,33 +73,45 @@ class StreamerNode : public AudioScheduledSourceNode {
   /**
    * @brief Initialize all necessary ffmpeg components for streaming audio
   */
-  bool initialize(const std::string& inputUrl);
+  bool initialize(const std::string &inputUrl);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
-  #ifndef AUDIO_API_TEST_SUITE
-  AVFormatContext* fmtCtx_;
-  AVCodecContext* codecCtx_;
-  const AVCodec* decoder_;
-  AVCodecParameters* codecpar_;
-  AVPacket* pkt_;
-  AVFrame* frame_; // Frame that is currently being processed
-  SwrContext* swrCtx_;
-  uint8_t** resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
+#ifndef AUDIO_API_TEST_SUITE
+  AVFormatContext *fmtCtx_;
+  AVCodecContext *codecCtx_;
+  const AVCodec *decoder_;
+  AVCodecParameters *codecpar_;
+  AVPacket *pkt_;
+  AVFrame *frame_; // Frame that is currently being processed
+  SwrContext *swrCtx_;
+  uint8_t **
+      resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
   std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusSize_; // size of currently buffered bus
+  size_t bufferedBusSize_;                // size of currently buffered bus
   int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
   std::thread streamingThread_;
   std::atomic<bool> isNodeFinished_; // Flag to control the streaming thread
-  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
-  channels::spsc::Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> sender_;
-  channels::spsc::Receiver<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY> receiver_;
+  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES =
+      8192; // Initial size for resampled data
+  channels::spsc::Sender<
+      StreamingData,
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>
+      sender_;
+  channels::spsc::Receiver<
+      StreamingData,
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>
+      receiver_;
 
   /**
    * @brief Setting up the resampler
@@ -109,7 +124,7 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
    */
-  bool processFrameWithResampler(AVFrame* frame);
+  bool processFrameWithResampler(AVFrame *frame);
 
   /**
    * @brief Thread function to continuously read and process audio frames
@@ -128,7 +143,7 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @return true if successful, false otherwise
    * @note This function initializes the FFmpeg libraries and opens the input stream
    */
-  bool openInput(const std::string& inputUrl);
+  bool openInput(const std::string &inputUrl);
 
   /**
    * @brief Find the audio stream channel in the input
@@ -141,6 +156,6 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @return true if successful, false otherwise
    */
   bool setupDecoder();
-  #endif // AUDIO_API_TEST_SUITE
+#endif // AUDIO_API_TEST_SUITE
 };
 } // namespace audioapi

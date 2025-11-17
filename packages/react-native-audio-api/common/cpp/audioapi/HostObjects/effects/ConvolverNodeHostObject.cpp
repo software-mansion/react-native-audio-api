@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/effects/ConvolverNode.h>
+#include <memory>
 
 namespace audioapi {
 

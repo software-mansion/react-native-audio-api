@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
+#include <memory>
 
 namespace audioapi {
 

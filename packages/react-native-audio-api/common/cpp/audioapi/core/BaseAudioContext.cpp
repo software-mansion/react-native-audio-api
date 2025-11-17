@@ -22,6 +22,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 

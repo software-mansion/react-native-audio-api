@@ -14,7 +14,7 @@ class ConstantSourceNode;
 class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit ConstantSourceNodeHostObject(
-        const std::shared_ptr<ConstantSourceNode> &node);
+      const std::shared_ptr<ConstantSourceNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(offset);
 };

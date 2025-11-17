@@ -1,4 +1,6 @@
 #include <audioapi/core/utils/AudioParamEventQueue.h>
+#include <algorithm>
+#include <utility>
 
 namespace audioapi {
 

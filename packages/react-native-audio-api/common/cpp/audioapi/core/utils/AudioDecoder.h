@@ -18,16 +18,25 @@ class AudioDecoder {
  public:
   AudioDecoder() = delete;
 
-  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, float sampleRate);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(
+      const std::string &path,
+      float sampleRate);
   [[nodiscard]] static std::shared_ptr<AudioBuffer>
   decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
-  [[nodiscard]] static std::shared_ptr<AudioBuffer>
-  decodeWithPCMInBase64(const std::string &data, float inputSampleRate, int inputChannelCount, bool interleaved);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
+      const std::string &data,
+      float inputSampleRate,
+      int inputChannelCount,
+      bool interleaved);
 
  private:
-  static std::vector<float> readAllPcmFrames(ma_decoder &decoder, int outputChannels);
-  static std::shared_ptr<AudioBuffer>
-  makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer, float outputSampleRate, int outputChannels);
+  static std::vector<float> readAllPcmFrames(
+      ma_decoder &decoder,
+      int outputChannels);
+  static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
+      const std::vector<float> &buffer,
+      float outputSampleRate,
+      int outputChannels);
 
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
@@ -35,7 +44,8 @@ class AudioDecoder {
     const auto *bytes = static_cast<const unsigned char *>(data);
 
     // WAV/RIFF
-    if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0)
+    if (std::memcmp(bytes, "RIFF", 4) == 0 &&
+        std::memcmp(bytes + 8, "WAVE", 4) == 0)
       return AudioFormat::WAV;
 
     // OGG
@@ -66,9 +76,12 @@ class AudioDecoder {
     return AudioFormat::UNKNOWN;
   }
 
-  static inline bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
+  static inline bool pathHasExtension(
+      const std::string &path,
+      const std::vector<std::string> &extensions) {
     std::string pathLower = path;
-    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
+    std::transform(
+        pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
     for (const auto &ext : extensions) {
       if (pathLower.ends_with(ext))
         return true;
@@ -83,7 +96,8 @@ class AudioDecoder {
     return static_cast<float>(sample) / INT16_MAX;
   }
   [[nodiscard]] static inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
-    return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) / INT16_MAX;
+    return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) /
+        INT16_MAX;
   }
 };
 

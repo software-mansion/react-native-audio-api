@@ -5,8 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <utility>
 #include <complex>
+#include <utility>
 #include <vector>
 
 namespace audioapi::dsp {
@@ -16,7 +16,7 @@ class FFT {
   explicit FFT(int size);
   ~FFT();
 
-  template<typename Allocator>
+  template <typename Allocator>
   void doFFT(float *in, std::vector<std::complex<float>, Allocator> &out) {
     pffft_transform_ordered(
         pffftSetup_,
@@ -31,8 +31,10 @@ class FFT {
     // out[0].imag = Nyquist component - should be pure real
   }
 
-  template<typename Allocator>
-  void doInverseFFT(std::vector<std::complex<float>, Allocator> &in, float *out) {
+  template <typename Allocator>
+  void doInverseFFT(
+      std::vector<std::complex<float>, Allocator> &in,
+      float *out) {
     pffft_transform_ordered(
         pffftSetup_,
         reinterpret_cast<float *>(&in[0]),

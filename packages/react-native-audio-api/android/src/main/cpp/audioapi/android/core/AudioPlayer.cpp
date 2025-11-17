@@ -6,6 +6,9 @@
 #include <audioapi/utils/AudioBus.h>
 #include <jni.h>
 
+#include <algorithm>
+#include <memory>
+
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(

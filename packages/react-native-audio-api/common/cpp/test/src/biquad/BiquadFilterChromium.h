@@ -44,21 +44,32 @@ struct BiquadCoefficients {
 };
 
 void getFrequencyResponse(
-const BiquadCoefficients &coeffs,
-std::span<const float> frequency,
-std::span<float> mag_response,
-std::span<float> phase_response,
-float nyquistFrequency);
+    const BiquadCoefficients &coeffs,
+    std::span<const float> frequency,
+    std::span<float> mag_response,
+    std::span<float> phase_response,
+    float nyquistFrequency);
 
-BiquadCoefficients normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
+BiquadCoefficients normalizeCoefficients(
+    double b0,
+    double b1,
+    double b2,
+    double a0,
+    double a1,
+    double a2);
 
 BiquadCoefficients calculateLowpassCoefficients(double cutoff, double Q);
 BiquadCoefficients calculateHighpassCoefficients(double cutoff, double Q);
 BiquadCoefficients calculateBandpassCoefficients(double frequency, double Q);
 BiquadCoefficients calculateNotchCoefficients(double frequency, double Q);
 BiquadCoefficients calculateAllpassCoefficients(double frequency, double Q);
-BiquadCoefficients calculatePeakingCoefficients(double frequency, double Q, double db_gain);
-BiquadCoefficients calculateLowshelfCoefficients(double frequency, double db_gain);
-BiquadCoefficients calculateHighshelfCoefficients(double frequency, double db_gain);
+BiquadCoefficients
+calculatePeakingCoefficients(double frequency, double Q, double db_gain);
+BiquadCoefficients calculateLowshelfCoefficients(
+    double frequency,
+    double db_gain);
+BiquadCoefficients calculateHighshelfCoefficients(
+    double frequency,
+    double db_gain);
 
 } // namespace audioapi

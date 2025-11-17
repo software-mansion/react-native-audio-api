@@ -2,6 +2,7 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 #include <type_traits>
 
 namespace audioapi {

@@ -10,6 +10,7 @@
 #else
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
+#include <memory>
 
 namespace audioapi {
 

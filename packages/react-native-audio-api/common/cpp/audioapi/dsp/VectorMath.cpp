@@ -25,6 +25,7 @@
 
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>

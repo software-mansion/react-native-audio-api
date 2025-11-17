@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <memory>
 
 namespace audioapi {
 

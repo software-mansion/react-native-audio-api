@@ -9,8 +9,10 @@
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <memory>
 
 namespace audioapi {
 
@@ -54,7 +56,8 @@ bool Convolver::init(
   // Ignore zeros at the end of the impulse response because they only waste
   // computation time
   _blockSize = blockSize;
-  _trueSegmentCount = (size_t)(std::ceil((float)irLen / (float)_blockSize));
+  _trueSegmentCount = static_cast<size_t>(
+      (std::ceil(static_cast<float>(irLen) / static_cast<float>(_blockSize))));
   while (irLen > 0 && ::fabs(ir[irLen - 1]) < 10e-3) {
     --irLen;
   }
@@ -64,12 +67,13 @@ bool Convolver::init(
   }
 
   // The length-N is split into P = N/B length-B sub filters
-  _segCount = (size_t)(std::ceil((float)irLen / (float)_blockSize));
+  _segCount = static_cast<size_t>(
+      (std::ceil(static_cast<float>(irLen) / static_cast<float>(_blockSize))));
   _segSize = 2 * _blockSize;
   // size of the FFT is 2B, so the complex size is B+1, due to the
   // complex-conjugate symmetricity
   _fftComplexSize = _segSize / 2 + 1;
-  _fft = std::make_shared<dsp::FFT>((int)_segSize);
+  _fft = std::make_shared<dsp::FFT>(static_cast<int>(_segSize));
   _fftBuffer.resize(_segSize);
 
   // segments preparation

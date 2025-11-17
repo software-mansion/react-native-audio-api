@@ -1,5 +1,7 @@
 #include <test/src/biquad/BiquadFilterChromium.h>
 #include <test/src/biquad/BiquadFilterTest.h>
+#include <memory>
+#include <vector>
 
 namespace audioapi {
 

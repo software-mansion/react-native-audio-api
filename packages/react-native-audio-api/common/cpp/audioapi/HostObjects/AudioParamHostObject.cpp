@@ -1,6 +1,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 

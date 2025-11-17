@@ -7,6 +7,8 @@
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
+#include <memory>
+
 namespace audioapi {
 
 AndroidAudioRecorder::AndroidAudioRecorder(

@@ -3,6 +3,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 
 namespace audioapi {
 

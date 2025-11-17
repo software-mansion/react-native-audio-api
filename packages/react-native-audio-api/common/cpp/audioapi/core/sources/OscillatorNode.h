@@ -1,9 +1,9 @@
 #pragma once
 
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>
-#include <audioapi/core/effects/PeriodicWave.h>
 
 #include <cmath>
 #include <memory>
@@ -24,7 +24,9 @@ class OscillatorNode : public AudioScheduledSourceNode {
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;

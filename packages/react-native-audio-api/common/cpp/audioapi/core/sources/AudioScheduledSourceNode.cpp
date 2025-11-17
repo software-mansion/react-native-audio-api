@@ -10,6 +10,10 @@
 #include <audioapi/core/AudioContext.h>
 #endif
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)

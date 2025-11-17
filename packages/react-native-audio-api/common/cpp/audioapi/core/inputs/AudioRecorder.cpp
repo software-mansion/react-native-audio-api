@@ -6,6 +6,10 @@
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace audioapi {
 

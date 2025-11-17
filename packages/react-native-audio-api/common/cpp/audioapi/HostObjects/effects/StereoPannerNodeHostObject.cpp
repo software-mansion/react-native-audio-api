@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
+#include <memory>
 
 namespace audioapi {
 

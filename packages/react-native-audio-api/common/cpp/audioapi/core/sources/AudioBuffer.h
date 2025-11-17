@@ -1,11 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cstddef>
-#include <cstring>
 
 namespace audioapi {
 

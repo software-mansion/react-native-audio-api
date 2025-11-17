@@ -1,13 +1,12 @@
 #pragma once
 
-
-#include <jsi/jsi.h>
-#include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/utils/AudioBus.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/jsi/AudioArrayBuffer.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
+#include <jsi/jsi.h>
 
 #include <memory>
 #include <vector>
@@ -21,11 +20,15 @@ class WorkletNode : public AudioNode {
       BaseAudioContext *context,
       size_t bufferLength,
       size_t inputChannelCount,
-      WorkletsRunner &&workletRunner
-  ) : AudioNode(context) {}
+      WorkletsRunner &&workletRunner)
+      : AudioNode(context) {}
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override { return processingBus; }
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override {
+    return processingBus;
+  }
 };
 #else
 
@@ -37,14 +40,14 @@ class WorkletNode : public AudioNode {
       BaseAudioContext *context,
       size_t bufferLength,
       size_t inputChannelCount,
-      WorkletsRunner &&workletRunner
-  );
+      WorkletsRunner &&workletRunner);
 
   ~WorkletNode() override = default;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
-
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   WorkletsRunner workletRunner_;

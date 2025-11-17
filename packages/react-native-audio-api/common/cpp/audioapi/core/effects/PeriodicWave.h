@@ -33,9 +33,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <memory>
 #include <vector>
-#include <complex>
 
 namespace audioapi {
 class PeriodicWave {
@@ -80,8 +80,9 @@ class PeriodicWave {
   // The higher frequencies are culled to band-limit the waveform.
   // For each range, the inverse FFT is performed to get the time domain
   // representation of the band-limited waveform.
-  void
-  createBandLimitedTables(const std::vector<std::complex<float>> &complexData, int size);
+  void createBandLimitedTables(
+      const std::vector<std::complex<float>> &complexData,
+      int size);
 
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given

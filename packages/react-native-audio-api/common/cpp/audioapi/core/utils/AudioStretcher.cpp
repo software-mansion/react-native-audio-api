@@ -5,6 +5,8 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace audioapi {
 

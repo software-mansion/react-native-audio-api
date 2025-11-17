@@ -2,6 +2,8 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 

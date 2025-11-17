@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <memory>
 
 namespace audioapi {
 

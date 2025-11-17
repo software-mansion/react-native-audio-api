@@ -1,4 +1,5 @@
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <algorithm>
 #include <type_traits>
 
 namespace audioapi {

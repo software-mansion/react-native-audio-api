@@ -1,4 +1,8 @@
 #include <audioapi/jsi/JsiHostObject.h>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 //  set this value to 1 in order to debug the construction/destruction
 #define JSI_DEBUG_ALLOCATIONS 0

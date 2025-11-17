@@ -1,4 +1,6 @@
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -77,6 +79,6 @@ std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeUnsafe(
 #else
   return std::nullopt;
 #endif
-};
+}
 
 }; // namespace audioapi
