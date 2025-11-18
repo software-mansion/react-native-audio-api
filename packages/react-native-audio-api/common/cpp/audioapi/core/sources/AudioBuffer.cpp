@@ -2,14 +2,13 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <algorithm>
+#include <memory>
 #include <utility>
 
 namespace audioapi {
 
-AudioBuffer::AudioBuffer(
-    int numberOfChannels,
-    size_t length,
-    float sampleRate) {
+AudioBuffer::AudioBuffer(int numberOfChannels, size_t length, float sampleRate) {
   bus_ = std::make_shared<AudioBus>(length, numberOfChannels, sampleRate);
 }
 
@@ -45,8 +44,7 @@ void AudioBuffer::copyFromChannel(
   memcpy(
       destination,
       bus_->getChannel(channelNumber)->getData() + startInChannel,
-      std::min(destinationLength, getLength() - startInChannel) *
-          sizeof(float));
+      std::min(destinationLength, getLength() - startInChannel) * sizeof(float));
 }
 
 void AudioBuffer::copyToChannel(

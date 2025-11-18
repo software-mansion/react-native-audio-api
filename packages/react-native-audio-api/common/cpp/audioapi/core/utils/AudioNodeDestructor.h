@@ -1,19 +1,18 @@
 #pragma once
 
-#include <thread>
-#include <atomic>
-#include <vector>
-#include <memory>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <atomic>
+#include <memory>
+#include <thread>
+#include <vector>
 
 namespace audioapi {
 
 class AudioNode;
 
 #define AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS \
-  std::shared_ptr<AudioNode>, \
-  channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
-  channels::spsc::WaitStrategy::ATOMIC_WAIT
+  std::shared_ptr<AudioNode>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
+      channels::spsc::WaitStrategy::ATOMIC_WAIT
 
 class AudioNodeDestructor {
  public:
@@ -32,13 +31,11 @@ class AudioNodeDestructor {
   std::thread workerHandle_;
   std::atomic<bool> isExiting_;
 
-  channels::spsc::Sender<
-    AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> sender_;
+  channels::spsc::Sender<AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> sender_;
 
   /// @brief Processes audio nodes for deconstruction.
   /// @param receiver The receiver channel for incoming audio nodes.
-  void process(channels::spsc::Receiver<
-    AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> &&receiver);
+  void process(channels::spsc::Receiver<AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS> &&receiver);
 };
 
 #undef AUDIO_NODE_DESTRUCTOR_SPSC_OPTIONS

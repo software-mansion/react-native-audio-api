@@ -4,14 +4,14 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <thread>
-#include <cstddef>
-#include <cassert>
 #include <utility>
 
 namespace audioapi {
@@ -51,7 +51,7 @@ class AudioScheduledSourceNode : public AudioNode {
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBus>& processingBus,
+      const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess);

@@ -10,6 +10,7 @@
 #else
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
+#include <memory>
 
 namespace audioapi {
 
@@ -18,11 +19,11 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     float sampleRate,
     int bufferLength) {
 #ifdef ANDROID
-  audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
-      sampleRate, bufferLength, audioEventHandlerRegistry);
+  audioRecorder_ =
+      std::make_shared<AndroidAudioRecorder>(sampleRate, bufferLength, audioEventHandlerRegistry);
 #else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>(
-      sampleRate, bufferLength, audioEventHandlerRegistry);
+  audioRecorder_ =
+      std::make_shared<IOSAudioRecorder>(sampleRate, bufferLength, audioEventHandlerRegistry);
 #endif
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioRecorderHostObject, onAudioReady));
@@ -35,17 +36,14 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioRecorderHostObject, onAudioReady) {
-  audioRecorder_->setOnAudioReadyCallbackId(
-      std::stoull(value.getString(runtime).utf8(runtime)));
+  audioRecorder_->setOnAudioReadyCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
   auto adapterNodeHostObject =
-      args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(
-          runtime);
+      args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(runtime);
   audioRecorder_->connect(
-      std::static_pointer_cast<RecorderAdapterNode>(
-          adapterNodeHostObject->node_));
+      std::static_pointer_cast<RecorderAdapterNode>(adapterNodeHostObject->node_));
   return jsi::Value::undefined();
 }
 

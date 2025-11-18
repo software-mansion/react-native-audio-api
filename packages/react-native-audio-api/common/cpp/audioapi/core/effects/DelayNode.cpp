@@ -3,11 +3,11 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 
 namespace audioapi {
 
-DelayNode::DelayNode(BaseAudioContext *context, float maxDelayTime)
-    : AudioNode(context) {
+DelayNode::DelayNode(BaseAudioContext *context, float maxDelayTime) : AudioNode(context) {
   delayTimeParam_ = std::make_shared<AudioParam>(0, 0, maxDelayTime, context);
   delayBuffer_ = std::make_shared<AudioBus>(
       static_cast<size_t>(
@@ -54,23 +54,19 @@ std::shared_ptr<AudioBus> DelayNode::processNode(
     }
     return processingBus;
   }
-  auto delayTime = delayTimeParam_->processKRateParam(
-      framesToProcess, context_->getCurrentTime());
+  auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context_->getCurrentTime());
   size_t processingBusStartIndex = 0;
-  size_t writeIndex =
-      static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
+  size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
       delayBuffer_->getSize();
   int framesToWrite = framesToProcess;
   if (writeIndex + framesToWrite >= delayBuffer_->getSize()) {
     int framesToCopy = writeIndex + framesToWrite - delayBuffer_->getSize();
-    delayBuffer_->sum(
-        processingBus.get(), processingBusStartIndex, writeIndex, framesToCopy);
+    delayBuffer_->sum(processingBus.get(), processingBusStartIndex, writeIndex, framesToCopy);
     writeIndex = 0;
     processingBusStartIndex += framesToCopy;
     framesToWrite -= framesToCopy;
   }
-  delayBuffer_->sum(
-      processingBus.get(), processingBusStartIndex, writeIndex, framesToWrite);
+  delayBuffer_->sum(processingBus.get(), processingBusStartIndex, writeIndex, framesToWrite);
   processingBus->zero();
   if (readIndex_ + framesToProcess >= delayBuffer_->getSize()) {
     size_t framesToEnd = delayBuffer_->getSize() - readIndex_;

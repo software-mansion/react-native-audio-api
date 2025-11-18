@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
+#include <memory>
 
 namespace audioapi {
 
@@ -10,21 +11,16 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
     : AudioScheduledSourceNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, detune),
-      JSI_EXPORT_PROPERTY_GETTER(
-          AudioBufferBaseSourceNodeHostObject, playbackRate),
-      JSI_EXPORT_PROPERTY_GETTER(
-          AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, playbackRate),
+      JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
 
   addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(
-          AudioBufferBaseSourceNodeHostObject, onPositionChanged),
-      JSI_EXPORT_PROPERTY_SETTER(
-          AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChanged),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getInputLatency),
-      JSI_EXPORT_FUNCTION(
-          AudioBufferBaseSourceNodeHostObject, getOutputLatency));
+      JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getOutputLatency));
 }
 
 AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
@@ -46,45 +42,35 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, playbackRate) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   auto playbackRate = sourceNode->getPlaybackRateParam();
-  auto playbackRateHostObject =
-      std::make_shared<AudioParamHostObject>(playbackRate);
+  auto playbackRateHostObject = std::make_shared<AudioParamHostObject>(playbackRate);
   return jsi::Object::createFromHostObject(runtime, playbackRateHostObject);
 }
 
-JSI_PROPERTY_GETTER_IMPL(
-    AudioBufferBaseSourceNodeHostObject,
-    onPositionChangedInterval) {
+JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   return {sourceNode->getOnPositionChangedInterval()};
 }
 
-JSI_PROPERTY_SETTER_IMPL(
-    AudioBufferBaseSourceNodeHostObject,
-    onPositionChanged) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
-  sourceNode->setOnPositionChangedCallbackId(
-      std::stoull(value.getString(runtime).utf8(runtime)));
+  sourceNode->setOnPositionChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
-JSI_PROPERTY_SETTER_IMPL(
-    AudioBufferBaseSourceNodeHostObject,
-    onPositionChangedInterval) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
   sourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getInputLatency) {
-  auto audioBufferBaseSourceNode =
-      std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  auto audioBufferBaseSourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
   return audioBufferBaseSourceNode->getInputLatency();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
-  auto audioBufferBaseSourceNode =
-      std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  auto audioBufferBaseSourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
   return audioBufferBaseSourceNode->getOutputLatency();
 }

@@ -13,8 +13,7 @@ class StereoPannerNode;
 
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit StereoPannerNodeHostObject(
-      const std::shared_ptr<StereoPannerNode> &node);
+  explicit StereoPannerNodeHostObject(const std::shared_ptr<StereoPannerNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(pan);
 };

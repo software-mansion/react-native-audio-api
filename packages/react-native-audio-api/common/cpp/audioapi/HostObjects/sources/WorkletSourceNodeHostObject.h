@@ -12,7 +12,6 @@ using namespace facebook;
 class WorkletSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit WorkletSourceNodeHostObject(const std::shared_ptr<WorkletSourceNode> &node)
-      : AudioScheduledSourceNodeHostObject(node) {
-  }
+      : AudioScheduledSourceNodeHostObject(node) {}
 };
 } // namespace audioapi

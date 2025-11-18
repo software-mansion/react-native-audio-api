@@ -44,13 +44,14 @@ struct BiquadCoefficients {
 };
 
 void getFrequencyResponse(
-const BiquadCoefficients &coeffs,
-std::span<const float> frequency,
-std::span<float> mag_response,
-std::span<float> phase_response,
-float nyquistFrequency);
+    const BiquadCoefficients &coeffs,
+    std::span<const float> frequency,
+    std::span<float> mag_response,
+    std::span<float> phase_response,
+    float nyquistFrequency);
 
-BiquadCoefficients normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
+BiquadCoefficients
+normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
 
 BiquadCoefficients calculateLowpassCoefficients(double cutoff, double Q);
 BiquadCoefficients calculateHighpassCoefficients(double cutoff, double Q);

@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
@@ -23,8 +24,7 @@ class DelayTest : public ::testing::Test {
 
 class TestableDelayNode : public DelayNode {
  public:
-  explicit TestableDelayNode(BaseAudioContext *context)
-      : DelayNode(context, 1) {}
+  explicit TestableDelayNode(BaseAudioContext *context) : DelayNode(context, 1) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
@@ -48,8 +48,7 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   auto delayNode = std::make_shared<TestableDelayNode>(context.get());
   delayNode->setDelayTimeParam(DELAY_TIME);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     bus->getChannel(0)->getData()[i] = i + 1;
   }
@@ -66,24 +65,20 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
   auto delayNode = std::make_shared<TestableDelayNode>(context.get());
   delayNode->setDelayTimeParam(DELAY_TIME);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     bus->getChannel(0)->getData()[i] = i + 1;
   }
 
   auto resultBus = delayNode->processNode(bus, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    if (i <
-        FRAMES_TO_PROCESS / 2) { // First 64 samples should be zero due to delay
+    if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be zero due to delay
       EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 0.0f);
     } else {
       EXPECT_FLOAT_EQ(
           (*resultBus->getChannel(0))[i],
           static_cast<float>(
-              i + 1 -
-              FRAMES_TO_PROCESS /
-                  2)); // Last 64 samples should be 1st part of bus
+              i + 1 - FRAMES_TO_PROCESS / 2)); // Last 64 samples should be 1st part of bus
     }
   }
 }
@@ -94,8 +89,7 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   auto delayNode = std::make_shared<TestableDelayNode>(context.get());
   delayNode->setDelayTimeParam(DELAY_TIME);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     bus->getChannel(0)->getData()[i] = i + 1;
   }
@@ -103,15 +97,12 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   delayNode->processNode(bus, FRAMES_TO_PROCESS);
   auto resultBus = delayNode->processNode(bus, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    if (i <
-        FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of bus
+    if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of bus
       EXPECT_FLOAT_EQ(
-          (*resultBus->getChannel(0))[i],
-          static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
+          (*resultBus->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
     } else {
-      EXPECT_FLOAT_EQ(
-          (*resultBus->getChannel(0))[i],
-          0.0f); // Last 64 samples should be zero
+      EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i],
+                      0.0f); // Last 64 samples should be zero
     }
   }
 }

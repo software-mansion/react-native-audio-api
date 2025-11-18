@@ -7,12 +7,13 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
+#include <memory>
+#include <string>
 
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry>
-        &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
     : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry) {
 #ifdef ANDROID
@@ -89,8 +90,7 @@ bool AudioContext::start() {
   return false;
 }
 
-std::function<void(std::shared_ptr<AudioBus>, int)>
-AudioContext::renderAudio() {
+std::function<void(std::shared_ptr<AudioBus>, int)> AudioContext::renderAudio() {
   return [this](const std::shared_ptr<AudioBus> &data, int frames) {
     destination_->renderAudio(data, frames);
   };

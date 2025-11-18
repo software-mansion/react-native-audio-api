@@ -1,12 +1,10 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/Windows.h>
+#include <algorithm>
 
 namespace audioapi::dsp {
 
-void WindowFunction::forcePerfectReconstruction(
-    float *data,
-    int windowLength,
-    int interval) {
+void WindowFunction::forcePerfectReconstruction(float *data, int windowLength, int interval) {
   for (int i = 0; i < interval; ++i) {
     float sum2 = 0;
 
@@ -58,14 +56,11 @@ float Kaiser::bandwidthToBeta(float bandwidth, bool heuristicOptimal) {
 }
 
 void ApproximateConfinedGaussian::apply(float *data, int size) const {
-  auto offsetScale =
-      getGaussian(1.0f) / (getGaussian(3.0f) + getGaussian(-1.0f));
+  auto offsetScale = getGaussian(1.0f) / (getGaussian(3.0f) + getGaussian(-1.0f));
   auto norm = 1 / (getGaussian(1.0f) - 2 * offsetScale * getGaussian(2.0f));
   for (int i = 0; i < size; ++i) {
     auto r = static_cast<float>(2 * i + 1) / static_cast<float>(size) - 1.0f;
-    data[i] = norm *
-        (getGaussian(r) -
-         offsetScale * (getGaussian(r - 2) + getGaussian(r + 2)));
+    data[i] = norm * (getGaussian(r) - offsetScale * (getGaussian(r - 2) + getGaussian(r + 2)));
   }
 }
 

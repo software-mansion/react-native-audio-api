@@ -3,9 +3,9 @@
 #include <audioapi/core/AudioNode.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <vector>
-#include <cstddef>
 
 namespace audioapi {
 
@@ -19,12 +19,14 @@ class AudioDestinationNode : public AudioNode {
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
 
-  void renderAudio(const std::shared_ptr<AudioBus>& audioData, int numFrames);
+  void renderAudio(const std::shared_ptr<AudioBus> &audioData, int numFrames);
 
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int) final { return processingBus; };
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int) final {
+    return processingBus;
+  };
 
  private:
   std::size_t currentSampleFrame_;

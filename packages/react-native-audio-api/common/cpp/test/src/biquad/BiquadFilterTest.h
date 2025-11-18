@@ -19,10 +19,13 @@ class BiquadFilterTest : public ::testing::Test {
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    context = std::make_unique<OfflineAudioContext>(
+        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  void expectCoefficientsNear(const std::shared_ptr<BiquadFilterNode> &node, const BiquadCoefficients &expected);
+  void expectCoefficientsNear(
+      const std::shared_ptr<BiquadFilterNode> &node,
+      const BiquadCoefficients &expected);
   void testLowpass(float frequency, float Q);
   void testHighpass(float frequency, float Q);
   void testBandpass(float frequency, float Q);
@@ -33,8 +36,12 @@ class BiquadFilterTest : public ::testing::Test {
   void testHighshelf(float frequency, float gain);
 };
 
-class BiquadFilterQTestLowpassHighpass : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
-class BiquadFilterQTestRestTypes : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
-class BiquadFilterFrequencyTest : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
-class BiquadFilterGainTest : public BiquadFilterTest, public ::testing::WithParamInterface<float> {};
+class BiquadFilterQTestLowpassHighpass : public BiquadFilterTest,
+                                         public ::testing::WithParamInterface<float> {};
+class BiquadFilterQTestRestTypes : public BiquadFilterTest,
+                                   public ::testing::WithParamInterface<float> {};
+class BiquadFilterFrequencyTest : public BiquadFilterTest,
+                                  public ::testing::WithParamInterface<float> {};
+class BiquadFilterGainTest : public BiquadFilterTest,
+                             public ::testing::WithParamInterface<float> {};
 } // namespace audioapi

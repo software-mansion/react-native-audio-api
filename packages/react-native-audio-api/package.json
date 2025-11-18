@@ -53,7 +53,7 @@
     "format:android:cpp": "find android/src/ -path android/src/main/cpp/audioapi/android/libs -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "format:ios": "find ios/audioapi/ios -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" | xargs clang-format -i",
-    "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
+    "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f -iname \"*.h\" -print -o -type f -iname \"*.cpp\" -print | xargs clang-format -i",
     "build": "bob build",
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",

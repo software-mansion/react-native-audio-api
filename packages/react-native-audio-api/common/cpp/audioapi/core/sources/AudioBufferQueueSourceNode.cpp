@@ -8,6 +8,13 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <algorithm>
+#include <memory>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
@@ -22,10 +29,9 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
 
-    int extraTailFrames =
-        static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    tailBuffer_ = std::make_shared<AudioBuffer>(
-        channelCount_, extraTailFrames, context_->getSampleRate());
+    int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
+    tailBuffer_ =
+        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context_->getSampleRate());
 
     tailBuffer_->bus_->zero();
   }
@@ -54,8 +60,7 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
   }
 
   offset = std::min(offset, buffers_.front().second->getDuration());
-  vReadIndex_ =
-      static_cast<double>(buffers_.front().second->getSampleRate() * offset);
+  vReadIndex_ = static_cast<double>(buffers_.front().second->getSampleRate() * offset);
 }
 
 void AudioBufferQueueSourceNode::pause() {
@@ -63,8 +68,7 @@ void AudioBufferQueueSourceNode::pause() {
   isPaused_ = true;
 }
 
-std::string AudioBufferQueueSourceNode::enqueueBuffer(
-    const std::shared_ptr<AudioBuffer> &buffer) {
+std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   auto locker = Locker(getBufferLock());
   buffers_.emplace(bufferId_, buffer);
 
@@ -140,8 +144,7 @@ std::shared_ptr<AudioBus> AudioBufferQueueSourceNode::processNode(
 }
 
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
-  return dsp::sampleFrameToTime(
-             static_cast<int>(vReadIndex_), context_->getSampleRate()) +
+  return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), context_->getSampleRate()) +
       playedBuffersDuration_;
 }
 
@@ -173,8 +176,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     assert(readIndex + framesToCopy <= buffer->getLength());
     assert(writeIndex + framesToCopy <= processingBus->getSize());
 
-    processingBus->copy(
-        buffer->bus_.get(), readIndex, writeIndex, framesToCopy);
+    processingBus->copy(buffer->bus_.get(), readIndex, writeIndex, framesToCopy);
 
     writeIndex += framesToCopy;
     readIndex += framesToCopy;
@@ -229,8 +231,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
   while (framesLeft > 0) {
     auto readIndex = static_cast<size_t>(vReadIndex_);
     size_t nextReadIndex = readIndex + 1;
-    auto factor =
-        static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
+    auto factor = static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
 
     bool crossBufferInterpolation = false;
     std::shared_ptr<AudioBuffer> nextBuffer = nullptr;
@@ -255,11 +256,10 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
         const float *nextSource = nextBuffer->bus_->getChannel(i)->getData();
         float currentSample = currentSource[readIndex];
         float nextSample = nextSource[nextReadIndex];
-        destination[writeIndex] =
-            currentSample + factor * (nextSample - currentSample);
+        destination[writeIndex] = currentSample + factor * (nextSample - currentSample);
       } else {
-        destination[writeIndex] = dsp::linearInterpolate(
-            currentSource, readIndex, nextReadIndex, factor);
+        destination[writeIndex] =
+            dsp::linearInterpolate(currentSource, readIndex, nextReadIndex, factor);
       }
     }
 
@@ -272,8 +272,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
       playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
-      std::unordered_map<std::string, EventValue> body = {
-          {"bufferId", std::to_string(bufferId)}};
+      std::unordered_map<std::string, EventValue> body = {{"bufferId", std::to_string(bufferId)}};
       context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
           "ended", onEndedCallbackId_, body);
 

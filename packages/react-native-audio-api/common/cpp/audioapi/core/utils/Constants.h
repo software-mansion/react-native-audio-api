@@ -1,8 +1,8 @@
 #pragma once
 
-#include <numbers>
 #include <cmath>
 #include <limits>
+#include <numbers>
 
 // https://webaudio.github.io/web-audio-api/
 
@@ -16,8 +16,10 @@ static constexpr float UPPER_FREQUENCY_LIMIT_DETECTION = 333.0f;
 static constexpr float LOWER_FREQUENCY_LIMIT_DETECTION = 55.0f;
 
 // general
-static constexpr float MOST_POSITIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::max());
-static constexpr float MOST_NEGATIVE_SINGLE_FLOAT = static_cast<float>(std::numeric_limits<float>::lowest());
+static constexpr float MOST_POSITIVE_SINGLE_FLOAT =
+    static_cast<float>(std::numeric_limits<float>::max());
+static constexpr float MOST_NEGATIVE_SINGLE_FLOAT =
+    static_cast<float>(std::numeric_limits<float>::lowest());
 static float LOG2_MOST_POSITIVE_SINGLE_FLOAT = std::log2(MOST_POSITIVE_SINGLE_FLOAT);
 static float LOG10_MOST_POSITIVE_SINGLE_FLOAT = std::log10(MOST_POSITIVE_SINGLE_FLOAT);
 static constexpr float PI = std::numbers::pi_v<float>;

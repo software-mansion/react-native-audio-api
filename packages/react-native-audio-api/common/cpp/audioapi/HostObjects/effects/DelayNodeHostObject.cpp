@@ -3,6 +3,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
+#include <memory>
 
 namespace audioapi {
 
@@ -19,8 +20,7 @@ size_t DelayNodeHostObject::getSizeInBytes() const {
 
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
   auto delayNode = std::static_pointer_cast<DelayNode>(node_);
-  auto delayTimeParam =
-      std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());
+  auto delayTimeParam = std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());
   return jsi::Object::createFromHostObject(runtime, delayTimeParam);
 }
 

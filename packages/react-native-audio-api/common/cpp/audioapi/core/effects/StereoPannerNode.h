@@ -4,8 +4,8 @@
 #include <audioapi/core/AudioParam.h>
 
 #include <algorithm>
-#include <memory>
 #include <cassert>
+#include <memory>
 
 namespace audioapi {
 
@@ -18,7 +18,9 @@ class StereoPannerNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> panParam_;

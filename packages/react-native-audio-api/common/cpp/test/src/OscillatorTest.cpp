@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 

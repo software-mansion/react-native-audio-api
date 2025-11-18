@@ -2,10 +2,10 @@
 
 #include <audioapi/jsi/JsiHostObject.h>
 
+#include <cstdio>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <cstdio>
 
 namespace audioapi {
 using namespace facebook;

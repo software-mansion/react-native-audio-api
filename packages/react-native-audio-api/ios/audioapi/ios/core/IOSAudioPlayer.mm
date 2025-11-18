@@ -13,45 +13,36 @@ IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio),
-      channelCount_(channelCount),
-      audioBus_(0),
-      isRunning_(false)
+    : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
 {
-  RenderAudioBlock renderAudioBlock =
-      ^(AudioBufferList *outputData, int numFrames) {
-        int processedFrames = 0;
+  RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
+    int processedFrames = 0;
 
-        while (processedFrames < numFrames) {
-          int framesToProcess =
-              std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
+    while (processedFrames < numFrames) {
+      int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
-          if (isRunning_.load()) {
-            renderAudio_(audioBus_, framesToProcess);
-          } else {
-            audioBus_->zero();
-          }
+      if (isRunning_.load()) {
+        renderAudio_(audioBus_, framesToProcess);
+      } else {
+        audioBus_->zero();
+      }
 
-          for (int channel = 0; channel < channelCount_; channel += 1) {
-            float *outputChannel = (float *)outputData->mBuffers[channel].mData;
-            auto *inputChannel = audioBus_->getChannel(channel)->getData();
+      for (int channel = 0; channel < channelCount_; channel += 1) {
+        float *outputChannel = (float *)outputData->mBuffers[channel].mData;
+        auto *inputChannel = audioBus_->getChannel(channel)->getData();
 
-            memcpy(
-                outputChannel + processedFrames,
-                inputChannel,
-                framesToProcess * sizeof(float));
-          }
+        memcpy(outputChannel + processedFrames, inputChannel, framesToProcess * sizeof(float));
+      }
 
-          processedFrames += framesToProcess;
-        }
-      };
+      processedFrames += framesToProcess;
+    }
+  };
 
   audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
 
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
