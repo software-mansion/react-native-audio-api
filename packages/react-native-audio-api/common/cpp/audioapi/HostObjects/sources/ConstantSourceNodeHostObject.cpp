@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
+#include <memory>
 
 namespace audioapi {
 
@@ -12,8 +13,7 @@ ConstantSourceNodeHostObject::ConstantSourceNodeHostObject(
 
 JSI_PROPERTY_GETTER_IMPL(ConstantSourceNodeHostObject, offset) {
   auto constantSourceNode = std::static_pointer_cast<ConstantSourceNode>(node_);
-  auto offsetParam_ = std::make_shared<AudioParamHostObject>(
-      constantSourceNode->getOffsetParam());
+  auto offsetParam_ = std::make_shared<AudioParamHostObject>(constantSourceNode->getOffsetParam());
   return jsi::Object::createFromHostObject(runtime, offsetParam_);
 }
 } // namespace audioapi

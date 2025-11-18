@@ -6,6 +6,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace audioapi {
 AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
@@ -18,8 +22,7 @@ AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
   inputBuffer_ = std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2);
   tempBuffer_ = std::make_unique<AudioArray>(fftSize_);
   magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
-  downMixBus_ = std::make_unique<AudioBus>(
-      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+  downMixBus_ = std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   fft_ = std::make_unique<dsp::FFT>(fftSize_);
   complexData_ = std::vector<std::complex<float>>(fftSize_);
@@ -100,9 +103,8 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
 
   for (int i = 0; i < length; i++) {
-    auto dbMag = magnitudeBufferData[i] == 0
-        ? minDecibels_
-        : dsp::linearToDecibels(magnitudeBufferData[i]);
+    auto dbMag =
+        magnitudeBufferData[i] == 0 ? minDecibels_ : dsp::linearToDecibels(magnitudeBufferData[i]);
     auto scaledValue = UINT8_MAX * (dbMag - minDecibels_) * rangeScaleFactor;
 
     if (scaledValue < 0) {
@@ -124,8 +126,7 @@ void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = std::min(fftSize_, length);
 
-  inputBuffer_->pop_back(
-      tempBuffer_->getData(), fftSize_, std::max(0, fftSize_ - size), true);
+  inputBuffer_->pop_back(tempBuffer_->getData(), fftSize_, std::max(0, fftSize_ - size), true);
 
   for (int i = 0; i < size; i++) {
     auto value = tempBuffer_->getData()[i];
@@ -152,8 +153,7 @@ std::shared_ptr<AudioBus> AnalyserNode::processNode(
   // Down mix the input bus to mono
   downMixBus_->copy(processingBus.get());
   // Copy the down mixed bus to the input buffer (circular buffer)
-  inputBuffer_->push_back(
-      downMixBus_->getChannel(0)->getData(), framesToProcess, true);
+  inputBuffer_->push_back(downMixBus_->getChannel(0)->getData(), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
 
@@ -171,11 +171,7 @@ void AnalyserNode::doFFTAnalysis() {
   // the window.
   inputBuffer_->pop_back(tempBuffer_->getData(), fftSize_, 0, true);
 
-  dsp::multiply(
-      tempBuffer_->getData(),
-      windowData_->getData(),
-      tempBuffer_->getData(),
-      fftSize_);
+  dsp::multiply(tempBuffer_->getData(), windowData_->getData(), tempBuffer_->getData(), fftSize_);
 
   // do fft analysis - get frequency domain data
   fft_->doFFT(tempBuffer_->getData(), complexData_);
@@ -194,9 +190,7 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(
-    audioapi::AnalyserNode::WindowType type,
-    int size) {
+void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int size) {
   if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
     return;
   }
@@ -207,12 +201,10 @@ void AnalyserNode::setWindowData(
 
   switch (windowType_) {
     case WindowType::BLACKMAN:
-      dsp::Blackman().apply(
-          windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      dsp::Blackman().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
     case WindowType::HANN:
-      dsp::Hann().apply(
-          windowData_->getData(), static_cast<int>(windowData_->getSize()));
+      dsp::Hann().apply(windowData_->getData(), static_cast<int>(windowData_->getSize()));
       break;
   }
 }

@@ -95,8 +95,7 @@ class BiquadFilterNode : public AudioNode {
 
   static BiquadFilterType fromString(const std::string &type) {
     std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
     if (lowerType == "lowpass")
       return BiquadFilterType::LOWPASS;
@@ -141,13 +140,7 @@ class BiquadFilterNode : public AudioNode {
     }
   }
 
-  void setNormalizedCoefficients(
-      float b0,
-      float b1,
-      float b2,
-      float a0,
-      float a1,
-      float a2);
+  void setNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
   void setLowpassCoefficients(float frequency, float Q);
   void setHighpassCoefficients(float frequency, float Q);
   void setBandpassCoefficients(float frequency, float Q);

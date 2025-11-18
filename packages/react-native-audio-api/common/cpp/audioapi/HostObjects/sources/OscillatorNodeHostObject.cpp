@@ -3,11 +3,11 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <memory>
 
 namespace audioapi {
 
-OscillatorNodeHostObject::OscillatorNodeHostObject(
-    const std::shared_ptr<OscillatorNode> &node)
+OscillatorNodeHostObject::OscillatorNodeHostObject(const std::shared_ptr<OscillatorNode> &node)
     : AudioScheduledSourceNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
@@ -21,15 +21,14 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, frequency) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto frequencyParam_ = std::make_shared<AudioParamHostObject>(
-      oscillatorNode->getFrequencyParam());
+  auto frequencyParam_ =
+      std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
   return jsi::Object::createFromHostObject(runtime, frequencyParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, detune) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto detuneParam_ =
-      std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
+  auto detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
 
@@ -41,8 +40,7 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
 
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto periodicWave =
-      args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(runtime);
+  auto periodicWave = args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(runtime);
   oscillatorNode->setPeriodicWave(periodicWave->periodicWave_);
   return jsi::Value::undefined();
 }

@@ -1,4 +1,6 @@
 #include <audioapi/core/utils/AudioParamEventQueue.h>
+#include <algorithm>
+#include <utility>
 
 namespace audioapi {
 
@@ -42,9 +44,7 @@ void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
   }
 }
 
-void AudioParamEventQueue::cancelAndHoldAtTime(
-    double cancelTime,
-    double &endTimeCache) {
+void AudioParamEventQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
     auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {

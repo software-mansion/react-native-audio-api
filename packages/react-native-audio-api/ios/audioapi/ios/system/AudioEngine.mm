@@ -10,8 +10,7 @@ static AudioEngine *_sharedInstance = nil;
   return _sharedInstance;
 }
 
-- (instancetype)initWithAudioSessionManager:
-    (AudioSessionManager *)sessionManager
+- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager
 {
   if (self = [super init]) {
     self.isInterrupted = false;
@@ -55,16 +54,12 @@ static AudioEngine *_sharedInstance = nil;
     AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
 
     [self.audioEngine attachNode:sourceNode];
-    [self.audioEngine connect:sourceNode
-                           to:self.audioEngine.mainMixerNode
-                       format:format];
+    [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
 
   if (self.inputNode) {
     [self.audioEngine attachNode:self.inputNode];
-    [self.audioEngine connect:self.audioEngine.inputNode
-                           to:self.inputNode
-                       format:nil];
+    [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
   }
 }
 
@@ -113,8 +108,7 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    NSLog(
-        @"Error while starting the audio engine: %@", [error debugDescription]);
+    NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
     return false;
   }
 
@@ -161,8 +155,7 @@ static AudioEngine *_sharedInstance = nil;
   self.isInterrupted = false;
 }
 
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode
-                        format:(AVAudioFormat *)format
+- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
 {
   NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
   NSLog(@"[AudioEngine] attaching new source node with ID: %@", sourceNodeId);
@@ -172,9 +165,7 @@ static AudioEngine *_sharedInstance = nil;
   [self.sourceStates setValue:@true forKey:sourceNodeId];
 
   [self.audioEngine attachNode:sourceNode];
-  [self.audioEngine connect:sourceNode
-                         to:self.audioEngine.mainMixerNode
-                     format:format];
+  [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
 
   return sourceNodeId;
 }
@@ -290,10 +281,7 @@ static AudioEngine *_sharedInstance = nil;
 
   // Output node format
   AVAudioFormat *format = [self.audioEngine.outputNode inputFormatForBus:0];
-  NSLog(
-      @"📐 Engine output format: %.0f Hz, %u channels",
-      format.sampleRate,
-      format.channelCount);
+  NSLog(@"📐 Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
 
   NSLog(@"=======================================================");
 }

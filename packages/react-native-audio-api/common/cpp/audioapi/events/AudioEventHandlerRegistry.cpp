@@ -1,5 +1,8 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace audioapi {
 
@@ -100,12 +103,9 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         if (eventName.compare("audioReady") == 0) {
           auto bufferIt = body.find("buffer");
           if (bufferIt != body.end()) {
-            auto bufferHostObject =
-                std::static_pointer_cast<AudioBufferHostObject>(
-                    std::get<std::shared_ptr<jsi::HostObject>>(
-                        bufferIt->second));
-            eventObject =
-                createEventObject(body, bufferHostObject->getSizeInBytes());
+            auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
+                std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
+            eventObject = createEventObject(body, bufferHostObject->getSizeInBytes());
           }
         } else {
           eventObject = createEventObject(body);
@@ -117,8 +117,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         throw;
       } catch (...) {
         printf(
-            "Unknown exception occurred while invoking handler for event: %s\n",
-            eventName.c_str());
+            "Unknown exception occurred while invoking handler for event: %s\n", eventName.c_str());
       }
     }
   });
@@ -168,11 +167,9 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       if (eventName.compare("audioReady") == 0) {
         auto bufferIt = body.find("buffer");
         if (bufferIt != body.end()) {
-          auto bufferHostObject =
-              std::static_pointer_cast<AudioBufferHostObject>(
-                  std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
-          eventObject =
-              createEventObject(body, bufferHostObject->getSizeInBytes());
+          auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
+              std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
+          eventObject = createEventObject(body, bufferHostObject->getSizeInBytes());
         }
       } else {
         eventObject = createEventObject(body);
@@ -184,8 +181,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       throw;
     } catch (...) {
       printf(
-          "Unknown exception occurred while invoking handler for event: %s\n",
-          eventName.c_str());
+          "Unknown exception occurred while invoking handler for event: %s\n", eventName.c_str());
     }
   });
 }
@@ -208,8 +204,7 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
       eventObject.setProperty(*runtime_, name, std::get<bool>(value));
     } else if (std::holds_alternative<std::string>(value)) {
       eventObject.setProperty(*runtime_, name, std::get<std::string>(value));
-    } else if (std::holds_alternative<std::shared_ptr<jsi::HostObject>>(
-                   value)) {
+    } else if (std::holds_alternative<std::shared_ptr<jsi::HostObject>>(value)) {
       auto hostObject = jsi::Object::createFromHostObject(
           *runtime_, std::get<std::shared_ptr<jsi::HostObject>>(value));
       eventObject.setProperty(*runtime_, name, hostObject);

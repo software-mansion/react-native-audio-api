@@ -25,6 +25,7 @@
 
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -47,8 +48,7 @@ void multiplyByScalar(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsmul(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsmul(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void addScalar(
@@ -56,8 +56,7 @@ void addScalar(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsadd(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsadd(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void add(
@@ -65,14 +64,7 @@ void add(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vadd(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vadd(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void subtract(
@@ -80,14 +72,7 @@ void subtract(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsub(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsub(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void multiply(
@@ -95,19 +80,10 @@ void multiply(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vmul(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vmul(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   float maximumValue = 0;
   vDSP_maxmgv(inputVector, 1, &maximumValue, numberOfElementsToProcess);
   return maximumValue;
@@ -118,15 +94,7 @@ void multiplyByScalarThenAddToOutput(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsma(
-      inputVector,
-      1,
-      &scalar,
-      outputVector,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 #else
@@ -552,9 +520,7 @@ void multiply(
   }
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
   float max = 0;
 

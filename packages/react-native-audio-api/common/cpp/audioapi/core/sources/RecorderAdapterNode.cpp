@@ -2,6 +2,7 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 #include <type_traits>
 
 namespace audioapi {
@@ -30,8 +31,7 @@ std::shared_ptr<AudioBus> RecorderAdapterNode::processNode(
   readFrames(outputChannel, framesToProcess);
 
   for (int i = 1; i < processingBus->getNumberOfChannels(); i++) {
-    processingBus->getChannel(i)->copy(
-        processingBus->getChannel(0), 0, framesToProcess);
+    processingBus->getChannel(i)->copy(processingBus->getChannel(0), 0, framesToProcess);
   }
 
   return processingBus;
@@ -42,8 +42,7 @@ void RecorderAdapterNode::readFrames(float *output, const size_t framesToRead) {
 
   if (readFrames < framesToRead) {
     // Fill the rest with silence
-    std::memset(
-        output + readFrames, 0, (framesToRead - readFrames) * sizeof(float));
+    std::memset(output + readFrames, 0, (framesToRead - readFrames) * sizeof(float));
   }
 }
 

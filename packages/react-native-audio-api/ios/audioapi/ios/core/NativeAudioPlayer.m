@@ -28,9 +28,8 @@
       return kAudioServicesNoError;
     };
 
-    _format = [[AVAudioFormat alloc]
-        initStandardFormatWithSampleRate:self.sampleRate
-                                channels:self.channelCount];
+    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate
+                                                             channels:self.channelCount];
     _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
                                                 renderBlock:self.renderBlock];
   }
@@ -55,8 +54,7 @@
   // performance issue and case when you will need to start and stop player very
   // frequently
   [audioEngine stopEngine];
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode
-                                             format:self.format];
+  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
   return [audioEngine startIfNecessary];
 }
 

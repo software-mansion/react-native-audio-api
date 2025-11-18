@@ -1,6 +1,8 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 
 #include <audioapi/core/AudioContext.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -17,38 +19,35 @@ AudioContextHostObject::AudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise(
-      [audioContext = std::move(audioContext)]() {
-        return [audioContext](jsi::Runtime &runtime) {
-          audioContext->close();
-          return jsi::Value::undefined();
-        };
-      });
+  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
+    return [audioContext](jsi::Runtime &runtime) {
+      audioContext->close();
+      return jsi::Value::undefined();
+    };
+  });
 
   return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise(
-      [audioContext = std::move(audioContext)]() {
-        auto result = audioContext->resume();
-        return [result](jsi::Runtime &runtime) {
-          return jsi::Value(result);
-        };
-      });
+  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
+    auto result = audioContext->resume();
+    return [result](jsi::Runtime &runtime) {
+      return jsi::Value(result);
+    };
+  });
   return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise(
-      [audioContext = std::move(audioContext)]() {
-        auto result = audioContext->suspend();
-        return [result](jsi::Runtime &runtime) {
-          return jsi::Value(result);
-        };
-      });
+  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
+    auto result = audioContext->suspend();
+    return [result](jsi::Runtime &runtime) {
+      return jsi::Value(result);
+    };
+  });
 
   return promise;
 }

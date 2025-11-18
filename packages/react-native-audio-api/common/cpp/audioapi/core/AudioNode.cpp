@@ -4,12 +4,15 @@
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
 AudioNode::~AudioNode() {
@@ -50,9 +53,7 @@ void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
 
 void AudioNode::disconnect() {
   context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(),
-      nullptr,
-      AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+      shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
@@ -76,8 +77,7 @@ void AudioNode::enable() {
 
   isEnabled_ = true;
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
+  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputEnabled();
   }
 }
@@ -89,8 +89,7 @@ void AudioNode::disable() {
 
   isEnabled_ = false;
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
+  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisabled();
   }
 }
@@ -132,8 +131,7 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
   }
 
   // Process inputs and return the bus with the most channels.
-  auto processingBus =
-      processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
+  auto processingBus = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
 
   // Apply channel count mode.
   processingBus = applyChannelCountMode(processingBus);
@@ -172,8 +170,7 @@ std::shared_ptr<AudioBus> AudioNode::processInputs(
   processingBus->zero();
 
   int maxNumberOfChannels = 0;
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end;
-       ++it) {
+  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
     auto inputNode = *it;
     assert(inputNode != nullptr);
 
@@ -181,8 +178,7 @@ std::shared_ptr<AudioBus> AudioNode::processInputs(
       continue;
     }
 
-    auto inputBus = inputNode->processAudio(
-        outputBus, framesToProcess, checkIsAlreadyProcessed);
+    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
     inputBuses_.push_back(inputBus);
 
     if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
@@ -215,8 +211,7 @@ std::shared_ptr<AudioBus> AudioNode::applyChannelCountMode(
 void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
   assert(processingBus != nullptr);
 
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end;
-       ++it) {
+  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
     processingBus->sum(it->get(), channelInterpretation_);
   }
 
@@ -306,8 +301,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 void AudioNode::cleanup() {
   isInitialized_ = false;
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
+  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisconnected(this);
   }
 

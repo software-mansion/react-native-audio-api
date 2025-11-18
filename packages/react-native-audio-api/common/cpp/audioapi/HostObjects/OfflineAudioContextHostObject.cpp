@@ -2,6 +2,8 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -33,10 +35,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
   auto promise = promiseVendor_->createAsyncPromise([=](Promise &&promise) {
-    OfflineAudioContextSuspendCallback callback = [promise =
-                                                       std::move(promise)]() {
-      promise.resolve(
-          [](jsi::Runtime &runtime) { return jsi::Value::undefined(); });
+    OfflineAudioContextSuspendCallback callback = [promise = std::move(promise)]() {
+      promise.resolve([](jsi::Runtime &runtime) { return jsi::Value::undefined(); });
     };
     audioContext->suspend(when, callback);
   });
@@ -46,21 +46,17 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
-  auto promise =
-      promiseVendor_->createAsyncPromise([audioContext](Promise &&promise) {
-        OfflineAudioContextResultCallback callback =
-            [promise = std::move(promise)](
-                const std::shared_ptr<AudioBuffer> &audioBuffer) {
-              auto audioBufferHostObject =
-                  std::make_shared<AudioBufferHostObject>(audioBuffer);
-              promise.resolve([audioBufferHostObject](jsi::Runtime &runtime) {
-                return jsi::Object::createFromHostObject(
-                    runtime, audioBufferHostObject);
-              });
-            };
+  auto promise = promiseVendor_->createAsyncPromise([audioContext](Promise &&promise) {
+    OfflineAudioContextResultCallback callback =
+        [promise = std::move(promise)](const std::shared_ptr<AudioBuffer> &audioBuffer) {
+          auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
+          promise.resolve([audioBufferHostObject](jsi::Runtime &runtime) {
+            return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          });
+        };
 
-        audioContext->startRendering(callback);
-      });
+    audioContext->startRendering(callback);
+  });
 
   return promise;
 }

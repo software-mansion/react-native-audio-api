@@ -1,16 +1,14 @@
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <algorithm>
 #include <type_traits>
 
 namespace audioapi {
 
-CircularOverflowableAudioArray::CircularOverflowableAudioArray(
-    size_t
-        size) noexcept(std::is_nothrow_constructible<AudioArray, size_t>::value)
+CircularOverflowableAudioArray::CircularOverflowableAudioArray(size_t size) noexcept(
+    std::is_nothrow_constructible<AudioArray, size_t>::value)
     : AudioArray(size) {}
 
-void CircularOverflowableAudioArray::write(
-    const float *data,
-    const size_t size) {
+void CircularOverflowableAudioArray::write(const float *data, const size_t size) {
   size_t writeIndex = vWriteIndex_.load(std::memory_order_relaxed);
 
   if (size > size_) {
@@ -43,8 +41,7 @@ size_t CircularOverflowableAudioArray::read(float *output, size_t size) const {
   size_t partSize = size_ - vReadIndex_;
   if (readSize > partSize) {
     std::memcpy(output, data_ + vReadIndex_, partSize * sizeof(float));
-    std::memcpy(
-        output + partSize, data_, (readSize - partSize) * sizeof(float));
+    std::memcpy(output + partSize, data_, (readSize - partSize) * sizeof(float));
   } else {
     std::memcpy(output, data_ + vReadIndex_, readSize * sizeof(float));
   }
@@ -54,8 +51,7 @@ size_t CircularOverflowableAudioArray::read(float *output, size_t size) const {
 }
 
 size_t CircularOverflowableAudioArray::getAvailableSpace() const {
-  return (size_ + vWriteIndex_.load(std::memory_order_relaxed) - vReadIndex_) %
-      size_;
+  return (size_ + vWriteIndex_.load(std::memory_order_relaxed) - vReadIndex_) % size_;
 }
 
 } // namespace audioapi

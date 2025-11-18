@@ -3,10 +3,12 @@
 #include <audioapi/jsi/AudioArrayBuffer.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <memory>
+#include <utility>
+
 namespace audioapi {
 
-AudioBufferHostObject::AudioBufferHostObject(
-    const std::shared_ptr<AudioBuffer> &audioBuffer)
+AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer)
     : audioBuffer_(audioBuffer) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
@@ -20,10 +22,8 @@ AudioBufferHostObject::AudioBufferHostObject(
       JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
 }
 
-AudioBufferHostObject::AudioBufferHostObject(
-    AudioBufferHostObject &&other) noexcept
-    : JsiHostObject(std::move(other)),
-      audioBuffer_(std::move(other.audioBuffer_)) {}
+AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
+    : JsiHostObject(std::move(other)), audioBuffer_(std::move(other.audioBuffer_)) {}
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
   return {audioBuffer_->getSampleRate()};
@@ -43,14 +43,12 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto channel = static_cast<int>(args[0].getNumber());
-  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(
-      audioBuffer_->bus_->getSharedChannel(channel));
+  auto audioArrayBuffer =
+      std::make_shared<AudioArrayBuffer>(audioBuffer_->bus_->getSharedChannel(channel));
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
-  auto float32ArrayCtor =
-      runtime.global().getPropertyAsFunction(runtime, "Float32Array");
-  auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer)
-                          .getObject(runtime);
+  auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
+  auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 
   float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 
@@ -58,26 +56,21 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto destination = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
   auto channelNumber = static_cast<int>(args[1].getNumber());
   auto startInChannel = static_cast<size_t>(args[2].getNumber());
 
-  audioBuffer_->copyFromChannel(
-      destination, length, channelNumber, startInChannel);
+  audioBuffer_->copyFromChannel(destination, length, channelNumber, startInChannel);
 
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
   auto channelNumber = static_cast<int>(args[1].getNumber());

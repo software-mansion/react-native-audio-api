@@ -3,8 +3,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
-#include <memory>
 #include <functional>
+#include <memory>
 
 namespace audioapi {
 #ifdef ANDROID
@@ -15,7 +15,10 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
+  explicit AudioContext(
+      float sampleRate,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
 
   void close();

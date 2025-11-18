@@ -27,9 +27,7 @@ struct RuntimeLifecycleListener {
  */
 struct RuntimeLifecycleMonitor {
   static void addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
-  static void removeListener(
-      jsi::Runtime &rt,
-      RuntimeLifecycleListener *listener);
+  static void removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
 };
 
 } // namespace audioapi

@@ -15,6 +15,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <chrono>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
 StreamerNode::StreamerNode(BaseAudioContext *context)
@@ -65,8 +69,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,
@@ -134,8 +138,7 @@ void StreamerNode::streamAudio() {
     av_packet_unref(pkt_);
   }
   StreamingData dummy;
-  while (receiver_.try_receive(dummy) ==
-         channels::spsc::ResponseStatus::SUCCESS)
+  while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)
     ; // clear the receiver
 }
 

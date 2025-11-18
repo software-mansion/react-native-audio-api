@@ -2,11 +2,11 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/effects/ConvolverNode.h>
+#include <memory>
 
 namespace audioapi {
 
-ConvolverNodeHostObject::ConvolverNodeHostObject(
-    const std::shared_ptr<ConvolverNode> &node)
+ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<ConvolverNode> &node)
     : AudioNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
@@ -25,8 +25,7 @@ JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, buffer) {
   auto buffer = convolverNode->getBuffer();
   auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
-  jsiObject.setExternalMemoryPressure(
-      runtime, bufferHostObject->getSizeInBytes() + 16);
+  jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes() + 16);
   return jsiObject;
 }
 
@@ -42,8 +41,7 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
     return jsi::Value::undefined();
   }
 
-  auto bufferHostObject =
-      args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+  auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   convolverNode->setBuffer(bufferHostObject->audioBuffer_);
   thisValue.asObject(runtime).setExternalMemoryPressure(
       runtime, bufferHostObject->getSizeInBytes() + 16);

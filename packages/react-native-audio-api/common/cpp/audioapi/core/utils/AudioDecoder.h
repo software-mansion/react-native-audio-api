@@ -18,16 +18,23 @@ class AudioDecoder {
  public:
   AudioDecoder() = delete;
 
-  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, float sampleRate);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(
+      const std::string &path,
+      float sampleRate);
   [[nodiscard]] static std::shared_ptr<AudioBuffer>
   decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
-  [[nodiscard]] static std::shared_ptr<AudioBuffer>
-  decodeWithPCMInBase64(const std::string &data, float inputSampleRate, int inputChannelCount, bool interleaved);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
+      const std::string &data,
+      float inputSampleRate,
+      int inputChannelCount,
+      bool interleaved);
 
  private:
   static std::vector<float> readAllPcmFrames(ma_decoder &decoder, int outputChannels);
-  static std::shared_ptr<AudioBuffer>
-  makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer, float outputSampleRate, int outputChannels);
+  static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
+      const std::vector<float> &buffer,
+      float outputSampleRate,
+      int outputChannels);
 
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
@@ -66,7 +73,9 @@ class AudioDecoder {
     return AudioFormat::UNKNOWN;
   }
 
-  static inline bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
+  static inline bool pathHasExtension(
+      const std::string &path,
+      const std::vector<std::string> &extensions) {
     std::string pathLower = path;
     std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
     for (const auto &ext : extensions) {
