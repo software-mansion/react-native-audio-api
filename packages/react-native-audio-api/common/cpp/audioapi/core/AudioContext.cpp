@@ -76,7 +76,6 @@ bool AudioContext::suspend() {
 }
 
 bool AudioContext::start() {
-  std::cout<<"audiocontexxt start" <<std::endl;
   if (isClosed()) {
     return false;
   }

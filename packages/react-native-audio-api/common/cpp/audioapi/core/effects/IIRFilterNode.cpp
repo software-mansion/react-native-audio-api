@@ -27,7 +27,6 @@
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <iostream>
 
 namespace audioapi {
 
@@ -35,12 +34,26 @@ IIRFilterNode::IIRFilterNode(
     BaseAudioContext *context,
     const std::vector<float> &feedforward,
     const std::vector<float> &feedback)
-    : AudioNode(context) {
+    : AudioNode(context), feedforward_(feedforward), feedback_(feedback) {
   isInitialized_ = true;
   channelCountMode_ = ChannelCountMode::MAX;
 
   x_.resize(IIRFilterNode::bufferLength, 0.0f);
   y_.resize(IIRFilterNode::bufferLength, 0.0f);
+
+  size_t feedforwardLength = feedforward_.size();
+  size_t feedbackLength = feedback_.size();
+
+  if (feedback_[0] != 1) {
+    float scale = feedback_[0];
+    for (unsigned k = 1; k < feedbackLength; ++k)
+      feedback_[k] /= scale;
+
+    for (unsigned k = 0; k < feedforwardLength; ++k)
+      feedforward_[k] /= scale;
+
+    feedback_[0] = 1.0f;
+  }
 }
 
 // Compute Z-transform of the filter
@@ -77,8 +90,8 @@ void IIRFilterNode::getFrequencyResponse(
       continue;
     }
 
-    double omega = -PI * normalizedFreq;
-    auto z = std::complex<double>(std::cos(omega), std::sin(omega));
+    float omega = -PI * normalizedFreq;
+    auto z = std::complex<float>(std::cos(omega), std::sin(omega));
 
     auto numerator = IIRFilterNode::evaluatePolynomial(
         feedforward_, z, feedforward_.size() - 1);
@@ -98,29 +111,40 @@ void IIRFilterNode::getFrequencyResponse(
 std::shared_ptr<AudioBus> IIRFilterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-
-  std::cout<<"processing"<<std::endl;
   int numChannels = processingBus->getNumberOfChannels();
 
-  size_t forwardLength = feedforward_.size();
+  size_t feedforwardLength = feedforward_.size();
   size_t feedbackLength = feedback_.size();
+  int minLength = std::min(feedbackLength, feedforwardLength);
 
   for (int c = 0; c < numChannels; ++c) {
+    // for (int c = 0; c < 1; ++c) {
     auto channelData = processingBus->getChannel(c)->getData();
+    // auto channelData2 = processingBus->getChannel(1)->getData();
 
     for (int n = 0; n < framesToProcess; ++n) {
-      float yn = 0.0;
-      for (int k = 0; k < forwardLength; ++k) {
-        yn += feedforward_[k] * x_[(n - k) & (IIRFilterNode::bufferLength - 1)];
-      }
-      for (int k = 1; k < feedbackLength; ++k) {
-        yn -= feedback_[k] * y_[(n - k) & (IIRFilterNode::bufferLength - 1)];
+      float yn = feedforward_[0] * channelData[n];
+
+      for (int k = 1; k < minLength; ++k) {
+        int m = (m_bufferIndex - k) & (bufferLength - 1);
+        yn += feedforward_[k] * x_[m];
+        yn -= feedback_[k] * y_[m];
       }
 
-      x_[n & (IIRFilterNode::bufferLength - 1)] = channelData[n];
-      y_[n & (IIRFilterNode::bufferLength - 1)] = yn;
+      for (int k = minLength; k < feedforwardLength; ++k) {
+        yn += feedforward_[k] * x_[(m_bufferIndex - k) & (bufferLength - 1)];
+      }
+      for (int k = minLength; k < feedbackLength; ++k) {
+        yn -= feedback_[k] * y_[(m_bufferIndex - k) & (bufferLength - 1)];
+      }
 
       channelData[n] = yn;
+      // channelData2[n] = yn;
+
+      x_[m_bufferIndex] = channelData[n];
+      y_[m_bufferIndex] = yn;
+
+      m_bufferIndex = (m_bufferIndex + 1) & (bufferLength - 1);
     }
   }
   return processingBus;

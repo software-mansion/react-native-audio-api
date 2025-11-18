@@ -54,6 +54,7 @@ class IIRFilterNode : public AudioNode {
 
  private:
   static constexpr size_t bufferLength = 32;
+  size_t m_bufferIndex = 0;
 
   std::vector<float> feedforward_;
   std::vector<float> feedback_;
@@ -61,14 +62,14 @@ class IIRFilterNode : public AudioNode {
   std::vector<float> x_;
   std::vector<float> y_;
 
-  static std::complex<double> evaluatePolynomial(
+  static std::complex<float> evaluatePolynomial(
       const std::vector<float> coefficients,
-      std::complex<double> z,
+      std::complex<float> z,
       int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
-    std::complex<double> result = 0;
+    std::complex<float> result = 0;
     for (int k = order; k >= 0; --k)
-      result = result * z + std::complex<double>(coefficients[k]);
+      result = result * z + std::complex<float>(coefficients[k]);
     return result;
   }
 };
