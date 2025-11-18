@@ -41,6 +41,7 @@ IIRFilterNode::IIRFilterNode(
   int maxChannels = 32; // TODO: magic number, jaki jest faktyczy Channels?
   xBuffers_.resize(maxChannels);
   yBuffers_.resize(maxChannels);
+  bufferIndices.resize(maxChannels, 0);
 
   for (int c = 0; c < maxChannels; ++c) {
     xBuffers_[c].resize(bufferLength, 0.0f);
@@ -128,34 +129,37 @@ std::shared_ptr<AudioBus> IIRFilterNode::processNode(
   int mask = bufferLength - 1;
 
   for (int c = 0; c < numChannels; ++c) {
-    // for (int c = 0; c < 1; ++c) {
     auto channelData = processingBus->getChannel(c)->getData();
-    // auto channelData2 = processingBus->getChannel(1)->getData();
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];
+    size_t bufferIndex = bufferIndices[c];
 
     for (int n = 0; n < framesToProcess; ++n) {
       float yn = feedforward_[0] * channelData[n];
 
       for (int k = 1; k < minLength; ++k) {
-        int m = (n - k) & mask;
+        int m = (bufferIndex - k) & mask;
         yn += feedforward_[k] * x[m];
         yn -= feedback_[k] * y[m];
+        // yn = std::fma(feedforward_[k], x[m], yn);
+        // yn = std::fma(-feedback_[k], y[m], yn);
       }
 
       for (int k = minLength; k < feedforwardLength; ++k) {
-        yn += feedforward_[k] * x[(n - k) & mask];
+        yn += feedforward_[k] * x[(bufferIndex - k) & mask];
       }
       for (int k = minLength; k < feedbackLength; ++k) {
-        yn -= feedback_[k] * y[(n - k) & mask];
+        yn -= feedback_[k] * y[(bufferIndex - k) & (bufferLength - 1)];
       }
 
       channelData[n] = yn;
-      // channelData2[n] = yn;
 
-      x[n & mask] = channelData[n];
-      y[n & mask] = yn;
+      x[bufferIndex] = channelData[n];
+      y[bufferIndex] = yn;
+
+      bufferIndex = (bufferIndex + 1) & (bufferLength - 1);
     }
+    bufferIndices[c] = bufferIndex;
   }
   return processingBus;
 }

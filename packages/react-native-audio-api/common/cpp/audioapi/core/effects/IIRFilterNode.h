@@ -61,6 +61,7 @@ class IIRFilterNode : public AudioNode {
 
   std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
   std::vector<std::vector<float>> yBuffers_;
+  std::vector<size_t> bufferIndices;
 
   static std::complex<float> evaluatePolynomial(
       const std::vector<float> coefficients,
