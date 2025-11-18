@@ -7,7 +7,6 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
-#include <iostream>
 
 namespace audioapi {
 AudioContext::AudioContext(
