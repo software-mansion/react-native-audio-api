@@ -185,7 +185,11 @@ export default class BaseAudioContext {
   }
 
   createStreamer(): StreamerNode {
-    return new StreamerNode(this, this.context.createStreamer());
+    const streamer = this.context.createStreamer();
+    if (!streamer) {
+      throw new NotSupportedError('StreamerNode requires FFmpeg build');
+    }
+    return new StreamerNode(this, streamer);
   }
 
   createConstantSource(): ConstantSourceNode {

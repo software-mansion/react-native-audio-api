@@ -226,14 +226,16 @@ Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 :::caution
 Supported file formats:
-- aac
 - flac
-- m4a
 - mp3
-- mp4
 - ogg
 - opus
 - wav
+- aac
+- m4a
+- mp4
+
+Last three formats are decoded with ffmpeg, [see for more info](/docs/other/ffmpeg-info).
 :::
 
 ### `decodeAudioData`

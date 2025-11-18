@@ -281,9 +281,9 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   this->playbackState_ = PlaybackState::FINISHED;
-  // cleanup cannot be called from the streaming thread so there is no need to
-  // check if we are in the same thread
-  streamingThread_.join();
+  if (streamingThread_.joinable()) {
+    streamingThread_.join();
+  }
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }

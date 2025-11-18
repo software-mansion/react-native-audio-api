@@ -81,7 +81,7 @@ export interface IBaseAudioContext {
     buffer: IAudioBuffer | undefined,
     disableNormalization: boolean
   ) => IConvolverNode;
-  createStreamer: () => IStreamerNode;
+  createStreamer: () => IStreamerNode | null; // null when FFmpeg is not enabled
 }
 
 export interface IAudioContext extends IBaseAudioContext {

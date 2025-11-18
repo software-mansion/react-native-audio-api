@@ -12,8 +12,10 @@
 
 #ifndef AUDIO_API_TEST_SUITE
 #include <android/log.h>
+#endif // AUDIO_API_TEST_SUITE
+#if !FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif
+#endif // FFMPEG_DISABLED
 
 namespace audioapi {
 
@@ -76,6 +78,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+#if !FFMPEG_DISABLED
     auto buffer =
         ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
@@ -87,6 +90,14 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
       return nullptr;
     }
     return buffer;
+#else
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "FFmpeg is disabled, cannot decode file: %s",
+        path.c_str());
+    return nullptr;
+#endif // FFMPEG_DISABLED
   }
   ma_decoder decoder;
   ma_decoder_config config =
@@ -128,6 +139,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
       format == AudioFormat::AAC) {
+#if !FFMPEG_DISABLED
     auto buffer = ffmpegdecoder::decodeWithMemoryBlock(
         data, size, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
@@ -136,6 +148,13 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
       return nullptr;
     }
     return buffer;
+#else
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AudioDecoder",
+        "FFmpeg is disabled, cannot decode memory block");
+    return nullptr;
+#endif // FFMPEG_DISABLED
   }
   ma_decoder decoder;
   ma_decoder_config config =
