@@ -91,6 +91,13 @@ class IIRFilterTest : public ::testing::Test {
   }
 };
 
+TEST_F(IIRFilterTest, IIRFilterCanBeCreated) {
+  const std::vector<float> feedforward = {1.0};
+  const std::vector<float> feedback = {1.0};
+  auto node = context->createIIRFilter(feedforward, feedback);
+  ASSERT_NE(node, nullptr);
+}
+
 TEST_F(IIRFilterTest, GetFrequencyResponse) {
   const std::vector<float> feedforward = {
       0.0050662636, 0.0101325272, 0.0050662636};

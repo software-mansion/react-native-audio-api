@@ -59,8 +59,8 @@ class IIRFilterNode : public AudioNode {
   std::vector<float> feedforward_;
   std::vector<float> feedback_;
 
-  std::vector<float> x_;
-  std::vector<float> y_;
+  std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
+  std::vector<std::vector<float>> yBuffers_;
 
   static std::complex<float> evaluatePolynomial(
       const std::vector<float> coefficients,
