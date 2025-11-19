@@ -19,7 +19,8 @@ but if odd-ordered filters are needed or automation is not needed, then `IIRFilt
 
 ```jsx
 interface IIRFilterNodeOptions {
- TODO:
+  feedforward: number[]; // array of floating-point values specifying the feedforward (numerator) coefficients
+  feedback: number[]; // array of floating-point values specifying the feedback (denominator) coefficients
 }
 ```
 

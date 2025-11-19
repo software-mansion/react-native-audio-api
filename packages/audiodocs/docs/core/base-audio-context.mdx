@@ -159,7 +159,6 @@ Creates [`GainNode`](/docs/effects/gain-node).
 
 #### Returns `GainNode`.
 
-
 ### `createConvolver`
 
 Creates [`ConvolverNode`](/docs/effects/convolver-node).
@@ -175,6 +174,23 @@ Creates [`ConvolverNode`](/docs/effects/convolver-node).
 | `NotSupportedError` | `numOfChannels` of buffer is not 1, 2 or 4. |
 
 #### Returns `ConvolverNode`.
+
+### `createIIRFilter`
+
+Creates [`IIRFilterNode`](/docs/effects/iir-filter-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` | [`IIRFilterNodeOptions`](/docs/effects/iir-filter-node#constructor) | Dictionary object that specifies the feedforward (numerator) and feedback (denominator) coefficients for the transfer function of the IIR filter. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | One or both of the input arrays exceeds 20 members. |
+| `InvalidStateError` | All of the feedforward coefficients are 0, or the first feedback coefficient is 0. |
+
+#### Returns `IIRFilterNode`.
 
 ### `createOscillator`
 
