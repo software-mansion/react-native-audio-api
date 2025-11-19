@@ -139,17 +139,16 @@ std::shared_ptr<AudioBus> IIRFilterNode::processNode(
 
       for (int k = 1; k < minLength; ++k) {
         int m = (bufferIndex - k) & mask;
-        yn += feedforward_[k] * x[m];
-        yn -= feedback_[k] * y[m];
-        // yn = std::fma(feedforward_[k], x[m], yn);
-        // yn = std::fma(-feedback_[k], y[m], yn);
+        yn = std::fma(feedforward_[k], x[m], yn);
+        yn = std::fma(-feedback_[k], y[m], yn);
       }
 
       for (int k = minLength; k < feedforwardLength; ++k) {
-        yn += feedforward_[k] * x[(bufferIndex - k) & mask];
+        yn = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], yn);
       }
       for (int k = minLength; k < feedbackLength; ++k) {
-        yn -= feedback_[k] * y[(bufferIndex - k) & (bufferLength - 1)];
+        yn = std::fma(
+            -feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], yn);
       }
 
       channelData[n] = yn;
