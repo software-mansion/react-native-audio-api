@@ -157,6 +157,13 @@ std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+  nodeManager_->addSourceNode(bufferSource);
+  return bufferSource;
+}
+
+std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueSource(
+    bool pitchCorrection) {
   auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;

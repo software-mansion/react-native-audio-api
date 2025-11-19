@@ -25,6 +25,7 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <algorithm>
@@ -41,7 +42,7 @@ IIRFilterNode::IIRFilterNode(
   isInitialized_ = true;
   channelCountMode_ = ChannelCountMode::MAX;
 
-  int maxChannels = 32; // TODO: magic number, jaki jest faktyczy Channels?
+  int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);
   yBuffers_.resize(maxChannels);
   bufferIndices.resize(maxChannels, 0);
