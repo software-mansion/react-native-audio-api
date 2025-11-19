@@ -5,8 +5,8 @@
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <algorithm>
 #include <complex>
-#include <numbers>
 #include <memory>
+#include <numbers>
 #include <vector>
 
 using namespace audioapi;
@@ -25,10 +25,8 @@ class IIRFilterTest : public ::testing::Test {
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  static std::complex<double> evaluatePolynomial(
-      std::span<const double> coefficients,
-      std::complex<double> z,
-      int order) {
+  static std::complex<double>
+  evaluatePolynomial(std::span<const double> coefficients, std::complex<double> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<double> result = 0;
     for (int k = order; k >= 0; --k)
@@ -80,14 +78,11 @@ class IIRFilterTest : public ::testing::Test {
         double omega = -std::numbers::pi * normalizedFreq[k];
         auto zRecip = std::complex<double>(cos(omega), sin(omega));
 
-        auto numerator =
-            evaluatePolynomial(m_feedforward, zRecip, m_feedforward.size() - 1);
-        auto denominator =
-            evaluatePolynomial(m_feedback, zRecip, m_feedback.size() - 1);
+        auto numerator = evaluatePolynomial(m_feedforward, zRecip, m_feedforward.size() - 1);
+        auto denominator = evaluatePolynomial(m_feedback, zRecip, m_feedback.size() - 1);
         auto response = numerator / denominator;
         magResponse[k] = static_cast<float>(std::abs(response));
-        phaseResponse[k] =
-            static_cast<float>(atan2(imag(response), real(response)));
+        phaseResponse[k] = static_cast<float>(atan2(imag(response), real(response)));
       }
     }
   }
@@ -101,13 +96,10 @@ TEST_F(IIRFilterTest, IIRFilterCanBeCreated) {
 }
 
 TEST_F(IIRFilterTest, GetFrequencyResponse) {
-  const std::vector<float> feedforward = {
-      0.0050662636, 0.0101325272, 0.0050662636};
-  const std::vector<float> feedback = {
-      1.0632762845, -1.9797349456, 0.9367237155};
+  const std::vector<float> feedforward = {0.0050662636, 0.0101325272, 0.0050662636};
+  const std::vector<float> feedback = {1.0632762845, -1.9797349456, 0.9367237155};
 
-  auto node =
-      std::make_shared<IIRFilterNode>(context.get(), feedforward, feedback);
+  auto node = std::make_shared<IIRFilterNode>(context.get(), feedforward, feedback);
 
   float frequency = 1000.0f;
   float normalizedFrequency = frequency / nyquistFrequency;
@@ -145,16 +137,14 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
   for (size_t i = 0; i < TestFrequencies.size(); ++i) {
     float f = TestFrequencies[i];
     if (std::isnan(magResponseExpected[i])) {
-      EXPECT_TRUE(std::isnan(magResponseNode[i]))
-          << "Expected NaN at frequency " << f;
+      EXPECT_TRUE(std::isnan(magResponseNode[i])) << "Expected NaN at frequency " << f;
     } else {
       EXPECT_NEAR(magResponseNode[i], magResponseExpected[i], tolerance)
           << "Magnitude mismatch at " << f << " Hz";
     }
 
     if (std::isnan(phaseResponseExpected[i])) {
-      EXPECT_TRUE(std::isnan(phaseResponseNode[i]))
-          << "Expected NaN at frequency " << f;
+      EXPECT_TRUE(std::isnan(phaseResponseNode[i])) << "Expected NaN at frequency " << f;
     } else {
       EXPECT_NEAR(phaseResponseNode[i], phaseResponseExpected[i], tolerance)
           << "Phase mismatch at " << f << " Hz";

@@ -12,10 +12,9 @@ using namespace facebook;
 class IIRFilterNode;
 
 class IIRFilterNodeHostObject : public AudioNodeHostObject {
-public:
-    explicit IIRFilterNodeHostObject(
-            const std::shared_ptr<IIRFilterNode> &node);
+ public:
+  explicit IIRFilterNodeHostObject(const std::shared_ptr<IIRFilterNode> &node);
 
-    JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
+  JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
 };
 } // namespace audioapi

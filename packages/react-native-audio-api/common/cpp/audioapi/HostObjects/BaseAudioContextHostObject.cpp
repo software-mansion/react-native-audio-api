@@ -206,8 +206,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createIIRFilter) {
   feedback.reserve(feedbackLength);
 
   for (size_t i = 0; i < feedforwardLength; ++i) {
-    feedforward.push_back(
-        feedforwardArray.getValueAtIndex(runtime, i).asNumber());
+    feedforward.push_back(feedforwardArray.getValueAtIndex(runtime, i).asNumber());
   }
 
   for (size_t i = 0; i < feedbackLength; ++i) {
@@ -215,8 +214,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createIIRFilter) {
   }
 
   auto iirFilter = context_->createIIRFilter(feedforward, feedback);
-  auto iirFilterHostObject =
-      std::make_shared<IIRFilterNodeHostObject>(iirFilter);
+  auto iirFilterHostObject = std::make_shared<IIRFilterNodeHostObject>(iirFilter);
   return jsi::Object::createFromHostObject(runtime, iirFilterHostObject);
 }
 

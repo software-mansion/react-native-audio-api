@@ -103,15 +103,12 @@ void IIRFilterNode::getFrequencyResponse(
     float omega = -PI * normalizedFreq;
     auto z = std::complex<float>(std::cos(omega), std::sin(omega));
 
-    auto numerator = IIRFilterNode::evaluatePolynomial(
-        feedforward_, z, feedforward_.size() - 1);
-    auto denominator =
-        IIRFilterNode::evaluatePolynomial(feedback_, z, feedback_.size() - 1);
+    auto numerator = IIRFilterNode::evaluatePolynomial(feedforward_, z, feedforward_.size() - 1);
+    auto denominator = IIRFilterNode::evaluatePolynomial(feedback_, z, feedback_.size() - 1);
     auto response = numerator / denominator;
 
     magResponseOutput[k] = static_cast<float>(std::abs(response));
-    phaseResponseOutput[k] =
-        static_cast<float>(atan2(imag(response), real(response)));
+    phaseResponseOutput[k] = static_cast<float>(atan2(imag(response), real(response)));
   }
 }
 
@@ -150,8 +147,7 @@ std::shared_ptr<AudioBus> IIRFilterNode::processNode(
         yn = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], yn);
       }
       for (int k = minLength; k < feedbackLength; ++k) {
-        yn = std::fma(
-            -feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], yn);
+        yn = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], yn);
       }
 
       channelData[n] = yn;
