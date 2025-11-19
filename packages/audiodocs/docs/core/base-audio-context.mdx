@@ -52,11 +52,121 @@ Creates [`AnalyserNode`](/docs/analysis/analyser-node).
 
 #### Returns `AnalyserNode`.
 
+### `createBiquadFilter`
+
+Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
+
+#### Returns `BiquadFilterNode`.
+
+### `createBuffer`
+
+Creates [`AudioBuffer`](/docs/sources/audio-buffer).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numOfChannels` | `number` | An integer representing the number of channels of the buffer. |
+| `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
+| `sampleRate` | `number` | A float representing the sample rate of the buffer. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
+| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
+| `NotSupportedError` | `length` is less then 1. |
+
+#### Returns `AudioBuffer`.
+
+### `createBufferSource`
+
+Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+
+#### Returns `AudioBufferSourceNode`.
+
+### `createBufferQueueSource` <MobileOnly />
+
+Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+
+#### Returns `AudioBufferQueueSourceNode`.
+
+### `createConstantSource`
+
+Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
+
+#### Returns `ConstantSourceNode`.
+
+### `createConvolver`
+
+Creates [`ConvolverNode`](/docs/effects/convolver-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`ConvolverNodeOptions`](/docs/effects/convolver-node#constructor) | Dictionary object that specifies associated buffer and normalization. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | `numOfChannels` of buffer is not 1, 2 or 4. |
+
+#### Returns `ConvolverNode`.
+
+### `createGain`
+
+Creates [`GainNode`](/docs/effects/gain-node).
+
+#### Returns `GainNode`.
+
+### `createOscillator`
+
+Creates [`OscillatorNode`](/docs/sources/oscillator-node).
+
+#### Returns `OscillatorNode`.
+
+### `createPeriodicWave`
+
+Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `real` | `Float32Array` | An array of cosine terms. |
+| `imag` | `Float32Array` | An array of sine terms. |
+| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
+
+#### Returns `PeriodicWave`.
+
 ### `createRecorderAdapter`
 
 Creates [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
 
 #### Returns `RecorderAdapterNode`
+
+### `createStereoPanner`
+
+Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+
+#### Returns `StereoPannerNode`.
+
+### `createStreamer` <MobileOnly />
+
+Creates [`StreamerNode`](/docs/sources/streamer-node).
+
+#### Returns `StreamerNode`.
 
 ### `createWorkletNode` <MobileOnly />
 
@@ -112,117 +222,6 @@ Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 | `Error` | `react-native-worklet` is not found as dependency. |
 
 #### Returns `WorkletProcessingNode`.
-
-### `createBuffer`
-
-Creates [`AudioBuffer`](/docs/sources/audio-buffer).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `numOfChannels` | `number` | An integer representing the number of channels of the buffer. |
-| `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
-| `sampleRate` | `number` | A float representing the sample rate of the buffer. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
-| `NotSupportedError` | `length` is less then 1. |
-
-#### Returns `AudioBuffer`.
-
-### `createBufferSource`
-
-Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
-
-#### Returns `AudioBufferSourceNode`.
-
-### `createBufferQueueSource` <MobileOnly />
-
-Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
-
-#### Returns `AudioBufferQueueSourceNode`.
-
-### `createGain`
-
-Creates [`GainNode`](/docs/effects/gain-node).
-
-#### Returns `GainNode`.
-
-
-### `createConvolver`
-
-Creates [`ConvolverNode`](/docs/effects/convolver-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`ConvolverNodeOptions`](/docs/effects/convolver-node#constructor) | Dictionary object that specifies associated buffer and normalization. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | `numOfChannels` of buffer is not 1, 2 or 4. |
-
-#### Returns `ConvolverNode`.
-
-### `createOscillator`
-
-Creates [`OscillatorNode`](/docs/sources/oscillator-node).
-
-#### Returns `OscillatorNode`.
-
-### `createStreamer` <MobileOnly />
-
-Creates [`StreamerNode`](/docs/sources/streamer-node).
-
-#### Returns `StreamerNode`.
-
-### `createConstantSource`
-
-Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
-
-#### Returns `ConstantSourceNode`.
-
-### `createPeriodicWave`
-
-Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `real` | `Float32Array` | An array of cosine terms. |
-| `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
-
-#### Returns `PeriodicWave`.
-
-### `createStereoPanner`
-
-Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
-
-#### Returns `StereoPannerNode`.
-
-### `createBiquadFilter`
-
-Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
-
-#### Returns `BiquadFilterNode`.
 
 :::caution
 Supported file formats:
