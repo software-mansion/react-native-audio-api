@@ -1,5 +1,6 @@
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
+#include <memory>
 
 namespace audioapi {
 

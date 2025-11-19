@@ -3,8 +3,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (
-    ^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFrames);
+typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFrames);
 
 @interface NativeAudioRecorder : NSObject
 

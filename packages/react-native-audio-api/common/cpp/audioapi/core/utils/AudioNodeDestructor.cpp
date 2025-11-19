@@ -1,6 +1,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/AudioNodeDestructor.h>
 #include <audioapi/core/utils/Locker.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -11,8 +13,7 @@ AudioNodeDestructor::AudioNodeDestructor() {
       channels::spsc::OverflowStrategy::WAIT_ON_FULL,
       channels::spsc::WaitStrategy::ATOMIC_WAIT>(kChannelCapacity);
   sender_ = std::move(sender);
-  workerHandle_ =
-      std::thread(&AudioNodeDestructor::process, this, std::move(receiver));
+  workerHandle_ = std::thread(&AudioNodeDestructor::process, this, std::move(receiver));
 }
 
 AudioNodeDestructor::~AudioNodeDestructor() {
@@ -25,10 +26,8 @@ AudioNodeDestructor::~AudioNodeDestructor() {
   }
 }
 
-bool AudioNodeDestructor::tryAddNodeForDeconstruction(
-    std::shared_ptr<AudioNode> &&node) {
-  return sender_.try_send(std::move(node)) ==
-      channels::spsc::ResponseStatus::SUCCESS;
+bool AudioNodeDestructor::tryAddNodeForDeconstruction(std::shared_ptr<AudioNode> &&node) {
+  return sender_.try_send(std::move(node)) == channels::spsc::ResponseStatus::SUCCESS;
 }
 
 void AudioNodeDestructor::process(

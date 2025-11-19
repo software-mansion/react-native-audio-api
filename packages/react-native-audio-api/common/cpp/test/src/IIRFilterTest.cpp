@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <complex>
 #include <numbers>
+#include <memory>
+#include <vector>
 
 using namespace audioapi;
 

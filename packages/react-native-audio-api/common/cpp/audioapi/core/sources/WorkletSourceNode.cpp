@@ -1,13 +1,12 @@
 #include <audioapi/core/sources/WorkletSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
-WorkletSourceNode::WorkletSourceNode(
-    BaseAudioContext *context,
-    WorkletsRunner &&workletRunner)
-    : AudioScheduledSourceNode(context),
-      workletRunner_(std::move(workletRunner)) {
+WorkletSourceNode::WorkletSourceNode(BaseAudioContext *context, WorkletsRunner &&workletRunner)
+    : AudioScheduledSourceNode(context), workletRunner_(std::move(workletRunner)) {
   isInitialized_ = true;
 
   // Prepare buffers for audio processing
@@ -30,8 +29,7 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
   size_t startOffset = 0;
   size_t nonSilentFramesToProcess = framesToProcess;
 
-  updatePlaybackInfo(
-      processingBus, framesToProcess, startOffset, nonSilentFramesToProcess);
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, nonSilentFramesToProcess);
 
   if (nonSilentFramesToProcess == 0) {
     processingBus->zero();

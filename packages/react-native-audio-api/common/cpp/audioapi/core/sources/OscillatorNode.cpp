@@ -3,16 +3,14 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
+#include <string>
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(BaseAudioContext *context)
-    : AudioScheduledSourceNode(context) {
+OscillatorNode::OscillatorNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      444.0,
-      -context_->getNyquistFrequency(),
-      context_->getNyquistFrequency(),
-      context);
+      444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       0.0,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
@@ -21,8 +19,7 @@ OscillatorNode::OscillatorNode(BaseAudioContext *context)
   type_ = OscillatorType::SINE;
   periodicWave_ = context_->getBasicWaveForm(type_);
 
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 
   isInitialized_ = true;
 }
@@ -44,8 +41,7 @@ void OscillatorNode::setType(const std::string &type) {
   periodicWave_ = context_->getBasicWaveForm(type_);
 }
 
-void OscillatorNode::setPeriodicWave(
-    const std::shared_ptr<PeriodicWave> &periodicWave) {
+void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave) {
   periodicWave_ = periodicWave;
   type_ = OscillatorType::CUSTOM;
 }
@@ -65,29 +61,22 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
 
   auto time = context_->getCurrentTime() +
       static_cast<double>(startOffset) * 1.0 / context_->getSampleRate();
-  auto detuneParamValues =
-      detuneParam_->processARateParam(framesToProcess, time);
-  auto frequencyParamValues =
-      frequencyParam_->processARateParam(framesToProcess, time);
+  auto detuneParamValues = detuneParam_->processARateParam(framesToProcess, time);
+  auto frequencyParamValues = frequencyParam_->processARateParam(framesToProcess, time);
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = std::pow(
-        2.0f, detuneParamValues->getChannel(0)->getData()[i] / 1200.0f);
-    auto detunedFrequency =
-        frequencyParamValues->getChannel(0)->getData()[i] * detuneRatio;
+    auto detuneRatio = std::pow(2.0f, detuneParamValues->getChannel(0)->getData()[i] / 1200.0f);
+    auto detunedFrequency = frequencyParamValues->getChannel(0)->getData()[i] * detuneRatio;
     auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
 
-    float sample =
-        periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
+    float sample = periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
 
     for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
       (*processingBus->getChannel(j))[i] = sample;
     }
 
     phase_ += phaseIncrement;
-    phase_ -=
-        floor(
-            phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
+    phase_ -= floor(phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
         static_cast<float>(periodicWave_->getPeriodicWaveSize());
   }
 

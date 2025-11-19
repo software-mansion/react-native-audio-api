@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 
 #include <memory>
 #include <string>
@@ -14,12 +14,11 @@ class AudioRecorderHostObject;
 
 class RecorderAdapterNodeHostObject : public AudioNodeHostObject {
  public:
-    explicit RecorderAdapterNodeHostObject(
-        const std::shared_ptr<RecorderAdapterNode> &node)
-        : AudioNodeHostObject(node) {}
+  explicit RecorderAdapterNodeHostObject(const std::shared_ptr<RecorderAdapterNode> &node)
+      : AudioNodeHostObject(node) {}
 
  private:
-    friend class AudioRecorderHostObject;
+  friend class AudioRecorderHostObject;
 };
 
 } // namespace audioapi

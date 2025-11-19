@@ -4,7 +4,7 @@ namespace audioapi::dsp {
 
 FFT::FFT(int size) : size_(size) {
   pffftSetup_ = pffft_new_setup(size_, PFFFT_REAL);
-  work_ = (float *)pffft_aligned_malloc(size_ * sizeof(float));
+  work_ = reinterpret_cast<float *>(pffft_aligned_malloc(size_ * sizeof(float)));
 }
 
 FFT::~FFT() {

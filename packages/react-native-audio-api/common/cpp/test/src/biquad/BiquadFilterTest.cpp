@@ -1,5 +1,7 @@
 #include <test/src/biquad/BiquadFilterChromium.h>
 #include <test/src/biquad/BiquadFilterTest.h>
+#include <memory>
+#include <vector>
 
 namespace audioapi {
 
@@ -18,8 +20,7 @@ void BiquadFilterTest::testLowpass(float frequency, float Q) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setLowpassCoefficients(normalizedFrequency, Q);
-  expectCoefficientsNear(
-      node, calculateLowpassCoefficients(normalizedFrequency, Q));
+  expectCoefficientsNear(node, calculateLowpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testHighpass(float frequency, float Q) {
@@ -27,8 +28,7 @@ void BiquadFilterTest::testHighpass(float frequency, float Q) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setHighpassCoefficients(normalizedFrequency, Q);
-  expectCoefficientsNear(
-      node, calculateHighpassCoefficients(normalizedFrequency, Q));
+  expectCoefficientsNear(node, calculateHighpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testBandpass(float frequency, float Q) {
@@ -36,8 +36,7 @@ void BiquadFilterTest::testBandpass(float frequency, float Q) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setBandpassCoefficients(normalizedFrequency, Q);
-  expectCoefficientsNear(
-      node, calculateBandpassCoefficients(normalizedFrequency, Q));
+  expectCoefficientsNear(node, calculateBandpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testNotch(float frequency, float Q) {
@@ -45,8 +44,7 @@ void BiquadFilterTest::testNotch(float frequency, float Q) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setNotchCoefficients(normalizedFrequency, Q);
-  expectCoefficientsNear(
-      node, calculateNotchCoefficients(normalizedFrequency, Q));
+  expectCoefficientsNear(node, calculateNotchCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testAllpass(float frequency, float Q) {
@@ -54,8 +52,7 @@ void BiquadFilterTest::testAllpass(float frequency, float Q) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setAllpassCoefficients(normalizedFrequency, Q);
-  expectCoefficientsNear(
-      node, calculateAllpassCoefficients(normalizedFrequency, Q));
+  expectCoefficientsNear(node, calculateAllpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testPeaking(float frequency, float Q, float gain) {
@@ -63,8 +60,7 @@ void BiquadFilterTest::testPeaking(float frequency, float Q, float gain) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setPeakingCoefficients(normalizedFrequency, Q, gain);
-  expectCoefficientsNear(
-      node, calculatePeakingCoefficients(normalizedFrequency, Q, gain));
+  expectCoefficientsNear(node, calculatePeakingCoefficients(normalizedFrequency, Q, gain));
 }
 
 void BiquadFilterTest::testLowshelf(float frequency, float gain) {
@@ -72,8 +68,7 @@ void BiquadFilterTest::testLowshelf(float frequency, float gain) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setLowshelfCoefficients(normalizedFrequency, gain);
-  expectCoefficientsNear(
-      node, calculateLowshelfCoefficients(normalizedFrequency, gain));
+  expectCoefficientsNear(node, calculateLowshelfCoefficients(normalizedFrequency, gain));
 }
 
 void BiquadFilterTest::testHighshelf(float frequency, float gain) {
@@ -81,17 +76,16 @@ void BiquadFilterTest::testHighshelf(float frequency, float gain) {
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node->setHighshelfCoefficients(normalizedFrequency, gain);
-  expectCoefficientsNear(
-      node, calculateHighshelfCoefficients(normalizedFrequency, gain));
+  expectCoefficientsNear(node, calculateHighshelfCoefficients(normalizedFrequency, gain));
 }
 
 INSTANTIATE_TEST_SUITE_P(
     Frequencies,
     BiquadFilterFrequencyTest,
     ::testing::Values(
-        0.0f,   // 0 Hz - the filter should block all input signal
-        10.0f,  // very low frequency
-        350.0f, // default
+        0.0f,                       // 0 Hz - the filter should block all input signal
+        10.0f,                      // very low frequency
+        350.0f,                     // default
         nyquistFrequency - 0.0001f, // frequency near Nyquist
         nyquistFrequency));         // maximal frequency
 
@@ -255,25 +249,19 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
       phaseResponseNode.data(),
       TestFrequencies.size());
   getFrequencyResponse(
-      coeffs,
-      TestFrequencies,
-      magResponseExpected,
-      phaseResponseExpected,
-      nyquistFrequency);
+      coeffs, TestFrequencies, magResponseExpected, phaseResponseExpected, nyquistFrequency);
 
   for (size_t i = 0; i < TestFrequencies.size(); ++i) {
     float f = TestFrequencies[i];
     if (std::isnan(magResponseExpected[i])) {
-      EXPECT_TRUE(std::isnan(magResponseNode[i]))
-          << "Expected NaN at frequency " << f;
+      EXPECT_TRUE(std::isnan(magResponseNode[i])) << "Expected NaN at frequency " << f;
     } else {
       EXPECT_NEAR(magResponseNode[i], magResponseExpected[i], tolerance)
           << "Magnitude mismatch at " << f << " Hz";
     }
 
     if (std::isnan(phaseResponseExpected[i])) {
-      EXPECT_TRUE(std::isnan(phaseResponseNode[i]))
-          << "Expected NaN at frequency " << f;
+      EXPECT_TRUE(std::isnan(phaseResponseNode[i])) << "Expected NaN at frequency " << f;
     } else {
       EXPECT_NEAR(phaseResponseNode[i], phaseResponseExpected[i], tolerance)
           << "Phase mismatch at " << f << " Hz";

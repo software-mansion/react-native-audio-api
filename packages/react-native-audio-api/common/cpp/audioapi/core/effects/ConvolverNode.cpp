@@ -6,7 +6,9 @@
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioArray.h>
 #include <iostream>
+#include <memory>
 #include <thread>
+#include <vector>
 
 namespace audioapi {
 ConvolverNode::ConvolverNode(
@@ -26,8 +28,8 @@ ConvolverNode::ConvolverNode(
   normalize_ = !disableNormalization;
   gainCalibrationSampleRate_ = context->getSampleRate();
   setBuffer(buffer);
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   isInitialized_ = true;
 }
 
@@ -60,26 +62,18 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
     for (int i = 0; i < buffer->getNumberOfChannels(); ++i) {
       convolvers_.emplace_back();
       AudioArray channelData(buffer->getLength());
-      memcpy(
-          channelData.getData(),
-          buffer->getChannelData(i),
-          buffer->getLength() * sizeof(float));
-      convolvers_.back().init(
-          RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+      memcpy(channelData.getData(), buffer->getChannelData(i), buffer->getLength() * sizeof(float));
+      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
     }
     if (buffer->getNumberOfChannels() == 1) {
       // add one more convolver, because right now input is always stereo
       convolvers_.emplace_back();
       AudioArray channelData(buffer->getLength());
-      memcpy(
-          channelData.getData(),
-          buffer->getChannelData(0),
-          buffer->getLength() * sizeof(float));
-      convolvers_.back().init(
-          RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+      memcpy(channelData.getData(), buffer->getChannelData(0), buffer->getLength() * sizeof(float));
+      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
     }
-    internalBuffer_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
+    internalBuffer_ =
+        std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
     intermediateBus_ = std::make_shared<AudioBus>(
         RENDER_QUANTUM_SIZE, convolvers_.size(), buffer->getSampleRate());
     internalBufferIndex_ = 0;
@@ -123,8 +117,7 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
     performConvolution(processingBus); // result returned to intermediateBus_
     audioBus_->sum(intermediateBus_.get());
 
-    internalBuffer_->copy(
-        audioBus_.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
+    internalBuffer_->copy(audioBus_.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
   }
   audioBus_->zero();
@@ -176,14 +169,12 @@ void ConvolverNode::calculateNormalizationScale() {
   scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 }
 
-void ConvolverNode::performConvolution(
-    const std::shared_ptr<AudioBus> &processingBus) {
+void ConvolverNode::performConvolution(const std::shared_ptr<AudioBus> &processingBus) {
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([&, i] {
         convolvers_[i].process(
-            processingBus->getChannel(0)->getData(),
-            intermediateBus_->getChannel(i)->getData());
+            processingBus->getChannel(0)->getData(), intermediateBus_->getChannel(i)->getData());
       });
     }
   } else if (processingBus->getNumberOfChannels() == 2) {
@@ -197,12 +188,11 @@ void ConvolverNode::performConvolution(
       outputChannelMap = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule(
-          [this, i, inputChannelMap, outputChannelMap, &processingBus] {
-            convolvers_[i].process(
-                processingBus->getChannel(inputChannelMap[i])->getData(),
-                intermediateBus_->getChannel(outputChannelMap[i])->getData());
-          });
+      threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBus] {
+        convolvers_[i].process(
+            processingBus->getChannel(inputChannelMap[i])->getData(),
+            intermediateBus_->getChannel(outputChannelMap[i])->getData());
+      });
     }
   }
   threadPool_->wait();

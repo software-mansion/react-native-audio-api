@@ -4,10 +4,7 @@ namespace audioapi {
 
 CircularAudioArray::CircularAudioArray(size_t size) : AudioArray(size) {}
 
-void CircularAudioArray::push_back(
-    const float *data,
-    size_t size,
-    bool skipAvailableSpaceCheck) {
+void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvailableSpaceCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
@@ -24,14 +21,10 @@ void CircularAudioArray::push_back(
     memcpy(data_ + vWriteIndex_, data, size * sizeof(float));
   }
 
-  vWriteIndex_ = vWriteIndex_ + size > size_ ? vWriteIndex_ + size - size_
-                                             : vWriteIndex_ + size;
+  vWriteIndex_ = vWriteIndex_ + size > size_ ? vWriteIndex_ + size - size_ : vWriteIndex_ + size;
 }
 
-void CircularAudioArray::pop_front(
-    float *data,
-    size_t size,
-    bool skipAvailableDataCheck) {
+void CircularAudioArray::pop_front(float *data, size_t size, bool skipAvailableDataCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
@@ -48,8 +41,7 @@ void CircularAudioArray::pop_front(
     memcpy(data, data_ + vReadIndex_, size * sizeof(float));
   }
 
-  vReadIndex_ = vReadIndex_ + size > size_ ? vReadIndex_ + size - size_
-                                           : vReadIndex_ + size;
+  vReadIndex_ = vReadIndex_ + size > size_ ? vReadIndex_ + size - size_ : vReadIndex_ + size;
 }
 
 void CircularAudioArray::pop_back(
@@ -66,10 +58,7 @@ void CircularAudioArray::pop_back(
   }
 
   if (vWriteIndex_ <= offset) {
-    memcpy(
-        data,
-        data_ + size_ - (offset - vWriteIndex_) - size,
-        size * sizeof(float));
+    memcpy(data, data_ + size_ - (offset - vWriteIndex_) - size, size * sizeof(float));
   } else if (vWriteIndex_ <= size + offset) {
     auto partSize = size + offset - vWriteIndex_;
     memcpy(data, data_ + size_ - partSize, partSize * sizeof(float));
@@ -78,8 +67,7 @@ void CircularAudioArray::pop_back(
     memcpy(data, data_ + vWriteIndex_ - size - offset, size * sizeof(float));
   }
 
-  vReadIndex_ = vWriteIndex_ - offset < 0 ? size + vWriteIndex_ - offset
-                                          : vWriteIndex_ - offset;
+  vReadIndex_ = vWriteIndex_ - offset < 0 ? size + vWriteIndex_ - offset : vWriteIndex_ - offset;
 }
 
 size_t CircularAudioArray::getNumberOfAvailableFrames() const {
