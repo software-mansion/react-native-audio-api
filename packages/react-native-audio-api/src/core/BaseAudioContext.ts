@@ -10,6 +10,7 @@ import {
   PeriodicWaveConstraints,
   AudioWorkletRuntime,
   ConvolverNodeOptions,
+  IIRFilterNodeOptions,
 } from '../types';
 import { assertWorkletsEnabled, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
@@ -209,8 +210,9 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
-    // TODO: magic number
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
+    const feedforward = options.feedforward;
+    const feedback = options.feedback;
     if (feedforward.length < 1 || feedforward.length > 20) {
       throw new NotSupportedError(
         `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`

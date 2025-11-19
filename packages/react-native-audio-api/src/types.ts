@@ -56,3 +56,8 @@ export interface ConvolverNodeOptions {
   buffer?: AudioBuffer | null;
   disableNormalization?: boolean;
 }
+
+export interface IIRFilterNodeOptions {
+  feedforward: number[];
+  feedback: number[];
+}

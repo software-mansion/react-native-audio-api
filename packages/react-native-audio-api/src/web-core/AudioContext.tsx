@@ -3,6 +3,7 @@ import {
   PeriodicWaveConstraints,
   AudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
+  IIRFilterNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -73,10 +74,10 @@ export default class AudioContext implements BaseAudioContext {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
   }
 
-  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
     return new IIRFilterNode(
       this,
-      this.context.createIIRFilter(feedforward, feedback)
+      this.context.createIIRFilter(options.feedforward, options.feedback)
     );
   }
 
