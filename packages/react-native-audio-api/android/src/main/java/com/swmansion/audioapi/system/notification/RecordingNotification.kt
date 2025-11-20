@@ -40,7 +40,10 @@ class RecordingNotification(
   private var notificationBuilder: NotificationCompat.Builder? = null
   private var isRecording: Boolean = false
   private var title: String = "Audio Recording"
+  private var description: String = "Ready to record"
   private var receiver: RecordingNotificationReceiver? = null
+  private var startEnabled: Boolean = true
+  private var stopEnabled: Boolean = true
 
   override fun init(params: ReadableMap?): Notification {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
@@ -116,9 +119,25 @@ class RecordingNotification(
       return buildNotification()
     }
 
+    // Handle control enable/disable
+    if (options.hasKey("control") && options.hasKey("enabled")) {
+      val control = options.getString("control")
+      val enabled = options.getBoolean("enabled")
+      when (control) {
+        "start" -> startEnabled = enabled
+        "stop" -> stopEnabled = enabled
+      }
+      updateActions()
+      return buildNotification()
+    }
+
     // Update metadata
     if (options.hasKey("title")) {
       title = options.getString("title") ?: "Audio Recording"
+    }
+
+    if (options.hasKey("description")) {
+      description = options.getString("description") ?: "Ready to record"
     }
 
     // Update recording state
@@ -130,7 +149,9 @@ class RecordingNotification(
     }
 
     // Update notification content
-    val statusText = if (isRecording) "Recording..." else "Ready to record"
+    val statusText = description.ifEmpty {
+      if (isRecording) "Recording..." else "Ready to record"
+    }
     notificationBuilder?.setContentTitle(title)
     notificationBuilder?.setContentText(statusText)
 
@@ -161,9 +182,9 @@ class RecordingNotification(
     // Clear existing actions
     notificationBuilder?.clearActions()
 
-    // Add appropriate action based on recording state
+    // Add appropriate action based on recording state and enabled controls
     // Note: Android shows text labels in collapsed view, icons only in expanded/Auto/Wear
-    if (isRecording) {
+    if (isRecording && stopEnabled) {
       // Show STOP button when recording
       val stopIntent = Intent(ACTION_STOP)
       stopIntent.setPackage(context.packageName)
@@ -182,7 +203,7 @@ class RecordingNotification(
             stopPendingIntent,
           ).build()
       notificationBuilder?.addAction(stopAction)
-    } else {
+    } else if (!isRecording && startEnabled) {
       // Show START button when not recording
       val startIntent = Intent(ACTION_START)
       startIntent.setPackage(context.packageName)
@@ -204,9 +225,12 @@ class RecordingNotification(
     }
 
     // Use BigTextStyle to ensure actions are visible
-    val statusText = if (isRecording) "Recording in progress..." else "Ready to record"
+    val statusText = description.ifEmpty {
+      if (isRecording) "Recording in progress..." else "Ready to record"
+    }
     notificationBuilder?.setStyle(
-      NotificationCompat.BigTextStyle()
+      NotificationCompat
+        .BigTextStyle()
         .bigText(statusText),
     )
   }
