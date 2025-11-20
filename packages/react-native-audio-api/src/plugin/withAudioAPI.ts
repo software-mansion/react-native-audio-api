@@ -92,21 +92,56 @@ const withForegroundService: ConfigPlugin<Options> = (
   });
 };
 
-const withFFmpegConfig: ConfigPlugin = (config) => {
+const withFFmpegConfig: ConfigPlugin<Options> = (config, options) => {
   const iosConf = withPodfile(config, (mod) => {
-    mod.modResults.contents += `\nENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'`;
+    let contents = mod.modResults.contents;
+    const ffmpegRegex = /^.*ENV\['DISABLE_AUDIOAPI_FFMPEG'\].*$/gm;
+    const podfileString = options.disableFFmpeg
+      ? `ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'`
+      : '';
+    // No existing setting
+    if (contents.search(ffmpegRegex) === -1) {
+      if (options.disableFFmpeg) {
+        if (contents.endsWith('\n')) {
+          contents = `${contents}${podfileString}`;
+        } else {
+          contents = `${contents}\n${podfileString}`;
+        }
+        mod.modResults.contents = contents;
+      }
+    } else {
+      // Existing setting found, will replace
+      contents = contents.replace(ffmpegRegex, podfileString);
+    }
+
+    mod.modResults.contents = contents;
     return mod;
   });
 
   const finalConf = withGradleProperties(iosConf, (mod) => {
     const gradleProperties = mod.modResults;
-    gradleProperties.push({
-      type: 'property',
-      key: 'disableAudioapiFFmpeg',
-      value: 'true',
-    });
+
+    const existingIndex = gradleProperties.findIndex(
+      (prop) => prop.type === 'property' && prop.key === 'disableAudioapiFFmpeg'
+    );
+    if (existingIndex !== -1) {
+      gradleProperties.splice(existingIndex, 1);
+    } else if (!options.disableFFmpeg) {
+      // No existing setting and FFmpeg is enabled, do nothing.
+      return mod;
+    }
+
+    if (options.disableFFmpeg) {
+      gradleProperties.push({
+        type: 'property',
+        key: 'disableAudioapiFFmpeg',
+        value: options.disableFFmpeg ? 'true' : 'false',
+      });
+    }
+
     return mod;
   });
+
   return finalConf;
 };
 
@@ -127,8 +162,8 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
     config = withIosMicrophonePermission(config, options);
   }
 
-  if (options.disableFFmpeg) {
-    config = withFFmpegConfig(config);
+  if (options.disableFFmpeg !== undefined) {
+    config = withFFmpegConfig(config, options);
   }
 
   return config;

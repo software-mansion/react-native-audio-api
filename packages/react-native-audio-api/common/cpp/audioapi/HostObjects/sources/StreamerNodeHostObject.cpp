@@ -13,7 +13,7 @@ StreamerNodeHostObject::StreamerNodeHostObject(const std::shared_ptr<StreamerNod
 }
 
 JSI_HOST_FUNCTION_IMPL(StreamerNodeHostObject, initialize) {
-#if !FFMPEG_DISABLED
+#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
   auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
   auto path = args[0].getString(runtime).utf8(runtime);
   auto result = streamerNode->initialize(path);

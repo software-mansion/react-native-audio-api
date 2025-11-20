@@ -4,14 +4,14 @@ require_relative './scripts/rnaa_utils'
 package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
-$ffmpeg_disabled = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : ENV['DISABLE_AUDIOAPI_FFMPEG'] == '1' # false by default
+$RN_AUDIO_API_FFMPEG_DISABLED = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : ENV['DISABLE_AUDIOAPI_FFMPEG'] == '1' # false by default
 
 folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
 worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
-ffmpeg_flag = $ffmpeg_disabled ? '-DFFMPEG_DISABLED=1' : ''
+ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
-    ss.exclude_files = $ffmpeg_disabled ? ["common/cpp/audioapi/libs/ffmpeg/**", "common/cpp/audioapi/core/sources/StreamerNode.cpp"] : []
+    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/libs/ffmpeg/**"] : []
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
@@ -60,7 +60,7 @@ Pod::Spec.new do |s|
   external_dir_relative = "common/cpp/audioapi/external"
   lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
 
-  s.ios.vendored_frameworks = $ffmpeg_disabled ? [] : [
+  s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : [
     'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
     'common/cpp/audioapi/external/ffmpeg_ios/libavformat.xcframework',
     'common/cpp/audioapi/external/ffmpeg_ios/libavutil.xcframework',
@@ -78,7 +78,7 @@ s.pod_target_xcconfig = {
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus
     $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
-  ].concat($ffmpeg_disabled ? [] : ["$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include"]).join(" "),
+  ].concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include"]).join(" "),
   'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
   'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
 }

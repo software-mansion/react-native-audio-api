@@ -13,7 +13,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/utils/AudioBus.h>
 
-#if !FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -22,7 +22,7 @@ extern "C" {
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 }
-#endif // FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 #include <atomic>
 #include <cmath>
@@ -78,7 +78,7 @@ class StreamerNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
-#if !FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
   AVCodecContext *codecCtx_;
   const AVCodec *decoder_;
@@ -149,6 +149,6 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @return true if successful, false otherwise
    */
   bool setupDecoder();
-#endif // FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 };
 } // namespace audioapi

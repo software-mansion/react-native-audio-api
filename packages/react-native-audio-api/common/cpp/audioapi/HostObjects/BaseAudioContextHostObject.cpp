@@ -159,7 +159,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
-#if !FFMPEG_DISABLED
+#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
   auto streamer = context_->createStreamer();
   auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(streamer);
   auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
@@ -167,7 +167,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
   return object;
 #else
   return jsi::Value::undefined();
-#endif // FFMPEG_DISABLED
+#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {

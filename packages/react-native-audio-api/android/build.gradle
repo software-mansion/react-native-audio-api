@@ -128,7 +128,7 @@ file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { rea
 def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
 def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
-def IS_FFMPEG_DISABLED = isFFmpegDisabled()
+def IS_RN_AUDIO_API_FFMPEG_DISABLED = isFFmpegDisabled()
 
 android {
   sourceSets {
@@ -170,7 +170,7 @@ android {
           "-DRN_AUDIO_API_WORKLETS_ENABLED=${isWorkletsAvailable}",
           "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-          "-DFFMPEG_DISABLED=${IS_FFMPEG_DISABLED}"
+          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}"
         ]
 
         if (isWorkletsAvailable) {
