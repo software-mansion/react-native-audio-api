@@ -1,14 +1,14 @@
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/notification/PlaybackNotification.h>
 
-#define NOW_PLAYING_INFO_KEYS                                     \
-  @{                                                              \
-    @"title" : MPMediaItemPropertyTitle,                          \
-    @"artist" : MPMediaItemPropertyArtist,                        \
-    @"album" : MPMediaItemPropertyAlbumTitle,                     \
-    @"duration" : MPMediaItemPropertyPlaybackDuration,            \
+#define NOW_PLAYING_INFO_KEYS \
+  @{ \
+    @"title" : MPMediaItemPropertyTitle, \
+    @"artist" : MPMediaItemPropertyArtist, \
+    @"album" : MPMediaItemPropertyAlbumTitle, \
+    @"duration" : MPMediaItemPropertyPlaybackDuration, \
     @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
-    @"speed" : MPNowPlayingInfoPropertyPlaybackRate               \
+    @"speed" : MPNowPlayingInfoPropertyPlaybackRate \
   }
 
 @implementation PlaybackNotification {
@@ -219,7 +219,8 @@
   }
 
   MPNowPlayingInfoCenter *center = [MPNowPlayingInfoCenter defaultCenter];
-  if ([artworkUrl isEqualToString:self.artworkUrl] && center.nowPlayingInfo[MPMediaItemPropertyArtwork] != nil) {
+  if ([artworkUrl isEqualToString:self.artworkUrl] &&
+      center.nowPlayingInfo[MPMediaItemPropertyArtwork] != nil) {
     return;
   }
 
@@ -255,10 +256,9 @@
     }
 
     if (image) {
-      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
-                                                                    requestHandler:^UIImage *_Nonnull(CGSize size) {
-                                                                      return image;
-                                                                    }];
+      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc]
+          initWithBoundsSize:image.size
+              requestHandler:^UIImage *_Nonnull(CGSize size) { return image; }];
 
       dispatch_async(dispatch_get_main_queue(), ^{
         NSMutableDictionary *nowPlayingInfo = [center.nowPlayingInfo mutableCopy];
@@ -309,21 +309,35 @@
   } else if ([name isEqualToString:@"stop"]) {
     [self enableCommand:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:enabled];
   } else if ([name isEqualToString:@"togglePlayPause"]) {
-    [self enableCommand:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
+    [self enableCommand:remoteCenter.togglePlayPauseCommand
+           withSelector:@selector(onTogglePlayPause:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"next"]) {
-    [self enableCommand:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:enabled];
+    [self enableCommand:remoteCenter.nextTrackCommand
+           withSelector:@selector(onNextTrack:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"previous"]) {
-    [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
+    [self enableCommand:remoteCenter.previousTrackCommand
+           withSelector:@selector(onPreviousTrack:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"skipForward"]) {
     remoteCenter.skipForwardCommand.preferredIntervals = @[ @(15) ];
-    [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
+    [self enableCommand:remoteCenter.skipForwardCommand
+           withSelector:@selector(onSkipForward:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"skipBackward"]) {
     remoteCenter.skipBackwardCommand.preferredIntervals = @[ @(15) ];
-    [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
+    [self enableCommand:remoteCenter.skipBackwardCommand
+           withSelector:@selector(onSkipBackward:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"seekForward"]) {
-    [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
+    [self enableCommand:remoteCenter.seekForwardCommand
+           withSelector:@selector(onSeekForward:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"seekBackward"]) {
-    [self enableCommand:remoteCenter.seekBackwardCommand withSelector:@selector(onSeekBackward:) enabled:enabled];
+    [self enableCommand:remoteCenter.seekBackwardCommand
+           withSelector:@selector(onSeekBackward:)
+                enabled:enabled];
   } else if ([name isEqualToString:@"seek"]) {
     [self enableCommand:remoteCenter.changePlaybackPositionCommand
            withSelector:@selector(onChangePlaybackPosition:)
@@ -362,7 +376,8 @@
 
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationTogglePlayPause" eventBody:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationTogglePlayPause"
+                                        eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -386,25 +401,29 @@
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekBackward" eventBody:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekBackward"
+                                        eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
   NSDictionary *body = @{@"interval" : @(event.interval)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipForward" eventBody:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipForward"
+                                        eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
   NSDictionary *body = @{@"interval" : @(event.interval)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipBackward" eventBody:body];
+  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipBackward"
+                                        eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
-- (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
+- (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:
+    (MPChangePlaybackPositionCommandEvent *)event
 {
   NSDictionary *body = @{@"position" : @(event.positionTime)};
   [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeek" eventBody:body];
