@@ -24,7 +24,7 @@ runs:
     - name: Install ktlint
       shell: bash
       run: |
-        curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.5.0/ktlint
+        curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint
         chmod a+x ktlint
         sudo mv ktlint /usr/local/bin/
 
