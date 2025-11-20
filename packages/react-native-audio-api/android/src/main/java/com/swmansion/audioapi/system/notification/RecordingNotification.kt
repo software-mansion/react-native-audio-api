@@ -149,9 +149,10 @@ class RecordingNotification(
     }
 
     // Update notification content
-    val statusText = description.ifEmpty {
-      if (isRecording) "Recording..." else "Ready to record"
-    }
+    val statusText =
+      description.ifEmpty {
+        if (isRecording) "Recording..." else "Ready to record"
+      }
     notificationBuilder?.setContentTitle(title)
     notificationBuilder?.setContentText(statusText)
 
@@ -225,9 +226,10 @@ class RecordingNotification(
     }
 
     // Use BigTextStyle to ensure actions are visible
-    val statusText = description.ifEmpty {
-      if (isRecording) "Recording in progress..." else "Ready to record"
-    }
+    val statusText =
+      description.ifEmpty {
+        if (isRecording) "Recording in progress..." else "Ready to record"
+      }
     notificationBuilder?.setStyle(
       NotificationCompat
         .BigTextStyle()
