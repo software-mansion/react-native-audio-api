@@ -313,7 +313,7 @@ object MediaSessionManager {
       when (type) {
         "simple" -> SimpleNotification(reactContext)
         "playback" -> PlaybackNotification(reactContext, audioAPIModule, 100, "audio_playback")
-        "recording" -> RecordingNotification(reactContext, audioAPIModule, 101, "audio_recording")
+        "recording" -> RecordingNotification(reactContext, audioAPIModule, 101, "audio_recording22")
         else -> throw IllegalArgumentException("Unknown notification type: $type")
       }
 

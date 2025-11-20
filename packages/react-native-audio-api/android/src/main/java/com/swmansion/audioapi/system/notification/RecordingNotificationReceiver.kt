@@ -7,7 +7,7 @@ import android.util.Log
 import com.swmansion.audioapi.AudioAPIModule
 
 /**
- * Broadcast receiver for handling recording notification dismissal.
+ * Broadcast receiver for handling recording notification actions and dismissal.
  */
 class RecordingNotificationReceiver : BroadcastReceiver() {
   companion object {
@@ -25,9 +25,19 @@ class RecordingNotificationReceiver : BroadcastReceiver() {
     context: Context?,
     intent: Intent?,
   ) {
-    if (intent?.action == ACTION_NOTIFICATION_DISMISSED) {
-      Log.d(TAG, "Recording notification dismissed by user")
-      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationDismissed", mapOf())
+    when (intent?.action) {
+      ACTION_NOTIFICATION_DISMISSED -> {
+        Log.d(TAG, "Recording notification dismissed by user")
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationDismissed", mapOf())
+      }
+      RecordingNotification.ACTION_START -> {
+        Log.d(TAG, "Start recording action received")
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStart", mapOf())
+      }
+      RecordingNotification.ACTION_STOP -> {
+        Log.d(TAG, "Stop recording action received")
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStop", mapOf())
+      }
     }
   }
 }

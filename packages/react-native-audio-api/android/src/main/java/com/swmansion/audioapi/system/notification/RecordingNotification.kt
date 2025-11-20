@@ -1,35 +1,27 @@
 package com.swmansion.audioapi.system.notification
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
+import android.content.IntentFilter
+import android.graphics.Color
 import android.os.Build
-import android.provider.ContactsContract
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.bridge.ReadableType
 import com.swmansion.audioapi.AudioAPIModule
-import java.io.IOException
 import java.lang.ref.WeakReference
-import java.net.URL
 
 /**
  * RecordingNotification
  *
- * This notification:
- * - Shows recording status and metadata
- * - Supports recording controls (start, stop)
+ * Simple notification for audio recording:
+ * - Shows recording status with red background when recording
+ * - Simple start/stop button with microphone icon
  * - Is persistent and cannot be swiped away when recording
  * - Notifies its dismissal via RecordingNotificationReceiver
  */
@@ -41,65 +33,35 @@ class RecordingNotification(
 ) : BaseNotification {
   companion object {
     private const val TAG = "RecordingNotification"
-    const val MEDIA_BUTTON = "recording_notification_media_button"
-    const val PACKAGE_NAME = "com.swmansion.audioapi.recording"
+    const val ACTION_START = "com.swmansion.audioapi.RECORDING_START"
+    const val ACTION_STOP = "com.swmansion.audioapi.RECORDING_STOP"
   }
 
-  private var mediaSession: MediaSessionCompat? = null
   private var notificationBuilder: NotificationCompat.Builder? = null
-  private var playbackStateBuilder: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
-
-  private var enabledControls: Long = 0
   private var isRecording: Boolean = false
-
-  // Metadata
-  private var title: String? = null
-  private var artwork: Bitmap? = null
-
-  // Actions
-  private var startAction: NotificationCompat.Action? = null
-  private var stopAction: NotificationCompat.Action? = null
-
-  private var artworkThread: Thread? = null
+  private var title: String = "Audio Recording"
+  private var receiver: RecordingNotificationReceiver? = null
 
   override fun init(params: ReadableMap?): Notification {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
 
+    // Register broadcast receiver
+    registerReceiver()
+
     // Create notification channel first
     createNotificationChannel()
-
-    // Create MediaSession
-    mediaSession = MediaSessionCompat(context, "RecordingNotification")
-    mediaSession?.isActive = true
-
-    // Set up media session callbacks
-    mediaSession?.setCallback(
-      object : MediaSessionCompat.Callback() {
-        override fun onCustomAction(
-          action: String,
-          extras: android.os.Bundle?,
-        ) {
-          Log.d(TAG, "MediaSession: onCustomAction ($action)")
-          when (action) {
-            "START_RECORDING" -> {
-              audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStart", mapOf())
-            }
-            "STOP_RECORDING" -> {
-              audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStop", mapOf())
-            }
-          }
-        }
-      },
-    )
 
     // Create notification builder
     notificationBuilder =
       NotificationCompat
         .Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+        .setContentTitle(title)
+        .setContentText("Ready to record")
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-        .setOngoing(true) // Make it persistent (can't swipe away)
+        .setOngoing(false)
+        .setAutoCancel(false)
 
     // Set content intent to open app
     val packageName = context.packageName
@@ -127,13 +89,6 @@ class RecordingNotification(
       )
     notificationBuilder?.setDeleteIntent(deletePendingIntent)
 
-    // Enable default controls
-    enableControl("start", true)
-    enableControl("stop", true)
-
-    updateMediaStyle()
-    updatePlaybackState()
-
     // Apply initial params if provided
     if (params != null) {
       update(params)
@@ -143,22 +98,13 @@ class RecordingNotification(
   }
 
   override fun reset() {
-    // Interrupt artwork loading if in progress
-    artworkThread?.interrupt()
-    artworkThread = null
+    // Unregister receiver
+    unregisterReceiver()
 
-    // Reset metadata
-    title = null
-    artwork = null
+    // Reset state
+    title = "Audio Recording"
     isRecording = false
-
-    // Reset media session
-    val emptyMetadata = MediaMetadataCompat.Builder().build()
-    mediaSession?.setMetadata(emptyMetadata)
-
-    mediaSession?.isActive = false
-    mediaSession?.release()
-    mediaSession = null
+    notificationBuilder = null
   }
 
   override fun getNotificationId(): Int = notificationId
@@ -170,87 +116,37 @@ class RecordingNotification(
       return buildNotification()
     }
 
-    // Handle control enable/disable
-    if (options.hasKey("control") && options.hasKey("enabled")) {
-      val control = options.getString("control")
-      val enabled = options.getBoolean("enabled")
-      if (control != null) {
-        enableControl(control, enabled)
-      }
-      return buildNotification()
-    }
-
     // Update metadata
     if (options.hasKey("title")) {
-      title = options.getString("title")
+      title = options.getString("title") ?: "Audio Recording"
     }
 
     // Update recording state
     if (options.hasKey("state")) {
       when (options.getString("state")) {
-        "recording" -> {
-          isRecording = true
-        }
-        "stopped" -> {
-          isRecording = false
-        }
+        "recording" -> isRecording = true
+        "stopped" -> isRecording = false
       }
     }
 
-    // Build MediaMetadata
-    val metadataBuilder =
-      MediaMetadataCompat
-        .Builder()
-        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-
-    // Update notification builder
-    notificationBuilder?.setContentTitle(title)
+    // Update notification content
     val statusText = if (isRecording) "Recording..." else "Ready to record"
+    notificationBuilder?.setContentTitle(title)
     notificationBuilder?.setContentText(statusText)
-
-    // Handle artwork
-    if (options.hasKey("artwork")) {
-      artworkThread?.interrupt()
-
-      val artworkUrl: String?
-      val isLocal: Boolean
-
-      if (options.getType("artwork") == ReadableType.Map) {
-        artworkUrl = options.getMap("artwork")?.getString("uri")
-        isLocal = true
-      } else {
-        artworkUrl = options.getString("artwork")
-        isLocal = false
-      }
-
-      if (artworkUrl != null) {
-        artworkThread =
-          Thread {
-            try {
-              val bitmap = loadArtwork(artworkUrl, isLocal)
-              if (bitmap != null) {
-                artwork = bitmap
-                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
-                notificationBuilder?.setLargeIcon(bitmap)
-              }
-              artworkThread = null
-            } catch (e: Exception) {
-              Log.e(TAG, "Error loading artwork: ${e.message}", e)
-            }
-          }
-        artworkThread?.start()
-      }
-    }
-
-    mediaSession?.setMetadata(metadataBuilder.build())
-    mediaSession?.isActive = true
 
     // Update ongoing state - only persistent when recording
     notificationBuilder?.setOngoing(isRecording)
 
-    // Update media style to reflect current state
-    updatePlaybackState()
-    updateMediaStyle()
+    // Set red color when recording
+    if (isRecording) {
+      notificationBuilder?.setColor(Color.RED)
+      notificationBuilder?.setColorized(true)
+    } else {
+      notificationBuilder?.setColorized(false)
+    }
+
+    // Update action button
+    updateActions()
 
     return buildNotification()
   }
@@ -259,161 +155,60 @@ class RecordingNotification(
     notificationBuilder?.build()
       ?: throw IllegalStateException("Notification not initialized. Call init() first.")
 
-  private fun updatePlaybackState() {
-    // Set playback state with custom actions to preserve custom icons
-    val state = if (isRecording) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_STOPPED
-
-    // Clear previous state and rebuild
-    playbackStateBuilder = PlaybackStateCompat.Builder()
-    playbackStateBuilder.setState(state, 0, 1.0f)
-
-    // Add only the appropriate custom action based on current state
-    if (!isRecording && (enabledControls and PlaybackStateCompat.ACTION_PLAY) != 0L) {
-      // Show START button when not recording
-      val startAction =
-        PlaybackStateCompat.CustomAction
-          .Builder(
-            "START_RECORDING",
-            "Start Recording",
-            android.R.drawable.ic_btn_speak_now,
-          ).build()
-      playbackStateBuilder.addCustomAction(startAction)
-    } else if (isRecording && (enabledControls and PlaybackStateCompat.ACTION_PAUSE) != 0L) {
-      // Show STOP button when recording
-      val stopAction =
-        PlaybackStateCompat.CustomAction
-          .Builder(
-            "STOP_RECORDING",
-            "Stop Recording",
-            android.R.drawable.ic_media_pause,
-          ).build()
-      playbackStateBuilder.addCustomAction(stopAction)
-    }
-
-    mediaSession?.setPlaybackState(playbackStateBuilder.build())
-  }
-
-  /**
-   * Enable or disable a specific control action.
-   */
-  private fun enableControl(
-    name: String,
-    enabled: Boolean,
-  ) {
-    val controlValue =
-      when (name) {
-        "start" -> PlaybackStateCompat.ACTION_PLAY
-        // Use PAUSE action so the system shows a pause button (consistent with PlaybackNotification)
-        "stop" -> PlaybackStateCompat.ACTION_PAUSE
-        else -> 0L
-      }
-
-    if (controlValue == 0L) return
-
-    enabledControls =
-      if (enabled) {
-        enabledControls or controlValue
-      } else {
-        enabledControls and controlValue.inv()
-      }
-
-    // Update actions
-    updateActions()
-    updateMediaStyle()
-    updatePlaybackState()
-  }
-
   private fun updateActions() {
     val context = reactContext.get() ?: return
 
-    startAction =
-      createAction(
-        "start",
-        "Start Recording",
-        android.R.drawable.ic_btn_speak_now, // Microphone icon
-        PlaybackStateCompat.ACTION_PLAY,
-      )
-
-    stopAction =
-      createAction(
-        "stop",
-        "Stop Recording",
-        android.R.drawable.ic_media_pause,
-        PlaybackStateCompat.ACTION_PAUSE,
-      )
-  }
-
-  private fun createAction(
-    name: String,
-    title: String,
-    icon: Int,
-    action: Long,
-  ): NotificationCompat.Action? {
-    val context = reactContext.get() ?: return null
-
-    if ((enabledControls and action) == 0L) {
-      return null
-    }
-
-    val keyCode = PlaybackStateCompat.toKeyCode(action)
-    val intent = Intent(MEDIA_BUTTON)
-    intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
-    intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, context.packageName)
-
-    val pendingIntent =
-      PendingIntent.getBroadcast(
-        context,
-        keyCode,
-        intent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-      )
-
-    return NotificationCompat.Action(icon, title, pendingIntent)
-  }
-
-  private fun updateMediaStyle() {
-    val style = MediaStyle()
-    style.setMediaSession(mediaSession?.sessionToken)
+    // Clear existing actions
     notificationBuilder?.clearActions()
-    style.setShowActionsInCompactView(0, 1, 2)
-    notificationBuilder?.setStyle(style)
-  }
 
-  private fun loadArtwork(
-    url: String,
-    isLocal: Boolean,
-  ): Bitmap? {
-    val context = reactContext.get() ?: return null
-
-    return try {
-      if (isLocal && !url.startsWith("http")) {
-        // Load local resource
-        val helper =
-          com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
-            .getInstance()
-        val drawable = helper.getResourceDrawable(context, url)
-
-        if (drawable is BitmapDrawable) {
-          drawable.bitmap
-        } else {
-          BitmapFactory.decodeFile(url)
-        }
-      } else {
-        // Load from URL
-        val connection = URL(url).openConnection()
-        connection.connect()
-        val inputStream = connection.getInputStream()
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        inputStream.close()
-        bitmap
-      }
-    } catch (e: IOException) {
-      Log.e(TAG, "Failed to load artwork: ${e.message}", e)
-      null
-    } catch (e: Exception) {
-      Log.e(TAG, "Error loading artwork: ${e.message}", e)
-      null
+    // Add appropriate action based on recording state
+    // Note: Android shows text labels in collapsed view, icons only in expanded/Auto/Wear
+    if (isRecording) {
+      // Show STOP button when recording
+      val stopIntent = Intent(ACTION_STOP)
+      stopIntent.setPackage(context.packageName)
+      val stopPendingIntent =
+        PendingIntent.getBroadcast(
+          context,
+          1001,
+          stopIntent,
+          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+      val stopAction =
+        NotificationCompat.Action
+          .Builder(
+            android.R.drawable.ic_delete,
+            "Stop",
+            stopPendingIntent,
+          ).build()
+      notificationBuilder?.addAction(stopAction)
+    } else {
+      // Show START button when not recording
+      val startIntent = Intent(ACTION_START)
+      startIntent.setPackage(context.packageName)
+      val startPendingIntent =
+        PendingIntent.getBroadcast(
+          context,
+          1000,
+          startIntent,
+          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+      val startAction =
+        NotificationCompat.Action
+          .Builder(
+            android.R.drawable.ic_btn_speak_now,
+            "Record",
+            startPendingIntent,
+          ).build()
+      notificationBuilder?.addAction(startAction)
     }
+
+    // Use BigTextStyle to ensure actions are visible
+    val statusText = if (isRecording) "Recording in progress..." else "Ready to record"
+    notificationBuilder?.setStyle(
+      NotificationCompat.BigTextStyle()
+        .bigText(statusText),
+    )
   }
 
   private fun createNotificationChannel() {
@@ -421,22 +216,60 @@ class RecordingNotification(
       val context = reactContext.get() ?: return
 
       val channel =
-        android.app
-          .NotificationChannel(
-            channelId,
-            "Audio Recording",
-            android.app.NotificationManager.IMPORTANCE_LOW,
-          ).apply {
-            description = "Recording controls and status"
-            setShowBadge(false)
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-          }
+        NotificationChannel(
+          channelId,
+          "Audio Recording",
+          NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+          description = "Recording controls and status"
+          setShowBadge(true)
+          lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+          enableLights(true)
+          lightColor = Color.RED
+          enableVibration(false)
+        }
 
       val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       notificationManager.createNotificationChannel(channel)
 
       Log.d(TAG, "Notification channel created: $channelId")
+    }
+  }
+
+  private fun registerReceiver() {
+    val context = reactContext.get() ?: return
+
+    if (receiver == null) {
+      receiver = RecordingNotificationReceiver()
+      RecordingNotificationReceiver.setAudioAPIModule(audioAPIModule.get())
+
+      val filter = IntentFilter()
+      filter.addAction(ACTION_START)
+      filter.addAction(ACTION_STOP)
+      filter.addAction(RecordingNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+      } else {
+        context.registerReceiver(receiver, filter)
+      }
+
+      Log.d(TAG, "RecordingNotificationReceiver registered")
+    }
+  }
+
+  private fun unregisterReceiver() {
+    val context = reactContext.get() ?: return
+
+    receiver?.let {
+      try {
+        context.unregisterReceiver(it)
+        receiver = null
+        Log.d(TAG, "RecordingNotificationReceiver unregistered")
+      } catch (e: Exception) {
+        Log.e(TAG, "Error unregistering receiver: ${e.message}", e)
+      }
     }
   }
 }
