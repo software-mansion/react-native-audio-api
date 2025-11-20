@@ -4,6 +4,8 @@ import {
   ConfigPlugin,
   withInfoPlist,
   withAndroidManifest,
+  withGradleProperties,
+  withPodfile,
 } from '@expo/config-plugins';
 const pkg = require('react-native-audio-api/package.json');
 
@@ -13,6 +15,7 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
+  disableFFmpeg: boolean;
 }
 
 const withDefaultOptions = (options: Partial<Options>): Options => {
@@ -24,6 +27,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     ],
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
+    disableFFmpeg: false,
     ...options,
   };
 };
@@ -88,6 +92,24 @@ const withForegroundService: ConfigPlugin<Options> = (
   });
 };
 
+const withFFmpegConfig: ConfigPlugin = (config) => {
+  const iosConf = withPodfile(config, (mod) => {
+    mod.modResults.contents += `\nENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'`;
+    return mod;
+  });
+
+  const finalConf = withGradleProperties(iosConf, (mod) => {
+    const gradleProperties = mod.modResults;
+    gradleProperties.push({
+      type: 'property',
+      key: 'disableAudioapiFFmpeg',
+      value: 'true',
+    });
+    return mod;
+  });
+  return finalConf;
+};
+
 const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
   const options = withDefaultOptions(optionsIn ?? {});
 
@@ -103,6 +125,10 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
 
   if (options.iosMicrophonePermission) {
     config = withIosMicrophonePermission(config, options);
+  }
+
+  if (options.disableFFmpeg) {
+    config = withFFmpegConfig(config);
   }
 
   return config;
