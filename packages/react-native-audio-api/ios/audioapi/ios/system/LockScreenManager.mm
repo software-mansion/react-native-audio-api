@@ -2,13 +2,13 @@
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/LockScreenManager.h>
 
-#define LOCK_SCREEN_INFO                                          \
-  @{                                                              \
-    @"album" : MPMediaItemPropertyAlbumTitle,                     \
-    @"artist" : MPMediaItemPropertyArtist,                        \
-    @"duration" : MPMediaItemPropertyPlaybackDuration,            \
-    @"title" : MPMediaItemPropertyTitle,                          \
-    @"speed" : MPNowPlayingInfoPropertyPlaybackRate,              \
+#define LOCK_SCREEN_INFO \
+  @{ \
+    @"album" : MPMediaItemPropertyAlbumTitle, \
+    @"artist" : MPMediaItemPropertyArtist, \
+    @"duration" : MPMediaItemPropertyPlaybackDuration, \
+    @"title" : MPMediaItemPropertyTitle, \
+    @"speed" : MPNowPlayingInfoPropertyPlaybackRate, \
     @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
   }
 
@@ -48,12 +48,14 @@
   if (self.playingInfoCenter.nowPlayingInfo == nil) {
     lockScreenInfoDict = [NSMutableDictionary dictionary];
   } else {
-    lockScreenInfoDict = [[NSMutableDictionary alloc] initWithDictionary:self.playingInfoCenter.nowPlayingInfo];
+    lockScreenInfoDict =
+        [[NSMutableDictionary alloc] initWithDictionary:self.playingInfoCenter.nowPlayingInfo];
   }
 
   for (NSString *key in LOCK_SCREEN_INFO) {
     if ([info objectForKey:key] != nil) {
-      [lockScreenInfoDict setValue:[info objectForKey:key] forKey:[LOCK_SCREEN_INFO objectForKey:key]];
+      [lockScreenInfoDict setValue:[info objectForKey:key]
+                            forKey:[LOCK_SCREEN_INFO objectForKey:key]];
     }
   }
 
@@ -128,7 +130,8 @@
       NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
       image = [UIImage imageWithData:imageData];
     } else {
-      NSString *localArtworkUrl = [artworkUrl stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+      NSString *localArtworkUrl = [artworkUrl stringByReplacingOccurrencesOfString:@"file://"
+                                                                        withString:@""];
       BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:localArtworkUrl];
       if (fileExists) {
         image = [UIImage imageNamed:localArtworkUrl];
@@ -155,10 +158,9 @@
       }
 
       MPNowPlayingInfoCenter *center = [MPNowPlayingInfoCenter defaultCenter];
-      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
-                                                                    requestHandler:^UIImage *_Nonnull(CGSize size) {
-                                                                      return image;
-                                                                    }];
+      MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc]
+          initWithBoundsSize:image.size
+              requestHandler:^UIImage *_Nonnull(CGSize size) { return image; }];
       NSMutableDictionary *mediaDict = (center.nowPlayingInfo != nil)
           ? [[NSMutableDictionary alloc] initWithDictionary:center.nowPlayingInfo]
           : [NSMutableDictionary dictionary];
@@ -179,25 +181,39 @@
   } else if ([name isEqual:@"remoteStop"]) {
     [self enableCommand:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:enabled];
   } else if ([name isEqual:@"remoteTogglePlayPause"]) {
-    [self enableCommand:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
+    [self enableCommand:remoteCenter.togglePlayPauseCommand
+           withSelector:@selector(onTogglePlayPause:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteChangePlaybackRate"]) {
     [self enableCommand:remoteCenter.changePlaybackRateCommand
            withSelector:@selector(onChangePlaybackRate:)
                 enabled:enabled];
   } else if ([name isEqual:@"remoteNextTrack"]) {
-    [self enableCommand:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:enabled];
+    [self enableCommand:remoteCenter.nextTrackCommand
+           withSelector:@selector(onNextTrack:)
+                enabled:enabled];
   } else if ([name isEqual:@"remotePreviousTrack"]) {
-    [self enableCommand:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:enabled];
+    [self enableCommand:remoteCenter.previousTrackCommand
+           withSelector:@selector(onPreviousTrack:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteSkipForward"]) {
     remoteCenter.skipForwardCommand.preferredIntervals = @[ @15 ];
-    [self enableCommand:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:enabled];
+    [self enableCommand:remoteCenter.skipForwardCommand
+           withSelector:@selector(onSkipForward:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteSkipBackward"]) {
     remoteCenter.skipBackwardCommand.preferredIntervals = @[ @15 ];
-    [self enableCommand:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:enabled];
+    [self enableCommand:remoteCenter.skipBackwardCommand
+           withSelector:@selector(onSkipBackward:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteSeekForward"]) {
-    [self enableCommand:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:enabled];
+    [self enableCommand:remoteCenter.seekForwardCommand
+           withSelector:@selector(onSeekForward:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteSeekBackward"]) {
-    [self enableCommand:remoteCenter.seekBackwardCommand withSelector:@selector(onSeekBackward:) enabled:enabled];
+    [self enableCommand:remoteCenter.seekBackwardCommand
+           withSelector:@selector(onSeekBackward:)
+                enabled:enabled];
   } else if ([name isEqual:@"remoteChangePlaybackPosition"]) {
     [self enableCommand:remoteCenter.changePlaybackPositionCommand
            withSelector:@selector(onChangePlaybackPosition:)
@@ -286,7 +302,8 @@
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
-- (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent *)event
+- (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:
+    (MPChangePlaybackPositionCommandEvent *)event
 {
   NSDictionary *body = @{@"value" : [NSNumber numberWithDouble:event.positionTime]};
 

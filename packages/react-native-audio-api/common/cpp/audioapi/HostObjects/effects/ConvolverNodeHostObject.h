@@ -15,6 +15,6 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_GETTER_DECL(normalize);
   JSI_PROPERTY_GETTER_DECL(buffer);
   JSI_PROPERTY_SETTER_DECL(normalize);
-  JSI_PROPERTY_SETTER_DECL(buffer);
+  JSI_HOST_FUNCTION_DECL(setBuffer);
 };
 } // namespace audioapi

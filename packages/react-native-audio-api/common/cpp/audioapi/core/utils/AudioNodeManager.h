@@ -16,9 +16,8 @@ class AudioScheduledSourceNode;
 class AudioParam;
 
 #define AUDIO_NODE_MANAGER_SPSC_OPTIONS \
-  std::unique_ptr<Event>, \
-  channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
-  channels::spsc::WaitStrategy::BUSY_LOOP
+  std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
+      channels::spsc::WaitStrategy::BUSY_LOOP
 
 class AudioNodeManager {
  public:
@@ -49,8 +48,8 @@ class AudioNodeManager {
     EventPayloadType payloadType;
     EventPayload payload;
 
-    Event(Event&& other);
-    Event& operator=(Event&& other);
+    Event(Event &&other);
+    Event &operator=(Event &&other);
     Event() : type(ConnectionType::CONNECT), payloadType(EventPayloadType::NODES), payload() {}
     ~Event();
   };
@@ -78,7 +77,7 @@ class AudioNodeManager {
   void addPendingParamConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioParam> &to,
-    ConnectionType type);
+      ConnectionType type);
 
   /// @brief Adds a processing node to the manager.
   /// @param node The processing node to add.
@@ -112,11 +111,9 @@ class AudioNodeManager {
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;
   std::vector<std::shared_ptr<AudioParam>> audioParams_;
 
-  channels::spsc::Receiver<
-    AUDIO_NODE_MANAGER_SPSC_OPTIONS> receiver_;
+  channels::spsc::Receiver<AUDIO_NODE_MANAGER_SPSC_OPTIONS> receiver_;
 
-  channels::spsc::Sender<
-    AUDIO_NODE_MANAGER_SPSC_OPTIONS> sender_;
+  channels::spsc::Sender<AUDIO_NODE_MANAGER_SPSC_OPTIONS> sender_;
 
   void settlePendingConnections();
   void handleConnectEvent(std::unique_ptr<Event> event);
@@ -128,7 +125,7 @@ class AudioNodeManager {
   void prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec);
 
   template <typename U>
-  inline static bool nodeCanBeDestructed(std::shared_ptr<U> const& node);
+  inline static bool nodeCanBeDestructed(std::shared_ptr<U> const &node);
 };
 
 #undef AUDIO_NODE_MANAGER_SPSC_OPTIONS

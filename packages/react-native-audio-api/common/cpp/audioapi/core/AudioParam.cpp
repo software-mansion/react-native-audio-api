@@ -3,6 +3,8 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -18,11 +20,7 @@ AudioParam::AudioParam(
       maxValue_(maxValue),
       eventsQueue_(),
       eventScheduler_(32),
-      audioBus_(
-          std::make_shared<AudioBus>(
-              RENDER_QUANTUM_SIZE,
-              1,
-              context->getSampleRate())) {
+      audioBus_(std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
   inputBuses_.reserve(4);
   inputNodes_.reserve(4);
   startTime_ = 0;
@@ -61,17 +59,14 @@ void AudioParam::setValueAtTime(float value, double startTime) {
     }
 
     // Step function: instant change at startTime
-    auto calculateValue = [](double startTime,
-                             double /* endTime */,
-                             float startValue,
-                             float endValue,
-                             double time) {
-      if (time < startTime) {
-        return startValue;
-      }
+    auto calculateValue =
+        [](double startTime, double /* endTime */, float startValue, float endValue, double time) {
+          if (time < startTime) {
+            return startValue;
+          }
 
-      return endValue;
-    };
+          return endValue;
+        };
 
     param.updateQueue(ParamChangeEvent(
         startTime,
@@ -92,24 +87,19 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
     }
 
     // Linear interpolation function
-    auto calculateValue = [](double startTime,
-                             double endTime,
-                             float startValue,
-                             float endValue,
-                             double time) {
-      if (time < startTime) {
-        return startValue;
-      }
+    auto calculateValue =
+        [](double startTime, double endTime, float startValue, float endValue, double time) {
+          if (time < startTime) {
+            return startValue;
+          }
 
-      if (time < endTime) {
-        return static_cast<float>(
-            startValue +
-            (endValue - startValue) * (time - startTime) /
-                (endTime - startTime));
-      }
+          if (time < endTime) {
+            return static_cast<float>(
+                startValue + (endValue - startValue) * (time - startTime) / (endTime - startTime));
+          }
 
-      return endValue;
-    };
+          return endValue;
+        };
 
     param.updateQueue(ParamChangeEvent(
         param.getQueueEndTime(),
@@ -129,24 +119,20 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
     }
 
     // Exponential curve function using power law
-    auto calculateValue = [](double startTime,
-                             double endTime,
-                             float startValue,
-                             float endValue,
-                             double time) {
-      if (time < startTime) {
-        return startValue;
-      }
+    auto calculateValue =
+        [](double startTime, double endTime, float startValue, float endValue, double time) {
+          if (time < startTime) {
+            return startValue;
+          }
 
-      if (time < endTime) {
-        return static_cast<float>(
-            startValue *
-            pow(endValue / startValue,
-                (time - startTime) / (endTime - startTime)));
-      }
+          if (time < endTime) {
+            return static_cast<float>(
+                startValue *
+                pow(endValue / startValue, (time - startTime) / (endTime - startTime)));
+          }
 
-      return endValue;
-    };
+          return endValue;
+        };
 
     param.updateQueue(ParamChangeEvent(
         param.getQueueEndTime(),
@@ -159,26 +145,21 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   eventScheduler_.scheduleEvent(std::move(event));
 }
 
-void AudioParam::setTargetAtTime(
-    float target,
-    double startTime,
-    double timeConstant) {
+void AudioParam::setTargetAtTime(float target, double startTime, double timeConstant) {
   auto event = [target, startTime, timeConstant](AudioParam &param) {
     if (startTime <= param.getQueueEndTime()) {
       return;
     }
     // Exponential decay function towards target value
-    auto calculateValue =
-        [timeConstant, target](
-            double startTime, double, float startValue, float, double time) {
-          if (time < startTime) {
-            return startValue;
-          }
+    auto calculateValue = [timeConstant, target](
+                              double startTime, double, float startValue, float, double time) {
+      if (time < startTime) {
+        return startValue;
+      }
 
-          return static_cast<float>(
-              target +
-              (startValue - target) * exp(-(time - startTime) / timeConstant));
-        };
+      return static_cast<float>(
+          target + (startValue - target) * exp(-(time - startTime) / timeConstant));
+    };
     param.updateQueue(ParamChangeEvent(
         startTime,
         startTime, // SetTarget events have infinite duration conceptually
@@ -202,31 +183,25 @@ void AudioParam::setValueCurveAtTime(
       return;
     }
 
-    auto calculateValue = [values, length](
-                              double startTime,
-                              double endTime,
-                              float startValue,
-                              float endValue,
-                              double time) {
-      if (time < startTime) {
-        return startValue;
-      }
+    auto calculateValue =
+        [values, length](
+            double startTime, double endTime, float startValue, float endValue, double time) {
+          if (time < startTime) {
+            return startValue;
+          }
 
-      if (time < endTime) {
-        // Calculate position in the array based on time progress
-        auto k = static_cast<int>(std::floor(
-            static_cast<double>(length - 1) / (endTime - startTime) *
-            (time - startTime)));
-        // Calculate interpolation factor between adjacent array elements
-        auto factor = static_cast<float>(
-            (time - startTime) * static_cast<double>(length - 1) /
-                (endTime - startTime) -
-            k);
-        return dsp::linearInterpolate(values->data(), k, k + 1, factor);
-      }
+          if (time < endTime) {
+            // Calculate position in the array based on time progress
+            auto k = static_cast<int>(std::floor(
+                static_cast<double>(length - 1) / (endTime - startTime) * (time - startTime)));
+            // Calculate interpolation factor between adjacent array elements
+            auto factor = static_cast<float>(
+                (time - startTime) * static_cast<double>(length - 1) / (endTime - startTime) - k);
+            return dsp::linearInterpolate(values->data(), k, k + 1, factor);
+          }
 
-      return endValue;
-    };
+          return endValue;
+        };
 
     param.updateQueue(ParamChangeEvent(
         startTime,
@@ -243,9 +218,8 @@ void AudioParam::setValueCurveAtTime(
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
-  eventScheduler_.scheduleEvent([cancelTime](AudioParam &param) {
-    param.eventsQueue_.cancelScheduledValues(cancelTime);
-  });
+  eventScheduler_.scheduleEvent(
+      [cancelTime](AudioParam &param) { param.eventsQueue_.cancelScheduledValues(cancelTime); });
 }
 
 void AudioParam::cancelAndHoldAtTime(double cancelTime) {
@@ -280,9 +254,7 @@ std::shared_ptr<AudioBus> AudioParam::calculateInputs(
   return processingBus;
 }
 
-std::shared_ptr<AudioBus> AudioParam::processARateParam(
-    int framesToProcess,
-    double time) {
+std::shared_ptr<AudioBus> AudioParam::processARateParam(int framesToProcess, double time) {
   processScheduledEvents();
   auto processingBus = calculateInputs(audioBus_, framesToProcess);
 
@@ -313,8 +285,7 @@ void AudioParam::processInputs(
     const std::shared_ptr<AudioBus> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end;
-       ++it) {
+  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
     auto inputNode = *it;
     assert(inputNode != nullptr);
 
@@ -323,19 +294,16 @@ void AudioParam::processInputs(
     }
 
     // Process this input node and store its output bus
-    auto inputBus = inputNode->processAudio(
-        outputBus, framesToProcess, checkIsAlreadyProcessed);
+    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
     inputBuses_.emplace_back(inputBus);
   }
 }
 
-void AudioParam::mixInputsBuses(
-    const std::shared_ptr<AudioBus> &processingBus) {
+void AudioParam::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
   assert(processingBus != nullptr);
 
   // Sum all input buses into the processing bus
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end;
-       ++it) {
+  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
     processingBus->sum(it->get(), ChannelInterpretation::SPEAKERS);
   }
 

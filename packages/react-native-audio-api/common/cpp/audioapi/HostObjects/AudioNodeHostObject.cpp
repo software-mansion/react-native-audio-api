@@ -2,11 +2,11 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/AudioNode.h>
+#include <memory>
 
 namespace audioapi {
 
-AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node)
-    : node_(node) {
+AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node) : node_(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioNodeHostObject, numberOfInputs),
       JSI_EXPORT_PROPERTY_GETTER(AudioNodeHostObject, numberOfOutputs),
@@ -36,8 +36,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCountMode) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
-  return jsi::String::createFromUtf8(
-      runtime, node_->getChannelInterpretation());
+  return jsi::String::createFromUtf8(runtime, node_->getChannelInterpretation());
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
 #include <audioapi/core/sources/AudioBuffer.h>
+#include <audioapi/jsi/JsiHostObject.h>
 
 #include <jsi/jsi.h>
 #include <cstddef>
@@ -16,22 +16,20 @@ class AudioBufferHostObject : public JsiHostObject {
  public:
   std::shared_ptr<AudioBuffer> audioBuffer_;
 
-  explicit AudioBufferHostObject(
-      const std::shared_ptr<AudioBuffer> &audioBuffer);
+  explicit AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer);
   AudioBufferHostObject(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject &operator=(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject(AudioBufferHostObject &&other) noexcept;
   AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept {
     if (this != &other) {
-        JsiHostObject::operator=(std::move(other));
-        audioBuffer_ = std::move(other.audioBuffer_);
+      JsiHostObject::operator=(std::move(other));
+      audioBuffer_ = std::move(other.audioBuffer_);
     }
     return *this;
   }
 
   [[nodiscard]] inline size_t getSizeInBytes() const {
-    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() *
-           sizeof(float);
+    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() * sizeof(float);
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

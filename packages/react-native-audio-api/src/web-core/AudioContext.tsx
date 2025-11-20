@@ -27,7 +27,7 @@ export default class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor(options?: AudioContextOptions, _initSuspended: boolean = false) {
+  constructor(options?: AudioContextOptions) {
     if (
       options &&
       options.sampleRate &&

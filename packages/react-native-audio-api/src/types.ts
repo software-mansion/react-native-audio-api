@@ -31,7 +31,6 @@ export interface PeriodicWaveConstraints {
 
 export interface AudioContextOptions {
   sampleRate?: number;
-  initSuspended?: boolean;
 }
 
 export interface OfflineAudioContextOptions {

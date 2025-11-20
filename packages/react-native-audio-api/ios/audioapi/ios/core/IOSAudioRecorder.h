@@ -2,7 +2,7 @@
 
 #ifdef __OBJC__ // when compiled as Objective-C++
 #import <NativeAudioRecorder.h>
-#else // when compiled as C++
+#else  // when compiled as C++
 typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 

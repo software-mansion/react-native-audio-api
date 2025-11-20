@@ -13,7 +13,6 @@ import { useGainAdsrPlayground } from '@site/src/components/InteractivePlaygroun
 # AudioBufferSourceNode
 
 The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
-The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
 [`AudioBuffer`](/docs/sources/audio-buffer). You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
@@ -39,6 +38,14 @@ interface AudioBufferBaseSourceNodeOptions {
   pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
 }
 ```
+
+:::caution
+The pitch correction algorithm introduces processing latency.
+As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
+For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+
+If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node)
+:::
 
 ## Example
 
@@ -99,6 +106,7 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 | `InvalidStateError` | If node has already been started once. |
 
 #### Returns `undefined`.
+
 
 ## Events
 

@@ -124,7 +124,8 @@
     self.sessionOptions = sessionOptions;
   }
 
-  if (self.allowHapticsAndSystemSoundsDuringRecording != allowHapticsAndSystemSoundsDuringRecording) {
+  if (self.allowHapticsAndSystemSoundsDuringRecording !=
+      allowHapticsAndSystemSoundsDuringRecording) {
     self.hasDirtySettings = true;
     self.allowHapticsAndSystemSoundsDuringRecording = allowHapticsAndSystemSoundsDuringRecording;
   }
@@ -167,7 +168,8 @@
 - (bool)configureAudioSession
 {
   if (!self.shouldManageSession) {
-    NSLog(@"[AudioSessionManager] Skipping AVAudioSession configuration, shouldManageSession is false");
+    NSLog(
+        @"[AudioSessionManager] Skipping AVAudioSession configuration, shouldManageSession is false");
     return true;
   }
 
@@ -184,7 +186,10 @@
 
   NSError *error = nil;
 
-  [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
+  [self.audioSession setCategory:self.sessionCategory
+                            mode:self.sessionMode
+                         options:self.sessionOptions
+                           error:&error];
 
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
@@ -192,11 +197,14 @@
   }
 
   if (@available(iOS 13.0, *)) {
-    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSystemSoundsDuringRecording
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:
+                           self.allowHapticsAndSystemSoundsDuringRecording
                                                                error:&error];
 
     if (error != nil) {
-      NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
+      NSLog(
+          @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+          [error debugDescription]);
     }
   }
 
@@ -226,10 +234,12 @@
   self.hasDirtySettings = false;
 }
 
-- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject
 {
   id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
-  // if there is no entry NSMicrophoneUsageDescription calling requestRecordPermission will quit an app
+  // if there is no entry NSMicrophoneUsageDescription calling
+  // requestRecordPermission will quit an app
   if (value == nil) {
     reject(
         nil,
@@ -256,7 +266,8 @@
   }
 }
 
-- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
 {
   if (@available(iOS 17, *)) {
     NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
@@ -326,10 +337,14 @@
 {
   NSMutableDictionary *devicesInfo = [[NSMutableDictionary alloc] init];
 
-  [devicesInfo setValue:[self parseDeviceList:[self.audioSession availableInputs]] forKey:@"availableInputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] inputs]] forKey:@"currentInputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"availableOutputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"currentOutputs"];
+  [devicesInfo setValue:[self parseDeviceList:[self.audioSession availableInputs]]
+                 forKey:@"availableInputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] inputs]]
+                 forKey:@"currentInputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]]
+                 forKey:@"availableOutputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]]
+                 forKey:@"currentOutputs"];
 
   resolve(devicesInfo);
 }

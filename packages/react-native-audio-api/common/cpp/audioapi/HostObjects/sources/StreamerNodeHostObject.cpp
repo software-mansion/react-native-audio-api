@@ -3,11 +3,11 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/core/sources/StreamerNode.h>
+#include <memory>
 
 namespace audioapi {
 
-StreamerNodeHostObject::StreamerNodeHostObject(
-    const std::shared_ptr<StreamerNode> &node)
+StreamerNodeHostObject::StreamerNodeHostObject(const std::shared_ptr<StreamerNode> &node)
     : AudioScheduledSourceNodeHostObject(node) {
   addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize));
 }

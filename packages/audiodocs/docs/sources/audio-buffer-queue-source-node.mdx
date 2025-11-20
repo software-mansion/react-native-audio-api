@@ -22,6 +22,12 @@ interface AudioBufferBaseSourceNodeOptions {
 }
 ```
 
+:::caution
+The pitch correction algorithm introduces processing latency.
+As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
+For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+:::
+
 ## Example
 
 ```tsx
@@ -39,8 +45,8 @@ function App() {
     const audioBufferQueue = audioContextRef.current.createBufferQueueSource();
     const buffer1 = ...; // Load your audio buffer here
     const buffer2 = ...; // Load another audio buffer if needed
-    audioBufferQueue.enqueueBuffer(buffer1, false);
-    audioBufferQueue.enqueueBuffer(buffer2, true); // Last buffer should be marked as is
+    audioBufferQueue.enqueueBuffer(buffer1);
+    audioBufferQueue.enqueueBuffer(buffer2);
     audioBufferQueue.connect(audioContextRef.current.destination);
     audioBufferQueue.start(audioContextRef.current.currentTime);
 }
@@ -80,6 +86,16 @@ Removes a buffer from the queue. Note that `onEnded` event will not be fired for
 Removes all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
 
 #### Returns `undefined`.
+
+### `start` <Overridden /> {#start}
+
+Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](/docs/sources/audio-buffer), or starts to play immediately.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to 0, the node starts playing immediately. <br /> Default: `0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
+
 
 ### `pause`
 

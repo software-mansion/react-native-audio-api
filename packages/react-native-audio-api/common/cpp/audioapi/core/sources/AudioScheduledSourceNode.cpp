@@ -6,6 +6,14 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#if !RN_AUDIO_API_TEST
+#include <audioapi/core/AudioContext.h>
+#endif
+
+#include <algorithm>
+#include <limits>
+#include <memory>
+
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
@@ -18,6 +26,12 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
 }
 
 void AudioScheduledSourceNode::start(double when) {
+#if !RN_AUDIO_API_TEST
+  if (auto context = dynamic_cast<AudioContext *>(context_)) {
+    context->start();
+  }
+#endif
+
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
 }
@@ -47,8 +61,7 @@ bool AudioScheduledSourceNode::isStopScheduled() {
 }
 
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
-  auto oldCallbackId =
-      onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  auto oldCallbackId = onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
   if (oldCallbackId != 0) {
     audioEventHandlerRegistry_->unregisterHandler("ended", oldCallbackId);
@@ -73,12 +86,9 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess - 1;
 
-  size_t startFrame =
-      std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
-  size_t stopFrame = stopTime_ == -1.0
-      ? std::numeric_limits<size_t>::max()
-      : dsp::timeToSampleFrame(stopTime_, sampleRate);
-
+  size_t startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
+  size_t stopFrame = stopTime_ == -1.0 ? std::numeric_limits<size_t>::max()
+                                       : dsp::timeToSampleFrame(stopTime_, sampleRate);
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
@@ -157,8 +167,7 @@ void AudioScheduledSourceNode::disable() {
 
   auto onEndedCallbackId = onEndedCallbackId_.load(std::memory_order_acquire);
   if (onEndedCallbackId != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "ended", onEndedCallbackId, {});
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody("ended", onEndedCallbackId, {});
   }
 }
 

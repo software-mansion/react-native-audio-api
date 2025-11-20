@@ -5,6 +5,8 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace audioapi {
 
@@ -43,8 +45,8 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
       outputChannels,
       0x1);
 
-  int maxOutputFrames = stretch_output_capacity(
-      stretcher, static_cast<int>(numFrames), 1 / playbackSpeed);
+  int maxOutputFrames =
+      stretch_output_capacity(stretcher, static_cast<int>(numFrames), 1 / playbackSpeed);
   std::vector<int16_t> stretchedBuffer(maxOutputFrames * outputChannels);
 
   int outputFrames = stretch_samples(
@@ -54,13 +56,11 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
       stretchedBuffer.data(),
       1 / playbackSpeed);
 
-  outputFrames +=
-      stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
+  outputFrames += stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
   stretchedBuffer.resize(outputFrames * outputChannels);
   stretch_deinit(stretcher);
 
-  auto audioBus =
-      std::make_shared<AudioBus>(outputFrames, outputChannels, sampleRate);
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, outputChannels, sampleRate);
 
   for (int ch = 0; ch < outputChannels; ++ch) {
     auto channelData = audioBus->getChannel(ch)->getData();

@@ -1,11 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cstddef>
-#include <cstring>
 
 namespace audioapi {
 
@@ -28,11 +28,8 @@ class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
       size_t destinationLength,
       int channelNumber,
       size_t startInChannel) const;
-  void copyToChannel(
-      const float *source,
-      size_t sourceLength,
-      int channelNumber,
-      size_t startInChannel);
+  void
+  copyToChannel(const float *source, size_t sourceLength, int channelNumber, size_t startInChannel);
 
  private:
   friend class AudioBufferSourceNode;

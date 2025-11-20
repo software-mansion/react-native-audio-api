@@ -1,11 +1,11 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <memory>
 
 namespace audioapi {
 
-AnalyserNodeHostObject::AnalyserNodeHostObject(
-    const std::shared_ptr<AnalyserNode> &node)
+AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<AnalyserNode> &node)
     : AudioNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
@@ -90,10 +90,8 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -104,10 +102,8 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -118,10 +114,8 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
@@ -132,10 +126,8 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteTimeDomainData) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 

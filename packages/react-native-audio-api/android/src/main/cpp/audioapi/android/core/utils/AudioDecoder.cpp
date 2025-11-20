@@ -15,14 +15,16 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif
 
+#include <memory>
+#include <string>
+#include <vector>
+
 namespace audioapi {
 
 // Decoding audio in fixed-size chunks because total frame count can't be
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
-std::vector<float> AudioDecoder::readAllPcmFrames(
-    ma_decoder &decoder,
-    int outputChannels) {
+std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outputChannels) {
   std::vector<float> buffer;
   std::vector<float> temp(CHUNK_SIZE * outputChannels);
   ma_uint64 outFramesRead = 0;
@@ -30,16 +32,12 @@ std::vector<float> AudioDecoder::readAllPcmFrames(
 #ifndef AUDIO_API_TEST_SUITE
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
-    ma_decoder_read_pcm_frames(
-        &decoder, temp.data(), CHUNK_SIZE, &tempFramesDecoded);
+    ma_decoder_read_pcm_frames(&decoder, temp.data(), CHUNK_SIZE, &tempFramesDecoded);
     if (tempFramesDecoded == 0) {
       break;
     }
 
-    buffer.insert(
-        buffer.end(),
-        temp.data(),
-        temp.data() + tempFramesDecoded * outputChannels);
+    buffer.insert(buffer.end(), temp.data(), temp.data() + tempFramesDecoded * outputChannels);
     outFramesRead += tempFramesDecoded;
   }
 
@@ -59,8 +57,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   }
 
   auto outputFrames = buffer.size() / outputChannels;
-  auto audioBus = std::make_shared<AudioBus>(
-      outputFrames, outputChannels, outputSampleRate);
+  auto audioBus = std::make_shared<AudioBus>(outputFrames, outputChannels, outputSampleRate);
 
   for (int ch = 0; ch < outputChannels; ++ch) {
     auto channelData = audioBus->getChannel(ch)->getData();
@@ -76,27 +73,21 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-    auto buffer =
-        ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
+    auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       __android_log_print(
-          ANDROID_LOG_ERROR,
-          "AudioDecoder",
-          "Failed to decode with FFmpeg: %s",
-          path.c_str());
+          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg: %s", path.c_str());
       return nullptr;
     }
     return buffer;
   }
   ma_decoder decoder;
-  ma_decoder_config config =
-      ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
+  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
   ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
-  config.customBackendCount =
-      sizeof(customBackends) / sizeof(customBackends[0]);
+  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
   if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
     __android_log_print(
@@ -113,46 +104,36 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
 
   std::vector<float> buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromFloatBuffer(
-      buffer, outputSampleRate, outputChannels);
+  return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 #else
   return nullptr;
 #endif
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
-    const void *data,
-    size_t size,
-    float sampleRate) {
+std::shared_ptr<AudioBuffer>
+AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
-  if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
-      format == AudioFormat::AAC) {
-    auto buffer = ffmpegdecoder::decodeWithMemoryBlock(
-        data, size, static_cast<int>(sampleRate));
+  if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
+    auto buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
-      __android_log_print(
-          ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
+      __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
       return nullptr;
     }
     return buffer;
   }
   ma_decoder decoder;
-  ma_decoder_config config =
-      ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
+  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
 
   ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
-  config.customBackendCount =
-      sizeof(customBackends) / sizeof(customBackends[0]);
+  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
   if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
     __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for memory block");
+        ANDROID_LOG_ERROR, "AudioDecoder", "Failed to initialize decoder for memory block");
     ma_decoder_uninit(&decoder);
     return nullptr;
   }
@@ -162,8 +143,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(
 
   std::vector<float> buffer = readAllPcmFrames(decoder, outputChannels);
   ma_decoder_uninit(&decoder);
-  return makeAudioBufferFromFloatBuffer(
-      buffer, outputSampleRate, outputChannels);
+  return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 #else
   return nullptr;
 #endif
@@ -176,11 +156,9 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
     bool interleaved) {
   auto decodedData = base64_decode(data, false);
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
-  size_t numFramesDecoded =
-      decodedData.size() / (inputChannelCount * sizeof(int16_t));
+  size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));
 
-  auto audioBus = std::make_shared<AudioBus>(
-      numFramesDecoded, inputChannelCount, inputSampleRate);
+  auto audioBus = std::make_shared<AudioBus>(numFramesDecoded, inputChannelCount, inputSampleRate);
 
   for (int ch = 0; ch < inputChannelCount; ++ch) {
     auto channelData = audioBus->getChannel(ch)->getData();

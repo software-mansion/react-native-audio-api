@@ -27,7 +27,7 @@ using namespace worklets;
 
 #if defined(RCT_NEW_ARCH_ENABLED)
 // nothing
-#else // defined(RCT_NEW_ARCH_ENABLED)
+#else  // defined(RCT_NEW_ARCH_ENABLED)
 @interface RCTBridge (RCTTurboModule)
 - (std::shared_ptr<facebook::react::CallInvoker>)jsCallInvoker;
 - (void)_tryAndHandleError:(dispatch_block_t)block;
@@ -73,7 +73,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
 #if defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = _callInvoker.callInvoker;
-#else // defined(RCT_NEW_ARCH_ENABLED)
+#else  // defined(RCT_NEW_ARCH_ENABLED)
   auto jsCallInvoker = self.bridge.jsCallInvoker;
 #endif // defined(RCT_NEW_ARCH_ENABLED)
 
@@ -103,7 +103,8 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
   }
 
   // Get the actual JSI Runtime reference
-  audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
+  audioapi::AudioAPIModuleInstaller::injectJSIBindings(
+      jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
 #else
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
 #endif
@@ -118,18 +119,19 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
 }
 
 RCT_EXPORT_METHOD(
-    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
-        reject)
+    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  if (!self.audioSessionManager.shouldManageSession) {
-    [self.audioSessionManager setShouldManageSession:true];
-  }
-  if ([self.audioSessionManager setActive:enabled]) {
-    resolve(@"true");
-    return;
-  }
-
-  resolve(@"false");
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    if (!self.audioSessionManager.shouldManageSession) {
+      [self.audioSessionManager setShouldManageSession:true];
+    }
+    if ([self.audioSessionManager setActive:enabled]) {
+      resolve(@"true");
+      return;
+    }
+    resolve(@"false");
+  });
 }
 
 RCT_EXPORT_METHOD(
@@ -139,7 +141,10 @@ RCT_EXPORT_METHOD(
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
   }
-  [self.audioSessionManager setAudioSessionOptions:category mode:mode options:options allowHaptics:allowHaptics];
+  [self.audioSessionManager setAudioSessionOptions:category
+                                              mode:mode
+                                           options:options
+                                      allowHaptics:allowHaptics];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
@@ -158,16 +163,21 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
 }
 
 RCT_EXPORT_METHOD(
-    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)
-        reject)
+    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
+        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
-    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
+        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(
@@ -190,9 +200,12 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    getDevicesInfo : (nonnull RCTPromiseResolveBlock)
+        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
-  [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager getDevicesInfo:resolve reject:reject];
+  });
 }
 
 RCT_EXPORT_METHOD(disableSessionManagement)
@@ -311,6 +324,11 @@ RCT_EXPORT_METHOD(
   if (_eventHandler != nullptr) {
     _eventHandler->invokeHandlerWithEventBody(name, body);
   }
+}
+
+- (dispatch_queue_t)methodQueue
+{
+  return dispatch_queue_create("swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
 }
 
 @end

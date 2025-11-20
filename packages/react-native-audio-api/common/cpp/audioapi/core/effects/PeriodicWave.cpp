@@ -29,6 +29,9 @@
 #include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
+#include <memory>
+#include <vector>
 
 constexpr unsigned NumberOfOctaveBands = 3;
 constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
@@ -38,13 +41,12 @@ constexpr float interpolate3Point = 0.16;
 namespace audioapi {
 PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
     : sampleRate_(sampleRate), disableNormalization_(disableNormalization) {
-  numberOfRanges_ = static_cast<int>(round(
-      NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))));
+  numberOfRanges_ = static_cast<int>(
+      round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))));
   auto nyquistFrequency = sampleRate_ / 2;
-  lowestFundamentalFrequency_ = static_cast<float>(nyquistFrequency) /
-      static_cast<float>(getMaxNumberOfPartials());
-  scale_ = static_cast<float>(getPeriodicWaveSize()) /
-      static_cast<float>(sampleRate_);
+  lowestFundamentalFrequency_ =
+      static_cast<float>(nyquistFrequency) / static_cast<float>(getMaxNumberOfPartials());
+  scale_ = static_cast<float>(getPeriodicWaveSize()) / static_cast<float>(sampleRate_);
   bandLimitedTables_ = new float *[numberOfRanges_];
 
   fft_ = std::make_unique<dsp::FFT>(getPeriodicWaveSize());
@@ -91,22 +93,14 @@ float PeriodicWave::getScale() const {
   return scale_;
 }
 
-float PeriodicWave::getSample(
-    float fundamentalFrequency,
-    float phase,
-    float phaseIncrement) {
+float PeriodicWave::getSample(float fundamentalFrequency, float phase, float phaseIncrement) {
   float *lowerWaveData = nullptr;
   float *higherWaveData = nullptr;
 
-  auto interpolationFactor = getWaveDataForFundamentalFrequency(
-      fundamentalFrequency, lowerWaveData, higherWaveData);
+  auto interpolationFactor =
+      getWaveDataForFundamentalFrequency(fundamentalFrequency, lowerWaveData, higherWaveData);
 
-  return doInterpolation(
-      phase,
-      phaseIncrement,
-      interpolationFactor,
-      lowerWaveData,
-      higherWaveData);
+  return doInterpolation(phase, phaseIncrement, interpolationFactor, lowerWaveData, higherWaveData);
 }
 
 int PeriodicWave::getMaxNumberOfPartials() const {
@@ -122,7 +116,7 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
 
   // The very top range will have all the partials culled.
   int numberOfPartials =
-      int(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
+      static_cast<int>(static_cast<float>(getMaxNumberOfPartials()) * cullingScale);
 
   return numberOfPartials;
 }
@@ -230,8 +224,7 @@ void PeriodicWave::createBandLimitedTables(
     fft_->doInverseFFT(complexFFTData, bandLimitedTables_[rangeIndex]);
 
     if (!disableNormalization_ && rangeIndex == 0) {
-      float maxValue =
-          dsp::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
+      float maxValue = dsp::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
       if (maxValue != 0) {
         normalizationFactor = 1.0f / maxValue;
       }
@@ -254,20 +247,17 @@ float PeriodicWave::getWaveDataForFundamentalFrequency(
 
   // calculating lower and higher range index for the given fundamental
   // frequency.
-  float ratio = fundamentalFrequency > 0
-      ? fundamentalFrequency / lowestFundamentalFrequency_
-      : 0.5f;
+  float ratio =
+      fundamentalFrequency > 0 ? fundamentalFrequency / lowestFundamentalFrequency_ : 0.5f;
   float centsAboveLowestFrequency = log2f(ratio) * 1200;
 
   float pitchRange = 1 + centsAboveLowestFrequency / CentsPerRange;
 
-  pitchRange =
-      std::clamp(pitchRange, 0.0f, static_cast<float>(numberOfRanges_ - 1));
+  pitchRange = std::clamp(pitchRange, 0.0f, static_cast<float>(numberOfRanges_ - 1));
 
   int lowerRangeIndex = static_cast<int>(pitchRange);
-  int higherRangeIndex = lowerRangeIndex < numberOfRanges_ - 1
-      ? lowerRangeIndex + 1
-      : lowerRangeIndex;
+  int higherRangeIndex =
+      lowerRangeIndex < numberOfRanges_ - 1 ? lowerRangeIndex + 1 : lowerRangeIndex;
 
   // get the wave data for the lower and higher range index.
   lowerWaveData = bandLimitedTables_[lowerRangeIndex];
@@ -297,8 +287,7 @@ float PeriodicWave::doInterpolation(
 
     for (int i = 0; i < 2; i++) {
       indices[i] = (index + i) &
-          (getPeriodicWaveSize() -
-           1); // more efficient alternative to % getPeriodicWaveSize()
+          (getPeriodicWaveSize() - 1); // more efficient alternative to % getPeriodicWaveSize()
     }
 
     auto lowerWaveDataSample1 = lowerWaveData[indices[0]];
@@ -306,10 +295,8 @@ float PeriodicWave::doInterpolation(
     auto higherWaveDataSample1 = higherWaveData[indices[0]];
     auto higherWaveDataSample2 = higherWaveData[indices[1]];
 
-    lowerWaveDataSample =
-        (1 - factor) * lowerWaveDataSample1 + factor * lowerWaveDataSample2;
-    higherWaveDataSample =
-        (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
+    lowerWaveDataSample = (1 - factor) * lowerWaveDataSample1 + factor * lowerWaveDataSample2;
+    higherWaveDataSample = (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
   } else if (phaseIncrement >= interpolate3Point) { // 3-point Lagrange
                                                     // interpolation
     int indices[3];

@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
@@ -23,8 +24,7 @@ class ConstantSourceTest : public ::testing::Test {
 
 class TestableConstantSourceNode : public ConstantSourceNode {
  public:
-  explicit TestableConstantSourceNode(BaseAudioContext *context)
-      : ConstantSourceNode(context) {}
+  explicit TestableConstantSourceNode(BaseAudioContext *context) : ConstantSourceNode(context) {}
 
   void setOffsetParam(float value) {
     getOffsetParam()->setValue(value);
@@ -45,10 +45,8 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
-  auto constantSource =
-      std::make_shared<TestableConstantSourceNode>(context.get());
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto constantSource = std::make_shared<TestableConstantSourceNode>(context.get());
   constantSource->start(context->getCurrentTime());
   auto resultBus = constantSource->processNode(bus, FRAMES_TO_PROCESS);
 

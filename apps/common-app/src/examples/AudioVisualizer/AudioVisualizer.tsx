@@ -131,16 +131,14 @@ const AudioVisualizer: React.FC = () => {
         }
       />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
-      >
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
         <View
           style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: layout.spacing * 2,
-          }}
-        >
+          }}>
           <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}

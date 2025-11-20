@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <cmath>
 
 namespace audioapi::dsp {
 

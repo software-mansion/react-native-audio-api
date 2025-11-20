@@ -25,6 +25,7 @@
 
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -47,8 +48,7 @@ void multiplyByScalar(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsmul(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsmul(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void addScalar(
@@ -56,8 +56,7 @@ void addScalar(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsadd(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsadd(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void add(
@@ -65,14 +64,7 @@ void add(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vadd(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vadd(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void subtract(
@@ -80,14 +72,7 @@ void subtract(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsub(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsub(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void multiply(
@@ -95,19 +80,10 @@ void multiply(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vmul(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vmul(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   float maximumValue = 0;
   vDSP_maxmgv(inputVector, 1, &maximumValue, numberOfElementsToProcess);
   return maximumValue;
@@ -118,15 +94,7 @@ void multiplyByScalarThenAddToOutput(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsma(
-      inputVector,
-      1,
-      &scalar,
-      outputVector,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 #else
@@ -508,15 +476,15 @@ void multiply(
   bool source2Aligned = is16ByteAligned(inputVector2);
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT(loadInstr, storeInstr)           \
-  while (outputVector < endP) {                    \
-    pSource1 = _mm_load_ps(inputVector1);          \
+#define SSE2_MULT(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource1 = _mm_load_ps(inputVector1); \
     pSource2 = _mm_##loadInstr##_ps(inputVector2); \
-    dest = _mm_mul_ps(pSource1, pSource2);         \
-    _mm_##storeInstr##_ps(outputVector, dest);     \
-    inputVector1 += 4;                             \
-    inputVector2 += 4;                             \
-    outputVector += 4;                             \
+    dest = _mm_mul_ps(pSource1, pSource2); \
+    _mm_##storeInstr##_ps(outputVector, dest); \
+    inputVector1 += 4; \
+    inputVector2 += 4; \
+    outputVector += 4; \
   }
 
   if (source2Aligned && destAligned) // Both aligned.
@@ -552,9 +520,7 @@ void multiply(
   }
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
   float max = 0;
 
@@ -647,15 +613,15 @@ void multiplyByScalarThenAddToOutput(
 
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT_ADD(loadInstr, storeInstr)   \
-  while (outputVector < endP) {                \
-    pSource = _mm_load_ps(inputVector);        \
-    temp = _mm_mul_ps(pSource, mScale);        \
+#define SSE2_MULT_ADD(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource = _mm_load_ps(inputVector); \
+    temp = _mm_mul_ps(pSource, mScale); \
     dest = _mm_##loadInstr##_ps(outputVector); \
-    dest = _mm_add_ps(dest, temp);             \
+    dest = _mm_add_ps(dest, temp); \
     _mm_##storeInstr##_ps(outputVector, dest); \
-    inputVector += 4;                          \
-    outputVector += 4;                         \
+    inputVector += 4; \
+    outputVector += 4; \
   }
 
   if (destAligned)

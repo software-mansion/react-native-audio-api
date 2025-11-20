@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
@@ -23,8 +24,7 @@ class StereoPannerTest : public ::testing::Test {
 
 class TestableStereoPannerNode : public StereoPannerNode {
  public:
-  explicit TestableStereoPannerNode(BaseAudioContext *context)
-      : StereoPannerNode(context) {}
+  explicit TestableStereoPannerNode(BaseAudioContext *context) : StereoPannerNode(context) {}
 
   void setPanParam(float value) {
     getPanParam()->setValue(value);
@@ -48,8 +48,7 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   auto panNode = std::make_shared<TestableStereoPannerNode>(context.get());
   panNode->setPanParam(PAN_VALUE);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
   }
@@ -76,8 +75,7 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
   auto panNode = std::make_shared<TestableStereoPannerNode>(context.get());
   panNode->setPanParam(PAN_VALUE);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
     (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;
@@ -105,8 +103,7 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
   auto panNode = std::make_shared<TestableStereoPannerNode>(context.get());
   panNode->setPanParam(PAN_VALUE);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
     (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;

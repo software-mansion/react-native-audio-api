@@ -13,8 +13,7 @@ class BiquadFilterNode;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit BiquadFilterNodeHostObject(
-      const std::shared_ptr<BiquadFilterNode> &node);
+  explicit BiquadFilterNodeHostObject(const std::shared_ptr<BiquadFilterNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

@@ -1,0 +1,28 @@
+---
+sidebar_position: 3
+---
+
+# Best Practices
+
+When working with audio in a web or mobile application, following best practices ensures optimal performance,
+user experience, and maintainability. Here are some key best practices to consider when using the React Native Audio API:
+
+## [**AudioContext**](/docs/core/audio-context) Management
+
+- **Single Audio Context**: Create one instance of `AudioContext` in order to easily and efficiently manage the audio layer's state in your application.
+  Creating many instances could lead to undefined behavior. Same of them could still be in [`running`](/docs/core/base-audio-context#contextstate) state while others could be
+  [`suspended`](/docs/core/base-audio-context#contextstate) or [`closed`](/docs/core/base-audio-context#contextstate), if you do not manage them by yourself.
+
+- **Clean up**: Always close the `AudioContext` using the [`close()`](/docs/core/audio-context#close) method when it is no longer needed.
+  This releases system audio resources and prevents memory leaks.
+
+- **Suspend when not in use**: Suspend the `AudioContext` when audio is not needed to save system resources and battery life, especially on mobile devices.
+  Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
+  Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to [`state_paused`](/docs/system/audio-manager#lockscreeninfo).
+
+## React hooks vs React Native Audio API
+
+- **Create singleton class to manage audio layer**: Instead of storing `AudioContext` or nodes directly in your React components using `useState` or `useRef`,
+  consider creating a singleton class that encapsulates the audio layer logic using React Native Audio API.
+  This class can manage the lifecycle of the `AudioContext`, handle audio nodes, and provide methods for playing, pausing, and stopping audio.
+  This approach promotes separation of concerns and makes it easier to manage audio state across your application.

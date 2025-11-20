@@ -1,12 +1,12 @@
 #pragma once
 
-#include "BaseAudioContext.h"
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include "BaseAudioContext.h"
 
-#include <mutex>
 #include <map>
-#include <unordered_map>
 #include <memory>
+#include <mutex>
+#include <unordered_map>
 
 namespace audioapi {
 
@@ -15,11 +15,16 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
+  explicit OfflineAudioContext(
+      int numberOfChannels,
+      size_t length,
+      float sampleRate,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
   void resume();
-  void suspend(double when, const OfflineAudioContextSuspendCallback& callback);
+  void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
 
   void startRendering(OfflineAudioContextResultCallback callback);
 

@@ -1,23 +1,27 @@
 #pragma once
 
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
+#include <audioapi/core/utils/AudioParamEventQueue.h>
 #include <audioapi/core/utils/ParamChangeEvent.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/core/utils/AudioParamEventQueue.h>
 
-#include <cstddef>
-#include <utility>
-#include <memory>
-#include <vector>
-#include <unordered_set>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
+#include <cstddef>
+#include <memory>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 
 class AudioParam {
  public:
-  explicit AudioParam(float defaultValue, float minValue, float maxValue, BaseAudioContext *context);
+  explicit AudioParam(
+      float defaultValue,
+      float minValue,
+      float maxValue,
+      BaseAudioContext *context);
 
   /// JS-Thread only methods
   /// These methods are called only from HostObjects invoked on the JS thread.
@@ -72,15 +76,14 @@ class AudioParam {
   // JS-Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
   // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
-  void addInputNode(AudioNode* node);
+  void addInputNode(AudioNode *node);
 
   // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
-  void removeInputNode(AudioNode* node);
+  void removeInputNode(AudioNode *node);
 
   // Audio-Thread only
   std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
@@ -141,9 +144,14 @@ class AudioParam {
     eventsQueue_.pushBack(std::move(event));
   }
   float getValueAtTime(double time);
-  void processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
-  std::shared_ptr<AudioBus> calculateInputs(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess);
+  void processInputs(
+      const std::shared_ptr<AudioBus> &outputBus,
+      int framesToProcess,
+      bool checkIsAlreadyProcessed);
+  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
+  std::shared_ptr<AudioBus> calculateInputs(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess);
 };
 
 } // namespace audioapi

@@ -256,7 +256,9 @@ static AudioEngine *_sharedInstance = nil;
 
   // AVAudioEngine state
   NSLog(@"➡️ engine.isRunning: %@", self.audioEngine.isRunning ? @"YES" : @"NO");
-  NSLog(@"➡️ engine.isInManualRenderingMode: %@", self.audioEngine.isInManualRenderingMode ? @"YES" : @"NO");
+  NSLog(
+      @"➡️ engine.isInManualRenderingMode: %@",
+      self.audioEngine.isInManualRenderingMode ? @"YES" : @"NO");
 
   // Session state
   NSLog(@"🎚️ Session category: %@", session.category);

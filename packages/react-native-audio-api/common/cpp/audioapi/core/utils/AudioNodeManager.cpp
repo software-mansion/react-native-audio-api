@@ -4,6 +4,9 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
 #include <audioapi/core/utils/Locker.h>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -117,8 +120,7 @@ void AudioNodeManager::preProcessGraph() {
   prepareNodesForDestruction(processingNodes_);
 }
 
-void AudioNodeManager::addProcessingNode(
-    const std::shared_ptr<AudioNode> &node) {
+void AudioNodeManager::addProcessingNode(const std::shared_ptr<AudioNode> &node) {
   auto event = std::make_unique<Event>();
   event->type = ConnectionType::ADD;
   event->payloadType = EventPayloadType::NODE;
@@ -127,8 +129,7 @@ void AudioNodeManager::addProcessingNode(
   sender_.send(std::move(event));
 }
 
-void AudioNodeManager::addSourceNode(
-    const std::shared_ptr<AudioScheduledSourceNode> &node) {
+void AudioNodeManager::addSourceNode(const std::shared_ptr<AudioScheduledSourceNode> &node) {
   auto event = std::make_unique<Event>();
   event->type = ConnectionType::ADD;
   event->payloadType = EventPayloadType::SOURCE_NODE;
@@ -148,8 +149,7 @@ void AudioNodeManager::addAudioParam(const std::shared_ptr<AudioParam> &param) {
 
 void AudioNodeManager::settlePendingConnections() {
   std::unique_ptr<Event> value;
-  while (receiver_.try_receive(value) !=
-         channels::spsc::ResponseStatus::CHANNEL_EMPTY) {
+  while (receiver_.try_receive(value) != channels::spsc::ResponseStatus::CHANNEL_EMPTY) {
     switch (value->type) {
       case ConnectionType::CONNECT:
         handleConnectEvent(std::move(value));
@@ -197,8 +197,7 @@ void AudioNodeManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
   }
 }
 
-void AudioNodeManager::handleAddToDeconstructionEvent(
-    std::unique_ptr<Event> event) {
+void AudioNodeManager::handleAddToDeconstructionEvent(std::unique_ptr<Event> event) {
   switch (event->payloadType) {
     case EventPayloadType::NODE:
       processingNodes_.push_back(event->payload.node);
@@ -215,24 +214,19 @@ void AudioNodeManager::handleAddToDeconstructionEvent(
 }
 
 template <typename U>
-inline bool AudioNodeManager::nodeCanBeDestructed(
-    std::shared_ptr<U> const &node) {
+inline bool AudioNodeManager::nodeCanBeDestructed(std::shared_ptr<U> const &node) {
   // If the node is an AudioScheduledSourceNode, we need to check if it is
   // playing
   if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
-    return node.use_count() == 1 &&
-        (node->isUnscheduled() || node->isFinished());
-  } else if constexpr (std::is_base_of_v<
-                           ConvolverNode,
-                           U>) { // convolver overrides disabling behavior
+    return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
+  } else if constexpr (std::is_base_of_v<ConvolverNode, U>) {
     return node.use_count() == 1 && !node->isEnabled();
   }
   return node.use_count() == 1;
 }
 
 template <typename U>
-void AudioNodeManager::prepareNodesForDestruction(
-    std::vector<std::shared_ptr<U>> &vec) {
+void AudioNodeManager::prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec) {
   if (vec.empty()) {
     return;
   }
@@ -284,14 +278,11 @@ void AudioNodeManager::prepareNodesForDestruction(
 }
 
 void AudioNodeManager::cleanup() {
-  for (auto it = sourceNodes_.begin(), end = sourceNodes_.end(); it != end;
-       ++it) {
+  for (auto it = sourceNodes_.begin(), end = sourceNodes_.end(); it != end; ++it) {
     it->get()->cleanup();
   }
 
-  for (auto it = processingNodes_.begin(), end = processingNodes_.end();
-       it != end;
-       ++it) {
+  for (auto it = processingNodes_.begin(), end = processingNodes_.end(); it != end; ++it) {
     it->get()->cleanup();
   }
 

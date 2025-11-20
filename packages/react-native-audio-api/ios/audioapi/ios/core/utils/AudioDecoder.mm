@@ -62,7 +62,9 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   return std::make_shared<AudioBuffer>(audioBus);
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate)
+std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
+    const std::string &path,
+    float sampleRate)
 {
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
     auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
@@ -74,7 +76,8 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string 
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
-  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+  ma_decoding_backend_vtable *customBackends[] = {
+      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
@@ -93,7 +96,8 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(const std::string 
   return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 }
 
-std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate)
+std::shared_ptr<AudioBuffer>
+AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate)
 {
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
@@ -107,7 +111,8 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithMemoryBlock(const void *dat
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
 
-  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+  ma_decoding_backend_vtable *customBackends[] = {
+      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);

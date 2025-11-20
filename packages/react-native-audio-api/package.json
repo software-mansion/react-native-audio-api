@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
@@ -53,7 +53,7 @@
     "format:android:cpp": "find android/src/ -path android/src/main/cpp/audioapi/android/libs -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "format:ios": "find ios/audioapi/ios -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" | xargs clang-format -i",
-    "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -iname \"*.h\" -o -iname \"*.cpp\" | xargs clang-format -i",
+    "format:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f -iname \"*.h\" -print -o -type f -iname \"*.cpp\" -print | xargs clang-format -i",
     "build": "bob build",
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
@@ -84,7 +84,12 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-worklets": "~0.6.0"
+    "react-native-worklets": ">= 0.6.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native-worklets": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",
@@ -107,6 +112,7 @@
     "@types/node": "^18.0.0",
     "@types/react": "^19.1.1",
     "@types/react-test-renderer": "^19.1.0",
+    "@types/semver": "7.7.1",
     "babel-plugin-module-resolver": "^4.1.0",
     "commitlint": "^17.0.2",
     "del-cli": "^5.1.0",
