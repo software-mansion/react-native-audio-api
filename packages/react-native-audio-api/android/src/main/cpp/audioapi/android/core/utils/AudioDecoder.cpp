@@ -13,9 +13,9 @@
 #ifndef AUDIO_API_TEST_SUITE
 #include <android/log.h>
 #endif // AUDIO_API_TEST_SUITE
-#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 #include <memory>
 #include <string>
@@ -75,7 +75,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     float sampleRate) {
 #ifndef AUDIO_API_TEST_SUITE
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       __android_log_print(
@@ -90,7 +90,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
         "FFmpeg is disabled, cannot decode file: %s",
         path.c_str());
     return nullptr;
-#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
@@ -126,7 +126,7 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
 #ifndef AUDIO_API_TEST_SUITE
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
-#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     auto buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
     if (buffer == nullptr) {
       __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode with FFmpeg");
@@ -137,7 +137,7 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
     __android_log_print(
         ANDROID_LOG_ERROR, "AudioDecoder", "FFmpeg is disabled, cannot decode memory block");
     return nullptr;
-#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));

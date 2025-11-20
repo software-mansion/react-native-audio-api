@@ -13,9 +13,9 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
-#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
-#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/WorkletSourceNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
@@ -124,13 +124,13 @@ std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
 }
 
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
-#if !RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   auto streamer = std::make_shared<StreamerNode>(this);
   nodeManager_->addSourceNode(streamer);
   return streamer;
 #else
   return nullptr;
-#endif // RN_AUDIO_API_RN_AUDIO_API_FFMPEG_DISABLED
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
