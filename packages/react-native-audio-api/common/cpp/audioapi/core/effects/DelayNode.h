@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 
+#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -22,6 +23,12 @@ class DelayNode : public AudioNode {
 
  private:
   void onInputDisabled() override;
+  enum class BufferAction { READ, WRITE };
+  void delayBufferOperation(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess,
+      size_t &operationStartingIndex,
+      BufferAction action);
   std::shared_ptr<AudioParam> delayTimeParam_;
   std::shared_ptr<AudioBus> delayBuffer_;
   size_t readIndex_ = 0;

@@ -13,8 +13,9 @@ DelayNode::DelayNode(BaseAudioContext *context, float maxDelayTime) : AudioNode(
       static_cast<size_t>(
           maxDelayTime * context->getSampleRate() +
           1), // +1 to enable delayTime equal to maxDelayTime
-      2,
+      channelCount_,
       context->getSampleRate());
+  requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
 
@@ -30,54 +31,62 @@ void DelayNode::onInputDisabled() {
   }
 }
 
-// delay buffer always has 2 channels, mix if needed
+void DelayNode::delayBufferOperation(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess,
+    size_t &operationStartingIndex,
+    DelayNode::BufferAction action) {
+  size_t processingBusStartIndex = 0;
+  // handle buffer wrap around
+  if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
+    int framesToEnd = operationStartingIndex + framesToProcess - delayBuffer_->getSize();
+    if (action == BufferAction::WRITE) {
+      delayBuffer_->sum(
+          processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToEnd);
+    } else { // READ
+      processingBus->sum(
+          delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToEnd);
+    }
+    operationStartingIndex = 0;
+    processingBusStartIndex += framesToEnd;
+    framesToProcess -= framesToEnd;
+  }
+  if (action == BufferAction::WRITE) {
+    delayBuffer_->sum(
+        processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToProcess);
+    processingBus->zero();
+  } else { // READ
+    processingBus->sum(
+        delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToProcess);
+    delayBuffer_->zero(operationStartingIndex, framesToProcess);
+  }
+  operationStartingIndex += framesToProcess;
+}
+
+// delay buffer always has channelCount_ channels
+// processing is split into two parts
+// 1. writing to delay buffer (mixing if needed) from processing bus
+// 2. reading from delay buffer to processing bus (mixing if needed) with delay
 std::shared_ptr<AudioBus> DelayNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
+  // handling tail processing
   if (signalledToStop_) {
-    if (remainingFrames_ > 0) {
-      if (readIndex_ + framesToProcess >= delayBuffer_->getSize()) {
-        size_t framesToEnd = delayBuffer_->getSize() - readIndex_;
-        processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToEnd);
-        delayBuffer_->zero(readIndex_, framesToEnd);
-        readIndex_ = 0;
-        framesToProcess -= framesToEnd;
-        remainingFrames_ -= framesToEnd;
-      }
-      processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToProcess);
-      delayBuffer_->zero(readIndex_, framesToProcess);
-      remainingFrames_ -= framesToProcess;
-      readIndex_ += framesToProcess;
-    } else {
+    if (remainingFrames_ <= 0) {
       disable();
       signalledToStop_ = false;
+      return processingBus;
     }
+    delayBufferOperation(processingBus, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
+    remainingFrames_ -= framesToProcess;
     return processingBus;
   }
+  // normal processing
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context_->getCurrentTime());
-  size_t processingBusStartIndex = 0;
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
       delayBuffer_->getSize();
-  int framesToWrite = framesToProcess;
-  if (writeIndex + framesToWrite >= delayBuffer_->getSize()) {
-    int framesToCopy = writeIndex + framesToWrite - delayBuffer_->getSize();
-    delayBuffer_->sum(processingBus.get(), processingBusStartIndex, writeIndex, framesToCopy);
-    writeIndex = 0;
-    processingBusStartIndex += framesToCopy;
-    framesToWrite -= framesToCopy;
-  }
-  delayBuffer_->sum(processingBus.get(), processingBusStartIndex, writeIndex, framesToWrite);
-  processingBus->zero();
-  if (readIndex_ + framesToProcess >= delayBuffer_->getSize()) {
-    size_t framesToEnd = delayBuffer_->getSize() - readIndex_;
-    processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToEnd);
-    readIndex_ = 0;
-    framesToProcess -= framesToEnd;
-    delayBuffer_->zero(readIndex_, framesToEnd);
-  }
-  processingBus->sum(delayBuffer_.get(), readIndex_, 0, framesToProcess);
-  delayBuffer_->zero(readIndex_, framesToProcess);
-  readIndex_ += framesToProcess;
+  delayBufferOperation(processingBus, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
+  delayBufferOperation(processingBus, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
   return processingBus;
 }
 
