@@ -137,9 +137,6 @@ void StreamerNode::streamAudio() {
     }
     av_packet_unref(pkt_);
   }
-  StreamingData dummy;
-  while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)
-    ; // clear the receiver
 }
 
 std::shared_ptr<AudioBus> StreamerNode::processNode(
@@ -284,9 +281,12 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   this->playbackState_ = PlaybackState::FINISHED;
-  // cleanup cannot be called from the streaming thread so there is no need to
-  // check if we are in the same thread
-  streamingThread_.join();
+  if (streamingThread_.joinable()) {
+    StreamingData dummy;
+    while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)
+      ; // clear the receiver
+    streamingThread_.join();
+  }
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }

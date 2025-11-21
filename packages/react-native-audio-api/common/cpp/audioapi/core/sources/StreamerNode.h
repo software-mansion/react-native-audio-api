@@ -13,7 +13,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/utils/AudioBus.h>
 
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -22,7 +22,7 @@ extern "C" {
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 }
-#endif
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 #include <atomic>
 #include <cmath>
@@ -36,7 +36,7 @@ static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_O
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
 static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-#endif
+#endif // AUDIO_API_TEST_SUITE
 
 static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;
@@ -78,7 +78,7 @@ class StreamerNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
   AVCodecContext *codecCtx_;
   const AVCodec *decoder_;
@@ -149,6 +149,6 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @return true if successful, false otherwise
    */
   bool setupDecoder();
-#endif // AUDIO_API_TEST_SUITE
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 };
 } // namespace audioapi
