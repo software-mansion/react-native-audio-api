@@ -5,6 +5,7 @@
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
@@ -14,7 +15,9 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/WorkletSourceNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
@@ -122,13 +125,15 @@ std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
   return constantSource;
 }
 
-#ifndef AUDIO_API_TEST_SUITE
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   auto streamer = std::make_shared<StreamerNode>(this);
   nodeManager_->addSourceNode(streamer);
   return streamer;
+#else
+  return nullptr;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
-#endif
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
   auto gain = std::make_shared<GainNode>(this);
@@ -152,6 +157,14 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
   nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
+}
+
+std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
+    const std::vector<float> &feedforward,
+    const std::vector<float> &feedback) {
+  auto iirFilter = std::make_shared<IIRFilterNode>(this, feedforward, feedback);
+  nodeManager_->addProcessingNode(iirFilter);
+  return iirFilter;
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {

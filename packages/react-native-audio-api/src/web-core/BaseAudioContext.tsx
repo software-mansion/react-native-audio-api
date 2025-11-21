@@ -1,9 +1,14 @@
-import { ContextState, PeriodicWaveConstraints } from '../types';
+import {
+  ContextState,
+  PeriodicWaveConstraints,
+  IIRFilterNodeOptions,
+} from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -26,6 +31,7 @@ export default interface BaseAudioContext {
   createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode;
   createConvolver(): ConvolverNode;
   createBufferSource(): Promise<AudioBufferSourceNode>;
   createBuffer(

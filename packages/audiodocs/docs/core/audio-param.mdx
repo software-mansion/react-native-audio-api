@@ -41,7 +41,7 @@ as they are more efficient for continuous changes. For more specific use cases, 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will be set at given time |
-| `startTime` | `number` | The time, in seconds, at which the change in value is going to happen. |
+| `startTime` | `number` | The time, in seconds, at which the change in value is going to happen. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties). |
 
 #### Errors:
 
@@ -61,7 +61,7 @@ The change begins at the time designated for the previous event. It follows a li
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value, the `AudioParam` will ramp to by given time. |
-| `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
+| `endTime` | `number` | The time, in seconds, at which the value ramp will end. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties).  |
 
 #### Errors
 
@@ -81,7 +81,7 @@ The change begins at the time designated for the previous event. It follows an e
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `value` | `number` | A float representing the value the `AudioParam` will ramp to by given time. |
-| `endTime` | `number` | The time, in seconds, at which the value ramp will end. |
+| `endTime` | `number` | The time, in seconds, at which the value ramp will end. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties).|
 
 #### Errors
 
@@ -101,7 +101,7 @@ This method is useful for decay or release portions of [ADSR envelopes](/docs/ef
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `target` | `number` | A float representing the value to which the `AudioParam` will start transitioning. |
-| `startTime` | `number` | The time, in seconds, at which exponential transition will begin. |
+| `startTime` | `number` | The time, in seconds, at which exponential transition will begin. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties). |
 | `timeConstant` | `number` | A double representing the time-constant value of an exponential approach to the `target`. |
 
 #### Errors
@@ -122,7 +122,7 @@ Schedules the parameters's value change following a curve defined by given array
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `values` | `Float32Array` | The array of values defining a curve, which change will follow. |
-| `startTime` | `number` | The time, in seconds, at which change will begin. |
+| `startTime` | `number` | The time, in seconds, at which change will begin. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties). |
 | `duration` | `number` | A double representing total time over which the change will happen. |
 
 #### Errors
@@ -139,7 +139,7 @@ Cancels all scheduled changes after given cancel time.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
+| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties). |
 
 #### Errors
 
@@ -155,7 +155,7 @@ Cancels all scheduled changes after given cancel time, but holds its value at gi
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. |
+| `cancelTime` | `number` | The time, in seconds, after which all scheduled changes will be cancelled. If it's smaller than [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties), it will be clamped to [`currentTime`](https://docs.swmansion.com/react-native-audio-api/docs/core/base-audio-context#properties).|
 
 #### Errors
 

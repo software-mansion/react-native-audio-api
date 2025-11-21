@@ -21,6 +21,10 @@ def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
 }
 
+def isFFmpegDisabled() {
+  return rootProject.hasProperty("disableAudioapiFFmpeg") && rootProject.getProperty("disableAudioapiFFmpeg") == "true"
+}
+
 apply plugin: "com.android.library"
 apply plugin: 'org.jetbrains.kotlin.android'
 
@@ -124,6 +128,7 @@ file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { rea
 def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
 def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
+def IS_RN_AUDIO_API_FFMPEG_DISABLED = isFFmpegDisabled()
 
 android {
   sourceSets {
@@ -163,8 +168,9 @@ android {
           "-DANDROID_TOOLCHAIN=clang",
           "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
           "-DRN_AUDIO_API_WORKLETS_ENABLED=${isWorkletsAvailable}",
-                  "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
-                  "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+          "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
+          "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}"
         ]
 
         if (isWorkletsAvailable) {

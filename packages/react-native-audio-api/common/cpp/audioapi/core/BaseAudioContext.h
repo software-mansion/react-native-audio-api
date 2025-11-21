@@ -24,6 +24,7 @@ class ConstantSourceNode;
 class StereoPannerNode;
 class AudioNodeManager;
 class BiquadFilterNode;
+class IIRFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
@@ -72,6 +73,9 @@ class BaseAudioContext {
   std::shared_ptr<DelayNode> createDelay(float maxDelayTime);
   std::shared_ptr<StereoPannerNode> createStereoPanner();
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
+  std::shared_ptr<IIRFilterNode> createIIRFilter(
+      const std::vector<float> &feedforward,
+      const std::vector<float> &feedback);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>

@@ -81,6 +81,7 @@ add_executable(
 add_compile_definitions(AUDIO_API_TEST_SUITE)
 add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
+add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
 
 target_link_libraries(tests
   rnaudioapi

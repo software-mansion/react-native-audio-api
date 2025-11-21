@@ -1,4 +1,8 @@
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import {
+  InvalidAccessError,
+  InvalidStateError,
+  NotSupportedError,
+} from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,
@@ -6,6 +10,7 @@ import {
   PeriodicWaveConstraints,
   AudioWorkletRuntime,
   ConvolverNodeOptions,
+  IIRFilterNodeOptions,
 } from '../types';
 import { assertWorkletsEnabled, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
@@ -26,6 +31,7 @@ import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
 import DelayNode from './DelayNode';
+import IIRFilterNode from './IIRFilterNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
@@ -186,7 +192,11 @@ export default class BaseAudioContext {
   }
 
   createStreamer(): StreamerNode {
-    return new StreamerNode(this, this.context.createStreamer());
+    const streamer = this.context.createStreamer();
+    if (!streamer) {
+      throw new NotSupportedError('StreamerNode requires FFmpeg build');
+    }
+    return new StreamerNode(this, streamer);
   }
 
   createConstantSource(): ConstantSourceNode {
@@ -208,6 +218,38 @@ export default class BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
+    const feedforward = options.feedforward;
+    const feedback = options.feedback;
+    if (feedforward.length < 1 || feedforward.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`
+      );
+    }
+    if (feedback.length < 1 || feedback.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedback array has length (${feedback.length}) outside the range [1, 20]`
+      );
+    }
+
+    if (feedforward.every((value) => value === 0)) {
+      throw new InvalidStateError(
+        `Feedforward array must contain at least one non-zero value`
+      );
+    }
+
+    if (feedback[0] === 0) {
+      throw new InvalidStateError(
+        `First value of feedback array cannot be zero`
+      );
+    }
+
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(feedforward, feedback)
+    );
   }
 
   createBufferSource(
