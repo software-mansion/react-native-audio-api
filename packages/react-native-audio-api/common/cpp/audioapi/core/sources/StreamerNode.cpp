@@ -41,6 +41,7 @@ StreamerNode::~StreamerNode() {
 }
 
 bool StreamerNode::initialize(const std::string &input_url) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   if (isInitialized_) {
     cleanup();
   }
@@ -82,9 +83,13 @@ bool StreamerNode::initialize(const std::string &input_url) {
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
   isInitialized_ = true;
   return true;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 bool StreamerNode::setupResampler() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   // Allocate resampler context
   swrCtx_ = swr_alloc();
   if (swrCtx_ == nullptr) {
@@ -117,6 +122,9 @@ bool StreamerNode::setupResampler() {
       0);
 
   return ret >= 0;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 void StreamerNode::streamAudio() {
@@ -142,6 +150,7 @@ void StreamerNode::streamAudio() {
 std::shared_ptr<AudioBus> StreamerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
@@ -184,11 +193,13 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
     }
     processedSamples_ += framesToProcess;
   }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
   return processingBus;
 }
 
 bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   // Check if we need to reallocate the resampled buffer
   int out_samples = swr_get_out_samples(swrCtx_, frame->nb_samples);
   if (out_samples > maxResampledSamples_) {
@@ -237,6 +248,9 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
   StreamingData data{std::move(bus), static_cast<size_t>(converted_samples)};
   sender_.send(std::move(data));
   return true;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 bool StreamerNode::openInput(const std::string &input_url) {
@@ -247,6 +261,7 @@ bool StreamerNode::openInput(const std::string &input_url) {
 }
 
 bool StreamerNode::findAudioStream() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   audio_stream_index_ = -1;
   codecpar_ = nullptr;
 
@@ -259,9 +274,13 @@ bool StreamerNode::findAudioStream() {
   }
 
   return audio_stream_index_ >= 0 && codecpar_ != nullptr;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 bool StreamerNode::setupDecoder() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   decoder_ = avcodec_find_decoder(codecpar_->codec_id);
   if (decoder_ == nullptr) {
     return false;
@@ -277,9 +296,13 @@ bool StreamerNode::setupDecoder() {
   }
 
   return avcodec_open2(codecCtx_, decoder_, nullptr) >= 0;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 void StreamerNode::cleanup() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   this->playbackState_ = PlaybackState::FINISHED;
   if (streamingThread_.joinable()) {
     StreamingData dummy;
@@ -317,5 +340,6 @@ void StreamerNode::cleanup() {
   decoder_ = nullptr;
   codecpar_ = nullptr;
   maxResampledSamples_ = 0;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 } // namespace audioapi
