@@ -145,6 +145,8 @@ interface PlaybackNotificationInfo {
   title?: string;
   artist?: string;
   album?: string;
+
+  // Can be a URL or a local file path relative to drawable resources (Android) or bundle resources (iOS)
   artwork?: string | { uri: string };
   duration?: number;
 
