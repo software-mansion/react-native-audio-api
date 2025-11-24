@@ -101,27 +101,6 @@ object MediaSessionManager {
     this.notificationRegistry = NotificationRegistry(this.reactContext)
   }
 
-  // Deprecated - kept for backward compatibility
-  @Deprecated("Use new PlaybackNotification system instead")
-  fun setLockScreenInfo(info: ReadableMap?) {
-    // No-op: Old system removed
-  }
-
-  // Deprecated - kept for backward compatibility
-  @Deprecated("Use new PlaybackNotification system instead")
-  fun resetLockScreenInfo() {
-    // No-op: Old system removed
-  }
-
-  // Deprecated - kept for backward compatibility
-  @Deprecated("Use new PlaybackNotification system instead")
-  fun enableRemoteCommand(
-    name: String,
-    enabled: Boolean,
-  ) {
-    // No-op: Old system removed
-  }
-
   fun getDevicePreferredSampleRate(): Double {
     val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
     return sampleRate.toDouble()
