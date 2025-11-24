@@ -60,7 +60,7 @@ class RecordingNotification(
         .Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_btn_speak_now)
         .setContentTitle(title)
-        .setContentText("Ready to record")
+        .setContentText(description)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .setOngoing(false)
@@ -106,6 +106,7 @@ class RecordingNotification(
 
     // Reset state
     title = "Audio Recording"
+    description = "Ready to record"
     isRecording = false
     notificationBuilder = null
   }

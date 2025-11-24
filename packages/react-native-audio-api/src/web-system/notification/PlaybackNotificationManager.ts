@@ -51,7 +51,7 @@ class PlaybackNotificationManager
     // dummy subscription object with a no-op remove method
     return {
       remove: () => {},
-    } as any;
+    } as unknown as AudioEventSubscription;
   }
 
   removeEventListener(subscription: AudioEventSubscription): void {}
