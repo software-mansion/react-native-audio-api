@@ -31,7 +31,39 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 ## Example
 
 ```tsx
-// TO DO
+// Register and show notification
+await PlaybackNotificationManager.register();
+await PlaybackNotificationManager.show({
+  title: 'My Song',
+  artist: 'My Artist',
+  duration: 180,
+  state: 'paused',
+});
+
+// Listen for notification controls
+const playListener = PlaybackNotificationManager.addEventListener(
+  'playbackNotificationPlay',
+  () => {
+    // Handle play action
+    PlaybackNotificationManager.update({ state: 'playing' });
+  }
+);
+
+const pauseListener = PlaybackNotificationManager.addEventListener(
+  'playbackNotificationPause',
+  () => {
+    // Handle pause action
+    PlaybackNotificationManager.update({ state: 'paused' });
+  }
+);
+
+// Update progress
+PlaybackNotificationManager.update({ elapsedTime: 60 });
+
+// Cleanup
+PlaybackNotificationManager.removeEventListener(playListener);
+PlaybackNotificationManager.removeEventListener(pauseListener);
+PlaybackNotificationManager.unregister();
 ```
 
 ## Methods

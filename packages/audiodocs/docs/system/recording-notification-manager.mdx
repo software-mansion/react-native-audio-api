@@ -16,7 +16,37 @@ The `RecordingNotificationManager` provides recording session integration and re
 ## Example
 
 ```tsx
-// TODO
+// Register and show recording notification
+await RecordingNotificationManager.register();
+await RecordingNotificationManager.show({
+  title: 'Recording Audio',
+  state: 'stopped',
+});
+
+// Listen for notification controls
+const startListener = RecordingNotificationManager.addEventListener(
+  'recordingNotificationStart',
+  () => {
+    // Handle start recording action
+    RecordingNotificationManager.update({ state: 'recording' });
+  }
+);
+
+const stopListener = RecordingNotificationManager.addEventListener(
+  'recordingNotificationStop',
+  () => {
+    // Handle stop recording action
+    RecordingNotificationManager.update({ state: 'stopped' });
+  }
+);
+
+// Update recording state
+RecordingNotificationManager.update({ state: 'recording' });
+
+// Cleanup
+RecordingNotificationManager.removeEventListener(startListener);
+RecordingNotificationManager.removeEventListener(stopListener);
+RecordingNotificationManager.unregister();
 ```
 
 ## Methods
@@ -126,7 +156,7 @@ interface RecordingNotificationInfo {
 
 <details>
   <summary>Type definitions</summary>
-  ```typescript 
+  ```typescript
   type RecordingControlName = 'start' | 'stop';
    ```
 </details>
@@ -135,7 +165,7 @@ interface RecordingNotificationInfo {
 
 <details>
   <summary>Type definitions</summary>
-  ```typescript 
+  ```typescript
   interface RecordingNotificationEvent {
     recordingNotificationStart: EventEmptyType;
     recordingNotificationStop: EventEmptyType;
@@ -143,7 +173,7 @@ interface RecordingNotificationInfo {
   }
 
   type RecordingNotificationEventName = keyof RecordingNotificationEvent;
- 
+
   ```
 </details>
 
