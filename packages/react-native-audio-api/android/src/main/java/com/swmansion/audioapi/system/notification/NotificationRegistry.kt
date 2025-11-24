@@ -3,12 +3,12 @@ package com.swmansion.audioapi.system.notification
 import android.app.Notification
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.system.ForegroundServiceManager
 import java.lang.ref.WeakReference
 
 /**
@@ -63,6 +63,10 @@ class NotificationRegistry(
       val builtNotification = notification.init(options)
       displayNotification(notification.getNotificationId(), builtNotification)
       activeNotifications[key] = true
+
+      // Subscribe to foreground service for persistent notifications
+      ForegroundServiceManager.subscribe("notification_$key")
+
       Log.d(TAG, "Showing notification: $key")
     } catch (e: Exception) {
       Log.e(TAG, "Error showing notification $key: ${e.message}", e)
@@ -115,6 +119,10 @@ class NotificationRegistry(
       cancelNotification(notification.getNotificationId())
       notification.reset()
       activeNotifications[key] = false
+
+      // Unsubscribe from foreground service
+      ForegroundServiceManager.unsubscribe("notification_$key")
+
       Log.d(TAG, "Hiding notification: $key")
     } catch (e: Exception) {
       Log.e(TAG, "Error hiding notification $key: ${e.message}", e)
@@ -153,6 +161,10 @@ class NotificationRegistry(
     notifications.clear()
     activeNotifications.clear()
     builtNotifications.clear()
+
+    // Cleanup foreground service manager
+    ForegroundServiceManager.cleanup()
+
     Log.d(TAG, "Cleaned up all notifications")
   }
 
@@ -178,52 +190,5 @@ class NotificationRegistry(
     NotificationManagerCompat.from(context).cancel(id)
     // Clean up stored notification
     builtNotifications.remove(id)
-  }
-
-  /**
-   * Start foreground service with the given notification.
-   * This is required for Android O+ when app is in background.
-   *
-   * @param key The notification key to use for foreground service
-   */
-  fun startForegroundService(key: String) {
-    val notification = notifications[key]
-    if (notification == null) {
-      Log.w(TAG, "Cannot start foreground service: notification $key not found")
-      return
-    }
-
-    val context = reactContext.get() ?: return
-    val intent = Intent(context, ForegroundNotificationService::class.java)
-    intent.action = ForegroundNotificationService.ACTION_START_FOREGROUND
-    intent.putExtra(ForegroundNotificationService.EXTRA_NOTIFICATION_ID, notification.getNotificationId())
-    intent.putExtra(ForegroundNotificationService.EXTRA_NOTIFICATION_KEY, key)
-
-    try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.startForegroundService(intent)
-      } else {
-        context.startService(intent)
-      }
-      Log.d(TAG, "Started foreground service with notification: $key")
-    } catch (e: Exception) {
-      Log.e(TAG, "Error starting foreground service: ${e.message}", e)
-    }
-  }
-
-  /**
-   * Stop the foreground service.
-   */
-  fun stopForegroundService() {
-    val context = reactContext.get() ?: return
-    val intent = Intent(context, ForegroundNotificationService::class.java)
-    intent.action = ForegroundNotificationService.ACTION_STOP_FOREGROUND
-
-    try {
-      context.startService(intent)
-      Log.d(TAG, "Stopped foreground service")
-    } catch (e: Exception) {
-      Log.e(TAG, "Error stopping foreground service: ${e.message}", e)
-    }
   }
 }

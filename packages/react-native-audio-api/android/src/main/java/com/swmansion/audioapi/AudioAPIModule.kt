@@ -10,6 +10,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
+import com.swmansion.audioapi.system.ForegroundServiceManager
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
@@ -88,7 +89,8 @@ class AudioAPIModule(
   override fun invalidate() {
     closeAllContexts()
     reactContext.get()?.removeLifecycleEventListener(this)
-    // think about cleaning up resources, singletons etc.
+    // Cleanup foreground service manager
+    ForegroundServiceManager.cleanup()
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()

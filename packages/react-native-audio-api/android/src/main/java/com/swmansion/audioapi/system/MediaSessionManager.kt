@@ -20,8 +20,6 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
-import com.swmansion.audioapi.core.NativeAudioPlayer
-import com.swmansion.audioapi.core.NativeAudioRecorder
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
 import com.swmansion.audioapi.system.notification.PlaybackNotification
@@ -30,7 +28,6 @@ import com.swmansion.audioapi.system.notification.RecordingNotification
 import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver
 import com.swmansion.audioapi.system.notification.SimpleNotification
 import java.lang.ref.WeakReference
-import java.util.UUID
 
 object MediaSessionManager {
   private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
@@ -47,9 +44,6 @@ object MediaSessionManager {
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
 
-  private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
-  private val nativeAudioRecorders = mutableMapOf<String, NativeAudioRecorder>()
-
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
     reactContext: WeakReference<ReactApplicationContext>,
@@ -57,6 +51,9 @@ object MediaSessionManager {
     this.audioAPIModule = audioAPIModule
     this.reactContext = reactContext
     this.audioManager = reactContext.get()?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+    // Initialize ForegroundServiceManager
+    ForegroundServiceManager.initialize(reactContext)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       createChannel()
@@ -102,48 +99,6 @@ object MediaSessionManager {
 
     // Initialize new notification system
     this.notificationRegistry = NotificationRegistry(this.reactContext)
-  }
-
-  fun attachAudioPlayer(player: NativeAudioPlayer): String {
-    val uuid = UUID.randomUUID().toString()
-    nativeAudioPlayers[uuid] = player
-
-    return uuid
-  }
-
-  fun detachAudioPlayer(uuid: String) {
-    nativeAudioPlayers.remove(uuid)
-  }
-
-  fun attachAudioRecorder(recorder: NativeAudioRecorder): String {
-    val uuid = UUID.randomUUID().toString()
-    nativeAudioRecorders[uuid] = recorder
-
-    return uuid
-  }
-
-  fun detachAudioRecorder(uuid: String) {
-    nativeAudioRecorders.remove(uuid)
-  }
-
-  fun startForegroundServiceIfNecessary() {
-    if (nativeAudioPlayers.isNotEmpty() || nativeAudioRecorders.isNotEmpty()) {
-      startForegroundService()
-    }
-  }
-
-  fun stopForegroundServiceIfNecessary() {
-    if (nativeAudioPlayers.isEmpty() && nativeAudioRecorders.isEmpty()) {
-      stopForegroundService()
-    }
-  }
-
-  private fun startForegroundService() {
-    // No longer needed with new notification system
-  }
-
-  private fun stopForegroundService() {
-    // No longer needed with new notification system
   }
 
   // Deprecated - kept for backward compatibility

@@ -1,24 +1,26 @@
 package com.swmansion.audioapi.core
 
 import com.facebook.common.internal.DoNotStrip
-import com.swmansion.audioapi.system.MediaSessionManager
+import com.swmansion.audioapi.system.ForegroundServiceManager
+import java.util.UUID
 
 @DoNotStrip
 class NativeAudioPlayer {
-  private var sourceNodeId: String? = null
+  private var playerId: String? = null
 
   @DoNotStrip
   fun start() {
-    this.sourceNodeId = MediaSessionManager.attachAudioPlayer(this)
-    MediaSessionManager.startForegroundServiceIfNecessary()
+    if (playerId == null) {
+      playerId = UUID.randomUUID().toString()
+      ForegroundServiceManager.subscribe("player_$playerId")
+    }
   }
 
   @DoNotStrip
   fun stop() {
-    this.sourceNodeId?.let {
-      MediaSessionManager.detachAudioPlayer(it)
-      this.sourceNodeId = null
+    playerId?.let {
+      ForegroundServiceManager.unsubscribe("player_$it")
+      playerId = null
     }
-    MediaSessionManager.stopForegroundServiceIfNecessary()
   }
 }

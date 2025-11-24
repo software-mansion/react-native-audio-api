@@ -1,24 +1,26 @@
 package com.swmansion.audioapi.core
 
 import com.facebook.common.internal.DoNotStrip
-import com.swmansion.audioapi.system.MediaSessionManager
+import com.swmansion.audioapi.system.ForegroundServiceManager
+import java.util.UUID
 
 @DoNotStrip
 class NativeAudioRecorder {
-  private var inputNodeId: String? = null
+  private var recorderId: String? = null
 
   @DoNotStrip
   fun start() {
-    this.inputNodeId = MediaSessionManager.attachAudioRecorder(this)
-    MediaSessionManager.startForegroundServiceIfNecessary()
+    if (recorderId == null) {
+      recorderId = UUID.randomUUID().toString()
+      ForegroundServiceManager.subscribe("recorder_$recorderId")
+    }
   }
 
   @DoNotStrip
   fun stop() {
-    this.inputNodeId?.let {
-      MediaSessionManager.detachAudioRecorder(it)
-      this.inputNodeId = null
+    recorderId?.let {
+      ForegroundServiceManager.unsubscribe("recorder_$it")
+      recorderId = null
     }
-    MediaSessionManager.stopForegroundServiceIfNecessary()
   }
 }
