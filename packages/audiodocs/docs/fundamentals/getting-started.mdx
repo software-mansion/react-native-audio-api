@@ -119,6 +119,13 @@ const config = {
 module.exports = wrapWithAudioAPIMetroConfig(config);
 ```
 
+### Step 4: Install system-wide bash (only Windows OS)
+
+There are many ways to do that f.e. using git bash. To make sure just test if any unix command works.
+```bash
+bash -c 'echo Hello World!'
+```
+
 ### Possible additional dependencies
 
 If you plan to use any of [`WorkletNode`](/docs/worklets/worklet-node), [`WorkletSourceNode`](/docs/worklets/worklet-source-node), [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node), it is required to have
