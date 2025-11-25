@@ -1,9 +1,6 @@
 package com.swmansion.audioapi.system.notification
 
 import android.app.Notification
-import android.content.Context
-import android.content.Intent
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.ReactApplicationContext
