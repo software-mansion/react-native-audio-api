@@ -6,7 +6,7 @@ To contribute by resolving already opened issues, please follow these steps:
 
 1. Fork the repository to your own GitHub account.
 2. Create a new branch for your feature or bug fix.
-3. Stage your changes and commit them. (We strongly suggest to follow [Conventional Commit Specification](https://www.conventionalcommits.org/en/v1.0.0/))
+3. Stage your changes and commit them. (Follow [Conventional Commit Specification](https://www.conventionalcommits.org/en/v1.0.0/))
 4. Submit PR for review.
 
 After your pull request is submitted, we will review it at as soon as possible.
