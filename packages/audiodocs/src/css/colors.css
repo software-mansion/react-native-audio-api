@@ -345,7 +345,7 @@
   --swm-details-background: var(--swm-purple-dark-140);
 
   /* Admonitions */
-  --swm-admonition-color-secondary: var(--swm-navy-light-10);
+  --swm-admonition-color-secondary: var(--swm-navy-dark-60);
   --swm-admonition-color-success: var(--swm-green-dark-120);
   --swm-admonition-color-danger: var(--swm-red-dark-120);
   --swm-admonition-color-info: var(--swm-blue-dark-120);
