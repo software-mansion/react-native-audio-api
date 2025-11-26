@@ -95,7 +95,7 @@ function App() {
 #### Returns `undefined`.
 
 Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
-Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package, 
+Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package,
 commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
 Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
 
@@ -258,39 +258,17 @@ interface OnRouteChangeEventType {
     | 'NoSuitableRouteForCategory';
 }
 
-// visit https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter?language=objc
-// for further info
-interface RemoteCommandEvents {
-  remotePlay: EventEmptyType;
-  remotePause: EventEmptyType;
-  remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType; // iOS only
-  remoteChangePlaybackRate: EventTypeWithValue;
-  remoteNextTrack: EventEmptyType;
-  remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventTypeWithValue;
-  remoteSkipBackward: EventTypeWithValue; // iOS only
-  remoteSeekForward: EventEmptyType; // iOS only
-  remoteSeekBackward: EventEmptyType;
-  remoteChangePlaybackPosition: EventTypeWithValue;
+interface AudioAPIEvents {
+  ended: OnEndedEventType;
+  loopEnded: EventEmptyType;
+  audioReady: OnAudioReadyEventType;
+  positionChanged: EventTypeWithValue;
+  audioError: EventEmptyType; // to change
+  systemStateChanged: EventEmptyType; // to change
 }
 
-interface PlaybackNotificationEvents {
-  playbackNotificationPlay: EventEmptyType;
-  playbackNotificationPause: EventEmptyType;
-  playbackNotificationNext: EventEmptyType;
-  playbackNotificationPrevious: EventEmptyType;
-  playbackNotificationSkipForward: EventTypeWithValue;
-  playbackNotificationSkipBackward: EventTypeWithValue;
-  playbackNotificationDismissed: EventEmptyType;
-}
-
-type SystemEvents = RemoteCommandEvents & 
-  PlaybackNotificationEvents & {
-  volumeChange: EventTypeWithValue; //triggered when volume level is changed
-  interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
-  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
-};
+// For `NotificationEvents` see PlaybackNotificationManager docs
+type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;
 
 type RemoteCommandEventName = keyof RemoteCommandEvents;
 type SystemEventName = keyof SystemEvents;

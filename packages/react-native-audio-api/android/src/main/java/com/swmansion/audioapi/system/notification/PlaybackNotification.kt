@@ -15,6 +15,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
@@ -199,9 +200,11 @@ class PlaybackNotification(
     val emptyMetadata = MediaMetadataCompat.Builder().build()
     mediaSession?.setMetadata(emptyMetadata)
 
-    playbackStateBuilder.setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
-    playbackStateBuilder.setActions(enabledControls)
-    playbackState = playbackStateBuilder.build()
+    playbackState =
+      playbackStateBuilder
+        .setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
+        .setActions(enabledControls)
+        .build()
     mediaSession?.setPlaybackState(playbackState)
     mediaSession?.isActive = false
     mediaSession?.release()
@@ -291,8 +294,9 @@ class PlaybackNotification(
         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
 
     // Update notification builder
-    notificationBuilder?.setContentTitle(title)
-    notificationBuilder?.setContentText(artist)
+    notificationBuilder
+      ?.setContentTitle(title)
+      ?.setContentText(artist)
 
     // Handle artwork
     if (options.hasKey("artwork")) {
@@ -315,13 +319,34 @@ class PlaybackNotification(
             try {
               val bitmap = loadArtwork(artworkUrl, isLocal)
               if (bitmap != null) {
-                artwork = bitmap
-                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
-                notificationBuilder?.setLargeIcon(bitmap)
+                // Post UI updates to main thread for thread safety
+                val context = reactContext.get()
+                context?.runOnUiQueueThread {
+                  try {
+                    artwork = bitmap
+                    notificationBuilder?.setLargeIcon(bitmap)
+
+                    // Add artwork to current metadata without touching other fields
+                    val currentMetadata = mediaSession?.controller?.metadata
+                    if (currentMetadata != null) {
+                      val updatedBuilder = MediaMetadataCompat.Builder(currentMetadata)
+                      updatedBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
+                      mediaSession?.setMetadata(updatedBuilder.build())
+                    }
+
+                    // Refresh the notification on main thread
+                    val notificationManager =
+                      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    notificationManager.notify(notificationId, buildNotification())
+                  } catch (e: Exception) {
+                    Log.e(TAG, "Error updating notification with artwork: ${e.message}", e)
+                  }
+                }
               }
               artworkThread = null
             } catch (e: Exception) {
               Log.e(TAG, "Error loading artwork: ${e.message}", e)
+              artworkThread = null
             }
           }
         artworkThread?.start()
@@ -372,8 +397,10 @@ class PlaybackNotification(
     updateMediaStyle()
 
     // Update playback state with new controls
-    playbackStateBuilder.setActions(enabledControls)
-    playbackState = playbackStateBuilder.build()
+    playbackState =
+      playbackStateBuilder
+        .setActions(enabledControls)
+        .build()
     mediaSession?.setPlaybackState(playbackState)
   }
 
@@ -461,9 +488,11 @@ class PlaybackNotification(
   private fun updatePlaybackState(state: Int) {
     isPlaying = state == PlaybackStateCompat.STATE_PLAYING
 
-    playbackStateBuilder.setState(state, elapsedTime, speed)
-    playbackStateBuilder.setActions(enabledControls)
-    playbackState = playbackStateBuilder.build()
+    playbackState =
+      playbackStateBuilder
+        .setState(state, elapsedTime, speed)
+        .setActions(enabledControls)
+        .build()
     if (mediaSession != null) {
       Log.d(TAG, "mediaSession is not null")
     } else {

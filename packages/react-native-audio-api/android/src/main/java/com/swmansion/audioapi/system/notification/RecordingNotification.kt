@@ -154,18 +154,19 @@ class RecordingNotification(
       description.ifEmpty {
         if (isRecording) "Recording..." else "Ready to record"
       }
-    notificationBuilder?.setContentTitle(title)
-    notificationBuilder?.setContentText(statusText)
-
-    // Update ongoing state - only persistent when recording
-    notificationBuilder?.setOngoing(isRecording)
+    notificationBuilder
+      ?.setContentTitle(title)
+      ?.setContentText(statusText)
+      ?.setOngoing(isRecording)
 
     // Set red color when recording
     if (isRecording) {
-      notificationBuilder?.setColor(Color.RED)
-      notificationBuilder?.setColorized(true)
+      notificationBuilder
+        ?.setColor(Color.RED)
+        ?.setColorized(true)
     } else {
-      notificationBuilder?.setColorized(false)
+      notificationBuilder
+        ?.setColorized(false)
     }
 
     // Update action button

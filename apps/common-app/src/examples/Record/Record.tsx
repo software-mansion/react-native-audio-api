@@ -6,6 +6,7 @@ import {
   RecorderAdapterNode,
   AudioBufferSourceNode,
   AudioBuffer,
+  RecordingNotificationManager,
 } from 'react-native-audio-api';
 
 import { Container, Button } from '../../components';
@@ -24,6 +25,7 @@ const Record: FC = () => {
   useEffect(() => {
     const setup = async () => {
       try {
+        await AudioManager.requestNotificationPermissions();
         await AudioManager.requestRecordingPermissions();
       } catch (err) {
         console.log(err);
@@ -53,6 +55,7 @@ const Record: FC = () => {
 
   const stopRecorder = () => {
     if (recorderRef.current) {
+      RecordingNotificationManager.unregister();
       recorderRef.current.stop();
       console.log('Recording stopped');
       // advised, but not required
@@ -78,6 +81,13 @@ const Record: FC = () => {
     recorderRef.current.connect(recorderAdapterRef.current);
 
     recorderRef.current.start();
+
+    // This is not a proper way to do it, but sufficient for this example
+    RecordingNotificationManager.register().then(() => RecordingNotificationManager.show({
+      title: 'Recording...',
+      state: 'recording',
+      enabled: true,
+    }));
     console.log('Recording started');
     console.log('Audio context state:', aCtxRef.current.state);
     if (aCtxRef.current.state === 'suspended') {
@@ -108,6 +118,12 @@ const Record: FC = () => {
       audioBuffersRef.current.push(buffer);
     });
 
+    // This is not a proper way to do it, but sufficient for this example
+    RecordingNotificationManager.register().then(() => RecordingNotificationManager.show({
+      title: 'Recording for replay...',
+      state: 'recording',
+      enabled: true,
+    }));
     recorderRef.current.start();
 
     setTimeout(() => {
@@ -116,6 +132,7 @@ const Record: FC = () => {
   };
 
   const stopRecordReplay = () => {
+    RecordingNotificationManager.unregister();
     const aCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
     aCtxRef.current = aCtx;
 

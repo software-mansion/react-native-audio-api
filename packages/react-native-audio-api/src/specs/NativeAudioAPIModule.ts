@@ -3,6 +3,10 @@ import { TurboModuleRegistry } from 'react-native';
 import type { TurboModule } from 'react-native';
 import { PermissionStatus, AudioDevicesInfo } from '../system/types';
 
+type OptionsMap = { [key: string]: string | boolean | number | undefined };
+type NotificationOpResponse = { success: boolean; error?: string };
+type NotificationType = 'playback' | 'recording' | 'simple';
+
 interface Spec extends TurboModule {
   install(): boolean;
   getDevicePreferredSampleRate(): number;
@@ -33,21 +37,19 @@ interface Spec extends TurboModule {
 
   // New notification system
   registerNotification(
-    type: string,
+    type: NotificationType,
     key: string
-  ): Promise<{ success: boolean; error?: string }>;
+  ): Promise<NotificationOpResponse>;
   showNotification(
     key: string,
-    options: { [key: string]: string | boolean | number | undefined }
-  ): Promise<{ success: boolean; error?: string }>;
+    options: OptionsMap
+  ): Promise<NotificationOpResponse>;
   updateNotification(
     key: string,
-    options: { [key: string]: string | boolean | number | undefined }
-  ): Promise<{ success: boolean; error?: string }>;
-  hideNotification(key: string): Promise<{ success: boolean; error?: string }>;
-  unregisterNotification(
-    key: string
-  ): Promise<{ success: boolean; error?: string }>;
+    options: OptionsMap
+  ): Promise<NotificationOpResponse>;
+  hideNotification(key: string): Promise<NotificationOpResponse>;
+  unregisterNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
 }
 

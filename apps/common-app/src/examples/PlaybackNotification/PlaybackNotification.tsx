@@ -68,15 +68,6 @@ export const PlaybackNotificationExample: React.FC = () => {
       }
     );
 
-    const seekToListener = PlaybackNotificationManager.addEventListener(
-      'playbackNotificationSeekTo',
-      async (event) => {
-        console.log(`Notification: Seek to ${event.value}s`);
-        // Update notification with new position
-        await PlaybackNotificationManager.update({ elapsedTime: event.value });
-      }
-    );
-
     const dismissListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationDismissed',
       () => {
@@ -93,7 +84,6 @@ export const PlaybackNotificationExample: React.FC = () => {
       previousListener.remove();
       skipForwardListener.remove();
       skipBackwardListener.remove();
-      seekToListener.remove();
       dismissListener.remove();
 
       // Cleanup AudioContext
@@ -136,6 +126,7 @@ export const PlaybackNotificationExample: React.FC = () => {
         artist: 'Artist Name',
         album: 'Album Name',
         state: 'playing',
+        artwork: 'https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
         duration: 180,
         elapsedTime: 0,
       });
