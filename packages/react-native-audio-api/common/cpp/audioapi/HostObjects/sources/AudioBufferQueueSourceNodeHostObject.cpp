@@ -21,11 +21,15 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
   auto when = args[0].getNumber();
-  auto offset = args[1].getNumber();
 
   auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-  audioBufferQueueSourceNode->start(when, offset);
+  if (!args[1].isNumber()) {
+    audioBufferQueueSourceNode->start(when);
+  } else {
+    auto offset = args[1].getNumber();
+    audioBufferQueueSourceNode->start(when, offset);
+  }
 
   return jsi::Value::undefined();
 }

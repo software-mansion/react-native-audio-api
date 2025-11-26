@@ -22,7 +22,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   void stop(double when) override;
 
-  using AudioScheduledSourceNode::start;
+  void start(double when) override;
   void start(double when, double offset);
   void pause();
 
