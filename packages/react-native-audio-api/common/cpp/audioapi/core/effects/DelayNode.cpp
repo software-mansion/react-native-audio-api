@@ -37,9 +37,11 @@ void DelayNode::delayBufferOperation(
     size_t &operationStartingIndex,
     DelayNode::BufferAction action) {
   size_t processingBusStartIndex = 0;
+
   // handle buffer wrap around
   if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
     int framesToEnd = operationStartingIndex + framesToProcess - delayBuffer_->getSize();
+
     if (action == BufferAction::WRITE) {
       delayBuffer_->sum(
           processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToEnd);
@@ -47,10 +49,12 @@ void DelayNode::delayBufferOperation(
       processingBus->sum(
           delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToEnd);
     }
+
     operationStartingIndex = 0;
     processingBusStartIndex += framesToEnd;
     framesToProcess -= framesToEnd;
   }
+
   if (action == BufferAction::WRITE) {
     delayBuffer_->sum(
         processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToProcess);
@@ -60,6 +64,7 @@ void DelayNode::delayBufferOperation(
         delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToProcess);
     delayBuffer_->zero(operationStartingIndex, framesToProcess);
   }
+
   operationStartingIndex += framesToProcess;
 }
 
@@ -77,16 +82,19 @@ std::shared_ptr<AudioBus> DelayNode::processNode(
       signalledToStop_ = false;
       return processingBus;
     }
+
     delayBufferOperation(processingBus, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
     remainingFrames_ -= framesToProcess;
     return processingBus;
   }
+
   // normal processing
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context_->getCurrentTime());
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
       delayBuffer_->getSize();
   delayBufferOperation(processingBus, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
   delayBufferOperation(processingBus, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
+
   return processingBus;
 }
 
