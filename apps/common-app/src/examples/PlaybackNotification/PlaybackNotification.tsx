@@ -15,7 +15,7 @@ export const PlaybackNotificationExample: React.FC = () => {
   useEffect(() => {
     // Create AudioContext in suspended state
     // Will be resumed when showing notification
-    audioContextRef.current = new AudioContext({ initSuspended: true });
+    audioContextRef.current = new AudioContext();
 
     checkPermissions();
 
@@ -68,6 +68,15 @@ export const PlaybackNotificationExample: React.FC = () => {
       }
     );
 
+    const seekToListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSeekTo',
+      async (event) => {
+        console.log(`Notification: Seek to ${event.value}s`);
+        // Update notification with new position
+        await PlaybackNotificationManager.update({ elapsedTime: event.value });
+      }
+    );
+
     const dismissListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationDismissed',
       () => {
@@ -84,6 +93,7 @@ export const PlaybackNotificationExample: React.FC = () => {
       previousListener.remove();
       skipForwardListener.remove();
       skipBackwardListener.remove();
+      seekToListener.remove();
       dismissListener.remove();
 
       // Cleanup AudioContext

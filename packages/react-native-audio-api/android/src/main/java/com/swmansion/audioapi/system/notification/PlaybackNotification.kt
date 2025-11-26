@@ -118,6 +118,12 @@ class PlaybackNotification(
           val body = HashMap<String, Any>().apply { put("value", 15) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipBackward", body)
         }
+
+        override fun onSeekTo(pos: Long) {
+          Log.d(TAG, "MediaSession: onSeekTo - position: $pos")
+          val body = HashMap<String, Any>().apply { put("value", pos / 1000.0) } // Convert to seconds
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSeekTo", body)
+        }
       },
     )
 
@@ -161,6 +167,7 @@ class PlaybackNotification(
     enableControl("pause", true)
     enableControl("next", true)
     enableControl("previous", true)
+    enableControl("seekTo", true)
 
     updateMediaStyle()
     updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
@@ -347,6 +354,7 @@ class PlaybackNotification(
         "previous" -> PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
         "skipForward" -> PlaybackStateCompat.ACTION_FAST_FORWARD
         "skipBackward" -> PlaybackStateCompat.ACTION_REWIND
+        "seekTo" -> PlaybackStateCompat.ACTION_SEEK_TO
         else -> 0L
       }
 

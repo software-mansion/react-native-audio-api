@@ -57,12 +57,21 @@ const pauseListener = PlaybackNotificationManager.addEventListener(
   }
 );
 
+const seekToListener = PlaybackNotificationManager.addEventListener(
+  'playbackNotificationSeekTo',
+  (event) => {
+    // Handle seek to position (event.value is in seconds)
+    PlaybackNotificationManager.update({ elapsedTime: event.value });
+  }
+);
+
 // Update progress
 PlaybackNotificationManager.update({ elapsedTime: 60 });
 
 // Cleanup
 PlaybackNotificationManager.removeEventListener(playListener);
 PlaybackNotificationManager.removeEventListener(pauseListener);
+PlaybackNotificationManager.removeEventListener(seekToListener);
 PlaybackNotificationManager.unregister();
 ```
 
@@ -201,7 +210,8 @@ interface PlaybackNotificationInfo {
     | 'next'
     | 'previous'
     | 'skipForward'
-    | 'skipBackward';
+    | 'skipBackward'
+    | 'seekTo';
   ```
 </details>
 
@@ -217,6 +227,7 @@ interface PlaybackNotificationInfo {
       playbackNotificationPrevious: EventEmptyType;
       playbackNotificationSkipForward: EventTypeWithValue;
       playbackNotificationSkipBackward: EventTypeWithValue;
+      playbackNotificationSeekTo: EventTypeWithValue;
       playbackNotificationDismissed: EventEmptyType;
     }
 

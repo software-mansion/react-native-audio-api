@@ -55,7 +55,8 @@ export type PlaybackControlName =
   | 'next'
   | 'previous'
   | 'skipForward'
-  | 'skipBackward';
+  | 'skipBackward'
+  | 'seekTo';
 
 /// Event names for playback notification actions.
 interface PlaybackNotificationEvent {
@@ -65,6 +66,7 @@ interface PlaybackNotificationEvent {
   playbackNotificationPrevious: EventEmptyType;
   playbackNotificationSkipForward: EventTypeWithValue;
   playbackNotificationSkipBackward: EventTypeWithValue;
+  playbackNotificationSeekTo: EventTypeWithValue;
   playbackNotificationDismissed: EventEmptyType;
 }
 
