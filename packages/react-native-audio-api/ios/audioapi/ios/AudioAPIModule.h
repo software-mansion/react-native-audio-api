@@ -11,7 +11,6 @@
 @class AudioEngine;
 @class NotificationManager;
 @class AudioSessionManager;
-@class LockScreenManager;
 @class NotificationRegistry;
 
 @interface AudioAPIModule : RCTEventEmitter
@@ -24,7 +23,6 @@
 @property (nonatomic, strong) AudioEngine *audioEngine;
 @property (nonatomic, strong) NotificationManager *notificationManager;
 @property (nonatomic, strong) AudioSessionManager *audioSessionManager;
-@property (nonatomic, strong) LockScreenManager *lockScreenManager;
 @property (nonatomic, strong) NotificationRegistry *notificationRegistry;
 
 - (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody;

@@ -8,7 +8,8 @@
     @"album" : MPMediaItemPropertyAlbumTitle, \
     @"duration" : MPMediaItemPropertyPlaybackDuration, \
     @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
-    @"speed" : MPNowPlayingInfoPropertyPlaybackRate \
+    @"speed" : MPNowPlayingInfoPropertyPlaybackRate, \
+    @"artwork" : MPMediaItemPropertyArtwork \
   }
 
 @implementation PlaybackNotification {
@@ -49,6 +50,7 @@
   [self enableRemoteCommand:@"previous" enabled:true];
   [self enableRemoteCommand:@"skipForward" enabled:true];
   [self enableRemoteCommand:@"skipBackward" enabled:true];
+  [self enableRemoteCommand:@"seek" enabled:true];
 
   _isInitialized = true;
   return true;
@@ -166,8 +168,13 @@
   for (NSString *key in info) {
     NSString *mpKey = keyMap[key];
     if (mpKey) {
-      nowPlayingInfo[mpKey] = info[key];
-      _currentInfo[key] = info[key];
+      // Handle artwork specially - don't set it directly to nowPlayingInfo
+      if ([key isEqualToString:@"artwork"]) {
+        _currentInfo[key] = info[key];
+      } else {
+        nowPlayingInfo[mpKey] = info[key];
+        _currentInfo[key] = info[key];
+      }
     }
   }
 
@@ -182,8 +189,6 @@
       playbackState = MPNowPlayingPlaybackStatePlaying;
     } else if ([state isEqualToString:@"paused"]) {
       playbackState = MPNowPlayingPlaybackStatePaused;
-    } else if ([state isEqualToString:@"stopped"]) {
-      playbackState = MPNowPlayingPlaybackStateStopped;
     } else {
       playbackState = MPNowPlayingPlaybackStatePaused;
     }
@@ -274,27 +279,17 @@
 
 - (void)enableControl:(NSString *)control enabled:(BOOL)enabled
 {
-  // Map control names to remote commands
-  NSString *remoteCommandName = nil;
-
-  if ([control isEqualToString:@"play"]) {
-    remoteCommandName = @"play";
-  } else if ([control isEqualToString:@"pause"]) {
-    remoteCommandName = @"pause";
-  } else if ([control isEqualToString:@"next"]) {
-    remoteCommandName = @"next";
-  } else if ([control isEqualToString:@"previous"]) {
-    remoteCommandName = @"previous";
-  } else if ([control isEqualToString:@"skipForward"]) {
-    remoteCommandName = @"skipForward";
-  } else if ([control isEqualToString:@"skipBackward"]) {
-    remoteCommandName = @"skipBackward";
-  } else if ([control isEqualToString:@"seek"]) {
-    remoteCommandName = @"seek";
-  }
-
-  if (remoteCommandName) {
-    [self enableRemoteCommand:remoteCommandName enabled:enabled];
+  NSSet *validControls = [NSSet setWithObjects:
+      @"play",
+      @"pause",
+      @"next",
+      @"previous",
+      @"skipForward",
+      @"skipBackward",
+      @"seek",
+      nil];
+  if ([validControls containsObject:control]) {
+    [self enableRemoteCommand:control enabled:enabled];
   }
 }
 
@@ -408,7 +403,7 @@
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  NSDictionary *body = @{@"interval" : @(event.interval)};
+  NSDictionary *body = @{@"value" : @(event.interval)};
   [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipForward"
                                         eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
@@ -416,7 +411,7 @@
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  NSDictionary *body = @{@"interval" : @(event.interval)};
+  NSDictionary *body = @{@"value" : @(event.interval)};
   [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipBackward"
                                         eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
@@ -425,8 +420,8 @@
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:
     (MPChangePlaybackPositionCommandEvent *)event
 {
-  NSDictionary *body = @{@"position" : @(event.positionTime)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeek" eventBody:body];
+  NSDictionary *body = @{@"value" : @(event.positionTime)};
+  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekTo" eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

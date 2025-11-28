@@ -11,7 +11,6 @@
 #import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/ios/system/LockScreenManager.h>
 #import <audioapi/ios/system/NotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 
@@ -51,7 +50,6 @@ RCT_EXPORT_MODULE(AudioAPIModule);
   [self.audioEngine cleanup];
   [self.notificationManager cleanup];
   [self.audioSessionManager cleanup];
-  [self.lockScreenManager cleanup];
   [self.notificationRegistry cleanup];
 
   _eventHandler = nullptr;
@@ -65,7 +63,6 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
   self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
-  self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
   self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
   self.notificationRegistry = [[NotificationRegistry alloc] initWithAudioAPIModule:self];
 
@@ -218,73 +215,85 @@ RCT_EXPORT_METHOD(
     registerNotification : (NSString *)type key : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL success = [self.notificationRegistry registerNotificationType:type withKey:key];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL success = [self.notificationRegistry registerNotificationType:type withKey:key];
 
-  if (success) {
-    resolve(@{@"success" : @true});
-  } else {
-    resolve(@{@"success" : @false, @"error" : @"Failed to register notification"});
-  }
+    if (success) {
+      resolve(@{@"success" : @true});
+    } else {
+      resolve(@{@"success" : @false, @"error" : @"Failed to register notification"});
+    }
+  });
 }
 
 RCT_EXPORT_METHOD(
     showNotification : (NSString *)key options : (NSDictionary *)
         options resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL success = [self.notificationRegistry showNotificationWithKey:key options:options];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL success = [self.notificationRegistry showNotificationWithKey:key options:options];
 
-  if (success) {
-    resolve(@{@"success" : @true});
-  } else {
-    resolve(@{@"success" : @false, @"error" : @"Failed to show notification"});
-  }
+    if (success) {
+      resolve(@{@"success" : @true});
+    } else {
+      resolve(@{@"success" : @false, @"error" : @"Failed to show notification"});
+    }
+  });
 }
 
 RCT_EXPORT_METHOD(
     updateNotification : (NSString *)key options : (NSDictionary *)
         options resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL success = [self.notificationRegistry updateNotificationWithKey:key options:options];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL success = [self.notificationRegistry updateNotificationWithKey:key options:options];
 
-  if (success) {
-    resolve(@{@"success" : @true});
-  } else {
-    resolve(@{@"success" : @false, @"error" : @"Failed to update notification"});
-  }
+    if (success) {
+      resolve(@{@"success" : @true});
+    } else {
+      resolve(@{@"success" : @false, @"error" : @"Failed to update notification"});
+    }
+  });
 }
 
 RCT_EXPORT_METHOD(
     hideNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
 
-  if (success) {
-    resolve(@{@"success" : @true});
-  } else {
-    resolve(@{@"success" : @false, @"error" : @"Failed to hide notification"});
-  }
+    if (success) {
+      resolve(@{@"success" : @true});
+    } else {
+      resolve(@{@"success" : @false, @"error" : @"Failed to hide notification"});
+    }
+  });
 }
 
 RCT_EXPORT_METHOD(
     unregisterNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL success = [self.notificationRegistry unregisterNotificationWithKey:key];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL success = [self.notificationRegistry unregisterNotificationWithKey:key];
 
-  if (success) {
-    resolve(@{@"success" : @true});
-  } else {
-    resolve(@{@"success" : @false, @"error" : @"Failed to unregister notification"});
-  }
+    if (success) {
+      resolve(@{@"success" : @true});
+    } else {
+      resolve(@{@"success" : @false, @"error" : @"Failed to unregister notification"});
+    }
+  });
 }
 
 RCT_EXPORT_METHOD(
     isNotificationActive : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];
-  resolve(@(isActive));
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];
+    resolve(@(isActive));
+  });
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
