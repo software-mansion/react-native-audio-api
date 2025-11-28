@@ -17,6 +17,10 @@ export function OnlyiOS({ footnote }) {
   return <div className={`${styles.badge} ${styles.basic}`}>iOS only{footnote ? '*' : ''}</div>;
 }
 
+export function AndroidOnly({ footnote }) {
+  return <div className={`${styles.badge} ${styles.basic}`}>Android only{footnote ? '*' : ''}</div>;
+}
+
 export function Experimental({ footnote }) {
   return <div className={`${styles.badge} ${styles.experimental}`}>Experimental{footnote ? '*' : ''}</div>;
 }

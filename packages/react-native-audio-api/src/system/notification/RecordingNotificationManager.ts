@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { NativeAudioAPIModule } from '../../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
 import type {
@@ -21,6 +22,7 @@ class RecordingNotificationManager
   private isRegistered = false;
   private isShown = false;
   private audioEventEmitter: AudioEventEmitter;
+  private isIOS = Platform.OS === 'ios';
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
@@ -30,6 +32,12 @@ class RecordingNotificationManager
   async register(): Promise<void> {
     if (this.isRegistered) {
       console.warn('RecordingNotification is already registered');
+      return;
+    }
+
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      this.isRegistered = true;
       return;
     }
 
@@ -57,6 +65,12 @@ class RecordingNotificationManager
       );
     }
 
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      this.isShown = true;
+      return;
+    }
+
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
@@ -80,6 +94,11 @@ class RecordingNotificationManager
       return;
     }
 
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      return;
+    }
+
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
@@ -97,6 +116,12 @@ class RecordingNotificationManager
   /// Hide the notification (can be shown again later).
   async hide(): Promise<void> {
     if (!this.isShown) {
+      return;
+    }
+
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      this.isShown = false;
       return;
     }
 
@@ -125,6 +150,12 @@ class RecordingNotificationManager
       await this.hide();
     }
 
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      this.isRegistered = false;
+      return;
+    }
+
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
@@ -150,6 +181,11 @@ class RecordingNotificationManager
       return;
     }
 
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      return;
+    }
+
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
@@ -167,6 +203,11 @@ class RecordingNotificationManager
 
   /// Check if the notification is currently active.
   async isActive(): Promise<boolean> {
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      return this.isShown;
+    }
+
     if (!NativeAudioAPIModule) {
       return false;
     }
@@ -181,6 +222,14 @@ class RecordingNotificationManager
     eventName: T,
     callback: (event: NotificationEvents[T]) => void
   ): AudioEventSubscription {
+    // Recording notifications are only supported on Android
+    if (this.isIOS) {
+      // Return a dummy subscription for iOS
+      return {
+        remove: () => {},
+      } as unknown as AudioEventSubscription;
+    }
+
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
   }
 

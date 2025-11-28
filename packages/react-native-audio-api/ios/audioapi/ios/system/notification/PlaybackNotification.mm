@@ -279,15 +279,14 @@
 
 - (void)enableControl:(NSString *)control enabled:(BOOL)enabled
 {
-  NSSet *validControls = [NSSet setWithObjects:
-      @"play",
-      @"pause",
-      @"next",
-      @"previous",
-      @"skipForward",
-      @"skipBackward",
-      @"seek",
-      nil];
+  NSSet *validControls = [NSSet setWithObjects:@"play",
+                                               @"pause",
+                                               @"next",
+                                               @"previous",
+                                               @"skipForward",
+                                               @"skipBackward",
+                                               @"seek",
+                                               nil];
   if ([validControls containsObject:control]) {
     [self enableRemoteCommand:control enabled:enabled];
   }
