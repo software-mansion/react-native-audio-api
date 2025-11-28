@@ -261,7 +261,7 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
                                                            target:self
                                                          selector:@selector(checkSecondaryAudioHint)
                                                          userInfo:nil
-                                                          repeats:YES];
+                                                          repeats:true];
 
   [[NSRunLoop mainRunLoop] addTimer:self.hintPollingTimer forMode:NSRunLoopCommonModes];
 }

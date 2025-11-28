@@ -182,7 +182,7 @@
       self.sessionCategory,
       self.sessionMode,
       (unsigned long)self.sessionOptions,
-      self.allowHapticsAndSystemSoundsDuringRecording ? @"YES" : @"NO");
+      self.allowHapticsAndSystemSoundsDuringRecording ? @"true" : @"false");
 
   NSError *error = nil;
 

@@ -22,13 +22,13 @@
 {
   if (!type || !key) {
     NSLog(@"[NotificationRegistry] Invalid type or key");
-    return NO;
+    return false;
   }
 
   // Check if already registered
   if (_notifications[key]) {
     NSLog(@"[NotificationRegistry] Notification with key '%@' already registered", key);
-    return NO;
+    return false;
   }
 
   // Create the appropriate notification type
@@ -36,14 +36,14 @@
 
   if (!notification) {
     NSLog(@"[NotificationRegistry] Unknown notification type: %@", type);
-    return NO;
+    return false;
   }
 
   // Store the notification
   _notifications[key] = notification;
 
   NSLog(@"[NotificationRegistry] Registered notification type '%@' with key '%@'", type, key);
-  return YES;
+  return true;
 }
 
 - (BOOL)showNotificationWithKey:(NSString *)key options:(NSDictionary *)options
@@ -52,14 +52,14 @@
 
   if (!notification) {
     NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return NO;
+    return false;
   }
 
   // Initialize if first time showing
   if (![notification isActive]) {
     if (![notification initializeWithOptions:options]) {
       NSLog(@"[NotificationRegistry] Failed to initialize notification: %@", key);
-      return NO;
+      return false;
     }
   }
 
@@ -80,7 +80,7 @@
 
   if (!notification) {
     NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return NO;
+    return false;
   }
 
   BOOL success = [notification updateWithOptions:options];
@@ -100,7 +100,7 @@
 
   if (!notification) {
     NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return NO;
+    return false;
   }
 
   BOOL success = [notification hide];
@@ -120,7 +120,7 @@
 
   if (!notification) {
     NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return NO;
+    return false;
   }
 
   // Clean up and remove
@@ -128,7 +128,7 @@
   [_notifications removeObjectForKey:key];
 
   NSLog(@"[NotificationRegistry] Unregistered notification: %@", key);
-  return YES;
+  return true;
 }
 
 - (BOOL)isNotificationActiveWithKey:(NSString *)key
@@ -136,7 +136,7 @@
   id<BaseNotification> notification = _notifications[key];
 
   if (!notification) {
-    return NO;
+    return false;
   }
 
   return [notification isActive];

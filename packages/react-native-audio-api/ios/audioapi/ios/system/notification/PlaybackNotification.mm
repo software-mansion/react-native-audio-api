@@ -21,8 +21,8 @@
   if (self = [super init]) {
     self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
-    _isInitialized = NO;
-    _isActive = NO;
+    _isInitialized = false;
+    _isActive = false;
     _currentInfo = [[NSMutableDictionary alloc] init];
   }
 
@@ -34,7 +34,7 @@
 - (BOOL)initializeWithOptions:(NSDictionary *)options
 {
   if (_isInitialized) {
-    return YES;
+    return true;
   }
 
   // Enable remote control events
@@ -43,37 +43,37 @@
   });
 
   // Enable default remote commands
-  [self enableRemoteCommand:@"play" enabled:YES];
-  [self enableRemoteCommand:@"pause" enabled:YES];
-  [self enableRemoteCommand:@"next" enabled:YES];
-  [self enableRemoteCommand:@"previous" enabled:YES];
-  [self enableRemoteCommand:@"skipForward" enabled:YES];
-  [self enableRemoteCommand:@"skipBackward" enabled:YES];
+  [self enableRemoteCommand:@"play" enabled:true];
+  [self enableRemoteCommand:@"pause" enabled:true];
+  [self enableRemoteCommand:@"next" enabled:true];
+  [self enableRemoteCommand:@"previous" enabled:true];
+  [self enableRemoteCommand:@"skipForward" enabled:true];
+  [self enableRemoteCommand:@"skipBackward" enabled:true];
 
-  _isInitialized = YES;
-  return YES;
+  _isInitialized = true;
+  return true;
 }
 
 - (BOOL)showWithOptions:(NSDictionary *)options
 {
   if (!_isInitialized) {
     if (![self initializeWithOptions:options]) {
-      return NO;
+      return false;
     }
   }
 
   // Update the now playing info
   [self updateNowPlayingInfo:options];
 
-  _isActive = YES;
+  _isActive = true;
 
-  return YES;
+  return true;
 }
 
 - (BOOL)updateWithOptions:(NSDictionary *)options
 {
   if (!_isActive) {
-    return NO;
+    return false;
   }
 
   // Handle control enable/disable
@@ -81,19 +81,19 @@
     NSString *control = options[@"control"];
     BOOL enabled = [options[@"enabled"] boolValue];
     [self enableControl:control enabled:enabled];
-    return YES;
+    return true;
   }
 
   // Update the now playing info
   [self updateNowPlayingInfo:options];
 
-  return YES;
+  return true;
 }
 
 - (BOOL)hide
 {
   if (!_isActive) {
-    return YES;
+    return true;
   }
 
   // Clear now playing info
@@ -101,9 +101,9 @@
   self.artworkUrl = nil;
   [_currentInfo removeAllObjects];
 
-  _isActive = NO;
+  _isActive = false;
 
-  return YES;
+  return true;
 }
 
 - (void)cleanup
@@ -132,7 +132,7 @@
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
   });
 
-  _isInitialized = NO;
+  _isInitialized = false;
 }
 
 - (BOOL)isActive

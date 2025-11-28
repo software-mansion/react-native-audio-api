@@ -221,9 +221,9 @@ RCT_EXPORT_METHOD(
   BOOL success = [self.notificationRegistry registerNotificationType:type withKey:key];
 
   if (success) {
-    resolve(@{@"success" : @YES});
+    resolve(@{@"success" : @true});
   } else {
-    resolve(@{@"success" : @NO, @"error" : @"Failed to register notification"});
+    resolve(@{@"success" : @false, @"error" : @"Failed to register notification"});
   }
 }
 
@@ -234,9 +234,9 @@ RCT_EXPORT_METHOD(
   BOOL success = [self.notificationRegistry showNotificationWithKey:key options:options];
 
   if (success) {
-    resolve(@{@"success" : @YES});
+    resolve(@{@"success" : @true});
   } else {
-    resolve(@{@"success" : @NO, @"error" : @"Failed to show notification"});
+    resolve(@{@"success" : @false, @"error" : @"Failed to show notification"});
   }
 }
 
@@ -247,9 +247,9 @@ RCT_EXPORT_METHOD(
   BOOL success = [self.notificationRegistry updateNotificationWithKey:key options:options];
 
   if (success) {
-    resolve(@{@"success" : @YES});
+    resolve(@{@"success" : @true});
   } else {
-    resolve(@{@"success" : @NO, @"error" : @"Failed to update notification"});
+    resolve(@{@"success" : @false, @"error" : @"Failed to update notification"});
   }
 }
 
@@ -260,9 +260,9 @@ RCT_EXPORT_METHOD(
   BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
 
   if (success) {
-    resolve(@{@"success" : @YES});
+    resolve(@{@"success" : @true});
   } else {
-    resolve(@{@"success" : @NO, @"error" : @"Failed to hide notification"});
+    resolve(@{@"success" : @false, @"error" : @"Failed to hide notification"});
   }
 }
 
@@ -273,9 +273,9 @@ RCT_EXPORT_METHOD(
   BOOL success = [self.notificationRegistry unregisterNotificationWithKey:key];
 
   if (success) {
-    resolve(@{@"success" : @YES});
+    resolve(@{@"success" : @true});
   } else {
-    resolve(@{@"success" : @NO, @"error" : @"Failed to unregister notification"});
+    resolve(@{@"success" : @false, @"error" : @"Failed to unregister notification"});
   }
 }
 
