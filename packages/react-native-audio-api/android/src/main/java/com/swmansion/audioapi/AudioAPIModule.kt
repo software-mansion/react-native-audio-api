@@ -40,8 +40,6 @@ class AudioAPIModule(
     eventBody: Map<String, Any>,
   )
 
-  private external fun closeAllContexts()
-
   init {
     try {
       System.loadLibrary("react-native-audio-api")
@@ -77,7 +75,7 @@ class AudioAPIModule(
   }
 
   override fun onHostDestroy() {
-    closeAllContexts()
+    // do nothing
   }
 
   override fun initialize() {
@@ -85,7 +83,6 @@ class AudioAPIModule(
   }
 
   override fun invalidate() {
-    closeAllContexts()
     reactContext.get()?.removeLifecycleEventListener(this)
     // think about cleaning up resources, singletons etc.
   }
