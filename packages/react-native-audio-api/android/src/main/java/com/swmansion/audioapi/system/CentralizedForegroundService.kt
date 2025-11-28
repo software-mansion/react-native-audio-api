@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.swmansion.audioapi.system.MediaSessionManager.CHANNEL_ID
+import com.swmansion.audioapi.system.notification.NotificationRegistry
 
 /**
  * Centralized foreground service that can be used by any component that needs foreground capabilities.
@@ -47,22 +48,44 @@ class CentralizedForegroundService : Service() {
     try {
       createNotificationChannelIfNeeded()
 
-      val notification = createServiceNotification()
+      // Try to use an existing notification first
+      val existingNotification = findExistingNotification()
+      val (notificationId, notification) =
+        if (existingNotification != null) {
+          existingNotification
+        } else {
+          // Fallback to default service notification
+          NOTIFICATION_ID to createServiceNotification()
+        }
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         startForeground(
-          NOTIFICATION_ID,
+          notificationId,
           notification,
           ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
       } else {
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(notificationId, notification)
       }
 
-      Log.d(TAG, "Centralized foreground service started")
+      Log.d(TAG, "Centralized foreground service started with notification ID: $notificationId")
     } catch (e: Exception) {
       Log.e(TAG, "Error starting foreground service: ${e.message}", e)
     }
+  }
+
+  private fun findExistingNotification(): Pair<Int, Notification>? {
+    // Check for recording notification first (priority)
+    NotificationRegistry.getBuiltNotification(101)?.let {
+      return 101 to it
+    }
+
+    // Check for playback notification
+    NotificationRegistry.getBuiltNotification(100)?.let {
+      return 100 to it
+    }
+
+    return null
   }
 
   private fun createServiceNotification(): Notification =
