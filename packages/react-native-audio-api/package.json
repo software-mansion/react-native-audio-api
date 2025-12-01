@@ -164,5 +164,8 @@
     "type": "module-legacy",
     "languages": "cpp",
     "version": "0.37.1"
+  },
+  "dependencies": {
+    "semver": "^7.7.3"
   }
 }

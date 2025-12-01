@@ -1,9 +1,9 @@
+import AudioAPIModule from '../AudioAPIModule';
+import { NotSupportedError } from '../errors';
 import { IAudioContext } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
-import { NotSupportedError } from '../errors';
-import { isWorkletsVersionSupported, workletsModule } from '../utils';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class AudioContext extends BaseAudioContext {
   constructor(options?: AudioContextOptions) {
@@ -16,11 +16,8 @@ export default class AudioContext extends BaseAudioContext {
         `The provided sampleRate is not supported: ${options.sampleRate}`
       );
     }
-    let audioRuntime = null;
 
-    if (isWorkletsVersionSupported) {
-      audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
-    }
+    const audioRuntime = AudioAPIModule.getOrCreateAudioRuntime();
 
     super(
       global.createAudioContext(

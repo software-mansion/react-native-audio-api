@@ -28,6 +28,7 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
         playOnAudioFocus = lockScreenManager.get()?.isPlaying == true
         val body =
@@ -37,6 +38,7 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
       AudioManager.AUDIOFOCUS_GAIN -> {
         if (playOnAudioFocus) {
           val body =

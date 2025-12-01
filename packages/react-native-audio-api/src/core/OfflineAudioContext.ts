@@ -1,9 +1,9 @@
-import { IOfflineAudioContext } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
-import { OfflineAudioContextOptions } from '../types';
+import AudioAPIModule from '../AudioAPIModule';
 import { InvalidStateError, NotSupportedError } from '../errors';
+import { IOfflineAudioContext } from '../interfaces';
+import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
-import { isWorkletsVersionSupported, workletsModule } from '../utils';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
@@ -17,10 +17,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg1?: number,
     arg2?: number
   ) {
-    let audioRuntime = null;
-    if (isWorkletsVersionSupported) {
-      audioRuntime = workletsModule.createWorkletRuntime('AudioWorkletRuntime');
-    }
+    const audioRuntime = AudioAPIModule.getOrCreateAudioRuntime();
 
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;
