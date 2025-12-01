@@ -17,7 +17,7 @@ export default class AudioContext extends BaseAudioContext {
       );
     }
 
-    const audioRuntime = AudioAPIModule.getOrCreateAudioRuntime();
+    const audioRuntime = AudioAPIModule.createAudioRuntime();
 
     super(
       global.createAudioContext(

@@ -17,7 +17,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg1?: number,
     arg2?: number
   ) {
-    const audioRuntime = AudioAPIModule.getOrCreateAudioRuntime();
+    const audioRuntime = AudioAPIModule.createAudioRuntime();
 
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;

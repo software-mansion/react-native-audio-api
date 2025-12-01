@@ -21,7 +21,6 @@ class AudioAPIModule {
   #canUseWorklets_ = false;
   #workletsVersion = 'unknown';
   #workletsAvailable_ = false;
-  #audioRuntime: WorkletRuntime | null = null;
 
   public supportedWorkletsVersion = ['0.6.0', '0.6.1'];
 
@@ -111,20 +110,12 @@ class AudioAPIModule {
     return this.#canUseWorklets_;
   }
 
-  public getOrCreateAudioRuntime(): WorkletRuntime | null {
+  public createAudioRuntime(): WorkletRuntime | null {
     if (!this.#canUseWorklets_) {
       return null;
     }
 
-    if (this.#audioRuntime) {
-      return this.#audioRuntime;
-    }
-
-    this.#audioRuntime = this.#workletsModule_!.createWorkletRuntime(
-      'AudioWorkletRuntime'
-    );
-
-    return this.#audioRuntime;
+    return this.#workletsModule_!.createWorkletRuntime('AudioWorkletRuntime');
   }
 }
 
