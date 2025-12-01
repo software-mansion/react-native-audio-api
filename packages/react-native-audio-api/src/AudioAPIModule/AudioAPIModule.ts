@@ -28,7 +28,7 @@ class AudioAPIModule {
   constructor() {
     // Important! Verify and import worklets first
     // otherwise the native module installation might crash
-    // if reanimated is not imported before audio-api
+    // if react-native-worklets is not imported before audio-api
     this.#verifyWorklets();
 
     if (this.#verifyInstallation()) {
