@@ -54,7 +54,6 @@ class IIRFilterNode : public AudioNode {
 
  private:
   static constexpr size_t bufferLength = 32;
-  size_t m_bufferIndex = 0;
 
   std::vector<float> feedforward_;
   std::vector<float> feedback_;

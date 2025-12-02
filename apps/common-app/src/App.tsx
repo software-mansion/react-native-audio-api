@@ -1,27 +1,22 @@
-import React from 'react';
-import type { FC } from 'react';
-import Animated from 'react-native-reanimated';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import type { FC } from 'react';
+import React from 'react';
 import {
   FlatList,
+  ListRenderItem,
+  Pressable,
   StyleSheet,
   Text,
-  Pressable,
-  ListRenderItem,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
 
+import { Spacer } from './components';
 import Container from './components/Container';
 import { Example, Examples, MainStackProps } from './examples';
-import { layout, colors } from './styles';
-import { Spacer } from './components';
+import { colors, layout } from './styles';
 
 const Stack = createStackNavigator();
-
-// Our slider component uses the text prop to display shared value
-// We need it whitelisted in order to have it "animated".
-Animated.addWhitelistedNativeProps({ text: true });
 
 const ItemSeparatorComponent = () => <Spacer.Vertical size={16} />;
 
@@ -35,7 +30,8 @@ const HomeScreen: FC = () => {
       style={({ pressed }) => [
         styles.button,
         { borderStyle: pressed ? 'solid' : 'dashed' },
-      ]}>
+      ]}
+    >
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.subtitle}>{item.subtitle}</Text>
     </Pressable>
@@ -68,7 +64,8 @@ const App: FC = () => {
             headerTintColor: colors.white,
             headerBackTitle: ' ',
             headerBackAccessibilityLabel: 'Go back',
-          }}>
+          }}
+        >
           <Stack.Screen
             name="Home"
             component={HomeScreen}

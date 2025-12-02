@@ -155,6 +155,7 @@ class LockScreenManager(
         "state_playing" -> {
           this.playbackState = PlaybackStateCompat.STATE_PLAYING
         }
+
         "state_paused" -> {
           this.playbackState = PlaybackStateCompat.STATE_PAUSED
         }
