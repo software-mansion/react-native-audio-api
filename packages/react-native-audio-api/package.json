@@ -72,7 +72,7 @@
     "type": "git",
     "url": "git+https://github.com/software-mansion/react-native-audio-api.git"
   },
-  "author": "Software Mansion Labs (https://github.com/software-mansion)",
+  "author": "Software Mansion (https://github.com/software-mansion)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/software-mansion/react-native-audio-api/issues"
