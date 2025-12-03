@@ -102,24 +102,7 @@ If your app is not managed by expo, see [non-expo-permissions page](/docs/other/
 
 Read more about plugin [here](/docs/other/audio-api-plugin)!
 
-### Step 3: Wrap metro config with Audio API wrapper (recommended)
-
-Wrap your existing Metro configuration in the `metro.config.js` file with the `wrapWithAudioAPIMetroConfig` function:
-
-```javascript
-// metro.config.js
-const {
-  wrapWithAudioAPIMetroConfig,
-} = require('react-native-audio-api/metro-config');
-
-const config = {
-  // Your existing Metro configuration options
-};
-
-module.exports = wrapWithAudioAPIMetroConfig(config);
-```
-
-### Step 4: Install system-wide bash (only Windows OS)
+### Step 3: Install system-wide bash (only Windows OS)
 
 There are many ways to do that f.e. using git bash. To make sure just test if any unix command works.
 ```bash

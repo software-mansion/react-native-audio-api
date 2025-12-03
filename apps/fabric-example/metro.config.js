@@ -1,7 +1,4 @@
 const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
-const {
-  wrapWithAudioAPIMetroConfig,
-} = require('react-native-audio-api/metro-config');
 
 const path = require('path');
 
@@ -16,6 +13,4 @@ const config = {
   watchFolders: [root],
 };
 
-module.exports = wrapWithAudioAPIMetroConfig(
-  mergeConfig(getDefaultConfig(__dirname), config),
-);
+module.exports = mergeConfig(getDefaultConfig(__dirname), config);
