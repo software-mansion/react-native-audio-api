@@ -6,7 +6,9 @@
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
+#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
+#include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
@@ -46,8 +48,10 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
@@ -159,11 +163,15 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   auto streamer = context_->createStreamer();
   auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(streamer);
   auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
   object.setExternalMemoryPressure(runtime, StreamerNodeHostObject::getSizeInBytes());
   return object;
+#else
+  return jsi::Value::undefined();
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
@@ -178,6 +186,15 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }
 
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
+  auto maxDelayTime = static_cast<float>(args[0].getNumber());
+  auto delayNode = context_->createDelay(maxDelayTime);
+  auto delayNodeHostObject = std::make_shared<DelayNodeHostObject>(delayNode);
+  auto jsiObject = jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
+  jsiObject.setExternalMemoryPressure(runtime, delayNodeHostObject->getSizeInBytes());
+  return jsiObject;
+}
+
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
   auto stereoPanner = context_->createStereoPanner();
   auto stereoPannerHostObject = std::make_shared<StereoPannerNodeHostObject>(stereoPanner);
@@ -188,6 +205,32 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
   auto biquadFilter = context_->createBiquadFilter();
   auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createIIRFilter) {
+  auto feedforwardArray = args[0].asObject(runtime).asArray(runtime);
+  auto feedbackArray = args[1].asObject(runtime).asArray(runtime);
+
+  size_t feedforwardLength = feedforwardArray.length(runtime);
+  size_t feedbackLength = feedbackArray.length(runtime);
+
+  std::vector<float> feedforward;
+  std::vector<float> feedback;
+
+  feedforward.reserve(feedforwardLength);
+  feedback.reserve(feedbackLength);
+
+  for (size_t i = 0; i < feedforwardLength; ++i) {
+    feedforward.push_back(feedforwardArray.getValueAtIndex(runtime, i).asNumber());
+  }
+
+  for (size_t i = 0; i < feedbackLength; ++i) {
+    feedback.push_back(feedbackArray.getValueAtIndex(runtime, i).asNumber());
+  }
+
+  auto iirFilter = context_->createIIRFilter(feedforward, feedback);
+  auto iirFilterHostObject = std::make_shared<IIRFilterNodeHostObject>(iirFilter);
+  return jsi::Object::createFromHostObject(runtime, iirFilterHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {

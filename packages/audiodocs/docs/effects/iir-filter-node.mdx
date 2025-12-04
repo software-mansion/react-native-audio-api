@@ -1,0 +1,41 @@
+---
+sidebar_position: 4
+---
+
+# IIRFilterNode
+
+The `IIRFilterNode` interface represents a general infinite impulse response (IIR) filter.
+It is an [`AudioNode`](/docs/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
+`IIRFilterNode` lets the parameters of the filter response be specified, so that it can be tuned as needed.
+
+In general, it is recommended to use [`BiquadFilterNode`](/docs/effects/biquad-filter-node) for implementing higher-order filters,
+as it is less sensitive to numeric issues and its parameters can be automated. You can create all even-order IIR filters with `BiquadFilterNode`,
+but if odd-ordered filters are needed or automation is not needed, then `IIRFilterNode` may be appropriate.
+
+
+## Constructor
+
+[`BaseAudioContext.createIIRFilter(options: IIRFilterNodeOptions)`](/docs/core/base-audio-context#createiirfilter)
+
+```jsx
+interface IIRFilterNodeOptions {
+  feedforward: number[]; // array of floating-point values specifying the feedforward (numerator) coefficients
+  feedback: number[]; // array of floating-point values specifying the feedback (denominator) coefficients
+}
+```
+
+## Properties
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+## Methods
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+### `getFrequencyResponse`
+
+| Parameter | Type | Description |
+| :--------: | :--: | :---------- |
+| `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
+| `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
+| `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
+
+#### Returns `undefined`.

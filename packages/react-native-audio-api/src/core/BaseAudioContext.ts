@@ -1,31 +1,39 @@
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import AudioAPIModule from '../AudioAPIModule';
+import {
+  InvalidAccessError,
+  InvalidStateError,
+  NotSupportedError,
+} from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,
-  ContextState,
-  PeriodicWaveConstraints,
   AudioWorkletRuntime,
+  ContextState,
   ConvolverNodeOptions,
+  IIRFilterNodeOptions,
+  PeriodicWaveConstraints,
 } from '../types';
-import { assertWorkletsEnabled, workletsModule } from '../utils';
-import WorkletSourceNode from './WorkletSourceNode';
-import WorkletProcessingNode from './WorkletProcessingNode';
+import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
-import ConvolverNode from './ConvolverNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 import GainNode from './GainNode';
+import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
-import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
+import WorkletProcessingNode from './WorkletProcessingNode';
+import WorkletSourceNode from './WorkletSourceNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -81,21 +89,26 @@ export default class BaseAudioContext {
         `The number of input channels provided (${inputChannelCount}) can not be less than 1 or greater than 32`
       );
     }
+
     if (bufferLength < 1) {
       throw new NotSupportedError(
         `The buffer length provided (${bufferLength}) can not be less than 1`
       );
     }
+
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
-        'worklet';
-        const floatAudioData: Array<Float32Array> = audioBuffers.map(
-          (buffer) => new Float32Array(buffer)
-        );
-        callback(floatAudioData, channelCount);
-      }
-    );
+
+    const shareableWorklet =
+      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
+        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
+          'worklet';
+          const floatAudioData: Array<Float32Array> = audioBuffers.map(
+            (buffer) => new Float32Array(buffer)
+          );
+          callback(floatAudioData, channelCount);
+        }
+      );
+
     return new WorkletNode(
       this,
       this.context.createWorkletNode(
@@ -117,23 +130,26 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletProcessingNode {
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (
-        inputBuffers: Array<ArrayBuffer>,
-        outputBuffers: Array<ArrayBuffer>,
-        framesToProcess: number,
-        currentTime: number
-      ) => {
-        'worklet';
-        const inputData: Array<Float32Array> = inputBuffers.map(
-          (buffer) => new Float32Array(buffer, 0, framesToProcess)
-        );
-        const outputData: Array<Float32Array> = outputBuffers.map(
-          (buffer) => new Float32Array(buffer, 0, framesToProcess)
-        );
-        callback(inputData, outputData, framesToProcess, currentTime);
-      }
-    );
+
+    const shareableWorklet =
+      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
+        (
+          inputBuffers: Array<ArrayBuffer>,
+          outputBuffers: Array<ArrayBuffer>,
+          framesToProcess: number,
+          currentTime: number
+        ) => {
+          'worklet';
+          const inputData: Array<Float32Array> = inputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          const outputData: Array<Float32Array> = outputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          callback(inputData, outputData, framesToProcess, currentTime);
+        }
+      );
+
     return new WorkletProcessingNode(
       this,
       this.context.createWorkletProcessingNode(
@@ -153,20 +169,22 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletSourceNode {
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (
-        audioBuffers: Array<ArrayBuffer>,
-        framesToProcess: number,
-        currentTime: number,
-        startOffset: number
-      ) => {
-        'worklet';
-        const floatAudioData: Array<Float32Array> = audioBuffers.map(
-          (buffer) => new Float32Array(buffer)
-        );
-        callback(floatAudioData, framesToProcess, currentTime, startOffset);
-      }
-    );
+    const shareableWorklet =
+      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
+        (
+          audioBuffers: Array<ArrayBuffer>,
+          framesToProcess: number,
+          currentTime: number,
+          startOffset: number
+        ) => {
+          'worklet';
+          const floatAudioData: Array<Float32Array> = audioBuffers.map(
+            (buffer) => new Float32Array(buffer)
+          );
+          callback(floatAudioData, framesToProcess, currentTime, startOffset);
+        }
+      );
+
     return new WorkletSourceNode(
       this,
       this.context.createWorkletSourceNode(
@@ -185,7 +203,11 @@ export default class BaseAudioContext {
   }
 
   createStreamer(): StreamerNode {
-    return new StreamerNode(this, this.context.createStreamer());
+    const streamer = this.context.createStreamer();
+    if (!streamer) {
+      throw new NotSupportedError('StreamerNode requires FFmpeg build');
+    }
+    return new StreamerNode(this, streamer);
   }
 
   createConstantSource(): ConstantSourceNode {
@@ -196,12 +218,49 @@ export default class BaseAudioContext {
     return new GainNode(this, this.context.createGain());
   }
 
+  createDelay(maxDelayTime?: number): DelayNode {
+    const maxTime = maxDelayTime ?? 1.0;
+    return new DelayNode(this, this.context.createDelay(maxTime));
+  }
+
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this, this.context.createStereoPanner());
   }
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
+    const feedforward = options.feedforward;
+    const feedback = options.feedback;
+    if (feedforward.length < 1 || feedforward.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`
+      );
+    }
+    if (feedback.length < 1 || feedback.length > 20) {
+      throw new NotSupportedError(
+        `The provided feedback array has length (${feedback.length}) outside the range [1, 20]`
+      );
+    }
+
+    if (feedforward.every((value) => value === 0)) {
+      throw new InvalidStateError(
+        `Feedforward array must contain at least one non-zero value`
+      );
+    }
+
+    if (feedback[0] === 0) {
+      throw new InvalidStateError(
+        `First value of feedback array cannot be zero`
+      );
+    }
+
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(feedforward, feedback)
+    );
   }
 
   createBufferSource(

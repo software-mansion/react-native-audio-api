@@ -9,7 +9,9 @@
  */
 
 #include <audioapi/core/sources/AudioBuffer.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <functional>
