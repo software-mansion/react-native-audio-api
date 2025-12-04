@@ -54,8 +54,6 @@ RCT_EXPORT_MODULE(AudioAPIModule);
 
   _eventHandler = nullptr;
 
-  audioapi::AudioAPIModuleInstaller::closeAllContexts();
-
   [super invalidate];
 }
 

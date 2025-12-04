@@ -1,0 +1,50 @@
+---
+sidebar_position: 5
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# DelayNode
+
+The `DelayNode` interface represents the latency of the audio signal by given time. It is an [`AudioNode`](/docs/core/audio-node) that applies time shift to incoming signal f.e.
+if `delayTime` value is 0.5, it means that audio will be played after 0.5 seconds.
+
+#### [`AudioNode`](/docs/core/audio-node#properties) properties
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+:::info
+Delay is a node with tail-time, which means, that it continues to output non-silent audio with zero input for the duration of `delayTime`.
+:::
+
+## Constructor
+
+[`BaseAudioContext.createDelay(maxDelayTime?: number)`](/docs/core/base-audio-context#createdelay)
+
+## Properties
+
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `delayTime`| <ReadOnly /> [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
+
+:::warning
+In web audio api specs `delayTime` is an `a-rate` param.
+:::
+
+## Methods
+
+`DelayNode` does not define any additional methods.
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+## Remarks
+
+#### `maxDelayTime`
+- Default value is 1.0.
+- Nominal range is 0 - 180.
+
+#### `delayTime`
+- Default value is 0.
+- Nominal range is 0 - `maxDelayTime`.

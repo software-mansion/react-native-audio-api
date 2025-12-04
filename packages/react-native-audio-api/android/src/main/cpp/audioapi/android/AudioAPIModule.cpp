@@ -50,7 +50,6 @@ void AudioAPIModule::registerNatives() {
       makeNativeMethod(
           "invokeHandlerWithEventNameAndEventBody",
           AudioAPIModule::invokeHandlerWithEventNameAndEventBody),
-      makeNativeMethod("closeAllContexts", AudioAPIModule::closeAllContexts),
   });
 }
 
@@ -95,9 +94,5 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
   if (audioEventHandlerRegistry_ != nullptr) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(eventName->toStdString(), body);
   }
-}
-
-void AudioAPIModule::closeAllContexts() {
-  AudioAPIModuleInstaller::closeAllContexts();
 }
 } // namespace audioapi

@@ -25,6 +25,7 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
         val body =
           HashMap<String, Any>().apply {
@@ -33,6 +34,7 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
       AudioManager.AUDIOFOCUS_GAIN -> {
         val body =
           HashMap<String, Any>().apply {
