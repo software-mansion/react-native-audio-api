@@ -42,6 +42,7 @@ export interface PlaybackNotificationInfo {
   artist?: string;
   album?: string;
   artwork?: string | { uri: string };
+  androidSmallIcon?: string | { uri: string };
   duration?: number;
   elapsedTime?: number;
   speed?: number;

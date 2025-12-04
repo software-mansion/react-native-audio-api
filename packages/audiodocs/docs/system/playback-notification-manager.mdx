@@ -189,6 +189,8 @@ interface PlaybackNotificationInfo {
 
   // Can be a URL or a local file path relative to drawable resources (Android) or bundle resources (iOS)
   artwork?: string | { uri: string };
+  // ANDROID: small icon shown in the status bar
+  androidSmallIcon?: string | { uri: string };
   duration?: number;
 
   // IOS: elapsed time does not update automatically, must be set manually on each state change

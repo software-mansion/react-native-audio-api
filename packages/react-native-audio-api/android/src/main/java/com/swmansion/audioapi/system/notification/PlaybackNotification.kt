@@ -61,6 +61,7 @@ class PlaybackNotification(
   private var artist: String? = null
   private var album: String? = null
   private var artwork: Bitmap? = null
+  private var smallIcon: IconCompat? = null
   private var duration: Long = 0L
   private var elapsedTime: Long = 0L
   private var speed: Float = 1.0F
@@ -74,6 +75,7 @@ class PlaybackNotification(
   private var skipBackwardAction: NotificationCompat.Action? = null
 
   private var artworkThread: Thread? = null
+  private var smallIconThread: Thread? = null
 
   override fun init(params: ReadableMap?): Notification {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
@@ -185,12 +187,15 @@ class PlaybackNotification(
     // Interrupt artwork loading if in progress
     artworkThread?.interrupt()
     artworkThread = null
+    smallIconThread?.interrupt()
+    smallIconThread = null
 
     // Reset metadata
     title = null
     artist = null
     album = null
     artwork = null
+    smallIcon = null
     duration = 0L
     elapsedTime = 0L
     speed = 1.0F
@@ -298,7 +303,7 @@ class PlaybackNotification(
       ?.setContentTitle(title)
       ?.setContentText(artist)
 
-    // Handle artwork
+    // Handle artwork (large icon)
     if (options.hasKey("artwork")) {
       artworkThread?.interrupt()
 
@@ -350,6 +355,54 @@ class PlaybackNotification(
             }
           }
         artworkThread?.start()
+      }
+    }
+
+    // Handle androidSmallIcon (small icon)
+    if (options.hasKey("androidSmallIcon")) {
+      smallIconThread?.interrupt()
+
+      val smallIconUrl: String?
+      val isLocal: Boolean
+
+      if (options.getType("androidSmallIcon") == ReadableType.Map) {
+        smallIconUrl = options.getMap("androidSmallIcon")?.getString("uri")
+        isLocal = true
+      } else {
+        smallIconUrl = options.getString("androidSmallIcon")
+        isLocal = false
+      }
+
+      if (smallIconUrl != null) {
+        smallIconThread =
+          Thread {
+            try {
+              val bitmap = loadArtwork(smallIconUrl, isLocal)
+              if (bitmap != null) {
+                // Post UI updates to main thread for thread safety
+                val context = reactContext.get()
+                context?.runOnUiQueueThread {
+                  try {
+                    val icon = IconCompat.createWithBitmap(bitmap)
+                    smallIcon = icon
+                    notificationBuilder?.setSmallIcon(icon)
+
+                    // Refresh the notification on main thread
+                    val notificationManager =
+                      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    notificationManager.notify(notificationId, buildNotification())
+                  } catch (e: Exception) {
+                    Log.e(TAG, "Error updating notification with small icon: ${e.message}", e)
+                  }
+                }
+              }
+              smallIconThread = null
+            } catch (e: Exception) {
+              Log.e(TAG, "Error loading small icon: ${e.message}", e)
+              smallIconThread = null
+            }
+          }
+        smallIconThread?.start()
       }
     }
 
