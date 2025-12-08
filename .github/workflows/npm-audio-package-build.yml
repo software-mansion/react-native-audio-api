@@ -9,6 +9,10 @@ on:
         description: 'Whether to publish as a latest build'
         required: true
         type: boolean
+      old-version-patch:
+        description: 'Whether to publish as a patch to an old version'
+        required: true
+        type: boolean
 
 permissions:
   id-token: write
@@ -50,9 +54,15 @@ jobs:
         run: |
           VERSION=$(jq -r .version package.json)
           echo "AUDIO_API_VERSION=$VERSION" >> $GITHUB_ENV
+          TRUNKATED_VERSION=$(echo $VERSION | cut -d. -f1,2)
+          echo "TRUNKATED_VERSION=$TRUNKATED_VERSION" >> $GITHUB_ENV
 
       - name: Assert AUDIO_API_VERSION
         if: ${{ env.AUDIO_API_VERSION == 'PLACEHOLDER' }}
+        run: exit 1 # this should never happen
+
+      - name: Assert TRUNKATED_VERSION
+        if: ${{ env.TRUNKATED_VERSION == 'PLACEHOLDER' }}
         run: exit 1 # this should never happen
 
       - name: Install monorepo dependencies
@@ -62,6 +72,13 @@ jobs:
         run: |
           if [[ "${{ inputs.latest-build }}" != "true" ]]; then
             echo "TAG=audio-api-nightly" >> $GITHUB_ENV
+          else if [[ "${{ inputs.old-version-patch }}" == "true" ]]; then
+            CURRENT_VERSION=$(npm view react-native-audio-api version | cut -d. -f1,2)
+            if [[ "$CURRENT_VERSION" == "${{ env.TRUNKATED_VERSION }}" ]]; then
+              echo "Old version patch requested but current published version matches package version. Exiting."
+              exit 1
+            fi
+            echo "TAG=rn-audio-api-$TRUNKATED_VERSION" >> $GITHUB_ENV
           else
             echo "TAG=latest" >> $GITHUB_ENV
           fi
