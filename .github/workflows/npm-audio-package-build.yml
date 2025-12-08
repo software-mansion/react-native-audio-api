@@ -70,15 +70,15 @@ jobs:
 
       - name: Set tag
         run: |
-          if [[ "${{ inputs.latest-build }}" != "true" ]]; then
-            echo "TAG=audio-api-nightly" >> $GITHUB_ENV
-          else if [[ "${{ inputs.old-version-patch }}" == "true" ]]; then
+          if [[ "${{ inputs.old-version-patch }}" == "true" ]]; then
             CURRENT_VERSION=$(npm view react-native-audio-api version | cut -d. -f1,2)
             if [[ "$CURRENT_VERSION" == "${{ env.TRUNKATED_VERSION }}" ]]; then
               echo "Old version patch requested but current published version matches package version. Exiting."
               exit 1
             fi
             echo "TAG=rn-audio-api-$TRUNKATED_VERSION" >> $GITHUB_ENV
+          else if [[ "${{ inputs.latest-build }}" != "true" ]]; then
+            echo "TAG=audio-api-nightly" >> $GITHUB_ENV
           else
             echo "TAG=latest" >> $GITHUB_ENV
           fi
