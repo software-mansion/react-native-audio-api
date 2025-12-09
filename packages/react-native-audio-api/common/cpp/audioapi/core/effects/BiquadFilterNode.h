@@ -31,9 +31,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/types/BiquadFilterType.h>
-#ifdef AUDIO_API_TEST_SUITE
+#if RN_AUDIO_API_TEST
 #include <gtest/gtest_prod.h>
-#endif
+#endif // RN_AUDIO_API_TEST
 
 #include <algorithm>
 #include <cmath>
@@ -48,10 +48,10 @@ namespace audioapi {
 class AudioBus;
 
 class BiquadFilterNode : public AudioNode {
-#ifdef AUDIO_API_TEST_SUITE
+#if RN_AUDIO_API_TEST
   friend class BiquadFilterTest;
   FRIEND_TEST(BiquadFilterTest, GetFrequencyResponse);
-#endif
+#endif // RN_AUDIO_API_TEST
 
  public:
   explicit BiquadFilterNode(BaseAudioContext *context);

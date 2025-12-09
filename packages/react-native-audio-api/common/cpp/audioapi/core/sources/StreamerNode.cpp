@@ -294,6 +294,7 @@ bool StreamerNode::setupDecoder() {
 
 void StreamerNode::cleanup() {
   this->playbackState_ = PlaybackState::FINISHED;
+  isNodeFinished_.store(true, std::memory_order_release);
   if (streamingThread_.joinable()) {
     StreamingData dummy;
     while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)

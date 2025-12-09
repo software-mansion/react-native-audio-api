@@ -103,7 +103,7 @@ void BiquadFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     const size_t length) {
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
   applyFilter();
 #endif
 

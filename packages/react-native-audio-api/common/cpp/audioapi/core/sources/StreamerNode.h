@@ -29,14 +29,14 @@ extern "C" {
 #include <memory>
 #include <string>
 #include <utility>
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
 #include <audioapi/utils/SpscChannel.hpp>
 
 static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
 static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-#endif // AUDIO_API_TEST_SUITE
+#endif // RN_AUDIO_API_TEST
 
 static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;

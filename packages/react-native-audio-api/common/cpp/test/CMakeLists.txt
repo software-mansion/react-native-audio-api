@@ -24,21 +24,16 @@ set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/*.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/android/src/main/cpp/audioapi/android/core/utils/AudioDecoder.cpp"
 )
 
 # exclude HostObjects from tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
+# exclude worklet nodes
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/effects/WorkletNode.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/effects/WorkletProcessingNode.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/WorkletSourceNode.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/StreamerNode.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/StreamerNode.h"
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.h"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
@@ -78,7 +73,6 @@ add_executable(
   ${test_src}
 )
 
-add_compile_definitions(AUDIO_API_TEST_SUITE)
 add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
 add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)

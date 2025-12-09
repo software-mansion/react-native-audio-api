@@ -1,8 +1,10 @@
 #pragma once
-#include <thread>
-#include <vector>
 #include <functional>
+#include <memory>
+#include <thread>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <audioapi/utils/MoveOnlyFunction.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
@@ -17,7 +19,9 @@ namespace audioapi {
 /// @note IMPORTANT: ThreadPool is not thread-safe and events should be scheduled from a single thread only.
 class ThreadPool {
   struct StopEvent {};
-  struct TaskEvent { audioapi::move_only_function<void()> task; };
+  struct TaskEvent {
+    audioapi::move_only_function<void()> task;
+  };
   using Event = std::variant<TaskEvent, StopEvent>;
 
   struct Cntrl {
@@ -25,34 +29,51 @@ class ThreadPool {
     std::atomic<size_t> tasksScheduled{0};
   };
 
-  using Sender = channels::spsc::Sender<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>;
-  using Receiver = channels::spsc::Receiver<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>;
-public:
+  using Sender = channels::spsc::Sender<
+      Event,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Receiver = channels::spsc::Receiver<
+      Event,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+
+ public:
   /// @brief Construct a new ThreadPool
   /// @param numThreads The number of worker threads to create
   /// @param loadBalancerQueueSize The size of the load balancer's queue
   /// @param workerQueueSize The size of each worker thread's queue
-  ThreadPool(size_t numThreads, size_t loadBalancerQueueSize = 32, size_t workerQueueSize = 32) {
-    auto [sender, receiver] = channels::spsc::channel<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
+  explicit ThreadPool(
+      size_t numThreads,
+      size_t loadBalancerQueueSize = 32,
+      size_t workerQueueSize = 32) {
+    auto [sender, receiver] = channels::spsc::channel<
+        Event,
+        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+        channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
     loadBalancerSender = std::move(sender);
     std::vector<Sender> workerSenders;
     workerSenders.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
-      auto [workerSender, workerReceiver] = channels::spsc::channel<Event, channels::spsc::OverflowStrategy::WAIT_ON_FULL, channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
+      auto [workerSender, workerReceiver] = channels::spsc::channel<
+          Event,
+          channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+          channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
       workers.emplace_back(&ThreadPool::workerThreadFunc, this, std::move(workerReceiver));
       workerSenders.emplace_back(std::move(workerSender));
     }
-    loadBalancerThread = std::thread(&ThreadPool::loadBalancerThreadFunc, this, std::move(receiver), std::move(workerSenders));
+    loadBalancerThread = std::thread(
+        &ThreadPool::loadBalancerThreadFunc, this, std::move(receiver), std::move(workerSenders));
     controlBlock_ = std::make_unique<Cntrl>();
   }
-  ThreadPool(const ThreadPool&) = delete;
-  ThreadPool& operator=(const ThreadPool&) = delete;
-  ThreadPool(ThreadPool&& other):
-    loadBalancerThread(std::move(other.loadBalancerThread)),
-    workers(std::move(other.workers)),
-    loadBalancerSender(std::move(other.loadBalancerSender)),
-    controlBlock_(std::move(other.controlBlock_)) {}
-  ThreadPool& operator=(ThreadPool&& other) {
+  ThreadPool(const ThreadPool &) = delete;
+  ThreadPool &operator=(const ThreadPool &) = delete;
+  ThreadPool(ThreadPool &&other)
+      : loadBalancerThread(std::move(other.loadBalancerThread)),
+        workers(std::move(other.workers)),
+        loadBalancerSender(std::move(other.loadBalancerSender)),
+        controlBlock_(std::move(other.controlBlock_)) {}
+  ThreadPool &operator=(ThreadPool &&other) {
     if (this != &other) {
       loadBalancerThread = std::move(other.loadBalancerThread);
       workers = std::move(other.workers);
@@ -69,7 +90,7 @@ public:
     }
     loadBalancerSender.send(StopEvent{});
     loadBalancerThread.join();
-    for (auto& worker : workers) {
+    for (auto &worker : workers) {
       worker.join();
     }
   }
@@ -84,14 +105,19 @@ public:
   /// @note The task should not throw exceptions, as they will not be caught.
   /// @note The task should end at some point, otherwise the thread pool will never be able to shut down.
   /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only.
-  template<typename Func, typename ... Args, typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
-  void schedule(Func &&task, Args &&... args) noexcept {
+  template <
+      typename Func,
+      typename... Args,
+      typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
+  void schedule(Func &&task, Args &&...args) noexcept {
     controlBlock_->tasksScheduled.fetch_add(1, std::memory_order_release);
 
     /// We know that lifetime of each worker thus spsc thus lambda is strongly bounded by ThreadPool lifetime
     /// so we can safely capture control block pointer unsafely here
     Cntrl *cntrl = controlBlock_.get();
-    auto boundTask = [cntrl, f= std::forward<Func>(task), ...capturedArgs = std::forward<Args>(args)]() mutable {
+    auto boundTask = [cntrl,
+                      f = std::forward<Func>(task),
+                      ... capturedArgs = std::forward<Args>(args)]() mutable {
       f(std::forward<Args>(capturedArgs)...);
       size_t left = cntrl->tasksScheduled.fetch_sub(1, std::memory_order_acq_rel) - 1;
       if (left == 0) {
@@ -121,7 +147,7 @@ public:
     return;
   }
 
-private:
+ private:
   std::thread loadBalancerThread;
   std::vector<std::thread> workers;
   Sender loadBalancerSender;
@@ -135,9 +161,9 @@ private:
       /// We use [[unlikely]] and [[likely]] attributes to help the compiler optimize the branching.
       /// we expect most of the time to receive TaskEvent, and rarely StopEvent.
       /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
-      if (std::holds_alternative<StopEvent>(event)) [[ unlikely ]] {
+      if (std::holds_alternative<StopEvent>(event)) [[unlikely]] {
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) [[ likely ]] {
+      } else if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
         std::get<TaskEvent>(event).task();
       }
     }
@@ -152,15 +178,15 @@ private:
       /// We use [[unlikely]] and [[likely]] attributes to help the compiler optimize the branching.
       /// we expect most of the time to receive TaskEvent, and rarely StopEvent.
       /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
-      if (std::holds_alternative<StopEvent>(event)) [[ unlikely ]] {
+      if (std::holds_alternative<StopEvent>(event)) [[unlikely]] {
         // Propagate stop event to all workers
         for (size_t i = 0; i < localWorkerSenders.size(); ++i) {
           localWorkerSenders[i].send(StopEvent{});
         }
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) [[ likely ]] {
+      } else if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
         // Dispatch task to the next worker in round-robin fashion
-        auto& taskEvent = std::get<TaskEvent>(event);
+        auto &taskEvent = std::get<TaskEvent>(event);
         localWorkerSenders[nextWorker].send(std::move(taskEvent));
         nextWorker = (nextWorker + 1) % localWorkerSenders.size();
       }

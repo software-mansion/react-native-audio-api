@@ -2,8 +2,9 @@
 
 #include <audioapi/utils/SpscChannel.hpp>
 
-#include <type_traits>
 #include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace audioapi {
 using namespace channels::spsc;
@@ -27,32 +28,34 @@ template <typename T>
 class CrossThreadEventScheduler {
  public:
   explicit CrossThreadEventScheduler(size_t capacity) {
-    auto [sender, receiver] = channel<std::function<void(T&)>>(capacity);
+    auto [sender, receiver] = channel<std::function<void(T &)>>(capacity);
     eventSender_ = std::move(sender);
     eventReceiver_ = std::move(receiver);
   }
-  CrossThreadEventScheduler(const CrossThreadEventScheduler&) = delete;
-  CrossThreadEventScheduler& operator=(const CrossThreadEventScheduler&) = delete;
+  CrossThreadEventScheduler(const CrossThreadEventScheduler &) = delete;
+  CrossThreadEventScheduler &operator=(const CrossThreadEventScheduler &) = delete;
 
   /// @brief Schedules an event to be processed on the audio thread.
   /// @param event The event to schedule.
   /// @return True if the event was successfully scheduled, false if the queue is full.
-  bool scheduleEvent(std::function<void(T&)> &&event) noexcept(noexcept(eventSender_.try_send(std::move(event)))) {
+  bool scheduleEvent(std::function<void(T &)> &&event) noexcept(
+      noexcept(eventSender_.try_send(std::move(event)))) {
     return eventSender_.try_send(std::move(event)) == ResponseStatus::SUCCESS;
   }
 
   /// @brief Processes all scheduled events.
   /// @param data The data to pass to each event.
-  void processAllEvents(T& data) noexcept(noexcept(eventReceiver_.try_receive(std::declval<std::function<void(T&)>&>()))) {
-    std::function<void(T&)> event;
+  void processAllEvents(T &data) noexcept(
+      noexcept(eventReceiver_.try_receive(std::declval<std::function<void(T &)> &>()))) {
+    std::function<void(T &)> event;
     while (eventReceiver_.try_receive(event) == ResponseStatus::SUCCESS) {
       event(data);
     }
   }
 
  private:
-  Sender<std::function<void(T&)>> eventSender_;
-  Receiver<std::function<void(T&)>> eventReceiver_;
+  Sender<std::function<void(T &)>> eventSender_;
+  Receiver<std::function<void(T &)>> eventReceiver_;
 };
 
 } // namespace audioapi

@@ -3,6 +3,7 @@
 #include <bit>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 namespace audioapi {
 
@@ -16,15 +17,10 @@ template <typename T, size_t capacity_>
 class RingBiDirectionalBuffer {
  public:
   /// @brief Constructor for RingBuffer.
-  RingBiDirectionalBuffer()
-    : headIndex_(0), tailIndex_(0) {
+  RingBiDirectionalBuffer() : headIndex_(0), tailIndex_(0) {
     static_assert(isPowerOfTwo(capacity_), "RingBiDirectionalBuffer's capacity must be power of 2");
-    buffer_ = static_cast<T*>(
-      ::operator new[](
-        capacity_ * sizeof(T),
-        static_cast<std::align_val_t>(alignof(T))
-      )
-    );
+    buffer_ = static_cast<T *>(
+        ::operator new[](capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T))));
   }
 
   /// @brief Destructor for RingBuffer.
@@ -32,11 +28,7 @@ class RingBiDirectionalBuffer {
     for (int i = headIndex_; i != tailIndex_; i = nextIndex(i)) {
       buffer_[i].~T();
     }
-    ::operator delete[](
-      buffer_,
-      capacity_ * sizeof(T),
-      static_cast<std::align_val_t>(alignof(T))
-    );
+    ::operator delete[](buffer_, capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T)));
   }
 
   /// @brief Push a value into the ring buffer.
@@ -44,8 +36,8 @@ class RingBiDirectionalBuffer {
   /// @param value The value to push.
   /// @return True if the value was pushed successfully, false if the buffer is full.
   template <typename U>
-  bool pushBack(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
-    if (isFull()) [[ unlikely ]] {
+  bool pushBack(U &&value) noexcept(std::is_nothrow_constructible_v<T, U &&>) {
+    if (isFull()) [[unlikely]] {
       return false;
     }
     new (&buffer_[tailIndex_]) T(std::forward<U>(value));
@@ -58,8 +50,8 @@ class RingBiDirectionalBuffer {
   /// @param value The value to push.
   /// @return True if the value was pushed successfully, false if the buffer is full.
   template <typename U>
-  bool pushFront(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>) {
-    if (isFull()) [[ unlikely ]] {
+  bool pushFront(U &&value) noexcept(std::is_nothrow_constructible_v<T, U &&>) {
+    if (isFull()) [[unlikely]] {
       return false;
     }
     headIndex_ = prevIndex(headIndex_);
@@ -70,8 +62,9 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the front of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popFront(T& out) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[ unlikely ]] {
+  bool popFront(T &out) noexcept(
+      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
+    if (isEmpty()) [[unlikely]] {
       return false;
     }
     out = std::move(buffer_[headIndex_]);
@@ -83,7 +76,7 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the front of the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
   bool popFront() noexcept(std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[ unlikely ]] {
+    if (isEmpty()) [[unlikely]] {
       return false;
     }
     buffer_[headIndex_].~T();
@@ -94,8 +87,9 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the back of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popBack(T& out) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[ unlikely ]] {
+  bool popBack(T &out) noexcept(
+      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
+    if (isEmpty()) [[unlikely]] {
       return false;
     }
     tailIndex_ = prevIndex(tailIndex_);
@@ -107,7 +101,7 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the back of the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
   bool popBack() noexcept(std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[ unlikely ]] {
+    if (isEmpty()) [[unlikely]] {
       return false;
     }
     tailIndex_ = prevIndex(tailIndex_);
@@ -117,25 +111,25 @@ class RingBiDirectionalBuffer {
 
   /// @brief Peek at the front of the buffer.
   /// @return A const reference to the front element of the buffer.
-  const inline T& peekFront() const noexcept {
+  const inline T &peekFront() const noexcept {
     return buffer_[headIndex_];
   }
 
   /// @brief Peek at the back of the buffer.
   /// @return A const reference to the back element of the buffer.
-  const inline T& peekBack() const noexcept {
+  const inline T &peekBack() const noexcept {
     return buffer_[prevIndex(tailIndex_)];
   }
 
   /// @brief Peek at the front of the buffer.
   /// @return A mutable reference to the front element of the buffer.
-  inline T& peekFrontMut() noexcept {
+  inline T &peekFrontMut() noexcept {
     return buffer_[headIndex_];
   }
 
   /// @brief Peek at the back of the buffer.
   /// @return A mutable reference to the back element of the buffer.
-  inline T& peekBackMut() noexcept {
+  inline T &peekBackMut() noexcept {
     return buffer_[prevIndex(tailIndex_)];
   }
 
@@ -196,4 +190,4 @@ class RingBiDirectionalBuffer {
   }
 };
 
-};
+}; // namespace audioapi

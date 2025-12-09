@@ -10,9 +10,9 @@
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
 #include <android/log.h>
-#endif // AUDIO_API_TEST_SUITE
+#endif // RN_AUDIO_API_TEST
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -31,7 +31,7 @@ std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outpu
   std::vector<float> temp(CHUNK_SIZE * outputChannels);
   ma_uint64 outFramesRead = 0;
 
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
   while (true) {
     ma_uint64 tempFramesDecoded = 0;
     ma_decoder_read_pcm_frames(&decoder, temp.data(), CHUNK_SIZE, &tempFramesDecoded);
@@ -46,7 +46,7 @@ std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outpu
   if (outFramesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
   }
-#endif
+#endif // RN_AUDIO_API_TEST
   return buffer;
 }
 
@@ -73,7 +73,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
     const std::string &path,
     float sampleRate) {
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
   if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
@@ -118,12 +118,12 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
   return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 #else
   return nullptr;
-#endif
+#endif // RN_AUDIO_API_TEST
 }
 
 std::shared_ptr<AudioBuffer>
 AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate) {
-#ifndef AUDIO_API_TEST_SUITE
+#if !RN_AUDIO_API_TEST
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -163,7 +163,7 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
   return makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels);
 #else
   return nullptr;
-#endif
+#endif // RN_AUDIO_API_TEST
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
