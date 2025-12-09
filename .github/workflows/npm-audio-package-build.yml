@@ -32,7 +32,8 @@ jobs:
       id-token: write
     env:
       AUDIO_API_DIR: packages/react-native-audio-api
-      AUDIO_API_VERSION: PLACEHOLDER
+      AUDIO_API_VERSION: PLACEHOLDER # all placeholders to be replaced during the run
+      TRUNKATED_VERSION: PLACEHOLDER
       PACKAGE_NAME: PLACEHOLDER
       TAG: PLACEHOLDER
     steps:
