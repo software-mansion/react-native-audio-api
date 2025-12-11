@@ -80,11 +80,11 @@ class BiquadFilterNode : public AudioNode {
   std::shared_ptr<AudioParam> gainParam_;
   audioapi::BiquadFilterType type_;
 
-  // delayed samples
-  float x1_ = 0;
-  float x2_ = 0;
-  float y1_ = 0;
-  float y2_ = 0;
+  // delayed samples, one per channel
+  std::vector<float> x1_;
+  std::vector<float> x2_;
+  std::vector<float> y1_;
+  std::vector<float> y2_;
 
   // coefficients
   float b0_ = 1.0;

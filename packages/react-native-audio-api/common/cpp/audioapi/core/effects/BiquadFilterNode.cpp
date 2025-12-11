@@ -51,6 +51,10 @@ BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context) : AudioNode(contex
   gainParam_ = std::make_shared<AudioParam>(
       0.0f, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
   type_ = BiquadFilterType::LOWPASS;
+  x1_.resize(MAX_CHANNEL_COUNT, 0.0f);
+  x2_.resize(MAX_CHANNEL_COUNT, 0.0f);
+  y1_.resize(MAX_CHANNEL_COUNT, 0.0f);
+  y2_.resize(MAX_CHANNEL_COUNT, 0.0f);
   isInitialized_ = true;
   channelCountMode_ = ChannelCountMode::MAX;
 }
@@ -390,10 +394,10 @@ std::shared_ptr<AudioBus> BiquadFilterNode::processNode(
   for (int c = 0; c < numChannels; ++c) {
     auto channelData = processingBus->getChannel(c)->getData();
 
-    x1 = x1_;
-    x2 = x2_;
-    y1 = y1_;
-    y2 = y2_;
+    x1 = x1_[c];
+    x2 = x2_[c];
+    y1 = y1_[c];
+    y2 = y2_[c];
 
     for (int i = 0; i < framesToProcess; ++i) {
       float input = channelData[i];
@@ -406,11 +410,11 @@ std::shared_ptr<AudioBus> BiquadFilterNode::processNode(
       y2 = y1;
       y1 = output;
     }
+    x1_[c] = x1;
+    x2_[c] = x2;
+    y1_[c] = y1;
+    y2_[c] = y2;
   }
-  x1_ = x1;
-  x2_ = x2;
-  y1_ = y1;
-  y2_ = y2;
 
   return processingBus;
 }
