@@ -83,8 +83,7 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "react-native-worklets": "*"
+    "react-native": "*"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",

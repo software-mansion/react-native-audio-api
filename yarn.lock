@@ -10942,7 +10942,6 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
-    react-native-worklets: "*"
   bin:
     setup-rn-audio-api-web: ./scripts/setup-rn-audio-api-web.js
   languageName: unknown
