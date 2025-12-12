@@ -92,7 +92,7 @@ jobs:
         id: build
         working-directory: ${{ env.AUDIO_API_DIR }}
         run: |
-          if [[ "${{ inputs.latest-build }}" != "true" && "${{ inputs.old-version-patch }}" != "true"]]; then
+          if [[ "${{ inputs.latest-build }}" != "true" && "${{ inputs.old-version-patch }}" != "true" ]]; then
             ./scripts/create-package.sh generate_nightly_version
           else
             ./scripts/create-package.sh
