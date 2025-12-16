@@ -34,6 +34,9 @@ class AudioPlayer {
     }
 
     this.isPlaying = true;
+    PlaybackNotificationManager.update({
+      state: 'playing',
+    })
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
@@ -52,10 +55,6 @@ class AudioPlayer {
       if (this.onPositionChanged) {
         this.onPositionChanged(this.currentElapsedTime / this.audioBuffer!.duration);
       }
-      PlaybackNotificationManager.update({
-        elapsedTime: this.currentElapsedTime,
-      })
-
     };
 
     this.sourceNode.start(this.audioContext.currentTime, this.currentElapsedTime);
@@ -70,6 +69,9 @@ class AudioPlayer {
     this.sourceNode?.stop(this.audioContext.currentTime);
 
     await this.audioContext.suspend();
+    PlaybackNotificationManager.update({
+      state: 'paused',
+    })
 
     this.isPlaying = false;
   };
@@ -136,6 +138,10 @@ class AudioPlayer {
   getDuration = (): number => {
     return this.audioBuffer?.duration ?? 0;
   };
+
+  getElapsedTime = (): number => {
+    return this.currentElapsedTime;
+  }
 }
 
 export default new AudioPlayer();

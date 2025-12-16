@@ -149,11 +149,19 @@ const AudioFile: FC = () => {
       }
     );
 
+    const seekToListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSeekTo',
+      (event) => {
+        AudioPlayer.seekBy(event.value - AudioPlayer.getElapsedTime());
+      }
+    );
+
     return () => {
       playListener.remove();
       pauseListener.remove();
       skipForwardListener.remove();
       skipBackwardListener.remove();
+      seekToListener.remove();
       interruptionSubscription?.remove();
     };
   }, [isPlaying, wasPlaying]);
