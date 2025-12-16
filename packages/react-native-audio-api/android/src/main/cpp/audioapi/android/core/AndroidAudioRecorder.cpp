@@ -111,7 +111,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (isRecording()) {
-    return Result<std::string, std::string>::Ok(std::format("file://{}", filePath_));
+    return Result<std::string, std::string>::Err("Recorder is already recording");
   }
 
   auto streamResult = openAudioStream();

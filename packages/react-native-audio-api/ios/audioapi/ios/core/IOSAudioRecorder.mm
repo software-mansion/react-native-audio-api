@@ -74,7 +74,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 Result<std::string, std::string> IOSAudioRecorder::start()
 {
   if (isRecording()) {
-    return Result<std::string, std::string>::Err("Already recording");
+    return Result<std::string, std::string>::Err("Recorder is already recording");
   }
 
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
