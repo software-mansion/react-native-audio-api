@@ -145,6 +145,18 @@ static AudioEngine *_sharedInstance = nil;
 /// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
 - (void)rebuildAudioEngine
 {
+  if (self.audioEngine != nil) {
+    for (id sourceNodeId in self.sourceNodes) {
+      AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
+
+      [self.audioEngine detachNode:sourceNode];
+    }
+
+    if (self.inputNode) {
+      [self.audioEngine detachNode:self.inputNode];
+    }
+  }
+
   self.audioEngine = [[AVAudioEngine alloc] init];
 
   for (id sourceNodeId in self.sourceNodes) {
@@ -175,7 +187,6 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
-    NSLog(@"[AudioEngine] rebuilding after interruption");
     [self.audioEngine stop];
     [self.audioEngine reset];
     [self rebuildAudioEngine];

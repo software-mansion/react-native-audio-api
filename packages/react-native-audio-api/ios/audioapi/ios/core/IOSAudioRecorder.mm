@@ -147,7 +147,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   double outputDuration = 0;
 
   if (isIdle()) {
-    return Result<std::tuple<std::string, double, double>, std::string>::Err("Not recording");
+    return Result<std::tuple<std::string, double, double>, std::string>::Err("Recorder is not in recording state.");
   }
 
   state_.store(RecorderState::Idle, std::memory_order_release);
