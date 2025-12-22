@@ -8,6 +8,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
+#include <android/log.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
@@ -15,13 +16,12 @@ extern "C" {
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
-#include <android/log.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <utility>
-#include <cassert>
 
 constexpr int fallbackFIFOSize = 8192;
 constexpr int defaultFlushInterval = 100;
@@ -285,7 +285,9 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 
   // Calculate resampler size of output buffer from the resampler
   int resamplerFrameSize = av_rescale_rnd(
-      maxBufferSize, static_cast<int>(encoderCtx_->sample_rate), static_cast<int>(streamSampleRate_),
+      maxBufferSize,
+      static_cast<int>(encoderCtx_->sample_rate),
+      static_cast<int>(streamSampleRate_),
       AV_ROUND_UP);
 
   // Configure frame parameters for desired file output
@@ -300,10 +302,16 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
   int writingFrameSize = 2 * std::max(encoderCtx_->frame_size, 512);
   int fifoSize = std::max(std::max(2 * resamplerFrameSize, writingFrameSize), fallbackFIFOSize);
 
-  __android_log_print(ANDROID_LOG_DEBUG, "FFMPEGAudioFileWriter", "%d %d %d", resamplerFrameSize, writingFrameSize, fifoSize);
+  __android_log_print(
+      ANDROID_LOG_DEBUG,
+      "FFMPEGAudioFileWriter",
+      "%d %d %d",
+      resamplerFrameSize,
+      writingFrameSize,
+      fifoSize);
 
   audioFifo_ = av_unique_ptr<AVAudioFifo>(
-    av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
+      av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
 
   // Configure writing frame parameters
   // size 2 x encoder frame size + same format as encoder
@@ -328,7 +336,11 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
   assert(outputLength <= resamplerFrame_->nb_samples);
 
   int convertedSamples = swr_convert(
-      resampleCtx_.get(), resamplerFrame_->data, static_cast<int>(outputLength), inputs, inputFrameCount);
+      resampleCtx_.get(),
+      resamplerFrame_->data,
+      static_cast<int>(outputLength),
+      inputs,
+      inputFrameCount);
 
   if (convertedSamples < 0) {
     invokeOnErrorCallback("Failed to convert audio samples: " + parseErrorCode(convertedSamples));
@@ -361,12 +373,12 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
 
     assert(chunkSize <= writingFrame_->nb_samples);
 
-    if (av_audio_fifo_read(audioFifo_.get(), reinterpret_cast<void **>(writingFrame_->data), chunkSize) !=
+    if (av_audio_fifo_read(
+            audioFifo_.get(), reinterpret_cast<void **>(writingFrame_->data), chunkSize) !=
         chunkSize) {
       invokeOnErrorCallback("Failed to read data from FIFO");
       return -1;
     }
-
 
     writingFrame_->nb_samples = chunkSize;
     writingFrame_->pts = nextPts_;
