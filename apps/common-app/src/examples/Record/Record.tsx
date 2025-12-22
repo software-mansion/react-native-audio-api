@@ -94,11 +94,13 @@ const Record: FC = () => {
   };
 
   /// This stops only the recording, not the audio context
-  const stopEcho = () => {
+  const stopEcho = async () => {
     audioRecorder.stop();
+
+    console.log('Echo recording stopped');
     audioRecorder.disconnect();
     setStatus(Status.Idle);
-    AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
   };
 
   const startRecordForReplay = async () => {
@@ -224,11 +226,11 @@ const Record: FC = () => {
     );
   };
 
-  useEffect(() => {
-    return () => {
-      audioRecorder.stop();
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     audioRecorder.stop();
+  //   };
+  // }, []);
 
   return (
     <Container style={{ gap: 40 }}>

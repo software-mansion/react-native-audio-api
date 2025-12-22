@@ -109,7 +109,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 Result<std::string, std::string> AndroidAudioRecorder::start() {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
-  if (isRecording()) {
+  if (!isIdle()) {
     return Result<std::string, std::string>::Err("Recorder is already recording");
   }
 
@@ -164,22 +164,29 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
 /// @returns On success, returns the file URI, size in MB and duration in seconds of the recorded file (if file output is enabled).
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
 Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorder::stop() {
+    __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x0");
   std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
+
+    __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x1");
   std::string filePath = std::format("file://{}", filePath_);
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
+  __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x2");
 
   if (!isRecording()) {
+    __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x3");
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Recorder is not in recording state.");
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
+    __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x45");
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Audio stream is not initialized.");
   }
 
+    __android_log_print(ANDROID_LOG_DEBUG, "AAR", "x5");
   state_.store(RecorderState::Idle, std::memory_order_release);
   jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->stop(); });
   mStream_->requestStop();
