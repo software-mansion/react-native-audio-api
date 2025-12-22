@@ -14,8 +14,7 @@ class AudioPlayer {
 
   private isPlaying: boolean = false;
 
-  private offset: number = 0;
-  private seekOffset: number = 0;
+  private currentElapsedTime: number = 0;
   private playbackRate: number = 1;
   private onPositionChanged: ((offset: number) => void) | null = null;
 
@@ -35,6 +34,9 @@ class AudioPlayer {
     }
 
     this.isPlaying = true;
+    PlaybackNotificationManager.update({
+      state: 'playing',
+    })
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
@@ -47,24 +49,15 @@ class AudioPlayer {
     this.sourceNode.playbackRate.value = this.playbackRate;
 
     this.sourceNode.connect(this.audioContext.destination);
-    if (this.seekOffset !== 0) {
-      this.offset = Math.max(this.seekOffset + this.offset, 0);
-      this.seekOffset = 0;
-    }
+    this.sourceNode.onPositionChangedInterval = 250;
     this.sourceNode.onPositionChanged = (event) => {
-      this.offset = event.value;
-
+      this.currentElapsedTime = event.value;
       if (this.onPositionChanged) {
-        this.onPositionChanged(this.offset / this.audioBuffer!.duration);
+        this.onPositionChanged(this.currentElapsedTime / this.audioBuffer!.duration);
       }
     };
 
-    this.sourceNode.start(this.audioContext.currentTime, this.offset);
-
-    PlaybackNotificationManager.update({
-      state: 'playing',
-      elapsedTime: this.offset,
-    });
+    this.sourceNode.start(this.audioContext.currentTime, this.currentElapsedTime);
   };
 
   pause = async () => {
@@ -75,19 +68,25 @@ class AudioPlayer {
 
     this.sourceNode?.stop(this.audioContext.currentTime);
 
+    await this.audioContext.suspend();
     PlaybackNotificationManager.update({
       state: 'paused',
-      elapsedTime: this.offset,
-    });
-
-    await this.audioContext.suspend();
+    })
 
     this.isPlaying = false;
   };
 
   seekBy = (seconds: number) => {
     this.sourceNode?.stop(this.audioContext.currentTime);
-    this.seekOffset = seconds;
+    this.currentElapsedTime += seconds;
+    if (this.currentElapsedTime < 0) {
+      this.currentElapsedTime = 0;
+    } else if (this.currentElapsedTime > this.getDuration()) {
+      this.currentElapsedTime = this.getDuration();
+    }
+    PlaybackNotificationManager.update({
+      elapsedTime: this.currentElapsedTime,
+    });
 
     if (this.isPlaying) {
       this.isPlaying = false;
@@ -111,8 +110,6 @@ class AudioPlayer {
 
     if (buffer) {
       this.audioBuffer = buffer;
-      this.offset = 0;
-      this.seekOffset = 0;
       this.playbackRate = 1;
     }
   };
@@ -125,8 +122,7 @@ class AudioPlayer {
     }
     this.audioBuffer = null;
     this.sourceNode = null;
-    this.offset = 0;
-    this.seekOffset = 0;
+    this.currentElapsedTime = 0;
     this.playbackRate = 1;
     this.isPlaying = false;
 
@@ -142,6 +138,10 @@ class AudioPlayer {
   getDuration = (): number => {
     return this.audioBuffer?.duration ?? 0;
   };
+
+  getElapsedTime = (): number => {
+    return this.currentElapsedTime;
+  }
 }
 
 export default new AudioPlayer();

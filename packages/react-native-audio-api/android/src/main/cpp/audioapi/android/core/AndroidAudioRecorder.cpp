@@ -1,4 +1,3 @@
-#include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
@@ -143,6 +142,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (isConnected()) {
+    deinterleavingBuffer_ = std::make_shared<AudioArray>(streamMaxBufferSizeInFrames_);
     adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
   }
 
@@ -324,9 +324,9 @@ void AndroidAudioRecorder::clearOnAudioReadyCallback() {
 void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
   std::scoped_lock adapterLock(adapterNodeMutex_);
   adapterNode_ = node;
-  deinterleavingBuffer_ = std::make_shared<AudioArray>(streamMaxBufferSizeInFrames_);
 
   if (!isIdle()) {
+    deinterleavingBuffer_ = std::make_shared<AudioArray>(streamMaxBufferSizeInFrames_);
     adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
   }
 
