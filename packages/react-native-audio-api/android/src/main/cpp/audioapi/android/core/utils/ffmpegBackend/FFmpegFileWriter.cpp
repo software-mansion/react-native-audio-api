@@ -8,7 +8,6 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-#include <android/log.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
@@ -301,14 +300,6 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
   // max(2 * resamplerFrameSize, 2 * encoderCtx_->frame_size, fallbackFIFOSize)
   int writingFrameSize = 2 * std::max(encoderCtx_->frame_size, 512);
   int fifoSize = std::max(std::max(2 * resamplerFrameSize, writingFrameSize), fallbackFIFOSize);
-
-  __android_log_print(
-      ANDROID_LOG_DEBUG,
-      "FFMPEGAudioFileWriter",
-      "%d %d %d",
-      resamplerFrameSize,
-      writingFrameSize,
-      fifoSize);
 
   audioFifo_ = av_unique_ptr<AVAudioFifo>(
       av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <android/log.h>
-
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 
 #include <jsi/jsi.h>
@@ -28,7 +26,6 @@ class RuntimeAwareCache : public RuntimeLifecycleListener {
  public:
   void onRuntimeDestroyed(jsi::Runtime *rt) override {
     // A runtime has been destroyed, so destroy the related cache.
-    __android_log_print(ANDROID_LOG_DEBUG, "RuntimeAwareCache", "destroying rt &d", rt);
     runtimeCaches_.erase(rt);
   }
 

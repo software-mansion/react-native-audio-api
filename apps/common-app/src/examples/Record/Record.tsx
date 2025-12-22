@@ -97,7 +97,6 @@ const Record: FC = () => {
   const stopEcho = async () => {
     audioRecorder.stop();
 
-    console.log('Echo recording stopped');
     audioRecorder.disconnect();
     setStatus(Status.Idle);
     await AudioManager.setAudioSessionActivity(false);
@@ -226,11 +225,11 @@ const Record: FC = () => {
     );
   };
 
-  // useEffect(() => {
-  //   return () => {
-  //     audioRecorder.stop();
-  //   };
-  // }, []);
+  useEffect(() => {
+    return () => {
+      audioRecorder.stop();
+    };
+  }, []);
 
   return (
     <Container style={{ gap: 40 }}>
