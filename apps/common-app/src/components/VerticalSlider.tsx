@@ -7,19 +7,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-const SLIDER_HEIGHT = 150;
+const SLIDER_HEIGHT = 100;
 const THUMB_SIZE = 30;
 const TRACK_HEIGHT = SLIDER_HEIGHT - THUMB_SIZE;
 
 interface VerticalSliderProps {
   label: string;
   value: number;
+  labelColor?: string;
+  valueColor?: string;
   onValueChange: (val: number) => void;
 }
 
 const VerticalSlider: React.FC<VerticalSliderProps> = ({
   label,
   value,
+  labelColor = '#333',
+  valueColor = '#555',
   onValueChange,
 }) => {
   const progress = useSharedValue(value);
@@ -40,6 +44,10 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
       const newValue = startValue.value + change;
       progress.value = Math.min(Math.max(newValue, 0), 1);
       scheduleOnRN(onValueChange, progress.value);
+    }).onEnd(() => {
+      'worklet';
+      // progress.value = Math.min(Math.max(progress.value, 0), 1);
+      // scheduleOnRN(onValueChange, progress.value);
     });
 
   const thumbStyle = useAnimatedStyle(() => {
@@ -51,7 +59,7 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
 
   return (
     <View style={styles.sliderContainer}>
-      <Text style={styles.sliderLabel}>{label}</Text>
+      <Text style={[styles.sliderLabel, { color: labelColor }]}>{label}</Text>
       <View style={styles.sliderTrackContainer}>
         <View style={styles.sliderTrack} />
         <GestureDetector gesture={gesture}>
@@ -60,7 +68,7 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
           </Animated.View>
         </GestureDetector>
       </View>
-      <Text style={styles.sliderValue}>{(value * 100).toFixed(0)}</Text>
+      <Text style={[styles.sliderLabel, { color: valueColor }]}>{(value * 100).toFixed(0)}</Text>
     </View>
   );
 };
@@ -74,7 +82,6 @@ const styles = StyleSheet.create({
   sliderLabel: {
     fontWeight: 'bold',
     fontSize: 12,
-    color: '#333',
   },
   sliderTrackContainer: {
     width: 40,
@@ -111,7 +118,6 @@ const styles = StyleSheet.create({
   },
   sliderValue: {
     fontSize: 10,
-    color: '#555',
     fontVariant: ['tabular-nums'],
   },
 });

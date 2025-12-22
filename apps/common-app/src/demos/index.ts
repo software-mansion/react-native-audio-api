@@ -1,7 +1,7 @@
 import { icons } from 'lucide-react-native';
 
 import Record from './Record/Record';
-import GuitarPedal from './GuitarPedal/GuitarPedal';
+import PedalBoard from './PedalBoard/PedalBoard';
 
 interface SimplifiedIconProps {
   color?: string;
@@ -26,11 +26,11 @@ export const demos: DemoScreen[] = [
     screen: Record,
   },
   {
-    key: 'GuitarPedal',
-    title: 'Guitar Pedal',
+    key: 'PedalBoard',
+    title: 'Pedal board',
     subtitle:
-      'Simulates a guitar pedal with distortion, tone, and level controls.',
+      'Simulates a guitar pedal board that can apply customizable audio effects in real-time.',
     icon: icons.Guitar,
-    screen: GuitarPedal,
+    screen: PedalBoard,
   },
 ] as const;
