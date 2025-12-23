@@ -89,14 +89,7 @@ import { decodeAudioData } from 'react-native-audio-api';
 
 const uri = Image.resolveAssetSource(require('path/to/file')).uri;
 
-const buffer = await fetch(uri)
-  .then((response) => response.arrayBuffer())
-  // sampleRate not provided, so file will be decoded in original sampleRate
-  .then((arrayBuffer) => decodeAudioData(arrayBuffer))
-  .catch((error) => {
-    console.error('Error decoding audio data source:', error);
-    return null;
-  });
+const buffer = await decodeAudioData(uri);
 ```
 </details>
 
@@ -114,7 +107,7 @@ const uri = await Asset.fromModule(require('@/assets/music/example.mp3'))
     }
     return asset.localUri;
   })
-  
+
 const context = new AudioContext();
 if (uri) {
   const buffer = await fetch(uri)

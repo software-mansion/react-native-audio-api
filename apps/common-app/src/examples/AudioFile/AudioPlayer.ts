@@ -4,8 +4,10 @@ import type {
 } from 'react-native-audio-api';
 import {
   AudioContext,
+  decodeAudioData,
   PlaybackNotificationManager,
 } from 'react-native-audio-api';
+import { Image } from 'react-native';
 
 class AudioPlayer {
   private readonly audioContext: AudioContext;
@@ -95,18 +97,7 @@ class AudioPlayer {
   };
 
   loadBuffer = async (url: string) => {
-    const buffer = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
-      },
-    })
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
-      .catch((error) => {
-        console.error('Error decoding audio data source:', error);
-        return null;
-      });
+    const buffer = await decodeAudioData(url);
 
     if (buffer) {
       this.audioBuffer = buffer;

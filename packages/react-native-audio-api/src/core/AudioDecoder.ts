@@ -25,8 +25,23 @@ class AudioDecoder {
       // Remove the file:// prefix if it exists
       if (input.startsWith('file://')) {
         input = input.replace('file://', '');
+      } else if (input.startsWith('https://') || input.startsWith('http://')) {
+        // For remote URLs, we need to fetch the data first
+        const response = await fetch(input, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+          },
+        })
+          .then((res) => res.arrayBuffer())
+          .then((arrayBuffer) => arrayBuffer);
+        buffer = await this.decoder.decodeWithMemoryBlock(
+          new Uint8Array(response),
+          sampleRate ?? 0
+        );
+      } else {
+        buffer = await this.decoder.decodeWithFilePath(input, sampleRate ?? 0);
       }
-      buffer = await this.decoder.decodeWithFilePath(input, sampleRate ?? 0);
     } else if (input instanceof ArrayBuffer) {
       buffer = await this.decoder.decodeWithMemoryBlock(
         new Uint8Array(input),
