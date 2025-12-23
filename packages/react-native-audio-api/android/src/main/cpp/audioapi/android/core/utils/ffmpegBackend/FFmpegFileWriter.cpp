@@ -23,6 +23,7 @@ extern "C" {
 #include <utility>
 
 constexpr int fallbackFIFOSize = 8192;
+constexpr int fallbackFrameSize = 512;
 constexpr int defaultFlushInterval = 100;
 
 namespace audioapi::android::ffmpeg {
@@ -298,7 +299,7 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 
   // calculate FIFO size based on max buffer size and encoder frame size
   // max(2 * resamplerFrameSize, 2 * encoderCtx_->frame_size, fallbackFIFOSize)
-  int writingFrameSize = 2 * std::max(encoderCtx_->frame_size, 512);
+  int writingFrameSize = 2 * std::max(encoderCtx_->frame_size, fallbackFrameSize);
   int fifoSize = std::max(std::max(2 * resamplerFrameSize, writingFrameSize), fallbackFIFOSize);
 
   audioFifo_ = av_unique_ptr<AVAudioFifo>(
@@ -357,7 +358,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
 /// @returns 0 on success, -1 or AV_ERROR code on failure
 int FFmpegAudioFileWriter::processFifo(bool flush) {
   int result = 0;
-  int frameSize = std::max(encoderCtx_->frame_size, 512);
+  int frameSize = std::max(encoderCtx_->frame_size, fallbackFrameSize);
 
   while (av_audio_fifo_size(audioFifo_.get()) >= (flush ? 1 : frameSize)) {
     const int chunkSize = std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
