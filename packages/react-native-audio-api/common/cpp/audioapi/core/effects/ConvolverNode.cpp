@@ -16,15 +16,15 @@ ConvolverNode::ConvolverNode(
     const std::shared_ptr<AudioBuffer> &buffer,
     bool disableNormalization)
     : AudioNode(context),
+      gainCalibrationSampleRate_(context->getSampleRate()),
       remainingSegments_(0),
       internalBufferIndex_(0),
+      normalize_(!disableNormalization),
       signalledToStop_(false),
       scaleFactor_(1.0f),
       intermediateBus_(nullptr),
       buffer_(nullptr),
-      internalBuffer_(nullptr),
-      gainCalibrationSampleRate_(context->getSampleRate()),
-      normalize_(!disableNormalization) {
+      internalBuffer_(nullptr) {
   channelCount_ = 2;
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   setBuffer(buffer);

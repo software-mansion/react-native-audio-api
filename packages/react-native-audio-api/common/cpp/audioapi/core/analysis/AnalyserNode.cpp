@@ -20,11 +20,11 @@ AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context)
       smoothingTimeConstant_(0.8),
       windowType_(WindowType::BLACKMAN),
       inputBuffer_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
-      tempBuffer_(std::make_unique<AudioArray>(fftSize_)),
-      magnitudeBuffer_(std::make_unique<AudioArray>(fftSize_ / 2)),
       downMixBus_(std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      tempBuffer_(std::make_unique<AudioArray>(fftSize_)),
       fft_(std::make_unique<dsp::FFT>(fftSize_)),
-      complexData_(std::vector<std::complex<float>>(fftSize_)) {
+      complexData_(std::vector<std::complex<float>>(fftSize_)),
+      magnitudeBuffer_(std::make_unique<AudioArray>(fftSize_ / 2)) {
   setWindowData(windowType_, fftSize_);
   isInitialized_ = true;
 }
