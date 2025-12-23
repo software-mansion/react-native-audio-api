@@ -19,7 +19,7 @@ class CircularAudioArray;
 class AnalyserNode : public AudioNode {
  public:
   enum class WindowType { BLACKMAN, HANN };
-  explicit AnalyserNode(BaseAudioContext *context);
+  explicit AnalyserNode(std::shared_ptr<BaseAudioContext> context);
 
   int getFftSize() const;
   int getFrequencyBinCount() const;

@@ -14,14 +14,14 @@ using namespace audioapi;
 class IIRFilterTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<OfflineAudioContext> context;
+  std::shared_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
   static constexpr float nyquistFrequency = sampleRate / 2.0f;
   static constexpr float tolerance = 0.0001f;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<OfflineAudioContext>(
+    context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
@@ -99,7 +99,7 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
   const std::vector<float> feedforward = {0.0050662636, 0.0101325272, 0.0050662636};
   const std::vector<float> feedback = {1.0632762845, -1.9797349456, 0.9367237155};
 
-  auto node = std::make_shared<IIRFilterNode>(context.get(), feedforward, feedback);
+  auto node = IIRFilterNode(context, feedforward, feedback);
 
   float frequency = 1000.0f;
   float normalizedFrequency = frequency / nyquistFrequency;
@@ -120,7 +120,7 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
   std::vector<float> magResponseExpected(TestFrequencies.size());
   std::vector<float> phaseResponseExpected(TestFrequencies.size());
 
-  node->getFrequencyResponse(
+  node.getFrequencyResponse(
       TestFrequencies.data(),
       magResponseNode.data(),
       phaseResponseNode.data(),

@@ -26,7 +26,7 @@ class AudioScheduledSourceNode : public AudioNode {
   // STOP_SCHEDULED: The node is scheduled to stop at a specific time, but is still playing.
   // FINISHED: The node has finished playing.
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
-  explicit AudioScheduledSourceNode(BaseAudioContext *context);
+  explicit AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context);
 
   virtual void start(double when);
   virtual void stop(double when);
@@ -54,7 +54,9 @@ class AudioScheduledSourceNode : public AudioNode {
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess,
       size_t &startOffset,
-      size_t &nonSilentFramesToProcess);
+      size_t &nonSilentFramesToProcess,
+      float sampleRate,
+      size_t currentSampleFrame);
 
   void handleStopScheduled();
 };

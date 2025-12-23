@@ -14,7 +14,9 @@ class AudioParam;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferBaseSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  explicit AudioBufferBaseSourceNode(
+      std::shared_ptr<BaseAudioContext> context,
+      bool pitchCorrection);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
@@ -58,7 +60,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess);
 
-  float getComputedPlaybackRateValue(int framesToProcess);
+  float getComputedPlaybackRateValue(int framesToProcess, double time);
 
   virtual void processWithoutInterpolation(
       const std::shared_ptr<AudioBus> &processingBus,

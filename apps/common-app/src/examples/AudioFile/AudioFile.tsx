@@ -61,32 +61,37 @@ const AudioFile: FC = () => {
     setIsLoading(false);
   }, []);
 
+  const setupNotification = async () => {
+    try {
+      await PlaybackNotificationManager.register();
+      const duration = AudioPlayer.getDuration();
+      await PlaybackNotificationManager.show({
+        title: 'Audio file',
+        artist: 'Software Mansion',
+        album: 'Audio API',
+        duration: duration,
+        state: 'paused',
+        speed: 1.0,
+        elapsedTime: 0,
+      });
+    } catch (error) {
+      console.error('Failed to setup notification:', error);
+    }
+  };
+
   useEffect(() => {
-    // Register notification first
-    const setupNotification = async () => {
-      try {
-        await PlaybackNotificationManager.register();
-
-        // Load audio buffer first
-        await fetchAudioBuffer();
-
-        // Show notification with correct duration after buffer is loaded
-        const duration = AudioPlayer.getDuration();
-        await PlaybackNotificationManager.show({
-          title: 'Audio file',
-          artist: 'Software Mansion',
-          album: 'Audio API',
-          duration: duration,
-          state: 'paused',
-          speed: 1.0,
-          elapsedTime: 0,
-        });
-      } catch (error) {
-        console.error('Failed to setup notification:', error);
-      }
+    const setup = async () => {
+      await fetchAudioBuffer();
+      await setupNotification();
+    }
+    setup();
+    return () => {
+      AudioPlayer.reset();
+      PlaybackNotificationManager.unregister();
     };
+  }, [fetchAudioBuffer]);
 
-    setupNotification();
+  useEffect(() => {
 
     AudioManager.observeAudioInterruptions(true);
 
@@ -144,17 +149,22 @@ const AudioFile: FC = () => {
       }
     );
 
+    const seekToListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSeekTo',
+      (event) => {
+        AudioPlayer.seekBy(event.value - AudioPlayer.getElapsedTime());
+      }
+    );
+
     return () => {
       playListener.remove();
       pauseListener.remove();
       skipForwardListener.remove();
       skipBackwardListener.remove();
+      seekToListener.remove();
       interruptionSubscription?.remove();
-      PlaybackNotificationManager.unregister();
-      AudioPlayer.reset();
-      console.log('Cleanup AudioFile component');
     };
-  }, [fetchAudioBuffer, isPlaying, wasPlaying]);
+  }, [isPlaying, wasPlaying]);
 
   return (
     <Container centered>

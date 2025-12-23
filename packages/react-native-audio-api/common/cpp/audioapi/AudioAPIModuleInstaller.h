@@ -82,6 +82,7 @@ class AudioAPIModuleInstaller {
 
           audioContext = std::make_shared<AudioContext>(
               sampleRate, audioEventHandlerRegistry, runtimeRegistry);
+          audioContext->initialize();
 
           auto audioContextHostObject =
               std::make_shared<AudioContextHostObject>(audioContext, &runtime, jsCallInvoker);
@@ -118,6 +119,7 @@ class AudioAPIModuleInstaller {
 
           auto offlineAudioContext = std::make_shared<OfflineAudioContext>(
               numberOfChannels, length, sampleRate, audioEventHandlerRegistry, runtimeRegistry);
+          offlineAudioContext->initialize();
 
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               offlineAudioContext, &runtime, jsCallInvoker);

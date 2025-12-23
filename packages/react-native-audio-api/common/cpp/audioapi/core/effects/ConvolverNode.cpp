@@ -12,7 +12,7 @@
 
 namespace audioapi {
 ConvolverNode::ConvolverNode(
-    BaseAudioContext *context,
+    std::shared_ptr<BaseAudioContext> context,
     const std::shared_ptr<AudioBuffer> &buffer,
     bool disableNormalization)
     : AudioNode(context),
@@ -22,11 +22,11 @@ ConvolverNode::ConvolverNode(
       scaleFactor_(1.0f),
       intermediateBus_(nullptr),
       buffer_(nullptr),
-      internalBuffer_(nullptr) {
+      internalBuffer_(nullptr),
+      gainCalibrationSampleRate_(context->getSampleRate()),
+      normalize_(!disableNormalization) {
   channelCount_ = 2;
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  normalize_ = !disableNormalization;
-  gainCalibrationSampleRate_ = context->getSampleRate();
   setBuffer(buffer);
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
