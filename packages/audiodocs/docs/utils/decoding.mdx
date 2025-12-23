@@ -58,6 +58,35 @@ if not provided, the original sample rate from the file is used.
 #### Returns `Promise<AudioBuffer>`.
 
 <details>
+<summary>Example decoding remote URL</summary>
+```tsx
+import { decodeAudioData } from 'react-native-audio-api';
+
+const url = ... // url to an audio
+
+const buffer = await decodeAudioData(url);
+```
+</details>
+
+<details>
+<summary>Example decoding local file with Image component <MobileOnly/> </summary>
+
+:::caution
+React Native by default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
+If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
+:::
+
+```tsx
+import { Image } from 'react-native';
+import { decodeAudioData } from 'react-native-audio-api';
+
+const uri = Image.resolveAssetSource(require('path/to/file')).uri;
+
+const buffer = await decodeAudioData(uri);
+```
+</details>
+
+<details>
 <summary>Example decoding with memory block</summary>
 ```tsx
 import { decodeAudioData } from 'react-native-audio-api';
@@ -72,24 +101,6 @@ const buffer = await fetch(url)
     console.error('Error decoding audio data source:', error);
     return null;
   });
-```
-</details>
-
-<details>
-<summary>Example decoding using react native Image component <MobileOnly/> </summary>
-
-:::caution
-React Native by default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
-If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
-:::
-
-```tsx
-import { Image } from 'react-native';
-import { decodeAudioData } from 'react-native-audio-api';
-
-const uri = Image.resolveAssetSource(require('path/to/file')).uri;
-
-const buffer = await decodeAudioData(uri);
 ```
 </details>
 
