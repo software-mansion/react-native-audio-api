@@ -1,15 +1,20 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withSpring,
+  useAnimatedProps,
 } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 const SLIDER_HEIGHT = 100;
 const THUMB_SIZE = 30;
 const TRACK_HEIGHT = SLIDER_HEIGHT - THUMB_SIZE;
+
+const AText = Animated.createAnimatedComponent(TextInput);
 
 interface VerticalSliderProps {
   label: string;
@@ -17,6 +22,7 @@ interface VerticalSliderProps {
   labelColor?: string;
   valueColor?: string;
   onValueChange: (val: number) => void;
+  possibleValues?: number[];
 }
 
 const VerticalSlider: React.FC<VerticalSliderProps> = ({
@@ -25,29 +31,58 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
   labelColor = '#333',
   valueColor = '#555',
   onValueChange,
+  possibleValues
 }) => {
   const progress = useSharedValue(value);
   const startValue = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = value;
+    progress.value = withSpring(value);
   }, [value, progress]);
+
+  const findClosestValue = (currentValue: number): number => {
+    'worklet';
+    if (!possibleValues || possibleValues.length === 0) {
+      return currentValue;
+    }
+
+    let closest = possibleValues[0];
+    let minDistance = Math.abs(currentValue - closest);
+
+    for (const possibleValue of possibleValues) {
+      const distance = Math.abs(currentValue - possibleValue);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = possibleValue;
+      }
+    }
+
+    return closest;
+  };
+
+  const handleValueChange = (val: number) => {
+    onValueChange(val);
+  };
 
   const gesture = Gesture.Pan()
     .onStart(() => {
-      'worklet';
       startValue.value = progress.value;
     })
     .onUpdate((e) => {
-      'worklet';
       const change = -e.translationY / TRACK_HEIGHT;
       const newValue = startValue.value + change;
-      progress.value = Math.min(Math.max(newValue, 0), 1);
-      scheduleOnRN(onValueChange, progress.value);
-    }).onEnd(() => {
-      'worklet';
-      // progress.value = Math.min(Math.max(progress.value, 0), 1);
-      // scheduleOnRN(onValueChange, progress.value);
+      const clampedValue = Math.min(Math.max(newValue, 0), 1);
+      progress.value = clampedValue;
+    })
+    .onEnd(() => {
+      if (possibleValues && possibleValues.length > 0) {
+        const snappedValue = findClosestValue(progress.value);
+        progress.value = withSpring(snappedValue);
+        scheduleOnRN(handleValueChange, snappedValue);
+      } else {
+        const finalValue = Math.min(Math.max(progress.value, 0), 1);
+        scheduleOnRN(handleValueChange, finalValue);
+      }
     });
 
   const thumbStyle = useAnimatedStyle(() => {
@@ -57,18 +92,57 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
     };
   });
 
+  const renderTickMarks = () => {
+    if (!possibleValues || possibleValues.length === 0) {
+      return null;
+    }
+
+    return possibleValues.map((val, index) => {
+      const position = (1 - val) * TRACK_HEIGHT + THUMB_SIZE / 2;
+      return (
+        <View
+          key={index}
+          style={[
+            styles.tickMark,
+            {
+              top: position, // Center the tick mark
+            },
+          ]}
+        />
+      );
+    });
+  };
+
+  const displayProps = useAnimatedProps(() => {
+    if (possibleValues && possibleValues.length > 0) {
+      return {
+        defaultValue: '',
+        text: '',
+      };
+    }
+
+    return {
+      defaultValue: (value * 100).toString(),
+      text: (progress.value * 100).toFixed(0),
+    };
+  });
+
   return (
     <View style={styles.sliderContainer}>
       <Text style={[styles.sliderLabel, { color: labelColor }]}>{label}</Text>
       <View style={styles.sliderTrackContainer}>
         <View style={styles.sliderTrack} />
+        {renderTickMarks()}
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.sliderThumbHitArea, thumbStyle]}>
             <View style={styles.sliderThumb} />
           </Animated.View>
         </GestureDetector>
       </View>
-      <Text style={[styles.sliderLabel, { color: valueColor }]}>{(value * 100).toFixed(0)}</Text>
+      <AText style={[styles.sliderValue, { color: valueColor }]} editable={false} animatedProps={displayProps} />
+      {/* <Text style={[styles.sliderValue, { color: valueColor }]}>
+        {getDisplayValue()}
+      </Text> */}
     </View>
   );
 };
@@ -88,6 +162,7 @@ const styles = StyleSheet.create({
     height: SLIDER_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   sliderTrack: {
     position: 'absolute',
@@ -95,6 +170,15 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#111',
     borderRadius: 2,
+  },
+  tickMark: {
+    position: 'absolute',
+    width: 12,
+    height: 2,
+    backgroundColor: '#fff',
+    borderRadius: 1,
+    left: '50%',
+    marginLeft: -6, // Center horizontally
   },
   sliderThumbHitArea: {
     position: 'absolute',

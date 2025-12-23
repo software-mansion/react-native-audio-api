@@ -41,7 +41,6 @@ export default function OverdrivePedal({
       return;
     }
     if (isActive) {
-      console.log('Applying overdrive effect');
       applyEffect(inputNode, outputNode);
     } else {
       discardEffect(inputNode, outputNode);

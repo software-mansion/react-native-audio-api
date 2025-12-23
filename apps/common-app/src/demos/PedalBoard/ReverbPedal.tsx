@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
-import { ConvolverNode, AudioNode, AudioContext, AudioBuffer } from 'react-native-audio-api';
+import { ConvolverNode, AudioNode, AudioContext, AudioBuffer, GainNode } from 'react-native-audio-api';
 import { makeReverbCurve } from './curves';
 
 interface ReverbPedalProps {
@@ -68,12 +68,16 @@ export default function ReverbPedal({
     convolverNodeRef.current = convolver;
     inputNode.connect(convolver).connect(outputNode);
     inputNode.disconnect(outputNode);
+    (outputNode as GainNode).gain.value = 2.5;
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    convolverNodeRef.current?.disconnect();
     inputNode.connect(outputNode);
-    inputNode.disconnect(convolverNodeRef.current!);
+    (outputNode as GainNode).gain.value = 1; // Reset output gain
+    if (convolverNodeRef.current) {
+      inputNode.disconnect(convolverNodeRef.current);
+      convolverNodeRef.current.disconnect();
+    }
     convolverNodeRef.current = null;
   };
 
@@ -95,6 +99,7 @@ export default function ReverbPedal({
           labelColor='#fff'
           valueColor='#ffda'
           onValueChange={setLevel}
+          possibleValues={[0, 0.5, 1]}
         />
       </View>
 

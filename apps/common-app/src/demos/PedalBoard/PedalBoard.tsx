@@ -3,30 +3,49 @@ import {
   AudioBufferSourceNode,
   AudioBuffer,
   GainNode,
+  RecorderAdapterNode,
+  AudioRecorder,
+  AudioManager
 } from 'react-native-audio-api';
 import { Container } from '../../components';
 import { audioContext } from '../../singletons';
-import { ActivityIndicator, View, Button, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { ActivityIndicator, View, Button, StyleSheet, ScrollView, Dimensions, Alert } from 'react-native';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
 import EchoPedal from './EchoPedal';
+import AutoWahPedal from './AutoWahPedal';
 
 const screenWdith = Dimensions.get('window').width;
 
-const URL = 'http://localhost:3000/react-native-audio-api/audio/music/105.wav';
+const URL = 'https://files.catbox.moe/xbj6gn.flac';
+const PEDALS = [
+  { id: 0, component: OverdrivePedal },
+  { id: 1, component: AutoWahPedal },
+  { id: 2, component: EchoPedal },
+  { id: 3, component: ReverbPedal },
+];
+
+let permissionsGranted = false;
 
 export default function PedalBoard() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const sourceNodeRef = useRef<AudioBufferSourceNode>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | RecorderAdapterNode>(null);
+  const recorderRef = useRef<AudioRecorder | null>(null);
   const pedalInputNodesRef = useRef<GainNode[]>([]);
   const pedalOutputNodesRef = useRef<GainNode[]>([]);
 
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
+      AudioManager.setAudioSessionOptions({
+        iosCategory: 'playAndRecord',
+        iosMode: 'default',
+      })
+      AudioManager.setAudioSessionActivity(true);
 
       try {
         // Load audio file
@@ -39,13 +58,16 @@ export default function PedalBoard() {
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < PEDALS.length; i++) {
           const input = audioContext.createGain();
           const output = audioContext.createGain();
           pedalInputNodesRef.current.push(input);
           pedalOutputNodesRef.current.push(output);
         }
         setAudioBuffer(audioBuffer);
+        sourceNodeRef.current = audioContext.createBufferSource();
+        sourceNodeRef.current.buffer = audioBuffer;
+        handleConnections();
       } catch (error) {
         console.error('Error loading audio:', error);
       } finally {
@@ -54,11 +76,8 @@ export default function PedalBoard() {
     };
 
     init();
-    handleConnections();
-
     return () => {
       sourceNodeRef.current?.disconnect();
-      sourceNodeRef.current?.stop();
     };
   }, []);
 
@@ -68,17 +87,19 @@ export default function PedalBoard() {
     }
     const sourceNode = sourceNodeRef.current;
     sourceNode.connect(pedalInputNodesRef.current[0]);
-    pedalInputNodesRef.current[0].connect(pedalOutputNodesRef.current[0]);
-    pedalOutputNodesRef.current[0].connect(pedalInputNodesRef.current[1]);
-    pedalInputNodesRef.current[1].connect(pedalOutputNodesRef.current[1]);
-    pedalOutputNodesRef.current[1].connect(pedalInputNodesRef.current[2]);
-    pedalInputNodesRef.current[2].connect(pedalOutputNodesRef.current[2]);
-    pedalOutputNodesRef.current[2].connect(audioContext.destination);
+    for (let i = 0; i < PEDALS.length; i++) {
+      pedalInputNodesRef.current[i].connect(pedalOutputNodesRef.current[i]);
+    }
+
+    for (let i = 0; i < PEDALS.length - 1; i++) {
+      pedalOutputNodesRef.current[i].connect(pedalInputNodesRef.current[i + 1]);
+    }
+    pedalOutputNodesRef.current[PEDALS.length - 1].connect(audioContext.destination);
   }
 
   const togglePlayback = () => {
     if (isPlaying) {
-      sourceNodeRef.current?.stop();
+      sourceNodeRef.current?.disconnect();
       setIsPlaying(false);
     } else {
       if (!audioBuffer) {
@@ -86,9 +107,43 @@ export default function PedalBoard() {
       }
       sourceNodeRef.current = audioContext.createBufferSource();
       sourceNodeRef.current.buffer = audioBuffer;
-      handleConnections();
+      sourceNodeRef.current.connect(pedalInputNodesRef.current[0]);
       sourceNodeRef.current.start();
       setIsPlaying(true);
+    }
+  }
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      recorderRef.current?.stop();
+      sourceNodeRef.current?.disconnect();
+      setIsRecording(false);
+    } else {
+      if (!permissionsGranted) {
+        const recPerm = await AudioManager.requestRecordingPermissions();
+        const notPerm = await AudioManager.requestNotificationPermissions();
+        console.log('Recording permission:', recPerm);
+        // @ts-ignore
+        permissionsGranted = recPerm === 'Granted' && notPerm === 'granted';
+      }
+      if (permissionsGranted) {
+        const recorder = new AudioRecorder();
+        const adapter = audioContext.createRecorderAdapter();
+        recorder.connect(adapter);
+        recorderRef.current = recorder;
+        sourceNodeRef.current = adapter;
+        sourceNodeRef.current.connect(pedalInputNodesRef.current[0]);
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        recorder.start();
+        setIsRecording(true);
+      } else {
+        Alert.alert(
+          'Insufficient permissions!',
+          'You need to grant audio recording permissions to use this feature.'
+        );
+      };
     }
   }
 
@@ -100,21 +155,33 @@ export default function PedalBoard() {
       ) : (
         <>
           <ScrollView>
-          <View style={styles.container}>
-            <OverdrivePedal context={audioContext} inputNode={pedalInputNodesRef.current[0]} outputNode={pedalOutputNodesRef.current[0]}/>
-          </View>
-          <View style={styles.container}>
-            <ReverbPedal context={audioContext} inputNode={pedalInputNodesRef.current[1]} outputNode={pedalOutputNodesRef.current[1]}/>
-          </View>
-          <View style={styles.container}>
-            <EchoPedal context={audioContext} inputNode={pedalInputNodesRef.current[2]} outputNode={pedalOutputNodesRef.current[2]}/>
-          </View>
+          {PEDALS.map((pedal, index) => {
+              const PedalComponent = pedal.component;
+              return (
+                <View key={pedal.id} style={styles.container}>
+                  <PedalComponent
+                    context={audioContext}
+                    inputNode={pedalInputNodesRef.current[index]}
+                    outputNode={pedalOutputNodesRef.current[index]}
+                  />
+                </View>
+              );
+            })}
           </ScrollView>
           <View style={styles.controls}>
+            <View style= {{ display: isRecording ? 'none' : 'flex' }}>
             <Button
               title={isPlaying ? 'Stop' : 'Play'}
               onPress={togglePlayback}
             />
+            </View>
+
+            <View style= {{ display: isPlaying ? 'none' : 'flex' }}>
+            <Button
+              title={isRecording ? 'Stop' : 'Record'}
+              onPress={toggleRecording}
+            />
+            </View>
           </View>
         </>
       )}
@@ -129,6 +196,10 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   controls: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
     marginTop: 20,
     width: 200,
   },

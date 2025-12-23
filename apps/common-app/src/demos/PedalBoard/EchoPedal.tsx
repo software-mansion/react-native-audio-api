@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
-import { ConvolverNode, AudioNode, AudioContext } from 'react-native-audio-api';
+import { ConvolverNode, AudioNode, AudioContext, GainNode } from 'react-native-audio-api';
 import { makeEchoCurve } from './curves';
 
 interface EchoPedalProps {
@@ -33,18 +33,21 @@ export default function EchoPedal({
   }, [isActive, inputNode, outputNode]);
 
   useEffect(() => {
-    // Re-apply effect when time changes and pedal is active
     if (isActive && inputNode && outputNode) {
       applyEffect(context, inputNode, outputNode);
     }
   }, [time]);
 
   const applyEffect = (context: AudioContext, inputNode: AudioNode, outputNode: AudioNode) => {
+    if (convolverNodeRef.current) {
+      inputNode.disconnect(convolverNodeRef.current);
+      convolverNodeRef.current.disconnect();
+    }
     // Map slider value (0-1) to delay time (0.1s - 2.0s)
     const delayTime = 0.1 + time * 1.9;
 
     // Create new convolver with echo curve
-    const convolver = context.createConvolver();
+    const convolver = context.createConvolver({ disableNormalization: true});
     convolver.buffer = makeEchoCurve(delayTime, context);
     convolverNodeRef.current = convolver;
 
@@ -54,11 +57,11 @@ export default function EchoPedal({
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
+    inputNode.connect(outputNode);
     if (convolverNodeRef.current) {
       convolverNodeRef.current.disconnect();
       inputNode.disconnect(convolverNodeRef.current);
     }
-    inputNode.connect(outputNode);
   };
 
   const togglePower = () => {
@@ -72,14 +75,7 @@ export default function EchoPedal({
         <Text style={styles.model}>ECHO</Text>
       </View>
 
-      <View style={styles.controlsRow}>
-        <VerticalSlider
-          label="TIME"
-          value={time}
-          labelColor='#fff'
-          valueColor='#ffda'
-          onValueChange={setTime}
-        />
+      <View style={[styles.controlsRow, { height: 150 }]}>
       </View>
 
       <View style={styles.footer}>
