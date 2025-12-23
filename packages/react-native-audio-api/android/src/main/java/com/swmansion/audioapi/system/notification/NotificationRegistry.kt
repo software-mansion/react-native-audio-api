@@ -2,7 +2,6 @@ package com.swmansion.audioapi.system.notification
 
 import android.app.Notification
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
@@ -39,7 +38,6 @@ class NotificationRegistry(
    * @param type The type of notification (only used for first creation)
    * @param options Configuration options from JavaScript
    */
-  @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   fun showNotification(
     key: String,
     type: String,
@@ -65,7 +63,7 @@ class NotificationRegistry(
 
       // Subscribe to foreground service if not already active
       if (!wasActive) {
-        ForegroundServiceManager.subscribe(notification)
+        ForegroundServiceManager.subscribe("notification_$key")
         activeNotifications[key] = true
         Log.d(TAG, "Showing notification: $key (subscribed to foreground service)")
       } else {
@@ -96,7 +94,7 @@ class NotificationRegistry(
         activeNotifications[key] = false
 
         // Unsubscribe from foreground service
-        ForegroundServiceManager.unsubscribe(notification)
+        ForegroundServiceManager.unsubscribe("notification_$key")
 
         Log.d(TAG, "Hiding notification: $key (unsubscribed from foreground service)")
       }
@@ -118,19 +116,11 @@ class NotificationRegistry(
     val notification =
       when (type) {
         "playback" -> {
-          PlaybackNotification(
+          com.swmansion.audioapi.system.notification.PlaybackNotification(
             reactContext,
             audioAPIModule,
             100,
             "audio_playback",
-          )
-        }
-        "recording" -> {
-          RecordingNotification(
-            reactContext,
-            audioAPIModule,
-            200,
-            "audio_recording6",
           )
         }
         else -> throw IllegalArgumentException("Unknown notification type: $type")
@@ -179,7 +169,6 @@ class NotificationRegistry(
     Log.d(TAG, "Cleaned up all notifications")
   }
 
-  @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   private fun displayNotification(
     id: Int,
     notification: Notification,
