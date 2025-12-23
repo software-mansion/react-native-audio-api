@@ -73,39 +73,10 @@ interface PlaybackNotificationEvent {
 
 export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 
-/// Metadata and state information for recording notifications.
-export interface RecordingNotificationInfo {
-  title?: string;
-  description?: string;
-  artwork?: string | { uri: string };
-  state?: 'recording' | 'stopped';
-  control?: RecordingControlName;
-  enabled?: boolean;
-}
-
-/// Available recording control actions.
-export type RecordingControlName = 'start' | 'stop';
-
-/// Event names for recording notification actions.
-interface RecordingNotificationEvent {
-  recordingNotificationStart: EventEmptyType;
-  recordingNotificationStop: EventEmptyType;
-  recordingNotificationDismissed: EventEmptyType;
-}
-
-export type RecordingNotificationEventName = keyof RecordingNotificationEvent;
-
-export type NotificationEvents = PlaybackNotificationEvent &
-  RecordingNotificationEvent;
+export type NotificationEvents = PlaybackNotificationEvent;
 
 export type NotificationEventName = keyof NotificationEvents;
 
 export type NotificationCallback<Name extends NotificationEventName> = (
   event: NotificationEvents[Name]
 ) => void;
-
-/// Options for a simple notification with title and text.
-export interface SimpleNotificationOptions {
-  title?: string;
-  text?: string;
-}
