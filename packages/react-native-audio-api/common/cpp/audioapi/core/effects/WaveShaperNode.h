@@ -19,7 +19,7 @@ class AudioArray;
 
 class WaveShaperNode : public AudioNode {
  public:
-  explicit WaveShaperNode(BaseAudioContext *context);
+  explicit WaveShaperNode(std::shared_ptr<BaseAudioContext> context);
 
   [[nodiscard]] std::string getOversample() const;
   [[nodiscard]] std::shared_ptr<AudioArray> getCurve() const;

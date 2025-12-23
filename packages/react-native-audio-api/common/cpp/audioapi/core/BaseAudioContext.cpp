@@ -212,7 +212,7 @@ std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
 }
 
 std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper() {
-  auto waveShaper = std::make_shared<WaveShaperNode>(this);
+  auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this());
   nodeManager_->addProcessingNode(waveShaper);
   return waveShaper;
 }

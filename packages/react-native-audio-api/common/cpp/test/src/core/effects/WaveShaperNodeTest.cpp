@@ -12,19 +12,20 @@ using namespace audioapi;
 class WaveShaperNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<OfflineAudioContext> context;
+  std::shared_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<OfflineAudioContext>(
+    context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };
 
 class TestableWaveShaperNode : public WaveShaperNode {
  public:
-  explicit TestableWaveShaperNode(BaseAudioContext *context) : WaveShaperNode(context) {
+  explicit TestableWaveShaperNode(std::shared_ptr<BaseAudioContext> context)
+      : WaveShaperNode(context) {
     testCurve_ = std::make_shared<AudioArray>(3);
     auto data = testCurve_->getData();
     data[0] = -2.0f;
@@ -54,7 +55,7 @@ TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
 
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   static constexpr int FRAMES_TO_PROCESS = 5;
-  auto waveShaper = std::make_shared<TestableWaveShaperNode>(context.get());
+  auto waveShaper = std::make_shared<TestableWaveShaperNode>(context);
   waveShaper->setOversample("none");
   waveShaper->setCurve(waveShaper->testCurve_);
 
