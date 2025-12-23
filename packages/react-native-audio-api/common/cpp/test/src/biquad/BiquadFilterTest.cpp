@@ -6,76 +6,76 @@
 namespace audioapi {
 
 void BiquadFilterTest::expectCoefficientsNear(
-    const std::shared_ptr<BiquadFilterNode> &biquadNode,
+    const BiquadFilterNode &biquadNode,
     const BiquadCoefficients &expected) {
-  EXPECT_NEAR(biquadNode->b0_, expected.b0, tolerance);
-  EXPECT_NEAR(biquadNode->b1_, expected.b1, tolerance);
-  EXPECT_NEAR(biquadNode->b2_, expected.b2, tolerance);
-  EXPECT_NEAR(biquadNode->a1_, expected.a1, tolerance);
-  EXPECT_NEAR(biquadNode->a2_, expected.a2, tolerance);
+  EXPECT_NEAR(biquadNode.b0_, expected.b0, tolerance);
+  EXPECT_NEAR(biquadNode.b1_, expected.b1, tolerance);
+  EXPECT_NEAR(biquadNode.b2_, expected.b2, tolerance);
+  EXPECT_NEAR(biquadNode.a1_, expected.a1, tolerance);
+  EXPECT_NEAR(biquadNode.a2_, expected.a2, tolerance);
 }
 
 void BiquadFilterTest::testLowpass(float frequency, float Q) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setLowpassCoefficients(normalizedFrequency, Q);
+  node.setLowpassCoefficients(normalizedFrequency, Q);
   expectCoefficientsNear(node, calculateLowpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testHighpass(float frequency, float Q) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setHighpassCoefficients(normalizedFrequency, Q);
+  node.setHighpassCoefficients(normalizedFrequency, Q);
   expectCoefficientsNear(node, calculateHighpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testBandpass(float frequency, float Q) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setBandpassCoefficients(normalizedFrequency, Q);
+  node.setBandpassCoefficients(normalizedFrequency, Q);
   expectCoefficientsNear(node, calculateBandpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testNotch(float frequency, float Q) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setNotchCoefficients(normalizedFrequency, Q);
+  node.setNotchCoefficients(normalizedFrequency, Q);
   expectCoefficientsNear(node, calculateNotchCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testAllpass(float frequency, float Q) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setAllpassCoefficients(normalizedFrequency, Q);
+  node.setAllpassCoefficients(normalizedFrequency, Q);
   expectCoefficientsNear(node, calculateAllpassCoefficients(normalizedFrequency, Q));
 }
 
 void BiquadFilterTest::testPeaking(float frequency, float Q, float gain) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setPeakingCoefficients(normalizedFrequency, Q, gain);
+  node.setPeakingCoefficients(normalizedFrequency, Q, gain);
   expectCoefficientsNear(node, calculatePeakingCoefficients(normalizedFrequency, Q, gain));
 }
 
 void BiquadFilterTest::testLowshelf(float frequency, float gain) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setLowshelfCoefficients(normalizedFrequency, gain);
+  node.setLowshelfCoefficients(normalizedFrequency, gain);
   expectCoefficientsNear(node, calculateLowshelfCoefficients(normalizedFrequency, gain));
 }
 
 void BiquadFilterTest::testHighshelf(float frequency, float gain) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setHighshelfCoefficients(normalizedFrequency, gain);
+  node.setHighshelfCoefficients(normalizedFrequency, gain);
   expectCoefficientsNear(node, calculateHighshelfCoefficients(normalizedFrequency, gain));
 }
 
@@ -218,13 +218,13 @@ TEST_P(BiquadFilterGainTest, SetHighshelfCoefficients) {
 }
 
 TEST_F(BiquadFilterTest, GetFrequencyResponse) {
-  auto node = std::make_shared<BiquadFilterNode>(context.get());
+  auto node = BiquadFilterNode(context);
 
   float frequency = 1000.0f;
   float Q = 1.0f;
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  node->setLowpassCoefficients(normalizedFrequency, Q);
+  node.setLowpassCoefficients(normalizedFrequency, Q);
   auto coeffs = calculateLowpassCoefficients(normalizedFrequency, Q);
 
   std::vector<float> TestFrequencies = {
@@ -243,7 +243,7 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
   std::vector<float> magResponseExpected(TestFrequencies.size());
   std::vector<float> phaseResponseExpected(TestFrequencies.size());
 
-  node->getFrequencyResponse(
+  node.getFrequencyResponse(
       TestFrequencies.data(),
       magResponseNode.data(),
       phaseResponseNode.data(),

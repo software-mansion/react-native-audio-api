@@ -22,7 +22,7 @@
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-StreamerNode::StreamerNode(BaseAudioContext *context)
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
@@ -37,7 +37,7 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       maxResampledSamples_(0),
       processedSamples_(0) {}
 #else
-StreamerNode::StreamerNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {}
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context) : AudioScheduledSourceNode(context) {}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 StreamerNode::~StreamerNode() {
@@ -48,6 +48,11 @@ StreamerNode::~StreamerNode() {
 
 bool StreamerNode::initialize(const std::string &input_url) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    return false;
+  }
+
   if (isInitialized_) {
     cleanup();
   }
@@ -58,7 +63,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
+  if (!findAudioStream() || !setupDecoder() || !setupResampler(context->getSampleRate())) {
     if (VERBOSE)
       printf("Failed to find/setup audio stream\n");
     cleanup();
@@ -77,7 +82,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
   audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,
@@ -100,7 +105,12 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
@@ -146,7 +156,7 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-bool StreamerNode::setupResampler() {
+bool StreamerNode::setupResampler(float outSampleRate) {
   // Allocate resampler context
   swrCtx_ = swr_alloc();
   if (swrCtx_ == nullptr) {
@@ -160,7 +170,7 @@ bool StreamerNode::setupResampler() {
 
   // Set output parameters (float)
   av_opt_set_chlayout(swrCtx_, "out_chlayout", &codecCtx_->ch_layout, 0);
-  av_opt_set_int(swrCtx_, "out_sample_rate", context_->getSampleRate(), 0);
+  av_opt_set_int(swrCtx_, "out_sample_rate", outSampleRate, 0);
   av_opt_set_sample_fmt(swrCtx_, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
 
   // Initialize the resampler
@@ -193,7 +203,11 @@ void StreamerNode::streamAudio() {
       if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
         return;
       }
-      if (!processFrameWithResampler(frame_)) {
+      std::shared_ptr<BaseAudioContext> context = context_.lock();
+      if (context == nullptr) {
+        return;
+      }
+      if (!processFrameWithResampler(frame_, context)) {
         return;
       }
     }
@@ -201,7 +215,7 @@ void StreamerNode::streamAudio() {
   }
 }
 
-bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
+bool StreamerNode::processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context) {
   // Check if we need to reallocate the resampled buffer
   int out_samples = swr_get_out_samples(swrCtx_, frame->nb_samples);
   if (out_samples > maxResampledSamples_) {
@@ -241,7 +255,7 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
   auto bus = AudioBus(
       static_cast<size_t>(converted_samples),
       codecCtx_->ch_layout.nb_channels,
-      context_->getSampleRate());
+      context->getSampleRate());
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
     float *dst = bus.getChannel(ch)->getData();

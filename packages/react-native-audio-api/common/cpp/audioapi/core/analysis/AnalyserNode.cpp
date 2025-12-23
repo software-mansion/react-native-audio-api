@@ -12,23 +12,20 @@
 #include <vector>
 
 namespace audioapi {
-AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context)
+AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context)
     : AudioNode(context),
       fftSize_(2048),
       minDecibels_(-100),
       maxDecibels_(-30),
       smoothingTimeConstant_(0.8),
-      windowType_(WindowType::BLACKMAN) {
-  inputBuffer_ = std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2);
-  tempBuffer_ = std::make_unique<AudioArray>(fftSize_);
-  magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
-  downMixBus_ = std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
-
-  fft_ = std::make_unique<dsp::FFT>(fftSize_);
-  complexData_ = std::vector<std::complex<float>>(fftSize_);
-
+      windowType_(WindowType::BLACKMAN),
+      inputBuffer_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
+      tempBuffer_(std::make_unique<AudioArray>(fftSize_)),
+      magnitudeBuffer_(std::make_unique<AudioArray>(fftSize_ / 2)),
+      downMixBus_(std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      fft_(std::make_unique<dsp::FFT>(fftSize_)),
+      complexData_(std::vector<std::complex<float>>(fftSize_)) {
   setWindowData(windowType_, fftSize_);
-
   isInitialized_ = true;
 }
 

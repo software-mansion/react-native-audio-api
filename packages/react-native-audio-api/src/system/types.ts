@@ -1,3 +1,6 @@
+import type { SystemEventName, SystemEventCallback } from '../events/types';
+import type { AudioEventSubscription } from '../events';
+
 export type IOSCategory =
   | 'record'
   | 'ambient'
@@ -48,4 +51,23 @@ export interface AudioDevicesInfo {
   availableOutputs: AudioDeviceList;
   currentInputs: AudioDeviceList; // iOS only
   currentOutputs: AudioDeviceList; // iOS only
+}
+
+export interface IAudioManager {
+  getDevicePreferredSampleRate(): number;
+  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
+  setAudioSessionOptions(options: SessionOptions): void;
+  disableSessionManagement(): void;
+  observeAudioInterruptions(enabled: boolean): void;
+  activelyReclaimSession(enabled: boolean): void;
+  observeVolumeChanges(enabled: boolean): void;
+  addSystemEventListener<Name extends SystemEventName>(
+    name: Name,
+    callback: SystemEventCallback<Name>
+  ): AudioEventSubscription | undefined;
+  requestRecordingPermissions(): Promise<PermissionStatus>;
+  checkRecordingPermissions(): Promise<PermissionStatus>;
+  requestNotificationPermissions(): Promise<PermissionStatus>;
+  checkNotificationPermissions(): Promise<PermissionStatus>;
+  getDevicesInfo(): Promise<AudioDevicesInfo>;
 }

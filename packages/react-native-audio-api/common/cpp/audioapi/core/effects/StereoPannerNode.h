@@ -13,7 +13,7 @@ class AudioBus;
 
 class StereoPannerNode : public AudioNode {
  public:
-  explicit StereoPannerNode(BaseAudioContext *context);
+  explicit StereoPannerNode(std::shared_ptr<BaseAudioContext> context);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 

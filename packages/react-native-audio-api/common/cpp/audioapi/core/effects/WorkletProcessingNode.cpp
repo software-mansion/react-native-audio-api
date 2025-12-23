@@ -6,11 +6,9 @@
 namespace audioapi {
 
 WorkletProcessingNode::WorkletProcessingNode(
-    BaseAudioContext *context,
+    std::shared_ptr<BaseAudioContext> context,
     WorkletsRunner &&workletRunner)
     : AudioNode(context), workletRunner_(std::move(workletRunner)) {
-  isInitialized_ = true;
-
   // Pre-allocate buffers for max 128 frames and 2 channels (stereo)
   size_t maxChannelCount = 2;
   inputBuffsHandles_.resize(maxChannelCount);
@@ -23,6 +21,7 @@ WorkletProcessingNode::WorkletProcessingNode(
     auto outputAudioArray = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE);
     outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(outputAudioArray);
   }
+  isInitialized_ = true;
 }
 
 std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
@@ -60,11 +59,15 @@ std::shared_ptr<AudioBus> WorkletProcessingNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
+        float time = 0.0f;
+        if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+          time = context->getCurrentTime();
+        }
         return workletRunner_.callUnsafe(
             inputJsArray,
             outputJsArray,
             jsi::Value(rt, static_cast<int>(framesToProcess)),
-            jsi::Value(rt, this->context_->getCurrentTime()));
+            jsi::Value(rt, time));
       });
 
   // Copy processed output data back to the processing bus or zero on failure

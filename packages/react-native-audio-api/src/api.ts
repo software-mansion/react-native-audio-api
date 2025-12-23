@@ -16,6 +16,7 @@ export { default as BaseAudioContext } from './core/BaseAudioContext';
 export { default as BiquadFilterNode } from './core/BiquadFilterNode';
 export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as ConvolverNode } from './core/ConvolverNode';
+export { default as DelayNode } from './core/DelayNode';
 export { default as GainNode } from './core/GainNode';
 export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';

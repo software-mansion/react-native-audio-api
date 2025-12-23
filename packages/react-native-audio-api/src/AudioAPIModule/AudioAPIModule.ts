@@ -1,22 +1,11 @@
-import type { ShareableWorkletCallback } from '../interfaces';
 import { NativeAudioAPIModule } from '../specs';
+import type {
+  WorkletRuntime,
+  IAudioAPIModule,
+  IWorkletsModule,
+} from './ModuleInterfaces';
 
-// Hint: Copied from react-native-worklets
-// Doesn't really matter what is inside, just need a unique type
-interface WorkletRuntime {
-  __hostObjectWorkletRuntime: never;
-  readonly name: string;
-}
-
-interface IWorkletsModule {
-  makeShareableCloneRecursive: (
-    workletCallback: ShareableWorkletCallback
-  ) => ShareableWorkletCallback;
-
-  createWorkletRuntime: (runtimeName: string) => WorkletRuntime;
-}
-
-class AudioAPIModule {
+class AudioAPIModule implements IAudioAPIModule {
   #workletsModule_: IWorkletsModule | null = null;
   #canUseWorklets_ = false;
   #workletsVersion = 'unknown';

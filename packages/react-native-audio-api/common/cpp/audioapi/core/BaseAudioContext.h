@@ -39,12 +39,14 @@ class WorkletProcessingNode;
 class StreamerNode;
 class WaveShaperNode;
 
-class BaseAudioContext {
+class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
+
+  virtual void initialize();
 
   std::string getState();
   [[nodiscard]] float getSampleRate() const;

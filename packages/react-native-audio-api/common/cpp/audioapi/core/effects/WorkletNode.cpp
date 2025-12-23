@@ -7,7 +7,7 @@
 namespace audioapi {
 
 WorkletNode::WorkletNode(
-    BaseAudioContext *context,
+    std::shared_ptr<BaseAudioContext> context,
     size_t bufferLength,
     size_t inputChannelCount,
     WorkletsRunner &&runtime)
@@ -15,8 +15,8 @@ WorkletNode::WorkletNode(
       workletRunner_(std::move(runtime)),
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
-      curBuffIndex_(0) {
-  bus_ = std::make_shared<AudioBus>(bufferLength, inputChannelCount, context->getSampleRate());
+      curBuffIndex_(0),
+      bus_(std::make_shared<AudioBus>(bufferLength, inputChannelCount, context->getSampleRate())) {
   isInitialized_ = true;
 }
 
