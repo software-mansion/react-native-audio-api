@@ -35,21 +35,13 @@ interface Spec extends TurboModule {
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
 
-  // New notification system
-  registerNotification(
-    type: NotificationType,
-    key: string
-  ): Promise<NotificationOpResponse>;
+  // Notification system
   showNotification(
-    key: string,
-    options: OptionsMap
-  ): Promise<NotificationOpResponse>;
-  updateNotification(
+    type: NotificationType,
     key: string,
     options: OptionsMap
   ): Promise<NotificationOpResponse>;
   hideNotification(key: string): Promise<NotificationOpResponse>;
-  unregisterNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
 }
 

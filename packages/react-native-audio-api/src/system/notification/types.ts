@@ -8,20 +8,15 @@ export interface NotificationManager<
   TUpdateOptions,
   TEventName extends NotificationEventName,
 > {
-  /// Register the notification (must be called before showing).
-  register(): Promise<void>;
-
-  /// Show the notification with initial options.
+  /// Show the notification with options or update if already visible.
+  /// Automatically creates the notification instance on first call.
   show(options: TShowOptions): Promise<void>;
 
-  /// Update the notification with new options.
+  /// Update the notification with new options (alias for show).
   update(options: TUpdateOptions): Promise<void>;
 
-  /// Hide the notification (can be shown again later).
+  /// Hide the notification.
   hide(): Promise<void>;
-
-  /// Unregister the notification (must register again to use).
-  unregister(): Promise<void>;
 
   /// Check if the notification is currently active.
   isActive(): Promise<boolean>;

@@ -10,9 +10,11 @@ import java.lang.ref.WeakReference
 
 /**
  * Central notification registry that manages multiple notification instances.
+ * Automatically handles foreground service lifecycle based on active notifications.
  */
 class NotificationRegistry(
   private val reactContext: WeakReference<ReactApplicationContext>,
+  private val audioAPIModule: WeakReference<com.swmansion.audioapi.AudioAPIModule>,
 ) {
   companion object {
     private const val TAG = "NotificationRegistry"
@@ -27,29 +29,25 @@ class NotificationRegistry(
   private val activeNotifications = mutableMapOf<String, Boolean>()
 
   /**
-   * Register a new notification instance.
-   *
-   * @param key Unique identifier for this notification
-   * @param notification The notification instance to register
-   */
-  fun registerNotification(
-    key: String,
-    notification: BaseNotification,
-  ) {
-    notifications[key] = notification
-    Log.d(TAG, "Registered notification: $key")
-  }
-
-  /**
-   * Initialize and show a notification.
+   * Show or update a notification.
+   * Automatically creates the notification instance on first call.
+   * If notification is not visible, it will be shown and subscribed to foreground service.
+   * If already visible, it will be updated.
    *
    * @param key The unique identifier of the notification
+   * @param type The type of notification (only used for first creation)
    * @param options Configuration options from JavaScript
    */
   fun showNotification(
     key: String,
+    type: String,
     options: ReadableMap?,
   ) {
+    // Auto-create notification if it doesn't exist
+    if (!notifications.containsKey(key)) {
+      createNotification(type, key)
+    }
+
     val notification = notifications[key]
     if (notification == null) {
       Log.w(TAG, "Notification not found: $key")
@@ -57,85 +55,91 @@ class NotificationRegistry(
     }
 
     try {
-      val builtNotification = notification.init(options)
+      val wasActive = activeNotifications.getOrDefault(key, false)
+
+      // Build/update the notification
+      val builtNotification = notification.show(options)
       displayNotification(notification.getNotificationId(), builtNotification)
-      activeNotifications[key] = true
 
-      // Subscribe to foreground service for persistent notifications
-      ForegroundServiceManager.subscribe("notification_$key")
-
-      Log.d(TAG, "Showing notification: $key")
+      // Subscribe to foreground service if not already active
+      if (!wasActive) {
+        ForegroundServiceManager.subscribe("notification_$key")
+        activeNotifications[key] = true
+        Log.d(TAG, "Showing notification: $key (subscribed to foreground service)")
+      } else {
+        Log.d(TAG, "Updating notification: $key")
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error showing notification $key: ${e.message}", e)
     }
   }
 
   /**
-   * Update an existing notification with new options.
-   *
-   * @param key The unique identifier of the notification
-   * @param options New configuration options from JavaScript
-   */
-  fun updateNotification(
-    key: String,
-    options: ReadableMap?,
-  ) {
-    if (!activeNotifications.getOrDefault(key, false)) {
-      Log.w(TAG, "Cannot update inactive notification: $key")
-      return
-    }
-
-    val notification = notifications[key]
-    if (notification == null) {
-      Log.w(TAG, "Notification not found: $key")
-      return
-    }
-
-    try {
-      val builtNotification = notification.update(options)
-      displayNotification(notification.getNotificationId(), builtNotification)
-      Log.d(TAG, "Updated notification: $key")
-    } catch (e: Exception) {
-      Log.e(TAG, "Error updating notification $key: ${e.message}", e)
-    }
-  }
-
-  /**
-   * Hide and reset a notification.
+   * Hide a notification.
    *
    * @param key The unique identifier of the notification
    */
   fun hideNotification(key: String) {
     val notification = notifications[key]
     if (notification == null) {
-      Log.w(TAG, "Notification not found: $key")
+      // Silently ignore if notification doesn't exist
       return
     }
 
     try {
-      cancelNotification(notification.getNotificationId())
-      notification.reset()
-      activeNotifications[key] = false
+      // Only hide if currently active
+      if (activeNotifications.getOrDefault(key, false)) {
+        cancelNotification(notification.getNotificationId())
+        notification.hide()
+        activeNotifications[key] = false
 
-      // Unsubscribe from foreground service
-      ForegroundServiceManager.unsubscribe("notification_$key")
+        // Unsubscribe from foreground service
+        ForegroundServiceManager.unsubscribe("notification_$key")
 
-      Log.d(TAG, "Hiding notification: $key")
+        Log.d(TAG, "Hiding notification: $key (unsubscribed from foreground service)")
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error hiding notification $key: ${e.message}", e)
     }
   }
 
   /**
-   * Unregister and cleanup a notification.
+   * Create a notification instance.
+   *
+   * @param type The type of notification to create
+   * @param key Unique identifier for this notification
+   */
+  private fun createNotification(
+    type: String,
+    key: String,
+  ) {
+    val notification =
+      when (type) {
+        "playback" -> {
+          com.swmansion.audioapi.system.notification.PlaybackNotification(
+            reactContext,
+            audioAPIModule,
+            100,
+            "audio_playback",
+          )
+        }
+        else -> throw IllegalArgumentException("Unknown notification type: $type")
+      }
+
+    notifications[key] = notification
+    Log.d(TAG, "Created notification: $key (type: $type)")
+  }
+
+  /**
+   * Destroy and cleanup a notification.
    *
    * @param key The unique identifier of the notification
    */
-  fun unregisterNotification(key: String) {
+  fun destroyNotification(key: String) {
     hideNotification(key)
     notifications.remove(key)
     activeNotifications.remove(key)
-    Log.d(TAG, "Unregistered notification: $key")
+    Log.d(TAG, "Destroyed notification: $key")
   }
 
   /**

@@ -77,7 +77,11 @@ class PlaybackNotification(
   private var artworkThread: Thread? = null
   private var smallIconThread: Thread? = null
 
-  override fun init(params: ReadableMap?): Notification {
+  private var isInitialized = false
+
+  private fun initializeIfNeeded() {
+    if (isInitialized) return
+
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
 
     // Create notification channel first
@@ -175,15 +179,21 @@ class PlaybackNotification(
     updateMediaStyle()
     updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
 
-    // Apply initial params if provided
+    isInitialized = true
+  }
+
+  override fun show(params: ReadableMap?): Notification {
+    initializeIfNeeded()
+
+    // Apply params if provided (this updates the notification)
     if (params != null) {
-      update(params)
+      updateInternal(params)
     }
 
     return buildNotification()
   }
 
-  override fun reset() {
+  override fun hide() {
     // Interrupt artwork loading if in progress
     artworkThread?.interrupt()
     artworkThread = null
@@ -214,15 +224,18 @@ class PlaybackNotification(
     mediaSession?.isActive = false
     mediaSession?.release()
     mediaSession = null
+
+    notificationBuilder = null
+    isInitialized = false
   }
 
   override fun getNotificationId(): Int = notificationId
 
   override fun getChannelId(): String = channelId
 
-  override fun update(options: ReadableMap?): Notification {
+  private fun updateInternal(options: ReadableMap?) {
     if (options == null) {
-      return buildNotification()
+      return
     }
 
     // Handle control enable/disable
@@ -232,7 +245,7 @@ class PlaybackNotification(
       if (control != null) {
         enableControl(control, enabled)
       }
-      return buildNotification()
+      return
     }
 
     // Update metadata
@@ -410,13 +423,11 @@ class PlaybackNotification(
     updatePlaybackState(playbackPlayingState)
     mediaSession?.setMetadata(metadataBuilder.build())
     mediaSession?.isActive = true
-
-    return buildNotification()
   }
 
   private fun buildNotification(): Notification =
     notificationBuilder?.build()
-      ?: throw IllegalStateException("Notification not initialized. Call init() first.")
+      ?: throw IllegalStateException("Notification not initialized")
 
   /**
    * Enable or disable a specific control action.

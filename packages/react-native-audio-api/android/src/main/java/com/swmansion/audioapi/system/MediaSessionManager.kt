@@ -75,7 +75,7 @@ object MediaSessionManager {
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
     // Initialize new notification system
-    this.notificationRegistry = NotificationRegistry(this.reactContext)
+    this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
   }
 
   fun getDevicePreferredSampleRate(): Double {
@@ -215,40 +215,17 @@ object MediaSessionManager {
       else -> "Other (${device.type})"
     }
 
-  // New notification system methods
-  fun registerNotification(
+  // Notification system methods
+  fun showNotification(
     type: String,
     key: String,
-  ) {
-    val notification =
-      when (type) {
-        "playback" -> PlaybackNotification(reactContext, audioAPIModule, 100, "audio_playback")
-        else -> throw IllegalArgumentException("Unknown notification type: $type")
-      }
-
-    notificationRegistry.registerNotification(key, notification)
-  }
-
-  fun showNotification(
-    key: String,
     options: ReadableMap?,
   ) {
-    notificationRegistry.showNotification(key, options)
-  }
-
-  fun updateNotification(
-    key: String,
-    options: ReadableMap?,
-  ) {
-    notificationRegistry.updateNotification(key, options)
+    notificationRegistry.showNotification(key, type, options)
   }
 
   fun hideNotification(key: String) {
     notificationRegistry.hideNotification(key)
-  }
-
-  fun unregisterNotification(key: String) {
-    notificationRegistry.unregisterNotification(key)
   }
 
   fun isNotificationActive(key: String): Boolean = notificationRegistry.isNotificationActive(key)
