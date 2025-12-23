@@ -8,15 +8,20 @@ export interface NotificationManager<
   TUpdateOptions,
   TEventName extends NotificationEventName,
 > {
-  /// Show the notification with options or update if already visible.
-  /// Automatically creates the notification instance on first call.
+  /// Register the notification (must be called before showing).
+  register(): Promise<void>;
+
+  /// Show the notification with initial options.
   show(options: TShowOptions): Promise<void>;
 
-  /// Update the notification with new options (alias for show).
+  /// Update the notification with new options.
   update(options: TUpdateOptions): Promise<void>;
 
-  /// Hide the notification.
+  /// Hide the notification (can be shown again later).
   hide(): Promise<void>;
+
+  /// Unregister the notification (must register again to use).
+  unregister(): Promise<void>;
 
   /// Check if the notification is currently active.
   isActive(): Promise<boolean>;
@@ -25,7 +30,7 @@ export interface NotificationManager<
   addEventListener<T extends TEventName>(
     eventName: T,
     callback: NotificationCallback<T>
-  ): AudioEventSubscription | undefined;
+  ): AudioEventSubscription;
 
   /// Remove an event listener.
   removeEventListener(subscription: AudioEventSubscription): void;
@@ -68,30 +73,7 @@ interface PlaybackNotificationEvent {
 
 export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 
-/// Metadata and state information for recording notifications.
-export interface RecordingNotificationInfo {
-  title?: string;
-  contentText?: string;
-  paused?: boolean;
-  smallIconResourceName?: string;
-  largeIcon?: string;
-  color?: number;
-}
-
-/// Available recording control actions.
-export type RecordingControlName = 'start' | 'stop';
-
-/// Event names for recording notification actions.
-interface RecordingNotificationEvent {
-  recordingNotificationStart: EventEmptyType;
-  recordingNotificationStop: EventEmptyType;
-  recordingNotificationDismissed: EventEmptyType;
-}
-
-export type RecordingNotificationEventName = keyof RecordingNotificationEvent;
-
-export type NotificationEvents = PlaybackNotificationEvent &
-  RecordingNotificationEvent;
+export type NotificationEvents = PlaybackNotificationEvent;
 
 export type NotificationEventName = keyof NotificationEvents;
 

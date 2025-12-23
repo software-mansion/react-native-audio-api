@@ -10,7 +10,6 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
@@ -21,6 +20,7 @@ import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
+import com.swmansion.audioapi.system.notification.PlaybackNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
 import java.lang.ref.WeakReference
 
@@ -75,7 +75,7 @@ object MediaSessionManager {
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
     // Initialize new notification system
-    this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
+    this.notificationRegistry = NotificationRegistry(this.reactContext)
   }
 
   fun getDevicePreferredSampleRate(): Double {
@@ -215,18 +215,40 @@ object MediaSessionManager {
       else -> "Other (${device.type})"
     }
 
-  // Notification system methods
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-  fun showNotification(
+  // New notification system methods
+  fun registerNotification(
     type: String,
+    key: String,
+  ) {
+    val notification =
+      when (type) {
+        "playback" -> PlaybackNotification(reactContext, audioAPIModule, 100, "audio_playback")
+        else -> throw IllegalArgumentException("Unknown notification type: $type")
+      }
+
+    notificationRegistry.registerNotification(key, notification)
+  }
+
+  fun showNotification(
     key: String,
     options: ReadableMap?,
   ) {
-    notificationRegistry.showNotification(key, type, options)
+    notificationRegistry.showNotification(key, options)
+  }
+
+  fun updateNotification(
+    key: String,
+    options: ReadableMap?,
+  ) {
+    notificationRegistry.updateNotification(key, options)
   }
 
   fun hideNotification(key: String) {
     notificationRegistry.hideNotification(key)
+  }
+
+  fun unregisterNotification(key: String) {
+    notificationRegistry.unregisterNotification(key)
   }
 
   fun isNotificationActive(key: String): Boolean = notificationRegistry.isNotificationActive(key)
