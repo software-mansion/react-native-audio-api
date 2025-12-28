@@ -3,6 +3,7 @@ require_relative './scripts/rnaa_utils'
 
 package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
+$config = find_config()
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 $RN_AUDIO_API_FFMPEG_DISABLED = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : ENV['DISABLE_AUDIOAPI_FFMPEG'] == '1' # false by default
 
@@ -10,7 +11,8 @@ folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
-worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
+worklets_enabled = check_if_worklets_enabled()
+worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 
 Pod::Spec.new do |s|
@@ -23,6 +25,10 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
+
+  if worklets_enabled
+    s.dependency 'RNWorklets'
+  end
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
@@ -99,6 +105,12 @@ s.user_target_xcconfig = {
     $(inherited)
     $(PODS_ROOT)/Headers/Public/RNAudioAPI
     $(PODS_TARGET_SRCROOT)/common/cpp
+    $(PODS_ROOT)/Headers/Public/RNWorklets
+    $(PODS_ROOT)/#{$config[:react_native_common_dir]}
+    $(PODS_ROOT)/#{$config[:dynamic_frameworks_audio_api_dir]}/ios
+    $(PODS_ROOT)/#{$config[:dynamic_frameworks_audio_api_dir]}/common/cpp
+    $(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/ios
+    $(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/common/cpp
   ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
