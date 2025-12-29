@@ -19,12 +19,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   explicit AudioBufferSourceNode(std::shared_ptr<BaseAudioContext> context, bool pitchCorrection);
   ~AudioBufferSourceNode() override;
 
-  [[nodiscard]] bool getLoop() const;
-  [[nodiscard]] bool getLoopSkip() const;
-  [[nodiscard]] double getLoopStart() const;
-  [[nodiscard]] double getLoopEnd() const;
-  [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
-
   void setLoop(bool loop);
   void setLoopSkip(bool loopSkip);
   void setLoopStart(double loopStart);
@@ -51,7 +45,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   double loopEnd_;
 
   // User provided buffer
-  std::shared_ptr<AudioBuffer> buffer_;
   std::shared_ptr<AudioBus> alignedBus_;
 
   std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback

@@ -9,6 +9,7 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioBufferSourceNode;
+class AudioBufferHostObject;
 
 class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
@@ -30,6 +31,13 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(setBuffer);
+
+ private:
+  bool loop_;
+  bool loopSkip_;
+  double loopStart_;
+  double loopEnd_;
+  std::shared_ptr<AudioBufferHostObject> buffer_;
 };
 
 } // namespace audioapi
