@@ -72,12 +72,16 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     "USE_HEADERMAP" => "YES",
+    "DEFINES_MODULE" => "YES",
     "HEADER_SEARCH_PATHS" => [
       '"$(PODS_TARGET_SRCROOT)/ReactCommon"',
       '"$(PODS_TARGET_SRCROOT)/common/cpp"',
       '"$(PODS_TARGET_SRCROOT)/ios"',
       '"$(PODS_ROOT)/Headers/Private/React-Core"',
       '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
+      "\"$(PODS_ROOT)/#{$config[:react_native_common_dir]}\"",
+      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/apple\"",
+      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/Common/cpp\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\"",
@@ -90,12 +94,8 @@ Pod::Spec.new do |s|
 
   s.user_target_xcconfig = {
     "HEADER_SEARCH_PATHS" => [
-      '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
-      "\"$(PODS_ROOT)/#{$config[:react_native_common_dir]}\"",
       "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_audio_api_dir]}/ios\"",
       "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_audio_api_dir]}/common/cpp\"",
-      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/apple\"",
-      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/Common/cpp\"",
     ].join(' '),
     'OTHER_LDFLAGS' => %W[
       $(inherited)
