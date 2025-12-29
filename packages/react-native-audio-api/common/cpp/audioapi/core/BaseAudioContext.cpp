@@ -35,13 +35,16 @@
 namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
+    float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : nodeManager_(std::make_shared<AudioNodeManager>()),
+    : sampleRate_ {sampleRate},
+      nodeManager_(std::make_shared<AudioNodeManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry) {}
 
 void BaseAudioContext::initialize() {
+  audioEventScheduler_ = std::make_unique<AudioEventScheduler>(shared_from_this());
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 

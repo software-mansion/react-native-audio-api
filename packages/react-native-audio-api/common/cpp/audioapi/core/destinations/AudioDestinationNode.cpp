@@ -35,6 +35,7 @@ void AudioDestinationNode::renderAudio(
   }
 
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->processAudioEvents();
     context->getNodeManager()->preProcessGraph();
   }
 

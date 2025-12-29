@@ -2,6 +2,7 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/core/utils/AudioEventScheduler.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <cassert>
 #include <complex>
@@ -42,6 +43,7 @@ class WaveShaperNode;
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
+      float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
@@ -101,12 +103,19 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
 
+  void inline processAudioEvents() {
+    audioEventScheduler_->processAllEvents();
+  }
+
+  bool inline scheduleAudioEvent(std::function<void(BaseAudioContext &)> &&event) noexcept {
+    return audioEventScheduler_->scheduleEvent(std::move(event));
+  }
+
  protected:
   static std::string toString(ContextState state);
 
   std::shared_ptr<AudioDestinationNode> destination_;
-  // init in AudioContext or OfflineContext constructor
-  float sampleRate_{};
+  float sampleRate_;
   ContextState state_ = ContextState::RUNNING;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
@@ -115,6 +124,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
+
+  std::unique_ptr<AudioEventScheduler> audioEventScheduler_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 

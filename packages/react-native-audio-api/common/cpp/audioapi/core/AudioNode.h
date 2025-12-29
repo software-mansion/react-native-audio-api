@@ -42,6 +42,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void enable();
   virtual void disable();
 
+  bool scheduleAudioEvent(std::function<void(BaseAudioContext &)> &&event) noexcept;
+
  protected:
   friend class AudioNodeManager;
   friend class AudioDestinationNode;

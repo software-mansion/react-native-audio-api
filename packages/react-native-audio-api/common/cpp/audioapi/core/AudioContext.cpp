@@ -15,8 +15,7 @@ AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry), isInitialized_(false) {
-  sampleRate_ = sampleRate;
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry), isInitialized_(false) {
   state_ = ContextState::SUSPENDED;
 }
 

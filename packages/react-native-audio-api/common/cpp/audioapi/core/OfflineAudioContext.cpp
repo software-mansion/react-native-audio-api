@@ -24,11 +24,10 @@ OfflineAudioContext::OfflineAudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry),
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0) {
-  sampleRate_ = sampleRate;
   resultBus_ =
       std::make_shared<AudioBus>(static_cast<int>(length_), numberOfChannels_, sampleRate_);
 }
