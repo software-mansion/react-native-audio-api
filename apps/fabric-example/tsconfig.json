@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["jest"],
     "baseUrl": ".",
     "moduleSuffixes": [".ios", ".android", ".native", ""],
     "paths": {
