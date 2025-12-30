@@ -14,8 +14,6 @@ class BaseAudioContext;
 ///
 /// It is a wrapper around CrossThreadEventScheduler specialized for audio events.
 /// It is designed to be managed by BaseAudioContext.
-/// @note If context is running events are scheduled to be executed on audio thread.
-/// @note If context is not running events are executed immediately on scheduling thread.
 class AudioEventScheduler {
  public:
   /// @brief Constructs an AudioEventScheduler with the given context and capacity.
@@ -26,7 +24,7 @@ class AudioEventScheduler {
       size_t capacity = 1024);
   ~AudioEventScheduler() = default;
 
-  /// @brief Schedules an event to be processed.
+  /// @brief Schedules an event to be processed or execute it immediately if context_ is not running.
   bool scheduleEvent(std::function<void(BaseAudioContext &)> &&event) noexcept;
 
   /// @brief Processes all scheduled events.
