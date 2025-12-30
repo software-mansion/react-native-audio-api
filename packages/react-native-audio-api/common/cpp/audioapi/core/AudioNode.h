@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
@@ -10,96 +11,106 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-namespace audioapi {
+    namespace audioapi {
 
-class AudioBus;
-class BaseAudioContext;
-class AudioParam;
+  class AudioBus;
+  class AudioParam;
 
-class AudioNode : public std::enable_shared_from_this<AudioNode> {
- public:
-  explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
-  virtual ~AudioNode();
+  class AudioNode : public std::enable_shared_from_this<AudioNode> {
+   public:
+    explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
+    virtual ~AudioNode();
 
-  int getNumberOfInputs() const;
-  int getNumberOfOutputs() const;
-  int getChannelCount() const;
-  std::string getChannelCountMode() const;
-  std::string getChannelInterpretation() const;
-  void connect(const std::shared_ptr<AudioNode> &node);
-  void connect(const std::shared_ptr<AudioParam> &param);
-  void disconnect();
-  void disconnect(const std::shared_ptr<AudioNode> &node);
-  void disconnect(const std::shared_ptr<AudioParam> &param);
-  virtual std::shared_ptr<AudioBus> processAudio(
-      const std::shared_ptr<AudioBus> &outputBus,
-      int framesToProcess,
-      bool checkIsAlreadyProcessed);
+    int getNumberOfInputs() const;
+    int getNumberOfOutputs() const;
+    int getChannelCount() const;
+    std::string getChannelCountMode() const;
+    std::string getChannelInterpretation() const;
+    void connect(const std::shared_ptr<AudioNode> &node);
+    void connect(const std::shared_ptr<AudioParam> &param);
+    void disconnect();
+    void disconnect(const std::shared_ptr<AudioNode> &node);
+    void disconnect(const std::shared_ptr<AudioParam> &param);
+    virtual std::shared_ptr<AudioBus> processAudio(
+        const std::shared_ptr<AudioBus> &outputBus,
+        int framesToProcess,
+        bool checkIsAlreadyProcessed);
 
-  bool isEnabled() const;
-  bool requiresTailProcessing() const;
-  void enable();
-  virtual void disable();
+    bool isEnabled() const;
+    bool requiresTailProcessing() const;
+    void enable();
+    virtual void disable();
 
-  bool scheduleAudioEvent(std::function<void(BaseAudioContext &)> &&event) noexcept;
+    template <
+        typename F,
+        typename =
+            std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+    bool inline scheduleAudioEvent(F &&event) noexcept {
+      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+        return context->scheduleAudioEvent(std::forward<F>(event));
+      }
 
- protected:
-  friend class AudioNodeManager;
-  friend class AudioDestinationNode;
-  friend class ConvolverNode;
-  friend class DelayNodeHostObject;
-  int channelCount_ = 2;
+      return false;
+    }
 
-  std::weak_ptr<BaseAudioContext> context_;
-  std::shared_ptr<AudioBus> audioBus_;
+   protected:
+    friend class AudioNodeManager;
+    friend class AudioDestinationNode;
+    friend class ConvolverNode;
+    friend class DelayNodeHostObject;
+    int channelCount_ = 2;
 
-  int numberOfInputs_ = 1;
-  int numberOfOutputs_ = 1;
-  ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
-  ChannelInterpretation channelInterpretation_ =
+    std::weak_ptr<BaseAudioContext> context_;
+    std::shared_ptr<AudioBus> audioBus_;
 
-      ChannelInterpretation::SPEAKERS;
+    int numberOfInputs_ = 1;
+    int numberOfOutputs_ = 1;
+    ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
+    ChannelInterpretation channelInterpretation_ =
 
-  std::unordered_set<AudioNode *> inputNodes_ = {};
-  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
-  std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
+        ChannelInterpretation::SPEAKERS;
 
-  int numberOfEnabledInputNodes_ = 0;
-  bool isInitialized_ = false;
-  bool isEnabled_ = true;
-  bool requiresTailProcessing_ = false;
+    std::unordered_set<AudioNode *> inputNodes_ = {};
+    std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
+    std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
 
-  std::size_t lastRenderedFrame_{SIZE_MAX};
+    int numberOfEnabledInputNodes_ = 0;
+    bool isInitialized_ = false;
+    bool isEnabled_ = true;
+    bool requiresTailProcessing_ = false;
 
- private:
-  std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
+    std::size_t lastRenderedFrame_{SIZE_MAX};
 
-  static std::string toString(ChannelCountMode mode);
-  static std::string toString(ChannelInterpretation interpretation);
+   private:
+    std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
 
-  virtual std::shared_ptr<AudioBus> processInputs(
-      const std::shared_ptr<AudioBus> &outputBus,
-      int framesToProcess,
-      bool checkIsAlreadyProcessed);
-  virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) = 0;
+    static std::string toString(ChannelCountMode mode);
+    static std::string toString(ChannelInterpretation interpretation);
 
-  bool isAlreadyProcessed();
-  std::shared_ptr<AudioBus> applyChannelCountMode(const std::shared_ptr<AudioBus> &processingBus);
-  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
+    virtual std::shared_ptr<AudioBus> processInputs(
+        const std::shared_ptr<AudioBus> &outputBus,
+        int framesToProcess,
+        bool checkIsAlreadyProcessed);
+    virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) = 0;
 
-  void connectNode(const std::shared_ptr<AudioNode> &node);
-  void disconnectNode(const std::shared_ptr<AudioNode> &node);
-  void connectParam(const std::shared_ptr<AudioParam> &param);
-  void disconnectParam(const std::shared_ptr<AudioParam> &param);
+    bool isAlreadyProcessed();
+    std::shared_ptr<AudioBus> applyChannelCountMode(const std::shared_ptr<AudioBus> &processingBus);
+    void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
 
-  void onInputEnabled();
-  virtual void onInputDisabled();
-  void onInputConnected(AudioNode *node);
-  void onInputDisconnected(AudioNode *node);
+    void connectNode(const std::shared_ptr<AudioNode> &node);
+    void disconnectNode(const std::shared_ptr<AudioNode> &node);
+    void connectParam(const std::shared_ptr<AudioParam> &param);
+    void disconnectParam(const std::shared_ptr<AudioParam> &param);
 
-  void cleanup();
-};
+    void onInputEnabled();
+    virtual void onInputDisabled();
+    void onInputConnected(AudioNode *node);
+    void onInputDisconnected(AudioNode *node);
+
+    void cleanup();
+  };
 
 } // namespace audioapi

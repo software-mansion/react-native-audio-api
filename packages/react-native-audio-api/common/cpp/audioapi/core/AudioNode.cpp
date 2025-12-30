@@ -111,14 +111,6 @@ void AudioNode::disable() {
   }
 }
 
-bool AudioNode::scheduleAudioEvent(std::function<void(BaseAudioContext &)> &&event) noexcept {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-        return context->scheduleAudioEvent(std::move(event));
-    }
-
-    return false;
-}
-
 std::string AudioNode::toString(ChannelCountMode mode) {
   switch (mode) {
     case ChannelCountMode::MAX:

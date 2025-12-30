@@ -2,14 +2,16 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
-#include <audioapi/core/utils/AudioEventScheduler.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/CrossThreadEventScheduler.hpp>
+
 #include <cassert>
 #include <complex>
 #include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -104,11 +106,20 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] bool isClosed() const;
 
   void inline processAudioEvents() {
-    audioEventScheduler_->processAllEvents();
+    audioEventScheduler_->processAllEvents(*this);
   }
 
-  bool inline scheduleAudioEvent(std::function<void(BaseAudioContext &)> &&event) noexcept {
-    return audioEventScheduler_->scheduleEvent(std::move(event));
+  template <
+      typename F,
+      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  bool inline scheduleAudioEvent(F &&event) noexcept {
+    if (!isRunning()) {
+      processAudioEvents();
+      event(*this);
+      return true;
+    }
+
+    return audioEventScheduler_->scheduleEvent(std::forward<F>(event));
   }
 
  protected:
@@ -125,7 +136,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
-  std::unique_ptr<AudioEventScheduler> audioEventScheduler_;
+  std::unique_ptr<CrossThreadEventScheduler<BaseAudioContext>> audioEventScheduler_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 

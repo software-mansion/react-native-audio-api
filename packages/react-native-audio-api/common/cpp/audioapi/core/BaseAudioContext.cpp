@@ -40,11 +40,11 @@ BaseAudioContext::BaseAudioContext(
     const RuntimeRegistry &runtimeRegistry)
     : sampleRate_ {sampleRate},
       nodeManager_(std::make_shared<AudioNodeManager>()),
+      audioEventScheduler_(std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(1024)),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry) {}
 
 void BaseAudioContext::initialize() {
-  audioEventScheduler_ = std::make_unique<AudioEventScheduler>(shared_from_this());
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 
