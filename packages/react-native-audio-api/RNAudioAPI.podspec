@@ -9,7 +9,7 @@ $RN_AUDIO_API_FFMPEG_DISABLED = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : EN
 
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
-ios_min_version = '13.4'
+ios_min_version = '14.0'
 
 worklets_enabled = $config[:worklets_enabled]
 worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
