@@ -1,7 +1,6 @@
 #pragma once
 
 #include <oboe/Oboe.h>
-#include <cassert>
 #include <functional>
 #include <memory>
 

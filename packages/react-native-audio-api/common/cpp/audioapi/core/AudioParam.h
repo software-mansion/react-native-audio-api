@@ -23,84 +23,64 @@ class AudioParam {
       float maxValue,
       std::shared_ptr<BaseAudioContext> context);
 
-  /// JS-Thread only methods
-  /// These methods are called only from HostObjects invoked on the JS thread.
-
-  // JS-Thread only
+  // Only getter callable from JS thread
   [[nodiscard]] inline float getValue() const noexcept {
-    return value_;
+    return value_.load(std::memory_order_relaxed);
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getDefaultValue() const noexcept {
     return defaultValue_;
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getMinValue() const noexcept {
     return minValue_;
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getMaxValue() const noexcept {
     return maxValue_;
   }
 
-  // JS-Thread only
   inline void setValue(float value) {
-    value_ = std::clamp(value, minValue_, maxValue_);
+    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_relaxed);
   }
 
-  // JS-Thread only
   void setValueAtTime(float value, double startTime);
-
-  // JS-Thread only
   void linearRampToValueAtTime(float value, double endTime);
-
-  // JS-Thread only
   void exponentialRampToValueAtTime(float value, double endTime);
-
-  // JS-Thread only
   void setTargetAtTime(float target, double startTime, double timeConstant);
-
-  // JS-Thread only
   void setValueCurveAtTime(
       std::shared_ptr<std::vector<float>> values,
       size_t length,
       double startTime,
       double duration);
-
-  // JS-Thread only
   void cancelScheduledValues(double cancelTime);
-
-  // JS-Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-  /// Audio-Thread only methods
-  /// These methods are called only from the Audio rendering thread.
-
-  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
   void addInputNode(AudioNode *node);
-
-  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
   void removeInputNode(AudioNode *node);
-
-  // Audio-Thread only
   std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
-
-  // Audio-Thread only
   float processKRateParam(int framesToProcess, double time);
+
+  template <
+      typename F,
+      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  bool inline scheduleAudioEvent(F &&event) noexcept {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->scheduleAudioEvent(std::forward<F>(event));
+    }
+
+    return false;
+  }
 
  private:
   // Core parameter state
   std::weak_ptr<BaseAudioContext> context_;
-  float value_;
+  std::atomic<float> value_;
   float defaultValue_;
   float minValue_;
   float maxValue_;
 
   AudioParamEventQueue eventsQueue_;
-  CrossThreadEventScheduler<AudioParam> eventScheduler_;
 
   // Current automation state (cached for performance)
   double startTime_;
@@ -116,7 +96,7 @@ class AudioParam {
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
-  inline double getQueueEndTime() const noexcept {
+  [[nodiscard]] inline double getQueueEndTime() const noexcept {
     if (eventsQueue_.isEmpty()) {
       return endTime_;
     }
@@ -125,16 +105,11 @@ class AudioParam {
 
   /// @brief Get the end value of the parameter queue.
   /// @return The end value of the parameter queue or last endValue_ if queue is empty.
-  inline float getQueueEndValue() const noexcept {
+  [[nodiscard]] inline float getQueueEndValue() const noexcept {
     if (eventsQueue_.isEmpty()) {
       return endValue_;
     }
     return eventsQueue_.back().getEndValue();
-  }
-
-  /// @brief Process all scheduled events.
-  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this))) {
-    eventScheduler_.processAllEvents(*this);
   }
 
   /// @brief Update the parameter queue with a new event.
