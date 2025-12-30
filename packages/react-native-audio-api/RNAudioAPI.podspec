@@ -22,7 +22,7 @@ Pod::Spec.new do |s|
   s.homepage     = package_json["homepage"]
   s.license      = package_json["license"]
   s.authors      = package_json["author"]
-  s.platforms    = { :ios => min_ios_version_supported }
+  s.platforms    = { :ios => ios_min_version }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
   if worklets_enabled
