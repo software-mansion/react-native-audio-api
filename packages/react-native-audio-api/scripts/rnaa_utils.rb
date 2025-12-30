@@ -20,6 +20,7 @@ def find_config()
     :react_native_common_dir => nil,
     :dynamic_frameworks_audio_api_dir => nil,
     :dynamic_frameworks_worklets_dir => nil,
+    :worklets_enabled => check_if_worklets_enabled()
   }
 
   react_native_node_modules_dir = File.join(File.dirname(`cd "#{Pod::Config.instance.installation_root.to_s}" && node --print "require.resolve('react-native/package.json')"`), '..')
@@ -44,15 +45,10 @@ def find_config()
   react_native_audio_api_dir_relative = Pathname.new(react_native_audio_api_dir_absolute).relative_path_from(pods_root).to_s
   result[:dynamic_frameworks_audio_api_dir] = react_native_audio_api_dir_relative
 
-  worklets_path_output = `cd "#{Pod::Config.instance.installation_root.to_s}" && node --print "require.resolve('react-native-worklets/package.json')" 2> /dev/null`.strip
-
-  if !worklets_path_output.empty? && $?.success?
-    react_native_worklets_node_modules_dir = File.join(File.dirname(worklets_path_output), '..')
-    react_native_worklets_dir_absolute = File.join(react_native_worklets_node_modules_dir, 'react-native-worklets')
+  if result[:worklets_enabled] == true
+    react_native_worklets_dir_absolute = File.join(__dir__, '..')
     react_native_worklets_dir_relative = Pathname.new(react_native_worklets_dir_absolute).relative_path_from(pods_root).to_s
     result[:dynamic_frameworks_worklets_dir] = react_native_worklets_dir_relative
-  else
-    result[:dynamic_frameworks_worklets_dir] = ""
   end
 
   return result

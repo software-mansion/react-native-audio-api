@@ -11,7 +11,7 @@ fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 ios_min_version = '13.4'
 
-worklets_enabled = check_if_worklets_enabled()
+worklets_enabled = $config[:worklets_enabled]
 worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 
@@ -80,12 +80,15 @@ Pod::Spec.new do |s|
       '"$(PODS_ROOT)/Headers/Private/React-Core"',
       '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
       "\"$(PODS_ROOT)/#{$config[:react_native_common_dir]}\"",
-      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/apple\"",
-      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/Common/cpp\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\"",
-    ].concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include\""]).join(' '),
+    ].concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include\""])
+    .concat(worklets_enabled ? [
+      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/apple\"",
+      "\"$(PODS_ROOT)/#{$config[:dynamic_frameworks_worklets_dir]}/Common/cpp\""
+    ] : [])
+    .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
     'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
