@@ -6626,9 +6626,11 @@ __metadata:
   resolution: "fabric-example@workspace:apps/fabric-example"
   dependencies:
     common-app: "workspace:*"
+    lucide-react-native: "npm:^0.555.0"
     prettier: "npm:^3.3.3"
     react: "npm:19.2.0"
     react-native: "npm:0.83.1"
+    react-native-svg: "npm:15.14.0"
   languageName: unknown
   linkType: soft
 
