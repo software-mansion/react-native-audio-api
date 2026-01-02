@@ -35,16 +35,10 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
 }
 
 AudioBufferSourceNodeHostObject::~AudioBufferSourceNodeHostObject() {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
-
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  auto event = [audioBufferSourceNode](BaseAudioContext &context) {
-    audioBufferSourceNode->setOnLoopEndedCallbackId(0);
-  };
-
-  audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  setOnLoopEndedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
@@ -122,13 +116,8 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
-
-    auto event = [audioBufferSourceNode, callbackId = std::stoull(value.getString(runtime).utf8(runtime))](BaseAudioContext &context) {
-        audioBufferSourceNode->setOnLoopEndedCallbackId(callbackId);
-    };
-
-    audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
+  setOnLoopEndedCallbackId(callbackId);
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
@@ -171,6 +160,18 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   loopEnd_ = bufferHostObject ? bufferHostObject->audioBuffer_->getDuration() : 0.0;
 
   return jsi::Value::undefined();
+}
+
+void AudioBufferSourceNodeHostObject::setOnLoopEndedCallbackId(uint64_t callbackId) {
+  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+
+  auto event = [audioBufferSourceNode, callbackId](BaseAudioContext &context) {
+    audioBufferSourceNode->setOnLoopEndedCallbackId(callbackId);
+  };
+
+  audioBufferSourceNode->unregisterOnLoopEndedCallback(onLoopEndedCallbackId_);
+  audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  onLoopEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi

@@ -29,7 +29,7 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
 uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::string &eventName,
     const std::shared_ptr<jsi::Function> &handler) {
-  uint64_t listenerId = listenerIdCounter_++;
+  uint64_t listenerId = listenerIdCounter_.fetch_add(1, std::memory_order_relaxed);
 
   if (callInvoker_ == nullptr || runtime_ == nullptr) {
     // If callInvoker or runtime is not valid, we cannot register the handler

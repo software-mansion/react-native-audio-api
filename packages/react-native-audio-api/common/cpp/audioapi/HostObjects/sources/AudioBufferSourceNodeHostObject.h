@@ -37,7 +37,10 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   bool loopSkip_;
   double loopStart_;
   double loopEnd_;
+  uint64_t onLoopEndedCallbackId_ = 0;
   std::shared_ptr<AudioBufferHostObject> buffer_;
+
+  void setOnLoopEndedCallbackId(uint64_t callbackId);
 };
 
 } // namespace audioapi

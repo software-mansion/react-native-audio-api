@@ -109,11 +109,11 @@ void AudioBufferSourceNode::disable() {
 }
 
 void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  auto oldCallbackId = onLoopEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  onLoopEndedCallbackId_ = callbackId;
+}
 
-  if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("loopEnded", oldCallbackId);
-  }
+void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
+  audioEventHandlerRegistry_->unregisterHandler("loopEnded", callbackId);
 }
 
 std::shared_ptr<AudioBus> AudioBufferSourceNode::processNode(
@@ -145,9 +145,8 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  auto onLoopEndedCallbackId = onLoopEndedCallbackId_.load(std::memory_order_acquire);
-  if (onLoopEndedCallbackId != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("loopEnded", onLoopEndedCallbackId, {});
+  if (onLoopEndedCallbackId_ != 0) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody("loopEnded", onLoopEndedCallbackId_, {});
   }
 }
 

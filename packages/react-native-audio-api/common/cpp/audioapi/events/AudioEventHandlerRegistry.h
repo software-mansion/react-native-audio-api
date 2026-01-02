@@ -16,6 +16,10 @@ using namespace facebook;
 using EventValue =
     std::variant<int, float, double, std::string, bool, std::shared_ptr<jsi::HostObject>>;
 
+/// @brief A registry for audio event handlers.
+/// It allows registering, unregistering, and invoking event handlers for audio events.
+/// State changes are performed only on the JS thread.
+/// State access is thread-safe via the RN CallInvoker.
 class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
  public:
   explicit AudioEventHandlerRegistry(
@@ -23,14 +27,24 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
       const std::shared_ptr<react::CallInvoker> &callInvoker);
   ~AudioEventHandlerRegistry() override;
 
+  /// @brief Registers an event handler for a specific event.
+  /// @note Can be used from any thread.
   uint64_t registerHandler(
       const std::string &eventName,
       const std::shared_ptr<jsi::Function> &handler) override;
+
+  /// @brief Unregisters an event handler for a specific event.
+  /// @note Can be used from any thread.
   void unregisterHandler(const std::string &eventName, uint64_t listenerId) override;
 
+  /// @brief Invokes the event handler(s) for a specific event with the provided event body.
+  /// @note Can be used from any thread.
   void invokeHandlerWithEventBody(
       const std::string &eventName,
       const std::unordered_map<std::string, EventValue> &body) override;
+
+  /// @brief Invokes a specific event handler by listener ID with the provided event body.
+  /// @note Can be used from any thread.
   void invokeHandlerWithEventBody(
       const std::string &eventName,
       uint64_t listenerId,

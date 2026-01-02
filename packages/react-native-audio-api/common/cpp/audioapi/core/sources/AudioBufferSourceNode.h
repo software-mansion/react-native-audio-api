@@ -31,6 +31,10 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
+  /// @note JS Thread only.
+  /// Thread safe, because does not access state of the node.
+  void unregisterOnLoopEndedCallback(uint64_t callbackId);
+
  protected:
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
@@ -47,7 +51,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBus> alignedBus_;
 
-  std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
+  uint64_t onLoopEndedCallbackId_ = 0; // 0 means no callback
   void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
