@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/FatFunction.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 
 #include <functional>
 #include <type_traits>
