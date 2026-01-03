@@ -1,70 +1,88 @@
 #pragma once
 #include <array>
+#include <utility>
+#include <type_traits>
 #include <functional>
 #include <new>
-#include <type_traits>
-#include <utility>
 
-namespace audioapi {
-
-template <int N, typename _Fp>
+template<int N, typename _Fp>
 class FatFunction;
 
 /// @brief FatFunction is a fixed-size function wrapper that can store callable objects
 ///        of a specific size N without dynamic memory allocation.
 /// @tparam N Size in bytes to allocate for the callable object
 /// @tparam _Fp The function signature (e.g., void(), int(int), etc.)
-template <int N, typename _FpReturnType, typename... _FpArgs>
+template<int N, typename _FpReturnType, typename... _FpArgs>
 class FatFunction<N, _FpReturnType(_FpArgs...)> {
 
  private:
-  using _InvokerType = _FpReturnType (*)(const std::byte *storage, _FpArgs... args);
-  using _DeleterType = void (*)(std::byte *storage);
+  using _InvokerType = _FpReturnType (*)(const std::byte* storage, _FpArgs... args);
+  using _DeleterType = void (*)(std::byte* storage);
+  using _MoverType = void (*)(std::byte* dest, std::byte* src);
 
  public:
   FatFunction() = default;
   FatFunction(std::nullptr_t) : FatFunction() {}
+
 
   /// @brief Constructs a FatFunction from a callable object.
   /// @tparam _Callable The type of the callable object
   /// @tparam (enable_if) Ensures that the callable fits within the allocated size N
   ///                    and is invocable with the specified signature.
   /// @param callable The callable object to store
-  template <
-      typename _Callable,
-      typename = std::enable_if_t<
-          sizeof(_Callable) <= N && std::is_invocable_r_v<_FpReturnType, _Callable, _FpArgs...>>>
-  FatFunction(_Callable &&callable) {
+  template<typename _Callable,
+           typename = std::enable_if_t<
+            sizeof(_Callable) <= N &&
+            std::is_invocable_r_v<_FpReturnType, _Callable, _FpArgs...>>>
+  FatFunction(_Callable&& callable) {
     using DecayedCallable = std::decay_t<_Callable>;
     new (storage_.data()) DecayedCallable(std::forward<_Callable>(callable));
-    invoker_ = [](const std::byte *storage, _FpArgs... args) -> _FpReturnType {
-      const DecayedCallable *callablePtr = reinterpret_cast<const DecayedCallable *>(storage);
+    invoker_ = [](const std::byte* storage, _FpArgs... args) -> _FpReturnType {
+      const DecayedCallable* callablePtr = reinterpret_cast<const DecayedCallable*>(storage);
       return (*callablePtr)(std::forward<_FpArgs>(args)...);
     };
-    deleter_ = [](std::byte *storage) {
-      DecayedCallable *callablePtr = reinterpret_cast<DecayedCallable *>(storage);
+    deleter_ = [](std::byte* storage) {
+      DecayedCallable* callablePtr = reinterpret_cast<DecayedCallable*>(storage);
       callablePtr->~DecayedCallable();
+    };
+    mover_ = [](std::byte* dest, std::byte* src) {
+      DecayedCallable* srcPtr = reinterpret_cast<DecayedCallable*>(src);
+      new (dest) DecayedCallable(std::move(*srcPtr));
     };
   }
 
   /// @brief Move constructor
   /// @param other
-  FatFunction(FatFunction &&other) noexcept {
-    std::memcpy(storage_.data(), other.storage_.data(), N);
-    invoker_ = other.invoker_;
-    deleter_ = other.deleter_;
-    other.reset();
+  FatFunction(FatFunction&& other) noexcept {
+    if (other.invoker_) {
+      if (other.mover_) {
+        other.mover_(storage_.data(), other.storage_.data());
+      } else {
+        std::memcpy(storage_.data(), other.storage_.data(), N);
+      }
+      invoker_ = other.invoker_;
+      deleter_ = other.deleter_;
+      mover_ = other.mover_;
+      other.reset();
+    }
   }
 
   /// @brief Move assignment operator
   /// @param other
-  FatFunction &operator=(FatFunction &&other) noexcept {
+  FatFunction& operator=(FatFunction&& other) noexcept {
     if (this != &other) {
       reset();
-      std::memcpy(storage_.data(), other.storage_.data(), N);
-      invoker_ = other.invoker_;
-      deleter_ = other.deleter_;
-      other.reset();
+      if (other.invoker_) {
+        if (other.mover_) {
+          other.mover_(storage_.data(), other.storage_.data());
+        } else {
+          std::memcpy(storage_.data(), other.storage_.data(), N);
+        }
+        invoker_ = other.invoker_;
+        deleter_ = other.deleter_;
+        mover_ = other.mover_;
+        other.reset();
+      }
     }
     return *this;
   }
@@ -72,7 +90,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   /// @brief Call operator to invoke the stored callable
   /// @param ...args Arguments to pass to the callable
   /// @return The result of the callable invocation
-  _FpReturnType operator()(_FpArgs &&...args) const {
+  _FpReturnType operator()(_FpArgs&&... args) const {
     if (!invoker_) {
       throw std::bad_function_call();
     }
@@ -93,6 +111,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
     _DeleterType deleterCopy = deleter_;
     deleter_ = nullptr;
     invoker_ = nullptr;
+    mover_ = nullptr;
     return {std::move(storageCopy), deleterCopy};
   }
 
@@ -100,13 +119,14 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   alignas(std::max_align_t) std::array<std::byte, N> storage_;
   _InvokerType invoker_ = nullptr; // Function pointer to invoke the stored callable
   _DeleterType deleter_ = nullptr; // Function pointer to delete the stored callable
+  _MoverType mover_ = nullptr; // Function pointer to move the stored callable
 
   void reset() {
     if (deleter_) {
       deleter_(storage_.data());
       deleter_ = nullptr;
       invoker_ = nullptr;
+      mover_ = nullptr;
     }
   }
 };
-} // namespace audioapi
