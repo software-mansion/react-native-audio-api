@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace audioapi {
+
 template <int N, typename _Fp>
 class FatFunction;
 
@@ -40,14 +42,24 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
       const DecayedCallable *callablePtr = reinterpret_cast<const DecayedCallable *>(storage);
       return (*callablePtr)(std::forward<_FpArgs>(args)...);
     };
-    deleter_ = [](std::byte *storage) {
-      DecayedCallable *callablePtr = reinterpret_cast<DecayedCallable *>(storage);
-      callablePtr->~DecayedCallable();
-    };
-    mover_ = [](std::byte *dest, std::byte *src) {
-      DecayedCallable *srcPtr = reinterpret_cast<DecayedCallable *>(src);
-      new (dest) DecayedCallable(std::move(*srcPtr));
-    };
+    if constexpr (std::is_trivially_destructible_v<DecayedCallable>) {
+      // No custom deleter needed for trivially destructible types
+      deleter_ = nullptr;
+    } else {
+      deleter_ = [](std::byte *storage) {
+        DecayedCallable *callablePtr = reinterpret_cast<DecayedCallable *>(storage);
+        callablePtr->~DecayedCallable();
+      };
+    }
+    if constexpr (std::is_trivially_move_constructible_v<DecayedCallable>) {
+      // No custom mover needed for trivially moveable types as memcpy is a fallback
+      mover_ = nullptr;
+    } else {
+      mover_ = [](std::byte *dest, std::byte *src) {
+        DecayedCallable *srcPtr = reinterpret_cast<DecayedCallable *>(src);
+        new (dest) DecayedCallable(std::move(*srcPtr));
+      };
+    }
   }
 
   /// @brief Move constructor
@@ -123,9 +135,11 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   void reset() {
     if (deleter_) {
       deleter_(storage_.data());
-      deleter_ = nullptr;
-      invoker_ = nullptr;
-      mover_ = nullptr;
     }
+    deleter_ = nullptr;
+    invoker_ = nullptr;
+    mover_ = nullptr;
   }
 };
+
+} // namespace audioapi
