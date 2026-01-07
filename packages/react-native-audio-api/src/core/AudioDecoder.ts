@@ -1,14 +1,13 @@
 import { Image } from 'react-native';
 
 import { IAudioDecoder } from '../interfaces';
+import { DecodeDataInput } from '../types';
 import {
   isBase64Source,
   isDataBlobString,
   isRemoteSource,
 } from '../utils/paths';
 import AudioBuffer from './AudioBuffer';
-
-type DecodeDataInput = number | string | ArrayBuffer;
 
 class AudioDecoder {
   private static instance: AudioDecoder | null = null;
@@ -58,6 +57,10 @@ class AudioDecoder {
       );
 
       return new AudioBuffer(buffer);
+    }
+
+    if (!(typeof input === 'string')) {
+      throw new TypeError('Input must be a module, uri or ArrayBuffer');
     }
 
     // Local file path
