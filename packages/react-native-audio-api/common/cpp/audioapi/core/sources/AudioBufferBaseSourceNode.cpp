@@ -15,8 +15,12 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     bool pitchCorrection)
     : AudioScheduledSourceNode(context),
       pitchCorrection_(pitchCorrection),
-      vReadIndex_(0.0),
-      onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1f)),
+      stretch_(std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>()),
+      playbackRateBus_(
+          std::make_shared<AudioBus>(
+              RENDER_QUANTUM_SIZE * 3,
+              channelCount_,
+              context->getSampleRate())),
       detuneParam_(
           std::make_shared<AudioParam>(
               0.0,
@@ -29,12 +33,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
               context)),
-      playbackRateBus_(
-          std::make_shared<AudioBus>(
-              RENDER_QUANTUM_SIZE * 3,
-              channelCount_,
-              context->getSampleRate())),
-      stretch_(std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>()) {}
+      vReadIndex_(0.0),
+      onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1f)) {}
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
   return detuneParam_;

@@ -10,6 +10,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
@@ -134,15 +135,29 @@ object MediaSessionManager {
     permissionAwareActivity.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), RECORDING_REQUEST_CODE, permissionListener)
   }
 
-  fun checkRecordingPermissions(): String =
-    if (reactContext.get()!!.checkSelfPermission(
-        Manifest.permission.RECORD_AUDIO,
-      ) == PackageManager.PERMISSION_GRANTED
-    ) {
-      "Granted"
-    } else {
-      "Denied"
+  fun checkRecordingPermissions(): String {
+    val context = reactContext.get()!!
+
+    if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+      return "Granted"
     }
+
+    // Permission not granted - check if we should show rationale
+    val activity = context.currentActivity
+    if (activity != null &&
+      ActivityCompat.shouldShowRequestPermissionRationale(
+        activity,
+        Manifest.permission.RECORD_AUDIO,
+      )
+    ) {
+      // User previously denied but didn't select "Don't ask again"
+      return "Denied"
+    }
+
+    // Either never asked OR user selected "Don't ask again"
+    // Return "Undetermined" to match iOS behavior and let caller decide to request
+    return "Undetermined"
+  }
 
   fun requestNotificationPermissions(permissionListener: PermissionListener) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -166,14 +181,26 @@ object MediaSessionManager {
 
   fun checkNotificationPermissions(): String {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      return if (reactContext.get()!!.checkSelfPermission(
-          Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
-      ) {
-        "Granted"
-      } else {
-        "Denied"
+      val context = reactContext.get()!!
+
+      if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        return "Granted"
       }
+
+      // Permission not granted - check if we should show rationale
+      val activity = context.currentActivity
+      if (activity != null &&
+        ActivityCompat.shouldShowRequestPermissionRationale(
+          activity,
+          Manifest.permission.POST_NOTIFICATIONS,
+        )
+      ) {
+        // User previously denied but didn't select "Don't ask again"
+        return "Denied"
+      }
+
+      // Either never asked OR user selected "Don't ask again"
+      return "Undetermined"
     }
     // For Android < 13, permission is granted by default
     return "Granted"

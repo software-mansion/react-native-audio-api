@@ -10,6 +10,7 @@ import type {
   OscillatorType,
   Result,
   WindowType,
+  OverSampleType,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -91,6 +92,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IConvolverNode;
   createStreamer: () => IStreamerNode | null; // null when FFmpeg is not enabled
+  createWaveShaper: () => IWaveShaperNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -289,6 +291,12 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
+export interface IWaveShaperNode extends IAudioNode {
+  readonly curve: Float32Array | null;
+  oversample: OverSampleType;
+
+  setCurve(curve: Float32Array | null): void;
+}
 export interface IAudioRecorderCallbackOptions
   extends AudioRecorderCallbackOptions {
   callbackId: string;
@@ -343,7 +351,7 @@ export interface IAudioDecoder {
 
 export interface IAudioStretcher {
   changePlaybackSpeed: (
-    arrayBuffer: AudioBuffer,
+    arrayBuffer: IAudioBuffer,
     playbackSpeed: number
   ) => Promise<IAudioBuffer>;
 }

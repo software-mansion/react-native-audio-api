@@ -37,6 +37,7 @@ class WorkletSourceNode;
 class WorkletNode;
 class WorkletProcessingNode;
 class StreamerNode;
+class WaveShaperNode;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -90,6 +91,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<ConvolverNode> createConvolver(
       std::shared_ptr<AudioBuffer> buffer,
       bool disableNormalization);
+  std::shared_ptr<WaveShaperNode> createWaveShaper();
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

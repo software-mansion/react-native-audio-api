@@ -7,6 +7,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
+#include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -208,6 +209,12 @@ std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
       std::make_shared<ConvolverNode>(shared_from_this(), buffer, disableNormalization);
   nodeManager_->addProcessingNode(convolver);
   return convolver;
+}
+
+std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper() {
+  auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this());
+  nodeManager_->addProcessingNode(waveShaper);
+  return waveShaper;
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {

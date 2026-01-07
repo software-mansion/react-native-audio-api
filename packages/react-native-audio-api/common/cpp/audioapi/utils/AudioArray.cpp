@@ -14,6 +14,11 @@ AudioArray::AudioArray(const AudioArray &other) : data_(nullptr), size_(0) {
   copy(&other);
 }
 
+AudioArray::AudioArray(const float *data, size_t size) : size_(size) {
+  data_ = new float[size_];
+  memcpy(data_, data, size_ * sizeof(float));
+}
+
 AudioArray::~AudioArray() {
   if (data_) {
     delete[] data_;

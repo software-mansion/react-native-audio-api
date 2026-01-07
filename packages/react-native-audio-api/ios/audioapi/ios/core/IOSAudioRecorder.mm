@@ -73,7 +73,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @returns Result containing the file path if recording started successfully, or an error message.
 Result<std::string, std::string> IOSAudioRecorder::start()
 {
-  if (isRecording()) {
+  if (!isIdle()) {
     return Result<std::string, std::string>::Err("Recorder is already recording");
   }
 

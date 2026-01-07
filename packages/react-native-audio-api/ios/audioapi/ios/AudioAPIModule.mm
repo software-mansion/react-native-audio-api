@@ -181,8 +181,8 @@ RCT_EXPORT_METHOD(
 {
   // iOS doesn't require explicit notification permissions for media controls
   // MPNowPlayingInfoCenter and MPRemoteCommandCenter work without permissions
-  // Return 'granted' to match the spec interface
-  resolve(@"granted");
+  // Return 'Granted' to match the spec interface
+  resolve(@"Granted");
 }
 
 RCT_EXPORT_METHOD(
@@ -190,8 +190,8 @@ RCT_EXPORT_METHOD(
         resolve reject : (nonnull RCTPromiseRejectBlock)reject)
 {
   // iOS doesn't require explicit notification permissions for media controls
-  // Return 'granted' to match the spec interface
-  resolve(@"granted");
+  // Return 'Granted' to match the spec interface
+  resolve(@"Granted");
 }
 
 RCT_EXPORT_METHOD(
