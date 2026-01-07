@@ -204,11 +204,7 @@ export default class AudioContext implements BaseAudioContext {
       return new AudioBuffer(decodedData);
     }
 
-    if (typeof source === 'number') {
-      console.log('12312312312');
-    }
-
-    throw new TypeError('Input must be a string or ArrayBuffer');
+    throw new TypeError('Unsupported source for decodeAudioData: ' + source);
   }
 
   async close(): Promise<void> {
