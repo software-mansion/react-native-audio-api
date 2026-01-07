@@ -6,6 +6,8 @@ typedef struct objc_object NSURL;
 typedef struct objc_object AudioBufferList;
 #endif // __OBJC__
 
+#include <memory>
+
 namespace audioapi {
 
 class AudioFileProperties;

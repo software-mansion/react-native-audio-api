@@ -44,6 +44,12 @@ IOSRecorderCallback::~IOSRecorderCallback()
   }
 }
 
+/// @brief Prepares the IOSRecorderCallback for receiving audio data.
+/// This involves setting up the audio converter and buffers based on the provided input format.
+/// This method should be called from the JS thread only.
+/// @param bufferFormat The format of the incoming audio data.
+/// @param maxInputBufferLength The maximum length of the input buffer in frames.
+/// @returns Result indicating success or error with message.
 Result<NoneType, std::string> IOSRecorderCallback::prepare(
     AVAudioFormat *bufferFormat,
     size_t maxInputBufferLength)
@@ -86,10 +92,14 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
   return Result<NoneType, std::string>::Ok(None);
 }
 
+/// @brief Cleans up resources used by the IOSRecorderCallback.
+/// This method should be called from the JS thread only.
 void IOSRecorderCallback::cleanup()
 {
   @autoreleasepool {
-    emitAudioData(true);
+    if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+      emitAudioData(true);
+    }
 
     converter_ = nil;
     bufferFormat_ = nil;
@@ -103,6 +113,11 @@ void IOSRecorderCallback::cleanup()
   }
 }
 
+/// @brief Receives audio data from the recorder, processes it, and stores it in the circular buffer.
+/// The data is converted using AVAudioConverter if the input format differs from the user desired callback format.
+/// This method runs on the audio thread.
+/// @param inputBuffer Pointer to the AudioBufferList containing the incoming audio data.
+/// @param numFrames Number of frames in the input buffer.
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int numFrames)
 {
   if (!isInitialized_.load(std::memory_order_acquire)) {
@@ -120,7 +135,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
         circularBus_[i]->push_back(inputChannel, numFrames);
       }
 
-      emitAudioData();
+      if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+        emitAudioData();
+      }
       return;
     }
 
@@ -165,7 +182,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
       circularBus_[i]->push_back(inputChannel, outputFrameCount);
     }
 
-    emitAudioData();
+    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      emitAudioData();
+    }
   }
 }
 

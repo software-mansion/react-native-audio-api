@@ -15,7 +15,7 @@ cmake -S . -B build -Wno-dev
 
 cd build
 make -j10
-./tests
+./tests --gtest_print_time=1
 cd ..
 
 rm -rf build/

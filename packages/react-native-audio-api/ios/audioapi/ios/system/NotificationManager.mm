@@ -117,8 +117,10 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    [audioEngine onInterruptionBegin];
-    [sessionManager markInactive];
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [audioEngine onInterruptionBegin];
+      [sessionManager markInactive];
+    });
 
     if (self.audioInterruptionsObserved) {
       NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
@@ -134,7 +136,7 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
     NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @(shouldResume)};
     [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
   } else {
-    [audioEngine onInterruptionEnd:shouldResume];
+    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
 }
 
@@ -146,8 +148,10 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
-    [sessionManager markInactive];
-    [audioEngine onInterruptionBegin];
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [sessionManager markInactive];
+      [audioEngine onInterruptionBegin];
+    });
 
     if (self.audioInterruptionsObserved) {
       NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
@@ -162,7 +166,7 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
     NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @(shouldResume)};
     [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
   } else {
-    [audioEngine onInterruptionEnd:shouldResume];
+    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
 }
 
@@ -264,8 +268,10 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   self.wasOtherAudioPlaying = shouldSilence;
 
   if (shouldSilence) {
-    [sessionManager markInactive];
-    [audioEngine onInterruptionBegin];
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [sessionManager markInactive];
+      [audioEngine onInterruptionBegin];
+    });
     NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
 
     if (self.audioInterruptionsObserved) {
@@ -280,7 +286,7 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   if (self.audioInterruptionsObserved) {
     [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
   } else {
-    [audioEngine onInterruptionEnd:true];
+    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
   }
 }
 

@@ -37,13 +37,16 @@ class WorkletSourceNode;
 class WorkletNode;
 class WorkletProcessingNode;
 class StreamerNode;
+class WaveShaperNode;
 
-class BaseAudioContext {
+class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
+
+  virtual void initialize();
 
   std::string getState();
   [[nodiscard]] float getSampleRate() const;
@@ -88,6 +91,7 @@ class BaseAudioContext {
   std::shared_ptr<ConvolverNode> createConvolver(
       std::shared_ptr<AudioBuffer> buffer,
       bool disableNormalization);
+  std::shared_ptr<WaveShaperNode> createWaveShaper();
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

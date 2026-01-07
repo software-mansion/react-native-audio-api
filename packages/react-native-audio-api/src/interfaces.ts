@@ -8,6 +8,7 @@ import type {
   ContextState,
   FileInfo,
   OscillatorType,
+  OverSampleType,
   Result,
   WindowType,
 } from './types';
@@ -91,6 +92,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IConvolverNode;
   createStreamer: () => IStreamerNode | null; // null when FFmpeg is not enabled
+  createWaveShaper: () => IWaveShaperNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -289,6 +291,12 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
+export interface IWaveShaperNode extends IAudioNode {
+  readonly curve: Float32Array | null;
+  oversample: OverSampleType;
+
+  setCurve(curve: Float32Array | null): void;
+}
 export interface IAudioRecorderCallbackOptions
   extends AudioRecorderCallbackOptions {
   callbackId: string;
@@ -343,7 +351,7 @@ export interface IAudioDecoder {
 
 export interface IAudioStretcher {
   changePlaybackSpeed: (
-    arrayBuffer: AudioBuffer,
+    arrayBuffer: IAudioBuffer,
     playbackSpeed: number
   ) => Promise<IAudioBuffer>;
 }

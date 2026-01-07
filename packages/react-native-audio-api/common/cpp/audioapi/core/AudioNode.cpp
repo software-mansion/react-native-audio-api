@@ -10,10 +10,13 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-}
+AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context)
+    : context_(context),
+      audioBus_(
+          std::make_shared<AudioBus>(
+              RENDER_QUANTUM_SIZE,
+              channelCount_,
+              context->getSampleRate())) {}
 
 AudioNode::~AudioNode() {
   if (isInitialized_) {
@@ -42,28 +45,38 @@ std::string AudioNode::getChannelInterpretation() const {
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->addPendingNodeConnection(
+        shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+  }
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
-  context_->getNodeManager()->addPendingParamConnection(
-      shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->addPendingParamConnection(
+        shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+  }
 }
 
 void AudioNode::disconnect() {
-  context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->addPendingNodeConnection(
+        shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+  }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
-  context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->addPendingNodeConnection(
+        shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+  }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
-  context_->getNodeManager()->addPendingParamConnection(
-      shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->addPendingParamConnection(
+        shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+  }
 }
 
 bool AudioNode::isEnabled() const {
@@ -147,23 +160,25 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
 
   // Finally, process the node itself.
   return processNode(processingBus, framesToProcess);
-  ;
 }
 
 bool AudioNode::isAlreadyProcessed() {
-  assert(context_ != nullptr);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    std::size_t currentSampleFrame = context->getCurrentSampleFrame();
 
-  std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
+    // check if the node has already been processed for this rendering quantum
+    if (currentSampleFrame == lastRenderedFrame_) {
+      return true;
+    }
 
-  // check if the node has already been processed for this rendering quantum
-  if (currentSampleFrame == lastRenderedFrame_) {
-    return true;
+    // Update the last rendered frame before processing node and its inputs.
+    lastRenderedFrame_ = currentSampleFrame;
+
+    return false;
   }
 
-  // Update the last rendered frame before processing node and its inputs.
-  lastRenderedFrame_ = currentSampleFrame;
-
-  return false;
+  // If context is invalid, consider it as already processed to avoid processing
+  return true;
 }
 
 std::shared_ptr<AudioBus> AudioNode::processInputs(

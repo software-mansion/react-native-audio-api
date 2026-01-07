@@ -11,6 +11,7 @@
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
@@ -57,7 +58,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
@@ -307,5 +309,11 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
     jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
   }
   return jsiObject;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWaveShaper) {
+  auto waveShaper = context_->createWaveShaper();
+  auto waveShaperHostObject = std::make_shared<WaveShaperNodeHostObject>(waveShaper);
+  return jsi::Object::createFromHostObject(runtime, waveShaperHostObject);
 }
 } // namespace audioapi

@@ -26,6 +26,12 @@ IOSFileWriter::~IOSFileWriter()
   }
 }
 
+/// @brief Opens an audio file for writing with the specified buffer format and maximum input buffer length.
+/// This method initializes the AVAudioFile and AVAudioConverter for audio data writing and conversion.
+/// This method should be called from the JS thread only.
+/// @param bufferFormat The audio format of the input buffer.
+/// @param maxInputBufferLength The maximum length of the input buffer in frames.
+/// @returns An OpenFileResult indicating success with the file path or an error message.
 OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
 {
   @autoreleasepool {
@@ -94,6 +100,10 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
   }
 }
 
+/// @brief Closes the currently open audio file and finalizes writing.
+/// This method retrieves the final file duration and size before closing.
+/// This method should be called from the JS thread only.
+/// @returns A CloseFileResult indicating success with file duration and size or an error message.
 CloseFileResult IOSFileWriter::closeFile()
 {
   @autoreleasepool {
@@ -126,6 +136,11 @@ CloseFileResult IOSFileWriter::closeFile()
   }
 }
 
+/// @brief Writes audio data to the open audio file, performing format conversion if necessary.
+/// This method should be called from the audio thread.
+/// @param audioBufferList Pointer to the AudioBufferList containing the audio data to write.
+/// @param numFrames Number of audio frames in the audioBufferList.
+/// @returns True if the write operation was successful, false otherwise.
 bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
   if (audioFile_ == nil) {

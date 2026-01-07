@@ -158,10 +158,20 @@ button[class*='DocSearch-Button'] {
   background-color: transparent;
 }
 
+.table-vertical-top {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
+}
+
 /* padding: 0.75rem */
 .table-vertical-top td {
   vertical-align: top;
   padding: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
 }
 
 .table-vertical-top td div.text-content {
@@ -198,4 +208,26 @@ button[class*='DocSearch-Button'] {
 
 [data-theme='dark'] .table-vertical-top tbody tr:nth-child(2n) code {
   background-color: var(--swm-navy) !important;
+}
+
+.table-vertical-top div table {
+  width: 101%;
+  margin: -1px;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.table-vertical-top div table td {
+  padding: 0.2rem;
+}
+
+.table-vertical-top div table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.table-vertical-top-table {
+  padding-top: 1px;
+  overflow-x: hidden;
+  border-collapse: collapse;
+  box-sizing: border-box;
 }

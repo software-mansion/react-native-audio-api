@@ -1,5 +1,6 @@
 import { icons } from 'lucide-react-native';
 
+import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
 
 interface SimplifiedIconProps {
@@ -23,5 +24,13 @@ export const demos: DemoScreen[] = [
       'Demonstrates microphone permissions, capture, and playback similar to voice memos app.',
     icon: icons.Mic,
     screen: Record,
+  },
+  {
+    key: 'PedalBoard',
+    title: 'Pedal board',
+    subtitle:
+      'Simulates a guitar pedal board that can apply customizable audio effects in real-time.',
+    icon: icons.Guitar,
+    screen: PedalBoard,
   },
 ] as const;

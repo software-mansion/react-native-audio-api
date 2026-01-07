@@ -247,46 +247,68 @@ class Result {
   }
 
   /// @brief Maps a Result<T, E> to Result<U, E> by applying a function to a contained Ok value.
-  template <typename TNew>
-  [[nodiscard]] std::enable_if_t<!std::is_void_v<T>, Result<TNew, E>> map(
-      std::function<TNew(T &&)> ok_func) && {
+  template <typename F>
+  [[nodiscard]] auto map(F &&ok_func) && {
+    using U = std::invoke_result_t<F, T>;
+    using ResultType = Result<U, E>;
     if (is_ok_) {
-      return Result<TNew, E>::Ok(ok_func(std::move(ok_value)));
+      return ResultType::Ok(ok_func(std::move(ok_value)));
     } else {
-      return Result<TNew, E>::Err(std::move(err_value));
+      return ResultType::Err(std::move(err_value));
     }
   }
 
   /// @brief Maps a Result<T, E> to Result<T, F> by applying a function to a contained Err value.
-  template <typename ENew>
-  [[nodiscard]] std::enable_if_t<!std::is_void_v<ENew>, Result<T, ENew>> map_err(
-      std::function<ENew(E &&)> err_func) && {
+  template <typename F>
+  [[nodiscard]] auto map_err(F &&err_func) && {
+    using U = std::invoke_result_t<F, E>;
+    using ResultType = Result<T, U>;
     if (is_ok_) {
-      return Result<T, ENew>::Ok(std::move(ok_value));
+      return ResultType::Ok(std::move(ok_value));
     } else {
-      return Result<T, ENew>::Err(err_func(std::move(err_value)));
+      return ResultType::Err(err_func(std::move(err_value)));
     }
   }
 
   /// @brief Returns the provided default (if Err), or applies a function to the contained value (if Ok).
-  template <typename TNew>
-  [[nodiscard]] std::enable_if_t<!std::is_void_v<TNew>, TNew> map_or(
-      std::function<TNew(T &&)> ok_func,
-      TNew &&default_value) && {
+  template <typename F, typename U>
+  [[nodiscard]] auto map_or(F &&ok_func, U &&default_value) && {
     if (is_ok_) {
       return ok_func(std::move(ok_value));
     } else {
-      return std::move(default_value);
+      return std::forward<U>(default_value);
     }
   }
 
   /// @brief Maps a Result<T, E> to U by applying fallback function default to a contained Err value, or function f to a contained Ok value.
-  template <typename TNew>
-  [[nodiscard]] std::enable_if_t<!std::is_void_v<TNew>, TNew> map_or_else(
-      std::function<TNew(T &&)> ok_func,
-      std::function<TNew(E &&)> err_func) && {
+  template <typename FT, typename FE>
+  [[nodiscard]] auto map_or_else(FT &&ok_func, FE &&err_func) && {
     if (is_ok_) {
       return ok_func(std::move(ok_value));
+    } else {
+      return err_func(std::move(err_value));
+    }
+  }
+
+  /// @brief Calls the provided closure with the contained Ok value, if any, otherwise returns the Err value of self.
+  /// @tparam for Result<T,E> F is a closure that takes T and returns Result<TNew, E>
+  template <typename F>
+  [[nodiscard]] auto and_then(F &&ok_func) && {
+    using ResultType = std::invoke_result_t<F, T>;
+    if (is_ok_) {
+      return ok_func(std::move(ok_value));
+    } else {
+      return ResultType::Err(std::move(err_value));
+    }
+  }
+
+  /// @brief Calls the provided closure with the contained Err value, if any, otherwise returns the Ok value of self.
+  /// @tparam for Result<T,E> F is a closure that takes E and returns Result<T, ENew>
+  template <typename F>
+  [[nodiscard]] auto or_else(F &&err_func) && {
+    using ResultType = std::invoke_result_t<F, E>;
+    if (is_ok_) {
+      return ResultType::Ok(std::move(ok_value));
     } else {
       return err_func(std::move(err_value));
     }

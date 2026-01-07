@@ -7,7 +7,7 @@
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
+AudioDestinationNode::AudioDestinationNode(std::shared_ptr<BaseAudioContext> context)
     : AudioNode(context), currentSampleFrame_(0) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = 1;
@@ -20,7 +20,11 @@ std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
 }
 
 double AudioDestinationNode::getCurrentTime() const {
-  return static_cast<double>(currentSampleFrame_) / context_->getSampleRate();
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    return static_cast<double>(currentSampleFrame_) / context->getSampleRate();
+  } else {
+    return 0.0;
+  }
 }
 
 void AudioDestinationNode::renderAudio(
@@ -30,7 +34,9 @@ void AudioDestinationNode::renderAudio(
     return;
   }
 
-  context_->getNodeManager()->preProcessGraph();
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->getNodeManager()->preProcessGraph();
+  }
 
   destinationBus->zero();
 

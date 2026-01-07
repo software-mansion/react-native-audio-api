@@ -135,7 +135,6 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
   }
 
   // Retrieve duration and file size
-  std::string filePath = filePath_;
   double durationInSeconds = 0.0;
   double fileSizeInMB = 0.0;
 

@@ -42,6 +42,7 @@ std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outpu
   if (outFramesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
   }
+  return buffer;
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(

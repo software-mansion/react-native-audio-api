@@ -4,8 +4,8 @@
 #include <react/jni/CxxModuleWrapper.h>
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
-#include <string>
 #include <utility>
+#include <string>
 #include <unordered_map>
 
 namespace audioapi {

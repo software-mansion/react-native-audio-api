@@ -6,6 +6,9 @@
 
 namespace audioapi::ios::fileoptions {
 
+/// @brief Maps AudioFileProperties to iOS AVFoundation AudioFormatID.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns Corresponding AudioFormatID for AVFoundation.
 AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties)
 {
   switch (properties->format) {
@@ -26,6 +29,9 @@ AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
+/// @brief Maps AudioFileProperties to iOS AVFoundation audio quality settings.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns Corresponding NSInteger value for AVAudioQuality.
 NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
 {
   switch (properties->iosAudioQuality) {
@@ -49,11 +55,17 @@ NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
+/// @brief Retrieves the FLAC compression level from AudioFileProperties.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns NSInteger representing the FLAC compression level.
 NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &properties)
 {
   return properties->flacCompressionLevel;
 }
 
+/// @brief Retrieves the file extension based on AudioFileProperties format.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns NSString representing the file extension.
 NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &properties)
 {
   switch (properties->format) {
@@ -74,6 +86,9 @@ NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &propertie
   }
 }
 
+/// @brief Retrieves the bit depth from AudioFileProperties.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns NSInteger representing the bit depth.
 NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
 {
   switch (properties->bitDepth) {
@@ -91,6 +106,9 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
+/// @brief Constructs AVFoundation file settings dictionary from AudioFileProperties.
+/// @param properties Shared pointer to AudioFileProperties.
+/// @returns NSDictionary containing AVFoundation audio file settings.
 NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &properties)
 {
   AudioFormatID format = getFormat(properties);
