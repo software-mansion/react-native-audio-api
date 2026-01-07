@@ -24,6 +24,7 @@ import StereoPannerNode from './StereoPannerNode';
 
 import ConstantSourceNode from './ConstantSourceNode';
 import { globalTag, globalWasmPromise } from './custom/LoadCustomWasm';
+import WaveShaperNode from './WaveShaperNode';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -174,6 +175,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
   async decodeAudioData(

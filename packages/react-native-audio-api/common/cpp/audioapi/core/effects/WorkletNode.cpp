@@ -13,10 +13,10 @@ WorkletNode::WorkletNode(
     WorkletsRunner &&runtime)
     : AudioNode(context),
       workletRunner_(std::move(runtime)),
+      bus_(std::make_shared<AudioBus>(bufferLength, inputChannelCount, context->getSampleRate())),
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
-      curBuffIndex_(0),
-      bus_(std::make_shared<AudioBus>(bufferLength, inputChannelCount, context->getSampleRate())) {
+      curBuffIndex_(0) {
   isInitialized_ = true;
 }
 

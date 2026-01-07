@@ -1,24 +1,29 @@
-import { SessionOptions, PermissionStatus, AudioDevicesInfo } from './types';
+import {
+  SessionOptions,
+  PermissionStatus,
+  AudioDevicesInfo,
+  IAudioManager,
+} from './types';
 import { SystemEventName, SystemEventCallback } from '../events/types';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import { NativeAudioAPIModule } from '../specs';
 
-class AudioManager {
+class AudioManager implements IAudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
   getDevicePreferredSampleRate(): number {
-    return NativeAudioAPIModule!.getDevicePreferredSampleRate();
+    return NativeAudioAPIModule.getDevicePreferredSampleRate();
   }
 
   setAudioSessionActivity(enabled: boolean): Promise<boolean> {
-    return NativeAudioAPIModule!.setAudioSessionActivity(enabled);
+    return NativeAudioAPIModule.setAudioSessionActivity(enabled);
   }
 
   setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioAPIModule!.setAudioSessionOptions(
+    NativeAudioAPIModule.setAudioSessionOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? [],
@@ -27,11 +32,11 @@ class AudioManager {
   }
 
   disableSessionManagement() {
-    NativeAudioAPIModule!.disableSessionManagement();
+    NativeAudioAPIModule.disableSessionManagement();
   }
 
   observeAudioInterruptions(enabled: boolean) {
-    NativeAudioAPIModule!.observeAudioInterruptions(enabled);
+    NativeAudioAPIModule.observeAudioInterruptions(enabled);
   }
 
   /**
@@ -48,11 +53,11 @@ class AudioManager {
    * interval polling to check if other audio is playing.
    */
   activelyReclaimSession(enabled: boolean) {
-    NativeAudioAPIModule!.activelyReclaimSession(enabled);
+    NativeAudioAPIModule.activelyReclaimSession(enabled);
   }
 
   observeVolumeChanges(enabled: boolean) {
-    NativeAudioAPIModule!.observeVolumeChanges(enabled);
+    NativeAudioAPIModule.observeVolumeChanges(enabled);
   }
 
   addSystemEventListener<Name extends SystemEventName>(
@@ -63,23 +68,23 @@ class AudioManager {
   }
 
   async requestRecordingPermissions(): Promise<PermissionStatus> {
-    return NativeAudioAPIModule!.requestRecordingPermissions();
+    return NativeAudioAPIModule.requestRecordingPermissions();
   }
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
-    return NativeAudioAPIModule!.checkRecordingPermissions();
+    return NativeAudioAPIModule.checkRecordingPermissions();
   }
 
   async requestNotificationPermissions(): Promise<PermissionStatus> {
-    return NativeAudioAPIModule!.requestNotificationPermissions();
+    return NativeAudioAPIModule.requestNotificationPermissions();
   }
 
   async checkNotificationPermissions(): Promise<PermissionStatus> {
-    return NativeAudioAPIModule!.checkNotificationPermissions();
+    return NativeAudioAPIModule.checkNotificationPermissions();
   }
 
   async getDevicesInfo(): Promise<AudioDevicesInfo> {
-    return NativeAudioAPIModule!.getDevicesInfo();
+    return NativeAudioAPIModule.getDevicesInfo();
   }
 }
 

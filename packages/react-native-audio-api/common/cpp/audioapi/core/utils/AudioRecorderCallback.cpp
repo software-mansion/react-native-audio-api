@@ -54,6 +54,7 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
   if (sizeLimit == 0) {
     return;
   }
+
   while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
     auto bus = std::make_shared<AudioBus>(sizeLimit, channelCount_, sampleRate_);
 

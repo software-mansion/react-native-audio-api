@@ -16,6 +16,7 @@ import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import WaveShaperNode from './WaveShaperNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -45,6 +46,7 @@ export default interface BaseAudioContext {
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
+  createWaveShaper(): WaveShaperNode;
   decodeAudioData(
     arrayBuffer: ArrayBuffer,
     fetchOptions?: RequestInit

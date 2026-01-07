@@ -40,8 +40,10 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   av_unique_ptr<SwrContext> resampleCtx_{nullptr};
   av_unique_ptr<AVAudioFifo> audioFifo_{nullptr};
   av_unique_ptr<AVPacket> packet_{nullptr};
-  av_unique_ptr<AVFrame> frame_{nullptr};
+  av_unique_ptr<AVFrame> resamplerFrame_{nullptr};
+  av_unique_ptr<AVFrame> writingFrame_{nullptr};
   AVStream* stream_{nullptr};
+
   unsigned int nextPts_{0};
 
   std::chrono::steady_clock::time_point lastFlushTime_ = std::chrono::steady_clock::now();
@@ -59,7 +61,6 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   bool resampleAndPushToFifo(void *data, int numFrames);
   int processFifo(bool flush);
   int writeEncodedPackets();
-  int prepareFrameForEncoding(int64_t samplesToRead);
 
   // Finalization helper methods
   CloseFileResult finalizeOutput();
