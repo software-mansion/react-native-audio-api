@@ -1,5 +1,14 @@
+import { Image } from 'react-native';
+
 import { IAudioDecoder } from '../interfaces';
+import {
+  isBase64Source,
+  isDataBlobString,
+  isRemoteSource,
+} from '../utils/paths';
 import AudioBuffer from './AudioBuffer';
+
+type DecodeDataInput = number | string | ArrayBuffer;
 
 class AudioDecoder {
   private static instance: AudioDecoder | null = null;
@@ -9,50 +18,85 @@ class AudioDecoder {
     this.decoder = global.createAudioDecoder();
   }
 
+  private async decodeAudioDataImplementation(
+    input: DecodeDataInput,
+    sampleRate?: number,
+    fetchOptions?: RequestInit
+  ): Promise<AudioBuffer | null | undefined> {
+    if (input instanceof ArrayBuffer) {
+      const buffer = await this.decoder.decodeWithMemoryBlock(
+        new Uint8Array(input),
+        sampleRate ?? 0
+      );
+      return new AudioBuffer(buffer);
+    }
+
+    const stringSource =
+      typeof input === 'number' ? Image.resolveAssetSource(input).uri : input;
+
+    // input is data:audio/...;base64,...
+    if (isBase64Source(stringSource)) {
+      throw new Error(
+        'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
+      );
+    }
+
+    // input is blob:...
+    if (isDataBlobString(stringSource)) {
+      throw new Error('Data Blob string decoding is not currently supported.');
+    }
+
+    // input is http(s)://...
+    if (isRemoteSource(stringSource)) {
+      const arrayBuffer = await fetch(stringSource, fetchOptions).then((res) =>
+        res.arrayBuffer()
+      );
+
+      const buffer = await this.decoder.decodeWithMemoryBlock(
+        new Uint8Array(arrayBuffer),
+        sampleRate ?? 0
+      );
+
+      return new AudioBuffer(buffer);
+    }
+
+    // Local file path
+    const filePath = stringSource.startsWith('file://')
+      ? stringSource.replace('file://', '')
+      : stringSource;
+
+    const buffer = await this.decoder.decodeWithFilePath(
+      filePath,
+      sampleRate ?? 0
+    );
+
+    return new AudioBuffer(buffer);
+  }
+
   public static getInstance(): AudioDecoder {
     if (!AudioDecoder.instance) {
       AudioDecoder.instance = new AudioDecoder();
     }
+
     return AudioDecoder.instance;
   }
 
   public async decodeAudioDataInstance(
-    input: string | ArrayBuffer,
-    sampleRate?: number
+    input: DecodeDataInput,
+    sampleRate?: number,
+    fetchOptions?: RequestInit
   ): Promise<AudioBuffer> {
-    let buffer;
-    if (typeof input === 'string') {
-      // Remove the file:// prefix if it exists
-      if (input.startsWith('file://')) {
-        input = input.replace('file://', '');
-      } else if (input.startsWith('https://') || input.startsWith('http://')) {
-        // For remote URLs, we need to fetch the data first
-        const response = await fetch(input, {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
-          },
-        })
-          .then((res) => res.arrayBuffer())
-          .then((arrayBuffer) => arrayBuffer);
-        buffer = await this.decoder.decodeWithMemoryBlock(
-          new Uint8Array(response),
-          sampleRate ?? 0
-        );
-      } else {
-        buffer = await this.decoder.decodeWithFilePath(input, sampleRate ?? 0);
-      }
-    } else if (input instanceof ArrayBuffer) {
-      buffer = await this.decoder.decodeWithMemoryBlock(
-        new Uint8Array(input),
-        sampleRate ?? 0
-      );
+    const audioBuffer = await this.decodeAudioDataImplementation(
+      input,
+      sampleRate,
+      fetchOptions
+    );
+
+    if (!audioBuffer) {
+      throw new Error('Failed to decode audio data.');
     }
 
-    if (!buffer) {
-      throw new Error('Unsupported input type or failed to decode audio');
-    }
-    return new AudioBuffer(buffer);
+    return audioBuffer;
   }
 
   public async decodePCMInBase64Instance(
@@ -72,10 +116,15 @@ class AudioDecoder {
 }
 
 export async function decodeAudioData(
-  input: string | ArrayBuffer,
-  sampleRate?: number
+  input: DecodeDataInput,
+  sampleRate?: number,
+  fetchOptions?: RequestInit
 ): Promise<AudioBuffer> {
-  return AudioDecoder.getInstance().decodeAudioDataInstance(input, sampleRate);
+  return AudioDecoder.getInstance().decodeAudioDataInstance(
+    input,
+    sampleRate,
+    fetchOptions
+  );
 }
 
 export async function decodePCMInBase64(

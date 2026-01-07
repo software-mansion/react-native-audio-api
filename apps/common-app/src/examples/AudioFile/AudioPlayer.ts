@@ -7,7 +7,6 @@ import {
   decodeAudioData,
   PlaybackNotificationManager,
 } from 'react-native-audio-api';
-import { Image } from 'react-native';
 
 class AudioPlayer {
   private readonly audioContext: AudioContext;
@@ -38,7 +37,7 @@ class AudioPlayer {
     this.isPlaying = true;
     PlaybackNotificationManager.update({
       state: 'playing',
-    })
+    });
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
@@ -55,11 +54,16 @@ class AudioPlayer {
     this.sourceNode.onPositionChanged = (event) => {
       this.currentElapsedTime = event.value;
       if (this.onPositionChanged) {
-        this.onPositionChanged(this.currentElapsedTime / this.audioBuffer!.duration);
+        this.onPositionChanged(
+          this.currentElapsedTime / this.audioBuffer!.duration
+        );
       }
     };
 
-    this.sourceNode.start(this.audioContext.currentTime, this.currentElapsedTime);
+    this.sourceNode.start(
+      this.audioContext.currentTime,
+      this.currentElapsedTime
+    );
   };
 
   pause = async () => {
@@ -73,7 +77,7 @@ class AudioPlayer {
     await this.audioContext.suspend();
     PlaybackNotificationManager.update({
       state: 'paused',
-    })
+    });
 
     this.isPlaying = false;
   };
@@ -96,8 +100,13 @@ class AudioPlayer {
     }
   };
 
-  loadBuffer = async (url: string) => {
-    const buffer = await decodeAudioData(url);
+  loadBuffer = async (asset: string | number) => {
+    const buffer = await decodeAudioData(asset, 0, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+      },
+    });
 
     if (buffer) {
       this.audioBuffer = buffer;
@@ -132,7 +141,7 @@ class AudioPlayer {
 
   getElapsedTime = (): number => {
     return this.currentElapsedTime;
-  }
+  };
 }
 
 export default new AudioPlayer();
