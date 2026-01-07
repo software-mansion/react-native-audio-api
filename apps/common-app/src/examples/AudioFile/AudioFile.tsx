@@ -10,8 +10,10 @@ import { Button, Container, Spacer } from '../../components';
 import { colors } from '../../styles';
 import AudioPlayer from './AudioPlayer';
 
-const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+// const remoteAsset =
+//   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+
+import staticAsset from './voice-sample-landing.mp3';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,7 +58,7 @@ const AudioFile: FC = () => {
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
 
-    await AudioPlayer.loadBuffer(URL);
+    await AudioPlayer.loadBuffer(staticAsset);
 
     setIsLoading(false);
   }, []);
@@ -83,7 +85,7 @@ const AudioFile: FC = () => {
     const setup = async () => {
       await fetchAudioBuffer();
       await setupNotification();
-    }
+    };
     setup();
     return () => {
       AudioPlayer.reset();
@@ -92,7 +94,6 @@ const AudioFile: FC = () => {
   }, [fetchAudioBuffer]);
 
   useEffect(() => {
-
     AudioManager.observeAudioInterruptions(true);
 
     // Listen to notification control events
