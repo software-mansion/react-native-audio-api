@@ -55,7 +55,7 @@ class BiquadFilterNode : public AudioNode {
 #endif // RN_AUDIO_API_TEST
 
  public:
-  explicit BiquadFilterNode(BaseAudioContext *context, BiquadFilterOptions options);
+  explicit BiquadFilterNode(std::shared_ptr<BaseAudioContext> context, BiquadFilterOptions options);
 
   [[nodiscard]] std::string getType();
   void setType(const std::string &type);

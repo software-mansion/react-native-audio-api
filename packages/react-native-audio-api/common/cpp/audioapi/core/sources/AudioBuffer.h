@@ -12,7 +12,7 @@ namespace audioapi {
 class AudioBus;
 class AudioBufferOptions;
 
-class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
+class AudioBuffer {
  public:
   explicit AudioBuffer(AudioBufferOptions options);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);

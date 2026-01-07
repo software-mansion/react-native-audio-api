@@ -12,7 +12,7 @@ class GainOptions;
 
 class GainNode : public AudioNode {
  public:
-  explicit GainNode(BaseAudioContext *context, GainOptions options);
+  explicit GainNode(std::shared_ptr<BaseAudioContext> context, GainOptions options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 

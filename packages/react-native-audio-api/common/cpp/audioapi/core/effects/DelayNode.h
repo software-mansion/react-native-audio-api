@@ -13,7 +13,7 @@ class DelayOptions;
 
 class DelayNode : public AudioNode {
  public:
-  explicit DelayNode(BaseAudioContext *context, DelayOptions options);
+  explicit DelayNode(std::shared_ptr<BaseAudioContext> context, DelayOptions options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 

@@ -11,18 +11,18 @@ using namespace audioapi;
 class AudioParamTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<OfflineAudioContext> context;
+  std::shared_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<OfflineAudioContext>(
+    context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 };
 
 TEST_F(AudioParamTest, ValueSetters) {
-  AudioParam param = AudioParam(0.5, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.5, 0.0, 1.0, context);
   param.setValue(0.8);
   EXPECT_FLOAT_EQ(param.getValue(), 0.8);
   param.setValue(-0.5);
@@ -32,7 +32,7 @@ TEST_F(AudioParamTest, ValueSetters) {
 }
 
 TEST_F(AudioParamTest, SetValueAtTime) {
-  AudioParam param = AudioParam(0.5, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.5, 0.0, 1.0, context);
   param.setValueAtTime(0.8, 0.1);
   param.setValueAtTime(0.3, 0.2);
 
@@ -53,7 +53,7 @@ TEST_F(AudioParamTest, SetValueAtTime) {
 }
 
 TEST_F(AudioParamTest, LinearRampToValueAtTime) {
-  AudioParam param = AudioParam(0, 0, 1.0, context.get());
+  auto param = AudioParam(0, 0, 1.0, context);
   param.linearRampToValueAtTime(1.0, 0.2);
 
   float value = param.processKRateParam(1, 0.05);
@@ -73,7 +73,7 @@ TEST_F(AudioParamTest, LinearRampToValueAtTime) {
 }
 
 TEST_F(AudioParamTest, ExponentialRampToValueAtTime) {
-  AudioParam param = AudioParam(0.1, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.1, 0.0, 1.0, context);
   param.exponentialRampToValueAtTime(1.0, 0.2);
   // value(time) = startValue * (endValue/startValue)^((time -
   // startTime)/(endTime - startTime)) value(time) = 0.1 * (1.0/0.1)^((time -
@@ -95,7 +95,7 @@ TEST_F(AudioParamTest, ExponentialRampToValueAtTime) {
 }
 
 TEST_F(AudioParamTest, SetTargetAtTime) {
-  AudioParam param = AudioParam(0.0, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setTargetAtTime(1.0, 0.1, 0.1);
   // value(time) = target + (startValue - target) * exp(-(time -
   // startTime)/timeConstant) value(time) = 1.0 + (0.0 - 1.0) * exp(-time/0.1)
@@ -119,7 +119,7 @@ TEST_F(AudioParamTest, SetTargetAtTime) {
 }
 
 TEST_F(AudioParamTest, SetValueCurveAtTime) {
-  AudioParam param = AudioParam(0.0, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setValue(0.5);
   auto curve = std::make_shared<std::vector<float>>(std::vector<float>{0.1, 0.4, 0.2, 0.8, 0.5});
   param.setValueCurveAtTime(curve, curve->size(), 0.1, 0.2);
@@ -158,7 +158,7 @@ TEST_F(AudioParamTest, SetValueCurveAtTime) {
 }
 
 TEST_F(AudioParamTest, CancelScheduledValues) {
-  AudioParam param = AudioParam(0.0, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setValueAtTime(0.8, 0.1);
   param.setValueAtTime(0.3, 0.2);
   param.linearRampToValueAtTime(1.0, 0.4);
@@ -182,7 +182,7 @@ TEST_F(AudioParamTest, CancelScheduledValues) {
 }
 
 TEST_F(AudioParamTest, CancelAndHoldAtTime) {
-  AudioParam param = AudioParam(0.0, 0.0, 1.0, context.get());
+  auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setValueAtTime(0.8, 0.1);
   param.linearRampToValueAtTime(1.0, 0.2);
   param.cancelAndHoldAtTime(0.15);

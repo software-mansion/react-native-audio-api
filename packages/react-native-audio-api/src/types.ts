@@ -200,6 +200,7 @@ export interface TIIRFilterOptions extends TAudioNodeOptions {
   feedforward: number[];
   feedback: number[];
 }
+export type OverSampleType = 'none' | '2x' | '4x';
 
 export interface AudioRecorderCallbackOptions {
   /**

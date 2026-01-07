@@ -33,6 +33,7 @@ class AudioEventHandlerRegistry;
 class ConvolverNode;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WaveShaperNode;
 class WorkletSourceNode;
 class WorkletNode;
 class WorkletProcessingNode;
@@ -50,13 +51,16 @@ class StreamerOptions;
 class AudioBufferOptions;
 class DelayOptions;
 class IIRFilterOptions;
+class WaveShaperOptions;
 
-class BaseAudioContext {
+class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
+
+  virtual void initialize();
 
   std::string getState();
   [[nodiscard]] float getSampleRate() const;
@@ -97,6 +101,7 @@ class BaseAudioContext {
       int length);
   std::shared_ptr<AnalyserNode> createAnalyser(AnalyserOptions options);
   std::shared_ptr<ConvolverNode> createConvolver(ConvolverOptions options);
+  std::shared_ptr<WaveShaperNode> createWaveShaper(WaveShaperOptions options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

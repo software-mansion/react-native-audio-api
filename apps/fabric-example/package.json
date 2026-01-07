@@ -12,8 +12,8 @@
   "dependencies": {
     "common-app": "workspace:*",
     "lucide-react-native": "^0.555.0",
-    "react": "19.1.1",
-    "react-native": "0.82.0",
+    "react": "19.2.0",
+    "react-native": "0.83.1",
     "react-native-svg": "15.14.0"
   },
   "devDependencies": {

@@ -20,7 +20,7 @@ class AnalyserOptions;
 class AnalyserNode : public AudioNode {
  public:
   enum class WindowType { BLACKMAN, HANN };
-  explicit AnalyserNode(BaseAudioContext *context, AnalyserOptions options);
+  explicit AnalyserNode(std::shared_ptr<BaseAudioContext> context, AnalyserOptions options);
 
   int getFftSize() const;
   int getFrequencyBinCount() const;

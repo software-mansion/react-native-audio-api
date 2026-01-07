@@ -20,9 +20,7 @@ class AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(BaseAudioContext *context);
-  // usually options are passed as derived class, keep in mind that object passed as options will be sliced
-  explicit AudioNode(BaseAudioContext *context, const AudioNodeOptions &options);
+  explicit AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;
@@ -50,13 +48,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
+  int channelCount_ = 2;
 
-  BaseAudioContext *context_;
+  std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
 

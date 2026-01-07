@@ -8,6 +8,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
+#include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -36,12 +37,13 @@ namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const RuntimeRegistry &runtimeRegistry) {
-  nodeManager_ = std::make_shared<AudioNodeManager>();
-  destination_ = std::make_shared<AudioDestinationNode>(this);
+    const RuntimeRegistry &runtimeRegistry)
+    : nodeManager_(std::make_shared<AudioNodeManager>()),
+      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      runtimeRegistry_(runtimeRegistry) {}
 
-  audioEventHandlerRegistry_ = audioEventHandlerRegistry;
-  runtimeRegistry_ = runtimeRegistry;
+void BaseAudioContext::initialize() {
+  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 
 std::string BaseAudioContext::getState() {
@@ -79,7 +81,8 @@ std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
     std::weak_ptr<worklets::WorkletRuntime> runtime,
     bool shouldLockRuntime) {
   WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
-  auto workletSourceNode = std::make_shared<WorkletSourceNode>(this, std::move(workletRunner));
+  auto workletSourceNode =
+      std::make_shared<WorkletSourceNode>(shared_from_this(), std::move(workletRunner));
   nodeManager_->addSourceNode(workletSourceNode);
   return workletSourceNode;
 }
@@ -92,7 +95,7 @@ std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
     bool shouldLockRuntime) {
   WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
   auto workletNode = std::make_shared<WorkletNode>(
-      this, bufferLength, inputChannelCount, std::move(workletRunner));
+      shared_from_this(), bufferLength, inputChannelCount, std::move(workletRunner));
   nodeManager_->addProcessingNode(workletNode);
   return workletNode;
 }
@@ -103,33 +106,33 @@ std::shared_ptr<WorkletProcessingNode> BaseAudioContext::createWorkletProcessing
     bool shouldLockRuntime) {
   WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
   auto workletProcessingNode =
-      std::make_shared<WorkletProcessingNode>(this, std::move(workletRunner));
+      std::make_shared<WorkletProcessingNode>(shared_from_this(), std::move(workletRunner));
   nodeManager_->addProcessingNode(workletProcessingNode);
   return workletProcessingNode;
 }
 
 std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
-  auto recorderAdapter = std::make_shared<RecorderAdapterNode>(this);
+  auto recorderAdapter = std::make_shared<RecorderAdapterNode>(shared_from_this());
   nodeManager_->addProcessingNode(recorderAdapter);
   return recorderAdapter;
 }
 
 std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(OscillatorOptions options) {
-  auto oscillator = std::make_shared<OscillatorNode>(this, std::move(options));
+  auto oscillator = std::make_shared<OscillatorNode>(shared_from_this(), std::move(options));
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
 }
 
 std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
     ConstantSourceOptions options) {
-  auto constantSource = std::make_shared<ConstantSourceNode>(this, std::move(options));
+  auto constantSource = std::make_shared<ConstantSourceNode>(shared_from_this(), std::move(options));
   nodeManager_->addSourceNode(constantSource);
   return constantSource;
 }
 
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(StreamerOptions options) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamer = std::make_shared<StreamerNode>(this, std::move(options));
+  auto streamer = std::make_shared<StreamerNode>(shared_from_this(), std::move(options));
   nodeManager_->addSourceNode(streamer);
   return streamer;
 #else
@@ -138,47 +141,47 @@ std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(StreamerOptions o
 }
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain(GainOptions options) {
-  auto gain = std::make_shared<GainNode>(this, std::move(options));
+  auto gain = std::make_shared<GainNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(gain);
   return gain;
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
     StereoPannerOptions options) {
-  auto stereoPanner = std::make_shared<StereoPannerNode>(this, std::move(options));
+  auto stereoPanner = std::make_shared<StereoPannerNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(stereoPanner);
   return stereoPanner;
 }
 
 std::shared_ptr<DelayNode> BaseAudioContext::createDelay(DelayOptions options) {
-  auto delay = std::make_shared<DelayNode>(this, std::move(options));
+  auto delay = std::make_shared<DelayNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(delay);
   return delay;
 }
 
 std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter(
     BiquadFilterOptions options) {
-  auto biquadFilter = std::make_shared<BiquadFilterNode>(this, std::move(options));
+  auto biquadFilter = std::make_shared<BiquadFilterNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
     AudioBufferSourceOptions options) {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, std::move(options));
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(shared_from_this(), std::move(options));
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
 
 std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(IIRFilterOptions options) {
-  auto iirFilter = std::make_shared<IIRFilterNode>(this, std::move(options));
+  auto iirFilter = std::make_shared<IIRFilterNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(iirFilter);
   return iirFilter;
 }
 
 std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueSource(
     BaseAudioBufferSourceOptions options) {
-  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, std::move(options));
+  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(shared_from_this(), std::move(options));
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
@@ -195,15 +198,21 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser(AnalyserOptions options) {
-  auto analyser = std::make_shared<AnalyserNode>(this, std::move(options));
+  auto analyser = std::make_shared<AnalyserNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(analyser);
   return analyser;
 }
 
 std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(ConvolverOptions options) {
-  auto convolver = std::make_shared<ConvolverNode>(this, std::move(options));
+  auto convolver = std::make_shared<ConvolverNode>(shared_from_this(), std::move(options));
   nodeManager_->addProcessingNode(convolver);
   return convolver;
+}
+
+std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper() {
+  auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this());
+  nodeManager_->addProcessingNode(waveShaper);
+  return waveShaper;
 }
 
 AudioNodeManager *BaseAudioContext::getNodeManager() {

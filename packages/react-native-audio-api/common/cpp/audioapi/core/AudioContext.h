@@ -25,6 +25,7 @@ class AudioContext : public BaseAudioContext {
   bool resume();
   bool suspend();
   bool start();
+  void initialize() override;
 
  private:
 #ifdef ANDROID
@@ -32,7 +33,7 @@ class AudioContext : public BaseAudioContext {
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
-  bool playerHasBeenStarted_;
+  bool isInitialized_;
 
   bool isDriverRunning() const override;
 

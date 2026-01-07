@@ -63,7 +63,7 @@ class StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(BaseAudioContext *context, StreamerOptions options);
+  explicit StreamerNode(std::shared_ptr<BaseAudioContext> context, StreamerOptions options);
   ~StreamerNode() override;
 
   /**
@@ -116,16 +116,17 @@ class StreamerNode : public AudioScheduledSourceNode {
 
   /**
    * @brief Setting up the resampler
+   * @param outSampleRate Sample rate for the output audio
    * @return true if successful, false otherwise
    */
-  bool setupResampler();
+  bool setupResampler(float outSampleRate);
 
   /**
    * @brief Resample the audio frame, change its sample format and channel layout
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
    */
-  bool processFrameWithResampler(AVFrame *frame);
+  bool processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context);
 
   /**
    * @brief Thread function to continuously read and process audio frames

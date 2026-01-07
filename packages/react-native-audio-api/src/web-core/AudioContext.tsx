@@ -14,6 +14,7 @@ import StereoPannerNode from './StereoPannerNode';
 import ConvolverNode from './ConvolverNode';
 import DelayNode from './DelayNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import WaveShaperNode from './WaveShaperNode';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -124,6 +125,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this);
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

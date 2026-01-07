@@ -14,7 +14,7 @@ class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(BaseAudioContext *context);
+  explicit AudioDestinationNode(std::shared_ptr<BaseAudioContext> context);
 
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;

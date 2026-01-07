@@ -97,7 +97,9 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 void IOSRecorderCallback::cleanup()
 {
   @autoreleasepool {
-    emitAudioData(true);
+    if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+      emitAudioData(true);
+    }
 
     converter_ = nil;
     bufferFormat_ = nil;
@@ -133,7 +135,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
         circularBus_[i]->push_back(inputChannel, numFrames);
       }
 
-      emitAudioData();
+      if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+        emitAudioData();
+      }
       return;
     }
 
@@ -178,7 +182,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
       circularBus_[i]->push_back(inputChannel, outputFrameCount);
     }
 
-    emitAudioData();
+    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      emitAudioData();
+    }
   }
 }
 

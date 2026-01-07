@@ -8,9 +8,14 @@
 
 namespace audioapi {
 
-GainNode::GainNode(BaseAudioContext *context, GainOptions options) : AudioNode(context, options) {
-  gainParam_ = std::make_shared<AudioParam>(
-      options.gain, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+GainNode::GainNode(std::shared_ptr<BaseAudioContext> context, GainOptions options)
+    : AudioNode(context, options),
+      gainParam_(
+          std::make_shared<AudioParam>(
+              options.gain,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)) {
   isInitialized_ = true;
 }
 
@@ -21,7 +26,10 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
 std::shared_ptr<AudioBus> GainNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  double time = context_->getCurrentTime();
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return processingBus;
+  double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
   for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
     dsp::multiply(

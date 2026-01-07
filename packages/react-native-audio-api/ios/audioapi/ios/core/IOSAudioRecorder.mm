@@ -73,8 +73,8 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @returns Result containing the file path if recording started successfully, or an error message.
 Result<std::string, std::string> IOSAudioRecorder::start()
 {
-  if (isRecording()) {
-    return Result<std::string, std::string>::Err("Already recording");
+  if (!isIdle()) {
+    return Result<std::string, std::string>::Err("Recorder is already recording");
   }
 
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
@@ -147,7 +147,8 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   double outputDuration = 0;
 
   if (isIdle()) {
-    return Result<std::tuple<std::string, double, double>, std::string>::Err("Not recording");
+    return Result<std::tuple<std::string, double, double>, std::string>::Err(
+        "Recorder is not in recording state.");
   }
 
   state_.store(RecorderState::Idle, std::memory_order_release);

@@ -96,8 +96,8 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
-  [audioEngine stopIfPossible];
   [audioEngine detachInputNode];
+  [audioEngine stopIfPossible];
 
   // This makes sure that the engine releases the input properly when we no longer need it
   // (i.e. no more misleading dot)

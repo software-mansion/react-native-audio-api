@@ -12,7 +12,7 @@ AudioParam::AudioParam(
     float defaultValue,
     float minValue,
     float maxValue,
-    BaseAudioContext *context)
+    std::shared_ptr<BaseAudioContext> context)
     : context_(context),
       value_(defaultValue),
       defaultValue_(defaultValue),
@@ -20,13 +20,13 @@ AudioParam::AudioParam(
       maxValue_(maxValue),
       eventsQueue_(),
       eventScheduler_(32),
+      startTime_(0),
+      endTime_(0),
+      startValue_(defaultValue),
+      endValue_(defaultValue),
       audioBus_(std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
   inputBuses_.reserve(4);
   inputNodes_.reserve(4);
-  startTime_ = 0;
-  endTime_ = 0;
-  startValue_ = value_;
-  endValue_ = value_;
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
     return value_;
@@ -258,7 +258,10 @@ std::shared_ptr<AudioBus> AudioParam::processARateParam(int framesToProcess, dou
   processScheduledEvents();
   auto processingBus = calculateInputs(audioBus_, framesToProcess);
 
-  float sampleRate = context_->getSampleRate();
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return processingBus;
+  float sampleRate = context->getSampleRate();
   float *busData = processingBus->getChannel(0)->getData();
   float timeCache = time;
   float timeStep = 1.0f / sampleRate;

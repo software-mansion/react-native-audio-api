@@ -11,6 +11,12 @@ class AudioArray {
  public:
   explicit AudioArray(size_t size);
   AudioArray(const AudioArray &other);
+
+  /// @brief Construct AudioArray from raw float data
+  /// @param data Pointer to the float data
+  /// @param size Number of float samples
+  /// @note The data is copied, so it does not take ownership of the pointer
+  AudioArray(const float *data, size_t size);
   ~AudioArray();
 
   [[nodiscard]] size_t getSize() const;

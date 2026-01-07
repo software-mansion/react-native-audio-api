@@ -17,7 +17,9 @@ class AudioBufferSourceOptions;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(BaseAudioContext *context, AudioBufferSourceOptions options);
+  explicit AudioBufferSourceNode(
+      std::shared_ptr<BaseAudioContext> context,
+      AudioBufferSourceOptions options);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
@@ -70,8 +72,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       size_t offsetLength,
       float playbackRate) override;
 
-  double getVirtualStartFrame();
-  double getVirtualEndFrame();
+  double getVirtualStartFrame(float sampleRate);
+  double getVirtualEndFrame(float sampleRate);
 };
 
 } // namespace audioapi

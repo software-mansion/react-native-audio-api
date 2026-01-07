@@ -10,9 +10,8 @@
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode(BaseAudioContext *context, StereoPannerOptions options)
-    : AudioNode(context, options) {
-  panParam_ = std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context);
+StereoPannerNode::StereoPannerNode(std::shared_ptr<BaseAudioContext> context, StereoPannerOptions options)
+    : AudioNode(context, options), panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
   isInitialized_ = true;
 }
 
@@ -23,8 +22,11 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
 std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  double time = context_->getCurrentTime();
-  double deltaTime = 1.0 / context_->getSampleRate();
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return processingBus;
+  double time = context->getCurrentTime();
+  double deltaTime = 1.0 / context->getSampleRate();
 
   auto *inputLeft = processingBus->getChannelByType(AudioBus::ChannelLeft);
   auto panParamValues =

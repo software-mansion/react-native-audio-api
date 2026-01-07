@@ -36,11 +36,10 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(BaseAudioContext *context, IIRFilterOptions options)
+IIRFilterNode::IIRFilterNode(std::shared_ptr<BaseAudioContext> context, IIRFilterOptions options)
     : AudioNode(context, options),
-      feedforward_(std::move(options.feedforward)),
-      feedback_(std::move(options.feedback)) {
-  isInitialized_ = true;
+    feedforward_(std::move(options.feedforward)),
+    feedback_(std::move(options.feedback)) {
 
   int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);
@@ -65,6 +64,7 @@ IIRFilterNode::IIRFilterNode(BaseAudioContext *context, IIRFilterOptions options
 
     feedback_[0] = 1.0f;
   }
+  isInitialized_ = true;
 }
 
 // Compute Z-transform of the filter
@@ -89,7 +89,10 @@ void IIRFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     size_t length) {
-  float nyquist = context_->getNyquistFrequency();
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return;
+  float nyquist = context->getNyquistFrequency();
 
   for (size_t k = 0; k < length; ++k) {
     float normalizedFreq = frequencyArray[k] / nyquist;

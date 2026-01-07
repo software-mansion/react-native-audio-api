@@ -12,6 +12,7 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import WaveShaperNode from './WaveShaperNode';
 
 import ConvolverNode from './ConvolverNode';
 import DelayNode from './DelayNode';
@@ -131,6 +132,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this);
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
