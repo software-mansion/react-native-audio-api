@@ -228,3 +228,8 @@ export interface TDelayOptions extends TAudioNodeOptions {
   maxDelayTime?: number;
   delayTime?: number;
 }
+
+export interface TWaveShaperOptions extends TAudioNodeOptions {
+  curve?: Float32Array;
+  oversample?: OverSampleType;
+}

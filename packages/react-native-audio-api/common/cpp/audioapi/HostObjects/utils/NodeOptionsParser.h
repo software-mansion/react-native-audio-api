@@ -58,7 +58,7 @@ StereoPannerOptions parseStereoPannerOptions(
 ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   ConvolverOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.disableNormalization =
-      static_cast<bool>(optionsObject.getProperty(runtime, "disableNormalization").getNumber());
+      optionsObject.getProperty(runtime, "disableNormalization").getBool();
   if (optionsObject.hasProperty(runtime, "buffer")) {
     auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
                                 .getObject(runtime)
@@ -233,6 +233,30 @@ IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object 
         static_cast<float>(feedbackArray.getValueAtIndex(runtime, i).getNumber()));
   }
 
+  return options;
+}
+
+WaveShaperOptions parseWaveShaperOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  WaveShaperOptions options(parseAudioNodeOptions(runtime, optionsObject));
+
+  auto oversampleStr =
+      optionsObject.getProperty(runtime, "oversample").asString(runtime).utf8(runtime);
+
+  if (oversampleStr == "none") {
+    options.oversample = OverSampleType::OVERSAMPLE_NONE;
+  } else if (oversampleStr == "2x") {
+    options.oversample = OverSampleType::OVERSAMPLE_2X;
+  } else if (oversampleStr == "4x") {
+    options.oversample = OverSampleType::OVERSAMPLE_4X;
+  }
+
+  if (optionsObject.hasProperty(runtime, "buffer")) {
+    auto arrayBuffer = optionsObject.getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+
+    options.curve = std::make_shared<AudioArray>(
+        reinterpret_cast<float *>(arrayBuffer.data(runtime)),
+        static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float)));
+  }
   return options;
 }
 } // namespace audioapi::option_parser

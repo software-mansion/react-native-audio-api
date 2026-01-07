@@ -24,6 +24,7 @@ import type {
   TDelayOptions,
   TIIRFilterOptions,
   OverSampleType,
+  TWaveShaperOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -103,7 +104,7 @@ export interface IBaseAudioContext {
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
-  createWaveShaper: () => IWaveShaperNode;
+  createWaveShaper: (waveShaperOptions?: TWaveShaperOptions) => IWaveShaperNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {

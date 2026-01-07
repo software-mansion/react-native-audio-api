@@ -11,6 +11,8 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/core/types/OverSampleType.h>
+#include <audioapi/utils/AudioArray.h>
 
 namespace audioapi {
 struct AudioNodeOptions {
@@ -99,6 +101,11 @@ struct IIRFilterOptions : AudioNodeOptions {
 
   IIRFilterOptions(std::vector<float> &&ff, std::vector<float> &&fb)
       : feedforward(std::move(ff)), feedback(std::move(fb)) {}
+};
+
+struct WaveShaperOptions : AudioNodeOptions {
+  std::shared_ptr<AudioArray> curve = nullptr;
+  OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
 };
 
 } // namespace audioapi

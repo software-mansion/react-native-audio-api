@@ -254,6 +254,6 @@ export default class BaseAudioContext {
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 }

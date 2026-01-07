@@ -305,15 +305,17 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   auto convolver = context_->createConvolver(convolverOptions);
   auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(convolver);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);
-  if (!args[0].isUndefined()) {
-    auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+  if (convolverOptions.bus != nullptr) {
+    auto bufferHostObject = options.getProperty(runtime, "buffer").getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
     jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
   }
   return jsiObject;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWaveShaper) {
-  auto waveShaper = context_->createWaveShaper();
+  auto options = args[0].asObject(runtime);
+  auto waveShaperOptions = audioapi::option_parser::parseWaveShaperOptions(runtime, options);
+  auto waveShaper = context_->createWaveShaper(waveShaperOptions);
   auto waveShaperHostObject = std::make_shared<WaveShaperNodeHostObject>(waveShaper);
   return jsi::Object::createFromHostObject(runtime, waveShaperHostObject);
 }

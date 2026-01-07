@@ -20,6 +20,7 @@ class AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
+  explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
   explicit AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options);
   virtual ~AudioNode();
 

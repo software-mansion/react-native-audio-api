@@ -12,6 +12,7 @@ import {
   TAudioBufferSourceOptions,
   TAudioBufferOptions,
   TDelayOptions,
+  TWaveShaperOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -91,4 +92,9 @@ export const DelayOptions: TDelayOptions = {
   ...AudioNodeOptions,
   maxDelayTime: 1.0,
   delayTime: 0.0,
+};
+
+export const WaveShaperOptions: TWaveShaperOptions = {
+  ...AudioNodeOptions,
+  oversample: 'none',
 };
