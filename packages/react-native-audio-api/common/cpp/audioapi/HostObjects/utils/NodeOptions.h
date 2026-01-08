@@ -16,76 +16,76 @@
 
 namespace audioapi {
 struct AudioNodeOptions {
-  int channelCount = 2;
-  ChannelCountMode channelCountMode = ChannelCountMode::MAX;
-  ChannelInterpretation channelInterpretation = ChannelInterpretation::SPEAKERS;
+  int channelCount;
+  ChannelCountMode channelCountMode;
+  ChannelInterpretation channelInterpretation;
 };
 
 struct GainOptions : AudioNodeOptions {
-  float gain = 1.0f;
+  float gain;
 };
 
 struct StereoPannerOptions : AudioNodeOptions {
-  float pan = 0.0f;
+  float pan;
 };
 
 struct ConvolverOptions : AudioNodeOptions {
-  std::shared_ptr<AudioBuffer> bus = nullptr;
-  bool disableNormalization = false;
+  std::shared_ptr<AudioBuffer> bus;
+  bool disableNormalization;
 };
 
 struct ConstantSourceOptions {
-  float offset = 1.0f;
+  float offset;
 };
 
 struct AnalyserOptions : AudioNodeOptions {
-  int fftSize = 2048;
-  float minDecibels = -100.0f;
-  float maxDecibels = -30.0f;
-  float smoothingTimeConstant = 0.8f;
+  int fftSize;
+  float minDecibels;
+  float maxDecibels;
+  float smoothingTimeConstant;
 };
 
 struct BiquadFilterOptions : AudioNodeOptions {
-  BiquadFilterType type = BiquadFilterType::LOWPASS;
-  float frequency = 350.0f;
-  float detune = 0.0f;
-  float Q = 1.0f;
-  float gain = 0.0f;
+  BiquadFilterType type;
+  float frequency;
+  float detune;
+  float Q;
+  float gain;
 };
 
 struct OscillatorOptions {
-  std::shared_ptr<PeriodicWave> periodicWave = nullptr;
-  float frequency = 440.0f;
-  float detune = 0.0f;
-  OscillatorType type = OscillatorType::SINE;
+  std::shared_ptr<PeriodicWave> periodicWave;
+  float frequency;
+  float detune;
+  OscillatorType type;
 };
 
 struct BaseAudioBufferSourceOptions {
-  float detune = 0.0f;
-  bool pitchCorrection = false;
-  float playbackRate = 1.0f;
+  float detune;
+  bool pitchCorrection;
+  float playbackRate;
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
-  std::shared_ptr<AudioBuffer> buffer = nullptr;
-  bool loop = false;
-  float loopStart = 0.0f;
-  float loopEnd = 0.0f;
+  std::shared_ptr<AudioBuffer> buffer;
+  bool loop;
+  float loopStart;
+  float loopEnd;
 };
 
 struct StreamerOptions {
-  std::string streamPath = "";
+  std::string streamPath;
 };
 
 struct AudioBufferOptions {
-  int numberOfChannels = 1;
-  size_t length = 0;
-  float sampleRate = 44100.0f;
+  int numberOfChannels;
+  size_t length;
+  float sampleRate;
 };
 
 struct DelayOptions : AudioNodeOptions {
-  float maxDelayTime = 1.0f;
-  float delayTime = 0.0f;
+  float maxDelayTime;
+  float delayTime;
 };
 
 struct IIRFilterOptions : AudioNodeOptions {
@@ -104,8 +104,8 @@ struct IIRFilterOptions : AudioNodeOptions {
 };
 
 struct WaveShaperOptions : AudioNodeOptions {
-  std::shared_ptr<AudioArray> curve = nullptr;
-  OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
+  std::shared_ptr<AudioArray> curve;
+  OverSampleType oversample;
 };
 
 } // namespace audioapi

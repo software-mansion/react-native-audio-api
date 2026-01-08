@@ -8,7 +8,7 @@
 
 namespace audioapi {
 
-GainNode::GainNode(std::shared_ptr<BaseAudioContext> context, GainOptions options)
+GainNode::GainNode(std::shared_ptr<BaseAudioContext> context, const GainOptions &options)
     : AudioNode(context, options),
       gainParam_(
           std::make_shared<AudioParam>(

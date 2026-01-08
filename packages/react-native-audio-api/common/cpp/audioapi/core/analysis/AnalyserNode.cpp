@@ -14,7 +14,7 @@
 
 namespace audioapi {
 
-AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context, AnalyserOptions options)
+AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context, const AnalyserOptions &options)
     : AudioNode(context, options),
       fftSize_(options.fftSize),
       minDecibels_(options.minDecibels),

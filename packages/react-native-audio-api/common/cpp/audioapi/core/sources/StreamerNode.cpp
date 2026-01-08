@@ -23,7 +23,7 @@
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, StreamerOptions options)
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),

@@ -13,7 +13,7 @@
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     std::shared_ptr<BaseAudioContext> context,
-    BaseAudioBufferSourceOptions options)
+    const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context),
       pitchCorrection_(options.pitchCorrection),
       vReadIndex_(0.0) {

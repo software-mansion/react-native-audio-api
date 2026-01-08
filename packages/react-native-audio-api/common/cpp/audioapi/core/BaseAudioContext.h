@@ -83,25 +83,26 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
-  std::shared_ptr<DelayNode> createDelay(DelayOptions options);
-  std::shared_ptr<IIRFilterNode> createIIRFilter(IIRFilterOptions options);
-  std::shared_ptr<OscillatorNode> createOscillator(OscillatorOptions options);
-  std::shared_ptr<ConstantSourceNode> createConstantSource(ConstantSourceOptions options);
-  std::shared_ptr<StreamerNode> createStreamer(StreamerOptions options);
-  std::shared_ptr<GainNode> createGain(GainOptions options);
-  std::shared_ptr<StereoPannerNode> createStereoPanner(StereoPannerOptions options);
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter(BiquadFilterOptions options);
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(AudioBufferSourceOptions options);
+  std::shared_ptr<DelayNode> createDelay(const DelayOptions &options);
+  std::shared_ptr<IIRFilterNode> createIIRFilter(const IIRFilterOptions &options);
+  std::shared_ptr<OscillatorNode> createOscillator(const OscillatorOptions &options);
+  std::shared_ptr<ConstantSourceNode> createConstantSource(const ConstantSourceOptions &options);
+  std::shared_ptr<StreamerNode> createStreamer(const StreamerOptions &options);
+  std::shared_ptr<GainNode> createGain(const GainOptions &options);
+  std::shared_ptr<StereoPannerNode> createStereoPanner(const StereoPannerOptions &options);
+  std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
+      const AudioBufferSourceOptions &options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
-      BaseAudioBufferSourceOptions options);
-  static std::shared_ptr<AudioBuffer> createBuffer(AudioBufferOptions options);
+      const BaseAudioBufferSourceOptions &options);
+  static std::shared_ptr<AudioBuffer> createBuffer(const AudioBufferOptions &options);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AnalyserNode> createAnalyser(AnalyserOptions options);
-  std::shared_ptr<ConvolverNode> createConvolver(ConvolverOptions options);
-  std::shared_ptr<WaveShaperNode> createWaveShaper(WaveShaperOptions options);
+  std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
+  std::shared_ptr<ConvolverNode> createConvolver(const ConvolverOptions &options);
+  std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

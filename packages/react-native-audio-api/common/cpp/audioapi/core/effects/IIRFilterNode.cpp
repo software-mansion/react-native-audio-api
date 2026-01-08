@@ -36,7 +36,7 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(std::shared_ptr<BaseAudioContext> context, IIRFilterOptions options)
+IIRFilterNode::IIRFilterNode(std::shared_ptr<BaseAudioContext> context, const IIRFilterOptions &options)
     : AudioNode(context, options),
     feedforward_(std::move(options.feedforward)),
     feedback_(std::move(options.feedback)) {

@@ -11,7 +11,7 @@
 
 namespace audioapi {
 
-WaveShaperNode::WaveShaperNode(std::shared_ptr<BaseAudioContext> context, WaveShaperOptions options)
+WaveShaperNode::WaveShaperNode(std::shared_ptr<BaseAudioContext> context, const WaveShaperOptions &options)
     : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);

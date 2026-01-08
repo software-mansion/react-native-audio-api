@@ -20,7 +20,7 @@ namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 std::shared_ptr<BaseAudioContext> context,
-    BaseAudioBufferSourceOptions options)
+    const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options) {
   buffers_ = {};
   stretch_->presetDefault(channelCount_, context->getSampleRate());

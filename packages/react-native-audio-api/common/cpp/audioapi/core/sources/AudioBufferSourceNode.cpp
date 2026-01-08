@@ -15,7 +15,7 @@ namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(
     std::shared_ptr<BaseAudioContext> context,
-    AudioBufferSourceOptions options)
+    const AudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
       loop_(options.loop),
       loopSkip_(false),

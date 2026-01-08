@@ -14,7 +14,7 @@ class AudioBufferOptions;
 
 class AudioBuffer {
  public:
-  explicit AudioBuffer(AudioBufferOptions options);
+  explicit AudioBuffer(const AudioBufferOptions &options);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);
 
   [[nodiscard]] size_t getLength() const;

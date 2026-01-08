@@ -20,7 +20,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
   explicit AudioBufferQueueSourceNode(
       std::shared_ptr<BaseAudioContext> context,
-      BaseAudioBufferSourceOptions options);
+      const BaseAudioBufferSourceOptions &options);
   ~AudioBufferQueueSourceNode() override;
 
   void stop(double when) override;
