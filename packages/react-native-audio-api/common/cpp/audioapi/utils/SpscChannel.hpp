@@ -8,6 +8,14 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_constructive_interference_size;
+using std::hardware_destructive_interference_size;
+#else
+constexpr std::size_t hardware_constructive_interference_size = 64;
+constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
+
 namespace audioapi::channels::spsc {
 
 /// @brief Overflow strategy for sender when the channel is full
@@ -414,17 +422,17 @@ class InnerChannel {
   T *buffer_;
 
   /// Producer-side data (accessed by sender thread)
-  alignas(std::hardware_destructive_interference_size) std::atomic<size_t> sendCursor_{0};
-  alignas(std::hardware_destructive_interference_size) size_t rcvCursorCache_{
+  alignas(hardware_constructive_interference_size) std::atomic<size_t> sendCursor_{0};
+  alignas(hardware_constructive_interference_size) size_t rcvCursorCache_{
       0}; // reduces cache coherency
 
   /// Consumer-side data (accessed by receiver thread)
-  alignas(std::hardware_destructive_interference_size) std::atomic<size_t> rcvCursor_{0};
-  alignas(std::hardware_destructive_interference_size) size_t sendCursorCache_{
+  alignas(hardware_constructive_interference_size) std::atomic<size_t> rcvCursor_{0};
+  alignas(hardware_constructive_interference_size) size_t sendCursorCache_{
       0}; // reduces cache coherency
 
   /// Flag indicating if the oldest element is occupied
-  alignas(std::hardware_destructive_interference_size) std::atomic<bool> oldestOccupied_{false};
+  alignas(hardware_constructive_interference_size) std::atomic<bool> oldestOccupied_{false};
 
   friend class Sender<T, Strategy, Wait>;
   friend class Receiver<T, Strategy, Wait>;
