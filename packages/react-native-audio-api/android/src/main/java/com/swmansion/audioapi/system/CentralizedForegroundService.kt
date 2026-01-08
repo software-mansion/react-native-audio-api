@@ -80,11 +80,6 @@ class CentralizedForegroundService : Service() {
       return 100 to it
     }
 
-    // Check for recording notification
-    NotificationRegistry.getBuiltNotification(101)?.let {
-      return 101 to it
-    }
-
     return null
   }
 
