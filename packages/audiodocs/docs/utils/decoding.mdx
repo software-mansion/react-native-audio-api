@@ -9,19 +9,25 @@ import { Optional, MobileOnly } from '@site/src/components/Badges';
 You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) and
 [`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64).
 
+:::warning
+Decoding on the web has to be done via `AudioContext` only.
+:::
+
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
 the decoded audio will then be automatically resampled to match the context's `sampleRate`.
 
 :::caution
 Supported file formats:
-- aac
 - flac
-- m4a
 - mp3
-- mp4
 - ogg
 - opus
 - wav
+- aac
+- m4a
+- mp4
+
+Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/other/ffmpeg-info).
 :::
 
 ### `decodeAudioData`
@@ -83,8 +89,9 @@ const buffer = await decodeAudioData(url);
 ```
 </details>
 
-:::warning
-Decoding local assets on web will only work via expo-asset library.
+:::caution
+Internally decoding local files uses Image component to retrieve asset uri, but it does not work on the web platform.
+You can use expo-asset library for this purpose or retrieve ArrayBuffer on your own and pass it to decoding function.
 :::
 <details>
 <summary>Example using expo-asset library</summary>

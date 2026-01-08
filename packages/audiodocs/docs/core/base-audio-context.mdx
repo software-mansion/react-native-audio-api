@@ -256,24 +256,12 @@ Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 
 #### Returns `WorkletProcessingNode`.
 
-:::caution
-Supported file formats:
-- flac
-- mp3
-- ogg
-- opus
-- wav
-- aac
-- m4a
-- mp4
-
-Last three formats are decoded with ffmpeg, [see for more info](/docs/other/ffmpeg-info).
-:::
-
 ### `decodeAudioData`
 
 Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio.
 If not provided, the audio will be automatically resampled to match the audio context's `sampleRate`.
+
+**For the list of supported formats visit [this page](/docs/utils/decoding).**
 
 <table>
   <thead>
