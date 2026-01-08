@@ -1,5 +1,11 @@
 import React, { FC, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {
   AudioManager,
   PlaybackNotificationManager,
