@@ -10,6 +10,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
@@ -20,7 +21,6 @@ import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
-import com.swmansion.audioapi.system.notification.PlaybackNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
 import java.lang.ref.WeakReference
 
@@ -216,6 +216,7 @@ object MediaSessionManager {
     }
 
   // Notification system methods
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   fun showNotification(
     type: String,
     key: String,

@@ -1,0 +1,183 @@
+package com.swmansion.audioapi.system.notification
+
+import android.app.Notification
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Context.RECEIVER_NOT_EXPORTED
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReadableMap
+import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver.Companion.setAudioAPIModule
+import java.lang.ref.WeakReference
+
+class RecordingNotification(
+  private val reactContext: WeakReference<ReactApplicationContext>,
+  private val audioAPIModule: WeakReference<AudioAPIModule>,
+  private val notificationId: Int,
+  private val channelId: String,
+) : BaseNotification {
+  companion object {
+    private const val TAG = "RecordingNotification"
+  }
+
+  private var builder: NotificationCompat.Builder? = null
+  private var receiver: RecordingNotificationReceiver? = null
+  private var initialized: Boolean = false
+
+  private var pauseIntent: Intent? = null
+  private var resumeIntent: Intent? = null
+  private var options: ReadableMap? = null
+  private var paused: Boolean = true
+
+  private fun getBuilder(): NotificationCompat.Builder {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (builder == null) {
+      val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+      val pendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, PendingIntent.FLAG_IMMUTABLE)
+
+      val style =
+        androidx.media.app.NotificationCompat
+          .MediaStyle()
+          .setShowActionsInCompactView(0)
+
+      builder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          NotificationCompat
+            .Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .setStyle(style)
+        } else {
+          throw IllegalStateException("RecordingNotification requires Android O or higher")
+        }
+    }
+    return builder!!
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun initialize() {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (!initialized) {
+      createNotificationChannel(context)
+      receiver =
+        RecordingNotificationReceiver(this).apply {
+          setAudioAPIModule(audioAPIModule.get())
+        }
+      val filter1 =
+        IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED)
+      val filter2 = IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED)
+      context.registerReceiver(receiver, filter1, RECEIVER_NOT_EXPORTED)
+      context.registerReceiver(receiver, filter2, RECEIVER_NOT_EXPORTED)
+      pauseIntent =
+        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED).apply {
+          `package` = context.packageName
+        }
+
+      resumeIntent =
+        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED).apply {
+          `package` = context.packageName
+        }
+      initialized = true
+    }
+  }
+
+  private fun createNotificationChannel(context: ReactApplicationContext) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val channel =
+        android.app
+          .NotificationChannel(
+            channelId,
+            "Recording Audio",
+            android.app.NotificationManager.IMPORTANCE_LOW,
+          ).apply {
+            description = "Notifications for ongoing audio recordings"
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+          }
+      val notificationManager =
+        context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+      notificationManager.createNotificationChannel(channel)
+    }
+    Log.d(TAG, "Notification channel created: $channelId")
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun show(options: ReadableMap?): Notification {
+    initialize()
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+
+    val map = parseMapFromRN(options)
+    val pauseResumeIntent =
+      if (paused) {
+        resumeIntent!!
+      } else {
+        pauseIntent!!
+      }
+
+    val pauseResumePendingIntent =
+      PendingIntent.getBroadcast(
+        context,
+        0,
+        pauseResumeIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+      )
+
+    val description = if (paused) "Resume" else "Stop"
+    val contentText = map["contentText"]
+
+    val icon = if (paused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+
+    val builder = getBuilder()
+    builder.clearActions()
+    val action =
+      NotificationCompat.Action
+        .Builder(
+          icon,
+          description,
+          pauseResumePendingIntent,
+        ).build()
+
+    builder
+      .setContentTitle(map["title"])
+      .setContentText(contentText)
+      .addAction(action)
+    return builder.build()
+  }
+
+  private fun parseMapFromRN(options: ReadableMap?): Map<String, String> {
+    val title = if (options?.hasKey("title") == true) options.getString("title") else "Recording Audio"
+    val contentText =
+      if (options?.hasKey("contentText") ==
+        true
+      ) {
+        options.getString("contentText")
+      } else {
+        "Audio recording is in progress/paused"
+      }
+    val paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
+    this.paused = paused
+
+    return mapOf(
+      "title" to title!!,
+      "contentText" to contentText!!,
+    )
+  }
+
+  override fun hide() {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (receiver != null) {
+      context.unregisterReceiver(receiver)
+      receiver = null
+    }
+  }
+
+  override fun getNotificationId(): Int = notificationId
+
+  override fun getChannelId(): String = channelId
+}

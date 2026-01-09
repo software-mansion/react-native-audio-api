@@ -66,9 +66,25 @@ interface PlaybackNotificationEvent {
   playbackNotificationDismissed: EventEmptyType;
 }
 
+export interface RecordingNotificationInfo {
+  title?: string;
+  contentText?: string;
+  paused?: boolean;
+}
+
+export type RecordingControlName = 'pause' | 'resume';
+
+interface RecordingNotificationEvent {
+  recordingNotificationPause: EventEmptyType;
+  recordingNotificationResume: EventEmptyType;
+}
+
 export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 
-export type NotificationEvents = PlaybackNotificationEvent;
+export type RecordingNotificationEventName = keyof RecordingNotificationEvent;
+
+export type NotificationEvents = PlaybackNotificationEvent &
+  RecordingNotificationEvent;
 
 export type NotificationEventName = keyof NotificationEvents;
 

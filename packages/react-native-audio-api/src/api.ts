@@ -36,6 +36,7 @@ export { default as FilePreset } from './utils/filePresets';
 
 // Notification System
 export { PlaybackNotificationManager } from './system/notification';
+export { RecordingNotificationManager } from './system/notification';
 
 export {
   NotificationManager,
