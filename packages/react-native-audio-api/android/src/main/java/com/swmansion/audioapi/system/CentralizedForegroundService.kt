@@ -49,15 +49,14 @@ class CentralizedForegroundService : Service() {
     try {
       createNotificationChannelIfNeeded()
 
-      // Try to use an existing notification first
+      // Get the first available notification
       val existingNotification = findExistingNotification()
-      val (notificationId, notification) =
-        if (existingNotification != null) {
-          existingNotification
-        } else {
-          // Fallback to default service notification
-          NOTIFICATION_ID to createServiceNotification()
-        }
+      if (existingNotification == null) {
+        Log.w(TAG, "No notification available to start foreground service")
+        return
+      }
+
+      val (notificationId, notification) = existingNotification
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         startForeground(
@@ -76,30 +75,17 @@ class CentralizedForegroundService : Service() {
   }
 
   private fun findExistingNotification(): Pair<Int, Notification>? {
-    // Check for recording notification first (priority)
-    NotificationRegistry.getBuiltNotification(101)?.let {
-      return 101 to it
-    }
-
-    // Check for playback notification
+    // Check for playback notification first (priority)
     NotificationRegistry.getBuiltNotification(100)?.let {
       return 100 to it
     }
 
+    NotificationRegistry.getBuiltNotification(200)?.let {
+      return 200 to it
+    }
+
     return null
   }
-
-  private fun createServiceNotification(): Notification =
-    NotificationCompat
-      .Builder(this, CHANNEL_ID)
-      .setContentTitle("Audio Service")
-      .setContentText("Audio processing in progress")
-      .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-      .setPriority(NotificationCompat.PRIORITY_LOW)
-      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-      .setOngoing(true)
-      .setAutoCancel(false)
-      .build()
 
   private fun createNotificationChannelIfNeeded() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

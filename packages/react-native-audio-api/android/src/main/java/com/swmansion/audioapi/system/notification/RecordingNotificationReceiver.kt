@@ -6,12 +6,12 @@ import android.content.Intent
 import android.util.Log
 import com.swmansion.audioapi.AudioAPIModule
 
-/**
- * Broadcast receiver for handling recording notification actions and dismissal.
- */
-class RecordingNotificationReceiver : BroadcastReceiver() {
+class RecordingNotificationReceiver(
+  notification: RecordingNotification,
+) : BroadcastReceiver() {
   companion object {
-    const val ACTION_NOTIFICATION_DISMISSED = "com.swmansion.audioapi.RECORDING_NOTIFICATION_DISMISSED"
+    const val NOTIFICATION_RECORDING_STOPPED = "com.swmansion.audioapi.NOTIFICATION_RECORDING_STOPPED"
+    const val NOTIFICATION_RECORDING_RESUMED = "com.swmansion.audioapi.NOTIFICATION_RECORDING_RESUMED"
     private const val TAG = "RecordingNotificationReceiver"
 
     private var audioAPIModule: AudioAPIModule? = null
@@ -21,24 +21,20 @@ class RecordingNotificationReceiver : BroadcastReceiver() {
     }
   }
 
+  private val notificationInstance: RecordingNotification = notification
+
   override fun onReceive(
     context: Context?,
     intent: Intent?,
   ) {
     when (intent?.action) {
-      ACTION_NOTIFICATION_DISMISSED -> {
-        Log.d(TAG, "Recording notification dismissed by user")
-        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationDismissed", mapOf())
+      NOTIFICATION_RECORDING_STOPPED -> {
+        Log.d(TAG, "Recording stopped via notification")
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationPause", mapOf())
       }
-
-      RecordingNotification.ACTION_START -> {
-        Log.d(TAG, "Start recording action received")
-        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStart", mapOf())
-      }
-
-      RecordingNotification.ACTION_STOP -> {
-        Log.d(TAG, "Stop recording action received")
-        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStop", mapOf())
+      NOTIFICATION_RECORDING_RESUMED -> {
+        Log.d(TAG, "Recording resumed via notification")
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationResume", mapOf())
       }
     }
   }

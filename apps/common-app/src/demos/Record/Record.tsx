@@ -1,5 +1,5 @@
 import React, { FC, useCallback, useEffect, useState } from 'react';
-import { AudioManager } from 'react-native-audio-api';
+import { AudioManager, RecordingNotificationManager } from 'react-native-audio-api';
 
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
@@ -20,6 +20,20 @@ AudioManager.setAudioSessionOptions({
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (state === RecordingState.Recording) {
+          RecordingNotificationManager.show({
+            title: 'Recording Demo',
+            contentText: 'Recording...',
+            paused: false,
+            smallIconResourceName: 'ic_stat_account_balance',
+            largeIcon: 'https://reactnative.dev/img/tiny_logo.png',
+            color: 0xff6200,
+          });
+          return;
+        }
+    }, [state]);
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
