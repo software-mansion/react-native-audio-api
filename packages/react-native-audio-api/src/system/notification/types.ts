@@ -70,6 +70,9 @@ export interface RecordingNotificationInfo {
   title?: string;
   contentText?: string;
   paused?: boolean;
+  smallIconResourceName?: string;
+  largeIcon?: string;
+  color?: number;
 }
 
 export type RecordingControlName = 'pause' | 'resume';
