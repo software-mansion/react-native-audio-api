@@ -37,11 +37,7 @@ export {
   PermissionStatus,
 } from './system/types';
 
-export {
-  PlaybackNotificationManager,
-  RecordingNotificationManager,
-  AudioManager,
-} from './web-system';
+export { PlaybackNotificationManager, AudioManager } from './web-system';
 
 export * from './system/notification/types';
 

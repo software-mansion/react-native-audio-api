@@ -18,50 +18,21 @@ class PlaybackNotificationManager
     >
 {
   private notificationKey = 'playback';
-  private isRegistered_ = false;
-  private isShown_ = false;
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
-  /// Register the playback notification (must be called before showing).
-  async register(): Promise<void> {
-    if (this.isRegistered_) {
-      console.warn('PlaybackNotification is already registered');
-      return;
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.registerNotification(
-      'playback',
-      this.notificationKey
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    this.isRegistered_ = true;
-  }
-
-  /// Show the notification with initial metadata.
+  /// Show the notification with metadata or update if already visible.
+  /// Automatically creates the notification on first call.
   async show(info: PlaybackNotificationInfo): Promise<void> {
-    if (!this.isRegistered_) {
-      throw new Error(
-        'PlaybackNotification must be registered before showing. Call register() first.'
-      );
-    }
-
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.showNotification(
+      'playback',
       this.notificationKey,
       info as Record<string, string | number | boolean | undefined>
     );
@@ -69,37 +40,16 @@ class PlaybackNotificationManager
     if (result.error) {
       throw new Error(result.error);
     }
-
-    this.isShown_ = true;
   }
 
   /// Update the notification with new metadata or state.
+  /// This is an alias for show() since show handles both initial display and updates.
   async update(info: PlaybackNotificationInfo): Promise<void> {
-    if (!this.isShown_) {
-      console.warn('PlaybackNotification is not shown. Call show() first.');
-      return;
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.updateNotification(
-      this.notificationKey,
-      info as Record<string, string | number | boolean | undefined>
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
+    return this.show(info);
   }
 
-  /// Hide the notification (can be shown again later).
+  /// Hide the notification.
   async hide(): Promise<void> {
-    if (!this.isShown_) {
-      return;
-    }
-
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
@@ -111,33 +61,6 @@ class PlaybackNotificationManager
     if (result.error) {
       throw new Error(result.error);
     }
-
-    this.isShown_ = false;
-  }
-
-  /// Unregister the notification (must register again to use).
-  async unregister(): Promise<void> {
-    if (!this.isRegistered_) {
-      return;
-    }
-
-    if (this.isShown_) {
-      await this.hide();
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.unregisterNotification(
-      this.notificationKey
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    this.isRegistered_ = false;
   }
 
   /// Enable or disable a specific playback control.
@@ -145,17 +68,13 @@ class PlaybackNotificationManager
     control: PlaybackControlName,
     enabled: boolean
   ): Promise<void> {
-    if (!this.isRegistered_) {
-      console.warn('PlaybackNotification is not registered');
-      return;
-    }
-
     if (!NativeAudioAPIModule) {
       throw new Error('NativeAudioAPIModule is not available');
     }
 
     const params = { control, enabled };
-    const result = await NativeAudioAPIModule.updateNotification(
+    const result = await NativeAudioAPIModule.showNotification(
+      'playback',
       this.notificationKey,
       params as Record<string, string | number | boolean | undefined>
     );
@@ -174,10 +93,6 @@ class PlaybackNotificationManager
     return await NativeAudioAPIModule.isNotificationActive(
       this.notificationKey
     );
-  }
-
-  isRegistered(): boolean {
-    return this.isRegistered_;
   }
 
   /// Add an event listener for notification actions.
