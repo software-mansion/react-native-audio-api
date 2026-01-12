@@ -3,6 +3,12 @@ cmake_minimum_required(VERSION 3.12.0)
 file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 
+if (RN_AUDIO_API_FFMPEG_DISABLED)
+  list(REMOVE_ITEM COMMON_CPP_SOURCES
+    "${COMMON_CPP_DIR}/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  )
+endif()
+
 set_source_files_properties(
   ${COMMON_CPP_SOURCES}/dsp/*.cpp
   PROPERTIES
@@ -21,10 +27,12 @@ foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${EXTERNAL_DIR}/${ANDROID_ABI}/lib${lib}.a)
 endforeach()
 
- foreach (lib IN ITEMS avcodec avformat avutil swresample)
-   add_library(${lib} SHARED IMPORTED)
-   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
- endforeach()
+if (NOT RN_AUDIO_API_FFMPEG_DISABLED)
+  foreach (lib IN ITEMS avcodec avformat avutil swresample)
+    add_library(${lib} SHARED IMPORTED)
+    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
+  endforeach()
+endif()
 
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
@@ -120,6 +128,13 @@ else()
   )
 endif()
 
+if (RN_AUDIO_API_FFMPEG_DISABLED)
+  target_compile_definitions(
+    react-native-audio-api
+    PRIVATE RN_AUDIO_API_FFMPEG_DISABLED=1
+  )
+endif()
+
 target_link_libraries(react-native-audio-api
   ${LINK_LIBRARIES}
   ${RN_VERSION_LINK_LIBRARIES}
@@ -129,11 +144,16 @@ target_link_libraries(react-native-audio-api
   vorbis
   vorbisenc
   vorbisfile
-  avcodec
-  avformat
-  avutil
-  swresample
   crypto
   ssl
   z
 )
+
+if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
+  target_link_libraries(react-native-audio-api
+    avcodec
+    avformat
+    avutil
+    swresample
+  )
+endif()
