@@ -7,13 +7,17 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver.Companion.setAudioAPIModule
+import java.io.InputStream
 import java.lang.ref.WeakReference
 
 /**
@@ -45,56 +49,211 @@ class RecordingNotification(
   private var startEnabled: Boolean = true
   private var stopEnabled: Boolean = true
 
-  override fun init(params: ReadableMap?): Notification {
+  private var pauseIntent: Intent? = null
+  private var resumeIntent: Intent? = null
+  private var title: String? = null
+  private var contentText: String? = null
+  private var paused: Boolean = true
+  private var smallIconResourceName: String? = null
+  private var backgroundColor: Int? = null
+  private var largeIconUri: String? = null
+  private var largeIconThread: Thread? = null
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun show(options: ReadableMap?): Notification {
+    initialize()
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-
-    // Register broadcast receiver
-    registerReceiver()
-
-    // Create notification channel first
-    createNotificationChannel()
-
-    // Create notification builder
-    notificationBuilder =
-      NotificationCompat
-        .Builder(context, channelId)
-        .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-        .setContentTitle(title)
-        .setContentText(description)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-        .setOngoing(false)
-        .setAutoCancel(false)
-
-    // Set content intent to open app
-    val packageName = context.packageName
-    val openAppIntent = context.packageManager.getLaunchIntentForPackage(packageName)
-    if (openAppIntent != null) {
-      val pendingIntent =
-        PendingIntent.getActivity(
-          context,
-          0,
-          openAppIntent,
-          PendingIntent.FLAG_IMMUTABLE,
-        )
-      notificationBuilder?.setContentIntent(pendingIntent)
+    parseMapFromRN(options)
+    val builder = getBuilder()
+    builder.setSmallIcon(context.resources.getIdentifier(smallIconResourceName, "drawable", context.packageName))
+    builder.setColor(Color.RED)
+    if (largeIconUri != null) {
+      largeIconThread?.interrupt()
+      largeIconThread =
+        Thread {
+          val bitmap = loadBitmapFromUri(context, largeIconUri)
+          if (bitmap != null) {
+            context.runOnUiQueueThread {
+              try {
+                builder.setLargeIcon(bitmap)
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                notificationManager.notify(notificationId, builder.build())
+              } catch (e: Exception) {
+                Log.e(TAG, "Failed to update notification with large icon", e)
+              }
+            }
+            builder.setLargeIcon(bitmap)
+          }
+          largeIconThread = null
+        }
+      largeIconThread?.start()
     }
 
-    // Set delete intent to handle dismissal
-    val deleteIntent = Intent(RecordingNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
-    deleteIntent.setPackage(context.packageName)
-    val deletePendingIntent =
+    val pauseResumeIntent =
+      if (paused) {
+        resumeIntent!!
+      } else {
+        pauseIntent!!
+      }
+
+    val pauseResumePendingIntent =
       PendingIntent.getBroadcast(
         context,
-        notificationId,
-        deleteIntent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        0,
+        pauseResumeIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
-    notificationBuilder?.setDeleteIntent(deletePendingIntent)
 
-    // Apply initial params if provided
-    if (params != null) {
-      update(params)
+    val description = if (paused) "Resume" else "Stop"
+
+    val icon = if (paused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+
+    builder.clearActions()
+    val action =
+      NotificationCompat.Action
+        .Builder(
+          icon,
+          description,
+          pauseResumePendingIntent,
+        ).build()
+
+    builder
+      .setContentTitle(this.title)
+      .setContentText(this.contentText)
+      .addAction(action)
+
+    if (this.backgroundColor != null) {
+      builder.setColor(this.backgroundColor!!)
+    }
+
+    return builder.build()
+  }
+
+  private fun loadBitmapFromUri(
+    context: Context,
+    uriString: String?,
+  ): Bitmap? =
+    try {
+      val uri = android.net.Uri.parse(uriString)
+      val inputStream: InputStream
+      if (uri.scheme == "http" || uri.scheme == "https") {
+        // web URL
+        val connection = java.net.URL(uriString).openConnection()
+        connection.doInput = true
+        connection.connect()
+        inputStream = connection.inputStream
+      } else {
+        // local files
+        inputStream = context.contentResolver.openInputStream(uri)!!
+      }
+      android.graphics.BitmapFactory.decodeStream(inputStream)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to load bitmap from URI: $uriString", e)
+      null
+    }
+
+  private fun getBuilder(): NotificationCompat.Builder {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (builder == null) {
+      val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+      val pendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, PendingIntent.FLAG_IMMUTABLE)
+
+      val style =
+        androidx.media.app.NotificationCompat
+          .MediaStyle()
+          .setShowActionsInCompactView(0)
+
+      builder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          NotificationCompat
+            .Builder(context, channelId)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .setStyle(style)
+        } else {
+          throw IllegalStateException("RecordingNotification requires Android O or higher")
+        }
+      if (smallIconResourceName == null) {
+        builder!!.setSmallIcon(android.R.drawable.ic_btn_speak_now)
+      }
+      if (largeIconUri == null) {
+        builder!!.setLargeIcon(
+          Icon.createWithResource(context, android.R.drawable.ic_btn_speak_now),
+        )
+      }
+    }
+    return builder!!
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun initialize() {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (!initialized) {
+      createNotificationChannel(context)
+      receiver =
+        RecordingNotificationReceiver(this).apply {
+          setAudioAPIModule(audioAPIModule.get())
+        }
+      val filter1 =
+        IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED)
+      val filter2 = IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED)
+      context.registerReceiver(receiver, filter1, RECEIVER_NOT_EXPORTED)
+      context.registerReceiver(receiver, filter2, RECEIVER_NOT_EXPORTED)
+      pauseIntent =
+        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED).apply {
+          `package` = context.packageName
+        }
+
+      resumeIntent =
+        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED).apply {
+          `package` = context.packageName
+        }
+      initialized = true
+    }
+  }
+
+  private fun createNotificationChannel(context: ReactApplicationContext) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val channel =
+        android.app
+          .NotificationChannel(
+            channelId,
+            "Recording Audio",
+            android.app.NotificationManager.IMPORTANCE_LOW,
+          ).apply {
+            description = "Notifications for ongoing audio recordings"
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+          }
+      val notificationManager =
+        context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+      notificationManager.createNotificationChannel(channel)
+    }
+    Log.d(TAG, "Notification channel created: $channelId")
+  }
+
+  private fun parseMapFromRN(options: ReadableMap?) {
+    this.title = if (options?.hasKey("title") == true) options.getString("title") else "Recording Audio"
+    this.contentText =
+      if (options?.hasKey("contentText") ==
+        true
+      ) {
+        options.getString("contentText")
+      } else {
+        "Audio recording is in progress/paused"
+      }
+    this.smallIconResourceName = if (options?.hasKey("smallIconResourceName") == true) options.getString("smallIconResourceName") else null
+    this.largeIconUri = if (options?.hasKey("largeIcon") == true) options.getString("largeIcon") else null
+    this.backgroundColor =
+      if (options?.hasKey("color") == true) options.getInt("color") else null
+
+    this.paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
+  }
+
+  override fun hide() {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    if (receiver != null) {
+      context.unregisterReceiver(receiver)
+      receiver = null
     }
 
     return buildNotification()

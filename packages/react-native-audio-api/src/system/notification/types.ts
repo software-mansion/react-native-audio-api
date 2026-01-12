@@ -76,11 +76,11 @@ export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 /// Metadata and state information for recording notifications.
 export interface RecordingNotificationInfo {
   title?: string;
-  description?: string;
-  artwork?: string | { uri: string };
-  state?: 'recording' | 'stopped';
-  control?: RecordingControlName;
-  enabled?: boolean;
+  contentText?: string;
+  paused?: boolean;
+  smallIconResourceName?: string;
+  largeIcon?: string;
+  color?: number;
 }
 
 /// Available recording control actions.
