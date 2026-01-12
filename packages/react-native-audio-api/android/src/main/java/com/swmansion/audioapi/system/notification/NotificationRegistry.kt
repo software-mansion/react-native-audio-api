@@ -121,7 +121,7 @@ class NotificationRegistry(
           PlaybackNotification(
             reactContext,
             audioAPIModule,
-            100,
+            PlaybackNotification.ID,
             "audio_playback",
           )
         }
@@ -129,8 +129,8 @@ class NotificationRegistry(
           RecordingNotification(
             reactContext,
             audioAPIModule,
-            200,
-            "audio_recording6",
+            RecordingNotification.ID,
+            "audio_recording4",
           )
         }
         else -> throw IllegalArgumentException("Unknown notification type: $type")

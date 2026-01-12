@@ -71,7 +71,9 @@ export interface RecordingNotificationInfo {
   contentText?: string;
   paused?: boolean;
   smallIconResourceName?: string;
-  largeIcon?: string;
+  largeIconResourceName?: string;
+  pauseIconResourceName?: string;
+  resumeIconResourceName?: string;
   color?: number;
 }
 

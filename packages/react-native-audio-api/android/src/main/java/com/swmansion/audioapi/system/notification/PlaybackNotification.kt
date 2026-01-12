@@ -44,7 +44,7 @@ class PlaybackNotification(
   companion object {
     private const val TAG = "PlaybackNotification"
     const val MEDIA_BUTTON = "playback_notification_media_button"
-    const val PACKAGE_NAME = "com.swmansion.audioapi.playback"
+    const val ID = 100
   }
 
   private var mediaSession: MediaSessionCompat? = null
