@@ -7,17 +7,17 @@ import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.IconCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.AudioAPIModule
-import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver.Companion.setAudioAPIModule
-import java.io.InputStream
+import com.swmansion.audioapi.R
 import java.lang.ref.WeakReference
 
 class RecordingNotification(
@@ -28,6 +28,7 @@ class RecordingNotification(
 ) : BaseNotification {
   companion object {
     private const val TAG = "RecordingNotification"
+    const val ID = 200
   }
 
   private var builder: NotificationCompat.Builder? = null
@@ -40,9 +41,10 @@ class RecordingNotification(
   private var contentText: String? = null
   private var paused: Boolean = true
   private var smallIconResourceName: String? = null
+  private var largeIconResourceName: String? = null
+  private var pauseIconResourceName: String? = null
+  private var resumeIconResourceName: String? = null
   private var backgroundColor: Int? = null
-  private var largeIconUri: String? = null
-  private var largeIconThread: Thread? = null
 
   @RequiresApi(Build.VERSION_CODES.O)
   override fun show(options: ReadableMap?): Notification {
@@ -50,28 +52,19 @@ class RecordingNotification(
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
     parseMapFromRN(options)
     val builder = getBuilder()
-    builder.setSmallIcon(context.resources.getIdentifier(smallIconResourceName, "drawable", context.packageName))
-    builder.setColor(Color.RED)
-    if (largeIconUri != null) {
-      largeIconThread?.interrupt()
-      largeIconThread =
-        Thread {
-          val bitmap = loadBitmapFromUri(context, largeIconUri)
-          if (bitmap != null) {
-            context.runOnUiQueueThread {
-              try {
-                builder.setLargeIcon(bitmap)
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                notificationManager.notify(notificationId, builder.build())
-              } catch (e: Exception) {
-                Log.e(TAG, "Failed to update notification with large icon", e)
-              }
-            }
-            builder.setLargeIcon(bitmap)
-          }
-          largeIconThread = null
-        }
-      largeIconThread?.start()
+    builder.clearActions()
+
+    if (smallIconResourceName != null) {
+      builder.setSmallIcon(context.resources.getIdentifier(smallIconResourceName, "drawable", context.packageName))
+    }
+
+    if (largeIconResourceName != null) {
+      val icon = Icon.createWithResource(context, context.resources.getIdentifier(largeIconResourceName, "drawable", context.packageName))
+      builder.setLargeIcon(icon)
+    }
+
+    if (backgroundColor != null) {
+      builder.setColor(backgroundColor!!)
     }
 
     val pauseResumeIntent =
@@ -90,10 +83,21 @@ class RecordingNotification(
       )
 
     val description = if (paused) "Resume" else "Stop"
+    val pauseId =
+      if (pauseIconResourceName != null) {
+        context.resources.getIdentifier(pauseIconResourceName, "drawable", context.packageName)
+      } else {
+        android.R.drawable.ic_media_pause
+      }
+    val resumeId =
+      if (resumeIconResourceName != null) {
+        context.resources.getIdentifier(resumeIconResourceName, "drawable", context.packageName)
+      } else {
+        android.R.drawable.ic_media_play
+      }
 
-    val icon = if (paused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+    val icon = IconCompat.createWithResource(context, if (paused) resumeId else pauseId)
 
-    builder.clearActions()
     val action =
       NotificationCompat.Action
         .Builder(
@@ -102,7 +106,20 @@ class RecordingNotification(
           pauseResumePendingIntent,
         ).build()
 
+//    collapsedView.setTextViewText(R.id.notification_title, this.title)
+//    collapsedView.setTextViewText(R.id.notification_content, this.contentText)
+//    collapsedView.setImageViewResource(R.id.notification_icon_small, if (paused) resumeId else pauseId)
+//    collapsedView.setOnClickPendingIntent(R.id.notification_icon_small, pauseResumePendingIntent)
+//
+//    // 5. Update Expanded View
+//    expandedView.setTextViewText(R.id.expanded_title, this.title)
+//    expandedView.setTextViewText(R.id.expanded_body, this.contentText)
+//    expandedView.setImageViewResource(R.id.notification_icon_large, if (paused) resumeId else pauseId)
+//    expandedView.setOnClickPendingIntent(R.id.notification_icon_large, pauseResumePendingIntent)
+
     builder
+//      .setCustomContentView(collapsedView)
+//      .setCustomBigContentView(expandedView)
       .setContentTitle(this.title)
       .setContentText(this.contentText)
       .addAction(action)
@@ -118,24 +135,26 @@ class RecordingNotification(
     context: Context,
     uriString: String?,
   ): Bitmap? =
-    try {
-      val uri = android.net.Uri.parse(uriString)
-      val inputStream: InputStream
-      if (uri.scheme == "http" || uri.scheme == "https") {
-        // web URL
-        val connection = java.net.URL(uriString).openConnection()
-        connection.doInput = true
-        connection.connect()
-        inputStream = connection.inputStream
-      } else {
-        // local files
-        inputStream = context.contentResolver.openInputStream(uri)!!
-      }
-      android.graphics.BitmapFactory.decodeStream(inputStream)
-    } catch (e: Exception) {
-      Log.e(TAG, "Failed to load bitmap from URI: $uriString", e)
-      null
-    }
+    // not used currently, left for future reference
+    null
+//    try {
+//      val uri = android.net.Uri.parse(uriString)
+//      val inputStream: InputStream
+//      if (uri.scheme == "http" || uri.scheme == "https") {
+//        // web URL
+//        val connection = java.net.URL(uriString).openConnection()
+//        connection.doInput = true
+//        connection.connect()
+//        inputStream = connection.inputStream
+//      } else {
+//        // local files
+//        inputStream = context.contentResolver.openInputStream(uri)!!
+//      }
+//      android.graphics.BitmapFactory.decodeStream(inputStream)
+//    } catch (e: Exception) {
+//      Log.e(TAG, "Failed to load bitmap from URI: $uriString", e)
+//      null
+//    }
 
   private fun getBuilder(): NotificationCompat.Builder {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
@@ -161,11 +180,6 @@ class RecordingNotification(
       if (smallIconResourceName == null) {
         builder!!.setSmallIcon(android.R.drawable.ic_btn_speak_now)
       }
-      if (largeIconUri == null) {
-        builder!!.setLargeIcon(
-          Icon.createWithResource(context, android.R.drawable.ic_btn_speak_now),
-        )
-      }
     }
     return builder!!
   }
@@ -176,14 +190,19 @@ class RecordingNotification(
     if (!initialized) {
       createNotificationChannel(context)
       receiver =
-        RecordingNotificationReceiver(this).apply {
-          setAudioAPIModule(audioAPIModule.get())
+        RecordingNotificationReceiver(audioAPIModule.get()!!)
+      val filter =
+        IntentFilter().apply {
+          addAction(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED)
+          addAction(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED)
         }
-      val filter1 =
-        IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED)
-      val filter2 = IntentFilter(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED)
-      context.registerReceiver(receiver, filter1, RECEIVER_NOT_EXPORTED)
-      context.registerReceiver(receiver, filter2, RECEIVER_NOT_EXPORTED)
+      ContextCompat.registerReceiver(
+        context,
+        receiver,
+        filter,
+        ContextCompat.RECEIVER_NOT_EXPORTED,
+      )
+
       pauseIntent =
         Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED).apply {
           `package` = context.packageName
@@ -210,7 +229,7 @@ class RecordingNotification(
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
           }
       val notificationManager =
-        context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
       notificationManager.createNotificationChannel(channel)
     }
     Log.d(TAG, "Notification channel created: $channelId")
@@ -219,18 +238,17 @@ class RecordingNotification(
   private fun parseMapFromRN(options: ReadableMap?) {
     this.title = if (options?.hasKey("title") == true) options.getString("title") else "Recording Audio"
     this.contentText =
-      if (options?.hasKey("contentText") ==
-        true
-      ) {
+      if (options?.hasKey("contentText") == true) {
         options.getString("contentText")
       } else {
         "Audio recording is in progress/paused"
       }
     this.smallIconResourceName = if (options?.hasKey("smallIconResourceName") == true) options.getString("smallIconResourceName") else null
-    this.largeIconUri = if (options?.hasKey("largeIcon") == true) options.getString("largeIcon") else null
-    this.backgroundColor =
-      if (options?.hasKey("color") == true) options.getInt("color") else null
-
+    this.largeIconResourceName = if (options?.hasKey("largeIconResourceName") == true) options.getString("largeIconResourceName") else null
+    this.pauseIconResourceName = if (options?.hasKey("pauseIconResourceName") == true) options.getString("pauseIconResourceName") else null
+    this.resumeIconResourceName =
+      if (options?.hasKey("resumeIconResourceName") == true) options.getString("resumeIconResourceName") else null
+    this.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else null
     this.paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
   }
 

@@ -27,7 +27,6 @@ import java.lang.ref.WeakReference
 object MediaSessionManager {
   private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
   private lateinit var reactContext: WeakReference<ReactApplicationContext>
-  const val NOTIFICATION_ID = 100
   const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
