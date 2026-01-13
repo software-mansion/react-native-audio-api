@@ -4,12 +4,12 @@ import { AudioManager } from 'react-native-audio-api';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { audioRecorder as Recorder } from '../../singletons';
 import ControlPanel from './ControlPanel';
 import RecordingTime from './RecordingTime';
 import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
-import TimeStream from './TimeStream';
 import { RecordingState } from './types';
 
 AudioManager.setAudioSessionOptions({
@@ -21,6 +21,7 @@ AudioManager.setAudioSessionOptions({
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const insets = useSafeAreaInsets();
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
@@ -157,6 +158,7 @@ const Record: FC = () => {
       <RecordingVisualization state={state} />
       <View style={styles.spacerM} />
       <ControlPanel state={state} onToggleState={onToggleState} />
+      <View style={{ height: insets.bottom + insets.top }} />
     </Container>
   );
 };
