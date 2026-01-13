@@ -11,7 +11,7 @@ class AudioAPIModule implements IAudioAPIModule {
   #workletsVersion = 'unknown';
   #workletsAvailable_ = false;
 
-  public supportedWorkletsVersion = ['0.6.0', '0.6.1'];
+  public supportedWorkletsVersion = ['0.6.0', '0.6.1', '0.7.0', '0.7.1'];
 
   constructor() {
     // Important! Verify and import worklets first

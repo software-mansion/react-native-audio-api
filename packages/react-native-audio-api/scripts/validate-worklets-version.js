@@ -2,7 +2,7 @@
 
 const semverPrerelease = require('semver/functions/prerelease');
 
-const validWorkletsVersions = ['0.6.0', '0.6.1'];
+const validWorkletsVersions = ['0.6.0', '0.6.1', '0.7.0', '0.7.1'];
 
 function validateVersion() {
   let workletsVersion;
