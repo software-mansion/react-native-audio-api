@@ -79,7 +79,7 @@ export interface RecordingNotificationInfo {
 
 export type RecordingControlName = 'pause' | 'resume';
 
-interface RecordingNotificationEvent {
+export interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
 }
