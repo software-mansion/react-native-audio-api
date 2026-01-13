@@ -355,18 +355,26 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
       cancelAnimation(translateX);
       translateX.value = 0;
       barHeights.value = Array(numBars).fill(-1);
+      historyRenderer.value = Array(historyNumBars).fill(-1);
+      history.value = Array(historyNumBars * 10).fill(-1);
+      historyHead.value = 0;
+      historyMidpointMS.value = 0;
       durationMS.value = 0;
       lastIndex.value = -1;
     }
-  }, [state, size, translateX, barHeights, numBars, durationMS, lastIndex]);
-
-  useEffect(() => {
-    return () => {
-      if (Recorder.isRecording()) {
-        Recorder.stop();
-      }
-    };
-  }, []);
+  }, [
+    state,
+    size,
+    translateX,
+    barHeights,
+    numBars,
+    durationMS,
+    lastIndex,
+    history,
+    historyHead,
+    historyMidpointMS,
+    historyRenderer,
+  ]);
 
   const transformPath = useDerivedValue(() => [
     {
@@ -416,7 +424,6 @@ export default RecordingVisualization;
 
 const styles = StyleSheet.create({
   container: {
-    // height: 300,
     flex: 1,
     width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
