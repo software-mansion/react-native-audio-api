@@ -27,9 +27,7 @@ AndroidAudioRecorder::AndroidAudioRecorder(
     : AudioRecorder(audioEventHandlerRegistry),
       streamSampleRate_(0.0),
       streamChannelCount_(0),
-      streamMaxBufferSizeInFrames_(0) {
-  nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
-}
+      streamMaxBufferSizeInFrames_(0) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// TODO: Possibly locks here are not necessary, but we might have an issue with oboe having raw pointer to the
@@ -54,8 +52,6 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
       adapterNode_->cleanup();
     }
   }
-
-  nativeAudioRecorder_.release();
 
   if (mStream_) {
     mStream_->requestStop();
@@ -119,7 +115,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
     return Result<std::string, std::string>::Err(streamResult.unwrap_err());
   }
 
-  if (!mStream_ || !nativeAudioRecorder_) {
+  if (!mStream_) {
     return Result<std::string, std::string>::Err("Audio stream is not initialized.");
   }
 
@@ -153,8 +149,6 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
-  jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->start(); });
-
   state_.store(RecorderState::Recording, std::memory_order_release);
   return Result<std::string, std::string>::Ok(std::format("file://{}", filePath_));
 }
@@ -175,13 +169,12 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
         "Recorder is not in recording state.");
   }
 
-  if (!mStream_ || !nativeAudioRecorder_) {
+  if (!mStream_) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Audio stream is not initialized.");
   }
 
   state_.store(RecorderState::Idle, std::memory_order_release);
-  jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->stop(); });
   mStream_->requestStop();
 
   if (usesFileOutput()) {
