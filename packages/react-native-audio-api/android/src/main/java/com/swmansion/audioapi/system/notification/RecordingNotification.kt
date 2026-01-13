@@ -6,14 +6,15 @@ import android.content.Context
 import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.util.Log
+import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.IconCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.AudioAPIModule
@@ -25,7 +26,8 @@ class RecordingNotification(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
   private val notificationId: Int,
   private val channelId: String,
-) : BaseNotification {
+) : BaseNotification,
+  android.content.ComponentCallbacks {
   companion object {
     private const val TAG = "RecordingNotification"
     const val ID = 200
@@ -45,12 +47,20 @@ class RecordingNotification(
   private var pauseIconResourceName: String? = null
   private var resumeIconResourceName: String? = null
   private var backgroundColor: Int? = null
+  private var cachedRNOptions: ReadableMap? = null
+  private var darkTheme: Boolean =
+    reactContext
+      .get()!!
+      .resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
   @RequiresApi(Build.VERSION_CODES.O)
   override fun show(options: ReadableMap?): Notification {
     initialize()
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    parseMapFromRN(options)
+    if (options != cachedRNOptions) {
+      this.cachedRNOptions = options
+      parseMapFromRN(options)
+    }
     val builder = getBuilder()
     builder.clearActions()
 
@@ -82,7 +92,6 @@ class RecordingNotification(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
-    val description = if (paused) "Resume" else "Stop"
     val pauseId =
       if (pauseIconResourceName != null) {
         context.resources.getIdentifier(pauseIconResourceName, "drawable", context.packageName)
@@ -96,39 +105,45 @@ class RecordingNotification(
         android.R.drawable.ic_media_play
       }
 
-    val icon = IconCompat.createWithResource(context, if (paused) resumeId else pauseId)
+    val iconId = if (paused) resumeId else pauseId
 
-    val action =
-      NotificationCompat.Action
-        .Builder(
-          icon,
-          description,
-          pauseResumePendingIntent,
-        ).build()
+    val collapsedView = RemoteViews(context.packageName, R.layout.notification_collapsed)
+    val expandedView = RemoteViews(context.packageName, R.layout.notification_expanded)
 
-//    collapsedView.setTextViewText(R.id.notification_title, this.title)
-//    collapsedView.setTextViewText(R.id.notification_content, this.contentText)
-//    collapsedView.setImageViewResource(R.id.notification_icon_small, if (paused) resumeId else pauseId)
-//    collapsedView.setOnClickPendingIntent(R.id.notification_icon_small, pauseResumePendingIntent)
-//
-//    // 5. Update Expanded View
-//    expandedView.setTextViewText(R.id.expanded_title, this.title)
-//    expandedView.setTextViewText(R.id.expanded_body, this.contentText)
-//    expandedView.setImageViewResource(R.id.notification_icon_large, if (paused) resumeId else pauseId)
-//    expandedView.setOnClickPendingIntent(R.id.notification_icon_large, pauseResumePendingIntent)
+    setupRemoteView(listOf(collapsedView, expandedView), pauseResumePendingIntent, iconId)
 
     builder
-//      .setCustomContentView(collapsedView)
-//      .setCustomBigContentView(expandedView)
+      .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+      .setCustomContentView(collapsedView)
+      .setCustomBigContentView(expandedView)
       .setContentTitle(this.title)
       .setContentText(this.contentText)
-      .addAction(action)
 
     if (this.backgroundColor != null) {
       builder.setColor(this.backgroundColor!!)
     }
 
     return builder.build()
+  }
+
+  private fun setupRemoteView(
+    views: List<RemoteViews>,
+    pauseResumePendingIntent: PendingIntent,
+    iconId: Int,
+  ) {
+    val iconColor =
+      if (darkTheme) {
+        android.graphics.Color.WHITE // Dark Mode -> White Icon
+      } else {
+        android.graphics.Color.BLACK // Light Mode -> Black Icon
+      }
+    for (view in views) {
+      view.setTextViewText(R.id.notification_title, this.title)
+      view.setTextViewText(R.id.notification_content, this.contentText)
+      view.setImageViewResource(R.id.notification_action_btn, iconId)
+      view.setInt(R.id.notification_action_btn, "setColorFilter", iconColor)
+      view.setOnClickPendingIntent(R.id.notification_action_btn, pauseResumePendingIntent)
+    }
   }
 
   private fun loadBitmapFromUri(
@@ -162,24 +177,18 @@ class RecordingNotification(
       val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
       val pendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, PendingIntent.FLAG_IMMUTABLE)
 
-      val style =
-        androidx.media.app.NotificationCompat
-          .MediaStyle()
-          .setShowActionsInCompactView(0)
-
       builder =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
           NotificationCompat
             .Builder(context, channelId)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
-            .setStyle(style)
         } else {
           throw IllegalStateException("RecordingNotification requires Android O or higher")
         }
-      if (smallIconResourceName == null) {
-        builder!!.setSmallIcon(android.R.drawable.ic_btn_speak_now)
-      }
+    }
+    if (smallIconResourceName == null) {
+      builder!!.setSmallIcon(android.R.drawable.ic_btn_speak_now)
     }
     return builder!!
   }
@@ -187,6 +196,7 @@ class RecordingNotification(
   @RequiresApi(Build.VERSION_CODES.O)
   private fun initialize() {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    context.registerComponentCallbacks(this)
     if (!initialized) {
       createNotificationChannel(context)
       receiver =
@@ -256,11 +266,36 @@ class RecordingNotification(
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
     if (receiver != null) {
       context.unregisterReceiver(receiver)
+      context.unregisterComponentCallbacks(this)
       receiver = null
     }
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+    notificationManager.cancel(notificationId)
+    initialized = false
+    builder = null
   }
 
   override fun getNotificationId(): Int = notificationId
 
   override fun getChannelId(): String = channelId
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    val currentNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    if (currentNightMode != darkTheme) {
+      // Theme changed, rebuild notification
+      darkTheme = currentNightMode
+      val notification = show(cachedRNOptions)
+      val context = reactContext.get()
+      if (context != null) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        notificationManager.notify(notificationId, notification)
+      }
+    }
+  }
+
+  @Deprecated("Deprecated in Java")
+  override fun onLowMemory() {
+    // No-op
+  }
 }

@@ -10,6 +10,7 @@ import RecordingTime from './RecordingTime';
 import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
+import { AudioEventSubscription } from 'react-native-audio-api/lib/typescript/events';
 
 AudioManager.setAudioSessionOptions({
   iosCategory: 'playAndRecord',
@@ -21,19 +22,41 @@ const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
 
-    useEffect(() => {
-        if (state === RecordingState.Recording) {
-          RecordingNotificationManager.show({
-            title: 'Recording Demo',
-            contentText: 'Recording...',
-            paused: false,
-            smallIconResourceName: 'ic_stat_account_balance',
-            largeIcon: 'https://reactnative.dev/img/tiny_logo.png',
-            color: 0xff6200,
-          });
-          return;
-        }
-    }, [state]);
+  useEffect(() => {
+    const pauseListener = RecordingNotificationManager.addEventListener(
+      'recordingNotificationPause',
+      () => {
+        console.log('Notification pause action received');
+        onPauseRecording();
+      }
+    );
+
+    const resumeListener = RecordingNotificationManager.addEventListener(
+      'recordingNotificationResume',
+      () => {
+        console.log('Notification resume action received');
+        onResumeRecording();
+      }
+    );
+
+    return () => {
+      RecordingNotificationManager.removeEventListener(pauseListener);
+      RecordingNotificationManager.removeEventListener(resumeListener);
+      RecordingNotificationManager.hide();
+    };
+  }, []);
+
+  const setNotification = (paused: boolean) => {
+    RecordingNotificationManager.show({
+      title: 'Recording Demo',
+      contentText: paused ? 'Paused recording' : 'Recording...',
+      paused,
+      smallIconResourceName: 'logo',
+      pauseIconResourceName: 'pause',
+      resumeIconResourceName: 'resume',
+      color: 0xff6200,
+    });
+  };
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
@@ -61,6 +84,7 @@ const Record: FC = () => {
     }
 
     const result = Recorder.start();
+    setNotification(false);
 
     if (result.status === 'success') {
       console.log('Recording started, file path:', result.path);
@@ -75,16 +99,19 @@ const Record: FC = () => {
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
+    setNotification(true);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
+    setNotification(false);
     setState(RecordingState.Recording);
   }, []);
 
   const onStopRecording = useCallback(() => {
     Recorder.stop();
+    RecordingNotificationManager.hide();
     setState(RecordingState.ReadyToPlay);
   }, []);
 
