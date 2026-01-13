@@ -1,11 +1,13 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
 import { NativeAudioAPIModule } from '../../specs';
 import type {
-  NotificationEvents,
+  RecordingNotificationEvent,
   NotificationManager,
   RecordingNotificationEventName,
   RecordingNotificationInfo,
 } from './types';
+
+import { NotSupportedError } from '../../errors';
 
 /// Manager for media playback notifications with controls and MediaSession integration.
 class RecordingNotificationManager
@@ -27,7 +29,7 @@ class RecordingNotificationManager
   /// Automatically creates the notification on first call.
   async show(info: RecordingNotificationInfo): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new NotSupportedError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.showNotification(
@@ -50,7 +52,7 @@ class RecordingNotificationManager
   /// Hide the notification.
   async hide(): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new NotSupportedError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.hideNotification(
@@ -76,7 +78,7 @@ class RecordingNotificationManager
   /// Add an event listener for notification actions.
   addEventListener<T extends RecordingNotificationEventName>(
     eventName: T,
-    callback: (event: NotificationEvents[T]) => void
+    callback: (event: RecordingNotificationEvent[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
   }
