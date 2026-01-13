@@ -57,7 +57,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 
   nativeAudioRecorder_.release();
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->requestStop();
     mStream_->close();
     mStream_.reset();
@@ -70,7 +70,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Callable from the JS thread only.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     return Result<NoneType, std::string>::Ok(None);
   }
 
@@ -406,7 +406,7 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   state_.store(RecorderState::Idle, std::memory_order_release);
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->close();
     mStream_.reset();
   }

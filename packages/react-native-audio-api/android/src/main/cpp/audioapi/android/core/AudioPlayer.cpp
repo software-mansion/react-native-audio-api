@@ -49,7 +49,7 @@ bool AudioPlayer::openAudioStream() {
 }
 
 bool AudioPlayer::start() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->start(); });
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
@@ -60,7 +60,7 @@ bool AudioPlayer::start() {
 }
 
 void AudioPlayer::stop() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->stop(); });
     isRunning_.store(false, std::memory_order_release);
     mStream_->requestStop();
@@ -72,7 +72,7 @@ bool AudioPlayer::resume() {
     return true;
   }
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
     return result;
@@ -82,7 +82,7 @@ bool AudioPlayer::resume() {
 }
 
 void AudioPlayer::suspend() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
     mStream_->requestPause();
   }
@@ -91,7 +91,7 @@ void AudioPlayer::suspend() {
 void AudioPlayer::cleanup() {
   isInitialized_ = false;
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->close();
     mStream_.reset();
   }
@@ -121,7 +121,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     }
 
     for (int i = 0; i < framesToProcess; i++) {
-      for (int channel = 0; channel < channelCount_; channel += 1) {
+      for (int channel = 0; channel < channelCount_; channel++) {
         buffer[(processedFrames + i) * channelCount_ + channel] =
             audioBus_->getChannel(channel)->getData()[i];
       }
