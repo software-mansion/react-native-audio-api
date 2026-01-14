@@ -289,6 +289,7 @@ class RecordingNotification(
 
   @Deprecated("Deprecated in Java")
   override fun onLowMemory() {
-    // left to listen for ui mode changes
+    // required by ComponentCallbacks interface, which enables us to listen for configuration changes
+    // nothing done here
   }
 }
