@@ -80,10 +80,21 @@ const AudioFile: FC = () => {
 
   useEffect(() => {
     const setup = async () => {
-      await fetchAudioBuffer();
       await setupNotification();
-    }
+      await fetchAudioBuffer();
+    };
     setup();
+
+    BackgroundTimer.setInterval(async () => {
+      console.log('interval');
+
+      const buffer = await fetch(URL)
+        .then((_response) => console.log('decoding'))
+        .catch((error) => {
+          console.error('error:', error);
+          return null;
+        });
+    }, 3000);
     return () => {
       AudioPlayer.reset();
       PlaybackNotificationManager.hide();
@@ -91,7 +102,6 @@ const AudioFile: FC = () => {
   }, [fetchAudioBuffer]);
 
   useEffect(() => {
-
     AudioManager.observeAudioInterruptions(true);
 
     // Listen to notification control events
