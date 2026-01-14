@@ -1,0 +1,115 @@
+---
+sidebar_position: 3
+sidebar_label: RecordingNotificationManager
+---
+
+import {
+  AndroidOnly,
+} from '@site/src/components/Badges';
+
+# RecordingNotificationManager <AndroidOnly />
+
+The `RecordingNotificationManager` provides system integration with [`Recorder`](/docs/inputs/audio-recorder).
+It can send events about pausing and resuming to your application.
+
+## Example
+```typescript
+RecordingNotificationManager.show({
+  title: 'Recording app',
+  contentText: 'Recording...',
+  paused: false,
+  smallIconResourceName: 'icon_to_display',
+  pauseIconResourceName: 'pause_icon',
+  resumeIconResourceName: 'resume_icon',
+  color: 0xff6200,
+});
+
+const pauseEventListener = RecordingNotificationManager.addEventListener('recordingNotificationPause', () => {
+  console.log('Notification pause action received');
+});
+const resumeEventListener = RecordingNotificationManager.addEventListener('recordingNotificationResume', () => {
+  console.log('Notification resume action received');
+});
+
+RecordingNotificationManager.removeEventListener(pauseEventListener);
+RecordingNotificationManager.removeEventListener(resumeEventListener);
+RecordingNotificationManager.hide();
+```
+
+## Methods
+
+### `show`
+
+Shows the recording notification with the parameters.
+
+| Parameter |Type| Description|
+| :-------: | :--: | :----|
+|  `info`   | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
+
+#### Returns `Promise<void>`.
+
+:::info
+For more details, go to [android developer page](https://developer.android.com/develop/ui/views/notifications#Templates).
+Resource name is a path to resource plased in res/drawable folder. It has to be either .png file or .xml file, name is indicated without file extenstion. (photo.png -> photo).
+:::
+
+:::caution
+If nothing is displayed, even though your name is correct, try decreasing size of your resource.
+Notification can look vastly different on different android devices.
+:::
+
+### `hide`
+
+Hides the recording notification.
+
+#### Returns `Promise<void>`.
+
+### `isActive`
+
+Checks if the notification is displayed.
+
+#### Returns `Promise<boolean>`.
+
+### `addEventListener`
+
+Add an event listener for notification actions.
+
+|  Parameter  | Type | Description |
+| :---------: | :----: | :---------------------- |
+| `eventName` | [`RecordingNotificationEvent`](recording-notification-manager#recordingnotificationevent) | The event to listen for |
+| `callback`  | ([`RecordingNotificationEvent](recording-notification-manager#recordingnotificationevent)) => void | Callback function |
+
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+
+## Remarks
+
+### `RecordingNotificationInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface RecordingNotificationInfo {
+  title?: string;
+  contentText?: string;
+  paused?: boolean; // flag indicating whether to display pauseIcon or resumeIcon
+  smallIconResourceName?: string;
+  largeIconResourceName?: string;
+  pauseIconResourceName?: string;
+  resumeIconResourceName?: string;
+  color?: number; //
+}
+```
+</details>
+
+### `RecordingNotificationEvent`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface RecordingNotificationEvent {
+  recordingNotificationPause: EventEmptyType;
+  recordingNotificationResume: EventEmptyType;
+}
+```
+</details>
+

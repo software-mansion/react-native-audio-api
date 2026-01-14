@@ -6,13 +6,14 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.swmansion.audioapi.system.MediaSessionManager.CHANNEL_ID
 import com.swmansion.audioapi.system.notification.NotificationRegistry
+import com.swmansion.audioapi.system.notification.PlaybackNotification
+import com.swmansion.audioapi.system.notification.RecordingNotification
 
 /**
  * Centralized foreground service that can be used by any component that needs foreground capabilities.
@@ -20,7 +21,6 @@ import com.swmansion.audioapi.system.notification.NotificationRegistry
 class CentralizedForegroundService : Service() {
   companion object {
     private const val TAG = "CentralizedForegroundService"
-    private const val NOTIFICATION_ID = 100
     const val ACTION_START = "START_FOREGROUND"
     const val ACTION_STOP = "STOP_FOREGROUND"
   }
@@ -62,7 +62,6 @@ class CentralizedForegroundService : Service() {
         startForeground(
           notificationId,
           notification,
-          ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
       } else {
         startForeground(notificationId, notification)
@@ -76,8 +75,12 @@ class CentralizedForegroundService : Service() {
 
   private fun findExistingNotification(): Pair<Int, Notification>? {
     // Check for playback notification first (priority)
-    NotificationRegistry.getBuiltNotification(100)?.let {
-      return 100 to it
+    NotificationRegistry.getBuiltNotification(PlaybackNotification.ID)?.let {
+      return PlaybackNotification.ID to it
+    }
+
+    NotificationRegistry.getBuiltNotification(RecordingNotification.ID)?.let {
+      return RecordingNotification.ID to it
     }
 
     return null

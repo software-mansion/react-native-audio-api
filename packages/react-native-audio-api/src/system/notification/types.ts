@@ -5,15 +5,11 @@ import { EventEmptyType, EventTypeWithValue } from '../../events/types';
 /// Provides a consistent API for managing notification lifecycle and events.
 export interface NotificationManager<
   TShowOptions,
-  TUpdateOptions,
   TEventName extends NotificationEventName,
 > {
   /// Show the notification with options or update if already visible.
   /// Automatically creates the notification instance on first call.
   show(options: TShowOptions): Promise<void>;
-
-  /// Update the notification with new options (alias for show).
-  update(options: TUpdateOptions): Promise<void>;
 
   /// Hide the notification.
   hide(): Promise<void>;
@@ -26,9 +22,6 @@ export interface NotificationManager<
     eventName: T,
     callback: NotificationCallback<T>
   ): AudioEventSubscription | undefined;
-
-  /// Remove an event listener.
-  removeEventListener(subscription: AudioEventSubscription): void;
 }
 
 /// Metadata and state information for playback notifications.
@@ -66,9 +59,28 @@ interface PlaybackNotificationEvent {
   playbackNotificationDismissed: EventEmptyType;
 }
 
+export interface RecordingNotificationInfo {
+  title?: string;
+  contentText?: string;
+  paused?: boolean;
+  smallIconResourceName?: string;
+  largeIconResourceName?: string;
+  pauseIconResourceName?: string;
+  resumeIconResourceName?: string;
+  color?: number;
+}
+
+export interface RecordingNotificationEvent {
+  recordingNotificationPause: EventEmptyType;
+  recordingNotificationResume: EventEmptyType;
+}
+
 export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 
-export type NotificationEvents = PlaybackNotificationEvent;
+export type RecordingNotificationEventName = keyof RecordingNotificationEvent;
+
+export type NotificationEvents = PlaybackNotificationEvent &
+  RecordingNotificationEvent;
 
 export type NotificationEventName = keyof NotificationEvents;
 

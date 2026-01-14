@@ -34,6 +34,7 @@ class PlaybackNotification(
     const val MEDIA_BUTTON = "playback_notification_media_button"
     const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
     const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
+    const val ID = 100
   }
 
   private var mediaSession: MediaSessionCompat? = null

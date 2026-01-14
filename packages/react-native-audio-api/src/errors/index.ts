@@ -3,3 +3,4 @@ export { default as InvalidAccessError } from './InvalidAccessError';
 export { default as InvalidStateError } from './InvalidStateError';
 export { default as RangeError } from './RangeError';
 export { default as NotSupportedError } from './NotSupportedError';
+export { default as AudioApiError } from './AudioApiError';

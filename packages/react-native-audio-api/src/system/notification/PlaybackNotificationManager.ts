@@ -7,15 +7,12 @@ import type {
   PlaybackNotificationEventName,
   PlaybackNotificationInfo,
 } from './types';
+import { AudioApiError } from '../../errors';
 
 /// Manager for media playback notifications with controls and MediaSession integration.
 class PlaybackNotificationManager
   implements
-    NotificationManager<
-      PlaybackNotificationInfo,
-      PlaybackNotificationInfo,
-      PlaybackNotificationEventName
-    >
+    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
 {
   private notificationKey = 'playback';
   private audioEventEmitter: AudioEventEmitter;
@@ -28,7 +25,7 @@ class PlaybackNotificationManager
   /// Automatically creates the notification on first call.
   async show(info: PlaybackNotificationInfo): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.showNotification(
@@ -38,7 +35,7 @@ class PlaybackNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
@@ -51,7 +48,7 @@ class PlaybackNotificationManager
   /// Hide the notification.
   async hide(): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.hideNotification(
@@ -59,7 +56,7 @@ class PlaybackNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
@@ -69,7 +66,7 @@ class PlaybackNotificationManager
     enabled: boolean
   ): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const params = { control, enabled };
@@ -80,7 +77,7 @@ class PlaybackNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
@@ -101,11 +98,6 @@ class PlaybackNotificationManager
     callback: (event: NotificationEvents[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
-  }
-
-  /** Remove an event listener. */
-  removeEventListener(subscription: AudioEventSubscription): void {
-    subscription.remove();
   }
 }
 

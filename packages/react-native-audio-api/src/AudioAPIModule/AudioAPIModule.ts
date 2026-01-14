@@ -4,6 +4,7 @@ import type {
   IAudioAPIModule,
   IWorkletsModule,
 } from './ModuleInterfaces';
+import { AudioApiError } from '../errors';
 
 class AudioAPIModule implements IAudioAPIModule {
   #workletsModule_: IWorkletsModule | null = null;
@@ -24,7 +25,7 @@ class AudioAPIModule implements IAudioAPIModule {
     }
 
     if (!NativeAudioAPIModule) {
-      throw new Error(
+      throw new AudioApiError(
         `Failed to install react-native-audio-api: The native module could not be found.`
       );
     }
