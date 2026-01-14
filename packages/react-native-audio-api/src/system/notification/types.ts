@@ -25,7 +25,7 @@ export interface NotificationManager<
   addEventListener<T extends TEventName>(
     eventName: T,
     callback: NotificationCallback<T>
-  ): AudioEventSubscription;
+  ): AudioEventSubscription | undefined;
 
   /// Remove an event listener.
   removeEventListener(subscription: AudioEventSubscription): void;

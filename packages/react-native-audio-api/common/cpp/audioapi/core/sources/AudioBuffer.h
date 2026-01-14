@@ -11,7 +11,7 @@ namespace audioapi {
 
 class AudioBus;
 
-class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
+class AudioBuffer {
  public:
   explicit AudioBuffer(int numberOfChannels, size_t length, float sampleRate);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);

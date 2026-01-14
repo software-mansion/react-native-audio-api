@@ -31,6 +31,7 @@ import PeriodicWave from './PeriodicWave';
 import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
+import WaveShaperNode from './WaveShaperNode';
 import WorkletNode from './WorkletNode';
 import WorkletProcessingNode from './WorkletProcessingNode';
 import WorkletSourceNode from './WorkletSourceNode';
@@ -354,5 +355,9 @@ export default class BaseAudioContext {
       this,
       this.context.createConvolver(buffer?.buffer, disableNormalization)
     );
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 }

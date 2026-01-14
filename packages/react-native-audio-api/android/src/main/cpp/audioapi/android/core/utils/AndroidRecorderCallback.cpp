@@ -103,7 +103,9 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 }
 
 void AndroidRecorderCallback::cleanup() {
-  emitAudioData(true);
+  if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+    emitAudioData(true);
+  }
 
   if (converter_ != nullptr) {
     ma_data_converter_uninit(converter_.get(), NULL);
@@ -136,7 +138,10 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
   if (static_cast<float>(streamSampleRate_) == sampleRate_ &&
       streamChannelCount_ == channelCount_) {
     deinterleaveAndPushAudioData(data, numFrames);
-    emitAudioData();
+
+    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      emitAudioData();
+    }
     return;
   }
 
@@ -147,7 +152,10 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
       converter_.get(), data, &inputFrameCount, processingBuffer_, &outputFrameCount);
 
   deinterleaveAndPushAudioData(processingBuffer_, static_cast<int>(outputFrameCount));
-  emitAudioData();
+
+  if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    emitAudioData();
+  }
 }
 
 /// @brief Deinterleaves the audio data and pushes it into the circular buffer.

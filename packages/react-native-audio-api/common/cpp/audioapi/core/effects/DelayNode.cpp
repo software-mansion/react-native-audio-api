@@ -7,14 +7,16 @@
 
 namespace audioapi {
 
-DelayNode::DelayNode(BaseAudioContext *context, float maxDelayTime) : AudioNode(context) {
-  delayTimeParam_ = std::make_shared<AudioParam>(0, 0, maxDelayTime, context);
-  delayBuffer_ = std::make_shared<AudioBus>(
-      static_cast<size_t>(
-          maxDelayTime * context->getSampleRate() +
-          1), // +1 to enable delayTime equal to maxDelayTime
-      channelCount_,
-      context->getSampleRate());
+DelayNode::DelayNode(std::shared_ptr<BaseAudioContext> context, float maxDelayTime)
+    : AudioNode(context),
+      delayTimeParam_(std::make_shared<AudioParam>(0, 0, maxDelayTime, context)),
+      delayBuffer_(
+          std::make_shared<AudioBus>(
+              static_cast<size_t>(
+                  maxDelayTime * context->getSampleRate() +
+                  1), // +1 to enable delayTime equal to maxDelayTime
+              channelCount_,
+              context->getSampleRate())) {
   requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
@@ -27,7 +29,11 @@ void DelayNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    remainingFrames_ = delayTimeParam_->getValue() * context_->getSampleRate();
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      remainingFrames_ = delayTimeParam_->getValue() * context->getSampleRate();
+    } else {
+      remainingFrames_ = 0;
+    }
   }
 }
 
@@ -89,8 +95,11 @@ std::shared_ptr<AudioBus> DelayNode::processNode(
   }
 
   // normal processing
-  auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context_->getCurrentTime());
-  size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context_->getSampleRate()) %
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return processingBus;
+  auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
+  size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();
   delayBufferOperation(processingBus, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
   delayBufferOperation(processingBus, framesToProcess, readIndex_, DelayNode::BufferAction::READ);

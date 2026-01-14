@@ -5,7 +5,9 @@
 
 namespace audioapi {
 
-WorkletSourceNode::WorkletSourceNode(BaseAudioContext *context, WorkletsRunner &&workletRunner)
+WorkletSourceNode::WorkletSourceNode(
+    std::shared_ptr<BaseAudioContext> context,
+    WorkletsRunner &&workletRunner)
     : AudioScheduledSourceNode(context), workletRunner_(std::move(workletRunner)) {
   isInitialized_ = true;
 
@@ -29,7 +31,12 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
   size_t startOffset = 0;
   size_t nonSilentFramesToProcess = framesToProcess;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, nonSilentFramesToProcess);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, nonSilentFramesToProcess, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (nonSilentFramesToProcess == 0) {
     processingBus->zero();
@@ -39,7 +46,7 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
   size_t outputChannelCount = processingBus->getNumberOfChannels();
 
   auto result = workletRunner_.executeOnRuntimeSync(
-      [this, nonSilentFramesToProcess, startOffset](jsi::Runtime &rt) {
+      [this, nonSilentFramesToProcess, startOffset, time = context->getCurrentTime()](jsi::Runtime &rt) {
         auto jsiArray = jsi::Array(rt, this->outputBuffsHandles_.size());
         for (size_t i = 0; i < this->outputBuffsHandles_.size(); ++i) {
           auto arrayBuffer = jsi::ArrayBuffer(rt, this->outputBuffsHandles_[i]);
@@ -52,7 +59,7 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
         return workletRunner_.callUnsafe(
             jsiArray,
             jsi::Value(rt, static_cast<int>(nonSilentFramesToProcess)),
-            jsi::Value(rt, this->context_->getCurrentTime()),
+            jsi::Value(rt, time),
             jsi::Value(rt, static_cast<int>(startOffset)));
       });
 

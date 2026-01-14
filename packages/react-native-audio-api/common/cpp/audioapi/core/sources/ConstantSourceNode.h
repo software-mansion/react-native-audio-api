@@ -13,7 +13,7 @@ class AudioBus;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit ConstantSourceNode(BaseAudioContext *context);
+  explicit ConstantSourceNode(std::shared_ptr<BaseAudioContext> context);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 

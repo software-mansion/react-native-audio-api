@@ -37,7 +37,7 @@ class IIRFilterNode : public AudioNode {
 
  public:
   explicit IIRFilterNode(
-      BaseAudioContext *context,
+      std::shared_ptr<BaseAudioContext> context,
       const std::vector<float> &feedforward,
       const std::vector<float> &feedback);
 

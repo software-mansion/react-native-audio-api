@@ -15,17 +15,15 @@ namespace audioapi {
 class BiquadFilterTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
-  std::unique_ptr<OfflineAudioContext> context;
+  std::shared_ptr<OfflineAudioContext> context;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_unique<OfflineAudioContext>(
+    context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  void expectCoefficientsNear(
-      const std::shared_ptr<BiquadFilterNode> &node,
-      const BiquadCoefficients &expected);
+  void expectCoefficientsNear(const BiquadFilterNode &node, const BiquadCoefficients &expected);
   void testLowpass(float frequency, float Q);
   void testHighpass(float frequency, float Q);
   void testBandpass(float frequency, float Q);

@@ -11,7 +11,7 @@ class AudioBus;
 
 class GainNode : public AudioNode {
  public:
-  explicit GainNode(BaseAudioContext *context);
+  explicit GainNode(std::shared_ptr<BaseAudioContext> context);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 

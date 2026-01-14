@@ -121,6 +121,8 @@ export interface ConvolverNodeOptions {
   disableNormalization?: boolean;
 }
 
+export type OverSampleType = 'none' | '2x' | '4x';
+
 export interface AudioRecorderCallbackOptions {
   /**
    * The desired sample rate (in Hz) for audio buffers delivered to the

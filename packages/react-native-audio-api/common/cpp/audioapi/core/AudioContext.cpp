@@ -15,17 +15,8 @@ AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry) {
-#ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#endif
-
+    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry), isInitialized_(false) {
   sampleRate_ = sampleRate;
-  playerHasBeenStarted_ = false;
   state_ = ContextState::SUSPENDED;
 }
 
@@ -33,6 +24,17 @@ AudioContext::~AudioContext() {
   if (!isClosed()) {
     close();
   }
+}
+
+void AudioContext::initialize() {
+  BaseAudioContext::initialize();
+#ifdef ANDROID
+  audioPlayer_ = std::make_shared<AudioPlayer>(
+      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+#else
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
+      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+#endif
 }
 
 void AudioContext::close() {
@@ -52,7 +54,7 @@ bool AudioContext::resume() {
     return true;
   }
 
-  if (playerHasBeenStarted_ && audioPlayer_->resume()) {
+  if (isInitialized_ && audioPlayer_->resume()) {
     state_ = ContextState::RUNNING;
     return true;
   }
@@ -80,8 +82,8 @@ bool AudioContext::start() {
     return false;
   }
 
-  if (!playerHasBeenStarted_ && audioPlayer_->start()) {
-    playerHasBeenStarted_ = true;
+  if (!isInitialized_ && audioPlayer_->start()) {
+    isInitialized_ = true;
     state_ = ContextState::RUNNING;
 
     return true;

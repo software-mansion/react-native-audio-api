@@ -23,6 +23,7 @@ import { ConvolverNodeOptions } from './ConvolverNodeOptions';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConstantSourceNode from './ConstantSourceNode';
+import WaveShaperNode from './WaveShaperNode';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -173,6 +174,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

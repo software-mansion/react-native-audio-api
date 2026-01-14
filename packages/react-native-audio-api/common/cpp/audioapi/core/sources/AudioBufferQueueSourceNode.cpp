@@ -18,11 +18,10 @@
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
-    BaseAudioContext *context,
+    std::shared_ptr<BaseAudioContext> context,
     bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context, pitchCorrection) {
-  buffers_ = {};
-  stretch_->presetDefault(channelCount_, context_->getSampleRate());
+    : AudioBufferBaseSourceNode(context, pitchCorrection), buffers_() {
+  stretch_->presetDefault(channelCount_, context->getSampleRate());
 
   if (pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
@@ -31,7 +30,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
     tailBuffer_ =
-        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context_->getSampleRate());
+        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
 
     tailBuffer_->bus_->zero();
   }
@@ -148,8 +147,12 @@ std::shared_ptr<AudioBus> AudioBufferQueueSourceNode::processNode(
 }
 
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
-  return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), context_->getSampleRate()) +
-      playedBuffersDuration_;
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), context->getSampleRate()) +
+        playedBuffersDuration_;
+  } else {
+    return 0.0;
+  }
 }
 
 /**
@@ -192,8 +195,10 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
 
       std::unordered_map<std::string, EventValue> body = {
           {"bufferId", std::to_string(bufferId)}, {"isLast", buffers_.empty()}};
-      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-          "ended", onEndedCallbackId_, body);
+      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+        context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+            "ended", onEndedCallbackId_, body);
+      }
 
       if (buffers_.empty()) {
         if (addExtraTailFrames_) {
@@ -277,8 +282,10 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
       buffers_.pop();
 
       std::unordered_map<std::string, EventValue> body = {{"bufferId", std::to_string(bufferId)}};
-      context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-          "ended", onEndedCallbackId_, body);
+      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+        context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+            "ended", onEndedCallbackId_, body);
+      }
 
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);

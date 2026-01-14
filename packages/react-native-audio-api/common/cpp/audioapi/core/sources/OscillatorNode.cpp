@@ -8,19 +8,23 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {
-  frequencyParam_ = std::make_shared<AudioParam>(
-      444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency(), context);
-  detuneParam_ = std::make_shared<AudioParam>(
-      0.0,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      context);
-  type_ = OscillatorType::SINE;
-  periodicWave_ = context_->getBasicWaveForm(type_);
-
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
-
+OscillatorNode::OscillatorNode(std::shared_ptr<BaseAudioContext> context)
+    : AudioScheduledSourceNode(context),
+      frequencyParam_(
+          std::make_shared<AudioParam>(
+              444.0,
+              -context->getNyquistFrequency(),
+              context->getNyquistFrequency(),
+              context)),
+      detuneParam_(
+          std::make_shared<AudioParam>(
+              0.0,
+              -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      type_(OscillatorType::SINE),
+      periodicWave_(context->getBasicWaveForm(type_)) {
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
   isInitialized_ = true;
 }
 
@@ -37,8 +41,10 @@ std::string OscillatorNode::getType() {
 }
 
 void OscillatorNode::setType(const std::string &type) {
-  type_ = OscillatorNode::fromString(type);
-  periodicWave_ = context_->getBasicWaveForm(type_);
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    type_ = OscillatorNode::fromString(type);
+    periodicWave_ = context->getBasicWaveForm(type_);
+  }
 }
 
 void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave) {
@@ -52,15 +58,21 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
     return processingBus;
   }
 
-  auto time = context_->getCurrentTime() +
-      static_cast<double>(startOffset) * 1.0 / context_->getSampleRate();
+  auto time =
+      context->getCurrentTime() + static_cast<double>(startOffset) * 1.0 / context->getSampleRate();
   auto detuneParamValues = detuneParam_->processARateParam(framesToProcess, time);
   auto frequencyParamValues = frequencyParam_->processARateParam(framesToProcess, time);
 

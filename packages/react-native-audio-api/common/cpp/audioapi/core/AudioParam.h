@@ -21,7 +21,7 @@ class AudioParam {
       float defaultValue,
       float minValue,
       float maxValue,
-      BaseAudioContext *context);
+      std::shared_ptr<BaseAudioContext> context);
 
   /// JS-Thread only methods
   /// These methods are called only from HostObjects invoked on the JS thread.
@@ -93,7 +93,7 @@ class AudioParam {
 
  private:
   // Core parameter state
-  BaseAudioContext *context_;
+  std::weak_ptr<BaseAudioContext> context_;
   float value_;
   float defaultValue_;
   float minValue_;

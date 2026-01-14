@@ -17,12 +17,13 @@ extern "C" {
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <utility>
 
-constexpr int defaultFrameRatio = 4;
 constexpr int fallbackFIFOSize = 8192;
+constexpr int fallbackFrameSize = 512;
 constexpr int defaultFlushInterval = 100;
 
 namespace audioapi::android::ffmpeg {
@@ -33,7 +34,7 @@ FFmpegAudioFileWriter::FFmpegAudioFileWriter(
     : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {
   // Set flush interval from properties, limit minimum to 100ms
   // to avoid people hurting themselves too much
-  flushIntervalMs_ = std::min(fileProperties_->androidFlushIntervalMs, defaultFlushInterval);
+  flushIntervalMs_ = std::max(fileProperties_->androidFlushIntervalMs, defaultFlushInterval);
 }
 
 FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
@@ -278,23 +279,40 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::initializeResampler(
 /// that might be needed for storing intermediate audio data or buffering before encoding.
 /// @param maxBufferSize The maximum buffer size to allocate.
 void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
-  frame_ = av_unique_ptr<AVFrame>(av_frame_alloc());
+  resamplerFrame_ = av_unique_ptr<AVFrame>(av_frame_alloc());
+  writingFrame_ = av_unique_ptr<AVFrame>(av_frame_alloc());
   packet_ = av_unique_ptr<AVPacket>(av_packet_alloc());
 
-  int frameRatio = defaultFrameRatio;
-  if (encoderCtx_->frame_size > 0) {
-    frameRatio = static_cast<int>(std::ceil(
-        static_cast<double>(maxBufferSize) / static_cast<double>(encoderCtx_->frame_size)));
-  }
+  // Calculate resampler size of output buffer from the resampler
+  int resamplerFrameSize = av_rescale_rnd(
+      maxBufferSize,
+      static_cast<int>(encoderCtx_->sample_rate),
+      static_cast<int>(streamSampleRate_),
+      AV_ROUND_UP);
 
-  int calculatedSize =
-      (encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size * frameRatio
-                                   : maxBufferSize * frameRatio);
+  // Configure frame parameters for desired file output
+  resamplerFrame_->nb_samples = resamplerFrameSize;
+  resamplerFrame_->format = encoderCtx_->sample_fmt;
+  av_channel_layout_copy(&resamplerFrame_->ch_layout, &encoderCtx_->ch_layout);
+  // Allocate buffer for the resampler frame
+  av_frame_get_buffer(resamplerFrame_.get(), 0);
 
-  int fifoSize = std::max(calculatedSize, fallbackFIFOSize);
+  // calculate FIFO size based on max buffer size and encoder frame size
+  // max(2 * resamplerFrameSize, 2 * encoderCtx_->frame_size, fallbackFIFOSize)
+  int writingFrameSize = 2 * std::max(encoderCtx_->frame_size, fallbackFrameSize);
+  int fifoSize = std::max(std::max(2 * resamplerFrameSize, writingFrameSize), fallbackFIFOSize);
 
   audioFifo_ = av_unique_ptr<AVAudioFifo>(
       av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
+
+  // Configure writing frame parameters
+  // size 2 x encoder frame size + same format as encoder
+  writingFrame_->nb_samples = writingFrameSize;
+  av_channel_layout_copy(&writingFrame_->ch_layout, &encoderCtx_->ch_layout);
+  writingFrame_->format = encoderCtx_->sample_fmt;
+  writingFrame_->sample_rate = encoderCtx_->sample_rate;
+  // Allocate buffer for the writing frame
+  av_frame_get_buffer(writingFrame_.get(), 0);
 }
 
 /// @brief Resamples input audio data and pushes it to the audio FIFO.
@@ -302,34 +320,30 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 /// @param inputFrameCount Number of input frames.
 /// @returns True if successful, false otherwise.
 bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFrameCount) {
-  int result = 0;
   int64_t outputLength = av_rescale_rnd(
       inputFrameCount, encoderCtx_->sample_rate, static_cast<int>(streamSampleRate_), AV_ROUND_UP);
 
-  result = prepareFrameForEncoding(outputLength);
-
-  if (result < 0) {
-    invokeOnErrorCallback("Failed to prepare frame for resampling: " + parseErrorCode(result));
-    return false;
-  }
-
   const uint8_t *inputs[1] = {reinterpret_cast<const uint8_t *>(inputData)};
 
+  assert(outputLength <= resamplerFrame_->nb_samples);
+
   int convertedSamples = swr_convert(
-      resampleCtx_.get(), frame_->data, static_cast<int>(outputLength), inputs, inputFrameCount);
+      resampleCtx_.get(),
+      resamplerFrame_->data,
+      static_cast<int>(outputLength),
+      inputs,
+      inputFrameCount);
 
   if (convertedSamples < 0) {
     invokeOnErrorCallback("Failed to convert audio samples: " + parseErrorCode(convertedSamples));
-    av_frame_unref(frame_.get());
     return false;
   }
 
   int written = av_audio_fifo_write(
-      audioFifo_.get(), reinterpret_cast<void **>(frame_->data), convertedSamples);
+      audioFifo_.get(), reinterpret_cast<void **>(resamplerFrame_->data), convertedSamples);
 
   if (written < convertedSamples) {
     invokeOnErrorCallback("Failed to write all samples to FIFO");
-    av_frame_unref(frame_.get());
     return false;
   }
 
@@ -344,26 +358,25 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
 /// @returns 0 on success, -1 or AV_ERROR code on failure
 int FFmpegAudioFileWriter::processFifo(bool flush) {
   int result = 0;
-  int frameSize = encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
+  int frameSize = std::max(encoderCtx_->frame_size, fallbackFrameSize);
 
   while (av_audio_fifo_size(audioFifo_.get()) >= (flush ? 1 : frameSize)) {
     const int chunkSize = std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
 
-    if (prepareFrameForEncoding(chunkSize) < 0) {
-      invokeOnErrorCallback("Failed to prepare frame for encoding");
-      return -1;
-    }
+    assert(chunkSize <= writingFrame_->nb_samples);
 
-    if (av_audio_fifo_read(audioFifo_.get(), reinterpret_cast<void **>(frame_->data), chunkSize) !=
+    if (av_audio_fifo_read(
+            audioFifo_.get(), reinterpret_cast<void **>(writingFrame_->data), chunkSize) !=
         chunkSize) {
       invokeOnErrorCallback("Failed to read data from FIFO");
       return -1;
     }
 
-    frame_->pts = nextPts_;
+    writingFrame_->nb_samples = chunkSize;
+    writingFrame_->pts = nextPts_;
     nextPts_ += chunkSize;
 
-    result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
+    result = avcodec_send_frame(encoderCtx_.get(), writingFrame_.get());
 
     if (result < 0) {
       invokeOnErrorCallback("Failed to send frame to encoder: " + parseErrorCode(result));
@@ -416,51 +429,6 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
       return result;
     }
   }
-}
-
-/// @brief Prepares the frame for next encoding phase,
-/// if frame is same size as previously used one (99.9% cases) try to reuse it.
-/// Otherwise resize the frame and in the worst case allocate new frame to use.
-/// @param samplesToRead Number of samples to prepare the frame for.
-/// @returns 0 on success, AV_ERROR code on failure
-int FFmpegAudioFileWriter::prepareFrameForEncoding(int64_t samplesToRead) {
-  int result = 0;
-
-  if (frame_->data[0] && frame_->nb_samples == samplesToRead &&
-      av_frame_is_writable(frame_.get())) {
-    return 0;
-  }
-
-  frame_->nb_samples = static_cast<int>(samplesToRead);
-  frame_->format = encoderCtx_->sample_fmt;
-  frame_->sample_rate = encoderCtx_->sample_rate;
-
-  if (av_channel_layout_compare(&frame_->ch_layout, &encoderCtx_->ch_layout) != 0) {
-    av_channel_layout_uninit(&frame_->ch_layout);
-
-    result = av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
-
-    if (result < 0) {
-      invokeOnErrorCallback("Failed to copy channel layout: " + parseErrorCode(result));
-      return result;
-    }
-  }
-
-  result = av_frame_make_writable(frame_.get());
-
-  if (result < 0) {
-    av_frame_unref(frame_.get());
-
-    frame_->nb_samples = static_cast<int>(samplesToRead);
-    ;
-    frame_->format = encoderCtx_->sample_fmt;
-    frame_->sample_rate = encoderCtx_->sample_rate;
-    av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
-
-    result = av_frame_get_buffer(frame_.get(), 0);
-  }
-
-  return result;
 }
 
 /// @brief Closes the currently opened audio file, flushing any remaining data and finalizing the file.

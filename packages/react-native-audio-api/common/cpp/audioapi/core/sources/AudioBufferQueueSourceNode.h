@@ -17,7 +17,9 @@ class AudioParam;
 
 class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferQueueSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  explicit AudioBufferQueueSourceNode(
+      std::shared_ptr<BaseAudioContext> context,
+      bool pitchCorrection);
   ~AudioBufferQueueSourceNode() override;
 
   void stop(double when) override;

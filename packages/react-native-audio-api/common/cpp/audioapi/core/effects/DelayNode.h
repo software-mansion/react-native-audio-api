@@ -12,7 +12,7 @@ class AudioBus;
 
 class DelayNode : public AudioNode {
  public:
-  explicit DelayNode(BaseAudioContext *context, float maxDelayTime);
+  explicit DelayNode(std::shared_ptr<BaseAudioContext> context, float maxDelayTime);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 
