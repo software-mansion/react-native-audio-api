@@ -4,7 +4,7 @@ import { AudioBuffer, AudioManager } from 'react-native-audio-api';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
 
-import { useSharedValue, withTiming } from 'react-native-reanimated';
+import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { audioRecorder as Recorder, audioContext } from '../../singletons';
 import ControlPanel from './ControlPanel';
@@ -117,6 +117,7 @@ const Record: FC = () => {
       playbackPosition.value = 0;
       playbackPosition.value = withTiming(duration, {
         duration: duration * 1000,
+        easing: Easing.linear,
       });
     }, 100);
 
