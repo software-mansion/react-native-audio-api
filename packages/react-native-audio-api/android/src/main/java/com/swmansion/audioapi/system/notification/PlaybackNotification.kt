@@ -24,6 +24,16 @@ import java.io.IOException
 import java.lang.ref.WeakReference
 import java.net.URL
 
+/**
+ * PlaybackNotification
+ *
+ * This notification:
+ * - Shows media metadata (title, artist, album, artwork)
+ * - Supports playback controls (play, pause, next, previous, skip)
+ * - Integrates with Android MediaSession for lock screen controls
+ * - Is persistent and cannot be swiped away when playing
+ * - Notifies its dismissal via PlaybackNotificationReceiver
+ */
 class PlaybackNotification(
   private val reactContext: WeakReference<ReactApplicationContext>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
