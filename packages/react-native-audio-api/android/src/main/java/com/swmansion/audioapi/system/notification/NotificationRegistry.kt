@@ -57,7 +57,7 @@ class NotificationRegistry(
     }
 
     try {
-      val wasActive = activeNotifications.getOrDefault(key, false)
+      val wasActive = isNotificationActive(key)
 
       // Build/update the notification
       val builtNotification = notification.show(options)

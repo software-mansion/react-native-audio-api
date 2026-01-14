@@ -8,6 +8,7 @@ import {
   isRemoteSource,
 } from '../utils/paths';
 import AudioBuffer from './AudioBuffer';
+import { AudioApiError } from '../errors';
 
 class AudioDecoder {
   private static instance: AudioDecoder | null = null;
@@ -35,14 +36,16 @@ class AudioDecoder {
 
     // input is data:audio/...;base64,...
     if (isBase64Source(stringSource)) {
-      throw new Error(
+      throw new AudioApiError(
         'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
       );
     }
 
     // input is blob:...
     if (isDataBlobString(stringSource)) {
-      throw new Error('Data Blob string decoding is not currently supported.');
+      throw new AudioApiError(
+        'Data Blob string decoding is not currently supported.'
+      );
     }
 
     // input is http(s)://...
@@ -96,7 +99,7 @@ class AudioDecoder {
     );
 
     if (!audioBuffer) {
-      throw new Error('Failed to decode audio data.');
+      throw new AudioApiError('Failed to decode audio data.');
     }
 
     return audioBuffer;
