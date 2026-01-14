@@ -1,5 +1,8 @@
 import React, { FC, useCallback, useEffect, useState } from 'react';
-import { AudioManager, RecordingNotificationManager } from 'react-native-audio-api';
+import {
+  AudioManager,
+  RecordingNotificationManager,
+} from 'react-native-audio-api';
 
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
@@ -10,7 +13,6 @@ import RecordingTime from './RecordingTime';
 import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
-import { AudioEventSubscription } from 'react-native-audio-api/lib/typescript/events';
 
 AudioManager.setAudioSessionOptions({
   iosCategory: 'playAndRecord',
@@ -21,30 +23,6 @@ AudioManager.setAudioSessionOptions({
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
-
-  useEffect(() => {
-    const pauseListener = RecordingNotificationManager.addEventListener(
-      'recordingNotificationPause',
-      () => {
-        console.log('Notification pause action received');
-        onPauseRecording();
-      }
-    );
-
-    const resumeListener = RecordingNotificationManager.addEventListener(
-      'recordingNotificationResume',
-      () => {
-        console.log('Notification resume action received');
-        onResumeRecording();
-      }
-    );
-
-    return () => {
-      pauseListener.remove();
-      resumeListener.remove();
-      RecordingNotificationManager.hide();
-    };
-  }, []);
 
   const setNotification = (paused: boolean) => {
     RecordingNotificationManager.show({
@@ -179,6 +157,30 @@ const Record: FC = () => {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const pauseListener = RecordingNotificationManager.addEventListener(
+      'recordingNotificationPause',
+      () => {
+        console.log('Notification pause action received');
+        onPauseRecording();
+      }
+    );
+
+    const resumeListener = RecordingNotificationManager.addEventListener(
+      'recordingNotificationResume',
+      () => {
+        console.log('Notification resume action received');
+        onResumeRecording();
+      }
+    );
+
+    return () => {
+      pauseListener.remove();
+      resumeListener.remove();
+      RecordingNotificationManager.hide();
+    };
+  }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
     Recorder.enableFileOutput();
