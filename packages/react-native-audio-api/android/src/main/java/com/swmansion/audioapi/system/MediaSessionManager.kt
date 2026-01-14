@@ -22,6 +22,7 @@ import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDING_REQUEST_CODE
 import com.swmansion.audioapi.system.notification.NotificationRegistry
+import com.swmansion.audioapi.system.notification.PlaybackNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
 import java.lang.ref.WeakReference
 
