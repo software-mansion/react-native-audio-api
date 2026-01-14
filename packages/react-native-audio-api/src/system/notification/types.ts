@@ -5,15 +5,11 @@ import { EventEmptyType, EventTypeWithValue } from '../../events/types';
 /// Provides a consistent API for managing notification lifecycle and events.
 export interface NotificationManager<
   TShowOptions,
-  TUpdateOptions,
   TEventName extends NotificationEventName,
 > {
   /// Show the notification with options or update if already visible.
   /// Automatically creates the notification instance on first call.
   show(options: TShowOptions): Promise<void>;
-
-  /// Update the notification with new options (alias for show).
-  update(options: TUpdateOptions): Promise<void>;
 
   /// Hide the notification.
   hide(): Promise<void>;
@@ -25,10 +21,7 @@ export interface NotificationManager<
   addEventListener<T extends TEventName>(
     eventName: T,
     callback: NotificationCallback<T>
-  ): AudioEventSubscription;
-
-  /// Remove an event listener.
-  removeEventListener(subscription: AudioEventSubscription): void;
+  ): AudioEventSubscription | undefined;
 }
 
 /// Metadata and state information for playback notifications.
@@ -76,8 +69,6 @@ export interface RecordingNotificationInfo {
   resumeIconResourceName?: string;
   color?: number;
 }
-
-export type RecordingControlName = 'pause' | 'resume';
 
 export interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;

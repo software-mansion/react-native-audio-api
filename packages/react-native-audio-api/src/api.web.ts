@@ -9,11 +9,13 @@ export { default as AudioParam } from './web-core/AudioParam';
 export { default as AudioScheduledSourceNode } from './web-core/AudioScheduledSourceNode';
 export { default as BaseAudioContext } from './web-core/BaseAudioContext';
 export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
+export { default as DelayNode } from './web-core/DelayNode';
 export { default as GainNode } from './web-core/GainNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
 export { default as ConvolverNode } from './web-core/ConvolverNode';
+export { default as WaveShaperNode } from './web-core/WaveShaperNode';
 
 export * from './web-core/custom';
 
@@ -35,7 +37,11 @@ export {
   PermissionStatus,
 } from './system/types';
 
-export { PlaybackNotificationManager } from './web-system';
+export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+  AudioManager,
+} from './web-system';
 
 export * from './system/notification/types';
 

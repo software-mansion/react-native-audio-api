@@ -2,6 +2,9 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # FFmpeg additional information
 
 We use [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for few components:
@@ -13,27 +16,28 @@ We use [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for few components:
 The ffmpeg usage is enabled by default, however if you would like not to use it, f.e. there are some name clashes with other ffmpeg
 binaries in your project, you can easily disable it. Just add one flag in corresponding file.
 
-## Expo projects
+:::info
+FFmpeg is enabled by default
+:::
 
-Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional). If not provided, default
-value is `false`.
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
 
-```
-"disableFFmpeg": true
-```
-
-## Non expo projects
-
-### Android
-
-gradle.properties
-```
-disableAudioapiFFmpeg=true
-```
-
-### iOS
-
-Podfile
-```
-ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
-```
+    ```
+    "disableFFmpeg": true
+    ```
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    Podfile
+    ```
+    ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android">
+    gradle.properties
+    ```
+    disableAudioapiFFmpeg=true
+    ```
+  </TabItem>
+</Tabs>

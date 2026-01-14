@@ -40,8 +40,8 @@ const Record: FC = () => {
     );
 
     return () => {
-      RecordingNotificationManager.removeEventListener(pauseListener);
-      RecordingNotificationManager.removeEventListener(resumeListener);
+      pauseListener.remove();
+      resumeListener.remove();
       RecordingNotificationManager.hide();
     };
   }, []);

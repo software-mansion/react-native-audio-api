@@ -7,29 +7,31 @@ import type {
   RecordingNotificationInfo,
 } from './types';
 
-import { NotSupportedError } from '../../errors';
+import { AudioApiError } from '../../errors';
 
-/// Manager for media playback notifications with controls and MediaSession integration.
 class RecordingNotificationManager
   implements
     NotificationManager<
       RecordingNotificationInfo,
-      RecordingNotificationInfo,
       RecordingNotificationEventName
     >
 {
-  private notificationKey = 'react-native audio-api-recording';
+  private notificationKey = 'react-native-audio-api-recording';
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
-  /// Show the notification with metadata or update if already visible.
-  /// Automatically creates the notification on first call.
+  /**
+   * Show the notification with metadata or update if already visible.
+   *
+   * @param info - The info to be displayed.
+   * @returns Promise that resolves after creating notification.
+   */
   async show(info: RecordingNotificationInfo): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new NotSupportedError('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.showNotification(
@@ -43,16 +45,14 @@ class RecordingNotificationManager
     }
   }
 
-  /// Update the notification with new metadata or state.
-  /// This is an alias for show() since show handles both initial display and updates.
-  async update(info: RecordingNotificationInfo): Promise<void> {
-    return this.show(info);
-  }
-
-  /// Hide the notification.
+  /**
+   * Hide the notification.
+   *
+   * @returns Promise that resolves after hiding notification.
+   */
   async hide(): Promise<void> {
     if (!NativeAudioAPIModule) {
-      throw new NotSupportedError('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.hideNotification(
@@ -64,7 +64,11 @@ class RecordingNotificationManager
     }
   }
 
-  /// Check if the notification is currently active.
+  /**
+   * Check if the notification is currently active.
+   *
+   * @returns Promise that resolves to whether notification is active.
+   */
   async isActive(): Promise<boolean> {
     if (!NativeAudioAPIModule) {
       return false;
@@ -75,17 +79,18 @@ class RecordingNotificationManager
     );
   }
 
-  /// Add an event listener for notification actions.
+  /**
+   * Add an event listener for notification actions.
+   *
+   * @param eventName - The event name to listen for.
+   * @param callback - The callback to invoke on event.
+   * @returns Promise that resolves to whether notification is active.
+   */
   addEventListener<T extends RecordingNotificationEventName>(
     eventName: T,
     callback: (event: RecordingNotificationEvent[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
-  }
-
-  /** Remove an event listener. */
-  removeEventListener(subscription: AudioEventSubscription): void {
-    subscription.remove();
   }
 }
 

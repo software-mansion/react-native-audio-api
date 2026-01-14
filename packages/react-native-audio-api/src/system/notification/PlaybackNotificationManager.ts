@@ -11,11 +11,7 @@ import type {
 /// Manager for media playback notifications with controls and MediaSession integration.
 class PlaybackNotificationManager
   implements
-    NotificationManager<
-      PlaybackNotificationInfo,
-      PlaybackNotificationInfo,
-      PlaybackNotificationEventName
-    >
+    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
 {
   private notificationKey = 'playback';
   private audioEventEmitter: AudioEventEmitter;
@@ -101,11 +97,6 @@ class PlaybackNotificationManager
     callback: (event: NotificationEvents[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
-  }
-
-  /** Remove an event listener. */
-  removeEventListener(subscription: AudioEventSubscription): void {
-    subscription.remove();
   }
 }
 
