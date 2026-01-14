@@ -60,6 +60,10 @@ object MediaSessionManager {
 
     // Register PlaybackNotificationReceiver
     val playbackFilter = IntentFilter(PlaybackNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
+    playbackFilter.addAction(PlaybackNotification.MEDIA_BUTTON)
+    playbackFilter.addAction(PlaybackNotificationReceiver.ACTION_SKIP_FORWARD)
+    playbackFilter.addAction(PlaybackNotificationReceiver.ACTION_SKIP_BACKWARD)
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       this.reactContext.get()!!.registerReceiver(playbackNotificationReceiver, playbackFilter, Context.RECEIVER_NOT_EXPORTED)
     } else {
