@@ -15,6 +15,7 @@ import {
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import RecorderAdapterNode from './RecorderAdapterNode';
+import { AudioApiError } from '../errors';
 
 // Enforces default options, making sure that all properties are defined
 // for the contract with native code.
@@ -107,7 +108,7 @@ export default class AudioRecorder {
    */
   connect(node: RecorderAdapterNode): void {
     if (node.wasConnected) {
-      throw new Error(
+      throw new AudioApiError(
         'RecorderAdapterNode cannot be connected more than once. Refer to the documentation for more details.'
       );
     }

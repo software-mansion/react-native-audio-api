@@ -41,7 +41,7 @@ class RecordingNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
@@ -60,7 +60,7 @@ class RecordingNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
