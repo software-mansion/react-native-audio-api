@@ -1,6 +1,6 @@
 'use strict';
 
-import { TurboModuleRegistry, TurboModule } from 'react-native';
+import { TurboModule, TurboModuleRegistry } from 'react-native';
 import { AudioDevicesInfo, PermissionStatus } from '../system/types';
 
 type OptionsMap = {

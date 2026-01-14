@@ -155,8 +155,7 @@ android {
 
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
     buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
-
-
+    buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", isFFmpegDisabled().toString()
 
     externalNativeBuild {
       cmake {
@@ -310,7 +309,7 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 task downloadPrebuiltBinaries(type: Exec) {
   commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
   commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
-  args 'android'
+  args 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
 }
 
 // Make preBuild depend on the download task

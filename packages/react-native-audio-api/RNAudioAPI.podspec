@@ -12,6 +12,7 @@ version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
 worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
+skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -50,7 +51,7 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh
-    scripts/download-prebuilt-binaries.sh ios
+    scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
   CMD
 
   # Assumes Pods dir is nested under ios project dir

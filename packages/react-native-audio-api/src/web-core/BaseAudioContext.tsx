@@ -1,21 +1,21 @@
 import {
   ContextState,
-  PeriodicWaveConstraints,
   IIRFilterNodeOptions,
+  PeriodicWaveConstraints,
 } from '../types';
 import AnalyserNode from './AnalyserNode';
-import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import ConstantSourceNode from './ConstantSourceNode';
+import ConvolverNode from './ConvolverNode';
 import DelayNode from './DelayNode';
-import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
+import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import ConstantSourceNode from './ConstantSourceNode';
-import ConvolverNode from './ConvolverNode';
 import WaveShaperNode from './WaveShaperNode';
 
 export default interface BaseAudioContext {
@@ -47,6 +47,8 @@ export default interface BaseAudioContext {
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
   createWaveShaper(): WaveShaperNode;
-  decodeAudioDataSource(source: string): Promise<AudioBuffer>;
-  decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
+  decodeAudioData(
+    arrayBuffer: ArrayBuffer,
+    fetchOptions?: RequestInit
+  ): Promise<AudioBuffer>;
 }

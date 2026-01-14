@@ -18,6 +18,12 @@ else
     PROJECT_ROOT="$(pwd)"
 fi
 
+if [ "$2" == "skipffmpeg" ]; then
+    SKIP_FFMPEG=true
+else
+    SKIP_FFMPEG=false
+fi
+
 JNILIBS_DESTINATION="${PROJECT_ROOT}/android/src/main"
 NORMAL_DESTINATION="${PROJECT_ROOT}/common/cpp/audioapi/external"
 
@@ -27,6 +33,10 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
 
     # Get the directory name from the zip name (e.g., "armeabi-v7a.zip" -> "armeabi-v7a")
     EXTRACTED_DIR_NAME="${name%.zip}"
+
+    if [[ ("$EXTRACTED_DIR_NAME" == "ffmpeg_ios" || "$EXTRACTED_DIR_NAME" == "jniLibs") && "$SKIP_FFMPEG" == true ]]; then
+        continue
+    fi
 
     # Determine the final output path
     if [[ "$name" == "jniLibs.zip" ]]; then
