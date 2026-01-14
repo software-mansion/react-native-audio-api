@@ -24,6 +24,7 @@ class RecordingNotificationReceiver(
         Log.d(TAG, "Recording stopped via notification")
         module.invokeHandlerWithEventNameAndEventBody("recordingNotificationPause", mapOf())
       }
+
       NOTIFICATION_RECORDING_RESUMED -> {
         Log.d(TAG, "Recording resumed via notification")
         module.invokeHandlerWithEventNameAndEventBody("recordingNotificationResume", mapOf())

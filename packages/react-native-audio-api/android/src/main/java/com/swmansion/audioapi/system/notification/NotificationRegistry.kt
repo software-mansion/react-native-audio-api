@@ -125,6 +125,7 @@ class NotificationRegistry(
             "audio_playback",
           )
         }
+
         "recording" -> {
           RecordingNotification(
             reactContext,
@@ -133,7 +134,10 @@ class NotificationRegistry(
             "audio_recording4",
           )
         }
-        else -> throw IllegalArgumentException("Unknown notification type: $type")
+
+        else -> {
+          throw IllegalArgumentException("Unknown notification type: $type")
+        }
       }
 
     notifications[key] = notification
