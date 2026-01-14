@@ -63,9 +63,10 @@ const AudioFile: FC = () => {
 
   const setupNotification = async () => {
     try {
+      await AudioManager.requestNotificationPermissions();
       const duration = AudioPlayer.getDuration();
       await PlaybackNotificationManager.show({
-        title: 'Audio file',
+        title: 'Audio File',
         artist: 'Software Mansion',
         album: 'Audio API',
         duration: duration,
@@ -73,6 +74,14 @@ const AudioFile: FC = () => {
         speed: 1.0,
         elapsedTime: 0,
       });
+      await PlaybackNotificationManager.enableControl('skipBackward', true);
+      await PlaybackNotificationManager.enableControl('next', true);
+      await PlaybackNotificationManager.enableControl('skipForward', true);
+      await PlaybackNotificationManager.enableControl('previous', true);
+      await PlaybackNotificationManager.enableControl('pause', true);
+      await PlaybackNotificationManager.enableControl('play', true);
+      await PlaybackNotificationManager.enableControl('seekTo', true);
+
     } catch (error) {
       console.error('Failed to setup notification:', error);
     }

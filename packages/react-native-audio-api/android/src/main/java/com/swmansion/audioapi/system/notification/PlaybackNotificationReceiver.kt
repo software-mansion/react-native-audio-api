@@ -3,7 +3,6 @@ package com.swmansion.audioapi.system.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.swmansion.audioapi.AudioAPIModule
 
 /**
@@ -12,7 +11,8 @@ import com.swmansion.audioapi.AudioAPIModule
 class PlaybackNotificationReceiver : BroadcastReceiver() {
   companion object {
     const val ACTION_NOTIFICATION_DISMISSED = "com.swmansion.audioapi.PLAYBACK_NOTIFICATION_DISMISSED"
-    private const val TAG = "PlaybackNotificationReceiver"
+    const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
+    const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
 
     private var audioAPIModule: AudioAPIModule? = null
 
@@ -26,8 +26,13 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
     intent: Intent?,
   ) {
     if (intent?.action == ACTION_NOTIFICATION_DISMISSED) {
-      Log.d(TAG, "Notification dismissed by user")
       audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationDismissed", mapOf())
+    } else if (intent?.action == ACTION_SKIP_FORWARD) {
+      val body = HashMap<String, Any>().apply { put("value", 15) }
+      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipForward", body)
+    } else if (intent?.action == ACTION_SKIP_BACKWARD) {
+      val body = HashMap<String, Any>().apply { put("value", 15) }
+      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipBackward", body)
     }
   }
 }
