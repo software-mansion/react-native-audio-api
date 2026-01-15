@@ -15,13 +15,15 @@ def try_to_parse_react_native_package_json(node_modules_dir)
   return JSON.parse(File.read(react_native_package_json_path))
 end
 
-def find_config()
+def find_audio_api_config()
   result = {
+    :worklets_enabled => nil,
     :react_native_common_dir => nil,
     :dynamic_frameworks_audio_api_dir => nil,
-    :dynamic_frameworks_worklets_dir => nil,
-    :worklets_enabled => check_if_worklets_enabled()
+    :dynamic_frameworks_worklets_dir => nil
   }
+
+  result[:worklets_enabled] = check_if_worklets_enabled()
 
   react_native_node_modules_dir = File.join(File.dirname(`cd "#{Pod::Config.instance.installation_root.to_s}" && node --print "require.resolve('react-native/package.json')"`), '..')
   react_native_json = try_to_parse_react_native_package_json(react_native_node_modules_dir)
