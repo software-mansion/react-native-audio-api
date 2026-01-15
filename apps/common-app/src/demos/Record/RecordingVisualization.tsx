@@ -257,7 +257,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     if (barHeights.value.length !== numBars) {
       barHeights.value = new Array(numBars).fill(-1);
     }
-  }, [numBars]);
+  }, [numBars, barHeights]);
 
   useEffect(() => {
     if (numBars <= 0) {
