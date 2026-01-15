@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.facebook.react.bridge.ReactApplicationContext
+import com.swmansion.audioapi.system.notification.BaseNotification
 import java.lang.ref.WeakReference
 
 /**
@@ -14,7 +15,7 @@ object ForegroundServiceManager {
   private const val TAG = "ForegroundServiceManager"
 
   private lateinit var reactContext: WeakReference<ReactApplicationContext>
-  private val subscribers = mutableSetOf<String>()
+  private val subscribers = mutableSetOf<BaseNotification>()
   private var isServiceRunning = false
 
   fun initialize(reactContext: WeakReference<ReactApplicationContext>) {
@@ -23,24 +24,24 @@ object ForegroundServiceManager {
 
   /**
    * Subscribe to foreground service. Service will start if not already running.
-   * @param subscriberId Unique identifier for the subscriber
+   * @param subscriber Unique identifier for the subscriber
    */
   @Synchronized
-  fun subscribe(subscriberId: String) {
-    if (subscribers.add(subscriberId)) {
-      Log.d(TAG, "Subscriber added: $subscriberId (total: ${subscribers.size})")
+  fun subscribe(subscriber: BaseNotification) {
+    if (subscribers.add(subscriber)) {
+      Log.d(TAG, "Subscriber added: $subscriber (total: ${subscribers.size})")
       startServiceIfNeeded()
     }
   }
 
   /**
    * Unsubscribe from foreground service. Service will stop if no more subscribers.
-   * @param subscriberId Unique identifier for the subscriber
+   * @param subscriber Unique identifier for the subscriber
    */
   @Synchronized
-  fun unsubscribe(subscriberId: String) {
-    if (subscribers.remove(subscriberId)) {
-      Log.d(TAG, "Subscriber removed: $subscriberId (total: ${subscribers.size})")
+  fun unsubscribe(subscriber: BaseNotification) {
+    if (subscribers.remove(subscriber)) {
+      Log.d(TAG, "Subscriber removed: $subscriber (total: ${subscribers.size})")
       stopServiceIfNotNeeded()
     }
   }

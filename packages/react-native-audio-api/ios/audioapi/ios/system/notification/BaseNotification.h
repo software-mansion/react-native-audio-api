@@ -26,13 +26,6 @@
 - (BOOL)showWithOptions:(NSDictionary *)options;
 
 /**
- * Update notification metadata.
- * @param options Updated information
- * @return YES if successful
- */
-- (BOOL)updateWithOptions:(NSDictionary *)options;
-
-/**
  * Hide the notification (clears metadata on iOS).
  * @return YES if successful
  */

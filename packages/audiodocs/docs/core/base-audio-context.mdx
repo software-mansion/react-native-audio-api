@@ -256,24 +256,12 @@ Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 
 #### Returns `WorkletProcessingNode`.
 
-:::caution
-Supported file formats:
-- flac
-- mp3
-- ogg
-- opus
-- wav
-- aac
-- m4a
-- mp4
-
-Last three formats are decoded with ffmpeg, [see for more info](/docs/other/ffmpeg-info).
-:::
-
 ### `decodeAudioData`
 
 Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio.
 If not provided, the audio will be automatically resampled to match the audio context's `sampleRate`.
+
+**For the list of supported formats visit [this page](/docs/utils/decoding).**
 
 <table>
   <thead>
@@ -285,18 +273,22 @@ If not provided, the audio will be automatically resampled to match the audio co
   </thead>
   <tbody>
     <tr>
-      <td rowspan="2" align="center"><code>input</code></td>
+      <td rowspan="3" align="center"><code>input</code></td>
       <td align="center"><code>ArrayBuffer</code></td>
       <td align="center">ArrayBuffer with audio data.</td>
     </tr>
     <tr>
       <td align="center"><code>string</code></td>
-      <td align="center">Path to audio file located on the device.</td>
+      <td align="center">Path to remote or local audio file.</td>
     </tr>
     <tr>
-      <td align="center"><code>sampleRate</code><Optional /></td>
       <td align="center"><code>number</code></td>
-      <td align="center">Target sample rate for the decoded audio.</td>
+      <td align="center">Asset module id. <MobileOnly/> </td>
+    </tr>
+    <tr>
+      <td align="center"><code>fetchOptions</code><Optional /></td>
+      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
+      <td align="center">Additional headers parameters when passing url to fetch.</td>
     </tr>
   </tbody>
 </table>

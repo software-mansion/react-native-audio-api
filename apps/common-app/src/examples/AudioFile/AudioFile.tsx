@@ -10,8 +10,10 @@ import { Button, Container, Spacer } from '../../components';
 import { colors } from '../../styles';
 import AudioPlayer from './AudioPlayer';
 
-const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+// const remoteAsset =
+//   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+
+import staticAsset from './voice-sample-landing.mp3';
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,17 +58,17 @@ const AudioFile: FC = () => {
   const fetchAudioBuffer = useCallback(async () => {
     setIsLoading(true);
 
-    await AudioPlayer.loadBuffer(URL);
+    await AudioPlayer.loadBuffer(staticAsset);
 
     setIsLoading(false);
   }, []);
 
   const setupNotification = async () => {
     try {
-      await PlaybackNotificationManager.register();
+      await AudioManager.requestNotificationPermissions();
       const duration = AudioPlayer.getDuration();
       await PlaybackNotificationManager.show({
-        title: 'Audio file',
+        title: 'Audio File',
         artist: 'Software Mansion',
         album: 'Audio API',
         duration: duration,
@@ -74,6 +76,14 @@ const AudioFile: FC = () => {
         speed: 1.0,
         elapsedTime: 0,
       });
+      await PlaybackNotificationManager.enableControl('skipBackward', true);
+      await PlaybackNotificationManager.enableControl('next', true);
+      await PlaybackNotificationManager.enableControl('skipForward', true);
+      await PlaybackNotificationManager.enableControl('previous', true);
+      await PlaybackNotificationManager.enableControl('pause', true);
+      await PlaybackNotificationManager.enableControl('play', true);
+      await PlaybackNotificationManager.enableControl('seekTo', true);
+
     } catch (error) {
       console.error('Failed to setup notification:', error);
     }
@@ -83,16 +93,15 @@ const AudioFile: FC = () => {
     const setup = async () => {
       await fetchAudioBuffer();
       await setupNotification();
-    }
+    };
     setup();
     return () => {
       AudioPlayer.reset();
-      PlaybackNotificationManager.unregister();
+      PlaybackNotificationManager.hide();
     };
   }, [fetchAudioBuffer]);
 
   useEffect(() => {
-
     AudioManager.observeAudioInterruptions(true);
 
     // Listen to notification control events

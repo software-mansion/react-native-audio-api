@@ -3,7 +3,6 @@ import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioManager,
-  RecordingNotificationManager,
 } from 'react-native-audio-api';
 
 import { Button, Container } from '../../components';
@@ -70,15 +69,6 @@ const Record: FC = () => {
     const adapter = audioContext.createRecorderAdapter();
     adapter.connect(audioContext.destination);
     audioRecorder.connect(adapter);
-
-    // This is not a proper way to do it, but sufficient for this example
-    RecordingNotificationManager.register().then(() =>
-      RecordingNotificationManager.show({
-        title: 'Recording...',
-        state: 'recording',
-        enabled: true,
-      })
-    );
 
     const result = audioRecorder.start();
 
@@ -153,32 +143,12 @@ const Record: FC = () => {
       return;
     }
 
-    // This is not a proper way to do it, but sufficient for this example
-    RecordingNotificationManager.register().then(() =>
-      RecordingNotificationManager.show({
-        title: 'Recording for replay...',
-        state: 'recording',
-        enabled: true,
-      })
-    );
-
-    const startResult = audioRecorder.start();
-
-    if (startResult.status === 'error') {
-      Alert.alert(
-        'Recording Error',
-        `Failed to start recording: ${startResult.message}`
-      );
-      return;
-    }
-
     setStatus(Status.Recording);
 
     setTimeout(async () => {
       audioRecorder.stop();
       audioRecorder.clearOnAudioReady();
       await AudioManager.setAudioSessionActivity(false);
-      await RecordingNotificationManager.unregister();
       setStatus(Status.Idle);
     }, 5000);
   };

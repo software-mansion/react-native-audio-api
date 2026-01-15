@@ -6,7 +6,7 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
 import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
@@ -49,6 +49,7 @@ Additionally to be able to record audio while application is in the background, 
     ```
 
     For more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+
   </TabItem>
   <TabItem value="iOS" label="iOS">
     For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
@@ -69,6 +70,7 @@ Additionally to be able to record audio while application is in the background, 
       <string>audio</string>
     </array>
     ```
+
   </TabItem>
   <TabItem value="android" label="Android">
     To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
@@ -88,6 +90,7 @@ Additionally to be able to record audio while application is in the background, 
     </manifest>
 
     ```
+
   </TabItem>
 </Tabs>
 
@@ -123,8 +126,8 @@ const MyRecorder: React.FC = () => {
     // Make sure the permissions are granted
     const permissions = await AudioManager.requestRecordingPermissions();
 
-    if (permissions !== "Granted") {
-      console.warn("Permissions are not granted");
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
       return;
     }
 
@@ -132,7 +135,7 @@ const MyRecorder: React.FC = () => {
     const success = await AudioManager.setAudioSessionActivity(true);
 
     if (!success) {
-      console.warn("Could not activate the audio session");
+      console.warn('Could not activate the audio session');
       return;
     }
 
@@ -142,9 +145,9 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    console.log("Recording started to file:", result.path);
+    console.log('Recording started to file:', result.path);
     setIsRecording(true);
-  }
+  };
 
   const onStop = () => {
     if (!isRecording) {
@@ -155,15 +158,15 @@ const MyRecorder: React.FC = () => {
     console.log(result);
     setIsRecording(false);
     AudioManager.setAudioSessionActivity(false);
-  }
+  };
 
   return (
     <View>
       <Pressable onPress={isRecording ? onStop : onStart}>
-        <Text>{isRecording ? "Stop" : "Record"}</Text>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
       </Pressable>
     </View>
-  )
+  );
 };
 
 export default MyRecorder;
@@ -190,17 +193,20 @@ const MyRecorder: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
-    audioRecorder.onAudioReady({
-      sampleRate,
-      bufferLength: sampleRate * 0.1, // 0.1s of audio each batch
-      channelCount: 1,
-    }, ({ buffer, numFrames, when }) => {
-      // do something with the data, i.e. stream it
-    });
+    audioRecorder.onAudioReady(
+      {
+        sampleRate,
+        bufferLength: sampleRate * 0.1, // 0.1s of audio each batch
+        channelCount: 1,
+      },
+      ({ buffer, numFrames, when }) => {
+        // do something with the data, i.e. stream it
+      }
+    );
 
     return () => {
       audioRecorder.clearOnAudioReady();
-    }
+    };
   }, []);
 
   const onStart = async () => {
@@ -211,8 +217,8 @@ const MyRecorder: React.FC = () => {
     // Make sure the permissions are granted
     const permissions = await AudioManager.requestRecordingPermissions();
 
-    if (permissions !== "Granted") {
-      console.warn("Permissions are not granted");
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
       return;
     }
 
@@ -220,7 +226,7 @@ const MyRecorder: React.FC = () => {
     const success = await AudioManager.setAudioSessionActivity(true);
 
     if (!success) {
-      console.warn("Could not activate the audio session");
+      console.warn('Could not activate the audio session');
       return;
     }
 
@@ -232,7 +238,7 @@ const MyRecorder: React.FC = () => {
     }
 
     setIsRecording(true);
-  }
+  };
 
   const onStop = () => {
     if (!isRecording) {
@@ -242,15 +248,15 @@ const MyRecorder: React.FC = () => {
     audioRecorder.stop();
     setIsRecording(false);
     AudioManager.setAudioSessionActivity(false);
-  }
+  };
 
   return (
     <View>
       <Pressable onPress={isRecording ? onStop : onStart}>
-        <Text>{isRecording ? "Stop" : "Record"}</Text>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
       </Pressable>
     </View>
-  )
+  );
 };
 
 export default MyRecorder;
@@ -262,7 +268,11 @@ export default MyRecorder;
 ```tsx
 import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
-import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
+import {
+  AudioRecorder,
+  AudioContext,
+  AudioManager,
+} from 'react-native-audio-api';
 
 AudioManager.setAudioSessionOptions({
   iosCategory: 'playAndRecord',
@@ -284,8 +294,8 @@ const MyRecorder: React.FC = () => {
     // Make sure the permissions are granted
     const permissions = await AudioManager.requestRecordingPermissions();
 
-    if (permissions !== "Granted") {
-      console.warn("Permissions are not granted");
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
       return;
     }
 
@@ -293,7 +303,7 @@ const MyRecorder: React.FC = () => {
     const success = await AudioManager.setAudioSessionActivity(true);
 
     if (!success) {
-      console.warn("Could not activate the audio session");
+      console.warn('Could not activate the audio session');
       return;
     }
 
@@ -313,7 +323,7 @@ const MyRecorder: React.FC = () => {
     }
 
     setIsRecording(true);
-  }
+  };
 
   const onStop = () => {
     if (!isRecording) {
@@ -324,15 +334,15 @@ const MyRecorder: React.FC = () => {
     audioContext.suspend();
     setIsRecording(false);
     AudioManager.setAudioSessionActivity(false);
-  }
+  };
 
   return (
     <View>
       <Pressable onPress={isRecording ? onStop : onStart}>
-        <Text>{isRecording ? "Stop" : "Record"}</Text>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
       </Pressable>
     </View>
-  )
+  );
 };
 
 export default MyRecorder;
@@ -382,7 +392,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### stop
@@ -402,7 +414,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### pause
@@ -416,7 +430,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### resume
@@ -430,7 +446,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### isRecording
@@ -444,7 +462,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### isPaused
@@ -458,7 +478,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### onError
@@ -476,7 +498,9 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
 <!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### clearOnError
@@ -490,6 +514,7 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -544,6 +569,7 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -597,6 +623,7 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -649,7 +676,6 @@ interface AudioRecorderCallbackOptions {
   bufferLength: number;
   channelCount: number;
 }
-
 ```
 
 - `sampleRate` - The desired sample rate (in Hz) for audio buffers delivered to the
@@ -717,7 +743,6 @@ interface AudioRecorderFileOptions {
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
 ```tsx
-
 enum FileFormat {
   Wav,
   Caf,
@@ -745,7 +770,6 @@ audioRecorder.enableFileOutput({
   format: FileFormat.M4A,
   preset: FilePreset.High,
 });
-
 ```
 
 <table className="table-vertical-top">
@@ -927,6 +951,5 @@ export interface FilePresetType {
     </tr>
   </tbody>
 </table>
-
 
 ## Remarks & known issues
