@@ -9,7 +9,7 @@ namespace audioapi {
 AudioFileWriter::AudioFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : audioEventHandlerRegistry_(audioEventHandlerRegistry), fileProperties_(fileProperties) {}
+    : fileProperties_(fileProperties), audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
 
 void AudioFileWriter::setOnErrorCallback(uint64_t callbackId) {
   errorCallbackId_.store(callbackId, std::memory_order_release);
