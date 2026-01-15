@@ -31,8 +31,8 @@ const resumeEventListener = RecordingNotificationManager.addEventListener('recor
   console.log('Notification resume action received');
 });
 
-RecordingNotificationManager.removeEventListener(pauseEventListener);
-RecordingNotificationManager.removeEventListener(resumeEventListener);
+pauseEventListener.remove();
+resumeEventListener.remove();
 RecordingNotificationManager.hide();
 ```
 
@@ -42,9 +42,14 @@ RecordingNotificationManager.hide();
 
 Shows the recording notification with the parameters.
 
+:::info
+Metadata is remembered between calls, so after initial passing the metadata to show function, you can only call it with elements that are supposed to change.
+:::
+
+
 | Parameter |Type| Description|
 | :-------: | :--: | :----|
-|  `info`   | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
+| `info` | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 

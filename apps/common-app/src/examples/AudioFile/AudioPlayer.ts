@@ -35,7 +35,7 @@ class AudioPlayer {
     }
 
     this.isPlaying = true;
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       state: 'playing',
     });
 
@@ -75,8 +75,9 @@ class AudioPlayer {
     this.sourceNode?.stop(this.audioContext.currentTime);
 
     await this.audioContext.suspend();
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       state: 'paused',
+      elapsedTime: this.currentElapsedTime,
     });
 
     this.isPlaying = false;
@@ -90,7 +91,7 @@ class AudioPlayer {
     } else if (this.currentElapsedTime > this.getDuration()) {
       this.currentElapsedTime = this.getDuration();
     }
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       elapsedTime: this.currentElapsedTime,
     });
 

@@ -239,19 +239,46 @@ class RecordingNotification(
   }
 
   private fun parseMapFromRN(options: ReadableMap?) {
-    state.title = if (options?.hasKey("title") == true) options.getString("title") else "Recording Audio"
+    state.title = if (options?.hasKey("title") == true) options.getString("title") else state.title ?: "Recording Audio"
     state.contentText =
       if (options?.hasKey("contentText") == true) {
         options.getString("contentText")
       } else {
-        "Audio recording is in progress/paused"
+        state.contentText ?: "Audio recording is in progress/paused"
       }
-    state.smallIconResourceName = if (options?.hasKey("smallIconResourceName") == true) options.getString("smallIconResourceName") else null
-    state.largeIconResourceName = if (options?.hasKey("largeIconResourceName") == true) options.getString("largeIconResourceName") else null
-    state.pauseIconResourceName = if (options?.hasKey("pauseIconResourceName") == true) options.getString("pauseIconResourceName") else null
+    state.smallIconResourceName =
+      if (options?.hasKey("smallIconResourceName") ==
+        true
+      ) {
+        options.getString("smallIconResourceName")
+      } else {
+        state.smallIconResourceName ?: null
+      }
+    state.largeIconResourceName =
+      if (options?.hasKey("largeIconResourceName") ==
+        true
+      ) {
+        options.getString("largeIconResourceName")
+      } else {
+        state.largeIconResourceName ?: null
+      }
+    state.pauseIconResourceName =
+      if (options?.hasKey("pauseIconResourceName") ==
+        true
+      ) {
+        options.getString("pauseIconResourceName")
+      } else {
+        state.pauseIconResourceName ?: null
+      }
     state.resumeIconResourceName =
-      if (options?.hasKey("resumeIconResourceName") == true) options.getString("resumeIconResourceName") else null
-    state.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else null
+      if (options?.hasKey("resumeIconResourceName") ==
+        true
+      ) {
+        options.getString("resumeIconResourceName")
+      } else {
+        state.resumeIconResourceName ?: null
+      }
+    state.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else state.backgroundColor ?: null
     state.paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
   }
 

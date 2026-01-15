@@ -84,7 +84,7 @@ class RecordingNotificationManager
    *
    * @param eventName - The event name to listen for.
    * @param callback - The callback to invoke on event.
-   * @returns Promise that resolves to whether notification is active.
+   * @returns Class that represents the subscription.
    */
   addEventListener<T extends RecordingNotificationEventName>(
     eventName: T,

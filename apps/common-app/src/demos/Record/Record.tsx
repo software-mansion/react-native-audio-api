@@ -24,7 +24,13 @@ const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
 
-  const setNotification = (paused: boolean) => {
+  const updateNotification = (paused: boolean) => {
+    RecordingNotificationManager.show({
+      paused,
+    });
+  };
+
+  const setupNotification = (paused: boolean) => {
     RecordingNotificationManager.show({
       title: 'Recording Demo',
       contentText: paused ? 'Paused recording' : 'Recording...',
@@ -34,7 +40,7 @@ const Record: FC = () => {
       resumeIconResourceName: 'resume',
       color: 0xff6200,
     });
-  };
+  }
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
@@ -62,7 +68,7 @@ const Record: FC = () => {
     }
 
     const result = Recorder.start();
-    setNotification(false);
+    setupNotification(false);
 
     if (result.status === 'success') {
       console.log('Recording started, file path:', result.path);
@@ -77,13 +83,13 @@ const Record: FC = () => {
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
-    setNotification(true);
+    updateNotification(true);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
-    setNotification(false);
+    updateNotification(false);
     setState(RecordingState.Recording);
   }, []);
 

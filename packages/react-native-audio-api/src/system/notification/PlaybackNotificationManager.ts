@@ -9,7 +9,6 @@ import type {
 } from './types';
 import { AudioApiError } from '../../errors';
 
-/// Manager for media playback notifications with controls and MediaSession integration.
 class PlaybackNotificationManager
   implements
     NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
@@ -21,8 +20,13 @@ class PlaybackNotificationManager
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
-  /// Show the notification with metadata or update if already visible.
-  /// Automatically creates the notification on first call.
+  /**
+   * Show the notification with metadata or update if already visible.
+   * Automatically creates the notification on first call.
+   *
+   * @param info - The info to be displayed.
+   * @returns Promise that resolves after creating notification.
+   */
   async show(info: PlaybackNotificationInfo): Promise<void> {
     if (!NativeAudioAPIModule) {
       throw new AudioApiError('NativeAudioAPIModule is not available');
@@ -39,13 +43,11 @@ class PlaybackNotificationManager
     }
   }
 
-  /// Update the notification with new metadata or state.
-  /// This is an alias for show() since show handles both initial display and updates.
-  async update(info: PlaybackNotificationInfo): Promise<void> {
-    return this.show(info);
-  }
-
-  /// Hide the notification.
+  /**
+   * Hide the notification.
+   *
+   * @returns Promise that resolves after hiding notification.
+   */
   async hide(): Promise<void> {
     if (!NativeAudioAPIModule) {
       throw new AudioApiError('NativeAudioAPIModule is not available');
@@ -60,7 +62,13 @@ class PlaybackNotificationManager
     }
   }
 
-  /// Enable or disable a specific playback control.
+  /**
+   * Enable or disable a specific playback control.
+   *
+   * @param control - The control to enable or disable on the notification.
+   * @param enabled - Whether to enable (true) or disable (false) the control.
+   * @returns Promise that resolves after showing modified notification.
+   */
   async enableControl(
     control: PlaybackControlName,
     enabled: boolean
@@ -81,7 +89,11 @@ class PlaybackNotificationManager
     }
   }
 
-  /// Check if the notification is currently active.
+  /**
+   * Check if the notification is currently active.
+   *
+   * @returns Promise that resolves to whether notification is active.
+   */
   async isActive(): Promise<boolean> {
     if (!NativeAudioAPIModule) {
       return false;
@@ -92,7 +104,13 @@ class PlaybackNotificationManager
     );
   }
 
-  /// Add an event listener for notification actions.
+  /**
+   * Add an event listener for notification actions.
+   *
+   * @param eventName - The event name to listen for.
+   * @param callback - The callback to invoke on event.
+   * @returns Class that represents the subscription.
+   */
   addEventListener<T extends PlaybackNotificationEventName>(
     eventName: T,
     callback: (event: NotificationEvents[T]) => void
