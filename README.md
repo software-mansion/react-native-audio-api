@@ -36,6 +36,20 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **Noise Cancellation 🦇**<br />
   System-based active noise and echo cancellation support
 
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.11.0"><img src="https://img.shields.io/badge/Released_in-0.11.0-green" /></a>
+
+- **Recoring to file 📼**<br />
+  Fully customizable recording to file. Choose file format, quality and other parameters. Fully integrated with audio graph.
+
+- **Playback anb recoriding notification system 🔔**<br />
+  Control playback and recording from notification center / lock screen and create custom notification layouts.
+
+- **Wave Shaper Node 🎸**<br />
+  Create custom nonlinear distortion effects. No need to buy guitar pedals anymore!
+
+- **IIR Filter Node 🧪**<br />
+  Implement custom digital filters using feedforward and feedback coefficients.
+
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.10.0"><img src="https://img.shields.io/badge/Released_in-0.10.0-green" /></a>
 
 - **Decoding and utility modules 🔧**<br />
