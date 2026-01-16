@@ -43,7 +43,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioParamHostObject, maxValue) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
-  auto event = [param = param_, value = static_cast<float>(value.getNumber())](BaseAudioContext &context) {
+  auto event = [param = param_, value = static_cast<float>(value.getNumber())](BaseAudioContext &) {
     param->setValue(value);
   };
 
@@ -51,7 +51,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
-  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber()](BaseAudioContext &context) {
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber()](BaseAudioContext &) {
     param->setValueAtTime(value, startTime);
   };
 
@@ -60,7 +60,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
-  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &context) {
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
     param->linearRampToValueAtTime(value, endTime);
   };
 
@@ -69,7 +69,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
-    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &context) {
+    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
         param->exponentialRampToValueAtTime(value, endTime);
     };
 
@@ -78,7 +78,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
-  auto event = [param = param_, target = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber(), timeConstant = args[2].getNumber()](BaseAudioContext &context) {
+  auto event = [param = param_, target = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber(), timeConstant = args[2].getNumber()](BaseAudioContext &) {
     param->setTargetAtTime(target, startTime, timeConstant);
   };
 
@@ -93,7 +93,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
   auto length = static_cast<int>(arrayBuffer.size(runtime));
   auto values = std::make_shared<std::vector<float>>(rawValues, rawValues + length);
 
-  auto event = [param = param_, values, length, startTime = args[1].getNumber(), duration = args[2].getNumber()](BaseAudioContext &context) {
+  auto event = [param = param_, values, length, startTime = args[1].getNumber(), duration = args[2].getNumber()](BaseAudioContext &) {
       param->setValueCurveAtTime(values, length, startTime, duration);
   };
 
@@ -102,7 +102,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelScheduledValues) {
-  auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &context) {
+  auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &) {
     param->cancelScheduledValues(cancelTime);
   };
 
@@ -111,7 +111,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelScheduledValues) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
-    auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &context) {
+    auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &) {
         param->cancelAndHoldAtTime(cancelTime);
     };
 

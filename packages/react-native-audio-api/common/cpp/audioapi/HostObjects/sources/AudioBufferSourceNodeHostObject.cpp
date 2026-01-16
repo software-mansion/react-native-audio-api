@@ -71,7 +71,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
   auto loop = value.getBool();
 
-  auto event = [audioBufferSourceNode, loop](BaseAudioContext &context) {
+  auto event = [audioBufferSourceNode, loop](BaseAudioContext &) {
     audioBufferSourceNode->setLoop(loop);
   };
 
@@ -83,7 +83,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopSkip) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
   auto loopSkip = value.getBool();
 
-    auto event = [audioBufferSourceNode, loopSkip](BaseAudioContext &context) {
+    auto event = [audioBufferSourceNode, loopSkip](BaseAudioContext &) {
         audioBufferSourceNode->setLoopSkip(loopSkip);
     };
 
@@ -95,7 +95,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopStart) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
   auto loopStart = value.getNumber();
 
-  auto event = [audioBufferSourceNode, loopStart](BaseAudioContext &context) {
+  auto event = [audioBufferSourceNode, loopStart](BaseAudioContext &) {
     audioBufferSourceNode->setLoopStart(loopStart);
   };
 
@@ -107,12 +107,12 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
   auto loopEnd = value.getNumber();
 
-    auto event = [audioBufferSourceNode, loopEnd](BaseAudioContext &context) {
-        audioBufferSourceNode->setLoopEnd(loopEnd);
-    };
+  auto event = [audioBufferSourceNode, loopEnd](BaseAudioContext &) {
+    audioBufferSourceNode->setLoopEnd(loopEnd);
+  };
 
-    audioBufferSourceNode->scheduleAudioEvent(std::move(event));
-    loopEnd_ = loopEnd;
+  audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  loopEnd_ = loopEnd;
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
@@ -128,7 +128,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
           when = args[0].getNumber(),
           offset = args[1].getNumber(),
           duration = args[2].isUndefined() ? -1 : args[2].getNumber()
-      ](BaseAudioContext &context) {
+      ](BaseAudioContext &) {
     audioBufferSourceNode->start(when, offset, duration);
   };
 
@@ -151,7 +151,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   auto event = [
         audioBufferSourceNode,
         buffer = bufferHostObject ? bufferHostObject->audioBuffer_ : nullptr
-  ](BaseAudioContext &context) {
+  ](BaseAudioContext &) {
     audioBufferSourceNode->setBuffer(buffer);
   };
 
@@ -165,7 +165,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
 void AudioBufferSourceNodeHostObject::setOnLoopEndedCallbackId(uint64_t callbackId) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
-  auto event = [audioBufferSourceNode, callbackId](BaseAudioContext &context) {
+  auto event = [audioBufferSourceNode, callbackId](BaseAudioContext &) {
     audioBufferSourceNode->setOnLoopEndedCallbackId(callbackId);
   };
 

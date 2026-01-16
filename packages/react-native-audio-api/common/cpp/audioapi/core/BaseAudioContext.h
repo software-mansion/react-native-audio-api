@@ -109,9 +109,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     audioEventScheduler_->processAllEvents(*this);
   }
 
-  template <
-      typename F,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  template <typename F>
   bool inline scheduleAudioEvent(F &&event) noexcept {
     if (!isRunning()) {
       processAudioEvents();
