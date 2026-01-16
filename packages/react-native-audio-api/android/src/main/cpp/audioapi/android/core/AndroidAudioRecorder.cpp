@@ -164,7 +164,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
 
-  if (!isRecording()) {
+  if (isIdle()) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Recorder is not in recording state.");
   }
