@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="64dp"
+  android:gravity="center_vertical"
+  android:orientation="horizontal"
+  android:paddingStart="16dp"
+  android:paddingEnd="16dp"
+  android:paddingBottom="16dp">
+
+  <LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:paddingEnd="16dp">
+
+    <TextView
+      android:id="@+id/notification_title"
+      style="@style/TextAppearance.Compat.Notification.Title"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:ellipsize="end"
+      android:maxLines="1"
+      android:text="Recording Audio" />
+
+    <TextView
+      android:id="@+id/notification_content"
+      style="@style/TextAppearance.Compat.Notification.Line2"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:ellipsize="end"
+      android:maxLines="1"
+      android:text="00:12" />
+  </LinearLayout>
+
+  <ImageButton
+    android:id="@+id/notification_action_btn"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="@layout/btn_round_ripple"
+    android:contentDescription="Pause or Resume"
+    android:scaleType="centerInside" />
+
+</LinearLayout>

@@ -148,10 +148,11 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
-  // New notification system methods
-  override fun registerNotification(
+  // Notification system methods
+  override fun showNotification(
     type: String?,
     key: String?,
+    options: ReadableMap?,
     promise: Promise?,
   ) {
     try {
@@ -163,61 +164,7 @@ class AudioAPIModule(
         return
       }
 
-      MediaSessionManager.registerNotification(type, key)
-
-      val result = Arguments.createMap()
-      result.putBoolean("success", true)
-      promise?.resolve(result)
-    } catch (e: Exception) {
-      val result = Arguments.createMap()
-      result.putBoolean("success", false)
-      result.putString("error", e.message ?: "Unknown error")
-      promise?.resolve(result)
-    }
-  }
-
-  override fun showNotification(
-    key: String?,
-    options: ReadableMap?,
-    promise: Promise?,
-  ) {
-    try {
-      if (key == null) {
-        val result = Arguments.createMap()
-        result.putBoolean("success", false)
-        result.putString("error", "Key is required")
-        promise?.resolve(result)
-        return
-      }
-
-      MediaSessionManager.showNotification(key, options)
-
-      val result = Arguments.createMap()
-      result.putBoolean("success", true)
-      promise?.resolve(result)
-    } catch (e: Exception) {
-      val result = Arguments.createMap()
-      result.putBoolean("success", false)
-      result.putString("error", e.message ?: "Unknown error")
-      promise?.resolve(result)
-    }
-  }
-
-  override fun updateNotification(
-    key: String?,
-    options: ReadableMap?,
-    promise: Promise?,
-  ) {
-    try {
-      if (key == null) {
-        val result = Arguments.createMap()
-        result.putBoolean("success", false)
-        result.putString("error", "Key is required")
-        promise?.resolve(result)
-        return
-      }
-
-      MediaSessionManager.updateNotification(key, options)
+      MediaSessionManager.showNotification(type, key, options)
 
       val result = Arguments.createMap()
       result.putBoolean("success", true)
@@ -244,32 +191,6 @@ class AudioAPIModule(
       }
 
       MediaSessionManager.hideNotification(key)
-
-      val result = Arguments.createMap()
-      result.putBoolean("success", true)
-      promise?.resolve(result)
-    } catch (e: Exception) {
-      val result = Arguments.createMap()
-      result.putBoolean("success", false)
-      result.putString("error", e.message ?: "Unknown error")
-      promise?.resolve(result)
-    }
-  }
-
-  override fun unregisterNotification(
-    key: String?,
-    promise: Promise?,
-  ) {
-    try {
-      if (key == null) {
-        val result = Arguments.createMap()
-        result.putBoolean("success", false)
-        result.putString("error", "Key is required")
-        promise?.resolve(result)
-        return
-      }
-
-      MediaSessionManager.unregisterNotification(key)
 
       val result = Arguments.createMap()
       result.putBoolean("success", true)

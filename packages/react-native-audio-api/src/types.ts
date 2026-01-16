@@ -233,3 +233,5 @@ export interface TWaveShaperOptions extends TAudioNodeOptions {
   curve?: Float32Array;
   oversample?: OverSampleType;
 }
+
+export type DecodeDataInput = number | string | ArrayBuffer;

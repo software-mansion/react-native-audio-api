@@ -1,18 +1,18 @@
-import { ContextState, AudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode';
-import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
+import BaseAudioContext from './BaseAudioContext';
 import BiquadFilterNode from './BiquadFilterNode';
-import IIRFilterNode from './IIRFilterNode';
+import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 import GainNode from './GainNode';
+import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import ConvolverNode from './ConvolverNode';
-import DelayNode from './DelayNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import WaveShaperNode from './WaveShaperNode';
 
@@ -131,16 +131,30 @@ export default class AudioContext implements BaseAudioContext {
     return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
-  async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
-    const arrayBuffer = await fetch(source).then((response) =>
-      response.arrayBuffer()
-    );
+  async decodeAudioData(
+    source: DecodeDataInput,
+    fetchOptions?: RequestInit
+  ): Promise<AudioBuffer> {
+    if (source instanceof ArrayBuffer) {
+      const decodedData = await this.context.decodeAudioData(source);
+      return new AudioBuffer(decodedData);
+    }
 
-    return this.decodeAudioData(arrayBuffer);
-  }
+    if (typeof source === 'string') {
+      const response = await fetch(source, fetchOptions);
 
-  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
-    return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
+      if (!response.ok) {
+        throw new InvalidAccessError(
+          `Failed to fetch audio data from the provided source: ${source}`
+        );
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const decodedData = await this.context.decodeAudioData(arrayBuffer);
+      return new AudioBuffer(decodedData);
+    }
+
+    throw new TypeError('Unsupported source for decodeAudioData: ' + source);
   }
 
   async close(): Promise<void> {

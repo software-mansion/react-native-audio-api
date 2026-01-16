@@ -1,7 +1,7 @@
 import { icons } from 'lucide-react-native';
 
-import Record from './Record/Record';
 import PedalBoard from './PedalBoard/PedalBoard';
+import Record from './Record/Record';
 
 interface SimplifiedIconProps {
   color?: string;

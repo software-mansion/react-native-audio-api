@@ -14,11 +14,7 @@ import type {
 /// Mock Manager for playback notifications. Does nothing.
 class PlaybackNotificationManager
   implements
-    NotificationManager<
-      PlaybackNotificationInfo,
-      PlaybackNotificationInfo,
-      PlaybackNotificationEventName
-    >
+    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
 {
   private isRegistered_ = false;
   private isShown_ = false;
@@ -57,8 +53,6 @@ class PlaybackNotificationManager
       remove: () => {},
     } as unknown as AudioEventSubscription;
   }
-
-  removeEventListener(subscription: AudioEventSubscription): void {}
 }
 
 export default new PlaybackNotificationManager();

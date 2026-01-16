@@ -8,6 +8,7 @@ import type {
   ContextState,
   FileInfo,
   OscillatorType,
+  OverSampleType,
   Result,
   WindowType,
   TGainOptions,
@@ -23,7 +24,6 @@ import type {
   TAudioBufferOptions,
   TDelayOptions,
   TIIRFilterOptions,
-  OverSampleType,
   TWaveShaperOptions,
 } from './types';
 

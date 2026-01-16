@@ -1,14 +1,15 @@
 import AudioAPIModule from '../AudioAPIModule';
+import { AudioApiError } from '../errors';
 
 export function assertWorkletsEnabled() {
   if (!AudioAPIModule.areWorkletsAvailable) {
-    throw new Error(
+    throw new AudioApiError(
       '[react-native-audio-api]: Worklets are not available. Please install react-native-worklets to use this feature.'
     );
   }
 
   if (!AudioAPIModule.isWorkletsVersionSupported) {
-    throw new Error(
+    throw new AudioApiError(
       `[react-native-audio-api]: Worklets version ${AudioAPIModule.workletsVersion} is not supported.
       Please install react-native-worklets of one of the following versions: [${AudioAPIModule.supportedWorkletsVersion.join(', ')}] to use this feature.`
     );

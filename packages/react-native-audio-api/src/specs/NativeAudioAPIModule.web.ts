@@ -37,20 +37,12 @@ interface Spec extends TurboModule {
   getDevicesInfo(): Promise<AudioDevicesInfo>;
 
   // New notification system
-  registerNotification(
-    type: NotificationType,
-    key: string
-  ): Promise<NotificationOpResponse>;
   showNotification(
-    key: string,
-    options: OptionsMap
-  ): Promise<NotificationOpResponse>;
-  updateNotification(
+    type: NotificationType,
     key: string,
     options: OptionsMap
   ): Promise<NotificationOpResponse>;
   hideNotification(key: string): Promise<NotificationOpResponse>;
-  unregisterNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
 }
 
@@ -82,11 +74,8 @@ const NativeAudioAPIModule: Spec = {
     currentInputs: [],
     currentOutputs: [],
   }),
-  registerNotification: mockAsync({ success: true }),
   showNotification: mockAsync({ success: true }),
-  updateNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
-  unregisterNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),
 };
 

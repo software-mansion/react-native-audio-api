@@ -1,11 +1,9 @@
 'use strict';
-
-import { TurboModuleRegistry, TurboModule } from 'react-native';
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
 import { AudioDevicesInfo, PermissionStatus } from '../system/types';
 
-type OptionsMap = {
-  [key: string]: string | boolean | number | undefined;
-};
+type OptionsMap = { [key: string]: string | boolean | number | undefined };
 type NotificationOpResponse = { success: boolean; error?: string };
 type NotificationType = 'playback' | 'recording' | 'simple';
 
@@ -37,21 +35,13 @@ interface Spec extends TurboModule {
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
 
-  // New notification system
-  registerNotification(
-    type: NotificationType,
-    key: string
-  ): Promise<NotificationOpResponse>;
+  // Notification system
   showNotification(
-    key: string,
-    options: OptionsMap
-  ): Promise<NotificationOpResponse>;
-  updateNotification(
+    type: NotificationType,
     key: string,
     options: OptionsMap
   ): Promise<NotificationOpResponse>;
   hideNotification(key: string): Promise<NotificationOpResponse>;
-  unregisterNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
 }
 

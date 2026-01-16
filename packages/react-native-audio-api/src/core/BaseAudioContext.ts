@@ -4,7 +4,7 @@ import {
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
-import { AudioWorkletRuntime, ContextState } from '../types';
+import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
 import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -48,13 +48,10 @@ export default class BaseAudioContext {
   }
 
   public async decodeAudioData(
-    input: string | ArrayBuffer,
-    sampleRate?: number
+    input: DecodeDataInput,
+    fetchOptions?: RequestInit
   ): Promise<AudioBuffer> {
-    if (!(typeof input === 'string' || input instanceof ArrayBuffer)) {
-      throw new TypeError('Input must be a string or ArrayBuffer');
-    }
-    return await decodeAudioData(input, sampleRate ?? this.sampleRate);
+    return await decodeAudioData(input, this.sampleRate, fetchOptions);
   }
 
   public async decodePCMInBase64(

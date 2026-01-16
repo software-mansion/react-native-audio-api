@@ -64,30 +64,19 @@
     }
   }
 
-  // Update the now playing info
-  [self updateNowPlayingInfo:options];
-
-  _isActive = true;
-
-  return true;
-}
-
-- (BOOL)updateWithOptions:(NSDictionary *)options
-{
-  if (!_isActive) {
-    return false;
-  }
-
   // Handle control enable/disable
   if (options[@"control"] && options[@"enabled"]) {
     NSString *control = options[@"control"];
     BOOL enabled = [options[@"enabled"] boolValue];
     [self enableControl:control enabled:enabled];
-    return true;
+    // If it's a control update, we can return early or continue
+    // Continuing lets us update metadata if provided mixed with controls
   }
 
   // Update the now playing info
   [self updateNowPlayingInfo:options];
+
+  _isActive = true;
 
   return true;
 }

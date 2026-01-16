@@ -4,6 +4,7 @@ import type {
 } from 'react-native-audio-api';
 import {
   AudioContext,
+  decodeAudioData,
   PlaybackNotificationManager,
 } from 'react-native-audio-api';
 
@@ -34,9 +35,9 @@ class AudioPlayer {
     }
 
     this.isPlaying = true;
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       state: 'playing',
-    })
+    });
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
@@ -51,11 +52,16 @@ class AudioPlayer {
     this.sourceNode.onPositionChanged = (event) => {
       this.currentElapsedTime = event.value;
       if (this.onPositionChanged) {
-        this.onPositionChanged(this.currentElapsedTime / this.audioBuffer!.duration);
+        this.onPositionChanged(
+          this.currentElapsedTime / this.audioBuffer!.duration
+        );
       }
     };
 
-    this.sourceNode.start(this.audioContext.currentTime, this.currentElapsedTime);
+    this.sourceNode.start(
+      this.audioContext.currentTime,
+      this.currentElapsedTime
+    );
   };
 
   pause = async () => {
@@ -67,9 +73,10 @@ class AudioPlayer {
     this.sourceNode?.stop(this.audioContext.currentTime);
 
     await this.audioContext.suspend();
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       state: 'paused',
-    })
+      elapsedTime: this.currentElapsedTime,
+    });
 
     this.isPlaying = false;
   };
@@ -82,7 +89,7 @@ class AudioPlayer {
     } else if (this.currentElapsedTime > this.getDuration()) {
       this.currentElapsedTime = this.getDuration();
     }
-    PlaybackNotificationManager.update({
+    PlaybackNotificationManager.show({
       elapsedTime: this.currentElapsedTime,
     });
 
@@ -92,19 +99,13 @@ class AudioPlayer {
     }
   };
 
-  loadBuffer = async (url: string) => {
-    const buffer = await fetch(url, {
+  loadBuffer = async (asset: string | number) => {
+    const buffer = await decodeAudioData(asset, 0, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
       },
-    })
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
-      .catch((error) => {
-        console.error('Error decoding audio data source:', error);
-        return null;
-      });
+    });
 
     if (buffer) {
       this.audioBuffer = buffer;
@@ -139,7 +140,7 @@ class AudioPlayer {
 
   getElapsedTime = (): number => {
     return this.currentElapsedTime;
-  }
+  };
 }
 
 export default new AudioPlayer();

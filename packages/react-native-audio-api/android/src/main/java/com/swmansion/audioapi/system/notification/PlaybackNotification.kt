@@ -8,19 +8,17 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import android.provider.ContactsContract
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.drawable.IconCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.R
 import java.io.IOException
 import java.lang.ref.WeakReference
 import java.net.URL
@@ -42,104 +40,94 @@ class PlaybackNotification(
   private val channelId: String,
 ) : BaseNotification {
   companion object {
-    private const val TAG = "PlaybackNotification"
     const val MEDIA_BUTTON = "playback_notification_media_button"
-    const val PACKAGE_NAME = "com.swmansion.audioapi.playback"
+    const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
+    const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
+    const val ID = 100
   }
 
   private var mediaSession: MediaSessionCompat? = null
   private var notificationBuilder: NotificationCompat.Builder? = null
-  private var playbackStateBuilder: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
-  private var playbackState: PlaybackStateCompat = playbackStateBuilder.build()
-  private var playbackPlayingState: Int = PlaybackStateCompat.STATE_PAUSED
+  private var pb: PlaybackStateCompat.Builder = PlaybackStateCompat.Builder()
+  private var state: PlaybackStateCompat = pb.build()
+  private var controls: Long = 0
 
-  private var enabledControls: Long = 0
   private var isPlaying: Boolean = false
+  private var isInitialized = false
 
   // Metadata
   private var title: String? = null
   private var artist: String? = null
   private var album: String? = null
   private var artwork: Bitmap? = null
-  private var smallIcon: IconCompat? = null
   private var duration: Long = 0L
   private var elapsedTime: Long = 0L
   private var speed: Float = 1.0F
-
-  // Actions
-  private var playAction: NotificationCompat.Action? = null
-  private var pauseAction: NotificationCompat.Action? = null
-  private var nextAction: NotificationCompat.Action? = null
-  private var previousAction: NotificationCompat.Action? = null
-  private var skipForwardAction: NotificationCompat.Action? = null
-  private var skipBackwardAction: NotificationCompat.Action? = null
+  private var playbackStateVal: Int = PlaybackStateCompat.STATE_PAUSED
 
   private var artworkThread: Thread? = null
-  private var smallIconThread: Thread? = null
 
-  override fun init(params: ReadableMap?): Notification {
-    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+  private fun initializeIfNeeded() {
+    if (isInitialized) return
+    val context = reactContext.get() ?: return
 
-    // Create notification channel first
     createNotificationChannel()
 
-    // Create MediaSession
     mediaSession = MediaSessionCompat(context, "PlaybackNotification")
-    mediaSession?.isActive = true
 
-    // Set up media session callbacks
     mediaSession?.setCallback(
       object : MediaSessionCompat.Callback() {
         override fun onPlay() {
-          Log.d(TAG, "MediaSession: onPlay")
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPlay", mapOf())
         }
 
         override fun onPause() {
-          Log.d(TAG, "MediaSession: onPause")
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPause", mapOf())
         }
 
         override fun onSkipToNext() {
-          Log.d(TAG, "MediaSession: onSkipToNext")
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationNext", mapOf())
         }
 
         override fun onSkipToPrevious() {
-          Log.d(TAG, "MediaSession: onSkipToPrevious")
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPrevious", mapOf())
         }
 
         override fun onFastForward() {
-          Log.d(TAG, "MediaSession: onFastForward")
           val body = HashMap<String, Any>().apply { put("value", 15) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipForward", body)
         }
 
         override fun onRewind() {
-          Log.d(TAG, "MediaSession: onRewind")
           val body = HashMap<String, Any>().apply { put("value", 15) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipBackward", body)
         }
 
         override fun onSeekTo(pos: Long) {
-          Log.d(TAG, "MediaSession: onSeekTo - position: $pos")
-          val body = HashMap<String, Any>().apply { put("value", pos / 1000.0) } // Convert to seconds
+          val body = HashMap<String, Any>().apply { put("value", pos / 1000.0) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSeekTo", body)
+        }
+
+        override fun onCustomAction(
+          action: String?,
+          extras: android.os.Bundle?,
+        ) {
+          if (action == "SkipForward") {
+            onFastForward()
+          } else if (action == "SkipBackward") {
+            onRewind()
+          }
         }
       },
     )
 
-    // Create notification builder
     notificationBuilder =
       NotificationCompat
         .Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_media_play)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-        .setOngoing(true) // Make it persistent (can't swipe away)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
 
-    // Set content intent to open app
     val packageName = context.packageName
     val openAppIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     if (openAppIntent != null) {
@@ -153,7 +141,6 @@ class PlaybackNotification(
       notificationBuilder?.setContentIntent(pendingIntent)
     }
 
-    // Set delete intent to handle dismissal
     val deleteIntent = Intent(PlaybackNotificationReceiver.ACTION_NOTIFICATION_DISMISSED)
     deleteIntent.setPackage(context.packageName)
     val deletePendingIntent =
@@ -165,468 +152,325 @@ class PlaybackNotification(
       )
     notificationBuilder?.setDeleteIntent(deletePendingIntent)
 
-    // Enable default controls
-    enableControl("play", true)
-    enableControl("pause", true)
-    enableControl("next", true)
-    enableControl("previous", true)
-    enableControl("seekTo", true)
+    pb.setActions(controls)
+    mediaSession?.isActive = true
 
-    updateMediaStyle()
-    updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+    isInitialized = true
+  }
 
-    // Apply initial params if provided
-    if (params != null) {
-      update(params)
+  override fun show(options: ReadableMap?): Notification {
+    initializeIfNeeded()
+    if (options != null) {
+      updateInternal(options)
     }
-
     return buildNotification()
   }
 
-  override fun reset() {
-    // Interrupt artwork loading if in progress
-    artworkThread?.interrupt()
+  override fun hide() {
+    if (!isInitialized) return
+
+    if (artworkThread != null && artworkThread!!.isAlive) {
+      artworkThread!!.interrupt()
+    }
     artworkThread = null
-    smallIconThread?.interrupt()
-    smallIconThread = null
 
-    // Reset metadata
-    title = null
-    artist = null
-    album = null
-    artwork = null
-    smallIcon = null
-    duration = 0L
-    elapsedTime = 0L
-    speed = 1.0F
-    isPlaying = false
-
-    // Reset media session
-    val emptyMetadata = MediaMetadataCompat.Builder().build()
-    mediaSession?.setMetadata(emptyMetadata)
-
-    playbackState =
-      playbackStateBuilder
-        .setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
-        .setActions(enabledControls)
-        .build()
-    mediaSession?.setPlaybackState(playbackState)
     mediaSession?.isActive = false
     mediaSession?.release()
     mediaSession = null
+    notificationBuilder = null
+    isInitialized = false
+
+    controls = 0
+    isPlaying = false
+    artwork = null
   }
 
   override fun getNotificationId(): Int = notificationId
 
   override fun getChannelId(): String = channelId
 
-  override fun update(options: ReadableMap?): Notification {
-    if (options == null) {
-      return buildNotification()
+  private fun updateInternal(info: ReadableMap) {
+    if (info.hasKey("control") && info.hasKey("enabled")) {
+      enableControl(info.getString("control"), info.getBoolean("enabled"))
     }
 
-    // Handle control enable/disable
-    if (options.hasKey("control") && options.hasKey("enabled")) {
-      val control = options.getString("control")
-      val enabled = options.getBoolean("enabled")
-      if (control != null) {
-        enableControl(control, enabled)
+    val md = MediaMetadataCompat.Builder()
+
+    if (info.hasKey("title")) title = info.getString("title")
+    if (info.hasKey("artist")) artist = info.getString("artist")
+    if (info.hasKey("album")) album = info.getString("album")
+    if (info.hasKey("duration")) duration = (info.getDouble("duration") * 1000).toLong()
+
+    md.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+    md.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+    md.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+    md.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+
+    notificationBuilder?.setContentTitle(title)
+    notificationBuilder?.setContentText(artist)
+    notificationBuilder?.setContentInfo(album)
+
+    if (info.hasKey("artwork")) {
+      if (artworkThread != null && artworkThread!!.isAlive) {
+        artworkThread!!.interrupt()
       }
-      return buildNotification()
-    }
 
-    // Update metadata
-    if (options.hasKey("title")) {
-      title = options.getString("title")
-    }
-
-    if (options.hasKey("artist")) {
-      artist = options.getString("artist")
-    }
-
-    if (options.hasKey("album")) {
-      album = options.getString("album")
-    }
-
-    if (options.hasKey("duration")) {
-      duration = (options.getDouble("duration") * 1000).toLong()
-    }
-
-    if (options.hasKey("elapsedTime")) {
-      elapsedTime = (options.getDouble("elapsedTime") * 1000).toLong()
-    } else {
-      // Use the current position from the media session controller (live calculated position)
-      val controllerPosition = mediaSession?.controller?.playbackState?.position
-      if (controllerPosition != null && controllerPosition > 0) {
-        elapsedTime = controllerPosition
-      }
-    }
-
-    if (options.hasKey("speed")) {
-      speed = options.getDouble("speed").toFloat()
-    } else {
-      // Use the current speed from the media session controller
-      val controllerSpeed = mediaSession?.controller?.playbackState?.playbackSpeed
-      if (controllerSpeed != null && controllerSpeed > 0) {
-        speed = controllerSpeed
-      }
-    }
-
-    // Ensure speed is at least 1.0 when playing
-    if (isPlaying && speed == 0f) {
-      speed = 1.0f
-    }
-
-    // Update playback state
-    if (options.hasKey("state")) {
-      when (options.getString("state")) {
-        "playing" -> {
-          playbackPlayingState = PlaybackStateCompat.STATE_PLAYING
+      var localArtwork = false
+      val artworkUri =
+        if (info.getType("artwork") == ReadableType.Map) {
+          localArtwork = true
+          info.getMap("artwork")?.getString("uri")
+        } else {
+          info.getString("artwork")
         }
 
-        "paused" -> {
-          playbackPlayingState = PlaybackStateCompat.STATE_PAUSED
-        }
-      }
-    }
-
-    // Build MediaMetadata
-    val metadataBuilder =
-      MediaMetadataCompat
-        .Builder()
-        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
-        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-
-    // Update notification builder
-    notificationBuilder
-      ?.setContentTitle(title)
-      ?.setContentText(artist)
-
-    // Handle artwork (large icon)
-    if (options.hasKey("artwork")) {
-      artworkThread?.interrupt()
-
-      val artworkUrl: String?
-      val isLocal: Boolean
-
-      if (options.getType("artwork") == ReadableType.Map) {
-        artworkUrl = options.getMap("artwork")?.getString("uri")
-        isLocal = true
-      } else {
-        artworkUrl = options.getString("artwork")
-        isLocal = false
-      }
-
-      if (artworkUrl != null) {
+      if (artworkUri != null) {
         artworkThread =
           Thread {
             try {
-              val bitmap = loadArtwork(artworkUrl, isLocal)
+              val bitmap = loadArtwork(artworkUri, localArtwork)
               if (bitmap != null) {
-                // Post UI updates to main thread for thread safety
+                artwork = bitmap
                 val context = reactContext.get()
                 context?.runOnUiQueueThread {
-                  try {
-                    artwork = bitmap
-                    notificationBuilder?.setLargeIcon(bitmap)
+                  notificationBuilder?.setLargeIcon(bitmap)
 
-                    // Add artwork to current metadata without touching other fields
-                    val currentMetadata = mediaSession?.controller?.metadata
-                    if (currentMetadata != null) {
-                      val updatedBuilder = MediaMetadataCompat.Builder(currentMetadata)
-                      updatedBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
-                      mediaSession?.setMetadata(updatedBuilder.build())
-                    }
+                  val currentMetadata = mediaSession?.controller?.metadata
+                  val newBuilder = MediaMetadataCompat.Builder(currentMetadata ?: MediaMetadataCompat.Builder().build())
+                  mediaSession?.setMetadata(newBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap).build())
 
-                    // Refresh the notification on main thread
-                    val notificationManager =
-                      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                    notificationManager.notify(notificationId, buildNotification())
-                  } catch (e: Exception) {
-                    Log.e(TAG, "Error updating notification with artwork: ${e.message}", e)
-                  }
+                  // Trigger update
+                  val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                  notificationManager.notify(notificationId, buildNotification())
                 }
               }
-              artworkThread = null
-            } catch (e: Exception) {
-              Log.e(TAG, "Error loading artwork: ${e.message}", e)
-              artworkThread = null
+            } catch (ex: Exception) {
+              ex.printStackTrace()
             }
           }
-        artworkThread?.start()
+        artworkThread!!.start()
       }
     }
 
-    // Handle androidSmallIcon (small icon)
-    if (options.hasKey("androidSmallIcon")) {
-      smallIconThread?.interrupt()
+    if (info.hasKey("speed")) {
+      speed = info.getDouble("speed").toFloat()
+    }
 
-      val smallIconUrl: String?
-      val isLocal: Boolean
+    if (isPlaying && speed == 0F) {
+      speed = 1F
+    }
 
-      if (options.getType("androidSmallIcon") == ReadableType.Map) {
-        smallIconUrl = options.getMap("androidSmallIcon")?.getString("uri")
-        isLocal = true
-      } else {
-        smallIconUrl = options.getString("androidSmallIcon")
-        isLocal = false
-      }
-
-      if (smallIconUrl != null) {
-        smallIconThread =
-          Thread {
-            try {
-              val bitmap = loadArtwork(smallIconUrl, isLocal)
-              if (bitmap != null) {
-                // Post UI updates to main thread for thread safety
-                val context = reactContext.get()
-                context?.runOnUiQueueThread {
-                  try {
-                    val icon = IconCompat.createWithBitmap(bitmap)
-                    smallIcon = icon
-                    notificationBuilder?.setSmallIcon(icon)
-
-                    // Refresh the notification on main thread
-                    val notificationManager =
-                      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                    notificationManager.notify(notificationId, buildNotification())
-                  } catch (e: Exception) {
-                    Log.e(TAG, "Error updating notification with small icon: ${e.message}", e)
-                  }
-                }
-              }
-              smallIconThread = null
-            } catch (e: Exception) {
-              Log.e(TAG, "Error loading small icon: ${e.message}", e)
-              smallIconThread = null
-            }
-          }
-        smallIconThread?.start()
+    if (info.hasKey("elapsedTime")) {
+      elapsedTime = (info.getDouble("elapsedTime") * 1000).toLong()
+    } else {
+      if (state.position != PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN) {
+        elapsedTime = state.position
       }
     }
 
-    updatePlaybackState(playbackPlayingState)
-    mediaSession?.setMetadata(metadataBuilder.build())
-    mediaSession?.isActive = true
+    if (info.hasKey("state")) {
+      when (info.getString("state")) {
+        "playing", "state_playing" -> playbackStateVal = PlaybackStateCompat.STATE_PLAYING
+        "paused", "state_paused" -> playbackStateVal = PlaybackStateCompat.STATE_PAUSED
+      }
+    }
 
-    return buildNotification()
+    updatePlaybackState(playbackStateVal)
+
+    if (artwork != null) {
+      md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, artwork)
+    }
+    mediaSession?.setMetadata(md.build())
+
+    updateNotificationsActions()
   }
 
-  private fun buildNotification(): Notification =
-    notificationBuilder?.build()
-      ?: throw IllegalStateException("Notification not initialized. Call init() first.")
-
-  /**
-   * Enable or disable a specific control action.
-   */
   private fun enableControl(
-    name: String,
+    name: String?,
     enabled: Boolean,
   ) {
-    val controlValue =
-      when (name) {
-        "play" -> PlaybackStateCompat.ACTION_PLAY
-        "pause" -> PlaybackStateCompat.ACTION_PAUSE
-        "next" -> PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-        "previous" -> PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-        "skipForward" -> PlaybackStateCompat.ACTION_FAST_FORWARD
-        "skipBackward" -> PlaybackStateCompat.ACTION_REWIND
-        "seekTo" -> PlaybackStateCompat.ACTION_SEEK_TO
-        else -> 0L
-      }
+    if (name == null) return
+    var controlValue = 0L
+    when (name) {
+      "play", "remotePlay" -> controlValue = PlaybackStateCompat.ACTION_PLAY
+      "pause", "remotePause" -> controlValue = PlaybackStateCompat.ACTION_PAUSE
+      "stop", "remoteStop" -> controlValue = PlaybackStateCompat.ACTION_STOP
+      "togglePlayPause", "remoteTogglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
+      "next", "remoteNextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+      "previous", "remotePreviousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+      "skipForward", "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD
+      "skipBackward", "remoteSkipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "seekTo", "remoteChangePlaybackPosition" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
+    }
 
-    if (controlValue == 0L) return
-
-    enabledControls =
+    controls =
       if (enabled) {
-        enabledControls or controlValue
+        controls or controlValue
       } else {
-        enabledControls and controlValue.inv()
+        controls and controlValue.inv()
       }
 
-    // Update actions
-    updateActions()
-    updateMediaStyle()
-
-    // Update playback state with new controls
-    playbackState =
-      playbackStateBuilder
-        .setActions(enabledControls)
-        .build()
-    mediaSession?.setPlaybackState(playbackState)
+    updatePlaybackActionState()
+    updateNotificationsActions()
   }
 
-  private fun updateActions() {
+  private fun updatePlaybackActionState() {
+    val builder = PlaybackStateCompat.Builder()
+    builder.setActions(controls)
+
+    if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
+      builder.addCustomAction(
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "SkipBackward",
+            "Skip Backward",
+            R.drawable.skip_backward_15,
+          ).build(),
+      )
+    }
+
+    if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
+      builder.addCustomAction(
+        PlaybackStateCompat.CustomAction
+          .Builder(
+            "SkipForward",
+            "Skip Forward",
+            R.drawable.skip_forward_15,
+          ).build(),
+      )
+    }
+
+    pb = builder
+  }
+
+  private fun updatePlaybackState(playbackStateCode: Int) {
+    isPlaying = playbackStateCode == PlaybackStateCompat.STATE_PLAYING
+
+    pb.setState(playbackStateCode, elapsedTime, speed)
+    state = pb.build()
+    mediaSession?.setPlaybackState(state)
+
+    notificationBuilder?.setOngoing(isPlaying)
+  }
+
+  private fun updateNotificationsActions() {
+    notificationBuilder?.clearActions()
+
+    val style = MediaStyle()
+    style.setMediaSession(mediaSession?.sessionToken)
+
     val context = reactContext.get() ?: return
-    val packageName = context.packageName
 
-    playAction =
-      createAction(
-        "play",
-        "Play",
-        android.R.drawable.ic_media_play,
-        PlaybackStateCompat.ACTION_PLAY,
-      )
+    var index = 0
+    val actionsList = mutableListOf<Int>()
 
-    pauseAction =
-      createAction(
-        "pause",
-        "Pause",
-        android.R.drawable.ic_media_pause,
-        PlaybackStateCompat.ACTION_PAUSE,
+    if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+      notificationBuilder?.addAction(
+        createAction("previous", "Previous", android.R.drawable.ic_media_previous, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
       )
+      actionsList.add(index++)
+    }
 
-    nextAction =
-      createAction(
-        "next",
-        "Next",
-        android.R.drawable.ic_media_next,
-        PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
+    if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
+      notificationBuilder?.addAction(
+        createAction("skip_backward", "Skip Backward", R.drawable.skip_backward_15, PlaybackStateCompat.ACTION_REWIND),
       )
+      actionsList.add(index++)
+    }
 
-    previousAction =
-      createAction(
-        "previous",
-        "Previous",
-        android.R.drawable.ic_media_previous,
-        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-      )
+    if (isPlaying) {
+      if (hasControl(PlaybackStateCompat.ACTION_PAUSE)) {
+        notificationBuilder?.addAction(
+          createAction("pause", "Pause", android.R.drawable.ic_media_pause, PlaybackStateCompat.ACTION_PAUSE),
+        )
+        actionsList.add(index++)
+      }
+    } else {
+      if (hasControl(PlaybackStateCompat.ACTION_PLAY)) {
+        notificationBuilder?.addAction(createAction("play", "Play", android.R.drawable.ic_media_play, PlaybackStateCompat.ACTION_PLAY))
+        actionsList.add(index++)
+      }
+    }
 
-    skipForwardAction =
-      createAction(
-        "skip_forward",
-        "Skip Forward",
-        android.R.drawable.ic_media_ff,
-        PlaybackStateCompat.ACTION_FAST_FORWARD,
+    if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
+      notificationBuilder?.addAction(
+        createAction("skip_forward", "Skip Forward", R.drawable.skip_forward_15, PlaybackStateCompat.ACTION_FAST_FORWARD),
       )
+      actionsList.add(index++)
+    }
 
-    skipBackwardAction =
-      createAction(
-        "skip_backward",
-        "Skip Backward",
-        android.R.drawable.ic_media_rew,
-        PlaybackStateCompat.ACTION_REWIND,
+    if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
+      notificationBuilder?.addAction(
+        createAction("next", "Next", android.R.drawable.ic_media_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
       )
+      actionsList.add(index++)
+    }
+
+    if (actionsList.size > 3) {
+      style.setShowActionsInCompactView(actionsList[0], actionsList[1], actionsList[2])
+    } else {
+      style.setShowActionsInCompactView(*actionsList.toIntArray())
+    }
+
+    notificationBuilder?.setStyle(style)
   }
 
   private fun createAction(
     name: String,
     title: String,
     icon: Int,
-    action: Long,
-  ): NotificationCompat.Action? {
-    val context = reactContext.get() ?: return null
+    mediaAction: Long,
+  ): NotificationCompat.Action {
+    val context = reactContext.get()!!
+    val pendingIntent: PendingIntent
 
-    if ((enabledControls and action) == 0L) {
-      return null
+    if (name == "skip_forward" || name == "skip_backward") {
+      val customActionName = if (name == "skip_forward") ACTION_SKIP_FORWARD else ACTION_SKIP_BACKWARD
+      val intent = Intent(customActionName)
+      intent.setPackage(context.packageName)
+      pendingIntent =
+        PendingIntent.getBroadcast(
+          context,
+          if (name == "skip_forward") 1001 else 1002,
+          intent,
+          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+    } else {
+      val keyCode = PlaybackStateCompat.toKeyCode(mediaAction)
+      val intent = Intent(MEDIA_BUTTON)
+      intent.setPackage(context.packageName)
+      intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+      pendingIntent =
+        PendingIntent.getBroadcast(
+          context,
+          keyCode,
+          intent,
+          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
     }
-
-    val keyCode = PlaybackStateCompat.toKeyCode(action)
-    val intent = Intent(MEDIA_BUTTON)
-    intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
-    intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, context.packageName)
-
-    val pendingIntent =
-      PendingIntent.getBroadcast(
-        context,
-        keyCode,
-        intent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-      )
-
     return NotificationCompat.Action(icon, title, pendingIntent)
   }
 
-  private fun updatePlaybackState(state: Int) {
-    isPlaying = state == PlaybackStateCompat.STATE_PLAYING
-
-    playbackState =
-      playbackStateBuilder
-        .setState(state, elapsedTime, speed)
-        .setActions(enabledControls)
-        .build()
-    if (mediaSession != null) {
-      Log.d(TAG, "mediaSession is not null")
-    } else {
-      Log.d(TAG, "mediaSession is null")
-    }
-    mediaSession?.setPlaybackState(playbackState)
-
-    // Update ongoing state - only persistent when playing
-    notificationBuilder?.setOngoing(isPlaying)
-  }
-
-  private fun updateMediaStyle() {
-    val style = MediaStyle()
-    style.setMediaSession(mediaSession?.sessionToken)
-
-    // Clear existing actions
-    notificationBuilder?.clearActions()
-
-    // Add actions in order based on enabled controls
-    val compactActions = mutableListOf<Int>()
-    var actionIndex = 0
-
-    if (previousAction != null) {
-      notificationBuilder?.addAction(previousAction)
-      actionIndex++
-    }
-
-    if (skipBackwardAction != null) {
-      notificationBuilder?.addAction(skipBackwardAction)
-      actionIndex++
-    }
-
-    if (playAction != null && !isPlaying) {
-      notificationBuilder?.addAction(playAction)
-      compactActions.add(actionIndex)
-      actionIndex++
-    }
-
-    if (pauseAction != null && isPlaying) {
-      notificationBuilder?.addAction(pauseAction)
-      compactActions.add(actionIndex)
-      actionIndex++
-    }
-
-    if (skipForwardAction != null) {
-      notificationBuilder?.addAction(skipForwardAction)
-      actionIndex++
-    }
-
-    if (nextAction != null) {
-      notificationBuilder?.addAction(nextAction)
-      actionIndex++
-    }
-
-    // Show up to 3 actions in compact view
-    style.setShowActionsInCompactView(*compactActions.take(3).toIntArray())
-    notificationBuilder?.setStyle(style)
-  }
+  private fun hasControl(control: Long): Boolean = (controls and control) == control
 
   private fun loadArtwork(
     url: String,
-    isLocal: Boolean,
+    local: Boolean,
   ): Bitmap? {
     val context = reactContext.get() ?: return null
 
     return try {
-      if (isLocal && !url.startsWith("http")) {
-        // Load local resource
+      if (local && !url.startsWith("http")) {
         val helper =
           com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
             .getInstance()
         val drawable = helper.getResourceDrawable(context, url)
-
         if (drawable is BitmapDrawable) {
           drawable.bitmap
         } else {
           BitmapFactory.decodeFile(url)
         }
       } else {
-        // Load from URL
         val connection = URL(url).openConnection()
         connection.connect()
         val inputStream = connection.getInputStream()
@@ -635,10 +479,8 @@ class PlaybackNotification(
         bitmap
       }
     } catch (e: IOException) {
-      Log.e(TAG, "Failed to load artwork: ${e.message}", e)
       null
     } catch (e: Exception) {
-      Log.e(TAG, "Error loading artwork: ${e.message}", e)
       null
     }
   }
@@ -646,24 +488,20 @@ class PlaybackNotification(
   private fun createNotificationChannel() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val context = reactContext.get() ?: return
-
+      val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
       val channel =
-        android.app
-          .NotificationChannel(
-            channelId,
-            "Audio Playback",
-            android.app.NotificationManager.IMPORTANCE_LOW,
-          ).apply {
-            description = "Media playback controls and information"
-            setShowBadge(false)
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-          }
-
-      val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-      notificationManager.createNotificationChannel(channel)
-
-      Log.d(TAG, "Notification channel created: $channelId")
+        android.app.NotificationChannel(
+          channelId,
+          "Media Playback",
+          android.app.NotificationManager.IMPORTANCE_LOW,
+        )
+      channel.description = "Media playback controls"
+      channel.setShowBadge(false)
+      channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+      manager.createNotificationChannel(channel)
     }
   }
+
+  private fun buildNotification(): Notification =
+    notificationBuilder?.build() ?: throw IllegalStateException("Notification not initialized")
 }

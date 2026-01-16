@@ -18,41 +18,33 @@
   return self;
 }
 
-- (BOOL)registerNotificationType:(NSString *)type withKey:(NSString *)key
+- (BOOL)showNotificationWithType:(NSString *)type
+                             key:(NSString *)key
+                         options:(NSDictionary *)options
 {
-  if (!type || !key) {
-    NSLog(@"[NotificationRegistry] Invalid type or key");
+  if (!key) {
+    NSLog(@"[NotificationRegistry] Invalid key");
     return false;
   }
 
-  // Check if already registered
-  if (_notifications[key]) {
-    NSLog(@"[NotificationRegistry] Notification with key '%@' already registered", key);
-    return false;
-  }
-
-  // Create the appropriate notification type
-  id<BaseNotification> notification = [self createNotificationForType:type];
-
-  if (!notification) {
-    NSLog(@"[NotificationRegistry] Unknown notification type: %@", type);
-    return false;
-  }
-
-  // Store the notification
-  _notifications[key] = notification;
-
-  NSLog(@"[NotificationRegistry] Registered notification type '%@' with key '%@'", type, key);
-  return true;
-}
-
-- (BOOL)showNotificationWithKey:(NSString *)key options:(NSDictionary *)options
-{
   id<BaseNotification> notification = _notifications[key];
 
+  // Create if doesn't exist
   if (!notification) {
-    NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return false;
+    if (!type) {
+      NSLog(@"[NotificationRegistry] Type required for new notification: %@", key);
+      return false;
+    }
+
+    notification = [self createNotificationForType:type];
+
+    if (!notification) {
+      NSLog(@"[NotificationRegistry] Unknown notification type: %@", type);
+      return false;
+    }
+
+    _notifications[key] = notification;
+    NSLog(@"[NotificationRegistry] Created notification type '%@' with key '%@'", type, key);
   }
 
   // Initialize if first time showing
@@ -66,29 +58,9 @@
   BOOL success = [notification showWithOptions:options];
 
   if (success) {
-    NSLog(@"[NotificationRegistry] Showed notification: %@", key);
+    NSLog(@"[NotificationRegistry] Showed/Updated notification: %@", key);
   } else {
     NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
-  }
-
-  return success;
-}
-
-- (BOOL)updateNotificationWithKey:(NSString *)key options:(NSDictionary *)options
-{
-  id<BaseNotification> notification = _notifications[key];
-
-  if (!notification) {
-    NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return false;
-  }
-
-  BOOL success = [notification updateWithOptions:options];
-
-  if (success) {
-    NSLog(@"[NotificationRegistry] Updated notification: %@", key);
-  } else {
-    NSLog(@"[NotificationRegistry] Failed to update notification: %@", key);
   }
 
   return success;
@@ -112,23 +84,6 @@
   }
 
   return success;
-}
-
-- (BOOL)unregisterNotificationWithKey:(NSString *)key
-{
-  id<BaseNotification> notification = _notifications[key];
-
-  if (!notification) {
-    NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
-    return false;
-  }
-
-  // Clean up and remove
-  [notification cleanup];
-  [_notifications removeObjectForKey:key];
-
-  NSLog(@"[NotificationRegistry] Unregistered notification: %@", key);
-  return true;
 }
 
 - (BOOL)isNotificationActiveWithKey:(NSString *)key

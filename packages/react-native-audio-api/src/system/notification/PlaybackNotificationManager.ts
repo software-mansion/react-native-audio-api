@@ -7,101 +7,50 @@ import type {
   PlaybackNotificationEventName,
   PlaybackNotificationInfo,
 } from './types';
+import { AudioApiError } from '../../errors';
 
-/// Manager for media playback notifications with controls and MediaSession integration.
 class PlaybackNotificationManager
   implements
-    NotificationManager<
-      PlaybackNotificationInfo,
-      PlaybackNotificationInfo,
-      PlaybackNotificationEventName
-    >
+    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
 {
   private notificationKey = 'playback';
-  private isRegistered_ = false;
-  private isShown_ = false;
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
 
-  /// Register the playback notification (must be called before showing).
-  async register(): Promise<void> {
-    if (this.isRegistered_) {
-      console.warn('PlaybackNotification is already registered');
-      return;
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.registerNotification(
-      'playback',
-      this.notificationKey
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    this.isRegistered_ = true;
-  }
-
-  /// Show the notification with initial metadata.
+  /**
+   * Show the notification with metadata or update if already visible.
+   * Automatically creates the notification on first call.
+   *
+   * @param info - The info to be displayed.
+   * @returns Promise that resolves after creating notification.
+   */
   async show(info: PlaybackNotificationInfo): Promise<void> {
-    if (!this.isRegistered_) {
-      throw new Error(
-        'PlaybackNotification must be registered before showing. Call register() first.'
-      );
-    }
-
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.showNotification(
+      'playback',
       this.notificationKey,
       info as Record<string, string | number | boolean | undefined>
     );
 
     if (result.error) {
-      throw new Error(result.error);
-    }
-
-    this.isShown_ = true;
-  }
-
-  /// Update the notification with new metadata or state.
-  async update(info: PlaybackNotificationInfo): Promise<void> {
-    if (!this.isShown_) {
-      console.warn('PlaybackNotification is not shown. Call show() first.');
-      return;
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.updateNotification(
-      this.notificationKey,
-      info as Record<string, string | number | boolean | undefined>
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
-  /// Hide the notification (can be shown again later).
+  /**
+   * Hide the notification.
+   *
+   * @returns Promise that resolves after hiding notification.
+   */
   async hide(): Promise<void> {
-    if (!this.isShown_) {
-      return;
-    }
-
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const result = await NativeAudioAPIModule.hideNotification(
@@ -109,63 +58,42 @@ class PlaybackNotificationManager
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
-
-    this.isShown_ = false;
   }
 
-  /// Unregister the notification (must register again to use).
-  async unregister(): Promise<void> {
-    if (!this.isRegistered_) {
-      return;
-    }
-
-    if (this.isShown_) {
-      await this.hide();
-    }
-
-    if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
-    }
-
-    const result = await NativeAudioAPIModule.unregisterNotification(
-      this.notificationKey
-    );
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    this.isRegistered_ = false;
-  }
-
-  /// Enable or disable a specific playback control.
+  /**
+   * Enable or disable a specific playback control.
+   *
+   * @param control - The control to enable or disable on the notification.
+   * @param enabled - Whether to enable (true) or disable (false) the control.
+   * @returns Promise that resolves after showing modified notification.
+   */
   async enableControl(
     control: PlaybackControlName,
     enabled: boolean
   ): Promise<void> {
-    if (!this.isRegistered_) {
-      console.warn('PlaybackNotification is not registered');
-      return;
-    }
-
     if (!NativeAudioAPIModule) {
-      throw new Error('NativeAudioAPIModule is not available');
+      throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
     const params = { control, enabled };
-    const result = await NativeAudioAPIModule.updateNotification(
+    const result = await NativeAudioAPIModule.showNotification(
+      'playback',
       this.notificationKey,
       params as Record<string, string | number | boolean | undefined>
     );
 
     if (result.error) {
-      throw new Error(result.error);
+      throw new AudioApiError(result.error);
     }
   }
 
-  /// Check if the notification is currently active.
+  /**
+   * Check if the notification is currently active.
+   *
+   * @returns Promise that resolves to whether notification is active.
+   */
   async isActive(): Promise<boolean> {
     if (!NativeAudioAPIModule) {
       return false;
@@ -176,21 +104,18 @@ class PlaybackNotificationManager
     );
   }
 
-  isRegistered(): boolean {
-    return this.isRegistered_;
-  }
-
-  /// Add an event listener for notification actions.
+  /**
+   * Add an event listener for notification actions.
+   *
+   * @param eventName - The event name to listen for.
+   * @param callback - The callback to invoke on event.
+   * @returns Class that represents the subscription.
+   */
   addEventListener<T extends PlaybackNotificationEventName>(
     eventName: T,
     callback: (event: NotificationEvents[T]) => void
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
-  }
-
-  /** Remove an event listener. */
-  removeEventListener(subscription: AudioEventSubscription): void {
-    subscription.remove();
   }
 }
 
