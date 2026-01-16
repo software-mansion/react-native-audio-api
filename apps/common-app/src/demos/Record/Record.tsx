@@ -47,7 +47,7 @@ const Record: FC = () => {
       resumeIconResourceName: 'resume',
       color: 0xff6200,
     });
-  }
+  };
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
@@ -67,10 +67,20 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    const success = await AudioManager.setAudioSessionActivity(true);
+    let success = false;
+
+    try {
+      success = await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to activate audio session for recording.');
+      setState(RecordingState.Idle);
+      return;
+    }
 
     if (!success) {
       Alert.alert('Error', 'Failed to activate audio session for recording.');
+      setState(RecordingState.Idle);
       return;
     }
 

@@ -109,14 +109,13 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 }
 
-- (bool)setActive:(bool)active
+- (bool)setActive:(bool)active error:(NSError **)error
 {
+  bool success = false;
+
   if (!self.shouldManageSession) {
     return true;
   }
-
-  NSError *error = nil;
-  bool success = false;
 
   if (self.isActive == active) {
     return true;
@@ -130,16 +129,10 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
-  success = [self.audioSession setActive:active error:&error];
+  success = [self.audioSession setActive:active error:error];
 
   if (success) {
     self.isActive = active;
-  }
-
-  if (error != nil) {
-    NSLog(@"[AudioSessionManager] setting session as %@ failed", active ? @"ACTIVE" : @"INACTIVE");
-  } else {
-    NSLog(@"[AudioSessionManager] session is %@", active ? @"ACTIVE" : @"INACTIVE");
   }
 
   return success;

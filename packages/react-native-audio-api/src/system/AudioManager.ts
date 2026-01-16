@@ -1,12 +1,13 @@
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { SystemEventCallback, SystemEventName } from '../events/types';
+import { NativeAudioAPIModule } from '../specs';
+import { parseNativeError } from './errors';
 import {
-  SessionOptions,
-  PermissionStatus,
   AudioDevicesInfo,
   IAudioManager,
+  PermissionStatus,
+  SessionOptions,
 } from './types';
-import { SystemEventName, SystemEventCallback } from '../events/types';
-import { AudioEventEmitter, AudioEventSubscription } from '../events';
-import { NativeAudioAPIModule } from '../specs';
 
 class AudioManager implements IAudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
@@ -18,8 +19,15 @@ class AudioManager implements IAudioManager {
     return NativeAudioAPIModule.getDevicePreferredSampleRate();
   }
 
-  setAudioSessionActivity(enabled: boolean): Promise<boolean> {
-    return NativeAudioAPIModule.setAudioSessionActivity(enabled);
+  async setAudioSessionActivity(enabled: boolean): Promise<boolean> {
+    try {
+      const success =
+        await NativeAudioAPIModule.setAudioSessionActivity(enabled);
+
+      return success;
+    } catch (error) {
+      throw parseNativeError(error);
+    }
   }
 
   setAudioSessionOptions(options: SessionOptions) {
