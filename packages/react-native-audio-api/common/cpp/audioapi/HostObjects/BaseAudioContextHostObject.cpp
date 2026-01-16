@@ -62,6 +62,12 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
 }
 
+// Explicitly define destructors here, as they to exist in order to act as a
+// "key function" for the audio classes - this allow for RTTI to work
+// properly across dynamic library boundaries (i.e. dynamic_cast that is used by
+// isHostObject method), android specific issue
+BaseAudioContextHostObject::~BaseAudioContextHostObject() = default;
+
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   auto destination = std::make_shared<AudioDestinationNodeHostObject>(context_->getDestination());
   return jsi::Object::createFromHostObject(runtime, destination);
