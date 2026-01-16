@@ -129,16 +129,18 @@ RCT_EXPORT_METHOD(
 
     if (!success) {
       NSDictionary *meta = @{
-        @"nativeCode": @(error.code),
-        @"nativeDomain": error.domain ?: @"",
-        @"nativeDesc": error.description ?: @"",
+        @"nativeCode" : @(error.code),
+        @"nativeDomain" : error.domain ?: @"",
+        @"nativeDesc" : error.description ?: @"",
       };
 
       NSError *jsError =
-          [NSError errorWithDomain:@"AudioAPIModule" code:error.code userInfo:@{
-            NSLocalizedDescriptionKey : @"Failed to set audio session active state",
-            @"meta" : meta,
-          }];
+          [NSError errorWithDomain:@"AudioAPIModule"
+                              code:error.code
+                          userInfo:@{
+                            NSLocalizedDescriptionKey : @"Failed to set audio session active state",
+                            @"meta" : meta,
+                          }];
 
       reject(@"E_AUDIO_SESSION", @"Failed to set audio session active state", jsError);
       return;
