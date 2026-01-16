@@ -47,6 +47,10 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("duck", emptyMap())
+      }
     }
   }
 

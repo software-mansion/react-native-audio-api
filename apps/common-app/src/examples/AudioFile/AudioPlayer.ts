@@ -6,17 +6,20 @@ import {
   AudioContext,
   decodeAudioData,
   PlaybackNotificationManager,
+  GainNode,
 } from 'react-native-audio-api';
 
 class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
+  private volumeNode: GainNode | null = null;
 
   private isPlaying: boolean = false;
 
   private currentElapsedTime: number = 0;
   private playbackRate: number = 1;
+  private volume: number = 1;
   private onPositionChanged: ((offset: number) => void) | null = null;
 
   constructor() {
@@ -48,6 +51,8 @@ class AudioPlayer {
     });
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
+    this.volumeNode = this.audioContext.createGain();
+    this.volumeNode.gain.value = this.volume;
 
     this.sourceNode.connect(this.audioContext.destination);
     this.sourceNode.onPositionChangedInterval = 250;
@@ -142,6 +147,13 @@ class AudioPlayer {
 
   getElapsedTime = (): number => {
     return this.currentElapsedTime;
+  };
+
+  setVolume = (volume: number) => {
+    this.volume = volume;
+    if (this.volumeNode) {
+      this.volumeNode.gain.value = volume;
+    }
   };
 }
 

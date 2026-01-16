@@ -148,6 +148,7 @@ const AudioFile: FC = () => {
 
         if (event.type === 'ended' && wasPlaying) {
           BackgroundTimer.setTimeout(async () => {
+            AudioPlayer.setVolume(1.0);
             AudioManager.setAudioSessionActivity(true);
             await AudioPlayer.play();
             setIsPlaying(true);
@@ -155,6 +156,13 @@ const AudioFile: FC = () => {
             console.log('Auto-resumed after transient interruption');
           }, 500);
         }
+      }
+    );
+
+    const duckListener = AudioManager.addSystemEventListener(
+      'duck',
+      () => {
+        AudioPlayer.setVolume(0.2);
       }
     );
 
@@ -172,6 +180,7 @@ const AudioFile: FC = () => {
       skipBackwardListener.remove();
       seekToListener.remove();
       interruptionSubscription?.remove();
+      duckListener.remove();
     };
   }, [isPlaying, wasPlaying]);
 
