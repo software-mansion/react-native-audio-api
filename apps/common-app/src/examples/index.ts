@@ -8,7 +8,6 @@ import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
 import Piano from './Piano';
-import { PlaybackNotificationExample } from './PlaybackNotification/PlaybackNotification';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
@@ -27,7 +26,6 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
-  PlaybackNotification: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -111,11 +109,5 @@ export const Examples: Example[] = [
     title: 'Streamer',
     Icon: icons.Radio,
     screen: Streaming,
-  },
-  {
-    key: 'PlaybackNotification',
-    title: 'Playback Notification',
-    Icon: icons.Bell,
-    screen: PlaybackNotificationExample,
   },
 ] as const;

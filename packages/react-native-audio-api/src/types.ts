@@ -149,3 +149,5 @@ export interface IIRFilterNodeOptions {
   feedforward: number[];
   feedback: number[];
 }
+
+export type DecodeDataInput = number | string | ArrayBuffer;

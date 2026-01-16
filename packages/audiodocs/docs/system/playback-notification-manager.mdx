@@ -17,7 +17,7 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 
 **iOS Requirements:**
 - Notification controls only appear when an active `AudioContext` is running
-- `show()`, `update()` or `hide()` only update metadata - they don't control notification visibility
+- `show()` or `hide()` only update metadata - they don't control notification visibility
 - The notification automatically appears/disappears based on audio session state
 - To show: create and resume an AudioContext
 - To hide: suspend or close the AudioContext
@@ -25,14 +25,12 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 **Android:**
 - Notification visibility is directly controlled by `show()` and `hide()` methods
 - Works independently of AudioContext state
-
 :::
 
 ## Example
 
 ```tsx
-// Register and show notification
-await PlaybackNotificationManager.register();
+// show notification
 await PlaybackNotificationManager.show({
   title: 'My Song',
   artist: 'My Artist',
@@ -45,7 +43,7 @@ const playListener = PlaybackNotificationManager.addEventListener(
   'playbackNotificationPlay',
   () => {
     // Handle play action
-    PlaybackNotificationManager.update({ state: 'playing' });
+    PlaybackNotificationManager.show({ state: 'playing' });
   }
 );
 
@@ -53,7 +51,7 @@ const pauseListener = PlaybackNotificationManager.addEventListener(
   'playbackNotificationPause',
   () => {
     // Handle pause action
-    PlaybackNotificationManager.update({ state: 'paused' });
+    PlaybackNotificationManager.show({ state: 'paused' });
   }
 );
 
@@ -61,33 +59,21 @@ const seekToListener = PlaybackNotificationManager.addEventListener(
   'playbackNotificationSeekTo',
   (event) => {
     // Handle seek to position (event.value is in seconds)
-    PlaybackNotificationManager.update({ elapsedTime: event.value });
+    PlaybackNotificationManager.show({ elapsedTime: event.value });
   }
 );
 
 // Update progress
-PlaybackNotificationManager.update({ elapsedTime: 60 });
+PlaybackNotificationManager.show({ elapsedTime: 60 });
 
 // Cleanup
-PlaybackNotificationManager.removeEventListener(playListener);
-PlaybackNotificationManager.removeEventListener(pauseListener);
-PlaybackNotificationManager.removeEventListener(seekToListener);
-PlaybackNotificationManager.unregister();
+playListener.remove();
+pauseListener.remove();
+seekToListener.remove();
+PlaybackNotificationManager.hide();
 ```
 
 ## Methods
-
-### `register`
-
-Register the playback notification with the system. Must be called before showing any notification.
-
-#### Returns `Promise<void>`.
-
-#### Errors
-
-| Error type | Description                                                 |
-| :--------: | :---------------------------------------------------------- |
-|  `Error`   | NativeAudioAPIModule is not available or registration fails |
 
 ### `show`
 
@@ -97,29 +83,13 @@ Display the notification with initial metadata.
 On iOS, this method only sets the metadata. The notification controls will only appear when an `AudioContext` is actively running. Make sure to create and resume an AudioContext before calling `show()`.
 :::
 
-| Parameter |                                               Type                                                | Description                   |
-| :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
-|  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
-
-#### Returns `Promise<void>`.
-
-#### Errors
-
-| Error type | Description                                                        |
-| :--------: | :----------------------------------------------------------------- |
-|  `Error`   | Notification must be registered first or native module unavailable |
-
-### `update`
-
-Update the notification with new metadata or state.
-
-:::note iOS Behavior
-On iOS, this method only updates the metadata. It does not control notification visibility - controls remain visible as long as the AudioContext is running.
+:::info
+Metadata is remembered between calls, so after initial passing the metadata to show function, you can only call it with elements that are supposed to change.
 :::
 
-| Parameter |                                               Type                                                | Description                   |
-| :-------: | :-----------------------------------------------------------------------------------------------: | :---------------------------- |
-|  `info`   | [`PlaybackNotificationInfo`](/docs/system/playback-notification-manager#playbacknotificationinfo) | Updated notification metadata |
+| Parameter | Type | Description |
+| :-------: | :----------: | :----- |
+| `info` | [`PlaybackNotificationInfo`](playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 
@@ -133,20 +103,14 @@ On iOS, this method clears the metadata but does not hide the notification contr
 
 #### Returns `Promise<void>`.
 
-### `unregister`
-
-Unregister the notification from the system. Must call `register()` again to use.
-
-#### Returns `Promise<void>`.
-
 ### `enableControl`
 
 Enable or disable specific playback controls.
 
-| Parameter |                                          Type                                           | Description                           |
-| :-------: | :-------------------------------------------------------------------------------------: | :------------------------------------ |
-| `control` | [`PlaybackControlName`](/docs/system/playback-notification-manager#playbackcontrolname) | The control to enable/disable         |
-| `enabled` |                                        `boolean`                                        | Whether the control should be enabled |
+| Parameter | Type | Description |
+| :-------: | :-----: | :------ |
+| `control` | [`PlaybackControlName`](playback-notification-manager#playbackcontrolname) | The control to enable/disable |
+| `enabled` | `boolean` | Whether the control should be enabled |
 
 #### Returns `Promise<void>`.
 
@@ -160,20 +124,12 @@ Check if the notification is currently active and visible.
 
 Add an event listener for notification actions.
 
-|  Parameter  |                                                    Type                                                     | Description             |
-| :---------: | :---------------------------------------------------------------------------------------------------------: | :---------------------- |
-| `eventName` | [`PlaybackNotificationEventName`](/docs/system/playback-notification-manager#playbacknotificationeventname) | The event to listen for |
-| `callback`  |         [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname)         | Callback function       |
+|  Parameter  | Type | Description |
+| :---------: | :------: | :------- |
+| `eventName` | [`PlaybackNotificationEventName`](playback-notification-manager#playbacknotificationeventname) | The event to listen for |
+| `callback`  | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Callback function |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
-
-### `removeEventListener`
-
-Remove an event listener.
-
-|   Parameter    |                                     Type                                      | Description                |
-| :------------: | :---------------------------------------------------------------------------: | :------------------------- |
-| `subscription` | [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) | The subscription to remove |
 
 ## Remarks
 
@@ -205,16 +161,16 @@ interface PlaybackNotificationInfo {
 
 <details>
   <summary>Type definitions</summary>
-  ```typescript
-  type PlaybackControlName =
-    | 'play'
-    | 'pause'
-    | 'next'
-    | 'previous'
-    | 'skipForward'
-    | 'skipBackward'
-    | 'seekTo';
-  ```
+```typescript
+type PlaybackControlName =
+  | 'play'
+  | 'pause'
+  | 'next'
+  | 'previous'
+  | 'skipForward'
+  | 'skipBackward'
+  | 'seekTo';
+```
 </details>
 
 ### `PlaybackNotificationEventName`
@@ -222,19 +178,23 @@ interface PlaybackNotificationInfo {
 <details>
   <summary>Type definitions</summary>
 ```typescript
-    interface PlaybackNotificationEvent {
-      playbackNotificationPlay: EventEmptyType;
-      playbackNotificationPause: EventEmptyType;
-      playbackNotificationNext: EventEmptyType;
-      playbackNotificationPrevious: EventEmptyType;
-      playbackNotificationSkipForward: EventTypeWithValue;
-      playbackNotificationSkipBackward: EventTypeWithValue;
-      playbackNotificationSeekTo: EventTypeWithValue;
-      playbackNotificationDismissed: EventEmptyType;
-    }
+interface EventTypeWithValue {
+  value: number;
+}
 
-    type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
-  ```
+interface PlaybackNotificationEvent {
+  playbackNotificationPlay: EventEmptyType;
+  playbackNotificationPause: EventEmptyType;
+  playbackNotificationNext: EventEmptyType;
+  playbackNotificationPrevious: EventEmptyType;
+  playbackNotificationSkipForward: EventTypeWithValue;
+  playbackNotificationSkipBackward: EventTypeWithValue;
+  playbackNotificationSeekTo: EventTypeWithValue;
+  playbackNotificationDismissed: EventEmptyType;
+}
+
+type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
+```
 </details>
 
 ```

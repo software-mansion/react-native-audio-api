@@ -37,18 +37,12 @@ export * from './types';
 export { default as FilePreset } from './utils/filePresets';
 
 // Notification System
-export {
-  PlaybackNotificationManager,
-  RecordingNotificationManager,
-} from './system/notification';
+export { PlaybackNotificationManager } from './system/notification';
+export { RecordingNotificationManager } from './system/notification';
 
 export {
   NotificationManager,
   PlaybackControlName,
   PlaybackNotificationEventName,
   PlaybackNotificationInfo,
-  RecordingControlName,
-  RecordingNotificationEventName,
-  RecordingNotificationInfo,
-  SimpleNotificationOptions,
 } from './system/notification';

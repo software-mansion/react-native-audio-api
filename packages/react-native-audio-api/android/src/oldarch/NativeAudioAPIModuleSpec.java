@@ -88,23 +88,11 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
 
   @ReactMethod
   @DoNotStrip
-  public abstract void registerNotification(String type, String key, Promise promise);
-
-  @ReactMethod
-  @DoNotStrip
-  public abstract void showNotification(String key, ReadableMap options, Promise promise);
-
-  @ReactMethod
-  @DoNotStrip
-  public abstract void updateNotification(String key, ReadableMap options, Promise promise);
+  public abstract void showNotification(String type, String key, ReadableMap options, Promise promise);
 
   @ReactMethod
   @DoNotStrip
   public abstract void hideNotification(String key, Promise promise);
-
-  @ReactMethod
-  @DoNotStrip
-  public abstract void unregisterNotification(String key, Promise promise);
 
   @ReactMethod
   @DoNotStrip

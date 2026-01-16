@@ -9,19 +9,25 @@ import { Optional, MobileOnly } from '@site/src/components/Badges';
 You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) and
 [`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64).
 
+:::warning
+Decoding on the web has to be done via `AudioContext` only.
+:::
+
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
 the decoded audio will then be automatically resampled to match the context's `sampleRate`.
 
 :::caution
 Supported file formats:
-- aac
 - flac
-- m4a
 - mp3
-- mp4
 - ogg
 - opus
 - wav
+- aac
+- m4a
+- mp4
+
+Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/other/ffmpeg-info).
 :::
 
 ### `decodeAudioData`
@@ -39,54 +45,77 @@ if not provided, the original sample rate from the file is used.
   </thead>
   <tbody>
     <tr>
-      <td rowspan="2" align="center"><code>input</code></td>
+      <td rowspan="3" align="center"><code>input</code></td>
       <td align="center"><code>ArrayBuffer</code></td>
       <td align="center">ArrayBuffer with audio data.</td>
     </tr>
     <tr>
       <td align="center"><code>string</code></td>
-      <td align="center">Path to audio file located on the device.</td>
+      <td align="center">Path to remote or local audio file.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>number</code></td>
+      <td align="center">Asset module id. <MobileOnly/> </td>
     </tr>
     <tr>
       <td align="center"><code>sampleRate</code><Optional /></td>
       <td align="center"><code>number</code></td>
       <td align="center">Target sample rate for the decoded audio.</td>
     </tr>
+    <tr>
+      <td align="center"><code>fetchOptions</code><Optional /></td>
+      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
+      <td align="center">Additional headers parameters when passing url to fetch.</td>
+    </tr>
   </tbody>
 </table>
 
 #### Returns `Promise<AudioBuffer>`.
 
+:::caution
+If you are passing number to decode function, bear in mind that it uses Image component provided
+by React Native internally. By default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
+If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
+:::
+
 <details>
-<summary>Example decoding with memory block</summary>
+<summary>Example decoding remote URL</summary>
 ```tsx
+import { decodeAudioData } from 'react-native-audio-api';
+
 const url = ... // url to an audio
 
-  const buffer = await fetch(url)
-    .then((response) => response.arrayBuffer())
-    // resample decoded audio to 48000 Hz
-    .then((arrayBuffer) => decodeAudioData(arrayBuffer, 48000))
-    .catch((error) => {
-      console.error('Error decoding audio data source:', error);
-      return null;
-    });
+const buffer = await decodeAudioData(url);
 ```
 </details>
 
+:::caution
+Internally decoding local files uses Image component to retrieve asset uri, but it does not work on the web platform.
+You can use expo-asset library for this purpose or retrieve ArrayBuffer on your own and pass it to decoding function.
+:::
 <details>
 <summary>Example using expo-asset library</summary>
 ```tsx
 import { Asset } from 'expo-asset';
+import { AudioContext } from 'react-native-audio-api';
 
-const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
-    .downloadAsync()
-    .then((asset) =>  {
-      if (!asset.localUri) {
-        throw new Error('Failed to load audio asset');
-      }
-      // sampleRate not provided, so file will be decoded in original sampleRate
-      return decodeAudioData(asset.localUri);
-    })
+const uri = await Asset.fromModule(require('@/assets/music/example.mp3'))
+  .downloadAsync()
+  .then((asset) =>  {
+    if (!asset.localUri) {
+      console.error('Failed to load audio asset');
+    }
+    return asset.localUri;
+  })
+
+const context = new AudioContext();
+if (uri) {
+  const buffer = await fetch(uri)
+  .then((response) => response.arrayBuffer())
+  .then((arrayBuffer) => context.decodeAudioData(arrayBuffer));
+  console.log('Audio buffer loaded:', buffer);
+}
+
 ```
 </details>
 

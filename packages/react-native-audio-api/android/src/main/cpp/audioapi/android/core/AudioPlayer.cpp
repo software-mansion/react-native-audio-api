@@ -20,8 +20,6 @@ AudioPlayer::AudioPlayer(
       channelCount_(channelCount),
       isRunning_(false) {
   isInitialized_ = openAudioStream();
-
-  nativeAudioPlayer_ = jni::make_global(NativeAudioPlayer::create());
 }
 
 bool AudioPlayer::openAudioStream() {
@@ -50,7 +48,6 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   if (mStream_ != nullptr) {
-    jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->start(); });
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
     return result;
@@ -61,7 +58,6 @@ bool AudioPlayer::start() {
 
 void AudioPlayer::stop() {
   if (mStream_ != nullptr) {
-    jni::ThreadScope::WithClassLoader([this]() { nativeAudioPlayer_->stop(); });
     isRunning_.store(false, std::memory_order_release);
     mStream_->requestStop();
   }

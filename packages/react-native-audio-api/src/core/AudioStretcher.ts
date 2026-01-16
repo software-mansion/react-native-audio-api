@@ -1,5 +1,6 @@
 import { IAudioStretcher } from '../interfaces';
 import AudioBuffer from './AudioBuffer';
+import { AudioApiError } from '../errors';
 
 class AudioStretcher {
   private static instance: AudioStretcher | null = null;
@@ -26,7 +27,7 @@ class AudioStretcher {
     );
 
     if (!buffer) {
-      throw new Error('Failed to change playback speed');
+      throw new AudioApiError('Failed to change playback speed');
     }
     return new AudioBuffer(buffer);
   }

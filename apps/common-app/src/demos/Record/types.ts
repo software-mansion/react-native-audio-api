@@ -6,3 +6,5 @@ export enum RecordingState {
   ReadyToPlay = 'ReadyToPlay',
   Playing = 'Playing',
 }
+
+export type AudioCallback = (normalized: number) => void;

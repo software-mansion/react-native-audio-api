@@ -2,15 +2,18 @@ require "json"
 require_relative './scripts/rnaa_utils'
 
 package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
+$audio_api_config = find_audio_api_config()
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 $RN_AUDIO_API_FFMPEG_DISABLED = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : ENV['DISABLE_AUDIOAPI_FFMPEG'] == '1' # false by default
 
-folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32"
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
+ios_min_version = '14.0'
 
-worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
+worklets_enabled = $audio_api_config[:worklets_enabled]
+worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
+
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
 
@@ -22,7 +25,7 @@ Pod::Spec.new do |s|
   s.license      = package_json["license"]
   s.authors      = package_json["author"]
 
-  s.platforms    = { :ios => min_ios_version_supported }
+  s.platforms    = { :ios => ios_min_version }
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
   s.subspec "audioapi" do |ss|
@@ -45,9 +48,11 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'Accelerate', 'MediaPlayer', 'AVFoundation'
+  if worklets_enabled
+    s.dependency 'RNWorklets'
+  end
 
-  s.compiler_flags = "#{folly_flags}"
+  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'MediaPlayer'
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh
@@ -67,41 +72,61 @@ Pod::Spec.new do |s|
     'common/cpp/audioapi/external/ffmpeg_ios/libavutil.xcframework',
     'common/cpp/audioapi/external/ffmpeg_ios/libswresample.xcframework'
   ]
-s.pod_target_xcconfig = {
-  "USE_HEADERMAP" => "YES",
-  "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
-  "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-  "HEADER_SEARCH_PATHS" => %W[
-    $(PODS_TARGET_SRCROOT)/common/cpp
-    $(PODS_TARGET_SRCROOT)/ios
-    $(PODS_ROOT)/Headers/Public/RNWorklets
-    $(PODS_ROOT)/Headers/Private/React-Core
-    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include
-    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus
-    $(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis
-  ].concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include"]).join(" "),
-  'OTHER_CFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
-  'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{folly_flags} #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
-}
 
-s.user_target_xcconfig = {
-  'OTHER_LDFLAGS' => %W[
-    $(inherited)
-    -force_load #{lib_dir}/libopusfile.a
-    -force_load #{lib_dir}/libopus.a
-    -force_load #{lib_dir}/libogg.a
-    -force_load #{lib_dir}/libvorbis.a
-    -force_load #{lib_dir}/libvorbisenc.a
-    -force_load #{lib_dir}/libvorbisfile.a
-    -force_load #{lib_dir}/libssl.a
-    -force_load #{lib_dir}/libcrypto.a
-  ].join(" "),
-  'HEADER_SEARCH_PATHS' => %W[
-    $(inherited)
-    $(PODS_ROOT)/Headers/Public/RNAudioAPI
-    $(PODS_TARGET_SRCROOT)/common/cpp
-  ].join(' ')
-}
+  s.pod_target_xcconfig = {
+    "USE_HEADERMAP" => "YES",
+    "DEFINES_MODULE" => "YES",
+    "HEADER_SEARCH_PATHS" => [
+      '"$(PODS_TARGET_SRCROOT)/ReactCommon"',
+      '"$(PODS_TARGET_SRCROOT)"',
+      '"$(PODS_ROOT)/RCT-Folly"',
+      '"$(PODS_ROOT)/boost"',
+      '"$(PODS_ROOT)/boost-for-react-native"',
+      '"$(PODS_ROOT)/DoubleConversion"',
+      '"$(PODS_ROOT)/Headers/Private/React-Core"',
+      '"$(PODS_ROOT)/Headers/Private/Yoga"',
+      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include\"",
+      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
+      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\"",
+    ]
+    .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include\""])
+    .concat(worklets_enabled ? ['"$(PODS_ROOT)/Headers/Public/RNWorklets"'] : [])
+    .join(' '),
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+    "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
+    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
+  }
+
+  s.xcconfig = {
+    "HEADER_SEARCH_PATHS" => [
+      '"$(PODS_ROOT)/boost"',
+      '"$(PODS_ROOT)/boost-for-react-native"',
+      '"$(PODS_ROOT)/glog"',
+      '"$(PODS_ROOT)/RCT-Folly"',
+      '"$(PODS_ROOT)/Headers/Public/React-hermes"',
+      '"$(PODS_ROOT)/Headers/Public/hermes-engine"',
+      "\"$(PODS_ROOT)/#{$audio_api_config[:react_native_common_dir]}\"",
+      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/ios\"",
+      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/common/cpp\"",
+    ]
+    .concat(worklets_enabled ? [
+      '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
+      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/apple\"",
+      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/Common/cpp\""
+    ] : [])
+    .join(' '),
+    'OTHER_LDFLAGS' => %W[
+      $(inherited)
+      -force_load #{lib_dir}/libopusfile.a
+      -force_load #{lib_dir}/libopus.a
+      -force_load #{lib_dir}/libogg.a
+      -force_load #{lib_dir}/libvorbis.a
+      -force_load #{lib_dir}/libvorbisenc.a
+      -force_load #{lib_dir}/libvorbisfile.a
+      -force_load #{lib_dir}/libssl.a
+      -force_load #{lib_dir}/libcrypto.a
+    ].join(" "),
+  }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   install_modules_dependencies(s)
