@@ -1,11 +1,18 @@
 #pragma once
 #include <array>
+#include <concepts>
 #include <functional>
 #include <new>
 #include <type_traits>
 #include <utility>
 
 namespace audioapi {
+
+template <int N, typename _Callable, typename _FpReturnType, typename... _FpArgs>
+concept CallableConcept = requires(_Callable &&_c, _FpArgs &&..._args) {
+  sizeof(std::decay_t<_Callable>) <= N;
+  { _c(std::forward<_FpArgs>(_args)...) } -> std::convertible_to<_FpReturnType>;
+};
 
 template <int N, typename _Fp>
 class FatFunction;
@@ -31,10 +38,8 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   /// @tparam (enable_if) Ensures that the callable fits within the allocated size N
   ///                    and is invocable with the specified signature.
   /// @param callable The callable object to store
-  template <
-      typename _Callable,
-      typename = std::enable_if_t<
-          sizeof(_Callable) <= N && std::is_invocable_r_v<_FpReturnType, _Callable, _FpArgs...>>>
+  template <typename _Callable>
+    requires CallableConcept<N, _Callable, _FpReturnType, _FpArgs...>
   FatFunction(_Callable &&callable) {
     using DecayedCallable = std::decay_t<_Callable>;
     new (storage_.data()) DecayedCallable(std::forward<_Callable>(callable));

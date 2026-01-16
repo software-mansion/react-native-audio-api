@@ -40,7 +40,7 @@ BaseAudioContext::BaseAudioContext(
     const RuntimeRegistry &runtimeRegistry)
     : sampleRate_ {sampleRate},
       nodeManager_(std::make_shared<AudioNodeManager>()),
-      audioEventScheduler_(std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(1024)),
+      audioEventScheduler_(std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(AUDIO_SCHEDULER_CAPACITY)),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry) {}
 

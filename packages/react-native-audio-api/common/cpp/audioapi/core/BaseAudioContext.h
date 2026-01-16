@@ -129,6 +129,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
  private:
+  static constexpr int AUDIO_SCHEDULER_CAPACITY = 1024;
+
   std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
