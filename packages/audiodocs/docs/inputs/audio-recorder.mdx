@@ -86,7 +86,7 @@ Additionally to be able to record audio while application is in the background, 
       <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
       <!-- Paste this inside <application> tag -->
-        <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.MediaNotificationManager$AudioForegroundService" android:foregroundServiceType="microphone" />
+        <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.CentralizedForegroundService" android:foregroundServiceType="microphone" />
     </manifest>
 
     ```
