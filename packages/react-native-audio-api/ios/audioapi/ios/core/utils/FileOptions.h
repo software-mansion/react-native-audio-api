@@ -22,7 +22,9 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties);
 float getSampleRate(const std::shared_ptr<AudioFileProperties> &properties);
 
 NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &properties);
-NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties);
+NSURL *getFileURL(
+    const std::shared_ptr<AudioFileProperties> &properties,
+    const std::string &fileNameOverride);
 NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties);
 
 NSString *getDateString();

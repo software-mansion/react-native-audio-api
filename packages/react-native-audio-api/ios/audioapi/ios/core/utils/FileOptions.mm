@@ -139,7 +139,9 @@ NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &proper
   return settings;
 }
 
-NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties)
+NSURL *getFileURL(
+    const std::shared_ptr<AudioFileProperties> &properties,
+    const std::string &fileNameOverride)
 {
   NSError *error = nil;
 
@@ -164,8 +166,12 @@ NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties)
   NSString *timestamp = getTimestampString();
   NSString *fileExtension = getFileExtension(properties);
 
-  NSString *fileName =
-      [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
+  NSString *fileName = fileNameOverride.length() > 0
+      ? [NSString stringWithFormat:@"%@.%@",
+                                   [NSString stringWithUTF8String:fileNameOverride.c_str()],
+                                   fileExtension]
+      : [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
+
   return [directoryURL URLByAppendingPathComponent:fileName];
 }
 

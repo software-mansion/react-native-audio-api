@@ -41,7 +41,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  auto result = audioRecorder_->start();
+  auto fileNameOverride = count > 0 ? args[0].getString(runtime).utf8(runtime) : "";
+  auto result = audioRecorder_->start(fileNameOverride);
   auto jsResult = jsi::Object(runtime);
 
   jsResult.setProperty(

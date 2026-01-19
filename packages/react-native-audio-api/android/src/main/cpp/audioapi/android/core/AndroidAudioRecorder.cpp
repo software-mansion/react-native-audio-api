@@ -102,7 +102,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// RN side requires their "file://" prefix, but sometimes it returned raw path.
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
-Result<std::string, std::string> AndroidAudioRecorder::start() {
+Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (!isIdle()) {
@@ -120,9 +120,12 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesFileOutput()) {
-    auto fileResult =
-        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    auto fileResult = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+                          ->openFile(
+                              streamSampleRate_,
+                              streamChannelCount_,
+                              streamMaxBufferSizeInFrames_,
+                              fileNameOverride);
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(
@@ -228,7 +231,7 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
   if (!isIdle()) {
     auto fileResult =
         std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, "");
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(

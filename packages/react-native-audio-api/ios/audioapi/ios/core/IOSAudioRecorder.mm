@@ -71,7 +71,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @brief Starts the audio recording process and prepares necessary resources.
 /// This method should be called from the JS thread only.
 /// @returns Result containing the file path if recording started successfully, or an error message.
-Result<std::string, std::string> IOSAudioRecorder::start()
+Result<std::string, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
 {
   if (!isIdle()) {
     return Result<std::string, std::string>::Err("Recorder is already recording");
@@ -104,7 +104,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
 
   if (usesFileOutput()) {
     auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                          ->openFile(inputFormat, maxInputBufferLength);
+                          ->openFile(inputFormat, maxInputBufferLength, fileNameOverride);
 
     if (fileResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -191,8 +191,9 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   fileWriter_ = std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, properties);
 
   if (!isIdle()) {
-    auto result = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                      ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    auto result =
+        std::static_pointer_cast<IOSFileWriter>(fileWriter_)
+            ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize], "");
 
     if (result.is_err()) {
       return Result<std::string, std::string>::Err(

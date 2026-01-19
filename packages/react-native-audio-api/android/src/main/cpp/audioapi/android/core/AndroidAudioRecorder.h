@@ -26,7 +26,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   ~AndroidAudioRecorder() override;
   void cleanup();
 
-  Result<std::string, std::string> start() override;
+  Result<std::string, std::string> start(const std::string &fileNameOverride) override;
   Result<std::tuple<std::string, double, double>, std::string> stop() override;
 
   Result<std::string, std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) override;

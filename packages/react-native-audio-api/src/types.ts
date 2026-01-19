@@ -151,3 +151,7 @@ export interface IIRFilterNodeOptions {
 }
 
 export type DecodeDataInput = number | string | ArrayBuffer;
+
+export interface AudioRecorderStartOptions {
+  fileNameOverride?: string;
+}

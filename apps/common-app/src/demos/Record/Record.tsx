@@ -84,7 +84,10 @@ const Record: FC = () => {
       return;
     }
 
-    const result = Recorder.start();
+    const result = Recorder.start({
+      fileNameOverride: `overridden_name_${Date.now()}`,
+    });
+
     setupNotification(false);
 
     if (result.status === 'success') {
