@@ -380,9 +380,12 @@ export default MyRecorder;
       <td>
         <div class="text-content">
           Starts the stream from system audio input device.
+          You can pass optional object with `fileNameOverride` string, to provide your own fileName generation.
         </div>
         ```tsx
-        const result = audioRecorder.start();
+        const result = audioRecorder.start({
+          fileNameOverride: `my_audio_${mySessionId}`
+        });
 
         if (result.status === 'success') {
           const openedFilePath = result.path;
