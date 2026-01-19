@@ -45,7 +45,6 @@ class AudioManager implements IAudioManager {
   }
 
   observeAudioInterruptions(param: AudioFocusType | boolean | null) {
-    console.log(param, typeof param === 'string');
     if (typeof param === 'string') {
       NativeAudioAPIModule.observeAudioInterruptions(param, true);
     } else {

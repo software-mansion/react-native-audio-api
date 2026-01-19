@@ -47,7 +47,7 @@ const AudioFile: FC = () => {
 
       await AudioPlayer.play();
 
-      AudioManager.observeAudioInterruptions('gainTransientMayDuck');
+      AudioManager.observeAudioInterruptions(true);
 
       AudioManager.getDevicesInfo().then(console.log);
     }
@@ -102,7 +102,7 @@ const AudioFile: FC = () => {
   }, [fetchAudioBuffer]);
 
   useEffect(() => {
-    AudioManager.observeAudioInterruptions('gainTransientMayDuck');
+    AudioManager.observeAudioInterruptions(true);
 
     // Listen to notification control events
     const playListener = PlaybackNotificationManager.addEventListener(
@@ -181,7 +181,6 @@ const AudioFile: FC = () => {
       seekToListener.remove();
       interruptionSubscription?.remove();
       duckListener.remove();
-      AudioManager.observeAudioInterruptions(null);
     };
   }, [isPlaying, wasPlaying]);
 
