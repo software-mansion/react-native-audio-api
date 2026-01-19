@@ -13,12 +13,12 @@ export function Overridden({ footnote }) {
   return <div className={`${styles.badge} ${styles.basic}`}>Overridden{footnote ? '*' : ''}</div>;
 }
 
-export function OnlyiOS({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>iOS only{footnote ? '*' : ''}</div>;
+export function IOS({ footnote }) {
+  return <div className={`${styles.badge} ${styles.basic}`}>iOS{footnote ? '*' : ''}</div>;
 }
 
-export function AndroidOnly({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>Android only{footnote ? '*' : ''}</div>;
+export function Android({ footnote }) {
+  return <div className={`${styles.badge} ${styles.basic}`}>Android{footnote ? '*' : ''}</div>;
 }
 
 export function Experimental({ footnote }) {
