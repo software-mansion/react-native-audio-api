@@ -44,9 +44,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void enable();
   virtual void disable();
 
-  template <
-      typename F,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  template <typename F>
   bool inline scheduleAudioEvent(F &&event) noexcept {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
