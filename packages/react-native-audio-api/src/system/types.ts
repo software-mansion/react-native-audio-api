@@ -1,5 +1,5 @@
-import type { SystemEventName, SystemEventCallback } from '../events/types';
 import type { AudioEventSubscription } from '../events';
+import type { SystemEventCallback, SystemEventName } from '../events/types';
 
 export type IOSCategory =
   | 'record'
