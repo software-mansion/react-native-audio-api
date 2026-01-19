@@ -30,6 +30,12 @@ export type IOSOption =
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
 
+export type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
+
 export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];

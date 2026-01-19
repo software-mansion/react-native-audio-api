@@ -163,7 +163,7 @@ RCT_EXPORT_METHOD(
                                       allowHaptics:allowHaptics];
 }
 
-RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
+RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
 {
   [self.notificationManager observeAudioInterruptions:enabled];
 }
