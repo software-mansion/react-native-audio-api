@@ -11,7 +11,7 @@
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext>& context,
     bool pitchCorrection)
     : AudioScheduledSourceNode(context),
       pitchCorrection_(pitchCorrection),
@@ -45,11 +45,7 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam() co
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto oldCallbackId = onPositionChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
-
-  if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("positionChanged", oldCallbackId);
-  }
+  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
@@ -89,14 +85,16 @@ double AudioBufferBaseSourceNode::getOutputLatency() const {
   return 0;
 }
 
-void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  auto onPositionChangedCallbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
+void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
+    audioEventHandlerRegistry_->unregisterHandler("positionChanged", callbackId);
+}
 
-  if (onPositionChangedCallbackId != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
+void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
+  if (onPositionChangedCallbackId_ != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId, body);
+        "positionChanged", onPositionChangedCallbackId_, body);
 
     onPositionChangedTime_ = 0;
   }

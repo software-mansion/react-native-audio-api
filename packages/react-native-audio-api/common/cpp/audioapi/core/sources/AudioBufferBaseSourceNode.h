@@ -15,7 +15,7 @@ class AudioParam;
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       bool pitchCorrection);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
@@ -26,6 +26,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] int getOnPositionChangedInterval() const;
   [[nodiscard]] double getInputLatency() const;
   [[nodiscard]] double getOutputLatency() const;
+
+  /// @note JS Thread only.
+  /// Thread safe, because does not access state of the node.
+  void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
  protected:
   // pitch correction
@@ -44,7 +48,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // internal helper
   double vReadIndex_;
 
-  std::atomic<uint64_t> onPositionChangedCallbackId_ = 0; // 0 means no callback
+  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
 
