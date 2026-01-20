@@ -6,11 +6,11 @@ import BaseAudioContext from './BaseAudioContext';
 import { TBaseAudioBufferSourceOptions } from '../types';
 import { BaseAudioBufferSourceOptions } from '../defaults';
 import { AudioEventSubscription } from '../events';
-import { EventEmptyType } from '../events/types';
+import { OnBufferEndEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
   private onBufferEndedSubscription?: AudioEventSubscription;
-  private onBufferEndedCallback?: (event: EventEmptyType) => void;
+  private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
 
   constructor(
     context: BaseAudioContext,
@@ -70,11 +70,15 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     (this.node as IAudioBufferQueueSourceNode).stop(when);
   }
 
-  public get onBufferEnded(): ((event: EventEmptyType) => void) | undefined {
+  public get onBufferEnded():
+    | ((event: OnBufferEndEventType) => void)
+    | undefined {
     return this.onBufferEndedCallback;
   }
 
-  public set onBufferEnded(callback: ((event: EventEmptyType) => void) | null) {
+  public set onBufferEnded(
+    callback: ((event: OnBufferEndEventType) => void) | null
+  ) {
     if (!callback) {
       (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
       this.onBufferEndedSubscription?.remove();
