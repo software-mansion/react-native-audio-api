@@ -10,11 +10,15 @@ namespace audioapi {
 using namespace facebook;
 
 class ConstantSourceNode;
+class AudioParamHostObject;
 
 class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit ConstantSourceNodeHostObject(const std::shared_ptr<ConstantSourceNode> &node);
 
   JSI_PROPERTY_GETTER_DECL(offset);
+
+  private:
+    std::shared_ptr<AudioParamHostObject> offsetParam_;
 };
 } // namespace audioapi

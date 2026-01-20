@@ -8,7 +8,7 @@
 namespace audioapi {
 
 DelayNodeHostObject::DelayNodeHostObject(const std::shared_ptr<DelayNode> &node)
-    : AudioNodeHostObject(node) {
+    : AudioNodeHostObject(node), delayTimeParam_(std::make_shared<AudioParamHostObject>(node->getDelayTimeParam())) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
 
@@ -23,9 +23,7 @@ size_t DelayNodeHostObject::getSizeInBytes() const {
 }
 
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
-  auto delayNode = std::static_pointer_cast<DelayNode>(node_);
-  auto delayTimeParam = std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());
-  return jsi::Object::createFromHostObject(runtime, delayTimeParam);
+  return jsi::Object::createFromHostObject(runtime, delayTimeParam_);
 }
 
 } // namespace audioapi

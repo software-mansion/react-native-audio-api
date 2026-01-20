@@ -7,14 +7,12 @@
 namespace audioapi {
 
 GainNodeHostObject::GainNodeHostObject(const std::shared_ptr<GainNode> &node)
-    : AudioNodeHostObject(node) {
+    : AudioNodeHostObject(node), gainParam_(std::make_shared<AudioParamHostObject>(node->getGainParam())) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(GainNodeHostObject, gain));
 }
 
 JSI_PROPERTY_GETTER_IMPL(GainNodeHostObject, gain) {
-  auto gainNode = std::static_pointer_cast<GainNode>(node_);
-  auto gainParam = std::make_shared<AudioParamHostObject>(gainNode->getGainParam());
-  return jsi::Object::createFromHostObject(runtime, gainParam);
+  return jsi::Object::createFromHostObject(runtime, gainParam_);
 }
 
 } // namespace audioapi
