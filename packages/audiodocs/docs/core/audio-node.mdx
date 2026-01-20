@@ -111,6 +111,18 @@ If no arguments provided node disconnects from all outgoing connections.
 
 #### Returns `undefined`.
 
+### `AudioNodeOptions`
+
+It is used to constructing majority of all `AudioNodes`.
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `channelCount` <Optional /> | `number` | 2 | Indicates number of channels used in mixing of node. |
+| `channelCountMode` <Optional /> | [`ChannelCountMode`](/docs/types/channel-count-mode) | `max` | Determines how the number of input channels affects the number of output channels in an audio node. |
+| `channelInterpretation` <Optional /> | [`ChannelInterpretation`](/docs/types/channel-interpretation) | `speakers` | Specifies how input channels are mapped out to output channels when the number of them are different. |
+
+If any of these values are not provided, default values are used.
+
 ## Remarks
 
 #### `numberOfInputs`

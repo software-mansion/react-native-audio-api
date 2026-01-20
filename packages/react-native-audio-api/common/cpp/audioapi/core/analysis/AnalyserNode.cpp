@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/dsp/AudioUtils.h>
@@ -12,12 +13,13 @@
 #include <vector>
 
 namespace audioapi {
-AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context),
-      fftSize_(2048),
-      minDecibels_(-100),
-      maxDecibels_(-30),
-      smoothingTimeConstant_(0.8),
+
+AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context, const AnalyserOptions &options)
+    : AudioNode(context, options),
+      fftSize_(options.fftSize),
+      minDecibels_(options.minDecibels),
+      maxDecibels_(options.maxDecibels),
+      smoothingTimeConstant_(options.smoothingTimeConstant),
       windowType_(WindowType::BLACKMAN),
       inputBuffer_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBus_(std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),

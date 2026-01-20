@@ -123,7 +123,28 @@ RCT_EXPORT_METHOD(
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    auto success = [self.audioSessionManager setActive:enabled];
+    NSError *error = nil;
+
+    auto success = [self.audioSessionManager setActive:enabled error:&error];
+
+    if (!success) {
+      NSDictionary *meta = @{
+        @"nativeCode" : @(error.code),
+        @"nativeDomain" : error.domain ?: @"",
+        @"nativeDesc" : error.description ?: @"",
+      };
+
+      NSError *jsError =
+          [NSError errorWithDomain:@"AudioAPIModule"
+                              code:error.code
+                          userInfo:@{
+                            NSLocalizedDescriptionKey : @"Failed to set audio session active state",
+                            @"meta" : meta,
+                          }];
+
+      reject(@"E_AUDIO_SESSION", @"Failed to set audio session active state", jsError);
+      return;
+    }
 
     resolve(@(success));
   });

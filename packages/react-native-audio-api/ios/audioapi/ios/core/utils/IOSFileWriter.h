@@ -29,7 +29,8 @@ class IOSFileWriter : public AudioFileWriter {
 
   Result<std::string, std::string> openFile(
       AVAudioFormat *bufferFormat,
-      size_t maxInputBufferLength);
+      size_t maxInputBufferLength,
+      const std::string &fileNameOverride);
   Result<std::tuple<double, double>, std::string> closeFile() override;
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);

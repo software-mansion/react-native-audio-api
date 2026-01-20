@@ -2,8 +2,23 @@ import { IAudioBufferQueueSourceNode } from '../interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
+import { TBaseAudioBufferSourceOptions } from '../types';
+import { BaseAudioBufferSourceOptions } from '../defaults';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
+  constructor(
+    context: BaseAudioContext,
+    options?: TBaseAudioBufferSourceOptions
+  ) {
+    const finalOptions: TBaseAudioBufferSourceOptions = {
+      ...BaseAudioBufferSourceOptions,
+      ...options,
+    };
+    const node = context.context.createBufferQueueSource(finalOptions);
+    super(context, node);
+  }
+
   public enqueueBuffer(buffer: AudioBuffer): string {
     return (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
       buffer.buffer

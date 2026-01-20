@@ -3,7 +3,7 @@ sidebar_position: 6
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # StereoPannerNode
 
@@ -15,6 +15,19 @@ The `StereoPannerNode` interface represents the change in ratio between two outp
 
 ## Constructor
 
+```tsx
+constructor(context: BaseAudioContext, stereoPannerOptions?: StereoPannerOptions)
+```
+
+### `StereoPannerOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `pan` <Optional /> | `number` | 0.0 | Number representing pan value |
+
+Or by using `BaseAudioContext` factory method:
 [`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createstereopanner)
 
 ## Properties

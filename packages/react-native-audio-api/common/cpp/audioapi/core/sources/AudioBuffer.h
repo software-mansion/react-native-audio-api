@@ -10,10 +10,11 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioBufferOptions;
 
 class AudioBuffer {
  public:
-  explicit AudioBuffer(int numberOfChannels, size_t length, float sampleRate);
+  explicit AudioBuffer(const AudioBufferOptions &options);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);
 
   [[nodiscard]] size_t getLength() const;

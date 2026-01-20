@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -74,7 +75,7 @@ double BaseAudioContext::getCurrentTime() const {
   return destination_->getCurrentTime();
 }
 
-std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
+std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
   return destination_;
 }
 
@@ -119,21 +120,22 @@ std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
   return recorderAdapter;
 }
 
-std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
-  auto oscillator = std::make_shared<OscillatorNode>(shared_from_this());
+std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(const OscillatorOptions &options) {
+  auto oscillator = std::make_shared<OscillatorNode>(shared_from_this(), options);
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
 }
 
-std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
-  auto constantSource = std::make_shared<ConstantSourceNode>(shared_from_this());
+std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
+    const ConstantSourceOptions &options) {
+  auto constantSource = std::make_shared<ConstantSourceNode>(shared_from_this(), options);
   nodeManager_->addSourceNode(constantSource);
   return constantSource;
 }
 
-std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
+std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(const StreamerOptions &options) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamer = std::make_shared<StreamerNode>(shared_from_this());
+  auto streamer = std::make_shared<StreamerNode>(shared_from_this(), options);
   nodeManager_->addSourceNode(streamer);
   return streamer;
 #else
@@ -141,55 +143,54 @@ std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<GainNode> BaseAudioContext::createGain() {
-  auto gain = std::make_shared<GainNode>(shared_from_this());
+std::shared_ptr<GainNode> BaseAudioContext::createGain(const GainOptions &options) {
+  auto gain = std::make_shared<GainNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(gain);
   return gain;
 }
 
-std::shared_ptr<DelayNode> BaseAudioContext::createDelay(float maxDelayTime) {
-  auto delay = std::make_shared<DelayNode>(shared_from_this(), maxDelayTime);
-  nodeManager_->addProcessingNode(delay);
-  return delay;
-}
-
-std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {
-  auto stereoPanner = std::make_shared<StereoPannerNode>(shared_from_this());
+std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
+    const StereoPannerOptions &options) {
+  auto stereoPanner = std::make_shared<StereoPannerNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(stereoPanner);
   return stereoPanner;
 }
 
-std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
-  auto biquadFilter = std::make_shared<BiquadFilterNode>(shared_from_this());
+std::shared_ptr<DelayNode> BaseAudioContext::createDelay(const DelayOptions &options) {
+  auto delay = std::make_shared<DelayNode>(shared_from_this(), options);
+  nodeManager_->addProcessingNode(delay);
+  return delay;
+}
+
+std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter(
+    const BiquadFilterOptions &options) {
+  auto biquadFilter = std::make_shared<BiquadFilterNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
 }
 
-std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
-    const std::vector<float> &feedforward,
-    const std::vector<float> &feedback) {
-  auto iirFilter = std::make_shared<IIRFilterNode>(shared_from_this(), feedforward, feedback);
+std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
+    const AudioBufferSourceOptions &options) {
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(shared_from_this(), options);
+  nodeManager_->addSourceNode(bufferSource);
+  return bufferSource;
+}
+
+std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(const IIRFilterOptions &options) {
+  auto iirFilter = std::make_shared<IIRFilterNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(iirFilter);
   return iirFilter;
 }
 
-std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(shared_from_this(), pitchCorrection);
-  nodeManager_->addSourceNode(bufferSource);
-  return bufferSource;
-}
-
 std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueSource(
-    bool pitchCorrection) {
-  auto bufferSource =
-      std::make_shared<AudioBufferQueueSourceNode>(shared_from_this(), pitchCorrection);
+    const BaseAudioBufferSourceOptions &options) {
+  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(shared_from_this(), options);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
 
-std::shared_ptr<AudioBuffer>
-BaseAudioContext::createBuffer(int numberOfChannels, size_t length, float sampleRate) {
-  return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
+std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOptions &options) {
+  return std::make_shared<AudioBuffer>(options);
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
@@ -199,23 +200,20 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
   return std::make_shared<PeriodicWave>(sampleRate_, complexData, length, disableNormalization);
 }
 
-std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
-  auto analyser = std::make_shared<AnalyserNode>(shared_from_this());
+std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser(const AnalyserOptions &options) {
+  auto analyser = std::make_shared<AnalyserNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
 }
 
-std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
-    std::shared_ptr<AudioBuffer> buffer,
-    bool disableNormalization) {
-  auto convolver =
-      std::make_shared<ConvolverNode>(shared_from_this(), buffer, disableNormalization);
+std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(const ConvolverOptions &options) {
+  auto convolver = std::make_shared<ConvolverNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(convolver);
   return convolver;
 }
 
-std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper() {
-  auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this());
+std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(const WaveShaperOptions &options) {
+  auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this(), options);
   nodeManager_->addProcessingNode(waveShaper);
   return waveShaper;
 }

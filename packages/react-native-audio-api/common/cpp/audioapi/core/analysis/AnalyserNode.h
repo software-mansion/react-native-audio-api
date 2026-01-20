@@ -15,11 +15,12 @@ namespace audioapi {
 class AudioBus;
 class AudioArray;
 class CircularAudioArray;
+class AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
  public:
   enum class WindowType { BLACKMAN, HANN };
-  explicit AnalyserNode(std::shared_ptr<BaseAudioContext> context);
+  explicit AnalyserNode(std::shared_ptr<BaseAudioContext> context, const AnalyserOptions &options);
 
   int getFftSize() const;
   int getFrequencyBinCount() const;

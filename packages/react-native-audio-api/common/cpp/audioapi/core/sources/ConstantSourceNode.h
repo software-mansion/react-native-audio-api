@@ -10,10 +10,13 @@
 namespace audioapi {
 
 class AudioBus;
+class ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit ConstantSourceNode(std::shared_ptr<BaseAudioContext> context);
+  explicit ConstantSourceNode(
+      std::shared_ptr<BaseAudioContext> context,
+      const ConstantSourceOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 

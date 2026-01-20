@@ -3,6 +3,7 @@ sidebar_position: 2
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { Optional } from '@site/src/components/Badges';
 
 # ConvolverNode
 
@@ -19,18 +20,30 @@ Convolver is a node with tail-time, which means, that it continues to output non
 
 ## Constructor
 
-[`BaseAudioContext.createConvolver(options: ConvolverNodeOptions)`](/docs/core/base-audio-context#createconvolver)
-
-```jsx
-interface ConvolverNodeOptions {
-  buffer?: AudioBuffer | null; // impulse response
-  disableNormalization?: boolean; // if normalization of output should be applied, true by default
-}
+```tsx
+constructor(context: BaseAudioContext, options?: ConvolverOptions)
 ```
+
+### `ConvolverOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `buffer` <Optional /> | `number` |  | Initial value for [`buffer`](/docs/effects/convolver-node#properties). |
+| `normalize` <Optional /> | `boolean` | true | Initial value for [`normalize`](/docs/effects/convolver-node#properties). |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createConvolver()`](/docs/core/base-audio-context#createconvolver)
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties) and has no individual ones.
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Associated AudioBuffer. |
+| `normalize` | `boolean` | Whether the impulse response from the buffer will be scaled by an equal-power normalization when the buffer attribute is set. |
 
 :::caution
 Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease the duration of impulse response buffer.

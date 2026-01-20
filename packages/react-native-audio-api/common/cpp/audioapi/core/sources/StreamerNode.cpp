@@ -8,6 +8,7 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
@@ -22,7 +23,7 @@
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context)
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
@@ -37,7 +38,7 @@ StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context)
       maxResampledSamples_(0),
       processedSamples_(0) {}
 #else
-StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context) : AudioScheduledSourceNode(context) {}
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options) : AudioScheduledSourceNode(context) {}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 StreamerNode::~StreamerNode() {
@@ -48,6 +49,7 @@ StreamerNode::~StreamerNode() {
 
 bool StreamerNode::initialize(const std::string &input_url) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
+  streamPath_ = input_url;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
     return false;

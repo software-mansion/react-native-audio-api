@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -25,7 +26,7 @@ class GainTest : public ::testing::Test {
 
 class TestableGainNode : public GainNode {
  public:
-  explicit TestableGainNode(std::shared_ptr<BaseAudioContext> context) : GainNode(context) {}
+  explicit TestableGainNode(std::shared_ptr<BaseAudioContext> context) : GainNode(context, GainOptions()) {}
 
   void setGainParam(float value) {
     getGainParam()->setValue(value);
@@ -39,7 +40,7 @@ class TestableGainNode : public GainNode {
 };
 
 TEST_F(GainTest, GainCanBeCreated) {
-  auto gain = context->createGain();
+  auto gain = context->createGain(GainOptions());
   ASSERT_NE(gain, nullptr);
 }
 

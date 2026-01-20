@@ -21,6 +21,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
 
+  ~BaseAudioContextHostObject() override;
+
   JSI_PROPERTY_GETTER_DECL(destination);
   JSI_PROPERTY_GETTER_DECL(state);
   JSI_PROPERTY_GETTER_DECL(sampleRate);

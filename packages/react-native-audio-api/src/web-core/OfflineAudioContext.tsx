@@ -1,10 +1,4 @@
-import {
-  ContextState,
-  PeriodicWaveConstraints,
-  OfflineAudioContextOptions,
-  AudioBufferBaseSourceNodeOptions,
-  IIRFilterNodeOptions,
-} from '../types';
+import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
@@ -20,9 +14,7 @@ import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import WaveShaperNode from './WaveShaperNode';
 
-import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConvolverNode from './ConvolverNode';
-import { ConvolverNodeOptions } from './ConvolverNodeOptions';
 import DelayNode from './DelayNode';
 
 export default class OfflineAudioContext implements BaseAudioContext {
@@ -63,85 +55,49 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+    return new OscillatorNode(this);
   }
 
   createConstantSource(): ConstantSourceNode {
-    return new ConstantSourceNode(this, this.context.createConstantSource());
+    return new ConstantSourceNode(this);
   }
 
   createGain(): GainNode {
-    return new GainNode(this, this.context.createGain());
+    return new GainNode(this);
   }
 
   createDelay(maxDelayTime?: number): DelayNode {
-    return new DelayNode(this, this.context.createDelay(maxDelayTime));
+    return new DelayNode(this, { maxDelayTime });
   }
 
   createStereoPanner(): StereoPannerNode {
-    return new StereoPannerNode(this, this.context.createStereoPanner());
+    return new StereoPannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
+    return new BiquadFilterNode(this);
   }
 
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
-    return new IIRFilterNode(
-      this,
-      this.context.createIIRFilter(options.feedforward, options.feedback)
-    );
+  createConvolver(): ConvolverNode {
+    return new ConvolverNode(this);
   }
 
-  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
-    if (options?.buffer) {
-      const numberOfChannels = options.buffer.numberOfChannels;
-      if (
-        numberOfChannels !== 1 &&
-        numberOfChannels !== 2 &&
-        numberOfChannels !== 4
-      ) {
-        throw new NotSupportedError(
-          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
-        );
-      }
-    }
-    const buffer = options?.buffer ?? null;
-    const disableNormalization = options?.disableNormalization ?? false;
-    return new ConvolverNode(
-      this,
-      this.context.createConvolver(),
-      buffer,
-      disableNormalization
-    );
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
+    return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  async createBufferSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): Promise<AudioBufferSourceNode> {
-    if (!options || !options.pitchCorrection) {
-      return new AudioBufferSourceNode(
-        this,
-        this.context.createBufferSource(),
-        false
-      );
-    }
-
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new AudioBufferSourceNode(this, wasmStretch, true);
+  createBufferSource(pitchCorrection?: boolean): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(this, { pitchCorrection });
   }
 
   createBuffer(
-    numOfChannels: number,
+    numberOfChannels: number,
     length: number,
     sampleRate: number
   ): AudioBuffer {
-    if (numOfChannels < 1 || numOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
       throw new NotSupportedError(
-        `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );
     }
 
@@ -157,9 +113,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    return new AudioBuffer(
-      this.context.createBuffer(numOfChannels, length, sampleRate)
-    );
+    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(
@@ -173,13 +127,11 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, constraints)
-    );
+    return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
   createAnalyser(): AnalyserNode {
-    return new AnalyserNode(this, this.context.createAnalyser());
+    return new AnalyserNode(this);
   }
 
   createWaveShaper(): WaveShaperNode {

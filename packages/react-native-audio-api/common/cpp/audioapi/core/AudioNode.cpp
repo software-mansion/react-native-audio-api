@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -10,13 +11,19 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context)
+AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context) : context_(context) {
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+}
+
+AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options)
     : context_(context),
-      audioBus_(
-          std::make_shared<AudioBus>(
-              RENDER_QUANTUM_SIZE,
-              channelCount_,
-              context->getSampleRate())) {}
+      channelCount_(options.channelCount),
+      channelCountMode_(options.channelCountMode),
+      channelInterpretation_(options.channelInterpretation) {
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+}
 
 AudioNode::~AudioNode() {
   if (isInitialized_) {

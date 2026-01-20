@@ -28,7 +28,7 @@
                        options:(NSArray *)options
                   allowHaptics:(BOOL)allowHaptics;
 
-- (bool)setActive:(bool)active;
+- (bool)setActive:(bool)active error:(NSError **)error;
 - (void)markInactive;
 - (void)disableSessionManagement;
 

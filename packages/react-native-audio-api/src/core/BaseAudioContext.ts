@@ -1,19 +1,10 @@
-import AudioAPIModule from '../AudioAPIModule';
 import {
   InvalidAccessError,
   InvalidStateError,
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
-import {
-  AudioBufferBaseSourceNodeOptions,
-  AudioWorkletRuntime,
-  ContextState,
-  ConvolverNodeOptions,
-  DecodeDataInput,
-  IIRFilterNodeOptions,
-  PeriodicWaveConstraints,
-} from '../types';
+import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
 import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -96,26 +87,12 @@ export default class BaseAudioContext {
     }
 
     assertWorkletsEnabled();
-
-    const shareableWorklet =
-      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
-        (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
-          'worklet';
-          const floatAudioData: Array<Float32Array> = audioBuffers.map(
-            (buffer) => new Float32Array(buffer)
-          );
-          callback(floatAudioData, channelCount);
-        }
-      );
-
     return new WorkletNode(
       this,
-      this.context.createWorkletNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime',
-        bufferLength,
-        inputChannelCount
-      )
+      workletRuntime,
+      callback,
+      bufferLength,
+      inputChannelCount
     );
   }
 
@@ -129,33 +106,7 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletProcessingNode {
     assertWorkletsEnabled();
-
-    const shareableWorklet =
-      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
-        (
-          inputBuffers: Array<ArrayBuffer>,
-          outputBuffers: Array<ArrayBuffer>,
-          framesToProcess: number,
-          currentTime: number
-        ) => {
-          'worklet';
-          const inputData: Array<Float32Array> = inputBuffers.map(
-            (buffer) => new Float32Array(buffer, 0, framesToProcess)
-          );
-          const outputData: Array<Float32Array> = outputBuffers.map(
-            (buffer) => new Float32Array(buffer, 0, framesToProcess)
-          );
-          callback(inputData, outputData, framesToProcess, currentTime);
-        }
-      );
-
-    return new WorkletProcessingNode(
-      this,
-      this.context.createWorkletProcessingNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime'
-      )
-    );
+    return new WorkletProcessingNode(this, workletRuntime, callback);
   }
 
   createWorkletSourceNode(
@@ -168,71 +119,56 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletSourceNode {
     assertWorkletsEnabled();
-    const shareableWorklet =
-      AudioAPIModule.workletsModule!.makeShareableCloneRecursive(
-        (
-          audioBuffers: Array<ArrayBuffer>,
-          framesToProcess: number,
-          currentTime: number,
-          startOffset: number
-        ) => {
-          'worklet';
-          const floatAudioData: Array<Float32Array> = audioBuffers.map(
-            (buffer) => new Float32Array(buffer)
-          );
-          callback(floatAudioData, framesToProcess, currentTime, startOffset);
-        }
-      );
-
-    return new WorkletSourceNode(
-      this,
-      this.context.createWorkletSourceNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime'
-      )
-    );
+    return new WorkletSourceNode(this, workletRuntime, callback);
   }
 
   createRecorderAdapter(): RecorderAdapterNode {
-    return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
+    return new RecorderAdapterNode(this);
   }
 
   createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+    return new OscillatorNode(this);
   }
 
   createStreamer(): StreamerNode {
-    const streamer = this.context.createStreamer();
-    if (!streamer) {
-      throw new NotSupportedError('StreamerNode requires FFmpeg build');
-    }
-    return new StreamerNode(this, streamer);
+    return new StreamerNode(this);
   }
 
   createConstantSource(): ConstantSourceNode {
-    return new ConstantSourceNode(this, this.context.createConstantSource());
+    return new ConstantSourceNode(this);
   }
 
   createGain(): GainNode {
-    return new GainNode(this, this.context.createGain());
+    return new GainNode(this);
   }
 
   createDelay(maxDelayTime?: number): DelayNode {
-    const maxTime = maxDelayTime ?? 1.0;
-    return new DelayNode(this, this.context.createDelay(maxTime));
+    if (maxDelayTime !== undefined) {
+      return new DelayNode(this, { maxDelayTime });
+    } else {
+      return new DelayNode(this);
+    }
   }
 
   createStereoPanner(): StereoPannerNode {
-    return new StereoPannerNode(this, this.context.createStereoPanner());
+    return new StereoPannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
+    return new BiquadFilterNode(this);
   }
 
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
-    const feedforward = options.feedforward;
-    const feedback = options.feedback;
+  createBufferSource(options?: {
+    pitchCorrection: boolean;
+  }): AudioBufferSourceNode {
+    if (options !== undefined) {
+      return new AudioBufferSourceNode(this, options);
+    } else {
+      return new AudioBufferSourceNode(this);
+    }
+  }
+
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
     if (feedforward.length < 1 || feedforward.length > 20) {
       throw new NotSupportedError(
         `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`
@@ -256,42 +192,27 @@ export default class BaseAudioContext {
       );
     }
 
-    return new IIRFilterNode(
-      this,
-      this.context.createIIRFilter(feedforward, feedback)
-    );
+    return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  createBufferSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): AudioBufferSourceNode {
-    const pitchCorrection = options?.pitchCorrection ?? false;
-
-    return new AudioBufferSourceNode(
-      this,
-      this.context.createBufferSource(pitchCorrection)
-    );
-  }
-
-  createBufferQueueSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): AudioBufferQueueSourceNode {
-    const pitchCorrection = options?.pitchCorrection ?? false;
-
-    return new AudioBufferQueueSourceNode(
-      this,
-      this.context.createBufferQueueSource(pitchCorrection)
-    );
+  createBufferQueueSource(options: {
+    pitchCorrection?: boolean;
+  }): AudioBufferQueueSourceNode {
+    if (options.pitchCorrection !== undefined) {
+      return new AudioBufferQueueSourceNode(this, options);
+    } else {
+      return new AudioBufferQueueSourceNode(this);
+    }
   }
 
   createBuffer(
-    numOfChannels: number,
+    numberOfChannels: number,
     length: number,
     sampleRate: number
   ): AudioBuffer {
-    if (numOfChannels < 1 || numOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
       throw new NotSupportedError(
-        `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );
     }
 
@@ -307,9 +228,7 @@ export default class BaseAudioContext {
       );
     }
 
-    return new AudioBuffer(
-      this.context.createBuffer(numOfChannels, length, sampleRate)
-    );
+    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(
@@ -322,40 +241,18 @@ export default class BaseAudioContext {
         `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
       );
     }
-
-    const disableNormalization = constraints?.disableNormalization ?? false;
-
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, disableNormalization)
-    );
+    return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
   createAnalyser(): AnalyserNode {
-    return new AnalyserNode(this, this.context.createAnalyser());
+    return new AnalyserNode(this);
   }
 
-  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
-    if (options?.buffer) {
-      const numberOfChannels = options.buffer.numberOfChannels;
-      if (
-        numberOfChannels !== 1 &&
-        numberOfChannels !== 2 &&
-        numberOfChannels !== 4
-      ) {
-        throw new NotSupportedError(
-          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
-        );
-      }
-    }
-    const buffer = options?.buffer ?? null;
-    const disableNormalization = options?.disableNormalization ?? false;
-    return new ConvolverNode(
-      this,
-      this.context.createConvolver(buffer?.buffer, disableNormalization)
-    );
+  createConvolver(): ConvolverNode {
+    return new ConvolverNode(this);
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 }

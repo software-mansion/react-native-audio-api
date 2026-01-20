@@ -1,8 +1,20 @@
 import { NotSupportedError } from '../errors';
 import { IIIRFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
+import { TIIRFilterOptions } from '../types';
+import { AudioNodeOptions } from '../defaults';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class IIRFilterNode extends AudioNode {
+  constructor(context: BaseAudioContext, options: TIIRFilterOptions) {
+    const finalOptions: TIIRFilterOptions = {
+      ...AudioNodeOptions,
+      ...options,
+    };
+    const iirFilterNode = context.context.createIIRFilter(finalOptions);
+    super(context, iirFilterNode);
+  }
+
   public getFrequencyResponse(
     frequencyArray: Float32Array,
     magResponseOutput: Float32Array,

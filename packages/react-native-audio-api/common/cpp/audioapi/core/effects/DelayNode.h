@@ -9,10 +9,11 @@
 namespace audioapi {
 
 class AudioBus;
+class DelayOptions;
 
 class DelayNode : public AudioNode {
  public:
-  explicit DelayNode(std::shared_ptr<BaseAudioContext> context, float maxDelayTime);
+  explicit DelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -8,8 +9,8 @@
 
 namespace audioapi {
 
-AudioBuffer::AudioBuffer(int numberOfChannels, size_t length, float sampleRate)
-    : bus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
+AudioBuffer::AudioBuffer(const AudioBufferOptions &options)
+    : bus_(std::make_shared<AudioBus>(options.length, options.numberOfChannels, options.sampleRate)) {}
 
 AudioBuffer::AudioBuffer(std::shared_ptr<AudioBus> bus) {
   bus_ = std::move(bus);

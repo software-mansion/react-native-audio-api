@@ -10,10 +10,13 @@
 namespace audioapi {
 
 class AudioBus;
+class StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {
  public:
-  explicit StereoPannerNode(std::shared_ptr<BaseAudioContext> context);
+  explicit StereoPannerNode(
+      std::shared_ptr<BaseAudioContext> context,
+      const StereoPannerOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 

@@ -1,10 +1,10 @@
 import {
   AndroidConfig,
-  createRunOncePlugin,
   ConfigPlugin,
-  withInfoPlist,
+  createRunOncePlugin,
   withAndroidManifest,
   withGradleProperties,
+  withInfoPlist,
   withPodfile,
 } from '@expo/config-plugins';
 const pkg = require('react-native-audio-api/package.json');
@@ -75,7 +75,7 @@ const withForegroundService: ConfigPlugin<Options> = (
     const serviceElement = {
       $: {
         'android:name':
-          'com.swmansion.audioapi.system.MediaNotificationManager$AudioForegroundService',
+          'com.swmansion.audioapi.system.CentralizedForegroundService',
         'android:stopWithTask': 'true',
         'android:foregroundServiceType': SFTypes,
       },
@@ -86,8 +86,16 @@ const withForegroundService: ConfigPlugin<Options> = (
       mainApplication.service = [];
     }
 
-    mainApplication.service.push(serviceElement);
+    const existingServiceIndex = mainApplication.service.findIndex((service) =>
+      service.$['android:name'].includes(serviceElement.$['android:name'])
+    );
 
+    if (existingServiceIndex !== -1) {
+      mainApplication.service[existingServiceIndex] = serviceElement;
+      return mod;
+    }
+
+    mainApplication.service.push(serviceElement);
     return mod;
   });
 };

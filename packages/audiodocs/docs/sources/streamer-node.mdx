@@ -20,7 +20,19 @@ Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If y
 
 ## Constructor
 
-[`BaseAudioContext.createStreamer()`](/docs/core/base-audio-context#createostreamer)
+```tsx
+constructor(context: BaseAudioContext, options?: StreamerOptions)
+```
+
+### `StreamerOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `streamPath` <Optional /> | `string` | - | Initial value for [`streamPath`](/docs/sources/streamer-node#properties) |
+
+Or by using `BaseAudioContext` factory method:
+
+[`BaseAudioContext.createStreamer()`](/docs/core/base-audio-context#createstreamer-).
 
 ## Example
 
@@ -45,18 +57,21 @@ function App() {
 
 ## Properties
 
-`StreamerNode` does not define any additional properties.
 It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+
+| Name | Type | Description |
+| :----: | :----: | :------- |
+| `streamPath` <ReadOnly /> | `string` | String value representing url to stream. |
 
 ## Methods
 It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
 
 ### `initialize`
 
-Initializes the streamer with a link to an external HLS source.
+Initializes the streamer with a link to an external source.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `streamPath` | `string` | Link pointing to an external HLS source |
+| `streamPath` | `string` | Link pointing to an external source |
 
 #### Returns `boolean` indicating if setup of streaming has worked.

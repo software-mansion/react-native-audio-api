@@ -53,14 +53,16 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 OpenFileResult FFmpegAudioFileWriter::openFile(
     float streamSampleRate,
     int32_t streamChannelCount,
-    int32_t streamMaxBufferSize) {
+    int32_t streamMaxBufferSize,
+    const std::string &fileNameOverride) {
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
   Result<NoneType, std::string> result = Result<NoneType, std::string>::Ok(None);
-  Result<std::string, std::string> filePathResult = fileoptions::getFilePath(fileProperties_);
+  Result<std::string, std::string> filePathResult =
+      fileoptions::getFilePath(fileProperties_, fileNameOverride);
 
   if (!filePathResult.is_ok()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());

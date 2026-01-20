@@ -3,7 +3,7 @@ sidebar_position: 1
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly } from '@site/src/components/Badges';
 import InteractiveExample from '@site/src/components/InteractiveExample';
 import AudioApiExample from '@site/src/components/AudioApiExample'
 import VinylPlayer from '@site/src/components/RecordPlayerExample/VinylAnimation';
@@ -23,7 +23,24 @@ Multiple `BiquadFilterNode` instances can be combined to create more complex fil
 
 ## Constructor
 
-[`BaseAudioContext.createBiquadFilter()`](/docs/core/base-audio-context#createbiquadfilter)
+```tsx
+constructor(context: BaseAudioContext, options?: BiquadFilterOptions)
+```
+
+### `BiquadFilterOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `Q` <Optional /> | `number` | 1 | Initial value for [`Q`](/docs/effects/biquad-filter-node#properties) |
+| `detune` <Optional /> | `number` | 0 | Initial value for [`detune`](/docs/effects/biquad-filter-node#properties) |
+| `frequency` <Optional /> | `number` | 350 | Initial value for [`frequency`](/docs/effects/biquad-filter-node#properties) |
+| `gain` <Optional /> | `number` | 0 | Initial value for [`gain`](/docs/effects/biquad-filter-node#properties) |
+| `type` <Optional /> | `BiquadFilterType` | `lowpass` | Initial value for [`type`](/docs/effects/biquad-filter-node#properties) |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createBiquadFilter()`](/docs/core/base-audio-context#createbiquadfilter) that creates node with default values.
 
 ## Properties
 
@@ -72,14 +89,9 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `frequency`
-- Float. Default: 350.
 - Range: [10, $\frac{sampleRate}{2}$].
 
-#### `detune`
-- Float. Default: 0.
-
 #### `Q`
-- Float. Default: 1.
 - Range:
   - For `lowpass` and `highpass` is [-Q, Q], where Q is the largest value for which $10^{Q/20}$ does not overflow the single-precision floating-point representation.
 Numerically: Q ≈ 770.63678.
@@ -87,9 +99,5 @@ Numerically: Q ≈ 770.63678.
   - Not used for `lowshelf` and `highshelf`.
 
 #### `gain`
-- Float. Default: 0.
 - Range: [-40, 40].
 - Positive values correspond to amplification; negative to attenuation.
-
-#### `type`
-- [`BiquadFilterType`](#biquadfiltertype-enumeration-description). Default: `"lowpass"`.

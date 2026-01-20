@@ -84,7 +84,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
@@ -94,7 +94,7 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioBufferBaseSourceNodeOptions`](/docs/sources/audio-buffer-queue-source-node#constructor) | Dictionary object that specifies if pitch correction has to be available. |
+| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferQueueSourceNode`.
 
@@ -107,16 +107,6 @@ Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
 ### `createConvolver`
 
 Creates [`ConvolverNode`](/docs/effects/convolver-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`ConvolverNodeOptions`](/docs/effects/convolver-node#constructor) | Dictionary object that specifies associated buffer and normalization. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | `numOfChannels` of buffer is not 1, 2 or 4. |
 
 #### Returns `ConvolverNode`.
 
@@ -139,17 +129,6 @@ Creates [`GainNode`](/docs/effects/gain-node).
 ### `createIIRFilter`
 
 Creates [`IIRFilterNode`](/docs/effects/iir-filter-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` | [`IIRFilterNodeOptions`](/docs/effects/iir-filter-node#constructor) | Dictionary object that specifies the feedforward (numerator) and feedback (denominator) coefficients for the transfer function of the IIR filter. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | One or both of the input arrays exceeds 20 members. |
-| `InvalidStateError` | All of the feedforward coefficients are 0, or the first feedback coefficient is 0. |
 
 #### Returns `IIRFilterNode`.
 

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -7,13 +8,13 @@
 
 namespace audioapi {
 
-DelayNode::DelayNode(std::shared_ptr<BaseAudioContext> context, float maxDelayTime)
-    : AudioNode(context),
-      delayTimeParam_(std::make_shared<AudioParam>(0, 0, maxDelayTime, context)),
+DelayNode::DelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions &options)
+    : AudioNode(context, options),
+      delayTimeParam_(std::make_shared<AudioParam>(options.delayTime, 0, options.maxDelayTime, context)),
       delayBuffer_(
           std::make_shared<AudioBus>(
               static_cast<size_t>(
-                  maxDelayTime * context->getSampleRate() +
+                  options.maxDelayTime * context->getSampleRate() +
                   1), // +1 to enable delayTime equal to maxDelayTime
               channelCount_,
               context->getSampleRate())) {

@@ -1,5 +1,8 @@
 import { IAudioBuffer } from '../interfaces';
 import { IndexSizeError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
+import { TAudioBufferOptions } from '../types';
+import { AudioBufferOptions } from '../defaults';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -9,12 +12,29 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: IAudioBuffer;
 
-  constructor(buffer: IAudioBuffer) {
-    this.buffer = buffer;
-    this.length = buffer.length;
-    this.duration = buffer.duration;
-    this.sampleRate = buffer.sampleRate;
-    this.numberOfChannels = buffer.numberOfChannels;
+  constructor(buffer: IAudioBuffer);
+  constructor(context: BaseAudioContext, options: TAudioBufferOptions);
+
+  constructor(
+    contextOrBuffer: BaseAudioContext | IAudioBuffer,
+    options?: TAudioBufferOptions
+  ) {
+    let buf: IAudioBuffer;
+    if (contextOrBuffer instanceof BaseAudioContext) {
+      const finalOptions = {
+        ...AudioBufferOptions,
+        ...options,
+      };
+      const context = contextOrBuffer;
+      buf = context.context.createBuffer(finalOptions);
+    } else {
+      buf = contextOrBuffer;
+    }
+    this.buffer = buf;
+    this.length = buf.length;
+    this.duration = buf.duration;
+    this.sampleRate = buf.sampleRate;
+    this.numberOfChannels = buf.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {

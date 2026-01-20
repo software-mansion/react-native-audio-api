@@ -1,8 +1,8 @@
 import AudioParam from './AudioParam';
 import AudioNode from './AudioNode';
 import BaseAudioContext from './BaseAudioContext';
-import { BiquadFilterType } from '../types';
 import { InvalidAccessError } from '../errors';
+import { TBiquadFilterOptions } from '../types';
 
 export default class BiquadFilterNode extends AudioNode {
   readonly frequency: AudioParam;
@@ -12,8 +12,12 @@ export default class BiquadFilterNode extends AudioNode {
 
   constructor(
     context: BaseAudioContext,
-    biquadFilter: globalThis.BiquadFilterNode
+    biquadFilterOptions?: TBiquadFilterOptions
   ) {
+    const biquadFilter = new globalThis.BiquadFilterNode(
+      context.context,
+      biquadFilterOptions
+    );
     super(context, biquadFilter);
     this.frequency = new AudioParam(biquadFilter.frequency, context);
     this.detune = new AudioParam(biquadFilter.detune, context);

@@ -19,6 +19,12 @@ AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node)
       JSI_EXPORT_FUNCTION(AudioNodeHostObject, disconnect));
 }
 
+// Explicitly define destructor here, as they to exist in order to act as a
+// "key function" for the audio classes - this allow for RTTI to work
+// properly across dynamic library boundaries (i.e. dynamic_cast that is used by
+// isHostObject method), android specific issue
+AudioNodeHostObject::~AudioNodeHostObject() = default;
+
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, numberOfInputs) {
   return {node_->getNumberOfInputs()};
 }

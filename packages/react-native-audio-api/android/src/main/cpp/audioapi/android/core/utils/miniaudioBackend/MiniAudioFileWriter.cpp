@@ -75,7 +75,8 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
 OpenFileResult MiniAudioFileWriter::openFile(
     float streamSampleRate,
     int32_t streamChannelCount,
-    int32_t streamMaxBufferSize) {
+    int32_t streamMaxBufferSize,
+    const std::string &fileNameOverride) {
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
@@ -95,7 +96,7 @@ OpenFileResult MiniAudioFileWriter::openFile(
         "Failed to initialize converter" + std::string(ma_result_description(result)));
   }
 
-  result = initializeEncoder();
+  result = initializeEncoder(fileNameOverride);
 
   if (result != MA_SUCCESS) {
     return OpenFileResult ::Err(
@@ -266,10 +267,10 @@ ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
 /// This method sets up the audio encoder for writing to the file,
 /// it should be called only on the JS thread. (during file opening)
 /// @return MA_SUCCESS if initialization was successful, otherwise an error code.
-ma_result MiniAudioFileWriter::initializeEncoder() {
+ma_result MiniAudioFileWriter::initializeEncoder(const std::string &fileNameOverride) {
   ma_result result;
   Result<std::string, std::string> filePathResult =
-      android::fileoptions::getFilePath(fileProperties_);
+      android::fileoptions::getFilePath(fileProperties_, fileNameOverride);
 
   if (!filePathResult.is_ok()) {
     return MA_ERROR;

@@ -10,6 +10,12 @@ namespace audioapi {
 StreamerNodeHostObject::StreamerNodeHostObject(const std::shared_ptr<StreamerNode> &node)
     : AudioScheduledSourceNodeHostObject(node) {
   addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize));
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(StreamerNodeHostObject, streamPath));
+}
+
+JSI_PROPERTY_GETTER_IMPL(StreamerNodeHostObject, streamPath) {
+  auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
+  return jsi::String::createFromUtf8(runtime, streamerNode->getStreamPath());
 }
 
 JSI_HOST_FUNCTION_IMPL(StreamerNodeHostObject, initialize) {

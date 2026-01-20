@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -25,7 +26,7 @@ class DelayTest : public ::testing::Test {
 
 class TestableDelayNode : public DelayNode {
  public:
-  explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context) : DelayNode(context, 1) {}
+  explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions& options) : DelayNode(context, options) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
@@ -39,14 +40,16 @@ class TestableDelayNode : public DelayNode {
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
-  auto delay = context->createDelay(1.0f);
+  auto delay = context->createDelay(DelayOptions());
   ASSERT_NE(delay, nullptr);
 }
 
 TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   static constexpr float DELAY_TIME = 0.0f;
   static constexpr int FRAMES_TO_PROCESS = 4;
-  auto delayNode = TestableDelayNode(context);
+  auto options = DelayOptions();
+  options.maxDelayTime = 1.0f;
+  auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
   auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
@@ -63,7 +66,9 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
 TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
   float DELAY_TIME = (128.0 / context->getSampleRate()) * 0.5;
   static constexpr int FRAMES_TO_PROCESS = 128;
-  auto delayNode = TestableDelayNode(context);
+  auto options = DelayOptions();
+  options.maxDelayTime = 1.0f;
+  auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
   auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
@@ -87,7 +92,9 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
 TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   float DELAY_TIME = (128.0 / context->getSampleRate()) * 0.5;
   static constexpr int FRAMES_TO_PROCESS = 128;
-  auto delayNode = TestableDelayNode(context);
+  auto options = DelayOptions();
+  options.maxDelayTime = 1.0f;
+  auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
   auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);

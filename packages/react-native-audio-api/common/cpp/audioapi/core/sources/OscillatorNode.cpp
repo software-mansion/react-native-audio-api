@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/dsp/AudioUtils.h>
@@ -8,23 +9,27 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioScheduledSourceNode(context),
-      frequencyParam_(
-          std::make_shared<AudioParam>(
-              444.0,
-              -context->getNyquistFrequency(),
-              context->getNyquistFrequency(),
-              context)),
-      detuneParam_(
-          std::make_shared<AudioParam>(
-              0.0,
-              -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-              1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      type_(OscillatorType::SINE),
-      periodicWave_(context->getBasicWaveForm(type_)) {
+OscillatorNode::OscillatorNode(std::shared_ptr<BaseAudioContext> context, const OscillatorOptions &options)
+    : AudioScheduledSourceNode(context) {
+  frequencyParam_ = std::make_shared<AudioParam>(
+      options.frequency,
+      -context->getNyquistFrequency(),
+      context->getNyquistFrequency(),
+      context);
+  detuneParam_ = std::make_shared<AudioParam>(
+      options.detune,
+      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      context);
+  type_ = options.type;
+  if (options.periodicWave) {
+    periodicWave_ = options.periodicWave;
+  } else {
+    periodicWave_ = context->getBasicWaveForm(type_);
+  }
+
   audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
+
   isInitialized_ = true;
 }
 

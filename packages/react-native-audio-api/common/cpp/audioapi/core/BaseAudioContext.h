@@ -36,11 +36,25 @@ class AudioEventHandlerRegistry;
 class ConvolverNode;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+class WaveShaperNode;
 class WorkletSourceNode;
 class WorkletNode;
 class WorkletProcessingNode;
 class StreamerNode;
-class WaveShaperNode;
+class GainOptions;
+class StereoPannerOptions;
+class ConvolverOptions;
+class ConstantSourceOptions;
+class AnalyserOptions;
+class BiquadFilterOptions;
+class OscillatorOptions;
+class BaseAudioBufferSourceOptions;
+class AudioBufferSourceOptions;
+class StreamerOptions;
+class AudioBufferOptions;
+class DelayOptions;
+class IIRFilterOptions;
+class WaveShaperOptions;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -56,7 +70,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  std::shared_ptr<AudioDestinationNode> getDestination();
+  std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(
@@ -73,29 +87,26 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
-  std::shared_ptr<OscillatorNode> createOscillator();
-  std::shared_ptr<ConstantSourceNode> createConstantSource();
-  std::shared_ptr<StreamerNode> createStreamer();
-  std::shared_ptr<GainNode> createGain();
-  std::shared_ptr<DelayNode> createDelay(float maxDelayTime);
-  std::shared_ptr<StereoPannerNode> createStereoPanner();
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter();
-  std::shared_ptr<IIRFilterNode> createIIRFilter(
-      const std::vector<float> &feedforward,
-      const std::vector<float> &feedback);
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
-  static std::shared_ptr<AudioBuffer>
-  createBuffer(int numberOfChannels, size_t length, float sampleRate);
+  std::shared_ptr<DelayNode> createDelay(const DelayOptions &options);
+  std::shared_ptr<IIRFilterNode> createIIRFilter(const IIRFilterOptions &options);
+  std::shared_ptr<OscillatorNode> createOscillator(const OscillatorOptions &options);
+  std::shared_ptr<ConstantSourceNode> createConstantSource(const ConstantSourceOptions &options);
+  std::shared_ptr<StreamerNode> createStreamer(const StreamerOptions &options);
+  std::shared_ptr<GainNode> createGain(const GainOptions &options);
+  std::shared_ptr<StereoPannerNode> createStereoPanner(const StereoPannerOptions &options);
+  std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
+      const AudioBufferSourceOptions &options);
+  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
+      const BaseAudioBufferSourceOptions &options);
+  static std::shared_ptr<AudioBuffer> createBuffer(const AudioBufferOptions &options);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AnalyserNode> createAnalyser();
-  std::shared_ptr<ConvolverNode> createConvolver(
-      std::shared_ptr<AudioBuffer> buffer,
-      bool disableNormalization);
-  std::shared_ptr<WaveShaperNode> createWaveShaper();
+  std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
+  std::shared_ptr<ConvolverNode> createConvolver(const ConvolverOptions &options);
+  std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

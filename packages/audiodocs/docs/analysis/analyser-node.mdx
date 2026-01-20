@@ -3,7 +3,7 @@ sidebar_position: 1
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AnalyserNode
 
@@ -23,7 +23,23 @@ In contrast, a frequency-domain graph reveals how the signal's energy or power i
 
 ## Constructor
 
-[`BaseAudioContext.createAnalyser()`](/docs/core/base-audio-context#createanalyser)
+```tsx
+constructor(context: BaseAudioContext, options?: AnalyserOptions)
+```
+
+### `AnalyserOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `fftSize` <Optional /> | `number` | 2048 | Number representing size of fast fourier transform |
+| `minDecibels` <Optional /> | `number` | -100 | Initial minimum power in dB for FFT analysis |
+| `maxDecibels` <Optional /> | `number` | -30 | Initial maximum power in dB for FFT analysis |
+| `smoothingTimeConstant` <Optional /> | `number` | 0.8 | Initial smoothing constant for the FFT analysis |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createAnalyser()`](/docs/core/base-audio-context#createanalyser) that creates node with default values.
 
 ## Properties
 
@@ -95,24 +111,20 @@ Each value in the array is within the range 0 to 255, where value of 127 indicat
 ## Remarks
 
 #### `fftSize`
-- Default value is 2048.
 - Must be a power of 2 between 32 and 32768.
 - Throws `IndexSizeError` if set value is not power of 2, or is outside the allowed range.
 
 #### `minDecibels`
-- Default value is -100 dB.
 - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
 - When getting data from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude lower then `minDecibels` will be returned as 0.
 - Throws `IndexSizeError` if set value is greater than or equal to `maxDecibels`.
 
 #### `maxDecibels`
-- Default value is -30 dB.
 - 0 dB([decibel](https://en.wikipedia.org/wiki/Decibel)) is the loudest possible sound, -10 dB is a 10th of that.
 - When getting data from [`getByteFrequencyData()`](/docs/analysis/analyser-node#getbytefrequencydata), any frequency with amplitude higher then `maxDecibels` will be returned as 255.
 - Throws `IndexSizeError` if set value is less then or equal to `minDecibels`.
 
 #### `smoothingTimeConstant`
-- Default value is 0.8.
 - Nominal range is 0 to 1.
 - 0 means no averaging, 1 means "overlap the previous and current buffer quite a lot while computing the value".
 - Throws `IndexSizeError` if set value is outside the allowed range.

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
@@ -11,30 +12,23 @@
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
-    const std::shared_ptr<BaseAudioContext>& context,
-    bool pitchCorrection)
+    std::shared_ptr<BaseAudioContext> context,
+    const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context),
-      pitchCorrection_(pitchCorrection),
-      stretch_(std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>()),
-      playbackRateBus_(
-          std::make_shared<AudioBus>(
-              RENDER_QUANTUM_SIZE * 3,
-              channelCount_,
-              context->getSampleRate())),
-      detuneParam_(
-          std::make_shared<AudioParam>(
-              0.0,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      playbackRateParam_(
-          std::make_shared<AudioParam>(
-              1.0,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      vReadIndex_(0.0),
-      onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1f)) {}
+      pitchCorrection_(options.pitchCorrection),
+      vReadIndex_(0.0) {
+  onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);
+
+  detuneParam_ = std::make_shared<AudioParam>(
+      options.detune, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+  playbackRateParam_ = std::make_shared<AudioParam>(
+      options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+
+  playbackRateBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+
+  stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+}
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
   return detuneParam_;

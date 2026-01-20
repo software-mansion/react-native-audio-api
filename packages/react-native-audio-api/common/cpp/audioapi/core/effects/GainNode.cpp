@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -7,11 +8,11 @@
 
 namespace audioapi {
 
-GainNode::GainNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context),
+GainNode::GainNode(std::shared_ptr<BaseAudioContext> context, const GainOptions &options)
+    : AudioNode(context, options),
       gainParam_(
           std::make_shared<AudioParam>(
-              1.0,
+              options.gain,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
               context)) {

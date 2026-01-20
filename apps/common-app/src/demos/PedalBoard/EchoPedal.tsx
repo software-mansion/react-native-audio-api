@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { VerticalSlider } from '../../components';
-import { ConvolverNode, AudioNode, AudioContext, GainNode } from 'react-native-audio-api';
+import { ConvolverNode, AudioNode, AudioContext } from 'react-native-audio-api';
 import { makeEchoCurve } from './curves';
 
 interface EchoPedalProps {
@@ -17,7 +16,6 @@ export default function EchoPedal({
   outputNode,
 }: EchoPedalProps) {
   const [isActive, setIsActive] = useState(false);
-  const [time, setTime] = useState(0.5); // Echo delay time (0-1 mapped to actual delay)
 
   const convolverNodeRef = useRef<ConvolverNode | null>(null);
 
@@ -32,23 +30,15 @@ export default function EchoPedal({
     }
   }, [isActive, inputNode, outputNode]);
 
-  useEffect(() => {
-    if (isActive && inputNode && outputNode) {
-      applyEffect(context, inputNode, outputNode);
-    }
-  }, [time]);
-
   const applyEffect = (context: AudioContext, inputNode: AudioNode, outputNode: AudioNode) => {
     if (convolverNodeRef.current) {
       inputNode.disconnect(convolverNodeRef.current);
       convolverNodeRef.current.disconnect();
     }
-    // Map slider value (0-1) to delay time (0.1s - 2.0s)
-    const delayTime = 0.1 + time * 1.9;
 
     // Create new convolver with echo curve
-    const convolver = context.createConvolver({ disableNormalization: true});
-    convolver.buffer = makeEchoCurve(delayTime, context);
+    const convolver = new ConvolverNode(context, { disableNormalization: true})
+    convolver.buffer = makeEchoCurve(0.7, context);
     convolverNodeRef.current = convolver;
 
     // Reconnect audio graph

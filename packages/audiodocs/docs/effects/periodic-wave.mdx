@@ -2,24 +2,39 @@
 sidebar_position: 5
 ---
 
+import { Optional } from '@site/src/components/Badges';
+
 # PeriodicWave
 
 The `PeriodicWave` interface defines a periodic waveform that can be used to shape the output of an OscillatorNode.
 
 ## Constructor
 
-[`BaseAudioContext.createPeriodicWave(real, imag)`](/docs/core/base-audio-context#createperiodicwave)
-
-[`BaseAudioContext.createPeriodicWave(real, imag, constraints: PeriodicWaveConstraints)`](/docs/core/base-audio-context#createperiodicwave)
-
-```jsx
-interface PeriodicWaveConstraints {
-  disableNormalization: boolean; // default set to false (normalization is enabled)
-}
+```tsx
+constructor(context: BaseAudioContext, options: PeriodicWaveOptions)
 ```
+
+### `PeriodicWaveOptions`
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `real` <Optional /> | `Float32Array` | - | [Cosine terms](/docs/core/base-audio-context#createperiodicwave) |
+| `imag` <Optional /> | `Float32Array` | - | [Sine terms](/docs/core/base-audio-context#createperiodicwave) |
+| `disableNormalization` | `boolean` | false | Whether the periodic wave is [normalized](/docs/core/base-audio-context#createperiodicwave) or not. |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createPeriodicWave(real, imag, constraints?: PeriodicWaveConstraints)`](/docs/core/base-audio-context#createperiodicwave)
 
 ## Properties
 None. `PeriodicWave` has no own or inherited properties.
 
 ## Methods
 None. `PeriodicWave` has no own or inherited methods.
+
+## Remarks
+
+#### `real` and `imag`
+- if only one is specified, the other one is treated as array of 0s of the same length
+- if neither is given values are equivalent to the sine wave
+- if both given, they have to have the same length
+- to see how values corresponds to the output wave [see](https://webaudio.github.io/web-audio-api/#waveform-generation) for more information

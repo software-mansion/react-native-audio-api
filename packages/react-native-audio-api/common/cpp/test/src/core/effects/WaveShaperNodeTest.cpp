@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -25,7 +26,7 @@ class WaveShaperNodeTest : public ::testing::Test {
 class TestableWaveShaperNode : public WaveShaperNode {
  public:
   explicit TestableWaveShaperNode(std::shared_ptr<BaseAudioContext> context)
-      : WaveShaperNode(context) {
+      : WaveShaperNode(context, WaveShaperOptions()) {
     testCurve_ = std::make_shared<AudioArray>(3);
     auto data = testCurve_->getData();
     data[0] = -2.0f;
@@ -43,12 +44,12 @@ class TestableWaveShaperNode : public WaveShaperNode {
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
-  auto waveShaper = context->createWaveShaper();
+  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
   ASSERT_NE(waveShaper, nullptr);
 }
 
 TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
-  auto waveShaper = context->createWaveShaper();
+  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
   ASSERT_NO_THROW(waveShaper->setCurve(nullptr));
   ASSERT_EQ(waveShaper->getCurve(), nullptr);
 }

@@ -19,6 +19,7 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
     return SIZE;
   }
 
+  JSI_PROPERTY_GETTER_DECL(streamPath);
   JSI_HOST_FUNCTION_DECL(initialize);
 
  private:

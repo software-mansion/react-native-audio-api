@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <test/src/biquad/BiquadFilterChromium.h>
 #include <test/src/biquad/BiquadFilterTest.h>
 #include <memory>
@@ -16,7 +17,7 @@ void BiquadFilterTest::expectCoefficientsNear(
 }
 
 void BiquadFilterTest::testLowpass(float frequency, float Q) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setLowpassCoefficients(normalizedFrequency, Q);
@@ -24,7 +25,7 @@ void BiquadFilterTest::testLowpass(float frequency, float Q) {
 }
 
 void BiquadFilterTest::testHighpass(float frequency, float Q) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setHighpassCoefficients(normalizedFrequency, Q);
@@ -32,7 +33,7 @@ void BiquadFilterTest::testHighpass(float frequency, float Q) {
 }
 
 void BiquadFilterTest::testBandpass(float frequency, float Q) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setBandpassCoefficients(normalizedFrequency, Q);
@@ -40,7 +41,7 @@ void BiquadFilterTest::testBandpass(float frequency, float Q) {
 }
 
 void BiquadFilterTest::testNotch(float frequency, float Q) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setNotchCoefficients(normalizedFrequency, Q);
@@ -48,7 +49,7 @@ void BiquadFilterTest::testNotch(float frequency, float Q) {
 }
 
 void BiquadFilterTest::testAllpass(float frequency, float Q) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setAllpassCoefficients(normalizedFrequency, Q);
@@ -56,7 +57,7 @@ void BiquadFilterTest::testAllpass(float frequency, float Q) {
 }
 
 void BiquadFilterTest::testPeaking(float frequency, float Q, float gain) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setPeakingCoefficients(normalizedFrequency, Q, gain);
@@ -64,7 +65,7 @@ void BiquadFilterTest::testPeaking(float frequency, float Q, float gain) {
 }
 
 void BiquadFilterTest::testLowshelf(float frequency, float gain) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setLowshelfCoefficients(normalizedFrequency, gain);
@@ -72,7 +73,7 @@ void BiquadFilterTest::testLowshelf(float frequency, float gain) {
 }
 
 void BiquadFilterTest::testHighshelf(float frequency, float gain) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
   float normalizedFrequency = frequency / nyquistFrequency;
 
   node.setHighshelfCoefficients(normalizedFrequency, gain);
@@ -218,7 +219,7 @@ TEST_P(BiquadFilterGainTest, SetHighshelfCoefficients) {
 }
 
 TEST_F(BiquadFilterTest, GetFrequencyResponse) {
-  auto node = BiquadFilterNode(context);
+  auto node = BiquadFilterNode(context, BiquadFilterOptions());
 
   float frequency = 1000.0f;
   float Q = 1.0f;

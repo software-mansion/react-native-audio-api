@@ -1,4 +1,5 @@
 import AudioBuffer from './core/AudioBuffer';
+import PeriodicWave from './core/PeriodicWave';
 
 export type Result<T> =
   | ({ status: 'success' } & T)
@@ -28,10 +29,6 @@ export type OscillatorType =
   | 'sawtooth'
   | 'triangle'
   | 'custom';
-
-export interface PeriodicWaveConstraints {
-  disableNormalization: boolean;
-}
 
 export interface AudioContextOptions {
   sampleRate?: number;
@@ -110,17 +107,99 @@ export interface FileInfo {
 
 export type WindowType = 'blackman' | 'hann';
 
-export interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean;
-}
-
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
-export interface ConvolverNodeOptions {
-  buffer?: AudioBuffer | null;
+export interface TAudioNodeOptions {
+  channelCount?: number;
+  channelCountMode?: ChannelCountMode;
+  channelInterpretation?: ChannelInterpretation;
+}
+
+export interface TGainOptions extends TAudioNodeOptions {
+  gain?: number;
+}
+
+export interface TSteroPannerOptions extends TAudioNodeOptions {
+  pan?: number;
+}
+
+export interface TAnalyserOptions extends TAudioNodeOptions {
+  fftSize?: number;
+  minDecibels?: number;
+  maxDecibels?: number;
+  smoothingTimeConstant?: number;
+}
+
+export interface OptionsValidator<T> {
+  validate(options: T): void;
+}
+
+export interface TBiquadFilterOptions extends TAudioNodeOptions {
+  type?: BiquadFilterType;
+  frequency?: number;
+  detune?: number;
+  Q?: number;
+  gain?: number;
+}
+
+export interface TOscillatorOptions {
+  type?: OscillatorType;
+  frequency?: number;
+  detune?: number;
+  periodicWave?: PeriodicWave;
+}
+
+export interface TBaseAudioBufferSourceOptions {
+  detune?: number;
+  playbackRate?: number;
+  pitchCorrection?: boolean;
+}
+
+export interface TAudioBufferSourceOptions
+  extends TBaseAudioBufferSourceOptions {
+  buffer?: AudioBuffer;
+  loop?: boolean;
+  loopStart?: number;
+  loopEnd?: number;
+}
+
+export interface TConvolverOptions extends TAudioNodeOptions {
+  buffer?: AudioBuffer;
   disableNormalization?: boolean;
 }
 
+export interface TWebConvolverOptions {
+  buffer?: globalThis.AudioBuffer | null;
+  normalize?: boolean;
+}
+
+export interface TConstantSourceOptions {
+  offset?: number;
+}
+
+export interface TStreamerOptions {
+  streamPath?: string;
+}
+
+export interface TPeriodicWaveConstraints {
+  disableNormalization?: boolean;
+}
+
+export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
+  real?: Float32Array;
+  imag?: Float32Array;
+}
+
+export interface TAudioBufferOptions {
+  numberOfChannels?: number;
+  length: number;
+  sampleRate: number;
+}
+
+export interface TIIRFilterOptions extends TAudioNodeOptions {
+  feedforward: number[];
+  feedback: number[];
+}
 export type OverSampleType = 'none' | '2x' | '4x';
 
 export interface AudioRecorderCallbackOptions {
@@ -145,9 +224,18 @@ export interface AudioRecorderCallbackOptions {
   channelCount: number;
 }
 
-export interface IIRFilterNodeOptions {
-  feedforward: number[];
-  feedback: number[];
+export interface TDelayOptions extends TAudioNodeOptions {
+  maxDelayTime?: number;
+  delayTime?: number;
+}
+
+export interface TWaveShaperOptions extends TAudioNodeOptions {
+  curve?: Float32Array;
+  oversample?: OverSampleType;
 }
 
 export type DecodeDataInput = number | string | ArrayBuffer;
+
+export interface AudioRecorderStartOptions {
+  fileNameOverride?: string;
+}

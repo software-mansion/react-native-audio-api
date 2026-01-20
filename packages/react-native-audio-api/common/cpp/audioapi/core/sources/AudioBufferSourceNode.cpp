@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
@@ -14,13 +15,14 @@ namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(
     std::shared_ptr<BaseAudioContext> context,
-    bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context, pitchCorrection),
-      loop_(false),
+    const AudioBufferSourceOptions &options)
+    : AudioBufferBaseSourceNode(context, options),
+      loop_(options.loop),
       loopSkip_(false),
-      loopStart_(0),
-      loopEnd_(0),
-      alignedBus_(nullptr) {
+      loopStart_(options.loopStart),
+      loopEnd_(options.loopEnd) {
+  setBuffer(options.buffer);
+
   isInitialized_ = true;
 }
 

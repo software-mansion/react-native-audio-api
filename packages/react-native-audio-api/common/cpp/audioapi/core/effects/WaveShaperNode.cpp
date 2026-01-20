@@ -3,6 +3,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 
 #include <algorithm>
 #include <memory>
@@ -10,14 +11,14 @@
 
 namespace audioapi {
 
-WaveShaperNode::WaveShaperNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context), oversample_(OverSampleType::OVERSAMPLE_NONE) {
+WaveShaperNode::WaveShaperNode(std::shared_ptr<BaseAudioContext> context, const WaveShaperOptions &options)
+    : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
   for (int i = 0; i < channelCount_; i++) {
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
-
+  setCurve(options.curve);
   // to change after graph processing improvement - should be max
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   isInitialized_ = true;

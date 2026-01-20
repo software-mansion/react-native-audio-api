@@ -1,8 +1,4 @@
-import {
-  ContextState,
-  IIRFilterNodeOptions,
-  PeriodicWaveConstraints,
-} from '../types';
+import { ContextState } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
@@ -32,9 +28,9 @@ export default interface BaseAudioContext {
   createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode;
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
   createConvolver(): ConvolverNode;
-  createBufferSource(): Promise<AudioBufferSourceNode>;
+  createBufferSource(): AudioBufferSourceNode;
   createBuffer(
     numOfChannels: number,
     length: number,

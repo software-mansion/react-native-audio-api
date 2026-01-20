@@ -32,7 +32,10 @@ IOSFileWriter::~IOSFileWriter()
 /// @param bufferFormat The audio format of the input buffer.
 /// @param maxInputBufferLength The maximum length of the input buffer in frames.
 /// @returns An OpenFileResult indicating success with the file path or an error message.
-OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+OpenFileResult IOSFileWriter::openFile(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength,
+    const std::string &fileNameOverride)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
@@ -44,7 +47,7 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
 
     NSError *error = nil;
     NSDictionary *settings = ios::fileoptions::getFileSettings(fileProperties_);
-    fileURL_ = ios::fileoptions::getFileURL(fileProperties_);
+    fileURL_ = ios::fileoptions::getFileURL(fileProperties_, fileNameOverride);
 
     if (fileProperties_->sampleRate == 0 || fileProperties_->channelCount == 0) {
       return OpenFileResult::Err(

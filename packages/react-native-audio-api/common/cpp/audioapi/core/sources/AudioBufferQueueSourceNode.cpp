@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
@@ -18,19 +19,21 @@
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
-    bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context, pitchCorrection), buffers_() {
+std::shared_ptr<BaseAudioContext> context,
+    const BaseAudioBufferSourceOptions &options)
+    : AudioBufferBaseSourceNode(context, options) {
+  buffers_ = {};
   stretch_->presetDefault(channelCount_, context->getSampleRate());
 
-  if (pitchCorrection) {
+  if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
 
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    tailBuffer_ =
-        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
+    auto audioBufferOptions = AudioBufferOptions(
+        extraTailFrames, static_cast<size_t>(channelCount_), context->getSampleRate());
+    tailBuffer_ = std::make_shared<AudioBuffer>(audioBufferOptions);
 
     tailBuffer_->bus_->zero();
   }
