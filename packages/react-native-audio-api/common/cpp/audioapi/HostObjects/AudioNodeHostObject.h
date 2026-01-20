@@ -14,6 +14,7 @@ class AudioNode;
 class AudioNodeHostObject : public JsiHostObject {
  public:
   explicit AudioNodeHostObject(const std::shared_ptr<AudioNode> &node);
+  ~AudioNodeHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(numberOfInputs);
   JSI_PROPERTY_GETTER_DECL(numberOfOutputs);

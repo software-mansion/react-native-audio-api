@@ -1,5 +1,6 @@
 package com.swmansion.audioapi
 
+import androidx.annotation.RequiresPermission
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
@@ -149,6 +150,7 @@ class AudioAPIModule(
   }
 
   // Notification system methods
+  @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   override fun showNotification(
     type: String?,
     key: String?,

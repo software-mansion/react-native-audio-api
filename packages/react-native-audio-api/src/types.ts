@@ -235,3 +235,7 @@ export interface TWaveShaperOptions extends TAudioNodeOptions {
 }
 
 export type DecodeDataInput = number | string | ArrayBuffer;
+
+export interface AudioRecorderStartOptions {
+  fileNameOverride?: string;
+}

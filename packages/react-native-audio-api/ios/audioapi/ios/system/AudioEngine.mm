@@ -38,7 +38,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
 
-  [self.sessionManager setActive:false];
+  [self.sessionManager setActive:false error:nil];
   self.sessionManager = nil;
 }
 
@@ -182,7 +182,9 @@ static AudioEngine *_sharedInstance = nil;
     return true;
   }
 
-  if (![self.sessionManager setActive:true]) {
+  if (![self.sessionManager setActive:true error:&error]) {
+    // TODO: return user facing error
+    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return false;
   }
 
