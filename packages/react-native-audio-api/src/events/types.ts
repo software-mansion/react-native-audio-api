@@ -49,9 +49,9 @@ type SystemEvents = RemoteCommandEvents & {
   routeChange: OnRouteChangeEventType;
 };
 
-export interface OnEndedEventType extends EventEmptyType {
-  bufferId: string | undefined;
-  isLast: boolean | undefined;
+export interface OnBufferEndEventType extends EventEmptyType {
+  bufferId: string;
+  isLastBufferInQueue: boolean;
 }
 
 /**
@@ -79,10 +79,11 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: OnEndedEventType;
+  ended: EventEmptyType;
   loopEnded: EventEmptyType;
   audioReady: OnAudioReadyEventType;
   positionChanged: EventTypeWithValue;
+  bufferEnded: OnBufferEndEventType;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
   recorderError: OnRecorderErrorEventType;

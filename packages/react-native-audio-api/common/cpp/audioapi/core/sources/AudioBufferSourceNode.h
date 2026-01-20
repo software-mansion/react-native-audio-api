@@ -72,7 +72,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       size_t offsetLength,
       float playbackRate) override;
 
-  double getVirtualStartFrame(float sampleRate);
+  double getVirtualStartFrame(float sampleRate) const;
   double getVirtualEndFrame(float sampleRate);
 };
 
