@@ -11,7 +11,7 @@
 #import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 
 #import <audioapi/events/AudioEventHandlerRegistry.h>
@@ -66,7 +66,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
   self.audioEngine = [[AudioEngine alloc] init];
-  self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
+  self.notificationManager = [[SystemNotificationManager alloc] initWithAudioAPIModule:self];
   self.notificationRegistry = [[NotificationRegistry alloc] initWithAudioAPIModule:self];
 
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);

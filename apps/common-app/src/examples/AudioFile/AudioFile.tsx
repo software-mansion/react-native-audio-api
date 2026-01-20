@@ -98,6 +98,7 @@ const AudioFile: FC = () => {
     return () => {
       AudioPlayer.reset();
       PlaybackNotificationManager.hide();
+      AudioManager.setAudioSessionActivity(false);
     };
   }, [fetchAudioBuffer]);
 

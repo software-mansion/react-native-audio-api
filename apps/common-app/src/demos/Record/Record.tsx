@@ -17,12 +17,6 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-});
-
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
@@ -68,6 +62,11 @@ const Record: FC = () => {
     }
 
     let success = false;
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playAndRecord',
+      iosMode: 'default',
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    });
 
     try {
       success = await AudioManager.setAudioSessionActivity(true);

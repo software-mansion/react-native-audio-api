@@ -9,7 +9,7 @@
 #import <React/RCTEventEmitter.h>
 
 @class AudioEngine;
-@class NotificationManager;
+@class SystemNotificationManager;
 @class AudioSessionManager;
 @class NotificationRegistry;
 
@@ -21,7 +21,7 @@
 #endif // RCT_NEW_ARCH_ENABLED
 
 @property (nonatomic, strong) AudioEngine *audioEngine;
-@property (nonatomic, strong) NotificationManager *notificationManager;
+@property (nonatomic, strong) SystemNotificationManager *notificationManager;
 @property (nonatomic, strong) AudioSessionManager *audioSessionManager;
 @property (nonatomic, strong) NotificationRegistry *notificationRegistry;
 
