@@ -18,7 +18,7 @@ class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
 
   JSI_PROPERTY_GETTER_DECL(offset);
 
-  private:
-    std::shared_ptr<AudioParamHostObject> offsetParam_;
+ private:
+  std::shared_ptr<AudioParamHostObject> offsetParam_;
 };
 } // namespace audioapi
