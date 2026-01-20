@@ -77,7 +77,10 @@ void AudioBufferQueueSourceNode::pause() {
 std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   auto locker = Locker(getBufferLock());
   buffers_.emplace(bufferId_, buffer);
-  addExtraTailFrames_ = true;
+
+  if (tailBuffer_ != nullptr) {
+    addExtraTailFrames_ = true;
+  }
 
   return std::to_string(bufferId_++);
 }
@@ -225,7 +228,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
         if (addExtraTailFrames_) {
           buffers_.emplace(bufferId, tailBuffer_);
           addExtraTailFrames_ = false;
-        } else if (buffers_.empty()) {
+        } else {
           processingBus->zero(writeIndex, framesLeft);
           readIndex = 0;
 
