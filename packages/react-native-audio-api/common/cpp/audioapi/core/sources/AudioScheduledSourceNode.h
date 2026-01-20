@@ -26,7 +26,7 @@ class AudioScheduledSourceNode : public AudioNode {
   // STOP_SCHEDULED: The node is scheduled to stop at a specific time, but is still playing.
   // FINISHED: The node has finished playing.
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
-  explicit AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context);
+  explicit AudioScheduledSourceNode(const std::shared_ptr<BaseAudioContext> &context);
 
   virtual void start(double when);
   virtual void stop(double when);
@@ -41,13 +41,17 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void disable() override;
 
+  /// @note JS Thread only.
+  /// Thread safe, because does not access state of the node.
+  void unregisterOnEndedCallback(uint64_t callbackId);
+
  protected:
   double startTime_;
   double stopTime_;
 
   PlaybackState playbackState_;
 
-  std::atomic<uint64_t> onEndedCallbackId_ = 0;
+  uint64_t onEndedCallbackId_ = 0;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(

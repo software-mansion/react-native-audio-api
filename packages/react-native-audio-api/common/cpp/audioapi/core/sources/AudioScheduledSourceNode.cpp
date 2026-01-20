@@ -16,7 +16,7 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
+AudioScheduledSourceNode::AudioScheduledSourceNode(const std::shared_ptr<BaseAudioContext>& context)
     : AudioNode(context),
       startTime_(-1.0),
       stopTime_(-1.0),
@@ -63,11 +63,11 @@ bool AudioScheduledSourceNode::isStopScheduled() {
 }
 
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
-  auto oldCallbackId = onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  onEndedCallbackId_ = callbackId;
+}
 
-  if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("ended", oldCallbackId);
-  }
+void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
+  audioEventHandlerRegistry_->unregisterHandler("ended", callbackId);
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -165,9 +165,8 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  auto onEndedCallbackId = onEndedCallbackId_.load(std::memory_order_acquire);
-  if (onEndedCallbackId != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("ended", onEndedCallbackId, {});
+  if (onEndedCallbackId_ != 0) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody("ended", onEndedCallbackId_, {});
   }
 }
 
