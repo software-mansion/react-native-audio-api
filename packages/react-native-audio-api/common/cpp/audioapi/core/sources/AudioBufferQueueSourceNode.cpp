@@ -39,8 +39,6 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 }
 
 AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
-  Locker locker(getBufferLock());
-
   buffers_ = {};
 }
 
@@ -72,14 +70,12 @@ void AudioBufferQueueSourceNode::pause() {
 }
 
 std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  auto locker = Locker(getBufferLock());
   buffers_.emplace(bufferId_, buffer);
 
   return std::to_string(bufferId_++);
 }
 
 void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
-  auto locker = Locker(getBufferLock());
   if (buffers_.empty()) {
     return;
   }
@@ -103,7 +99,6 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 }
 
 void AudioBufferQueueSourceNode::clearBuffers() {
-  auto locker = Locker(getBufferLock());
   buffers_ = {};
   vReadIndex_ = 0.0;
 }
@@ -125,23 +120,19 @@ void AudioBufferQueueSourceNode::disable() {
 std::shared_ptr<AudioBus> AudioBufferQueueSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (auto locker = Locker::tryLock(getBufferLock())) {
-    // no audio data to fill, zero the output and return.
-    if (buffers_.empty()) {
-      processingBus->zero();
-      return processingBus;
-    }
-
-    if (!pitchCorrection_) {
-      processWithoutPitchCorrection(processingBus, framesToProcess);
-    } else {
-      processWithPitchCorrection(processingBus, framesToProcess);
-    }
-
-    handleStopScheduled();
-  } else {
+  // no audio data to fill, zero the output and return.
+  if (buffers_.empty()) {
     processingBus->zero();
+    return processingBus;
   }
+
+  if (!pitchCorrection_) {
+    processWithoutPitchCorrection(processingBus, framesToProcess);
+  } else {
+    processWithPitchCorrection(processingBus, framesToProcess);
+  }
+
+  handleStopScheduled();
 
   return processingBus;
 }
@@ -193,20 +184,21 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
-      std::unordered_map<std::string, EventValue> body = {
-          {"bufferId", std::to_string(bufferId)}, {"isLast", buffers_.empty()}};
-      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-        context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-            "ended", onEndedCallbackId_, body);
+      if (!(buffers_.empty() && addExtraTailFrames_)) {
+        std::unordered_map<std::string, EventValue> body = {
+            {"bufferId", std::to_string(bufferId)}, {"isLast", buffers_.empty()}};
+        if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+          context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+              "ended", onEndedCallbackId_, body);
+        }
       }
 
       if (buffers_.empty()) {
         if (addExtraTailFrames_) {
           buffers_.emplace(bufferId_, tailBuffer_);
-          bufferId_++;
 
           addExtraTailFrames_ = false;
-        } else if (buffers_.empty()) {
+        } else {
           processingBus->zero(writeIndex, framesLeft);
           readIndex = 0;
 

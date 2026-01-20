@@ -119,23 +119,19 @@ void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
 std::shared_ptr<AudioBus> AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (auto locker = Locker::tryLock(getBufferLock())) {
-    // No audio data to fill, zero the output and return.
-    if (!alignedBus_) {
-      processingBus->zero();
-      return processingBus;
-    }
-
-    if (!pitchCorrection_) {
-      processWithoutPitchCorrection(processingBus, framesToProcess);
-    } else {
-      processWithPitchCorrection(processingBus, framesToProcess);
-    }
-
-    handleStopScheduled();
-  } else {
+  // No audio data to fill, zero the output and return.
+  if (!alignedBus_) {
     processingBus->zero();
+    return processingBus;
   }
+
+  if (!pitchCorrection_) {
+    processWithoutPitchCorrection(processingBus, framesToProcess);
+  } else {
+    processWithPitchCorrection(processingBus, framesToProcess);
+  }
+
+  handleStopScheduled();
 
   return processingBus;
 }
@@ -294,7 +290,7 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 }
 
-double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) {
+double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {
   auto loopStartFrame = loopStart_ * sampleRate;
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_ ? loopStartFrame : 0.0;
 }

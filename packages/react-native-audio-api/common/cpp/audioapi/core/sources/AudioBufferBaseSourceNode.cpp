@@ -59,10 +59,6 @@ int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
   return onPositionChangedInterval_;
 }
 
-std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
-  return bufferLock_;
-}
-
 double AudioBufferBaseSourceNode::getInputLatency() const {
   if (pitchCorrection_) {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {

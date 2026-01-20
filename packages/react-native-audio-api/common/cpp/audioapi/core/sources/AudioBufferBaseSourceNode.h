@@ -35,8 +35,6 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // pitch correction
   bool pitchCorrection_;
 
-  std::mutex bufferLock_;
-
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
   std::shared_ptr<AudioBus> playbackRateBus_;
@@ -52,7 +50,6 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
 
-  std::mutex &getBufferLock();
   virtual double getCurrentPosition() const = 0;
 
   void sendOnPositionChangedEvent();
