@@ -31,13 +31,13 @@ extern "C" {
 #include <string>
 #include <utility>
 
-static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+inline constexpr auto STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
+inline constexpr auto STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 
-static constexpr bool VERBOSE = false;
-static constexpr int CHANNEL_CAPACITY = 32;
+inline constexpr auto VERBOSE = false;
+inline constexpr auto CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
   audioapi::AudioBus bus;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -47,6 +48,14 @@ class AudioRecorderCallback {
 
   // TODO: CircularAudioBus
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
+  static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
+      channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
+  static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
+      channels::spsc::WaitStrategy::ATOMIC_WAIT;
+  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
+
+  std::thread callbackThread_;
+  std::atomic<bool> stopCallbackThread_;
 };
 
 } // namespace audioapi

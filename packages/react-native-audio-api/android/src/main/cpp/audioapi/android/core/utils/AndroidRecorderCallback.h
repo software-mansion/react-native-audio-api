@@ -14,6 +14,11 @@ class AudioArray;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
+struct CallbackData {
+    void *data;
+    int numFrames;
+};
+
 class AndroidRecorderCallback : public AudioRecorderCallback {
  public:
   AndroidRecorderCallback(
@@ -22,7 +27,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
-  ~AndroidRecorderCallback();
+  ~AndroidRecorderCallback() override;
 
   Result<NoneType, std::string> prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
   void cleanup() override;
@@ -41,6 +46,11 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
   std::shared_ptr<AudioArray> deinterleavingArray_;
 
   void deinterleaveAndPushAudioData(void *data, int numFrames);
+
+ private:
+  channels::spsc::Sender<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY> sender_;
+  channels::spsc::Receiver<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY> receiver_;
+  void callbackThreadHandler();
 };
 
 } // namespace audioapi
