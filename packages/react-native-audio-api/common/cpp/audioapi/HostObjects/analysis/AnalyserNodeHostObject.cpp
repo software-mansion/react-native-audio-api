@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <memory>
 
 namespace audioapi {
@@ -57,7 +58,7 @@ JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, window) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto windowType = analyserNode->getWindowType();
-  return jsi::String::createFromUtf8(runtime, AnalyserNodeHostObject::windowTypeToString(windowType));
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::windowTypeToString(windowType));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
@@ -87,7 +88,7 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto type = value.asString(runtime).utf8(runtime);
-  analyserNode->setWindowType(AnalyserNodeHostObject::windowTypeFromString(type));
+  analyserNode->setWindowType(js_enum_parser::windowTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {

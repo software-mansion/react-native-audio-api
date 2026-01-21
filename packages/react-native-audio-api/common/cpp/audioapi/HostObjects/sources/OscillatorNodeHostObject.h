@@ -23,37 +23,5 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   JSI_HOST_FUNCTION_DECL(setPeriodicWave);
 
   JSI_PROPERTY_SETTER_DECL(type);
-
-  static OscillatorType oscillatorTypeFromString(const std::string &type) {
-    if (type == "sine")
-      return OscillatorType::SINE;
-    if (type == "square")
-      return OscillatorType::SQUARE;
-    if (type == "sawtooth")
-      return OscillatorType::SAWTOOTH;
-    if (type == "triangle")
-      return OscillatorType::TRIANGLE;
-    if (type == "custom")
-      return OscillatorType::CUSTOM;
-
-    throw std::invalid_argument("Unknown oscillator type: " + type);
-  }
-
-  static std::string oscillatorTypeToString(const OscillatorType type) {
-    switch (type) {
-      case OscillatorType::SINE:
-        return "sine";
-      case OscillatorType::SQUARE:
-        return "square";
-      case OscillatorType::SAWTOOTH:
-        return "sawtooth";
-      case OscillatorType::TRIANGLE:
-        return "triangle";
-      case OscillatorType::CUSTOM:
-        return "custom";
-      default:
-        throw std::invalid_argument("Unknown oscillator type");
-    }
-  }
 };
 } // namespace audioapi

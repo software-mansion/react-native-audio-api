@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/jsi/AudioArrayBuffer.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 
 #include <memory>
 #include <string>
@@ -19,7 +20,7 @@ WaveShaperNodeHostObject::WaveShaperNodeHostObject(const std::shared_ptr<WaveSha
 
 JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
-  return jsi::String::createFromUtf8(runtime, WaveShaperNodeHostObject::overSampleTypeToString(waveShaperNode->getOversample()));
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::overSampleTypeToString(waveShaperNode->getOversample()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
@@ -45,7 +46,7 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
 JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
   auto type = value.asString(runtime).utf8(runtime);
-  waveShaperNode->setOversample(WaveShaperNodeHostObject::overSampleTypeFromString(type));
+  waveShaperNode->setOversample(js_enum_parser::overSampleTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
