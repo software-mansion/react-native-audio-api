@@ -35,7 +35,7 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, detune) {
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
   auto waveType = oscillatorNode->getType();
-  return jsi::String::createFromUtf8(runtime, waveType);
+  return jsi::String::createFromUtf8(runtime, OscillatorNodeHostObject::oscillatorTypeToString(waveType));
 }
 
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
@@ -47,7 +47,8 @@ JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
 
 JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  oscillatorNode->setType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  oscillatorNode->setType(OscillatorNodeHostObject::oscillatorTypeFromString(type));
 }
 
 } // namespace audioapi

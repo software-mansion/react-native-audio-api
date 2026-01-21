@@ -19,7 +19,7 @@ WaveShaperNodeHostObject::WaveShaperNodeHostObject(const std::shared_ptr<WaveSha
 
 JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
-  return jsi::String::createFromUtf8(runtime, waveShaperNode->getOversample());
+  return jsi::String::createFromUtf8(runtime, WaveShaperNodeHostObject::overSampleTypeToString(waveShaperNode->getOversample()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
@@ -44,8 +44,8 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
 
 JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
-  std::string type = value.asString(runtime).utf8(runtime);
-  waveShaperNode->setOversample(type);
+  auto type = value.asString(runtime).utf8(runtime);
+  waveShaperNode->setOversample(WaveShaperNodeHostObject::overSampleTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {

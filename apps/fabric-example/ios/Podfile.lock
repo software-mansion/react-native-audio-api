@@ -2568,7 +2568,7 @@ PODS:
     - React-perflogger (= 0.83.1)
     - React-utils (= 0.83.1)
     - SocketRocket
-  - RNAudioAPI (0.11.0):
+  - RNAudioAPI (0.12.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2594,11 +2594,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi (= 0.11.0)
+    - RNAudioAPI/audioapi (= 0.12.0)
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi (0.11.0):
+  - RNAudioAPI/audioapi (0.12.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2624,12 +2624,12 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNAudioAPI/audioapi/audioapi_dsp (= 0.11.0)
-    - RNAudioAPI/audioapi/ios (= 0.11.0)
+    - RNAudioAPI/audioapi/audioapi_dsp (= 0.12.0)
+    - RNAudioAPI/audioapi/ios (= 0.12.0)
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi/audioapi_dsp (0.11.0):
+  - RNAudioAPI/audioapi/audioapi_dsp (0.12.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2658,7 +2658,7 @@ PODS:
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNAudioAPI/audioapi/ios (0.11.0):
+  - RNAudioAPI/audioapi/ios (0.12.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3291,7 +3291,7 @@ SPEC CHECKSUMS:
   FBLazyVector: 309703e71d3f2f1ed7dc7889d58309c9d77a95a4
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
-  hermes-engine: 42d6f09ee6ede2feb220e2fb772e8bebb42ca403
+  hermes-engine: ceeea60c009bd0e5901c2902d127df94e33af86d
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: a41bbdd9af30bf2e5715796b313e44ec43eefff1
   RCTRequired: 7be34aabb0b77c3cefe644528df0fa0afad4e4d0
@@ -3364,7 +3364,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 0eb286cc274abb059ee601b862ebddac2e681d01
   ReactCodegen: b8e56b780fffe6edd6405be0af4a1e3049a937f7
   ReactCommon: ac934cb340aee91282ecd6f273a26d24d4c55cae
-  RNAudioAPI: aa794adb23edd2564e825dc6006e8504d20c3eb9
+  RNAudioAPI: 8db04de40902933a82131908afb9aa2796e1f02a
   RNGestureHandler: cd4be101cfa17ea6bbd438710caa02e286a84381
   RNReanimated: 132940c4c15ca2757f4f7d1fd7c9c3c01dbc4689
   RNScreens: ffbb0296608eb3560de641a711bbdb663ed1f6b4

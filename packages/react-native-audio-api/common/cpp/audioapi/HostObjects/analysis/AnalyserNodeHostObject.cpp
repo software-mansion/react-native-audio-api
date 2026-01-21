@@ -57,7 +57,7 @@ JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, window) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto windowType = analyserNode->getWindowType();
-  return jsi::String::createFromUtf8(runtime, windowType);
+  return jsi::String::createFromUtf8(runtime, AnalyserNodeHostObject::windowTypeToString(windowType));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
@@ -86,7 +86,8 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  analyserNode->setWindowType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  analyserNode->setWindowType(AnalyserNodeHostObject::windowTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {

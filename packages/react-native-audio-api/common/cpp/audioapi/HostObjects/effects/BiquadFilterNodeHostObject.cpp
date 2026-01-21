@@ -49,12 +49,13 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, gain) {
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
   auto type = biquadFilterNode->getType();
-  return jsi::String::createFromUtf8(runtime, type);
+  return jsi::String::createFromUtf8(runtime, BiquadFilterNodeHostObject::filterTypeToString(type));
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  biquadFilterNode->setType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  biquadFilterNode->setType(BiquadFilterNodeHostObject::filterTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
