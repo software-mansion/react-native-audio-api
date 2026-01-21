@@ -114,7 +114,7 @@ where `bufferId` is the ID of the buffer that has ended and `isLastBufferInQueue
 You can remove callback by passing `null`.
 
 ```ts
-audioBufferSourceNode.isLastBufferInQueue = (event) => { //setting callback
+audioBufferSourceNode.onBufferEnded = (event) => { //setting callback
   console.log(`buffer with id {event.bufferId} ended`);
 
   if (event.isLastBufferInQueue) {
