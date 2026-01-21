@@ -1,5 +1,6 @@
 package com.swmansion.audioapi
 
+import android.media.AudioManager
 import androidx.annotation.RequiresPermission
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Arguments
@@ -115,8 +116,21 @@ class AudioAPIModule(
     // nothing to do here
   }
 
-  override fun observeAudioInterruptions(enabled: Boolean) {
-    MediaSessionManager.observeAudioInterruptions(enabled)
+  override fun observeAudioInterruptions(
+    focusType: String?,
+    enabled: Boolean,
+  ) {
+    if (!enabled) {
+      MediaSessionManager.abandonAudioFocus()
+      return
+    }
+    when (focusType) {
+      "gain" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
+      "gainTransient" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+      "gainTransientMayDuck" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+      "gainTransientExclusive" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+      else -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
+    }
   }
 
   override fun activelyReclaimSession(enabled: Boolean) {

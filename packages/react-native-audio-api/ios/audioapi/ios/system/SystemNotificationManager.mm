@@ -1,11 +1,11 @@
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/system/SystemNotificationManager.h>
 
-@implementation NotificationManager
+@implementation SystemNotificationManager
 
-static NSString *NotificationManagerContext = @"NotificationManagerContext";
+static NSString *NotificationManagerContext = @"SystemNotificationManagerContext";
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
@@ -216,8 +216,13 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   NSLog(
       @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine restartAudioEngine]; });
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [sessionManager markInactive];
+    [sessionManager setActive:YES error:nil];
+    [audioEngine restartAudioEngine];
+  });
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification

@@ -88,12 +88,12 @@ object MediaSessionManager {
     return sampleRate.toDouble()
   }
 
-  fun observeAudioInterruptions(observe: Boolean) {
-    if (observe) {
-      audioFocusListener.requestAudioFocus()
-    } else {
-      audioFocusListener.abandonAudioFocus()
-    }
+  fun requestAudioFocus(focus: Int) {
+    audioFocusListener.requestAudioFocus(focus)
+  }
+
+  fun abandonAudioFocus() {
+    audioFocusListener.abandonAudioFocus()
   }
 
   fun activelyReclaimSession(enabled: Boolean) {
