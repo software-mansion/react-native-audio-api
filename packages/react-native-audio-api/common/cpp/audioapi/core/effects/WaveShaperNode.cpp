@@ -28,7 +28,7 @@ OverSampleType WaveShaperNode::getOversample() const {
   return oversample_.load(std::memory_order_acquire);
 }
 
-void WaveShaperNode::setOversample(const OverSampleType type) {
+void WaveShaperNode::setOversample(OverSampleType type) {
   std::scoped_lock<std::mutex> lock(mutex_);
   oversample_.store(type, std::memory_order_release);
 

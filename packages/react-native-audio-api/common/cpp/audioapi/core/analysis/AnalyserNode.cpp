@@ -80,7 +80,7 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::setWindowType(const AnalyserNode::WindowType type) {
+void AnalyserNode::setWindowType(AnalyserNode::WindowType type) {
   setWindowData(type, fftSize_);
 }
 

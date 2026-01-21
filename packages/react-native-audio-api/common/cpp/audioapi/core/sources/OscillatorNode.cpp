@@ -45,7 +45,7 @@ OscillatorType OscillatorNode::getType() {
   return type_;
 }
 
-void OscillatorNode::setType(const OscillatorType type) {
+void OscillatorNode::setType(OscillatorType type) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     type_ = type;
     periodicWave_ = context->getBasicWaveForm(type_);

@@ -63,7 +63,7 @@ BiquadFilterType BiquadFilterNode::getType() {
   return type_;
 }
 
-void BiquadFilterNode::setType(const BiquadFilterType type) {
+void BiquadFilterNode::setType(BiquadFilterType type) {
   type_ = type;
 }
 

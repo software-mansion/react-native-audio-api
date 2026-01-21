@@ -60,7 +60,7 @@ class BiquadFilterNode : public AudioNode {
       const BiquadFilterOptions &options);
 
   [[nodiscard]] BiquadFilterType getType();
-  void setType(const BiquadFilterType type);
+  void setType(BiquadFilterType);
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getQParam() const;

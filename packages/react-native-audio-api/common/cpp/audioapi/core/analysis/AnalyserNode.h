@@ -33,7 +33,7 @@ class AnalyserNode : public AudioNode {
   void setMinDecibels(float minDecibels);
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
-  void setWindowType(const AnalyserNode::WindowType type);
+  void setWindowType(AnalyserNode::WindowType);
 
   void getFloatFrequencyData(float *data, int length);
   void getByteFrequencyData(uint8_t *data, int length);

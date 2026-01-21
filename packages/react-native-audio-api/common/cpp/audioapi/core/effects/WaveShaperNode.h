@@ -27,7 +27,7 @@ class WaveShaperNode : public AudioNode {
   [[nodiscard]] OverSampleType getOversample() const;
   [[nodiscard]] std::shared_ptr<AudioArray> getCurve() const;
 
-  void setOversample(const OverSampleType type);
+  void setOversample(OverSampleType);
   void setCurve(const std::shared_ptr<AudioArray> &curve);
 
  protected:
