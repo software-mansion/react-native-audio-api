@@ -235,9 +235,9 @@ interface SessionOptions {
 <details>
 <summary>Type definitions</summary>
 ```typescript
-interface EventEmptyType {}
+export interface EventEmptyType {}
 
-interface EventTypeWithValue {
+export interface EventTypeWithValue {
   value: number;
 }
 
@@ -258,23 +258,26 @@ interface OnRouteChangeEventType {
     | 'NoSuitableRouteForCategory';
 }
 
-interface AudioAPIEvents {
-  ended: EventEmptyType;
-  loopEnded: EventEmptyType;
-  audioReady: OnAudioReadyEventType;
-  positionChanged: EventTypeWithValue;
-  audioError: EventEmptyType;
-  systemStateChanged: EventEmptyType;
+interface RemoteCommandEvents {
+  remotePlay: EventEmptyType;
+  remotePause: EventEmptyType;
+  remoteStop: EventEmptyType;
+  remoteTogglePlayPause: EventEmptyType;
+  remoteChangePlaybackRate: EventTypeWithValue;
+  remoteNextTrack: EventEmptyType;
+  remotePreviousTrack: EventEmptyType;
+  remoteSkipForward: EventTypeWithValue;
+  remoteSkipBackward: EventTypeWithValue;
+  remoteSeekForward: EventEmptyType;
+  remoteSeekBackward: EventEmptyType;
+  remoteChangePlaybackPosition: EventTypeWithValue;
 }
 
-// For `NotificationEvents` see PlaybackNotificationManager docs
-type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;
-
-type RemoteCommandEventName = keyof RemoteCommandEvents;
-type SystemEventName = keyof SystemEvents;
-type SystemEventCallback<Name extends SystemEventName> = (
-  event: SystemEvents[Name]
-) => void;
+type SystemEvents = RemoteCommandEvents & {
+  volumeChange: EventTypeWithValue;
+  interruption: OnInterruptionEventType;
+  routeChange: OnRouteChangeEventType;
+};
 ```
 </details>
 
