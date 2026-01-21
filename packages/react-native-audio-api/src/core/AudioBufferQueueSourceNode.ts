@@ -5,8 +5,13 @@ import { RangeError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import { TBaseAudioBufferSourceOptions } from '../types';
 import { BaseAudioBufferSourceOptions } from '../defaults';
+import { AudioEventSubscription } from '../events';
+import { OnBufferEndEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
+  private onBufferEndedSubscription?: AudioEventSubscription;
+  private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
+
   constructor(
     context: BaseAudioContext,
     options?: TBaseAudioBufferSourceOptions
@@ -63,6 +68,32 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     }
 
     (this.node as IAudioBufferQueueSourceNode).stop(when);
+  }
+
+  public get onBufferEnded():
+    | ((event: OnBufferEndEventType) => void)
+    | undefined {
+    return this.onBufferEndedCallback;
+  }
+
+  public set onBufferEnded(
+    callback: ((event: OnBufferEndEventType) => void) | null
+  ) {
+    if (!callback) {
+      (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
+      this.onBufferEndedSubscription?.remove();
+      this.onBufferEndedSubscription = undefined;
+      this.onBufferEndedCallback = undefined;
+
+      return;
+    }
+
+    this.onBufferEndedCallback = callback;
+    this.onBufferEndedSubscription =
+      this.audioEventEmitter.addAudioEventListener('bufferEnded', callback);
+
+    (this.node as IAudioBufferQueueSourceNode).onBufferEnded =
+      this.onBufferEndedSubscription.subscriptionId;
   }
 
   public pause(): void {

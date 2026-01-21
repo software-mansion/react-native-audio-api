@@ -47,20 +47,24 @@ class AudioFocusListener(
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
+
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("duck", emptyMap())
+      }
     }
   }
 
-  fun requestAudioFocus() {
+  fun requestAudioFocus(focus: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       this.focusRequest =
         AudioFocusRequest
-          .Builder(AudioManager.AUDIOFOCUS_GAIN)
+          .Builder(focus)
           .setOnAudioFocusChangeListener(this)
           .build()
 
       audioManager.get()?.requestAudioFocus(focusRequest!!)
     } else {
-      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, focus)
     }
   }
 

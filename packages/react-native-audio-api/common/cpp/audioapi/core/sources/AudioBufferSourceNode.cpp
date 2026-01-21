@@ -324,7 +324,7 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 }
 
-double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) {
+double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {
   auto loopStartFrame = loopStart_ * sampleRate;
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_ ? loopStartFrame : 0.0;
 }

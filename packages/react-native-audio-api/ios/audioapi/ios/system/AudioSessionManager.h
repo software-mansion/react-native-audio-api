@@ -28,6 +28,7 @@
                        options:(NSArray *)options
                   allowHaptics:(BOOL)allowHaptics;
 
+- (bool)configureAudioSession;
 - (bool)setActive:(bool)active error:(NSError **)error;
 - (void)markInactive;
 - (void)disableSessionManagement;

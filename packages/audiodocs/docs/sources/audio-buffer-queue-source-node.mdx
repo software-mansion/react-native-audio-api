@@ -63,7 +63,7 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 ### `enqueueBuffer`
 
-Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in `onEnded` event.
+Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -73,7 +73,7 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 
 ### `dequeueBuffer`
 
-Removes a buffer from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Removes a buffer from the queue. Note that [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event will not be fired for buffers that were removed.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -83,7 +83,7 @@ Removes a buffer from the queue. Note that `onEnded` event will not be fired for
 
 ### `clearBuffers`
 
-Removes all buffers from the queue. Note that `onEnded` event will not be fired for buffers that were removed.
+Removes all buffers from the queue. Note that [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event will not be fired for buffers that were removed.
 
 #### Returns `undefined`.
 
@@ -106,20 +106,32 @@ pause() halts the audio while keeping the current playback position, allowing yo
 
 ## Events
 
-### `onEnded` <Overridden />
+### `onBufferEnded`
 
-Sets (or remove) callback that will be fired when queue source node has been stopped with payload `{ bufferId: undefined, isLast: undefined }`
-or when a specific buffer has ended with payload `{ bufferId: <bufferId>, isLast: <isLast> }`,
-where `bufferId` is the ID of the buffer that has ended and `isLast` is a boolean indicating whether it was the last buffer in the queue.
+Sets (or remove) callback that will be fired when a specific buffer has ended with payload of type [`OnBufferEndEventType`](audio-buffer-queue-source-node#onbufferendeventtype)
 
 You can remove callback by passing `null`.
 
 ```ts
-audioBufferSourceNode.onEnded = (event) => { //setting callback
-  if (event.bufferId === undefined) {
-    console.log('queue source node has been stopped');
-  } else {
-    console.log(`buffer with id {event.bufferId} ended`);
+audioBufferQueueSourceNode.onBufferEnded = (event) => { //setting callback
+  console.log(`buffer with id {event.bufferId} ended`);
+
+  if (event.isLastBufferInQueue) {
+    console.log('That was the last buffer in the queue');
   }
 };
 ```
+
+## Remarks
+
+### `OnBufferEndEventType`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+interface OnBufferEndEventType {
+  bufferId: string; // the ID of the buffer that has ended
+  isLastBufferInQueue: boolean; // a boolean indicating whether it was the last buffer in the queue
+}
+```
+</details>

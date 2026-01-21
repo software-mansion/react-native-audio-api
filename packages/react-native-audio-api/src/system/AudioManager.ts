@@ -7,6 +7,7 @@ import {
   IAudioManager,
   PermissionStatus,
   SessionOptions,
+  AudioFocusType,
 } from './types';
 
 class AudioManager implements IAudioManager {
@@ -43,8 +44,13 @@ class AudioManager implements IAudioManager {
     NativeAudioAPIModule.disableSessionManagement();
   }
 
-  observeAudioInterruptions(enabled: boolean) {
-    NativeAudioAPIModule.observeAudioInterruptions(enabled);
+  observeAudioInterruptions(param: AudioFocusType | boolean | null) {
+    if (typeof param === 'string') {
+      NativeAudioAPIModule.observeAudioInterruptions(param, true);
+    } else {
+      // audiofocusgain as default value if not provided
+      NativeAudioAPIModule.observeAudioInterruptions('gain', param === true);
+    }
   }
 
   /**
