@@ -5,7 +5,7 @@
 
 @class AudioAPIModule;
 
-@interface NotificationManager : NSObject
+@interface SystemNotificationManager : NSObject
 
 @property (nonatomic, weak) AudioAPIModule *audioAPIModule;
 @property (nonatomic, weak) NSNotificationCenter *notificationCenter;

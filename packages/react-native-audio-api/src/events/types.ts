@@ -46,6 +46,7 @@ interface RemoteCommandEvents {
 type SystemEvents = RemoteCommandEvents & {
   volumeChange: EventTypeWithValue;
   interruption: OnInterruptionEventType;
+  duck: EventEmptyType;
   routeChange: OnRouteChangeEventType;
 };
 

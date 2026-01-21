@@ -30,6 +30,12 @@ export type IOSOption =
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
 
+export type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
+
 export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
@@ -60,7 +66,7 @@ export interface IAudioManager {
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
-  observeVolumeChanges(enabled: boolean): void;
+  observeAudioInterruptions(param: AudioFocusType | boolean | null): void;
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,
     callback: SystemEventCallback<Name>
