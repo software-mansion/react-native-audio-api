@@ -50,7 +50,7 @@ type SystemEvents = RemoteCommandEvents & {
   routeChange: OnRouteChangeEventType;
 };
 
-export interface OnBufferEndEventType extends EventEmptyType {
+export interface OnBufferEndEventType {
   bufferId: string;
   isLastBufferInQueue: boolean;
 }
