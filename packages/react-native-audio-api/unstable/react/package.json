@@ -1,6 +1,0 @@
-{
-  "main": "../../lib/module/unstable/react/index",
-  "module": "../../lib/module/unstable/react/index",
-  "react-native": "../../src/unstable/react/index",
-  "types": "../../lib/typescript/unstable/react/index.d.ts"
-}

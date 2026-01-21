@@ -1,0 +1,6 @@
+{
+  "main": "../../lib/module/development/react/index",
+  "module": "../../lib/module/development/react/index",
+  "react-native": "../../src/development/react/index",
+  "types": "../../lib/typescript/development/react/index.d.ts"
+}

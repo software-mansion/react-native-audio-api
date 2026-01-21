@@ -4,6 +4,7 @@ import type { AudioProps } from './types';
 import { useStableAudioProps } from './utils';
 
 const Audio: React.FC<AudioProps> = (inProps) => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const {
     autoPlay,
     controls,
@@ -15,6 +16,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     preservesPitch,
     volume,
   } = useStableAudioProps(inProps);
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return null;
 };
