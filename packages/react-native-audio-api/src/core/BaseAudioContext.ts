@@ -161,7 +161,7 @@ export default class BaseAudioContext {
   createBufferSource(options?: {
     pitchCorrection: boolean;
   }): AudioBufferSourceNode {
-    if (options?.pitchCorrection !== undefined) {
+    if (options !== undefined) {
       return new AudioBufferSourceNode(this, options);
     } else {
       return new AudioBufferSourceNode(this);
@@ -198,7 +198,7 @@ export default class BaseAudioContext {
   createBufferQueueSource(options?: {
     pitchCorrection: boolean;
   }): AudioBufferQueueSourceNode {
-    if (options?.pitchCorrection !== undefined) {
+    if (options !== undefined) {
       return new AudioBufferQueueSourceNode(this, options);
     } else {
       return new AudioBufferQueueSourceNode(this);
