@@ -22,7 +22,8 @@ interface Spec extends TurboModule {
     category: string,
     mode: string,
     options: Array<string>,
-    allowHaptics: boolean
+    allowHaptics: boolean,
+    notifyOthersOnDeactivation: boolean
   ): void;
   disableSessionManagement(): void;
 

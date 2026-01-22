@@ -17,6 +17,7 @@ static AudioSessionManager *_sharedInstance = nil;
     self.desiredMode = AVAudioSessionModeDefault;
     self.desiredOptions = 0;
     self.allowHapticsAndSounds = false;
+    self.notifyOthersOnDeactivation = true;
   }
 
   _sharedInstance = self;
@@ -88,6 +89,7 @@ static AudioSessionManager *_sharedInstance = nil;
                           mode:(NSString *)modeStr
                        options:(NSArray *)optionsArray
                   allowHaptics:(BOOL)allowHaptics
+    notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation
 {
   AVAudioSessionCategory category = [self categoryFromString:categoryStr];
   AVAudioSessionMode mode = [self modeFromString:modeStr];
@@ -103,6 +105,7 @@ static AudioSessionManager *_sharedInstance = nil;
   self.desiredMode = mode;
   self.desiredOptions = options;
   self.allowHapticsAndSounds = allowHaptics;
+  self.notifyOthersOnDeactivation = notifyOthersOnDeactivation;
 
   if (configChanged && self.isActive) {
     [self configureAudioSession];
@@ -129,7 +132,11 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
-  success = [self.audioSession setActive:active error:error];
+  AVAudioSessionSetActiveOptions options = active
+      ? 0
+      : (self.notifyOthersOnDeactivation ? AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
+                                         : 0);
+  success = [self.audioSession setActive:active withOptions:options error:error];
 
   if (success) {
     self.isActive = active;

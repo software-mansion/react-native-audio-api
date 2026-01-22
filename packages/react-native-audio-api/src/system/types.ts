@@ -41,6 +41,7 @@ export interface SessionOptions {
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
   iosAllowHaptics?: boolean;
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';

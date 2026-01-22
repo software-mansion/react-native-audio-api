@@ -152,7 +152,8 @@ RCT_EXPORT_METHOD(
 
 RCT_EXPORT_METHOD(
     setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics)
+        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
+            notifyOthersOnDeactivation)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -160,7 +161,8 @@ RCT_EXPORT_METHOD(
   [self.audioSessionManager setAudioSessionOptions:category
                                               mode:mode
                                            options:options
-                                      allowHaptics:allowHaptics];
+                                      allowHaptics:allowHaptics
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
