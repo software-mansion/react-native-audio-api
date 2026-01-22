@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -14,6 +15,11 @@ typedef struct objc_object AVAudioFormat;
 typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
 #endif // __OBJC__
+
+struct WriterData {
+  const AudioBufferList *audioBufferList;
+  int numFrames;
+};
 
 namespace audioapi {
 
@@ -33,7 +39,7 @@ class IOSFileWriter : public AudioFileWriter {
       const std::string &fileNameOverride);
   Result<std::tuple<double, double>, std::string> closeFile() override;
 
-  bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
+  void writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
   double getCurrentDuration() const override;
 
   std::string getFilePath() const override;
@@ -49,6 +55,19 @@ class IOSFileWriter : public AudioFileWriter {
 
   AVAudioPCMBuffer *converterInputBuffer_;
   AVAudioPCMBuffer *converterOutputBuffer_;
+
+ private:
+  channels::spsc::Sender<
+      WriterData,
+      AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY>
+      sender_;
+  channels::spsc::Receiver<
+      WriterData,
+      AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY>
+      receiver_;
+  void fileWriterThreadHandler() override;
 };
 
 } // namespace audioapi

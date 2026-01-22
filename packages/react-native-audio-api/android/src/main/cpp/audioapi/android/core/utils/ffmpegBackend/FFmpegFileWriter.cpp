@@ -87,6 +87,10 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
         initializeBuffers(streamMaxBufferSize);
         isFileOpen_.store(true, std::memory_order_release);
         return OpenFileResult::Ok(filePath);
+      })
+      .and_then([this](const auto &res) {
+        fileWriterThread_ = std::thread(&FFmpegAudioFileWriter::fileWriterThreadHandler, this);
+        return OpenFileResult::Ok(res);
       });
 }
 
@@ -120,30 +124,30 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
     return CloseFileResult::Err("Failed to drain encoder packets");
   }
 
+  stopFileWriterThread();
+
   return finalizeOutput();
 }
 
 /// @brief Writes audio data to the currently opened file.
 /// This method should be called only from the audio thread (or audio side-effect thread in the future).
-/// @param data Pointer to the audio data buffer (interleaved float samples) as returned by Oboe stream.
-/// @param numFrames Number of audio frames in the data buffer.
-/// @returns True if the data was written successfully, false otherwise.
-bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
-  if (!isFileOpen()) {
-    return false;
+void FFmpegAudioFileWriter::fileWriterThreadHandler() {
+  while (!stopFileWriterThread_.load(std::memory_order_acquire)) {
+    auto [data, numFrames] = receiver_.receive();
+    if (!isFileOpen()) {
+      return;
+    }
+
+    if (!resampleAndPushToFifo(data, numFrames)) {
+      return;
+    }
+
+    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+
+    if (processFifo(false) < 0) {
+      return;
+    }
   }
-
-  if (!resampleAndPushToFifo(data, numFrames)) {
-    return false;
-  }
-
-  framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
-
-  if (processFifo(false) < 0) {
-    return false;
-  }
-
-  return true;
 }
 
 /// @brief Initializes the FFmpeg format context for the output file.
