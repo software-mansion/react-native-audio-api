@@ -59,7 +59,13 @@ class IOSRecorderCallback : public AudioRecorderCallback {
       AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
       AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>
       receiver_;
-  void callbackThreadHandler();
+  std::unique_ptr<task_offloader::TaskOffloader<
+      CallbackData,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
+      offloader_;
+  // delay initialization of offloader until prepare is called
+  void taskOffloaderFunction(CallbackData data);
 };
 
 } // namespace audioapi

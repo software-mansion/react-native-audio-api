@@ -94,9 +94,11 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
         AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>(
         AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY);
     sender_ = std::move(sender);
-    receiver_ = std::move(receiver);
-    stopCallbackThread_.store(false, std::memory_order_release);
-    callbackThread_ = std::thread(&IOSRecorderCallback::callbackThreadHandler, this);
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        CallbackData,
+        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(std::move(receiver));
+    offloader_->offloadTask([this](CallbackData data) { taskOffloaderFunction(data); });
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -120,13 +122,7 @@ void IOSRecorderCallback::cleanup()
     for (int i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
-    stopCallbackThread_.store(true, std::memory_order_release);
-    // Send a dummy/empty message to unblock the receiver_.receive()
-    sender_.send({nullptr, 0});
-
-    if (callbackThread_.joinable()) {
-      callbackThread_.join();
-    }
+    offloader_->stop(sender_);
   }
 }
 
@@ -143,80 +139,73 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   sender_.send({inputBuffer, numFrames});
 }
 
-/// @brief The handler function for the callback thread. It continuously receives audio data,
-/// processes it (resampling and deinterleaving if necessary), and pushes it into the circular buffer.
-void IOSRecorderCallback::callbackThreadHandler()
+void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
 {
-  while (!stopCallbackThread_.load(std::memory_order_acquire)) {
-    auto [inputBuffer, numFrames] = receiver_.receive();
-    // dummy data to wake up thread after cleanup, skip processing it
-    if (inputBuffer == nullptr)
-      continue;
-    @autoreleasepool {
-      NSError *error = nil;
+  auto [inputBuffer, numFrames] = data;
+  // dummy data to wake up thread after cleanup, skip processing it
+  if (inputBuffer == nullptr)
+    return;
+  @autoreleasepool {
+    NSError *error = nil;
 
-      if (bufferFormat_.sampleRate == sampleRate_ && bufferFormat_.channelCount == channelCount_ &&
-          !bufferFormat_.isInterleaved) {
-        // Directly write to circular buffer
-        for (int i = 0; i < channelCount_; ++i) {
-          auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
-          circularBus_[i]->push_back(inputChannel, numFrames);
-        }
-
-        if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
-          emitAudioData();
-        }
-        return;
-      }
-
-      size_t outputFrameCount = ceil(numFrames * (sampleRate_ / bufferFormat_.sampleRate));
-
-      for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-        memcpy(
-            converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-            inputBuffer->mBuffers[i].mData,
-            inputBuffer->mBuffers[i].mDataByteSize);
-      }
-
-      converterInputBuffer_.frameLength = numFrames;
-
-      __block BOOL handedOff = false;
-      AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
-          AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-      {
-        if (handedOff) {
-          *outStatus = AVAudioConverterInputStatus_NoDataNow;
-          return nil;
-        }
-
-        handedOff = true;
-        *outStatus = AVAudioConverterInputStatus_HaveData;
-        return converterInputBuffer_;
-      };
-
-      [converter_ convertToBuffer:converterOutputBuffer_
-                            error:&error
-               withInputFromBlock:inputBlock];
-      converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
-
-      if (error != nil) {
-        invokeOnErrorCallback(
-            std::string("Error during audio conversion, native error: ") +
-            [[error debugDescription] UTF8String]);
-        return;
-      }
-
+    if (bufferFormat_.sampleRate == sampleRate_ && bufferFormat_.channelCount == channelCount_ &&
+        !bufferFormat_.isInterleaved) {
+      // Directly write to circular buffer
       for (int i = 0; i < channelCount_; ++i) {
-        auto *inputChannel =
-            static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-        circularBus_[i]->push_back(inputChannel, outputFrameCount);
+        auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
+        circularBus_[i]->push_back(inputChannel, numFrames);
       }
 
       if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
+      return;
+    }
+
+    size_t outputFrameCount = ceil(numFrames * (sampleRate_ / bufferFormat_.sampleRate));
+
+    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
+      memcpy(
+          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+          inputBuffer->mBuffers[i].mData,
+          inputBuffer->mBuffers[i].mDataByteSize);
+    }
+
+    converterInputBuffer_.frameLength = numFrames;
+
+    __block BOOL handedOff = false;
+    AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
+        AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+    {
+      if (handedOff) {
+        *outStatus = AVAudioConverterInputStatus_NoDataNow;
+        return nil;
+      }
+
+      handedOff = true;
+      *outStatus = AVAudioConverterInputStatus_HaveData;
+      return converterInputBuffer_;
+    };
+
+    [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
+    converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
+
+    if (error != nil) {
+      invokeOnErrorCallback(
+          std::string("Error during audio conversion, native error: ") +
+          [[error debugDescription] UTF8String]);
+      return;
+    }
+
+    for (int i = 0; i < channelCount_; ++i) {
+      auto *inputChannel =
+          static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
+      circularBus_[i]->push_back(inputChannel, outputFrameCount);
+    }
+
+    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      emitAudioData();
     }
   }
 }
-
 } // namespace audioapi

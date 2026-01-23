@@ -106,9 +106,11 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
       AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>(
       AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY);
   sender_ = std::move(sender);
-  receiver_ = std::move(receiver);
-  stopCallbackThread_.store(false, std::memory_order_release);
-  callbackThread_ = std::thread(&AndroidRecorderCallback::callbackThreadHandler, this);
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      CallbackData,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(std::move(receiver));
+  offloader_->offloadTask([this](CallbackData data) { taskOffloaderFunction(data); });
   return Result<NoneType, std::string>::Ok(None);
 }
 
@@ -131,14 +133,7 @@ void AndroidRecorderCallback::cleanup() {
   for (size_t i = 0; i < circularBus_.size(); ++i) {
     circularBus_[i]->zero();
   }
-
-  stopCallbackThread_.store(true, std::memory_order_release);
-  // Send a dummy/empty message to unblock the receiver_.receive()
-  sender_.send({nullptr, 0});
-
-  if (callbackThread_.joinable()) {
-    callbackThread_.join();
-  }
+  offloader_->stop(sender_);
 }
 
 /// @brief Receives audio data from the recorder, processes it (resampling and deinterleaving if necessary),
@@ -172,33 +167,31 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
 
 /// @brief The handler function for the callback thread. It continuously receives audio data,
 /// processes it (resampling and deinterleaving if necessary), and pushes it into the circular buffer.
-void AndroidRecorderCallback::callbackThreadHandler() {
-  while (!stopCallbackThread_.load(std::memory_order_acquire)) {
-    auto [data, numFrames] = receiver_.receive();
-    ma_uint64 inputFrameCount = numFrames;
-    ma_uint64 outputFrameCount = 0;
+void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
+  auto [data, numFrames] = callbackData;
+  ma_uint64 inputFrameCount = numFrames;
+  ma_uint64 outputFrameCount = 0;
 
-    if (static_cast<float>(streamSampleRate_) == sampleRate_ &&
-        streamChannelCount_ == channelCount_) {
-      deinterleaveAndPushAudioData(data, numFrames);
-
-      if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
-        emitAudioData();
-      }
-      return;
-    }
-
-    ma_data_converter_get_expected_output_frame_count(
-        converter_.get(), inputFrameCount, &outputFrameCount);
-
-    ma_data_converter_process_pcm_frames(
-        converter_.get(), data, &inputFrameCount, processingBuffer_, &outputFrameCount);
-
-    deinterleaveAndPushAudioData(processingBuffer_, static_cast<int>(outputFrameCount));
+  if (static_cast<float>(streamSampleRate_) == sampleRate_ &&
+      streamChannelCount_ == channelCount_) {
+    deinterleaveAndPushAudioData(data, numFrames);
 
     if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
+    return;
+  }
+
+  ma_data_converter_get_expected_output_frame_count(
+      converter_.get(), inputFrameCount, &outputFrameCount);
+
+  ma_data_converter_process_pcm_frames(
+      converter_.get(), data, &inputFrameCount, processingBuffer_, &outputFrameCount);
+
+  deinterleaveAndPushAudioData(processingBuffer_, static_cast<int>(outputFrameCount));
+
+  if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    emitAudioData();
   }
 }
 

@@ -2,6 +2,7 @@
 
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <audioapi/utils/TaskOffloader.hpp>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -53,9 +54,6 @@ class AudioRecorderCallback {
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
       channels::spsc::WaitStrategy::ATOMIC_WAIT;
   static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
-
-  std::thread callbackThread_;
-  std::atomic<bool> stopCallbackThread_;
 };
 
 } // namespace audioapi
