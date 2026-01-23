@@ -232,6 +232,7 @@ interface SessionOptions {
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
   iosAllowHaptics?: boolean;
+  // Has no effect when using PlaybackNotificationManager as it takes over the "Now playing" controls
   iosNotifyOthersOnDeactivation?: boolean;
 }
 ```
