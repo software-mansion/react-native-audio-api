@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/SpscChannel.hpp>
+#include <cassert>
 #include <concepts>
 #include <utility>
 
