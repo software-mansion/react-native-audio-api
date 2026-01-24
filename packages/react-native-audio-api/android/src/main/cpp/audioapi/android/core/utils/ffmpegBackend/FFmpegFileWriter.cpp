@@ -30,8 +30,16 @@ namespace audioapi::android::ffmpeg {
 
 FFmpegAudioFileWriter::FFmpegAudioFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
+    float streamSampleRate,
+    int32_t streamChannelCount,
+    int32_t streamMaxBufferSize)
+    : AndroidFileWriterBackend(
+          audioEventHandlerRegistry,
+          fileProperties,
+          streamSampleRate,
+          streamChannelCount,
+          streamMaxBufferSize) {
   // Set flush interval from properties, limit minimum to 100ms
   // to avoid people hurting themselves too much
   flushIntervalMs_ = std::max(fileProperties_->androidFlushIntervalMs, defaultFlushInterval);
@@ -50,13 +58,7 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 /// @param streamChannelCount The number of channels in the incoming audio stream.
 /// @param streamMaxBufferSize The estimated maximum buffer size for the incoming audio stream.
 /// @returns Success status with file path or Error status with message.
-OpenFileResult FFmpegAudioFileWriter::openFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t streamMaxBufferSize) {
-  streamSampleRate_ = streamSampleRate;
-  streamChannelCount_ = streamChannelCount;
-  streamMaxBufferSize_ = streamMaxBufferSize;
+OpenFileResult FFmpegAudioFileWriter::openFile() {
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
   Result<NoneType, std::string> result = Result<NoneType, std::string>::Ok(None);
@@ -78,11 +80,10 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
       .and_then([this](auto) { return initializeStream(); })
       .and_then([this](auto) { return openIOAndWriteHeader(); })
-      .and_then([this, streamSampleRate, streamChannelCount](auto) {
-        return initializeResampler(streamSampleRate, streamChannelCount);
-      })
-      .and_then([this, streamMaxBufferSize, filePath = std::move(filePath_)](auto) {
-        initializeBuffers(streamMaxBufferSize);
+      .and_then(
+          [this](auto) { return initializeResampler(streamSampleRate_, streamChannelCount_); })
+      .and_then([this, filePath = std::move(filePath_)](auto) {
+        initializeBuffers(streamMaxBufferSize_);
         isFileOpen_.store(true, std::memory_order_release);
         return OpenFileResult::Ok(filePath);
       });

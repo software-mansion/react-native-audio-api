@@ -40,8 +40,16 @@ inline ma_format getDataFormat(const std::shared_ptr<AudioFileProperties> &prope
 
 MiniAudioFileWriter::MiniAudioFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {}
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
+    float streamSampleRate,
+    int32_t streamChannelCount,
+    int32_t streamMaxBufferSize)
+    : AndroidFileWriterBackend(
+          audioEventHandlerRegistry,
+          fileProperties,
+          streamSampleRate,
+          streamChannelCount,
+          streamMaxBufferSize) {}
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
@@ -72,13 +80,7 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param streamMaxBufferSize The maximum buffer size of the incoming audio stream.
 /// @return The status of the file opening operation.
-OpenFileResult MiniAudioFileWriter::openFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t streamMaxBufferSize) {
-  streamSampleRate_ = streamSampleRate;
-  streamChannelCount_ = streamChannelCount;
-  streamMaxBufferSize_ = streamMaxBufferSize;
+OpenFileResult MiniAudioFileWriter::openFile() {
   ma_result result;
   framesWritten_.store(0, std::memory_order_release);
 

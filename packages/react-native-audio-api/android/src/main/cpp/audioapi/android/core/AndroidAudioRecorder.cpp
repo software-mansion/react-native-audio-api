@@ -1,3 +1,4 @@
+#include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
@@ -120,9 +121,31 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesFileOutput()) {
-    auto fileResult =
-        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    if (fileProperties_->format == AudioFileProperties::Format::WAV) {
+      fileWriter_ = std::make_shared<MiniAudioFileWriter>(
+          audioEventHandlerRegistry_,
+          fileProperties_,
+          streamSampleRate_,
+          streamChannelCount_,
+          streamMaxBufferSizeInFrames_);
+    } else {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+      fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+          audioEventHandlerRegistry_,
+          fileProperties_,
+          streamSampleRate_,
+          streamChannelCount_,
+          streamMaxBufferSizeInFrames_);
+#else
+      return Result<std::string, std::string>::Err(
+          "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV "
+          "format instead.");
+#endif
+    }
+
+    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+
+    auto fileResult = fileWriter_->openFile();
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(
@@ -130,6 +153,11 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
     }
 
     filePath_ = fileResult.unwrap();
+    __android_log_print(
+        ANDROID_LOG_INFO,
+        "AndroidAudioRecorder",
+        "File created successfully at path: %s",
+        filePath_.c_str());
   }
 
   if (usesCallback()) {
@@ -212,23 +240,34 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
 Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
   std::scoped_lock fileWriterLock(fileWriterMutex_);
-
-  if (properties->format == AudioFileProperties::Format::WAV) {
-    fileWriter_ = std::make_shared<MiniAudioFileWriter>(audioEventHandlerRegistry_, properties);
-  } else {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
-        audioEventHandlerRegistry_, properties);
-#else
-    return Result<std::string, std::string>::Err(
-        "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
-#endif
-  }
+  fileProperties_ = properties;
 
   if (!isIdle()) {
-    auto fileResult =
-        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    if (properties->format == AudioFileProperties::Format::WAV) {
+      fileWriter_ = std::make_shared<MiniAudioFileWriter>(
+          audioEventHandlerRegistry_,
+          properties,
+          streamSampleRate_,
+          streamChannelCount_,
+          streamMaxBufferSizeInFrames_);
+    } else {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+      fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+          audioEventHandlerRegistry_,
+          properties,
+          streamSampleRate_,
+          streamChannelCount_,
+          streamMaxBufferSizeInFrames_);
+#else
+      return Result<std::string, std::string>::Err(
+          "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV "
+          "format instead.");
+#endif
+    }
+
+    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+
+    auto fileResult = fileWriter_->openFile();
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(
@@ -355,8 +394,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (usesFileOutput()) {
     if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
-      std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-          ->writeAudioData(audioData, numFrames);
+      fileWriter_->writeAudioData(audioData, numFrames);
     }
   }
 

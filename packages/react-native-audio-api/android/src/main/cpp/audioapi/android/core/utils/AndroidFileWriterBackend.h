@@ -14,10 +14,14 @@ class AndroidFileWriterBackend : public AudioFileWriter {
  public:
   explicit AndroidFileWriterBackend(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties> &fileProperties)
-      : AudioFileWriter(audioEventHandlerRegistry, fileProperties) {}
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
+    float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize)
+      : AudioFileWriter(audioEventHandlerRegistry, fileProperties),
+        streamSampleRate_(streamSampleRate),
+        streamChannelCount_(streamChannelCount),
+        streamMaxBufferSize_(streamMaxBufferSize) {}
 
-  virtual OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
+  virtual OpenFileResult openFile() = 0;
   virtual bool writeAudioData(void *data, int numFrames) = 0;
 
   std::string getFilePath() const override { return filePath_; }

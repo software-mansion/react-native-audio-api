@@ -11,9 +11,13 @@
 namespace audioapi {
 IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties> &fileProperties)
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties)
 {
+  bufferFormat_ = bufferFormat;
+  converterInputBufferSize_ = maxInputBufferLength;
 }
 
 IOSFileWriter::~IOSFileWriter()
@@ -32,7 +36,7 @@ IOSFileWriter::~IOSFileWriter()
 /// @param bufferFormat The audio format of the input buffer.
 /// @param maxInputBufferLength The maximum length of the input buffer in frames.
 /// @returns An OpenFileResult indicating success with the file path or an error message.
-OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+Result<std::string, std::string> IOSFileWriter::openFile()
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
@@ -40,7 +44,6 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
     }
 
     framesWritten_.store(0, std::memory_order_release);
-    bufferFormat_ = bufferFormat;
 
     NSError *error = nil;
     NSDictionary *settings = ios::fileoptions::getFileSettings(fileProperties_);
@@ -51,7 +54,7 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
           "Invalid file properties: sampleRate and channelCount must be greater than 0");
     }
 
-    if (bufferFormat.sampleRate == 0 || bufferFormat.channelCount == 0) {
+    if (bufferFormat_.sampleRate == 0 || bufferFormat_.channelCount == 0) {
       return OpenFileResult::Err(
           "Invalid input format: sampleRate and channelCount must be greater than 0");
     }
@@ -59,7 +62,7 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
     audioFile_ = [[AVAudioFile alloc] initForWriting:fileURL_
                                             settings:settings
                                         commonFormat:AVAudioPCMFormatFloat32
-                                         interleaved:bufferFormat.interleaved
+                                         interleaved:bufferFormat_.interleaved
                                                error:&error];
 
     if (error != nil) {
@@ -68,20 +71,19 @@ OpenFileResult IOSFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxIn
           [[error debugDescription] UTF8String]);
     }
 
-    converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat
+    converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat_
                                                  toFormat:[audioFile_ processingFormat]];
     converter_.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     converter_.sampleRateConverterQuality = AVAudioQualityMax;
     converter_.primeMethod = AVAudioConverterPrimeMethod_None;
 
-    converterInputBufferSize_ = maxInputBufferLength;
     converterOutputBufferSize_ = std::max(
-        (double)maxInputBufferLength,
-        fileProperties_->sampleRate / bufferFormat.sampleRate * maxInputBufferLength);
+        (double)converterInputBufferSize_,
+        fileProperties_->sampleRate / bufferFormat_.sampleRate * converterInputBufferSize_);
 
     converterInputBuffer_ =
-        [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat
-                                      frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat_
+                                      frameCapacity:(AVAudioFrameCount)converterInputBufferSize_];
     converterOutputBuffer_ =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile_ processingFormat]
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];

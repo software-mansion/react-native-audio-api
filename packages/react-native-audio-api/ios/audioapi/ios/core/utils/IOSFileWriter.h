@@ -24,12 +24,12 @@ class IOSFileWriter : public AudioFileWriter {
  public:
   IOSFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::shared_ptr<AudioFileProperties> &fileProperties);
-  ~IOSFileWriter();
-
-  Result<std::string, std::string> openFile(
+      const std::shared_ptr<AudioFileProperties> &fileProperties,
       AVAudioFormat *bufferFormat,
       size_t maxInputBufferLength);
+  ~IOSFileWriter();
+
+  Result<std::string, std::string> openFile();
   Result<std::tuple<double, double>, std::string> closeFile() override;
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);

@@ -14,6 +14,13 @@ class AudioEventHandlerRegistry;
 typedef Result<std::string, std::string> OpenFileResult;
 typedef Result<std::tuple<double, double>, std::string> CloseFileResult;
 
+#ifdef ANDROID
+typedef void *AudioDataType;
+#else
+#include <CoreAudio/CoreAudioTypes.h>
+typedef const AudioBufferList *AudioDataType;
+#endif
+
 class AudioFileWriter {
  public:
   AudioFileWriter(
@@ -22,8 +29,11 @@ class AudioFileWriter {
   virtual ~AudioFileWriter() = default;
 
   virtual CloseFileResult closeFile() = 0;
-
+  virtual OpenFileResult openFile() = 0;
   virtual std::string getFilePath() const = 0;
+
+  virtual bool writeAudioData(AudioDataType data, int numFrames) = 0;
+
   virtual double getCurrentDuration() const = 0;
 
   void setOnErrorCallback(uint64_t callbackId);

@@ -36,8 +36,7 @@ IOSAudioRecorder::IOSAudioRecorder(
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (usesFileOutput()) {
       if (auto lock = Locker::tryLock(fileWriterMutex_)) {
-        std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-            ->writeAudioData(inputBuffer, numFrames);
+        fileWriter_->writeAudioData(inputBuffer, numFrames);
       }
     }
 
@@ -103,8 +102,11 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                          ->openFile(inputFormat, maxInputBufferLength);
+    fileWriter_ = std::make_shared<IOSFileWriter>(
+        audioEventHandlerRegistry_, fileProperties_, inputFormat, maxInputBufferLength);
+    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+
+    auto fileResult = fileWriter_->openFile();
 
     if (fileResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -112,6 +114,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
     }
 
     filePath_ = fileResult.unwrap();
+    NSLog(@"[IOSAudioRecorder] File created successfully at path: %s", filePath_.c_str());
   }
 
   if (usesCallback()) {
@@ -188,11 +191,16 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
   std::scoped_lock lock(fileWriterMutex_, errorCallbackMutex_);
-  fileWriter_ = std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, properties);
+  fileProperties_ = properties;
 
   if (!isIdle()) {
-    auto result = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                      ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    fileWriter_ = std::make_shared<IOSFileWriter>(
+        audioEventHandlerRegistry_,
+        properties,
+        [nativeRecorder_ getInputFormat],
+        [nativeRecorder_ getBufferSize]);
+
+    auto result = fileWriter_->openFile();
 
     if (result.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -200,9 +208,8 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
     }
 
     filePath_ = result.unwrap();
+    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   }
-
-  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
   fileOutputEnabled_.store(true, std::memory_order_release);
   return Result<std::string, std::string>::Ok(filePath_);

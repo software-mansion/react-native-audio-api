@@ -77,6 +77,7 @@ class AudioRecorder {
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 
 } // namespace audioapi
