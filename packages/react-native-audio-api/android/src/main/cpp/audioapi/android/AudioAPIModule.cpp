@@ -92,7 +92,8 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
   }
 
   if (audioEventHandlerRegistry_ != nullptr) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(static_cast<audioapi::AudioEvent>(eventOrdinal), body);
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        static_cast<audioapi::AudioEvent>(eventOrdinal), body);
   }
 }
 } // namespace audioapi
