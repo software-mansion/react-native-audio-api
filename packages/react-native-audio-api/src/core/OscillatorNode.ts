@@ -4,7 +4,6 @@ import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
-import { EventEmptyType } from '../events/types';
 import { OscillatorOptions } from '../defaults';
 import { TOscillatorOptions } from '../types';
 
@@ -45,15 +44,5 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
 
   public setPeriodicWave(wave: PeriodicWave): void {
     (this.node as IOscillatorNode).setPeriodicWave(wave.periodicWave);
-  }
-
-  public override get onEnded(): ((event: EventEmptyType) => void) | undefined {
-    return super.onEnded as ((event: EventEmptyType) => void) | undefined;
-  }
-
-  public override set onEnded(
-    callback: ((event: EventEmptyType) => void) | null
-  ) {
-    super.onEnded = callback;
   }
 }

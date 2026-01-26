@@ -229,6 +229,9 @@ export interface IAudioBufferQueueSourceNode
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
+
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onBufferEnded: string;
 }
 
 export interface IConvolverNode extends IAudioNode {

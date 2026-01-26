@@ -51,8 +51,8 @@ float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
-std::string AnalyserNode::getWindowType() const {
-  return AnalyserNode::toString(windowType_);
+AnalyserNode::WindowType AnalyserNode::getWindowType() const {
+  return windowType_;
 }
 
 void AnalyserNode::setFftSize(int fftSize) {
@@ -80,9 +80,8 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::setWindowType(const std::string &type) {
-  setWindowData(windowType_, fftSize_);
-  windowType_ = AnalyserNode::fromString(type);
+void AnalyserNode::setWindowType(AnalyserNode::WindowType type) {
+  setWindowData(type, fftSize_);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
@@ -189,12 +188,13 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int size) {
-  if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
+void AnalyserNode::setWindowData(AnalyserNode::WindowType type, int size) {
+  if (windowType_ == type && windowData_ != nullptr && windowData_->getSize() == size) {
     return;
   }
 
-  if (!windowData_ || windowData_->getSize() != size) {
+  windowType_ = type;
+  if (windowData_ == nullptr|| windowData_->getSize() != size) {
     windowData_ = std::make_shared<AudioArray>(size);
   }
 

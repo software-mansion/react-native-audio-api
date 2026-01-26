@@ -34,11 +34,16 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void clearBuffers();
   void disable() override;
 
+  void setOnBufferEndedCallbackId(uint64_t callbackId);
+
  protected:
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override;
+
   double getCurrentPosition() const override;
+
+  void sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue);
 
  private:
   // User provided buffers
@@ -50,6 +55,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   std::shared_ptr<AudioBuffer> tailBuffer_;
 
   double playedBuffersDuration_ = 0;
+
+  std::atomic<uint64_t> onBufferEndedCallbackId_ = 0; // 0 means no callback
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBus> &processingBus,

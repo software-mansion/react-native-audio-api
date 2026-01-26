@@ -46,6 +46,14 @@ Pod::Spec.new do |s|
       sss.header_mappings_dir = "common/cpp/audioapi/dsp"
       sss.compiler_flags = "-O3"
     end
+
+    # compile miniaudio implementation file as objective-c++
+    ss.subspec "miniaudio_impl" do |sss|
+      sss.source_files = "common/cpp/audioapi/utils/MiniaudioImplementation.cpp"
+      sss.header_dir = "audioapi/libs"
+      sss.header_mappings_dir = "common/cpp/audioapi/libs"
+      sss.compiler_flags = "-x objective-c++"
+    end
   end
 
   if worklets_enabled

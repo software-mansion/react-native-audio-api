@@ -1,8 +1,10 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/core/types/OverSampleType.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace audioapi {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/core/analysis/AnalyserNode.h>
 
 #include <memory>
 #include <string>
@@ -8,8 +9,6 @@
 
 namespace audioapi {
 using namespace facebook;
-
-class AnalyserNode;
 
 class AnalyserNodeHostObject : public AudioNodeHostObject {
  public:

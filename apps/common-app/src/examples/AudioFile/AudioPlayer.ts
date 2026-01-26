@@ -6,17 +6,20 @@ import {
   AudioContext,
   decodeAudioData,
   PlaybackNotificationManager,
+  GainNode,
 } from 'react-native-audio-api';
 
 class AudioPlayer {
   private readonly audioContext: AudioContext;
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
+  private volumeNode: GainNode | null = null;
 
   private isPlaying: boolean = false;
 
   private currentElapsedTime: number = 0;
   private playbackRate: number = 1;
+  private volume: number = 1;
   private onPositionChanged: ((offset: number) => void) | null = null;
 
   constructor() {
@@ -43,15 +46,18 @@ class AudioPlayer {
       await this.audioContext.resume();
     }
 
-    this.sourceNode = this.audioContext.createBufferSource({
-      pitchCorrection: true,
-    });
+    this.sourceNode = this.audioContext.createBufferSource({pitchCorrection: true});
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
+    this.volumeNode = this.audioContext.createGain();
+    this.volumeNode.gain.value = this.volume;
 
     this.sourceNode.connect(this.audioContext.destination);
-    this.sourceNode.onPositionChangedInterval = 250;
+    this.sourceNode.onPositionChangedInterval = 1000;
     this.sourceNode.onPositionChanged = (event) => {
+      PlaybackNotificationManager.show({
+        elapsedTime: this.currentElapsedTime,
+      });
       this.currentElapsedTime = event.value;
       if (this.onPositionChanged) {
         this.onPositionChanged(
@@ -142,6 +148,13 @@ class AudioPlayer {
 
   getElapsedTime = (): number => {
     return this.currentElapsedTime;
+  };
+
+  setVolume = (volume: number) => {
+    this.volume = volume;
+    if (this.volumeNode) {
+      this.volumeNode.gain.value = volume;
+    }
   };
 }
 

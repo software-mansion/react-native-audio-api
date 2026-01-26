@@ -195,10 +195,10 @@ export default class BaseAudioContext {
     return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  createBufferQueueSource(options: {
-    pitchCorrection?: boolean;
+  createBufferQueueSource(options?: {
+    pitchCorrection: boolean;
   }): AudioBufferQueueSourceNode {
-    if (options.pitchCorrection !== undefined) {
+    if (options !== undefined) {
       return new AudioBufferQueueSourceNode(this, options);
     } else {
       return new AudioBufferQueueSourceNode(this);

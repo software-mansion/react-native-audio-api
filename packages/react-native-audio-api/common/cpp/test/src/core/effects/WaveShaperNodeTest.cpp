@@ -2,6 +2,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
@@ -57,7 +58,7 @@ TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   static constexpr int FRAMES_TO_PROCESS = 5;
   auto waveShaper = std::make_shared<TestableWaveShaperNode>(context);
-  waveShaper->setOversample("none");
+  waveShaper->setOversample(OverSampleType::OVERSAMPLE_NONE);
   waveShaper->setCurve(waveShaper->testCurve_);
 
   auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);

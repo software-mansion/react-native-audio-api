@@ -24,10 +24,10 @@ class WaveShaperNode : public AudioNode {
       std::shared_ptr<BaseAudioContext> context,
       const WaveShaperOptions &options);
 
-  [[nodiscard]] std::string getOversample() const;
+  [[nodiscard]] OverSampleType getOversample() const;
   [[nodiscard]] std::shared_ptr<AudioArray> getCurve() const;
 
-  void setOversample(const std::string &type);
+  void setOversample(OverSampleType);
   void setCurve(const std::shared_ptr<AudioArray> &curve);
 
  protected:
@@ -41,29 +41,6 @@ class WaveShaperNode : public AudioNode {
   mutable std::mutex mutex_;
 
   std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};
-
-  static OverSampleType overSampleTypeFromString(const std::string &type) {
-    std::string lowerType = type;
-    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
-
-    if (lowerType == "2x")
-      return OverSampleType::OVERSAMPLE_2X;
-    if (lowerType == "4x")
-      return OverSampleType::OVERSAMPLE_4X;
-
-    return OverSampleType::OVERSAMPLE_NONE;
-  }
-
-  static std::string overSampleTypeToString(OverSampleType type) {
-    switch (type) {
-      case OverSampleType::OVERSAMPLE_2X:
-        return "2x";
-      case OverSampleType::OVERSAMPLE_4X:
-        return "4x";
-      default:
-        return "none";
-    }
-  }
 };
 
 } // namespace audioapi

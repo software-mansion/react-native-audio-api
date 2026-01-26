@@ -41,13 +41,13 @@ std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
   return detuneParam_;
 }
 
-std::string OscillatorNode::getType() {
-  return OscillatorNode::toString(type_);
+OscillatorType OscillatorNode::getType() {
+  return type_;
 }
 
-void OscillatorNode::setType(const std::string &type) {
+void OscillatorNode::setType(OscillatorType type) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    type_ = OscillatorNode::fromString(type);
+    type_ = type;
     periodicWave_ = context->getBasicWaveForm(type_);
   }
 }

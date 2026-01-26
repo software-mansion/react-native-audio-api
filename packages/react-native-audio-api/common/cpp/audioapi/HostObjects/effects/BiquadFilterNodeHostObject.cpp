@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <memory>
 
 namespace audioapi {
@@ -49,12 +50,13 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, gain) {
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
   auto type = biquadFilterNode->getType();
-  return jsi::String::createFromUtf8(runtime, type);
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::filterTypeToString(type));
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  biquadFilterNode->setType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  biquadFilterNode->setType(js_enum_parser::filterTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {

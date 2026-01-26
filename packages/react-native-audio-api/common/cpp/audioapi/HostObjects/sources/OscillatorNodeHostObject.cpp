@@ -3,6 +3,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <memory>
 
 namespace audioapi {
@@ -35,7 +36,7 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, detune) {
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
   auto waveType = oscillatorNode->getType();
-  return jsi::String::createFromUtf8(runtime, waveType);
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::oscillatorTypeToString(waveType));
 }
 
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
@@ -47,7 +48,8 @@ JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
 
 JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  oscillatorNode->setType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  oscillatorNode->setType(js_enum_parser::oscillatorTypeFromString(type));
 }
 
 } // namespace audioapi

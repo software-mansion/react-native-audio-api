@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/core/types/OscillatorType.h>
 
 #include <memory>
 #include <string>

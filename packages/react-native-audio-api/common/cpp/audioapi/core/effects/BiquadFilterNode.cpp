@@ -59,12 +59,12 @@ BiquadFilterNode::BiquadFilterNode(std::shared_ptr<BaseAudioContext> context, co
   isInitialized_ = true;
 }
 
-std::string BiquadFilterNode::getType() {
-  return BiquadFilterNode::toString(type_);
+BiquadFilterType BiquadFilterNode::getType() {
+  return type_;
 }
 
-void BiquadFilterNode::setType(const std::string &type) {
-  type_ = BiquadFilterNode::fromString(type);
+void BiquadFilterNode::setType(BiquadFilterType type) {
+  type_ = type;
 }
 
 std::shared_ptr<AudioParam> BiquadFilterNode::getFrequencyParam() const {

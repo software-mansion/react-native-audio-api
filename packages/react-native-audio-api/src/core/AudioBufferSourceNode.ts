@@ -97,16 +97,6 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
   }
 
-  public override get onEnded(): ((event: EventEmptyType) => void) | undefined {
-    return super.onEnded as ((event: EventEmptyType) => void) | undefined;
-  }
-
-  public override set onEnded(
-    callback: ((event: EventEmptyType) => void) | null
-  ) {
-    super.onEnded = callback;
-  }
-
   public get onLoopEnded(): ((event: EventEmptyType) => void) | undefined {
     return this.onLoopEndedCallback;
   }
