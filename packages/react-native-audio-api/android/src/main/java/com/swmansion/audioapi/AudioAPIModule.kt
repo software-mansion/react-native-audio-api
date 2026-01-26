@@ -43,7 +43,7 @@ class AudioAPIModule(
   private external fun injectJSIBindings()
 
   external fun invokeHandlerWithEventNameAndEventBody(
-    eventName: Int,
+    eventOrdinal: Int,
     eventBody: Map<String, Any>,
   )
 

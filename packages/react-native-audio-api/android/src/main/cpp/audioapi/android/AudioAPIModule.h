@@ -33,7 +33,7 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
   static void registerNatives();
 
   void injectJSIBindings();
-  void invokeHandlerWithEventNameAndEventBody(jni::alias_ref<jni::JString> eventName, jni::alias_ref<jni::JMap<jstring, jobject>> eventBody);
+  void invokeHandlerWithEventNameAndEventBody(jint eventOrdinal, jni::alias_ref<jni::JMap<jstring, jobject>> eventBody);
 
  private:
   friend HybridBase;

@@ -56,7 +56,7 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
 
   @ReactMethod
   @DoNotStrip
-  public abstract void observeAudioInterruptions(boolean enabled);
+  public abstract void observeAudioInterruptions(String focusType, boolean enabled);
 
   @ReactMethod
   @DoNotStrip
