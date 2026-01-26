@@ -99,21 +99,14 @@ target_include_directories(
   ${INCLUDE_LIBRARIES}
 )
 
-if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
-  set(RN_VERSION_LINK_LIBRARIES
-    ReactAndroid::reactnative
-  )
-else()
-  set(RN_VERSION_LINK_LIBRARIES
-    ReactAndroid::folly_runtime
-    ReactAndroid::react_nativemodule_core
-    ReactAndroid::glog
-    ReactAndroid::reactnativejni
-  )
-endif()
-
 set(RN_VERSION_LINK_LIBRARIES
   ReactAndroid::reactnative
+)
+
+target_compile_options(
+  react-native-audio-api
+  PRIVATE
+  -Wno-mismatched-tags
 )
 
 if(RN_AUDIO_API_WORKLETS_ENABLED)
