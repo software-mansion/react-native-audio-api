@@ -31,6 +31,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup
+        uses: ./.github/actions/setup
+
       - name: Check AudioEvent enum sync
         run: yarn check-audio-enum-sync
 
