@@ -19,6 +19,8 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace audioapi {
 
@@ -420,7 +422,16 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
-      // TODO: call error callback
+      uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
+
+      if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+        return;
+      }
+
+      std::string message = "Android recorder error: " + streamResult.unwrap_err();
+      std::unordered_map<std::string, EventValue> eventPayload{{"message", std::move(message)}};
+      audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+          "recorderError", callbackId, eventPayload);
       return;
     }
 
