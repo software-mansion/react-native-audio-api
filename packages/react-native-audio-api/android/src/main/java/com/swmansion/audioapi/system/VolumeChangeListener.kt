@@ -21,7 +21,7 @@ class VolumeChangeListener(
     val maxVolume = audioManager.get()?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.toDouble()!!
 
     val body = HashMap<String, Any>().apply { put("value", currentVolume / maxVolume) }
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("volumeChange", body)
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.VOLUME_CHANGE.ordinal, body)
   }
 
   fun getIntentFilter(): IntentFilter {

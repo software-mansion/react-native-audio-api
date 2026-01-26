@@ -42,7 +42,7 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
   auto oldCallbackId = onPositionChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
   if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("positionChanged", oldCallbackId);
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, oldCallbackId);
   }
 }
 
@@ -90,7 +90,7 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId, body);
+        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId, body);
 
     onPositionChangedTime_ = 0;
   }

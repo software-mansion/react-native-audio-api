@@ -26,7 +26,7 @@ interface Spec extends TurboModule {
   ): void;
   disableSessionManagement(): void;
 
-  // Remote commands, system events and interruptions
+  // system events and interruptions
   observeAudioInterruptions(focusType: AudioFocusType, enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;

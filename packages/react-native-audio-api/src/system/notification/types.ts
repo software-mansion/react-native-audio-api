@@ -41,8 +41,9 @@ export interface PlaybackNotificationInfo {
 export type PlaybackControlName =
   | 'play'
   | 'pause'
-  | 'next'
-  | 'previous'
+  | 'stop'
+  | 'nextTrack'
+  | 'previousTrack'
   | 'skipForward'
   | 'skipBackward'
   | 'seekTo';
@@ -51,8 +52,9 @@ export type PlaybackControlName =
 interface PlaybackNotificationEvent {
   playbackNotificationPlay: EventEmptyType;
   playbackNotificationPause: EventEmptyType;
-  playbackNotificationNext: EventEmptyType;
-  playbackNotificationPrevious: EventEmptyType;
+  playbackNotificationStop: EventEmptyType;
+  playbackNotificationNextTrack: EventEmptyType;
+  playbackNotificationPreviousTrack: EventEmptyType;
   playbackNotificationSkipForward: EventTypeWithValue;
   playbackNotificationSkipBackward: EventTypeWithValue;
   playbackNotificationSeekTo: EventTypeWithValue;

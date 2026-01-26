@@ -27,22 +27,6 @@ function App() {
     AudioManager.getDevicesInfo().then(console.log);
 
   useEffect(() => {
-    // callback to be invoked on 'remotePlay' event
-    const remotePlaySubscription = AudioManager.addSystemEventListener(
-      'remotePlay',
-      (event) => {
-        console.log('remotePlay event:', event);
-      }
-    );
-
-    // callback to be invoked on 'remotePause' event
-    const remotePauseSubscription = AudioManager.addSystemEventListener(
-      'remotePause',
-      (event) => {
-        console.log('remotePause event:', event);
-      }
-    );
-
     // callback to be invoked on 'interruption' event
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
@@ -52,8 +36,6 @@ function App() {
     );
 
     return () => {
-      remotePlaySubscription?.remove();
-      remotePauseSubscription?.remove();
       interruptionSubscription?.remove();
     };
   }, []);
