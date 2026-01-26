@@ -29,9 +29,8 @@ void AudioFileWriter::invokeOnErrorCallback(const std::string &message) {
     return;
   }
 
-  std::unordered_map<std::string, EventValue> eventPayload = {};
-  eventPayload.insert({"message", message});
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody("error", callbackId, eventPayload);
+  std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody("recorderError", callbackId, eventPayload);
 }
 
 bool AudioFileWriter::isFileOpen() {
