@@ -736,7 +736,7 @@ interface AudioRecorderFileOptions {
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
-- `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording_`).
+- `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
 - `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
   - Higher values are more battery- and storage-efficient.

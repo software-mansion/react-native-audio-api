@@ -17,8 +17,8 @@ AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context) : context_(conte
 }
 
 AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options)
-    : context_(context),
-      channelCount_(options.channelCount),
+    : channelCount_(options.channelCount),
+      context_(context),
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation) {
   audioBus_ =
