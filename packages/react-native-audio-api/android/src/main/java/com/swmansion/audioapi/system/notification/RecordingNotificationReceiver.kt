@@ -23,12 +23,12 @@ class RecordingNotificationReceiver(
     when (intent?.action) {
       NOTIFICATION_RECORDING_STOPPED -> {
         Log.d(TAG, "Recording stopped via notification")
-        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_RESUME.ordinal, mapOf())
+        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_PAUSE.ordinal, mapOf())
       }
 
       NOTIFICATION_RECORDING_RESUMED -> {
         Log.d(TAG, "Recording resumed via notification")
-        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_PAUSE.ordinal, mapOf())
+        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_RESUME.ordinal, mapOf())
       }
     }
   }

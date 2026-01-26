@@ -98,7 +98,7 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
   }
 
   std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::AUDIO_READY, callbackId, eventPayload);
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
 }
 
 } // namespace audioapi

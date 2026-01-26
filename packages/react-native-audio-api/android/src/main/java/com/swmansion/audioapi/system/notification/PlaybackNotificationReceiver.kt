@@ -27,14 +27,14 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
     intent: Intent?,
   ) {
     when (intent?.action) {
-      intent?.action -> {
+      ACTION_NOTIFICATION_DISMISSED -> {
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_DISMISSED.ordinal, mapOf())
       }
-      intent?.action -> {
+      ACTION_SKIP_FORWARD -> {
         val body = HashMap<String, Any>().apply { put("value", 15) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
       }
-      intent?.action -> {
+      ACTION_SKIP_BACKWARD -> {
         val body = HashMap<String, Any>().apply { put("value", 15) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
       }

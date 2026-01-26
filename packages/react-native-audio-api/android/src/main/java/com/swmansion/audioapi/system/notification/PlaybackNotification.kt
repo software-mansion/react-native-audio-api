@@ -391,9 +391,8 @@ class PlaybackNotification(
       }
 
       if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
-        // TODO add stop icon
         notificationBuilder?.addAction(
-          createAction("stop", "Stop", android.R.drawable.ic_media_pause, PlaybackStateCompat.ACTION_STOP),
+          createAction("stop", "Stop", R.drawable.stop, PlaybackStateCompat.ACTION_STOP),
         )
         actionsList.add(index++)
       }
