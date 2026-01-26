@@ -12,6 +12,7 @@
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
 #include <memory>
+#include <string>
 
 namespace audioapi {
 
@@ -41,7 +42,12 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  auto fileNameOverride = count > 0 ? args[0].getString(runtime).utf8(runtime) : "";
+  std::string fileNameOverride = "";
+
+  if (count > 0 && !args[0].isUndefined()) {
+    fileNameOverride = args[0].getString(runtime).utf8(runtime);
+  }
+
   auto result = audioRecorder_->start(fileNameOverride);
   auto jsResult = jsi::Object(runtime);
 
