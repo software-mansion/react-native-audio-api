@@ -103,12 +103,6 @@ set(RN_VERSION_LINK_LIBRARIES
   ReactAndroid::reactnative
 )
 
-target_compile_options(
-  react-native-audio-api
-  PRIVATE
-  -Wno-mismatched-tags
-)
-
 if(RN_AUDIO_API_WORKLETS_ENABLED)
   target_compile_definitions(
     react-native-audio-api
