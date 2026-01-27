@@ -4,6 +4,10 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/Windows.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/CircularAudioArray.h>
+
 #include <algorithm>
 #include <memory>
 #include <string>

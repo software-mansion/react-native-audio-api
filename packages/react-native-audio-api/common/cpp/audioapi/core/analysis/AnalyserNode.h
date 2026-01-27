@@ -2,9 +2,6 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/dsp/FFT.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
-#include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>
 #include <complex>
@@ -17,6 +14,7 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
+class CircularAudioArray;
 struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {

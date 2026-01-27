@@ -78,8 +78,7 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-  auto state = context_->getState();
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::contextStateToString(state));
+    return jsi::String::createFromUtf8(runtime, js_enum_parser::contextStateToString(context_->getState()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
