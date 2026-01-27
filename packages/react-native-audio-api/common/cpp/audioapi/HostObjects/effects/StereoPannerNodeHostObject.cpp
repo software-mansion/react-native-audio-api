@@ -1,14 +1,17 @@
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <memory>
 
 namespace audioapi {
 
 StereoPannerNodeHostObject::StereoPannerNodeHostObject(
-    const std::shared_ptr<StereoPannerNode> &node)
-    : AudioNodeHostObject(node) {
+    const std::shared_ptr<BaseAudioContext> &context,
+    const StereoPannerOptions &options)
+    : AudioNodeHostObject(context->createStereoPanner(options)) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
 }
 

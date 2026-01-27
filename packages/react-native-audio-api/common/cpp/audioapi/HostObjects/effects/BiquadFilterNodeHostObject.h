@@ -9,7 +9,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class BiquadFilterOptions;
+struct BiquadFilterOptions;
 class BaseAudioContext;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {

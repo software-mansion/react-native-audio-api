@@ -16,12 +16,12 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
-class WaveShaperOptions;
+struct WaveShaperOptions;
 
 class WaveShaperNode : public AudioNode {
  public:
   explicit WaveShaperNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const WaveShaperOptions &options);
 
   [[nodiscard]] OverSampleType getOversample() const;

@@ -7,7 +7,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class ConvolverOptions;
+struct ConvolverOptions;
 class BaseAudioContext;
 
 class ConvolverNodeHostObject : public AudioNodeHostObject {

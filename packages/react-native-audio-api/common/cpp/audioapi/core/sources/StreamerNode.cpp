@@ -23,7 +23,9 @@
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options)
+StreamerNode::StreamerNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const StreamerOptions &options)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
@@ -38,7 +40,10 @@ StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const Stre
       maxResampledSamples_(0),
       processedSamples_(0) {}
 #else
-StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options) : AudioScheduledSourceNode(context) {}
+StreamerNode::StreamerNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const StreamerOptions &options)
+    : AudioScheduledSourceNode(context) {}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 StreamerNode::~StreamerNode() {
@@ -112,7 +117,13 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
     processingBus->zero();
     return processingBus;
   }
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
@@ -217,7 +228,9 @@ void StreamerNode::streamAudio() {
   }
 }
 
-bool StreamerNode::processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context) {
+bool StreamerNode::processFrameWithResampler(
+    AVFrame *frame,
+    std::shared_ptr<BaseAudioContext> context) {
   // Check if we need to reallocate the resampled buffer
   int out_samples = swr_get_out_samples(swrCtx_, frame->nb_samples);
   if (out_samples > maxResampledSamples_) {

@@ -33,13 +33,13 @@
 
 namespace audioapi {
 
-class IIRFilterOptions;
+struct IIRFilterOptions;
 
 class IIRFilterNode : public AudioNode {
 
  public:
   explicit IIRFilterNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const IIRFilterOptions &options);
 
   void getFrequencyResponse(

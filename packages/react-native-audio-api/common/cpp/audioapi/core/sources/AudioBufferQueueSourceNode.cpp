@@ -19,7 +19,7 @@
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
-std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options) {
   buffers_ = {};
@@ -130,11 +130,11 @@ void AudioBufferQueueSourceNode::disable() {
 }
 
 void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId) {
-    auto oldCallbackId = onBufferEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+  auto oldCallbackId = onBufferEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
-    if (oldCallbackId != 0) {
-        audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, oldCallbackId);
-    }
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, oldCallbackId);
+  }
 }
 
 std::shared_ptr<AudioBus> AudioBufferQueueSourceNode::processNode(
@@ -171,15 +171,15 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
-    auto onBufferEndedCallbackId = onBufferEndedCallbackId_.load(std::memory_order_acquire);
+  auto onBufferEndedCallbackId = onBufferEndedCallbackId_.load(std::memory_order_acquire);
 
-    if (onBufferEndedCallbackId != 0) {
-        std::unordered_map<std::string, EventValue> body =
-                {{"bufferId", std::to_string(bufferId)}, {"isLastBufferInQueue", isLastBufferInQueue}};
+  if (onBufferEndedCallbackId != 0) {
+    std::unordered_map<std::string, EventValue> body = {
+        {"bufferId", std::to_string(bufferId)}, {"isLastBufferInQueue", isLastBufferInQueue}};
 
-        audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-                AudioEvent::BUFFER_ENDED, onBufferEndedCallbackId, body);
-    }
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::BUFFER_ENDED, onBufferEndedCallbackId, body);
+  }
 }
 
 /**
@@ -221,7 +221,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       buffers_.pop();
 
       if (!(buffers_.empty() && addExtraTailFrames_)) {
-          sendOnBufferEndedEvent(bufferId, buffers_.empty());
+        sendOnBufferEndedEvent(bufferId, buffers_.empty());
       }
 
       if (buffers_.empty()) {

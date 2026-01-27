@@ -9,7 +9,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class AnalyserOptions;
+struct AnalyserOptions;
 class BaseAudioContext;
 
 class AnalyserNodeHostObject : public AudioNodeHostObject {

@@ -12,7 +12,7 @@
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context),
       pitchCorrection_(options.pitchCorrection),
@@ -157,7 +157,13 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
   auto computedPlaybackRate =
       getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();

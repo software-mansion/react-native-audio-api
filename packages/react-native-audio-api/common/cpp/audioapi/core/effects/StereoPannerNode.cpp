@@ -10,8 +10,11 @@
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode(std::shared_ptr<BaseAudioContext> context, const StereoPannerOptions &options)
-    : AudioNode(context, options), panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
+StereoPannerNode::StereoPannerNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const StereoPannerOptions &options)
+    : AudioNode(context, options),
+      panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
   isInitialized_ = true;
 }
 

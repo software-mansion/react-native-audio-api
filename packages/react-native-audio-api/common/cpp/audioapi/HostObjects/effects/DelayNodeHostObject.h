@@ -8,7 +8,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class DelayOptions;
+struct DelayOptions;
 class BaseAudioContext;
 
 class DelayNodeHostObject : public AudioNodeHostObject {
