@@ -13,7 +13,7 @@ struct DelayOptions;
 
 class DelayNode : public AudioNode {
  public:
-  explicit DelayNode(const std::shared_ptr<BaseAudioContext>& context, const DelayOptions &options);
+  explicit DelayNode(const std::shared_ptr<BaseAudioContext> &context, const DelayOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 

@@ -22,7 +22,7 @@ struct ConvolverOptions;
 class ConvolverNode : public AudioNode {
  public:
   explicit ConvolverNode(
-      const std::shared_ptr<BaseAudioContext>& context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const ConvolverOptions &options);
 
   [[nodiscard]] bool getNormalize_() const;
