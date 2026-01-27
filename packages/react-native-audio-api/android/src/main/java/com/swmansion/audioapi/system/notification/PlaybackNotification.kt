@@ -388,9 +388,7 @@ class PlaybackNotification(
           createAction("pause", "Pause", android.R.drawable.ic_media_pause, PlaybackStateCompat.ACTION_PAUSE),
         )
         actionsList.add(index++)
-      }
-
-      if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
+      } else if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
         notificationBuilder?.addAction(
           createAction("stop", "Stop", R.drawable.stop, PlaybackStateCompat.ACTION_STOP),
         )
