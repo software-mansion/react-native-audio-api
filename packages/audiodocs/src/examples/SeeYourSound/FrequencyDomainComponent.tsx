@@ -46,11 +46,11 @@ const FrequencyChart: React.FC<ChartProps> = ({ data, dataSize }) => {
       const value = data[i];
       const height = canvas.height * (value / 256);
       const offset = canvas.height - height;
-      const hue = (i / dataSize) * 360;
+      const hue = (i / dataSize) * 300;
       ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
       ctx.fillRect(i * barWidth, offset, Math.max(1, barWidth), height);
     }
-  }, [data, dataSize]); 
+  }, [data, dataSize]);
 
   return (
     <CanvasSizer canvasHeight={300}>

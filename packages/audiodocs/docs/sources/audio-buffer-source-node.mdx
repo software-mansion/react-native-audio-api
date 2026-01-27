@@ -113,13 +113,14 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 ### `onLoopEnded`
 
 Sets (or remove) callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
-You can remove callback by passing `null`.
-
+You can remove callback either by passing `null` or calling `remove` on the returned subscription.
 
 ```ts
-audioBufferSourceNode.onLoopEnded = () => { //setting callback
+const subscription = audioBufferSourceNode.onLoopEnded = () => { // setting the callback
   console.log("loop ended");
 };
+
+subscription.remove(); // removal of the subscription
 ```
 
 ## Remarks

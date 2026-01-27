@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
 } from 'react';
 import {
   AudioContext,
@@ -107,6 +108,7 @@ const TimeChart: React.FC<ChartProps> = (props) => {
 const FFT_SIZE = 512;
 
 const AudioVisualizer: React.FC = () => {
+  const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [times, setTimes] = useState<Uint8Array>(new Uint8Array(FFT_SIZE).fill(127));
@@ -137,20 +139,25 @@ const AudioVisualizer: React.FC = () => {
     setIsPlaying((prev) => !prev);
   };
 
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
   const draw = () => {
     if (!analyserRef.current) {
       return;
     }
 
     const timesArrayLength = analyserRef.current.fftSize;
-    const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
     const timesArray = new Uint8Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);
-    setTimes(timesArray);
+    if (isPlayingRef.current) {
+      setTimes(timesArray);
+    }
 
     requestAnimationFrame(draw);
-  };
+  }
 
   useEffect(() => {
     if (!audioContextRef.current) {

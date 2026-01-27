@@ -110,10 +110,7 @@ const uri = await Asset.fromModule(require('@/assets/music/example.mp3'))
 
 const context = new AudioContext();
 if (uri) {
-  const buffer = await fetch(uri)
-  .then((response) => response.arrayBuffer())
-  .then((arrayBuffer) => context.decodeAudioData(arrayBuffer));
-  console.log('Audio buffer loaded:', buffer);
+  const buffer = await context.decodeAudioData(uri);
 }
 
 ```

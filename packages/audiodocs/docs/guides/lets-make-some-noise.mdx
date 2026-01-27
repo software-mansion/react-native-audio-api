@@ -44,11 +44,8 @@ import { AudioContext } from 'react-native-audio-api';
 export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
-
     // highlight-start
-    const audioBuffer = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     // highlight-end
   };
 
@@ -66,7 +63,7 @@ We have used the [`decodeAudioData`](/docs/core/base-audio-context#decodeaudioda
 
 The last and final step is to create an [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), connect it to the `AudioContext's` destination, and start playing the sound. For the purpose of this guide, we will play the sound for just 10 seconds.
 
-```jsx {13-14,16-18}
+```jsx {10-11,13-15}
 import React from 'react';
 import { View, Button } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
@@ -74,10 +71,7 @@ import { AudioContext } from 'react-native-audio-api';
 export default function App() {
   const handlePlay = async () => {
     const audioContext = new AudioContext();
-
-    const audioBuffer = await fetch('https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3')
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
     const playerNode = audioContext.createBufferSource();
     playerNode.buffer = audioBuffer;

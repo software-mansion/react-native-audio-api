@@ -64,11 +64,13 @@ If you invoke this method multiple times on the same node before the designated 
 
 Sets (or remove) callback that will be fired when source node has stopped playing,
 either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
-You can remove callback by passing `null`.
+You can remove callback either by passing `null` or calling `remove` on the returned subscription.
 
 
 ```ts
-audioBufferSourceNode.onEnded = () => { //setting callback
+const subscription = audioBufferSourceNode.onEnded = () => { // setting the callback
   console.log("audio ended");
 };
+
+subscription.remove(); // removal of the subscription
 ```
