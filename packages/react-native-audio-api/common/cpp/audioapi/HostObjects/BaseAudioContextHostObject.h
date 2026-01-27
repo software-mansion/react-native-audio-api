@@ -48,9 +48,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(createWaveShaper);
   JSI_HOST_FUNCTION_DECL(createDelay);
 
-  std::shared_ptr<BaseAudioContext> context_;
-
  protected:
+  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 };

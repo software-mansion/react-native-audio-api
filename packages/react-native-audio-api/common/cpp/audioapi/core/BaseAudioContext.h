@@ -56,6 +56,7 @@ class WaveShaperOptions;
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
+      float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
@@ -116,9 +117,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   static std::string toString(ContextState state);
 
   std::shared_ptr<AudioDestinationNode> destination_;
-  // init in AudioContext or OfflineContext constructor
-  float sampleRate_{};
-  ContextState state_ = ContextState::RUNNING;
+  float sampleRate_;
+  ContextState state_ = ContextState::SUSPENDED;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
  private:

@@ -36,9 +36,11 @@
 namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
+    float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : nodeManager_(std::make_shared<AudioNodeManager>()),
+    : sampleRate_(sampleRate),
+      nodeManager_(std::make_shared<AudioNodeManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry) {}
 

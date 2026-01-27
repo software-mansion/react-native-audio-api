@@ -33,8 +33,10 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : context_(context), callInvoker_(callInvoker) {
-  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+    : context_(context),
+    promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
+    callInvoker_(callInvoker) {
+    context_->initialize();
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
