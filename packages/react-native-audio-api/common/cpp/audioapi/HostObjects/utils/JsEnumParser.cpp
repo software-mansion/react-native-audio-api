@@ -175,4 +175,16 @@ namespace audioapi::js_enum_parser {
     throw std::invalid_argument("Unknown audio event: " + event);
   }
 
+  std::string contextStateToString(ContextState state) {
+    switch (state) {
+      case ContextState::SUSPENDED:
+        return "suspended";
+      case ContextState::RUNNING:
+        return "running";
+      case ContextState::CLOSED:
+        return "closed";
+      default:
+        throw std::invalid_argument("Unknown context state");
+    }
+  }
 } // namespace audioapi::js_enum_parser

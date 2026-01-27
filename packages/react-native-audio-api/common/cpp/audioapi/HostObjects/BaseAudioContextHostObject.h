@@ -13,6 +13,7 @@ namespace audioapi {
 using namespace facebook;
 
 class BaseAudioContext;
+class AudioDestinationNodeHostObject;
 
 class BaseAudioContextHostObject : public JsiHostObject {
  public:
@@ -52,5 +53,7 @@ class BaseAudioContextHostObject : public JsiHostObject {
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
+
+  std::shared_ptr<AudioDestinationNodeHostObject> destination_;
 };
 } // namespace audioapi

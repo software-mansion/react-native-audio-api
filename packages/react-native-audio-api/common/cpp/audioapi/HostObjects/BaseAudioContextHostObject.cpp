@@ -1,5 +1,4 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
-
 #include <audioapi/HostObjects/WorkletNodeHostObject.h>
 #include <audioapi/HostObjects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
@@ -21,8 +20,9 @@
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
 #include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
-
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -37,6 +37,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
     promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
     callInvoker_(callInvoker) {
     context_->initialize();
+    destination_ = std::make_shared<AudioDestinationNodeHostObject>(context_->getDestination());
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
@@ -73,12 +74,12 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
 BaseAudioContextHostObject::~BaseAudioContextHostObject() = default;
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
-  auto destination = std::make_shared<AudioDestinationNodeHostObject>(context_->getDestination());
-  return jsi::Object::createFromHostObject(runtime, destination);
+  return jsi::Object::createFromHostObject(runtime, destination_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-  return jsi::String::createFromUtf8(runtime, context_->getState());
+  auto state = context_->getState();
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::contextStateToString(state));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
@@ -205,7 +206,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   const auto options = args[0].asObject(runtime);
   const auto gainOptions = audioapi::option_parser::parseGainOptions(runtime, options);
-  auto gain = context_->createGain(std::move(gainOptions));
+  auto gain = context_->createGain(gainOptions);
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }
@@ -302,8 +303,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
   const auto options = args[0].asObject(runtime);
   const auto analyserOptions = audioapi::option_parser::parseAnalyserOptions(runtime, options);
-  auto analyser = context_->createAnalyser(analyserOptions);
-  auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
+  auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(context_, analyserOptions);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
 }
 
