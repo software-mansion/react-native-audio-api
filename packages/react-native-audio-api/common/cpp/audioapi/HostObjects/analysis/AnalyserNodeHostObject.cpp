@@ -2,6 +2,7 @@
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/analysis/AnalyserNode.h>
 
 #include <memory>
 

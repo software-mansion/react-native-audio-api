@@ -214,8 +214,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
   const auto options = args[0].asObject(runtime);
   const auto delayOptions = audioapi::option_parser::parseDelayOptions(runtime, options);
-  auto delayNode = context_->createDelay(delayOptions);
-  auto delayNodeHostObject = std::make_shared<DelayNodeHostObject>(delayNode);
+  auto delayNodeHostObject = std::make_shared<DelayNodeHostObject>(context_, delayOptions);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
   jsiObject.setExternalMemoryPressure(runtime, delayNodeHostObject->getSizeInBytes());
   return jsiObject;
@@ -232,8 +231,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
   const auto options = args[0].asObject(runtime);
   const auto biquadFilterOptions = audioapi::option_parser::parseBiquadFilterOptions(runtime, options);
-  auto biquadFilter = context_->createBiquadFilter(biquadFilterOptions);
-  auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
+  auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(context_, biquadFilterOptions);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
 }
 
@@ -310,8 +308,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   const auto options = args[0].asObject(runtime);
   const auto convolverOptions = audioapi::option_parser::parseConvolverOptions(runtime, options);
-  auto convolver = context_->createConvolver(convolverOptions);
-  auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(convolver);
+  auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(context_, convolverOptions);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);
   if (convolverOptions.bus != nullptr) {
     auto bufferHostObject = options.getProperty(runtime, "buffer").getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
