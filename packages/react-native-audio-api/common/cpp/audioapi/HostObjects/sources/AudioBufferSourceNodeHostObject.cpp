@@ -140,17 +140,22 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
-    auto bufferHostObject = args[0].isNull() ? std::shared_ptr<AudioBufferHostObject>(nullptr) :
-                            args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+  auto bufferHostObject = args[0].isNull() ? std::shared_ptr<AudioBufferHostObject>(nullptr) :
+                        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
 
-    if (bufferHostObject != nullptr) {
-        thisValue.asObject(runtime).setExternalMemoryPressure(
-                runtime, bufferHostObject->getSizeInBytes() + 16);
-    }
+
+  std::shared_ptr<AudioBuffer> bufferCopy = nullptr;
+
+  if (bufferHostObject != nullptr) {
+    thisValue.asObject(runtime).setExternalMemoryPressure(
+            runtime, bufferHostObject->getSizeInBytes() + 16);
+
+    bufferCopy = std::make_shared<AudioBuffer>(*bufferHostObject->audioBuffer_);
+  }
 
   auto event = [
         audioBufferSourceNode,
-        buffer = bufferHostObject ? bufferHostObject->audioBuffer_ : nullptr
+        buffer = bufferCopy
   ](BaseAudioContext &) {
     audioBufferSourceNode->setBuffer(buffer);
   };
