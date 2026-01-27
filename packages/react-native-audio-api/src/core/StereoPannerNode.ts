@@ -1,6 +1,6 @@
+import { StereoPannerOptions } from '../defaults';
 import { IStereoPannerNode } from '../interfaces';
-import { SteroPannerOptions } from '../defaults';
-import { TSteroPannerOptions } from '../types';
+import { TStereoPannerOptions } from '../types';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
@@ -8,9 +8,9 @@ import BaseAudioContext from './BaseAudioContext';
 export default class StereoPannerNode extends AudioNode {
   readonly pan: AudioParam;
 
-  constructor(context: BaseAudioContext, options?: TSteroPannerOptions) {
-    const finalOptions: TSteroPannerOptions = {
-      ...SteroPannerOptions,
+  constructor(context: BaseAudioContext, options?: TStereoPannerOptions) {
+    const finalOptions: TStereoPannerOptions = {
+      ...StereoPannerOptions,
       ...options,
     };
     const pan: IStereoPannerNode =

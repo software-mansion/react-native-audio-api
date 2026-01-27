@@ -1,17 +1,17 @@
 import {
-  TAudioNodeOptions,
-  TGainOptions,
-  TSteroPannerOptions,
-  TConvolverOptions,
-  TConstantSourceOptions,
-  TPeriodicWaveConstraints,
   TAnalyserOptions,
-  TBiquadFilterOptions,
-  TOscillatorOptions,
-  TBaseAudioBufferSourceOptions,
-  TAudioBufferSourceOptions,
   TAudioBufferOptions,
+  TAudioBufferSourceOptions,
+  TAudioNodeOptions,
+  TBaseAudioBufferSourceOptions,
+  TBiquadFilterOptions,
+  TConstantSourceOptions,
+  TConvolverOptions,
   TDelayOptions,
+  TGainOptions,
+  TOscillatorOptions,
+  TPeriodicWaveConstraints,
+  TStereoPannerOptions,
   TWaveShaperOptions,
 } from './types';
 
@@ -26,7 +26,7 @@ export const GainOptions: TGainOptions = {
   gain: 1,
 };
 
-export const SteroPannerOptions: TSteroPannerOptions = {
+export const StereoPannerOptions: TStereoPannerOptions = {
   ...AudioNodeOptions,
   channelCountMode: 'clamped-max',
   pan: 0,

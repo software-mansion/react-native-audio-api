@@ -119,7 +119,7 @@ export interface TGainOptions extends TAudioNodeOptions {
   gain?: number;
 }
 
-export interface TSteroPannerOptions extends TAudioNodeOptions {
+export interface TStereoPannerOptions extends TAudioNodeOptions {
   pan?: number;
 }
 
