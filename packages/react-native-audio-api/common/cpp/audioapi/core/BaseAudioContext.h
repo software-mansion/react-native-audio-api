@@ -111,11 +111,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] bool isSuspended() const;
   [[nodiscard]] bool isClosed() const;
 
- protected:
-  friend class BaseAudioContextHostObject;
-
   virtual void initialize();
 
+ protected:
   std::shared_ptr<AudioDestinationNode> destination_;
   float sampleRate_;
   ContextState state_ = ContextState::SUSPENDED;

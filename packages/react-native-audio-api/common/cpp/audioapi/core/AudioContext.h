@@ -26,7 +26,6 @@ class AudioContext : public BaseAudioContext {
   bool suspend();
   bool start();
 
- protected:
   void initialize() override;
 
  private:
