@@ -24,7 +24,7 @@ if [ ! -f "$KOTLIN_FILE" ]; then
 fi
 
 # Extract enum values from C++ file (lines between typedef enum { and } AudioEvent;)
-CPP_ENUMS=$(sed -n '/typedef enum {/,/} AudioEvent;/p' "$CPP_FILE" | \
+CPP_ENUMS=$(sed -n '/enum class AudioEvent {/,/};/p' "$CPP_FILE" | \
   grep -E '^\s*[A-Z_]+' | \
   sed 's/,//g' | \
   sed 's/^[[:space:]]*//' | \
