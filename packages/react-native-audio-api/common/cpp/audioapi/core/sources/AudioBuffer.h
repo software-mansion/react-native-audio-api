@@ -17,6 +17,12 @@ class AudioBuffer {
   explicit AudioBuffer(const AudioBufferOptions &options);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);
 
+  AudioBuffer(const AudioBuffer& other);
+  AudioBuffer& operator=(const AudioBuffer& other);
+
+  AudioBuffer(AudioBuffer&& other) noexcept;
+  AudioBuffer& operator=(AudioBuffer&& other) noexcept;
+
   [[nodiscard]] size_t getLength() const;
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getDuration() const;

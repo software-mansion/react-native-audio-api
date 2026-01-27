@@ -16,6 +16,26 @@ AudioBuffer::AudioBuffer(std::shared_ptr<AudioBus> bus) {
   bus_ = std::move(bus);
 }
 
+AudioBuffer::AudioBuffer(const audioapi::AudioBuffer &other): bus_{std::make_shared<AudioBus>(*other.bus_)} {}
+
+AudioBuffer &AudioBuffer::operator=(const audioapi::AudioBuffer &other) {
+    if (this != &other) {
+        bus_ = std::make_shared<AudioBus>(*other.bus_);
+    }
+
+    return *this;
+}
+
+AudioBuffer::AudioBuffer(audioapi::AudioBuffer &&other) noexcept: bus_{std::move(other.bus_)} {}
+
+AudioBuffer &AudioBuffer::operator=(audioapi::AudioBuffer &&other) noexcept {
+    if (this != &other) {
+        bus_ = std::move(other.bus_);
+    }
+
+    return *this;
+}
+
 size_t AudioBuffer::getLength() const {
   return bus_->getSize();
 }
