@@ -2,7 +2,7 @@
 
 namespace audioapi {
 
-typedef enum {
+enum class AudioEvent {
   PLAYBACK_NOTIFICATION_PLAY,
   PLAYBACK_NOTIFICATION_PAUSE,
   PLAYBACK_NOTIFICATION_STOP,
@@ -26,5 +26,5 @@ typedef enum {
   POSITION_CHANGED,
   BUFFER_ENDED,
   RECORDER_ERROR,
-} AudioEvent;
+};
 } // namespace audioapi
