@@ -108,7 +108,7 @@ class AudioAPIModule(
     mode: String?,
     options: ReadableArray?,
     allowHaptics: Boolean,
-    notifyOthersOnDeactivation: Boolean
+    notifyOthersOnDeactivation: Boolean,
   ) {
     // noting to do here
   }
