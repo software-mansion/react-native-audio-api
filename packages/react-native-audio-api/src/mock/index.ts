@@ -482,6 +482,9 @@ export class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   get streamPath(): string {
     return this._streamPath;
   }
+
+  pause(): void {}
+  resume(): void {}
 }
 
 export class WorkletNodeMock extends AudioNodeMock {
@@ -546,7 +549,7 @@ export class BaseAudioContextMock {
   public destination: AudioDestinationNodeMock;
   private _sampleRate: number = 44100;
   private _currentTime: number = 0;
-  private _state: ContextState = 'running';
+  protected _state: ContextState = 'running';
 
   constructor(options?: AudioContextOptions) {
     this.destination = new AudioDestinationNodeMock(this);
@@ -689,14 +692,17 @@ export class AudioContextMock extends BaseAudioContextMock {
   }
 
   close(): Promise<void> {
+    this._state = 'closed';
     return Promise.resolve();
   }
 
   resume(): Promise<void> {
+    this._state = 'running';
     return Promise.resolve();
   }
 
   suspend(): Promise<void> {
+    this._state = 'suspended';
     return Promise.resolve();
   }
 }
