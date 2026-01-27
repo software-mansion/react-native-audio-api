@@ -36,7 +36,8 @@ class AudioManager implements IAudioManager {
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? [],
-      options.iosAllowHaptics ?? false
+      options.iosAllowHaptics ?? false,
+      options.iosNotifyOthersOnDeactivation ?? true
     );
   }
 

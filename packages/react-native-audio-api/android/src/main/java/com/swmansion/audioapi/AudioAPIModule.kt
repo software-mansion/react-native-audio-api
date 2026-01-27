@@ -1,6 +1,8 @@
 package com.swmansion.audioapi
 
 import android.media.AudioManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Arguments
@@ -41,7 +43,7 @@ class AudioAPIModule(
   private external fun injectJSIBindings()
 
   external fun invokeHandlerWithEventNameAndEventBody(
-    eventName: String,
+    eventOrdinal: Int,
     eventBody: Map<String, Any>,
   )
 
@@ -108,6 +110,7 @@ class AudioAPIModule(
     mode: String?,
     options: ReadableArray?,
     allowHaptics: Boolean,
+    notifyOthersOnDeactivation: Boolean,
   ) {
     // noting to do here
   }
@@ -159,6 +162,7 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.checkNotificationPermissions())
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   override fun getDevicesInfo(promise: Promise) {
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.AudioEvent
 
 /**
  * Broadcast receiver for handling playback notification dismissal.
@@ -25,14 +26,18 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
     context: Context?,
     intent: Intent?,
   ) {
-    if (intent?.action == ACTION_NOTIFICATION_DISMISSED) {
-      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationDismissed", mapOf())
-    } else if (intent?.action == ACTION_SKIP_FORWARD) {
-      val body = HashMap<String, Any>().apply { put("value", 15) }
-      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipForward", body)
-    } else if (intent?.action == ACTION_SKIP_BACKWARD) {
-      val body = HashMap<String, Any>().apply { put("value", 15) }
-      audioAPIModule?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipBackward", body)
+    when (intent?.action) {
+      ACTION_NOTIFICATION_DISMISSED -> {
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_DISMISSED.ordinal, mapOf())
+      }
+      ACTION_SKIP_FORWARD -> {
+        val body = HashMap<String, Any>().apply { put("value", 15) }
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
+      }
+      ACTION_SKIP_BACKWARD -> {
+        val body = HashMap<String, Any>().apply { put("value", 15) }
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
+      }
     }
   }
 }

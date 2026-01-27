@@ -28,22 +28,7 @@ export interface OnRecorderErrorEventType {
   message: string;
 }
 
-interface RemoteCommandEvents {
-  remotePlay: EventEmptyType;
-  remotePause: EventEmptyType;
-  remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType;
-  remoteChangePlaybackRate: EventTypeWithValue;
-  remoteNextTrack: EventEmptyType;
-  remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventTypeWithValue;
-  remoteSkipBackward: EventTypeWithValue;
-  remoteSeekForward: EventEmptyType;
-  remoteSeekBackward: EventEmptyType;
-  remoteChangePlaybackPosition: EventTypeWithValue;
-}
-
-type SystemEvents = RemoteCommandEvents & {
+type SystemEvents = {
   volumeChange: EventTypeWithValue;
   interruption: OnInterruptionEventType;
   duck: EventEmptyType;
@@ -85,8 +70,6 @@ interface AudioAPIEvents {
   audioReady: OnAudioReadyEventType;
   positionChanged: EventTypeWithValue;
   bufferEnded: OnBufferEndEventType;
-  audioError: EventEmptyType; // to change
-  systemStateChanged: EventEmptyType; // to change
   recorderError: OnRecorderErrorEventType;
 }
 

@@ -64,7 +64,7 @@ void AudioAPIModule::injectJSIBindings() {
 }
 
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
-    jni::alias_ref<jni::JString> eventName,
+    jint eventOrdinal,
     jni::alias_ref<jni::JMap<jstring, jobject>> eventBody) {
   std::unordered_map<std::string, EventValue> body = {};
 
@@ -92,7 +92,8 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
   }
 
   if (audioEventHandlerRegistry_ != nullptr) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(eventName->toStdString(), body);
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        static_cast<audioapi::AudioEvent>(eventOrdinal), body);
   }
 }
 } // namespace audioapi

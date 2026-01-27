@@ -19,6 +19,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.R
+import com.swmansion.audioapi.system.AudioEvent
 import java.io.IOException
 import java.lang.ref.WeakReference
 import java.net.URL
@@ -78,34 +79,38 @@ class PlaybackNotification(
     mediaSession?.setCallback(
       object : MediaSessionCompat.Callback() {
         override fun onPlay() {
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPlay", mapOf())
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_PLAY.ordinal, mapOf())
         }
 
         override fun onPause() {
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPause", mapOf())
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_PAUSE.ordinal, mapOf())
+        }
+
+        override fun onStop() {
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_STOP.ordinal, mapOf())
         }
 
         override fun onSkipToNext() {
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationNext", mapOf())
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_NEXT_TRACK.ordinal, mapOf())
         }
 
         override fun onSkipToPrevious() {
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationPrevious", mapOf())
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_PREVIOUS_TRACK.ordinal, mapOf())
         }
 
         override fun onFastForward() {
           val body = HashMap<String, Any>().apply { put("value", 15) }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipForward", body)
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
         }
 
         override fun onRewind() {
           val body = HashMap<String, Any>().apply { put("value", 15) }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSkipBackward", body)
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
         }
 
         override fun onSeekTo(pos: Long) {
           val body = HashMap<String, Any>().apply { put("value", pos / 1000.0) }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("playbackNotificationSeekTo", body)
+          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SEEK_TO.ordinal, body)
         }
 
         override fun onCustomAction(
@@ -292,15 +297,14 @@ class PlaybackNotification(
     if (name == null) return
     var controlValue = 0L
     when (name) {
-      "play", "remotePlay" -> controlValue = PlaybackStateCompat.ACTION_PLAY
-      "pause", "remotePause" -> controlValue = PlaybackStateCompat.ACTION_PAUSE
-      "stop", "remoteStop" -> controlValue = PlaybackStateCompat.ACTION_STOP
-      "togglePlayPause", "remoteTogglePlayPause" -> controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE
-      "next", "remoteNextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-      "previous", "remotePreviousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-      "skipForward", "remoteSkipForward" -> controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD
-      "skipBackward", "remoteSkipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
-      "seekTo", "remoteChangePlaybackPosition" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
+      "play" -> controlValue = PlaybackStateCompat.ACTION_PLAY
+      "pause" -> controlValue = PlaybackStateCompat.ACTION_PAUSE
+      "stop" -> controlValue = PlaybackStateCompat.ACTION_STOP
+      "nextTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+      "previousTrack" -> controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+      "skipForward" -> controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD
+      "skipBackward" -> controlValue = PlaybackStateCompat.ACTION_REWIND
+      "seekTo" -> controlValue = PlaybackStateCompat.ACTION_SEEK_TO
     }
 
     controls =
@@ -366,7 +370,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
       notificationBuilder?.addAction(
-        createAction("previous", "Previous", android.R.drawable.ic_media_previous, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
+        createAction("previousTrack", "Previous track", android.R.drawable.ic_media_previous, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
       )
       actionsList.add(index++)
     }
@@ -382,6 +386,11 @@ class PlaybackNotification(
       if (hasControl(PlaybackStateCompat.ACTION_PAUSE)) {
         notificationBuilder?.addAction(
           createAction("pause", "Pause", android.R.drawable.ic_media_pause, PlaybackStateCompat.ACTION_PAUSE),
+        )
+        actionsList.add(index++)
+      } else if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
+        notificationBuilder?.addAction(
+          createAction("stop", "Stop", R.drawable.stop, PlaybackStateCompat.ACTION_STOP),
         )
         actionsList.add(index++)
       }
@@ -401,7 +410,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
       notificationBuilder?.addAction(
-        createAction("next", "Next", android.R.drawable.ic_media_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
+        createAction("nextTrack", "Next track", android.R.drawable.ic_media_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
       )
       actionsList.add(index++)
     }

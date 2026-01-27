@@ -431,7 +431,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       std::string message = "Android recorder error: " + streamResult.unwrap_err();
       std::unordered_map<std::string, EventValue> eventPayload{{"message", std::move(message)}};
       audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-          "recorderError", callbackId, eventPayload);
+          AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
       return;
     }
 

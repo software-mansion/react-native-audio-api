@@ -84,7 +84,7 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId_, body);
+        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId, body);
 
     onPositionChangedTime_ = 0;
   }

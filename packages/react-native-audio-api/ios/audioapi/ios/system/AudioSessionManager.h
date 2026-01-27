@@ -17,6 +17,7 @@
 @property (nonatomic, assign) AVAudioSessionCategory desiredCategory;
 @property (nonatomic, assign) AVAudioSessionCategoryOptions desiredOptions;
 @property (nonatomic, assign) bool allowHapticsAndSounds;
+@property (nonatomic, assign) bool notifyOthersOnDeactivation;
 
 - (instancetype)init;
 + (instancetype)sharedInstance;
@@ -26,7 +27,8 @@
 - (void)setAudioSessionOptions:(NSString *)category
                           mode:(NSString *)mode
                        options:(NSArray *)options
-                  allowHaptics:(BOOL)allowHaptics;
+                  allowHaptics:(BOOL)allowHaptics
+    notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation;
 
 - (bool)configureAudioSession;
 - (bool)setActive:(bool)active error:(NSError **)error;

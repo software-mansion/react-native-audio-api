@@ -76,7 +76,7 @@ void AudioRecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus,
   eventPayload.insert({"numFrames", numFrames});
 
   if (audioEventHandlerRegistry_) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", callbackId_, eventPayload);
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::AUDIO_READY, callbackId_, eventPayload);
   }
 }
 
@@ -98,7 +98,7 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
   }
 
   std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody("recorderError", callbackId, eventPayload);
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
 }
 
 } // namespace audioapi

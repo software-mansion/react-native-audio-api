@@ -152,7 +152,8 @@ RCT_EXPORT_METHOD(
 
 RCT_EXPORT_METHOD(
     setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics)
+        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
+            notifyOthersOnDeactivation)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -160,7 +161,8 @@ RCT_EXPORT_METHOD(
   [self.audioSessionManager setAudioSessionOptions:category
                                               mode:mode
                                            options:options
-                                      allowHaptics:allowHaptics];
+                                      allowHaptics:allowHaptics
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
@@ -280,10 +282,9 @@ RCT_EXPORT_METHOD(
 }
 #endif // RCT_NEW_ARCH_ENABLED
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody
+- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
+                         eventBody:(NSDictionary *)eventBody
 {
-  auto name = [eventName UTF8String];
-
   std::unordered_map<std::string, EventValue> body = {};
 
   for (NSString *key in eventBody) {
@@ -308,7 +309,7 @@ RCT_EXPORT_METHOD(
   }
 
   if (_eventHandler != nullptr) {
-    _eventHandler->invokeHandlerWithEventBody(name, body);
+    _eventHandler->invokeHandlerWithEventBody(eventName, body);
   }
 }
 

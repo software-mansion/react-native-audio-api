@@ -6,6 +6,7 @@
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/jsi/JsiUtils.h>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
@@ -41,7 +42,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  auto fileNameOverride = count > 0 ? args[0].getString(runtime).utf8(runtime) : "";
+  auto fileNameOverride = jsiutils::argToString(runtime, args, count, 0, "");
   auto result = audioRecorder_->start(fileNameOverride);
   auto jsResult = jsi::Object(runtime);
 

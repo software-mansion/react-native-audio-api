@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.swmansion.audioapi.AudioAPIModule
+import com.swmansion.audioapi.system.AudioEvent
 
 class RecordingNotificationReceiver(
   private val module: AudioAPIModule,
@@ -22,12 +23,12 @@ class RecordingNotificationReceiver(
     when (intent?.action) {
       NOTIFICATION_RECORDING_STOPPED -> {
         Log.d(TAG, "Recording stopped via notification")
-        module.invokeHandlerWithEventNameAndEventBody("recordingNotificationPause", mapOf())
+        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_PAUSE.ordinal, mapOf())
       }
 
       NOTIFICATION_RECORDING_RESUMED -> {
         Log.d(TAG, "Recording resumed via notification")
-        module.invokeHandlerWithEventNameAndEventBody("recordingNotificationResume", mapOf())
+        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_RESUME.ordinal, mapOf())
       }
     }
   }

@@ -128,7 +128,7 @@ void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId)
     auto oldCallbackId = onBufferEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
     if (oldCallbackId != 0) {
-        audioEventHandlerRegistry_->unregisterHandler("bufferEnded", oldCallbackId);
+        audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, oldCallbackId);
     }
 }
 
@@ -169,7 +169,7 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
                 {{"bufferId", std::to_string(bufferId)}, {"isLastBufferInQueue", isLastBufferInQueue}};
 
         audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-                "bufferEnded", onBufferEndedCallbackId, body);
+                AudioEvent::BUFFER_ENDED, onBufferEndedCallbackId, body);
     }
 }
 
