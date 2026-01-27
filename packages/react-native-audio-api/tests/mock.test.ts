@@ -1,7 +1,4 @@
-/**
- * Test suite for react-native-audio-api mocks
- * This validates that the mock implementations behave correctly
- */
+/* eslint-disable */
 
 import * as MockAPI from '../src/mock';
 
@@ -258,7 +255,7 @@ describe('React Native Audio API Mocks', () => {
   });
 
   describe('AudioRecorder', () => {
-    let recorder: MockAPI.AudioRecorder;
+    let recorder: MockAPI.AudioRecorderMock;
 
     beforeEach(() => {
       recorder = new MockAPI.AudioRecorder();

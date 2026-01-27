@@ -1,6 +1,4 @@
-/**
- * Integration tests demonstrating real-world usage scenarios of the mocks
- */
+/* eslint-disable */
 
 import * as MockAPI from '../src/mock';
 

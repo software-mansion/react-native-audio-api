@@ -1,11 +1,10 @@
-/**
- * Jest setup file for mock tests
- */
+// __tests__/setup.ts
+import type { IAudioEventEmitter } from '../src/interfaces';
 
 // Mock global objects that might be needed
 global.createAudioContext = jest.fn();
 global.createAudioRecorder = jest.fn();
-global.AudioEventEmitter = {};
+global.AudioEventEmitter = {} as IAudioEventEmitter;
 
 // Set up global test environment
 beforeAll(() => {
