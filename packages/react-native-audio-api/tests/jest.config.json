@@ -1,9 +1,9 @@
 {
   "preset": "react-native",
   "rootDir": "..",
-  "testMatch": ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.tsx"],
+  "testMatch": ["**/tests/**/*.test.ts", "**/tests/**/*.test.tsx"],
   "collectCoverageFrom": ["src/mock/**/*.{ts,tsx}", "!src/mock/**/*.d.ts"],
-  "coverageDirectory": "__tests__/coverage",
+  "coverageDirectory": "tests/coverage",
   "coverageReporters": ["text", "lcov", "html"],
-  "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.ts"]
+  "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
 }

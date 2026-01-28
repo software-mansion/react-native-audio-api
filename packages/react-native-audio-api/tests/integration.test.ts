@@ -86,7 +86,7 @@ describe('Mock Integration Tests', () => {
       // Stop recording
       const stopResult = recorder.stop();
       expect(stopResult.status).toBe('success');
-      expect(stopResult.path).toBeDefined();
+      expect((stopResult as { path?: string }).path).toBeDefined();
       expect(recorder.isRecording()).toBe(false);
     });
 

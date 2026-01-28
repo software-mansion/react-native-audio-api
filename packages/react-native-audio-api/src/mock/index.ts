@@ -11,6 +11,7 @@ import {
   FileDirectory,
   FileFormat,
   FileInfo,
+  FilePresetType,
   OfflineAudioContextOptions,
   OscillatorType,
   OverSampleType,
@@ -72,7 +73,7 @@ class MockAudioEventEmitter {
   }
 }
 
-export class AudioParamMock {
+class AudioParamMock {
   private _value: number = 0;
   public defaultValue: number = 0;
   public minValue: number = -3.4028235e38;
@@ -135,7 +136,7 @@ export class AudioParamMock {
   }
 }
 
-export class AudioBufferMock {
+class AudioBufferMock {
   public sampleRate: number;
   public length: number;
   public duration: number;
@@ -169,7 +170,7 @@ export class AudioBufferMock {
   ): void {}
 }
 
-export class AudioNodeMock {
+class AudioNodeMock {
   public context: BaseAudioContextMock;
   public numberOfInputs: number = 1;
   public numberOfOutputs: number = 1;
@@ -193,7 +194,7 @@ export class AudioNodeMock {
   public disconnect(_destination?: AudioNodeMock): void {}
 }
 
-export class AudioScheduledSourceNodeMock extends AudioNodeMock {
+class AudioScheduledSourceNodeMock extends AudioNodeMock {
   private _onended: ((event: Event) => void) | null = null;
 
   constructor(context: BaseAudioContextMock, node: unknown) {
@@ -212,7 +213,7 @@ export class AudioScheduledSourceNodeMock extends AudioNodeMock {
   }
 }
 
-export class AnalyserNodeMock extends AudioNodeMock {
+class AnalyserNodeMock extends AudioNodeMock {
   public fftSize: number = 2048;
   public frequencyBinCount: number = 1024;
   public minDecibels: number = -100;
@@ -229,7 +230,7 @@ export class AnalyserNodeMock extends AudioNodeMock {
   getFloatTimeDomainData(_array: Float32Array): void {}
 }
 
-export class GainNodeMock extends AudioNodeMock {
+class GainNodeMock extends AudioNodeMock {
   readonly gain: AudioParamMock;
 
   constructor(context: BaseAudioContextMock, _options?: TGainOptions) {
@@ -239,7 +240,7 @@ export class GainNodeMock extends AudioNodeMock {
   }
 }
 
-export class DelayNodeMock extends AudioNodeMock {
+class DelayNodeMock extends AudioNodeMock {
   readonly delayTime: AudioParamMock;
 
   constructor(context: BaseAudioContextMock, _options?: TDelayOptions) {
@@ -249,7 +250,7 @@ export class DelayNodeMock extends AudioNodeMock {
   }
 }
 
-export class BiquadFilterNodeMock extends AudioNodeMock {
+class BiquadFilterNodeMock extends AudioNodeMock {
   private _type: BiquadFilterType = 'lowpass';
   readonly frequency: AudioParamMock;
   readonly detune: AudioParamMock;
@@ -283,7 +284,7 @@ export class BiquadFilterNodeMock extends AudioNodeMock {
   ): void {}
 }
 
-export class ConvolverNodeMock extends AudioNodeMock {
+class ConvolverNodeMock extends AudioNodeMock {
   private _buffer: AudioBufferMock | null = null;
   public normalize: boolean = true;
 
@@ -300,7 +301,7 @@ export class ConvolverNodeMock extends AudioNodeMock {
   }
 }
 
-export class WaveShaperNodeMock extends AudioNodeMock {
+class WaveShaperNodeMock extends AudioNodeMock {
   private _curve: Float32Array | null = null;
   private _oversample: OverSampleType = 'none';
 
@@ -325,7 +326,7 @@ export class WaveShaperNodeMock extends AudioNodeMock {
   }
 }
 
-export class StereoPannerNodeMock extends AudioNodeMock {
+class StereoPannerNodeMock extends AudioNodeMock {
   readonly pan: AudioParamMock;
 
   constructor(context: BaseAudioContextMock, _options?: TStereoPannerOptions) {
@@ -334,7 +335,7 @@ export class StereoPannerNodeMock extends AudioNodeMock {
   }
 }
 
-export class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
+class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
   private _type: OscillatorType = 'sine';
   readonly frequency: AudioParamMock;
   readonly detune: AudioParamMock;
@@ -357,7 +358,7 @@ export class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
   public setPeriodicWave(_wave: PeriodicWaveMock): void {}
 }
 
-export class ConstantSourceNodeMock extends AudioScheduledSourceNodeMock {
+class ConstantSourceNodeMock extends AudioScheduledSourceNodeMock {
   readonly offset: AudioParamMock;
 
   constructor(
@@ -370,7 +371,7 @@ export class ConstantSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-export class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
+class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
   private _buffer: AudioBufferMock | null = null;
   private _loop: boolean = false;
   private _loopStart: number = 0;
@@ -419,7 +420,7 @@ export class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-export class RecorderAdapterNodeMock extends AudioNodeMock {
+class RecorderAdapterNodeMock extends AudioNodeMock {
   public wasConnected: boolean = false;
 
   constructor(context: BaseAudioContextMock) {
@@ -431,7 +432,7 @@ export class RecorderAdapterNodeMock extends AudioNodeMock {
   }
 }
 
-export class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
+class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   private _onBufferEnded: ((event: { bufferId: string }) => void) | null = null;
   private eventEmitter = new MockAudioEventEmitter();
 
@@ -459,7 +460,7 @@ export class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock
   }
 }
 
-export class StreamerNodeMock extends AudioScheduledSourceNodeMock {
+class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   private hasBeenSetup: boolean = false;
   private _streamPath: string = '';
 
@@ -487,7 +488,7 @@ export class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   resume(): void {}
 }
 
-export class WorkletNodeMock extends AudioNodeMock {
+class WorkletNodeMock extends AudioNodeMock {
   constructor(
     context: BaseAudioContextMock,
     _runtime: AudioWorkletRuntime,
@@ -499,7 +500,7 @@ export class WorkletNodeMock extends AudioNodeMock {
   }
 }
 
-export class WorkletProcessingNodeMock extends AudioNodeMock {
+class WorkletProcessingNodeMock extends AudioNodeMock {
   constructor(
     context: BaseAudioContextMock,
     _runtime: AudioWorkletRuntime,
@@ -514,7 +515,7 @@ export class WorkletProcessingNodeMock extends AudioNodeMock {
   }
 }
 
-export class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
+class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
   constructor(
     context: BaseAudioContextMock,
     _runtime: AudioWorkletRuntime,
@@ -529,14 +530,14 @@ export class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-export class PeriodicWaveMock {
+class PeriodicWaveMock {
   constructor(
     _context: BaseAudioContextMock,
     _options?: TPeriodicWaveOptions
   ) {}
 }
 
-export class AudioDestinationNodeMock extends AudioNodeMock {
+class AudioDestinationNodeMock extends AudioNodeMock {
   public maxChannelCount: number = 2;
 
   constructor(context: BaseAudioContextMock) {
@@ -545,7 +546,7 @@ export class AudioDestinationNodeMock extends AudioNodeMock {
   }
 }
 
-export class BaseAudioContextMock {
+class BaseAudioContextMock {
   public destination: AudioDestinationNodeMock;
   private _sampleRate: number = 44100;
   private _currentTime: number = 0;
@@ -686,7 +687,7 @@ export class BaseAudioContextMock {
   }
 }
 
-export class AudioContextMock extends BaseAudioContextMock {
+class AudioContextMock extends BaseAudioContextMock {
   constructor(options?: AudioContextOptions) {
     super(options);
   }
@@ -707,7 +708,7 @@ export class AudioContextMock extends BaseAudioContextMock {
   }
 }
 
-export class OfflineAudioContextMock extends BaseAudioContextMock {
+class OfflineAudioContextMock extends BaseAudioContextMock {
   public length: number;
 
   constructor(options: OfflineAudioContextOptions) {
@@ -726,7 +727,7 @@ export class OfflineAudioContextMock extends BaseAudioContextMock {
   }
 }
 
-export class AudioRecorderMock {
+class AudioRecorderMock {
   private _isRecording: boolean = false;
   private _isPaused: boolean = false;
   private _currentDuration: number = 0;
@@ -847,9 +848,7 @@ export class AudioRecorderMock {
   }
 }
 
-export const decodeAudioData = (
-  _audioData: ArrayBuffer
-): Promise<AudioBufferMock> => {
+const decodeAudioData = (_audioData: ArrayBuffer): Promise<AudioBufferMock> => {
   return Promise.resolve(
     new AudioBufferMock({
       numberOfChannels: 2,
@@ -859,9 +858,7 @@ export const decodeAudioData = (
   );
 };
 
-export const decodePCMInBase64 = (
-  _base64Data: string
-): Promise<AudioBufferMock> => {
+const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {
   return Promise.resolve(
     new AudioBufferMock({
       numberOfChannels: 2,
@@ -871,14 +868,14 @@ export const decodePCMInBase64 = (
   );
 };
 
-export const changePlaybackSpeed = (
+const changePlaybackSpeed = (
   buffer: AudioBufferMock,
   _speed: number
 ): Promise<AudioBufferMock> => {
   return Promise.resolve(buffer);
 };
 
-export class AudioManagerMock {
+class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
     return 44100;
   }
@@ -895,7 +892,7 @@ export class AudioManagerMock {
   static removeSystemEventListener(_listener: { remove: () => void }): void {}
 }
 
-export class NotificationManagerMock {
+class NotificationManagerMock {
   static create(_options: Record<string, unknown>): {
     update: () => void;
     destroy: () => void;
@@ -907,7 +904,7 @@ export class NotificationManagerMock {
   }
 }
 
-export class PlaybackNotificationManagerMock {
+class PlaybackNotificationManagerMock {
   static create(_options: Record<string, unknown>): {
     update: () => void;
     destroy: () => void;
@@ -919,7 +916,7 @@ export class PlaybackNotificationManagerMock {
   }
 }
 
-export class RecordingNotificationManagerMock {
+class RecordingNotificationManagerMock {
   static create(_options: Record<string, unknown>): {
     update: () => void;
     destroy: () => void;
@@ -932,71 +929,72 @@ export class RecordingNotificationManagerMock {
 }
 
 let mockSystemVolumeValue = 0.5;
-export const useSystemVolume = (): number => mockSystemVolumeValue;
-export const setMockSystemVolume = (volume: number): void => {
+const useSystemVolume = (): number => mockSystemVolumeValue;
+const setMockSystemVolume = (volume: number): void => {
   mockSystemVolumeValue = volume;
 };
 
-export class FilePresetMock {
-  static get Low(): Record<string, unknown> {
-    return {};
+class FilePresetMock {
+  static get Low(): FilePresetType {
+    return {} as FilePresetType;
   }
 
-  static get Medium(): Record<string, unknown> {
-    return {};
+  static get Medium(): FilePresetType {
+    return {} as FilePresetType;
   }
 
-  static get High(): Record<string, unknown> {
-    return {};
+  static get High(): FilePresetType {
+    return {} as FilePresetType;
   }
 
-  static get Lossless(): Record<string, unknown> {
-    return {};
+  static get Lossless(): FilePresetType {
+    return {} as FilePresetType;
   }
 }
 
-export class NotSupportedErrorMock extends Error {
+class NotSupportedErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'NotSupportedError';
   }
 }
 
-export class InvalidAccessErrorMock extends Error {
+class InvalidAccessErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidAccessError';
   }
 }
 
-export class InvalidStateErrorMock extends Error {
+class InvalidStateErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidStateError';
   }
 }
 
-export class IndexSizeErrorMock extends Error {
+class IndexSizeErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'IndexSizeError';
   }
 }
 
-export class RangeErrorMock extends Error {
+class RangeErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'RangeError';
   }
 }
 
-export class AudioApiErrorMock extends Error {
+class AudioApiErrorMock extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'AudioApiError';
   }
 }
 
+// Export classes with original API names (for compatibility)
 export const AnalyserNode = AnalyserNodeMock;
 export const AudioBuffer = AudioBufferMock;
 export const AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
@@ -1038,7 +1036,76 @@ export const IndexSizeError = IndexSizeErrorMock;
 export const RangeError = RangeErrorMock;
 export const AudioApiError = AudioApiErrorMock;
 
-export { FileDirectory, FileFormat };
+// Export functions
+export {
+  changePlaybackSpeed,
+  decodeAudioData,
+  decodePCMInBase64,
+  setMockSystemVolume,
+  useSystemVolume,
+};
+
+// Type exports to allow using classes as types
+export type AnalyserNode = AnalyserNodeMock;
+export type AudioBuffer = AudioBufferMock;
+export type AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
+export type AudioBufferSourceNode = AudioBufferSourceNodeMock;
+export type AudioContext = AudioContextMock;
+export type AudioDestinationNode = AudioDestinationNodeMock;
+export type AudioNode = AudioNodeMock;
+export type AudioParam = AudioParamMock;
+export type AudioRecorder = AudioRecorderMock;
+export type AudioScheduledSourceNode = AudioScheduledSourceNodeMock;
+export type BaseAudioContext = BaseAudioContextMock;
+export type BiquadFilterNode = BiquadFilterNodeMock;
+export type ConstantSourceNode = ConstantSourceNodeMock;
+export type ConvolverNode = ConvolverNodeMock;
+export type DelayNode = DelayNodeMock;
+export type GainNode = GainNodeMock;
+export type OfflineAudioContext = OfflineAudioContextMock;
+export type OscillatorNode = OscillatorNodeMock;
+export type RecorderAdapterNode = RecorderAdapterNodeMock;
+export type StereoPannerNode = StereoPannerNodeMock;
+export type StreamerNode = StreamerNodeMock;
+export type WaveShaperNode = WaveShaperNodeMock;
+export type WorkletNode = WorkletNodeMock;
+export type WorkletProcessingNode = WorkletProcessingNodeMock;
+export type WorkletSourceNode = WorkletSourceNodeMock;
+export type PeriodicWave = PeriodicWaveMock;
+
+// Export types and enums
+export {
+  AudioContextOptions,
+  AudioRecorderCallbackOptions,
+  AudioRecorderFileOptions,
+  AudioRecorderStartOptions,
+  AudioWorkletRuntime,
+  BiquadFilterType,
+  ChannelCountMode,
+  ChannelInterpretation,
+  ContextState,
+  FileDirectory,
+  FileFormat,
+  FileInfo,
+  FilePresetType,
+  OfflineAudioContextOptions,
+  OscillatorType,
+  OverSampleType,
+  Result,
+  TAnalyserOptions,
+  TAudioBufferSourceOptions,
+  TBaseAudioBufferSourceOptions,
+  TBiquadFilterOptions,
+  TConstantSourceOptions,
+  TConvolverOptions,
+  TDelayOptions,
+  TGainOptions,
+  TOscillatorOptions,
+  TPeriodicWaveOptions,
+  TStereoPannerOptions,
+  TStreamerOptions,
+  TWaveShaperOptions,
+};
 
 export default {
   AnalyserNode: AnalyserNodeMock,
@@ -1046,14 +1113,11 @@ export default {
   AudioBufferQueueSourceNode: AudioBufferQueueSourceNodeMock,
   AudioBufferSourceNode: AudioBufferSourceNodeMock,
   AudioContext: AudioContextMock,
-  decodeAudioData,
-  decodePCMInBase64,
   AudioDestinationNode: AudioDestinationNodeMock,
   AudioNode: AudioNodeMock,
   AudioParam: AudioParamMock,
   AudioRecorder: AudioRecorderMock,
   AudioScheduledSourceNode: AudioScheduledSourceNodeMock,
-  changePlaybackSpeed,
   BaseAudioContext: BaseAudioContextMock,
   BiquadFilterNode: BiquadFilterNodeMock,
   ConstantSourceNode: ConstantSourceNodeMock,
@@ -1070,19 +1134,32 @@ export default {
   WorkletProcessingNode: WorkletProcessingNodeMock,
   WorkletSourceNode: WorkletSourceNodeMock,
   PeriodicWave: PeriodicWaveMock,
+
+  // Functions
+  decodeAudioData,
+  decodePCMInBase64,
+  changePlaybackSpeed,
   useSystemVolume,
   setMockSystemVolume,
+
+  // System classes
   AudioManager: AudioManagerMock,
   NotificationManager: NotificationManagerMock,
   PlaybackNotificationManager: PlaybackNotificationManagerMock,
   RecordingNotificationManager: RecordingNotificationManagerMock,
+
+  // Utils
   FilePreset: FilePresetMock,
+
+  // Errors
   NotSupportedError: NotSupportedErrorMock,
   InvalidAccessError: InvalidAccessErrorMock,
   InvalidStateError: InvalidStateErrorMock,
   IndexSizeError: IndexSizeErrorMock,
   RangeError: RangeErrorMock,
   AudioApiError: AudioApiErrorMock,
+
+  // Enums
   FileDirectory,
   FileFormat,
 };

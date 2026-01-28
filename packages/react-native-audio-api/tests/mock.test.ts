@@ -255,7 +255,7 @@ describe('React Native Audio API Mocks', () => {
   });
 
   describe('AudioRecorder', () => {
-    let recorder: MockAPI.AudioRecorderMock;
+    let recorder: MockAPI.AudioRecorder;
 
     beforeEach(() => {
       recorder = new MockAPI.AudioRecorder();
@@ -275,7 +275,7 @@ describe('React Native Audio API Mocks', () => {
       });
 
       expect(result.status).toBe('success');
-      expect(result.path).toBeDefined();
+      expect((result as { path?: string }).path).toBeDefined();
       expect(recorder.options).toBeDefined();
     });
 
@@ -294,7 +294,7 @@ describe('React Native Audio API Mocks', () => {
 
       const stopResult = recorder.stop();
       expect(stopResult.status).toBe('success');
-      expect(stopResult.path).toBeDefined();
+      expect((stopResult as { path?: string }).path).toBeDefined();
       expect(recorder.isRecording()).toBe(false);
     });
 
