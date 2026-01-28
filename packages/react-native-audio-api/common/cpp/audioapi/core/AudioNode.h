@@ -58,7 +58,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   }
 
  protected:
-  friend class AudioNodeManager;
+  friend class AudioGraphManager;
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;

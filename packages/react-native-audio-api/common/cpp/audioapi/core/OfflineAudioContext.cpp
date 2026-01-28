@@ -3,7 +3,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.h>
@@ -31,7 +31,7 @@ OfflineAudioContext::OfflineAudioContext(
       resultBus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
-  nodeManager_->cleanup();
+  getAudioGraphManager()->cleanup();
 }
 
 void OfflineAudioContext::resume() {

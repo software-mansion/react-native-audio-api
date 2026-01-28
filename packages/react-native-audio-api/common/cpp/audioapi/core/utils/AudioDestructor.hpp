@@ -41,8 +41,8 @@ class AudioDestructor {
   /// @brief Adds an audio object to the deconstruction queue.
   /// @param object The audio object to be deconstructed.
   /// @return True if the node was successfully added, false otherwise.
-  /// @note node does NOT get moved out if it is not successfully added.
-  bool tryAddNodeForDeconstruction(std::shared_ptr<T> &&object) {
+  /// @note audio object does NOT get moved out if it is not successfully added.
+  bool tryAddForDeconstruction(std::shared_ptr<T> &&object) {
     return sender_.try_send(std::move(object)) == channels::spsc::ResponseStatus::SUCCESS;
   }
 

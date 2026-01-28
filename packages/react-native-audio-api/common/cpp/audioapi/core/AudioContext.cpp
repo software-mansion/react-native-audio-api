@@ -6,7 +6,7 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <memory>
 #include <string>
 
@@ -16,7 +16,7 @@ AudioContext::AudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
-    isInitialized_(false) {}
+      isInitialized_(false) {}
 
 AudioContext::~AudioContext() {
   if (!isClosed()) {
@@ -40,7 +40,7 @@ void AudioContext::close() {
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-  nodeManager_->cleanup();
+  getAudioGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {
@@ -81,9 +81,9 @@ bool AudioContext::start() {
   }
 
   if (!isInitialized_ && audioPlayer_->start()) {
-      isInitialized_ = true;
-      state_.store(ContextState::RUNNING, std::memory_order_release);
-      return true;
+    isInitialized_ = true;
+    state_.store(ContextState::RUNNING, std::memory_order_release);
+    return true;
   }
 
   return false;

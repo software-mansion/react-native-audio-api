@@ -8,6 +8,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <algorithm>
 #include <memory>
 

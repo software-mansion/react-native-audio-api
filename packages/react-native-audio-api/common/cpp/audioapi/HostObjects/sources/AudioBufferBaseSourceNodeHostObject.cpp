@@ -80,7 +80,7 @@ void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_
         sourceNode->setOnPositionChangedCallbackId(callbackId);
     };
 
-    sourceNode->unregisterOnPositionChangedCallback(callbackId);
+    sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
     sourceNode->scheduleAudioEvent(std::move(event));
     onPositionChangedCallbackId_ = callbackId;
 }

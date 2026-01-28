@@ -2,7 +2,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <memory>
@@ -53,36 +53,36 @@ ChannelInterpretation AudioNode::getChannelInterpretation() const {
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+    context->getAudioGraphManager()->addPendingNodeConnection(
+            shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+    context->getAudioGraphManager()->addPendingParamConnection(
+            shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::disconnect() {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+    context->getAudioGraphManager()->addPendingNodeConnection(
+            shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+    context->getAudioGraphManager()->addPendingNodeConnection(
+            shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+    context->getAudioGraphManager()->addPendingParamConnection(
+            shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 

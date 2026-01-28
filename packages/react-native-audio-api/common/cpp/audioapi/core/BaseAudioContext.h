@@ -25,7 +25,7 @@ class PeriodicWave;
 class OscillatorNode;
 class ConstantSourceNode;
 class StereoPannerNode;
-class AudioNodeManager;
+class AudioGraphManager;
 class BiquadFilterNode;
 class IIRFilterNode;
 class AudioDestinationNode;
@@ -101,14 +101,15 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
-      int length);
+      int length) const;
   std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
   std::shared_ptr<ConvolverNode> createConvolver(const ConvolverOptions &options);
   std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;
-  AudioNodeManager *getNodeManager();
+  std::shared_ptr<AudioGraphManager> getAudioGraphManager() const;
+  std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
 
   [[nodiscard]] bool isRunning() const;
   [[nodiscard]] bool isSuspended() const;
@@ -131,11 +132,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   virtual void initialize();
 
+  RuntimeRegistry runtimeRegistry_;
+
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
   std::atomic<float> sampleRate_;
   std::atomic<ContextState> state_;
-  std::shared_ptr<AudioNodeManager> nodeManager_;
+  std::shared_ptr<AudioGraphManager> graphManager_;
 
  private:
   static constexpr int AUDIO_SCHEDULER_CAPACITY = 1024;
@@ -147,11 +150,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   std::unique_ptr<CrossThreadEventScheduler<BaseAudioContext>> audioEventScheduler_;
 
-  [[nodiscard]] virtual bool isDriverRunning() const = 0;
-
- public:
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  RuntimeRegistry runtimeRegistry_;
+
+  [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };
 
 } // namespace audioapi
