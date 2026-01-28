@@ -215,6 +215,7 @@ void AudioNodeManager::handleAddToDeconstructionEvent(std::unique_ptr<Event> eve
 }
 
 template <typename U>
+requires std::derived_from<U, AudioNode>
 inline bool AudioNodeManager::nodeCanBeDestructed(std::shared_ptr<U> const &node) {
   // If the node is an AudioScheduledSourceNode, we need to check if it is
   // playing
@@ -228,6 +229,7 @@ inline bool AudioNodeManager::nodeCanBeDestructed(std::shared_ptr<U> const &node
 }
 
 template <typename U>
+requires std::derived_from<U, AudioNode>
 void AudioNodeManager::prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec) {
   if (vec.empty()) {
     return;
@@ -274,7 +276,7 @@ void AudioNodeManager::prepareNodesForDestruction(std::vector<std::shared_ptr<U>
     }
   }
   if (begin < vec.size()) {
-    // it does not realocate if newer size is < current size
+    // it does not reallocate if newer size is < current size
     vec.resize(begin);
   }
 }

@@ -12,6 +12,8 @@ namespace audioapi {
 class AudioBus;
 struct AudioBufferOptions;
 
+/// AudioBuffer is not thread-safe.
+/// Due to that fact it should be copied when passing between threads.
 class AudioBuffer {
  public:
   explicit AudioBuffer(const AudioBufferOptions &options);

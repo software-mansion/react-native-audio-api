@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/AudioNodeDestructor.h>
+#include <audioapi/core/utils/AudioDestructor.hpp>
 
 #include <memory>
 #include <mutex>
@@ -97,7 +97,7 @@ class AudioNodeManager {
   void cleanup();
 
  private:
-  AudioNodeDestructor nodeDeconstructor_;
+  AudioDestructor<AudioNode> nodeDeconstructor_;
 
   /// @brief Initial capacity for various node types for deletion
   /// @note Higher capacity decreases number of reallocations at runtime (can be easily adjusted to 128 if needed)
@@ -122,9 +122,11 @@ class AudioNodeManager {
   void handleAddToDeconstructionEvent(std::unique_ptr<Event> event);
 
   template <typename U>
+    requires std::derived_from<U, AudioNode>
   void prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec);
 
   template <typename U>
+    requires std::derived_from<U, AudioNode>
   inline static bool nodeCanBeDestructed(std::shared_ptr<U> const &node);
 };
 

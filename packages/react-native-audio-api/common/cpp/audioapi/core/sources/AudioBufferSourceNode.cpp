@@ -66,7 +66,7 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
 
   if (pitchCorrection_) {
     int extraTailFrames =
-        static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
+        static_cast<int>((getInputLatency() + getOutputLatency()) * buffer->getSampleRate());
     size_t totalSize = buffer->getLength() + extraTailFrames;
 
     alignedBus_ = std::make_shared<AudioBus>(totalSize, channelCount_, buffer->getSampleRate());
