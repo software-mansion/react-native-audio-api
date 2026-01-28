@@ -25,7 +25,7 @@ class AudioParam {
 
   /// @note Can be invoked from any thread
   [[nodiscard]] inline float getValue() const noexcept {
-    return value_.load(std::memory_order_relaxed);
+    return value_.load(std::memory_order_acquire);
   }
 
   [[nodiscard]] inline float getDefaultValue() const noexcept {
@@ -41,7 +41,7 @@ class AudioParam {
   }
 
   inline void setValue(float value) {
-    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_relaxed);
+    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
   void setValueAtTime(float value, double startTime);

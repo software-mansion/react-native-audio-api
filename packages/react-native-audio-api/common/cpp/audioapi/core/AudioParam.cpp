@@ -28,7 +28,7 @@ AudioParam::AudioParam(
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
-    return value_.load(std::memory_order_relaxed);
+    return value_.load(std::memory_order_acquire);
   };
 }
 
@@ -42,12 +42,13 @@ float AudioParam::getValueAtTime(double time) {
     endTime_ = event.getEndTime();
     startValue_ = event.getStartValue();
     endValue_ = event.getEndValue();
-    calculateValue_ = std::move(event.getCalculateValue());
+    calculateValue_ = event.getCalculateValue();
   }
 
   // Calculate value using the current automation function and clamp to valid
-  setValue(calculateValue_(startTime_, endTime_, startValue_, endValue_, time));
-  return value_.load(std::memory_order_relaxed);
+  auto value = calculateValue_(startTime_, endTime_, startValue_, endValue_, time);
+  setValue(value);
+  return value;
 }
 
 void AudioParam::setValueAtTime(float value, double startTime) {

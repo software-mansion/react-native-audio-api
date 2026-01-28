@@ -69,11 +69,11 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
-    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
-        param->exponentialRampToValueAtTime(value, endTime);
-    };
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
+    param->exponentialRampToValueAtTime(value, endTime);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
