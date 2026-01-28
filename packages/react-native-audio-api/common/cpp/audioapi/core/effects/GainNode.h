@@ -8,11 +8,11 @@
 namespace audioapi {
 
 class AudioBus;
-class GainOptions;
+struct GainOptions;
 
 class GainNode : public AudioNode {
  public:
-  explicit GainNode(std::shared_ptr<BaseAudioContext> context, const GainOptions &options);
+  explicit GainNode(const std::shared_ptr<BaseAudioContext> &context, const GainOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 

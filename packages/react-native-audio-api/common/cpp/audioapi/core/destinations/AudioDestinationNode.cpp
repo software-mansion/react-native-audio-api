@@ -7,7 +7,7 @@
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(std::shared_ptr<BaseAudioContext> context)
+AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
     : AudioNode(context), currentSampleFrame_(0) {
   numberOfOutputs_ = 0;
   numberOfInputs_ = 1;

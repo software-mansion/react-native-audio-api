@@ -112,6 +112,12 @@ const config = {
       appId: '7OKARNAQRP',
       apiKey: 'f06db3d3f64e619012f52f9fb3edf349',
       indexName: 'swmansion',
+      askAi: {
+        assistantId: 'Gy3lkaKLUCko',
+        indexName: 'audio-api-ai',
+        apiKey: 'f06db3d3f64e619012f52f9fb3edf349',
+        appId: '7OKARNAQRP',
+      },
     },
   },
     clientModules: [

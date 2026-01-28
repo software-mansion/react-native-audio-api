@@ -69,7 +69,6 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          std::shared_ptr<AudioContext> audioContext;
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
@@ -80,12 +79,8 @@ class AudioAPIModuleInstaller {
           auto runtimeRegistry = RuntimeRegistry{};
 #endif
 
-          audioContext = std::make_shared<AudioContext>(
-              sampleRate, audioEventHandlerRegistry, runtimeRegistry);
-          audioContext->initialize();
-
-          auto audioContextHostObject =
-              std::make_shared<AudioContextHostObject>(audioContext, &runtime, jsCallInvoker);
+          auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
+              sampleRate, audioEventHandlerRegistry, runtimeRegistry, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -117,12 +112,14 @@ class AudioAPIModuleInstaller {
           auto runtimeRegistry = RuntimeRegistry{};
 #endif
 
-          auto offlineAudioContext = std::make_shared<OfflineAudioContext>(
-              numberOfChannels, length, sampleRate, audioEventHandlerRegistry, runtimeRegistry);
-          offlineAudioContext->initialize();
-
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
-              offlineAudioContext, &runtime, jsCallInvoker);
+              numberOfChannels,
+              length,
+              sampleRate,
+              audioEventHandlerRegistry,
+              runtimeRegistry,
+              &runtime,
+              jsCallInvoker);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });

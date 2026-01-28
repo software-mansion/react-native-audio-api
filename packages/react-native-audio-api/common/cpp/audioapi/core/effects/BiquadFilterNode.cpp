@@ -39,7 +39,7 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(std::shared_ptr<BaseAudioContext> context, const BiquadFilterOptions &options) : AudioNode(context, options) {
+BiquadFilterNode::BiquadFilterNode(const std::shared_ptr<BaseAudioContext>& context, const BiquadFilterOptions &options) : AudioNode(context, options) {
   frequencyParam_ =
       std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
@@ -112,11 +112,11 @@ void BiquadFilterNode::getFrequencyResponse(
 #endif
 
   // Use double precision for later calculations
-  double b0 = static_cast<double>(b0_);
-  double b1 = static_cast<double>(b1_);
-  double b2 = static_cast<double>(b2_);
-  double a1 = static_cast<double>(a1_);
-  double a2 = static_cast<double>(a2_);
+  auto b0 = static_cast<double>(b0_);
+  auto b1 = static_cast<double>(b1_);
+  auto b2 = static_cast<double>(b2_);
+  auto a1 = static_cast<double>(a1_);
+  auto a2 = static_cast<double>(a2_);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (!context)

@@ -16,7 +16,7 @@ import { AudioManager } from 'react-native-audio-api';
 import { useEffect } from 'react';
 
 function App() {
-    // set AVAudioSession example options (iOS only)
+    // set AVAudioSession example options (iOS)
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
@@ -302,8 +302,8 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS only
-  currentOutputs: AudioDeviceList; // iOS only
+  currentInputs: AudioDeviceList; // iOS
+  currentOutputs: AudioDeviceList; // iOS
 }
 ```
 </details>

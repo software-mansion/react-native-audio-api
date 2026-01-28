@@ -10,7 +10,7 @@
 namespace audioapi {
 
 class AudioBus;
-class AudioBufferOptions;
+struct AudioBufferOptions;
 
 class AudioBuffer {
  public:

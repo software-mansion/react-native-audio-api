@@ -27,10 +27,8 @@ OfflineAudioContext::OfflineAudioContext(
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
       length_(length),
       numberOfChannels_(numberOfChannels),
-      currentSampleFrame_(0) {
-  resultBus_ =
-      std::make_shared<AudioBus>(static_cast<int>(length_), numberOfChannels_, sampleRate_);
-}
+      currentSampleFrame_(0),
+      resultBus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
   nodeManager_->cleanup();

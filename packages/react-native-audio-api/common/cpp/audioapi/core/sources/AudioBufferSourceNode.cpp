@@ -14,7 +14,7 @@
 namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const AudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
       loop_(options.loop),
@@ -78,8 +78,8 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
   }
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+  playbackRateBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   loopEnd_ = buffer->getDuration();
 }

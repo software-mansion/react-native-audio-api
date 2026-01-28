@@ -12,7 +12,7 @@
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context),
       pitchCorrection_(options.pitchCorrection),
@@ -76,7 +76,7 @@ double AudioBufferBaseSourceNode::getOutputLatency() const {
 }
 
 void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
-    audioEventHandlerRegistry_->unregisterHandler("positionChanged", callbackId);
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
@@ -84,7 +84,7 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId, body);
+        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
 
     onPositionChangedTime_ = 0;
   }
@@ -151,7 +151,13 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
   auto computedPlaybackRate =
       getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();

@@ -59,11 +59,13 @@ struct StreamingData {
 namespace audioapi {
 
 class AudioBus;
-class StreamerOptions;
+struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(std::shared_ptr<BaseAudioContext> context, const StreamerOptions &options);
+  explicit StreamerNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StreamerOptions &options);
   ~StreamerNode() override;
 
   /**

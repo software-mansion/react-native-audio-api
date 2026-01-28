@@ -10,11 +10,14 @@
 namespace audioapi {
 using namespace facebook;
 
-class OscillatorNode;
+struct OscillatorOptions;
+class BaseAudioContext;
 
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
-  explicit OscillatorNodeHostObject(const std::shared_ptr<OscillatorNode> &node);
+  explicit OscillatorNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const OscillatorOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

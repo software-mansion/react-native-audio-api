@@ -11,12 +11,12 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context) : context_(context) {
+AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context) : context_(context) {
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
-AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options)
+AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context, const AudioNodeOptions &options)
     : channelCount_(options.channelCount),
       context_(context),
       channelCountMode_(options.channelCountMode),

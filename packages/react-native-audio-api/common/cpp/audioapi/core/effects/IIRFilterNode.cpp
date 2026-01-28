@@ -36,10 +36,12 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(std::shared_ptr<BaseAudioContext> context, const IIRFilterOptions &options)
+IIRFilterNode::IIRFilterNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const IIRFilterOptions &options)
     : AudioNode(context, options),
-    feedforward_(std::move(options.feedforward)),
-    feedback_(std::move(options.feedback)) {
+      feedforward_(std::move(options.feedforward)),
+      feedback_(std::move(options.feedback)) {
 
   int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);

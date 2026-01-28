@@ -1,11 +1,15 @@
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <memory>
 
 namespace audioapi {
 
-IIRFilterNodeHostObject::IIRFilterNodeHostObject(const std::shared_ptr<IIRFilterNode> &node)
-    : AudioNodeHostObject(node) {
+IIRFilterNodeHostObject::IIRFilterNodeHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const IIRFilterOptions &options)
+    : AudioNodeHostObject(context->createIIRFilter(options)) {
 
   addFunctions(JSI_EXPORT_FUNCTION(IIRFilterNodeHostObject, getFrequencyResponse));
 }

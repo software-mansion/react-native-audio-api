@@ -41,20 +41,20 @@ class WorkletSourceNode;
 class WorkletNode;
 class WorkletProcessingNode;
 class StreamerNode;
-class GainOptions;
-class StereoPannerOptions;
-class ConvolverOptions;
-class ConstantSourceOptions;
-class AnalyserOptions;
-class BiquadFilterOptions;
-class OscillatorOptions;
-class BaseAudioBufferSourceOptions;
-class AudioBufferSourceOptions;
-class StreamerOptions;
-class AudioBufferOptions;
-class DelayOptions;
-class IIRFilterOptions;
-class WaveShaperOptions;
+struct GainOptions;
+struct StereoPannerOptions;
+struct ConvolverOptions;
+struct ConstantSourceOptions;
+struct AnalyserOptions;
+struct BiquadFilterOptions;
+struct OscillatorOptions;
+struct BaseAudioBufferSourceOptions;
+struct AudioBufferSourceOptions;
+struct StreamerOptions;
+struct AudioBufferOptions;
+struct DelayOptions;
+struct IIRFilterOptions;
+struct WaveShaperOptions;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -64,9 +64,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
-  virtual void initialize();
-
-  std::string getState();
+  ContextState getState();
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
@@ -131,12 +129,12 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return audioEventScheduler_->scheduleEvent(std::forward<F>(event));
   }
 
- protected:
-  static std::string toString(ContextState state);
+  virtual void initialize();
 
+ protected:
   std::shared_ptr<AudioDestinationNode> destination_;
   float sampleRate_;
-  ContextState state_ = ContextState::RUNNING;
+  ContextState state_ = ContextState::SUSPENDED;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
  private:

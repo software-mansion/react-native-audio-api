@@ -9,11 +9,14 @@
 namespace audioapi {
 using namespace facebook;
 
-class StreamerNode;
+struct StreamerOptions;
+class BaseAudioContext;
 
 class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
-  explicit StreamerNodeHostObject(const std::shared_ptr<StreamerNode> &node);
+  explicit StreamerNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StreamerOptions &options);
 
   [[nodiscard]] static inline size_t getSizeInBytes() {
     return SIZE;

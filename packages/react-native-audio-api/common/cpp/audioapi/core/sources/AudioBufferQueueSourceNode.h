@@ -14,12 +14,12 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
-class BaseAudioBufferSourceOptions;
+struct BaseAudioBufferSourceOptions;
 
 class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
   explicit AudioBufferQueueSourceNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
   ~AudioBufferQueueSourceNode() override;
 

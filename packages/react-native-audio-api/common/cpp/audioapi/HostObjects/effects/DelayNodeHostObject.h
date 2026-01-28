@@ -8,12 +8,15 @@
 namespace audioapi {
 using namespace facebook;
 
-class DelayNode;
+struct DelayOptions;
+class BaseAudioContext;
 class AudioParamHostObject;
 
 class DelayNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit DelayNodeHostObject(const std::shared_ptr<DelayNode> &node);
+  explicit DelayNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const DelayOptions &options);
 
   [[nodiscard]] size_t getSizeInBytes() const;
 

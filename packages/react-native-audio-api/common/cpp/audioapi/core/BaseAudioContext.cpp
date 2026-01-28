@@ -49,16 +49,12 @@ void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 
-std::string BaseAudioContext::getState() {
-  if (isDriverRunning()) {
-    return BaseAudioContext::toString(state_);
+ContextState BaseAudioContext::getState() {
+  if (isDriverRunning() || state_ == ContextState::CLOSED) {
+    return state_;
   }
 
-  if (state_ == ContextState::CLOSED) {
-    return BaseAudioContext::toString(ContextState::CLOSED);
-  }
-
-  return BaseAudioContext::toString(ContextState::SUSPENDED);
+  return ContextState::SUSPENDED;
 }
 
 float BaseAudioContext::getSampleRate() const {
@@ -236,19 +232,6 @@ bool BaseAudioContext::isClosed() const {
 
 float BaseAudioContext::getNyquistFrequency() const {
   return sampleRate_ / 2.0f;
-}
-
-std::string BaseAudioContext::toString(ContextState state) {
-  switch (state) {
-    case ContextState::SUSPENDED:
-      return "suspended";
-    case ContextState::RUNNING:
-      return "running";
-    case ContextState::CLOSED:
-      return "closed";
-    default:
-      throw std::invalid_argument("Unknown context state");
-  }
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {

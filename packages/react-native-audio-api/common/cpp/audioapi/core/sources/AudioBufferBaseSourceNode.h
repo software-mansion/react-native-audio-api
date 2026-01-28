@@ -11,12 +11,12 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
-class BaseAudioBufferSourceOptions;
+struct BaseAudioBufferSourceOptions;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;

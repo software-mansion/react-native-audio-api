@@ -1,13 +1,15 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
-
-#include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/analysis/AnalyserNode.h>
+
 #include <memory>
 
 namespace audioapi {
 
-AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<AnalyserNode> &node)
-    : AudioNodeHostObject(node) {
+AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const AnalyserOptions &options)
+    : AudioNodeHostObject(context->createAnalyser(options)) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, frequencyBinCount),
