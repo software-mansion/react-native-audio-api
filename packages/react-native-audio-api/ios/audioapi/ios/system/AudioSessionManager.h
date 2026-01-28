@@ -49,8 +49,8 @@
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;
 - (void)setInputDevice:(NSString *)deviceId
-                resolve:(RCTPromiseResolveBlock)resolve
-                 reject:(RCTPromiseRejectBlock)reject;
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject;
 
 - (bool)isSessionActive;
 
