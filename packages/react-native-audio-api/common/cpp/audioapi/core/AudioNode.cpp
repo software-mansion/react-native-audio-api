@@ -17,8 +17,8 @@ AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context) : context
 }
 
 AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context, const AudioNodeOptions &options)
-    : channelCount_(options.channelCount),
-      context_(context),
+    : context_(context),
+      channelCount_(options.channelCount),
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation) {
   audioBus_ =
@@ -43,12 +43,12 @@ int AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-std::string AudioNode::getChannelCountMode() const {
-  return AudioNode::toString(channelCountMode_);
+ChannelCountMode AudioNode::getChannelCountMode() const {
+  return channelCountMode_;
 }
 
-std::string AudioNode::getChannelInterpretation() const {
-  return AudioNode::toString(channelInterpretation_);
+ChannelInterpretation AudioNode::getChannelInterpretation() const {
+  return channelInterpretation_;
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
@@ -115,30 +115,6 @@ void AudioNode::disable() {
 
   for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisabled();
-  }
-}
-
-std::string AudioNode::toString(ChannelCountMode mode) {
-  switch (mode) {
-    case ChannelCountMode::MAX:
-      return "max";
-    case ChannelCountMode::CLAMPED_MAX:
-      return "clamped-max";
-    case ChannelCountMode::EXPLICIT:
-      return "explicit";
-    default:
-      throw std::invalid_argument("Unknown channel count mode");
-  }
-}
-
-std::string AudioNode::toString(ChannelInterpretation interpretation) {
-  switch (interpretation) {
-    case ChannelInterpretation::SPEAKERS:
-      return "speakers";
-    case ChannelInterpretation::DISCRETE:
-      return "discrete";
-    default:
-      throw std::invalid_argument("Unknown channel interpretation");
   }
 }
 

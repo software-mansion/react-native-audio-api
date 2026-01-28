@@ -1,6 +1,8 @@
 #pragma once
 
 #include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/core/types/ChannelCountMode.h>
+#include <audioapi/core/types/ChannelInterpretation.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -27,5 +29,11 @@ class AudioNodeHostObject : public JsiHostObject {
 
  protected:
   std::shared_ptr<AudioNode> node_;
+
+  int numberOfInputs_;
+  int numberOfOutputs_;
+  int channelCount_;
+  ChannelCountMode channelCountMode_;
+  ChannelInterpretation channelInterpretation_;
 };
 } // namespace audioapi
