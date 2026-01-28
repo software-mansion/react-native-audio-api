@@ -18,6 +18,7 @@ class OscillatorTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    context->initialize();
   }
 };
 

@@ -21,7 +21,7 @@ std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
 
 double AudioDestinationNode::getCurrentTime() const {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    return static_cast<double>(getCurrentTime()) / context->getSampleRate();
+    return static_cast<double>(getCurrentSampleFrame()) / context->getSampleRate();
   } else {
     return 0.0;
   }
