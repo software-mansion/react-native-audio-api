@@ -1,0 +1,375 @@
+
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Testing
+
+React Native Audio API provides a comprehensive mock implementation to help you test your audio-related code without requiring actual audio hardware or platform-specific implementations.
+
+## Mock Implementation
+
+The mock implementation provides the same API surface as the real library but with no-op or simplified implementations that are perfect for unit testing.
+
+### Importing Mocks
+
+<Tabs>
+<TabItem value="jest" label="Jest">
+
+```typescript
+import * as MockAudioAPI from 'react-native-audio-api/mock';
+
+// Or import specific components
+import { AudioContext, AudioRecorder } from 'react-native-audio-api/mock';
+```
+
+</TabItem>
+<TabItem value="manual" label="Manual Setup">
+
+```typescript
+// In your test setup file
+jest.mock('react-native-audio-api', () =>
+  require('react-native-audio-api/mock')
+);
+
+// Then in your tests
+import { AudioContext, AudioRecorder } from 'react-native-audio-api';
+```
+
+</TabItem>
+</Tabs>
+
+## Basic Usage
+
+### Audio Context Testing
+
+```typescript
+import { AudioContext } from 'react-native-audio-api/mock';
+
+describe('Audio Graph Tests', () => {
+  it('should create and connect audio nodes', () => {
+    const context = new AudioContext();
+
+    // Create nodes
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+
+    // Configure properties
+    oscillator.frequency.value = 440; // A4 note
+    gainNode.gain.value = 0.5; // 50% volume
+
+    // Connect the audio graph
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    // Test the configuration
+    expect(oscillator.frequency.value).toBe(440);
+    expect(gainNode.gain.value).toBe(0.5);
+  });
+
+  it('should support context state management', async () => {
+    const context = new AudioContext();
+    expect(context.state).toBe('running');
+
+    await context.suspend();
+    expect(context.state).toBe('suspended');
+
+    await context.resume();
+    expect(context.state).toBe('running');
+  });
+});
+```
+
+### Audio Recording Testing
+
+```typescript
+import { AudioContext, AudioRecorder, FileFormat, FileDirectory } from 'react-native-audio-api/mock';
+
+describe('Audio Recording Tests', () => {
+  it('should configure and control recording', () => {
+    const context = new AudioContext();
+    const recorder = new AudioRecorder();
+
+    // Configure file output
+    const result = recorder.enableFileOutput({
+      format: FileFormat.M4A,
+      channelCount: 2,
+      directory: FileDirectory.Document,
+    });
+
+    expect(result.status).toBe('success');
+
+    // Set up recording chain
+    const oscillator = context.createOscillator();
+    const recorderAdapter = context.createRecorderAdapter();
+
+    oscillator.connect(recorderAdapter);
+    recorder.connect(recorderAdapter);
+
+    // Test recording workflow
+    const startResult = recorder.start();
+    expect(startResult.status).toBe('success');
+    expect(recorder.isRecording()).toBe(true);
+
+    const stopResult = recorder.stop();
+    expect(stopResult.status).toBe('success');
+    expect(recorder.isRecording()).toBe(false);
+  });
+});
+```
+
+### Offline Audio Processing
+
+```typescript
+import { OfflineAudioContext } from 'react-native-audio-api/mock';
+
+describe('Offline Processing Tests', () => {
+  it('should render offline audio', async () => {
+    const offlineContext = new OfflineAudioContext({
+      numberOfChannels: 2,
+      length: 44100, // 1 second at 44.1kHz
+      sampleRate: 44100,
+    });
+
+    // Create a simple tone
+    const oscillator = offlineContext.createOscillator();
+    oscillator.frequency.value = 440;
+    oscillator.connect(offlineContext.destination);
+
+    // Render the audio
+    const renderedBuffer = await offlineContext.startRendering();
+
+    expect(renderedBuffer.numberOfChannels).toBe(2);
+    expect(renderedBuffer.length).toBe(44100);
+    expect(renderedBuffer.sampleRate).toBe(44100);
+  });
+});
+```
+
+## Advanced Testing Scenarios
+
+### Custom Worklet Testing
+
+```typescript
+import { AudioContext, WorkletProcessingNode } from 'react-native-audio-api/mock';
+
+describe('Worklet Tests', () => {
+  it('should create custom audio processing', () => {
+    const context = new AudioContext();
+
+    const processingCallback = jest.fn((inputData, outputData, framesToProcess) => {
+      // Mock audio processing logic
+      for (let channel = 0; channel < outputData.length; channel++) {
+        for (let i = 0; i < framesToProcess; i++) {
+          outputData[channel][i] = inputData[channel][i] * 0.5; // Simple gain
+        }
+      }
+    });
+
+    const workletNode = new WorkletProcessingNode(
+      context,
+      'AudioRuntime',
+      processingCallback
+    );
+
+    expect(workletNode.context).toBe(context);
+  });
+});
+```
+
+### Audio Streaming Testing
+
+```typescript
+import { AudioContext } from 'react-native-audio-api/mock';
+
+describe('Streaming Tests', () => {
+  it('should handle audio streaming', () => {
+    const context = new AudioContext();
+
+    const streamer = context.createStreamer({
+      streamPath: 'https://example.com/audio-stream',
+    });
+
+    expect(streamer.streamPath).toBe('https://example.com/audio-stream');
+
+    // Test streaming controls
+    streamer.start();
+    streamer.pause();
+    streamer.resume();
+    streamer.stop();
+  });
+});
+```
+
+### Error Handling Testing
+
+```typescript
+import {
+  AudioRecorder,
+  NotSupportedError,
+  InvalidStateError
+} from 'react-native-audio-api/mock';
+
+describe('Error Handling Tests', () => {
+  it('should handle various error conditions', () => {
+    // Test error creation
+    expect(() => {
+      throw new NotSupportedError('Feature not supported');
+    }).toThrow('Feature not supported');
+
+    // Test recorder connection errors
+    const recorder = new AudioRecorder();
+    const context = new AudioContext();
+    const adapter = context.createRecorderAdapter();
+
+    // First connection should work
+    recorder.connect(adapter);
+
+    // Second connection should throw
+    expect(() => recorder.connect(adapter)).toThrow();
+  });
+});
+```
+
+## Mock Configuration
+
+### System Volume Testing
+
+```typescript
+import { useSystemVolume, setMockSystemVolume, AudioManager } from 'react-native-audio-api/mock';
+
+describe('System Integration Tests', () => {
+  it('should mock system audio management', () => {
+    // Test system sample rate
+    const preferredRate = AudioManager.getDevicePreferredSampleRate();
+    expect(preferredRate).toBe(44100);
+
+    // Test volume management
+    setMockSystemVolume(0.7);
+    const currentVolume = useSystemVolume();
+    expect(currentVolume).toBe(0.7);
+
+    // Test event listeners
+    const volumeCallback = jest.fn();
+    const listener = AudioManager.addSystemEventListener(
+      'volumeChange',
+      volumeCallback
+    );
+
+    expect(listener.remove).toBeDefined();
+    listener.remove();
+  });
+});
+```
+
+### Audio Callback Testing
+
+```typescript
+import { AudioRecorder } from 'react-native-audio-api/mock';
+
+describe('Callback Tests', () => {
+  it('should handle audio data callbacks', () => {
+    const recorder = new AudioRecorder();
+    const audioDataCallback = jest.fn();
+
+    const result = recorder.onAudioReady(
+      {
+        sampleRate: 44100,
+        bufferLength: 1024,
+        channelCount: 2,
+      },
+      audioDataCallback
+    );
+
+    expect(result.status).toBe('success');
+
+    // Test callback cleanup
+    recorder.clearOnAudioReady();
+    expect(() => recorder.clearOnAudioReady()).not.toThrow();
+  });
+});
+```
+
+## Type Safety
+
+The mock implementation provides full TypeScript support with the same types as the real library:
+
+```typescript
+import type { AudioContext, AudioParam, GainNode } from 'react-native-audio-api/mock';
+
+// All types are available and identical to the real implementation
+function processAudioNode(node: GainNode): void {
+  node.gain.value = 0.5;
+}
+```
+
+## Testing Best Practices
+
+1. **Isolate Audio Logic**: Test audio processing logic separately from UI components
+2. **Mock External Dependencies**: Use mocks for file system, network, and platform-specific operations
+3. **Test Error Scenarios**: Verify your code handles various error conditions gracefully
+4. **Validate Audio Graph Structure**: Ensure nodes are connected correctly
+5. **Test Async Operations**: Use proper async/await patterns for operations like rendering
+
+## Example Test Suite
+
+```typescript
+import {
+  AudioContext,
+  AudioRecorder,
+  FileFormat,
+  decodeAudioData
+} from 'react-native-audio-api/mock';
+
+describe('Audio Application Tests', () => {
+  let context: AudioContext;
+
+  beforeEach(() => {
+    context = new AudioContext();
+  });
+
+  afterEach(() => {
+    // Clean up if needed
+    context.close();
+  });
+
+  describe('Audio Graph', () => {
+    it('should create complex audio processing chain', () => {
+      const oscillator = context.createOscillator();
+      const filter = context.createBiquadFilter();
+      const delay = context.createDelay();
+      const gainNode = context.createGain();
+
+      // Configure effects chain
+      filter.type = 'lowpass';
+      filter.frequency.value = 2000;
+      delay.delayTime.value = 0.3;
+      gainNode.gain.value = 0.8;
+
+      // Connect the chain
+      oscillator.connect(filter);
+      filter.connect(delay);
+      delay.connect(gainNode);
+      gainNode.connect(context.destination);
+
+      // Verify configuration
+      expect(filter.type).toBe('lowpass');
+      expect(delay.delayTime.value).toBe(0.3);
+      expect(gainNode.gain.value).toBe(0.8);
+    });
+  });
+
+  describe('File Operations', () => {
+    it('should handle audio file processing', async () => {
+      const mockAudioData = new ArrayBuffer(1024);
+
+      // Test audio decoding
+      const decodedBuffer = await decodeAudioData(mockAudioData);
+      expect(decodedBuffer.numberOfChannels).toBe(2);
+      expect(decodedBuffer.sampleRate).toBe(44100);
+    });
+  });
+});
+```
+
+The mock implementation provides a complete testing environment that allows you to thoroughly test your audio applications without requiring real audio hardware or complex setup.
