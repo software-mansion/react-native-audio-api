@@ -16,7 +16,7 @@
 
 namespace audioapi {
 struct AudioNodeOptions {
-  int channelCount;
+  int channelCount = 2;
   ChannelCountMode channelCountMode;
   ChannelInterpretation channelInterpretation;
 };
