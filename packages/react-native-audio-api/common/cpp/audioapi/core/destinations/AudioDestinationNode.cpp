@@ -16,12 +16,12 @@ AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContex
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
-  return currentSampleFrame_;
+  return currentSampleFrame_.load(std::memory_order_acquire);
 }
 
 double AudioDestinationNode::getCurrentTime() const {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    return static_cast<double>(currentSampleFrame_) / context->getSampleRate();
+    return static_cast<double>(getCurrentTime()) / context->getSampleRate();
   } else {
     return 0.0;
   }
@@ -49,7 +49,7 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->normalize();
 
-  currentSampleFrame_ += numFrames;
+  currentSampleFrame_.fetch_add(numFrames, std::memory_order_acq_rel);
 }
 
 } // namespace audioapi

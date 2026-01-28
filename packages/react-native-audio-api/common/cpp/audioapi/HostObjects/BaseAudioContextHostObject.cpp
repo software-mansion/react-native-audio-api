@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
-#include <audioapi/HostObjects/WorkletNodeHostObject.h>
-#include <audioapi/HostObjects/WorkletProcessingNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>

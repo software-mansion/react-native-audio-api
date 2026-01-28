@@ -23,7 +23,6 @@ class AudioParam {
       float maxValue,
       std::shared_ptr<BaseAudioContext> context);
 
-  /// @note Can be invoked from any thread
   [[nodiscard]] inline float getValue() const noexcept {
     return value_.load(std::memory_order_acquire);
   }

@@ -28,15 +28,15 @@ void AudioContext::initialize() {
   BaseAudioContext::initialize();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
 #endif
 }
 
 void AudioContext::close() {
-  state_ = ContextState::CLOSED;
+  state_.store(ContextState::CLOSED, std::memory_order_release);
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
@@ -53,7 +53,7 @@ bool AudioContext::resume() {
   }
 
   if (isInitialized_ && audioPlayer_->resume()) {
-    state_ = ContextState::RUNNING;
+    state_.store(ContextState::RUNNING, std::memory_order_release);
     return true;
   }
 
@@ -71,7 +71,7 @@ bool AudioContext::suspend() {
 
   audioPlayer_->suspend();
 
-  state_ = ContextState::SUSPENDED;
+  state_.store(ContextState::SUSPENDED, std::memory_order_release);
   return true;
 }
 
@@ -81,10 +81,9 @@ bool AudioContext::start() {
   }
 
   if (!isInitialized_ && audioPlayer_->start()) {
-    isInitialized_ = true;
-    state_ = ContextState::RUNNING;
-
-    return true;
+      isInitialized_ = true;
+      state_.store(ContextState::RUNNING, std::memory_order_release);
+      return true;
   }
 
   return false;

@@ -40,6 +40,7 @@ BaseAudioContext::BaseAudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
     : sampleRate_ {sampleRate},
+      state_(ContextState::SUSPENDED),
       nodeManager_(std::make_shared<AudioNodeManager>()),
       audioEventScheduler_(std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(AUDIO_SCHEDULER_CAPACITY)),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
@@ -50,15 +51,17 @@ void BaseAudioContext::initialize() {
 }
 
 ContextState BaseAudioContext::getState() {
-  if (isDriverRunning() || state_ == ContextState::CLOSED) {
-    return state_;
+  auto state = state_.load(std::memory_order_acquire);
+
+  if (state == ContextState::CLOSED || isDriverRunning()) {
+    return state;
   }
 
   return ContextState::SUSPENDED;
 }
 
 float BaseAudioContext::getSampleRate() const {
-  return sampleRate_;
+  return sampleRate_.load(std::memory_order_acquire);
 }
 
 std::size_t BaseAudioContext::getCurrentSampleFrame() const {
@@ -193,7 +196,7 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
     int length) {
-  return std::make_shared<PeriodicWave>(sampleRate_, complexData, length, disableNormalization);
+  return std::make_shared<PeriodicWave>(getSampleRate(), complexData, length, disableNormalization);
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser(const AnalyserOptions &options) {
@@ -219,41 +222,44 @@ AudioNodeManager *BaseAudioContext::getNodeManager() {
 }
 
 bool BaseAudioContext::isRunning() const {
-  return state_ == ContextState::RUNNING && isDriverRunning();
+  return state_.load(std::memory_order_acquire) == ContextState::RUNNING && isDriverRunning();
 }
 
 bool BaseAudioContext::isSuspended() const {
-  return state_ == ContextState::SUSPENDED || !isDriverRunning();
+    ContextState s = state_.load(std::memory_order_acquire);
+    if (s == ContextState::CLOSED) return false;
+
+    return s == ContextState::SUSPENDED || !isDriverRunning();
 }
 
 bool BaseAudioContext::isClosed() const {
-  return state_ == ContextState::CLOSED;
+  return state_.load(std::memory_order_acquire) == ContextState::CLOSED;
 }
 
 float BaseAudioContext::getNyquistFrequency() const {
-  return sampleRate_ / 2.0f;
+  return getSampleRate() / 2.0f;
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
-        cachedSineWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSineWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSineWave_;
     case OscillatorType::SQUARE:
       if (cachedSquareWave_ == nullptr) {
-        cachedSquareWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSquareWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSquareWave_;
     case OscillatorType::SAWTOOTH:
       if (cachedSawtoothWave_ == nullptr) {
-        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSawtoothWave_;
     case OscillatorType::TRIANGLE:
       if (cachedTriangleWave_ == nullptr) {
-        cachedTriangleWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedTriangleWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:

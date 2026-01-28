@@ -21,10 +21,15 @@ class AudioContext : public BaseAudioContext {
       const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
 
+  /// @note JS Thread only
   void close();
+  /// @note JS Thread only
   bool resume();
+  /// @note JS Thread only
   bool suspend();
+  /// @note JS Thread only
   bool start();
+  /// @note JS Thread only
   void initialize() override;
 
  private:

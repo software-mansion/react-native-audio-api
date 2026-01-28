@@ -43,7 +43,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
+  /// @note JS Thread only
   bool isEnabled() const;
+  /// @note JS Thread only
   bool requiresTailProcessing() const;
 
   template <typename F>

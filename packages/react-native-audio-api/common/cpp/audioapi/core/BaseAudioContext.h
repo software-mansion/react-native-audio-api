@@ -133,8 +133,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
-  float sampleRate_;
-  ContextState state_ = ContextState::SUSPENDED;
+  std::atomic<float> sampleRate_;
+  std::atomic<ContextState> state_;
   std::shared_ptr<AudioNodeManager> nodeManager_;
 
  private:

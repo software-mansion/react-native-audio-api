@@ -23,9 +23,11 @@ class OfflineAudioContext : public BaseAudioContext {
       const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
+  /// @note JS Thread only
   void resume();
+  /// @note JS Thread only
   void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
-
+  /// @note JS Thread only
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:

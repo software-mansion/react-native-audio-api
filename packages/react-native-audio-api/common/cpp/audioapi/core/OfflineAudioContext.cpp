@@ -37,7 +37,7 @@ OfflineAudioContext::~OfflineAudioContext() {
 void OfflineAudioContext::resume() {
   Locker locker(mutex_);
 
-  if (state_ == ContextState::RUNNING) {
+  if (isRunning()) {
     return;
   }
 
@@ -62,7 +62,7 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 }
 
 void OfflineAudioContext::renderAudio() {
-  state_ = ContextState::RUNNING;
+  state_.store(ContextState::RUNNING, std::memory_order_release);
   std::thread([this]() {
     auto audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, numberOfChannels_, sampleRate_);
 
@@ -88,7 +88,7 @@ void OfflineAudioContext::renderAudio() {
         assert(currentSampleFrame_ < length_);
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
-        state_ = ContextState::SUSPENDED;
+        state_.store(ContextState::SUSPENDED, std::memory_order_release);
         callback();
         return;
       }
