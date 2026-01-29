@@ -1,9 +1,9 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
-  AudioDevicesInfo,
   AudioManager,
+  useAudioInput,
 } from 'react-native-audio-api';
 
 import { Button, Container, Select } from '../../components';
@@ -19,10 +19,7 @@ enum Status {
 }
 
 const Record: FC = () => {
-  const [currentInput, setCurrentInput] = useState<string>('');
-  const [currentOutput, setCurrentOutput] = useState<string>('');
-  const [availableDevices, setAvailableDevices] =
-    useState<AudioDevicesInfo | null>(null);
+  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
@@ -51,8 +48,6 @@ const Record: FC = () => {
     });
 
     const success = await AudioManager.setAudioSessionActivity(true);
-
-    await updateDevices();
 
     if (!success) {
       Alert.alert(
@@ -209,34 +204,6 @@ const Record: FC = () => {
     };
   }, []);
 
-  const updateDevices = useCallback(async () => {
-    const devices = await AudioManager.getDevicesInfo();
-    setAvailableDevices(devices);
-
-    if (devices.currentInputs.length > 0) {
-      setCurrentInput(devices.currentInputs[0].uid);
-    }
-
-    if (devices.currentOutputs.length > 0) {
-      setCurrentOutput(devices.currentOutputs[0].uid);
-    }
-  }, []);
-
-  useEffect(() => {
-    updateDevices();
-  }, [updateDevices]);
-
-  console.log('Available devices:', availableDevices);
-
-  const onSetCurrentInput = (deviceId: string) => {
-    AudioManager.setInputDevice(deviceId);
-    // TODO: implement setInputDevice when supported
-  };
-
-  const onSetCurrentOutput = (deviceId: string) => {
-    // TODO: implement setOutputDevice when supported
-  };
-
   return (
     <Container style={{ gap: 40 }}>
       <View style={{ alignItems: 'center' }}>
@@ -246,14 +213,11 @@ const Record: FC = () => {
       </View>
       <View>
         <Select
-          value={currentInput}
-          onChange={onSetCurrentInput}
-          options={availableDevices?.availableInputs.map((d) => d.uid) || []}
-        />
-        <Select
-          value={currentOutput}
-          onChange={onSetCurrentOutput}
-          options={availableDevices?.availableOutputs.map((d) => d.uid) || []}
+          value={currentInput?.uid || ''}
+          onChange={(uid) =>
+            onSelectInput(availableInputs.find((d) => d.uid === uid)!)
+          }
+          options={availableInputs.map((d) => d.uid) || []}
         />
       </View>
       <View style={{ alignItems: 'center', gap: 10 }}>

@@ -24,8 +24,8 @@ export type IOSOption =
   | 'duckOthers'
   | 'allowAirPlay'
   | 'mixWithOthers'
-  | 'allowBluetoothHFP'
   | 'defaultToSpeaker'
+  | 'allowBluetoothHFP'
   | 'allowBluetoothA2DP'
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
@@ -54,9 +54,9 @@ export interface SessionOptions {
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
 export interface AudioDeviceInfo {
+  uid: string;
   name: string;
   category: string;
-  uid: string;
 }
 
 export type AudioDeviceList = AudioDeviceInfo[];

@@ -52,6 +52,6 @@ interface Spec extends TurboModule {
   isNotificationActive(key: string): Promise<boolean>;
 }
 
-const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule');
+const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule')!;
 
 export { NativeAudioAPIModule };
