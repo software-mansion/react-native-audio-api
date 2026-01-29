@@ -268,7 +268,7 @@ void AudioGraphManager::prepareNodesForDestruction(std::vector<std::shared_ptr<U
     /// If we fail to add we can't safely remove the node from the vector
     /// so we swap it and advance begin cursor
     /// @note vec[i] does NOT get moved out if it is not successfully added.
-    if (!nodeDeconstructor_.tryAddNodeForDeconstruction(std::move(vec[i]))) {
+    if (!nodeDestructor_.tryAddForDeconstruction(std::move(vec[i]))) {
       std::swap(vec[i], vec[begin]);
       begin++;
     }

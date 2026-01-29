@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/AudioNodeDestructor.h>
+#include <audioapi/core/utils/AudioDestructor.hpp>
 
 #include <memory>
 #include <mutex>
@@ -97,7 +97,7 @@ class AudioGraphManager {
   void cleanup();
 
  private:
-  AudioNodeDestructor nodeDeconstructor_;
+  AudioDestructor<AudioNode> nodeDestructor_;
 
   /// @brief Initial capacity for various node types for deletion
   /// @note Higher capacity decreases number of reallocations at runtime (can be easily adjusted to 128 if needed)
