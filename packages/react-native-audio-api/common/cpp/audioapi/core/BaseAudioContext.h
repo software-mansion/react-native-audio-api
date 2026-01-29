@@ -3,6 +3,8 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+
+#include <atomic>
 #include <cassert>
 #include <complex>
 #include <cstddef>
@@ -22,7 +24,7 @@ class PeriodicWave;
 class OscillatorNode;
 class ConstantSourceNode;
 class StereoPannerNode;
-class AudioNodeManager;
+class AudioGraphManager;
 class BiquadFilterNode;
 class IIRFilterNode;
 class AudioDestinationNode;
@@ -107,7 +109,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;
-  std::shared_ptr<AudioNodeManager> getNodeManager() const;
+  std::shared_ptr<AudioGraphManager> getGraphManager() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
 
@@ -119,7 +121,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<ContextState> state_;
   std::atomic<float> sampleRate_;
-  std::shared_ptr<AudioNodeManager> nodeManager_;
+  std::shared_ptr<AudioGraphManager> graphManager_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   RuntimeRegistry runtimeRegistry_;
 

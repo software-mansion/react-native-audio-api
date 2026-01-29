@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <vector>

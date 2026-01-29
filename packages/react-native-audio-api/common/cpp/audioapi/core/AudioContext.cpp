@@ -6,7 +6,7 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <memory>
 #include <string>
 
@@ -40,7 +40,7 @@ void AudioContext::close() {
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-  getNodeManager()->cleanup();
+    getGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {

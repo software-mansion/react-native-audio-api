@@ -47,7 +47,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   virtual void disable();
 
  protected:
-  friend class AudioNodeManager;
+  friend class AudioGraphManager;
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
@@ -74,6 +74,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  private:
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
+
+  static std::string toString(ChannelCountMode mode);
+  static std::string toString(ChannelInterpretation interpretation);
 
   virtual std::shared_ptr<AudioBus> processInputs(
       const std::shared_ptr<AudioBus> &outputBus,

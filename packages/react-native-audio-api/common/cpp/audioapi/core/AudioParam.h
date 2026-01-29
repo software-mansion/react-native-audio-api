@@ -79,10 +79,10 @@ class AudioParam {
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
-  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioGraphManager)
   void addInputNode(AudioNode *node);
 
-  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioGraphManager)
   void removeInputNode(AudioNode *node);
 
   // Audio-Thread only

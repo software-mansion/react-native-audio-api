@@ -15,11 +15,11 @@ class AudioNode;
 class AudioScheduledSourceNode;
 class AudioParam;
 
-#define AUDIO_NODE_MANAGER_SPSC_OPTIONS \
+#define AUDIO_GRAPH_MANAGER_SPSC_OPTIONS \
   std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
       channels::spsc::WaitStrategy::BUSY_LOOP
 
-class AudioNodeManager {
+class AudioGraphManager {
  public:
   enum class ConnectionType { CONNECT, DISCONNECT, DISCONNECT_ALL, ADD };
   typedef ConnectionType EventType; // for backwards compatibility
@@ -54,8 +54,8 @@ class AudioNodeManager {
     ~Event();
   };
 
-  AudioNodeManager();
-  ~AudioNodeManager();
+  AudioGraphManager();
+  ~AudioGraphManager();
 
   void preProcessGraph();
 
@@ -111,9 +111,9 @@ class AudioNodeManager {
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;
   std::vector<std::shared_ptr<AudioParam>> audioParams_;
 
-  channels::spsc::Receiver<AUDIO_NODE_MANAGER_SPSC_OPTIONS> receiver_;
+  channels::spsc::Receiver<AUDIO_GRAPH_MANAGER_SPSC_OPTIONS> receiver_;
 
-  channels::spsc::Sender<AUDIO_NODE_MANAGER_SPSC_OPTIONS> sender_;
+  channels::spsc::Sender<AUDIO_GRAPH_MANAGER_SPSC_OPTIONS> sender_;
 
   void settlePendingConnections();
   void handleConnectEvent(std::unique_ptr<Event> event);
@@ -128,6 +128,6 @@ class AudioNodeManager {
   inline static bool nodeCanBeDestructed(std::shared_ptr<U> const &node);
 };
 
-#undef AUDIO_NODE_MANAGER_SPSC_OPTIONS
+#undef AUDIO_GRAPH_MANAGER_SPSC_OPTIONS
 
 } // namespace audioapi

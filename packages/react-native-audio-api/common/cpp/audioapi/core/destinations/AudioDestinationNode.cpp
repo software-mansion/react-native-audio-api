@@ -1,7 +1,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/utils/AudioBus.h>
 #include <memory>
 
@@ -35,7 +35,7 @@ void AudioDestinationNode::renderAudio(
   }
 
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->preProcessGraph();
+      context->getGraphManager()->preProcessGraph();
   }
 
   destinationBus->zero();
