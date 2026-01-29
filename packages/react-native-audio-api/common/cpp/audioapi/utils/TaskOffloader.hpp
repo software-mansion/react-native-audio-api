@@ -10,7 +10,7 @@ using namespace audioapi::channels::spsc;
 namespace audioapi::task_offloader {
 
 /// @brief A utility class to offload task to a separate thread using a SPSC channel.
-/// @tparam T The type of data to be sent through the channel. Must be DefaultConstructible.
+/// @tparam T The type of data to be sent through the channel. Must be default_initializable.
 /// @tparam Strategy The overflow strategy for the SPSC channel.
 /// @tparam Wait The wait strategy for the SPSC channel.
 template <std::default_initializable T, OverflowStrategy Strategy, WaitStrategy Wait>
