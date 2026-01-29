@@ -9,6 +9,7 @@
 namespace audioapi {
 
 class AudioFileProperties;
+class RotatingFileWriter;
 class AudioEventHandlerRegistry;
 
 typedef Result<std::string, std::string> OpenFileResult;
@@ -35,6 +36,7 @@ class AudioFileWriter {
   virtual bool writeAudioData(AudioDataType data, int numFrames) = 0;
 
   virtual double getCurrentDuration() const = 0;
+  virtual size_t getFileSizeBytes() const = 0;
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
@@ -49,6 +51,8 @@ class AudioFileWriter {
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+
+  friend class RotatingFileWriter;
 };
 
 } // namespace audioapi

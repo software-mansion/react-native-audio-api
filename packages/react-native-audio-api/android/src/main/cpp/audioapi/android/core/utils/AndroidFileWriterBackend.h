@@ -21,11 +21,12 @@ class AndroidFileWriterBackend : public AudioFileWriter {
         streamChannelCount_(streamChannelCount),
         streamMaxBufferSize_(streamMaxBufferSize) {}
 
-  virtual OpenFileResult openFile() = 0;
-  virtual bool writeAudioData(void *data, int numFrames) = 0;
+  OpenFileResult openFile() override = 0;
+  bool writeAudioData(void *data, int numFrames) override = 0;
 
   std::string getFilePath() const override { return filePath_; }
   double getCurrentDuration() const override { return static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / streamSampleRate_; }
+  size_t getFileSizeBytes() const override { return 0; }
 
  protected:
   float streamSampleRate_{0};

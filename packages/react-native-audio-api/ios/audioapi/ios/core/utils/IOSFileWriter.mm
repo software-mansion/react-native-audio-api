@@ -1,6 +1,8 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+#include <sys/stat.h>
+
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
@@ -136,6 +138,23 @@ CloseFileResult IOSFileWriter::closeFile()
 
     return CloseFileResult::Ok(std::make_tuple(fileDuration, fileSizeBytesMb));
   }
+}
+
+/// @brief Retrieves the current file size in bytes from the actual file on disk.
+/// This method uses POSIX stat to minimize overhead compared to NSFileManager attributes.
+/// @returns The file size in bytes, or 0 if the file is not open or an error occurs.
+size_t IOSFileWriter::getFileSizeBytes() const
+{
+  if (fileURL_ == nil) {
+    return 0;
+  }
+
+  // Use stat for faster file size retrieval than NSFileManager
+  struct stat st;
+  if (stat([[fileURL_ path] fileSystemRepresentation], &st) == 0) {
+    return (size_t)st.st_size;
+  }
+  return 0;
 }
 
 /// @brief Writes audio data to the open audio file, performing format conversion if necessary.

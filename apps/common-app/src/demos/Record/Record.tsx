@@ -228,7 +228,7 @@ const Record: FC = () => {
   }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
-    Recorder.enableFileOutput();
+    Recorder.enableFileOutput({ rotateIntervalBytes: 1024 * 1024 });
 
     return () => {
       Recorder.disableFileOutput();

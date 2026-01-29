@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
 
+#include <sys/stat.h>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -163,6 +164,16 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
 
   filePath_ = "";
   return CloseFileResult ::Ok({fileSizeInMB, durationInSeconds});
+}
+
+/// @brief Get the current file size in bytes.
+/// @return The size of the file in bytes.
+size_t MiniAudioFileWriter::getFileSizeBytes() const {
+  struct stat st;
+  if (stat(filePath_.c_str(), &st) == 0) {
+    return st.st_size;
+  }
+  return 0;
 }
 
 /// @brief Writes audio data to the file.

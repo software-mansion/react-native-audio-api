@@ -31,6 +31,7 @@ function withDefaultOptions(
     batchDurationSeconds: 0,
     preset: FilePreset.High,
     androidFlushIntervalMs: 500,
+    rotateIntervalBytes: 0,
     ...inOptions,
   };
 }

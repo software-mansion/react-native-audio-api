@@ -34,6 +34,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   CloseFileResult closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
+  size_t getFileSizeBytes() const override;
 
  private:
   av_unique_ptr<AVCodecContext> encoderCtx_{nullptr};

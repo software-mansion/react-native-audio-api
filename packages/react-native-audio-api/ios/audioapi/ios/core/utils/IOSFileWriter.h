@@ -34,6 +34,7 @@ class IOSFileWriter : public AudioFileWriter {
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
   double getCurrentDuration() const override;
+  size_t getFileSizeBytes() const override;
 
   std::string getFilePath() const override;
 

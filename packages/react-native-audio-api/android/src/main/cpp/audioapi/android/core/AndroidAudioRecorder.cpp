@@ -11,6 +11,7 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -121,26 +122,51 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesFileOutput()) {
-    if (fileProperties_->format == AudioFileProperties::Format::WAV) {
-      fileWriter_ = std::make_shared<MiniAudioFileWriter>(
-          audioEventHandlerRegistry_,
-          fileProperties_,
-          streamSampleRate_,
-          streamChannelCount_,
-          streamMaxBufferSizeInFrames_);
-    } else {
+    auto createWriter =
+        [this](
+            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
+      if (props->format == AudioFileProperties::Format::WAV) {
+        return std::make_shared<MiniAudioFileWriter>(
+            audioEventHandlerRegistry_,
+            props,
+            streamSampleRate_,
+            streamChannelCount_,
+            streamMaxBufferSizeInFrames_);
+      } else {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-      fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+        return std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+            audioEventHandlerRegistry_,
+            props,
+            streamSampleRate_,
+            streamChannelCount_,
+            streamMaxBufferSizeInFrames_);
+#else
+        return nullptr;
+#endif
+      }
+    };
+
+    if (fileProperties_->rotateIntervalBytes > 0) {
+      if (createWriter(fileProperties_) == nullptr) {
+        return Result<std::string, std::string>::Err(
+            "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use "
+            "WAV "
+            "format instead.");
+      }
+
+      fileWriter_ = std::make_shared<RotatingFileWriter>(
           audioEventHandlerRegistry_,
           fileProperties_,
-          streamSampleRate_,
-          streamChannelCount_,
-          streamMaxBufferSizeInFrames_);
-#else
-      return Result<std::string, std::string>::Err(
-          "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV "
-          "format instead.");
-#endif
+          fileProperties_->rotateIntervalBytes,
+          createWriter);
+    } else {
+      fileWriter_ = createWriter(fileProperties_);
+      if (fileWriter_ == nullptr) {
+        return Result<std::string, std::string>::Err(
+            "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use "
+            "WAV "
+            "format instead.");
+      }
     }
 
     fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
@@ -243,26 +269,48 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
   fileProperties_ = properties;
 
   if (!isIdle()) {
-    if (properties->format == AudioFileProperties::Format::WAV) {
-      fileWriter_ = std::make_shared<MiniAudioFileWriter>(
-          audioEventHandlerRegistry_,
-          properties,
-          streamSampleRate_,
-          streamChannelCount_,
-          streamMaxBufferSizeInFrames_);
-    } else {
+    auto createWriter =
+        [this](
+            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
+      if (props->format == AudioFileProperties::Format::WAV) {
+        return std::make_shared<MiniAudioFileWriter>(
+            audioEventHandlerRegistry_,
+            props,
+            streamSampleRate_,
+            streamChannelCount_,
+            streamMaxBufferSizeInFrames_);
+      } else {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-      fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
-          audioEventHandlerRegistry_,
-          properties,
-          streamSampleRate_,
-          streamChannelCount_,
-          streamMaxBufferSizeInFrames_);
+        return std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+            audioEventHandlerRegistry_,
+            props,
+            streamSampleRate_,
+            streamChannelCount_,
+            streamMaxBufferSizeInFrames_);
 #else
-      return Result<std::string, std::string>::Err(
-          "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV "
-          "format instead.");
+        return nullptr;
 #endif
+      }
+    };
+
+    if (properties->rotateIntervalBytes > 0) {
+      if (createWriter(properties) == nullptr) {
+        return Result<std::string, std::string>::Err(
+            "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use "
+            "WAV "
+            "format instead.");
+      }
+
+      fileWriter_ = std::make_shared<RotatingFileWriter>(
+          audioEventHandlerRegistry_, properties, properties->rotateIntervalBytes, createWriter);
+    } else {
+      fileWriter_ = createWriter(properties);
+      if (fileWriter_ == nullptr) {
+        return Result<std::string, std::string>::Err(
+            "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use "
+            "WAV "
+            "format instead.");
+      }
     }
 
     fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));

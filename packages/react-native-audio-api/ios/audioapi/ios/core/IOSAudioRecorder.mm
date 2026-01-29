@@ -9,6 +9,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
@@ -102,8 +103,26 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    fileWriter_ = std::make_shared<IOSFileWriter>(
-        audioEventHandlerRegistry_, fileProperties_, inputFormat, maxInputBufferLength);
+    auto createWriter =
+        [this, maxInputBufferLength](
+            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
+      return std::make_shared<IOSFileWriter>(
+          audioEventHandlerRegistry_,
+          props,
+          [nativeRecorder_ getInputFormat],
+          maxInputBufferLength);
+    };
+
+    if (fileProperties_->rotateIntervalBytes > 0) {
+      fileWriter_ = std::make_shared<RotatingFileWriter>(
+          audioEventHandlerRegistry_,
+          fileProperties_,
+          fileProperties_->rotateIntervalBytes,
+          createWriter);
+    } else {
+      fileWriter_ = createWriter(fileProperties_);
+    }
+
     fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
     auto fileResult = fileWriter_->openFile();
@@ -194,11 +213,20 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   fileProperties_ = properties;
 
   if (!isIdle()) {
-    fileWriter_ = std::make_shared<IOSFileWriter>(
-        audioEventHandlerRegistry_,
-        properties,
-        [nativeRecorder_ getInputFormat],
-        [nativeRecorder_ getBufferSize]);
+    size_t bufferSize = [nativeRecorder_ getBufferSize];
+    auto createWriter =
+        [this, bufferSize](
+            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
+      return std::make_shared<IOSFileWriter>(
+          audioEventHandlerRegistry_, props, [nativeRecorder_ getInputFormat], bufferSize);
+    };
+
+    if (properties->rotateIntervalBytes > 0) {
+      fileWriter_ = std::make_shared<RotatingFileWriter>(
+          audioEventHandlerRegistry_, properties, properties->rotateIntervalBytes, createWriter);
+    } else {
+      fileWriter_ = createWriter(properties);
+    }
 
     auto result = fileWriter_->openFile();
 

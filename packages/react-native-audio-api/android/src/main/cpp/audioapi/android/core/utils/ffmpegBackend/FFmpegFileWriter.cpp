@@ -15,6 +15,7 @@ extern "C" {
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
+#include <sys/stat.h>
 
 #include <algorithm>
 #include <cassert>
@@ -61,8 +62,7 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 OpenFileResult FFmpegAudioFileWriter::openFile() {
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
-  Result<NoneType, std::string> result = Result<NoneType, std::string>::Ok(None);
-  Result<std::string, std::string> filePathResult = fileoptions::getFilePath(fileProperties_);
+  auto filePathResult = fileoptions::getFilePath(fileProperties_);
 
   if (!filePathResult.is_ok()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());
@@ -239,6 +239,23 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   }
 
   return Result<NoneType, std::string>::Ok(None);
+}
+
+size_t FFmpegAudioFileWriter::getFileSizeBytes() const {
+  if (formatCtx_ == nullptr) {
+    return 0;
+  }
+
+  if (formatCtx_ && formatCtx_->pb) {
+    return static_cast<size_t>(avio_tell(formatCtx_->pb));
+  }
+
+  // Fallback
+  struct stat st;
+  if (stat(filePath_.c_str(), &st) == 0) {
+    return st.st_size;
+  }
+  return 0;
 }
 
 /// @brief Initializes the resampler context for audio conversion.
