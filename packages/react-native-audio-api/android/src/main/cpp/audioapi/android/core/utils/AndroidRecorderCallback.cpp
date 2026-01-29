@@ -100,17 +100,14 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   processingBuffer_ = ma_malloc(
       processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), nullptr);
 
-  auto [sender, receiver] = channels::spsc::channel<
-      CallbackData,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>(
-      AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY);
-  sender_ = std::move(sender);
+  auto offloaderLambda = [this](CallbackData data) {
+    taskOffloaderFunction(data);
+  };
   offloader_ = std::make_unique<task_offloader::TaskOffloader<
       CallbackData,
       AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(std::move(receiver));
-  offloader_->offloadTask([this](CallbackData data) { taskOffloaderFunction(data); });
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
+      AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 
@@ -133,7 +130,7 @@ void AndroidRecorderCallback::cleanup() {
   for (size_t i = 0; i < circularBus_.size(); ++i) {
     circularBus_[i]->zero();
   }
-  offloader_->stop(sender_);
+  offloader_.reset();
 }
 
 /// @brief Receives audio data from the recorder, processes it (resampling and deinterleaving if necessary),
@@ -145,7 +142,7 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
     return;
   }
 
-  sender_.send({data, numFrames});
+  offloader_->getSender()->send({data, numFrames});
 }
 
 /// @brief Deinterleaves the audio data and pushes it into the circular buffer.

@@ -5,9 +5,6 @@
 #include <concepts>
 #include <utility>
 
-template <typename T>
-concept DefaultConstructible = std::default_initializable<T>;
-
 using namespace audioapi::channels::spsc;
 
 namespace audioapi::task_offloader {
@@ -16,30 +13,15 @@ namespace audioapi::task_offloader {
 /// @tparam T The type of data to be sent through the channel. Must be DefaultConstructible.
 /// @tparam Strategy The overflow strategy for the SPSC channel.
 /// @tparam Wait The wait strategy for the SPSC channel.
-template <DefaultConstructible T, OverflowStrategy Strategy, WaitStrategy Wait>
+template <std::default_initializable T, OverflowStrategy Strategy, WaitStrategy Wait>
 class TaskOffloader {
  public:
-  explicit TaskOffloader(Receiver<T, Strategy, Wait> &&receiver)
-      : receiver_(std::move(receiver)), shouldRun_(false) {}
-
-  // delete or other functions
-  TaskOffloader(const TaskOffloader &) = delete;
-  TaskOffloader &operator=(const TaskOffloader &) = delete;
-  TaskOffloader(TaskOffloader &&other) = delete;
-  TaskOffloader &operator=(TaskOffloader &&other) = delete;
-
-  ~TaskOffloader() {
-    auto wasStopCalled = !shouldRun_.load(std::memory_order_acquire);
-    assert(
-        wasStopCalled &&
-        "TaskOffloader destructor called without stopping the offloader. Call stop() before destruction.");
-  }
-
-  /// @brief Offloads the given task to a separate thread.
-  /// @param task The task to be offloaded. It should be a callable that takes a T as parameter.
   template <typename Func>
-  void offloadTask(Func &&task) {
-    shouldRun_.store(true, std::memory_order_release);
+  explicit TaskOffloader(size_t capacity, Func &&task) : shouldRun_(true) {
+    auto [sender, receiver] = channels::spsc::channel<T, Strategy, Wait>(capacity);
+    sender_ = std::move(sender);
+    receiver_ = std::move(receiver);
+
     workerThread_ = std::thread([this, task = std::forward<Func>(task)]() {
       while (shouldRun_.load(std::memory_order_acquire)) {
         auto data = receiver_.receive();
@@ -50,20 +32,31 @@ class TaskOffloader {
     });
   }
 
-  /// @brief Stops the offloading thread and joins it.
-  /// @param sender The sender associated with the receiver to send a dummy message to unblock the receiver.
-  void stop(Sender<T, Strategy, Wait> &sender) {
+  // delete other functions
+  TaskOffloader(const TaskOffloader &) = delete;
+  TaskOffloader &operator=(const TaskOffloader &) = delete;
+  TaskOffloader(TaskOffloader &&other) = delete;
+  TaskOffloader &operator=(TaskOffloader &&other) = delete;
+
+  ~TaskOffloader() {
     shouldRun_.store(false, std::memory_order_release);
-    sender.send(T{}); // Send a dummy message to unblock the receiver
+    sender_.send(T{}); // send a dummy message to unblock the receiver
     if (workerThread_.joinable()) {
       workerThread_.join();
     }
   }
 
+  /// @brief Get the const pointer to mutable sender of the SPSC channel
+  auto *const getSender() {
+    return &sender_;
+  }
+
  private:
   Receiver<T, Strategy, Wait> receiver_;
+  Sender<T, Strategy, Wait> sender_;
   std::thread workerThread_;
   std::atomic<bool> shouldRun_;
+  bool taskOffloaded_;
 };
 
 } // namespace audioapi::task_offloader

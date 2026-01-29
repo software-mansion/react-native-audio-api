@@ -88,17 +88,14 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
     converterOutputBuffer_ =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
-    auto [sender, receiver] = channels::spsc::channel<
-        CallbackData,
-        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>(
-        AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY);
-    sender_ = std::move(sender);
+    auto offloaderLambda = [this](CallbackData data) {
+      taskOffloaderFunction(data);
+    };
     offloader_ = std::make_unique<task_offloader::TaskOffloader<
         CallbackData,
         AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(std::move(receiver));
-    offloader_->offloadTask([this](CallbackData data) { taskOffloaderFunction(data); });
+        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
+        AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -122,7 +119,7 @@ void IOSRecorderCallback::cleanup()
     for (int i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
-    offloader_->stop(sender_);
+    offloader_.reset();
   }
 }
 
@@ -136,7 +133,7 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
-  sender_.send({inputBuffer, numFrames});
+  offloader_->getSender()->send({inputBuffer, numFrames});
 }
 
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)

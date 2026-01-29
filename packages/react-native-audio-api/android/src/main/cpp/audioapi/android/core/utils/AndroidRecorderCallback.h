@@ -49,8 +49,6 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
   void deinterleaveAndPushAudioData(void *data, int numFrames);
 
  private:
-  channels::spsc::Sender<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY> sender_;
-  channels::spsc::Receiver<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY> receiver_;
   // delay initialization of offloader until prepare is called
   std::unique_ptr<task_offloader::TaskOffloader<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>> offloader_;
   void taskOffloaderFunction(CallbackData data);
