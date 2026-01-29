@@ -35,6 +35,7 @@ class AudioBus {
   [[nodiscard]] int getNumberOfChannels() const;
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] size_t getSize() const;
+  [[nodiscard]] double getDuration() const;
   [[nodiscard]] AudioArray *getChannel(int index) const;
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
   [[nodiscard]] std::shared_ptr<AudioArray> getSharedChannel(int index) const;

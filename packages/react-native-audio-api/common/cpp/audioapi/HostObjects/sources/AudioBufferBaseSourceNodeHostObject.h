@@ -28,13 +28,14 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   JSI_HOST_FUNCTION_DECL(getInputLatency);
   JSI_HOST_FUNCTION_DECL(getOutputLatency);
 
- private:
+ protected:
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;
 
   int onPositionChangedInterval_;
   uint64_t onPositionChangedCallbackId_ = 0;
 
+  bool pitchCorrection_ = false;
   double inputLatency_;
   double outputLatency_;
 

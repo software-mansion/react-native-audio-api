@@ -42,6 +42,7 @@ class AudioBuffer {
 
  private:
   friend class AudioBufferSourceNode;
+  friend class AudioBufferSourceNodeHostObject;
   friend class AudioBufferQueueSourceNode;
   friend class AudioBufferHostObject;
 

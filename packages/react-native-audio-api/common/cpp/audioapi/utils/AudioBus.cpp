@@ -84,6 +84,10 @@ size_t AudioBus::getSize() const {
   return size_;
 }
 
+double AudioBus::getDuration() const {
+  return static_cast<double>(size_) / sampleRate_;
+}
+
 AudioArray *AudioBus::getChannel(int index) const {
   return channels_[index].get();
 }

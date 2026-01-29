@@ -102,9 +102,9 @@ void AudioGraphManager::addAudioParam(const std::shared_ptr<AudioParam> &param) 
     sender_.send(std::move(event));
 }
 
-void AudioGraphManager::addAudioBusForDestruction(const std::shared_ptr<AudioBus> &bus) {
-    // Direct access because this is called from the Audio Thread
-    audioBuses_.push_back(bus);
+void AudioGraphManager::addAudioBusForDestruction(std::shared_ptr<AudioBus> bus) {
+    // direct access because this is called from the Audio thread
+    audioBuses_.push_back(std::move(bus));
 }
 
 void AudioGraphManager::preProcessGraph() {

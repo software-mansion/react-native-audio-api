@@ -26,7 +26,10 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void setLoopSkip(bool loopSkip);
   void setLoopStart(double loopStart);
   void setLoopEnd(double loopEnd);
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void setBuffer(
+      const std::shared_ptr<AudioBus> &alignedBus,
+      const std::shared_ptr<AudioBus> &audioBus,
+      const std::shared_ptr<AudioBus> &playbackRateBus);
 
   using AudioScheduledSourceNode::start;
   void start(double when, double offset, double duration = -1);

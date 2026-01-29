@@ -9,8 +9,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
+
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -22,7 +24,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(false),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-  setBuffer(options.buffer);
+//  setBuffer(options.buffer);
 
   isInitialized_ = true;
 }
@@ -52,37 +54,56 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
   loopEnd_ = loopEnd;
 }
 
-void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
+void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBus> &alignedBus, const std::shared_ptr<AudioBus> &audioBus, const std::shared_ptr<AudioBus> &playbackRateBus) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
-  if (buffer == nullptr || context == nullptr) {
-    alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
+  if (context == nullptr) {
+      return;
+  }
+
+  if (alignedBus_ != nullptr) {
+    context->getAudioGraphManager()->addAudioBusForDestruction(std::move(alignedBus_));
+  }
+
+  if (alignedBus == nullptr) {
+    alignedBus_ = nullptr;
     loopEnd_ = 0;
     return;
   }
 
-  channelCount_ = buffer->getNumberOfChannels();
+  channelCount_ = alignedBus->getNumberOfChannels();
+  stretch_->presetDefault(channelCount_, alignedBus->getSampleRate());
 
-  stretch_->presetDefault(channelCount_, buffer->getSampleRate());
-
-  if (pitchCorrection_) {
-    int extraTailFrames =
-        static_cast<int>((getInputLatency() + getOutputLatency()) * buffer->getSampleRate());
-    size_t totalSize = buffer->getLength() + extraTailFrames;
-
-    alignedBus_ = std::make_shared<AudioBus>(totalSize, channelCount_, buffer->getSampleRate());
-    alignedBus_->copy(buffer->bus_.get(), 0, 0, buffer->getLength());
-
-    alignedBus_->zero(buffer->getLength(), extraTailFrames);
-  } else {
-    alignedBus_ = std::make_shared<AudioBus>(*buffer->bus_);
+  if (audioBus_ != nullptr) {
+    context->getAudioGraphManager()->addAudioBusForDestruction(std::move(audioBus_));
   }
-  audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  playbackRateBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
-  loopEnd_ = buffer->getDuration();
+  if (playbackRateBus_ != nullptr) {
+    context->getAudioGraphManager()->addAudioBusForDestruction(std::move(playbackRateBus_));
+  }
+
+  alignedBus_ = alignedBus;
+  audioBus_ = audioBus;
+  playbackRateBus_ = playbackRateBus;
+
+//  if (pitchCorrection_) {
+//    int extraTailFrames =
+//        static_cast<int>((getInputLatency() + getOutputLatency()) * buffer->getSampleRate());
+//    size_t totalSize = buffer->getLength() + extraTailFrames;
+//
+//    alignedBus_ = std::make_shared<AudioBus>(totalSize, channelCount_, buffer->getSampleRate());
+//    alignedBus_->copy(buffer->bus_.get(), 0, 0, buffer->getLength());
+//
+//    alignedBus_->zero(buffer->getLength(), extraTailFrames);
+//  } else {
+//    alignedBus_ = std::make_shared<AudioBus>(*buffer->bus_);
+//  }
+//  audioBus_ =
+//      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+//  playbackRateBus_ =
+//      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+
+  loopEnd_ = alignedBus->getDuration();
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {

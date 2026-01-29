@@ -35,7 +35,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(setBuffer);
 
- private:
+ protected:
   bool loop_;
   bool loopSkip_;
   double loopStart_;

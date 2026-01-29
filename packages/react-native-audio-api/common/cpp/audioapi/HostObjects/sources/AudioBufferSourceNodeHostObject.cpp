@@ -3,6 +3,7 @@
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/utils/AudioBus.h>
 
 #include <memory>
 #include <utility>
@@ -17,6 +18,8 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
     loopStart_(options.loopStart),
     loopEnd_(options.loopEnd),
     buffer_(std::make_shared<AudioBufferHostObject>(options.buffer)) {
+   pitchCorrection_ = options.pitchCorrection;
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
@@ -149,20 +152,40 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
                         args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
 
 
-  std::shared_ptr<AudioBuffer> bufferCopy = nullptr;
+  std::shared_ptr<AudioBus> alignedBus = nullptr;
+  std::shared_ptr<AudioBus> audioBus = nullptr;
+  std::shared_ptr<AudioBus> playbackRateBus = nullptr;
 
   if (bufferHostObject != nullptr) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
-            runtime, bufferHostObject->getSizeInBytes() + 16);
+              runtime, bufferHostObject->getSizeInBytes() + 16);
 
-    bufferCopy = std::make_shared<AudioBuffer>(*bufferHostObject->audioBuffer_);
+    auto buffer = bufferHostObject->audioBuffer_;
+
+    channelCount_ = buffer->getNumberOfChannels();
+    audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, 48000.0f);
+    playbackRateBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, 48000.0f);
+
+      if (pitchCorrection_) {
+        int extraTailFrames =
+            static_cast<int>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
+        size_t totalSize = buffer->getLength() + extraTailFrames;
+
+        alignedBus = std::make_shared<AudioBus>(totalSize, channelCount_, buffer->getSampleRate());
+        alignedBus->copy(buffer->bus_.get(), 0, 0, buffer->getLength());
+        alignedBus->zero(buffer->getLength(), extraTailFrames);
+      } else {
+        alignedBus = std::make_shared<AudioBus>(*buffer->bus_);
+      }
   }
 
   auto event = [
         audioBufferSourceNode,
-        buffer = bufferCopy
+        alignedBus,
+        audioBus,
+        playbackRateBus
   ](BaseAudioContext &) {
-    audioBufferSourceNode->setBuffer(buffer);
+    audioBufferSourceNode->setBuffer(alignedBus, audioBus, playbackRateBus);
   };
 
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
