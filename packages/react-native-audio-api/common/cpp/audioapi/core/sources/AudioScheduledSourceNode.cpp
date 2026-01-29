@@ -21,7 +21,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioCont
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {
+      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()) {
   numberOfInputs_ = 0;
 }
 

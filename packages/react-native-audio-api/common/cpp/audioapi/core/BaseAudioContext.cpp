@@ -39,7 +39,8 @@ BaseAudioContext::BaseAudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : sampleRate_(sampleRate),
+    : state_(ContextState::SUSPENDED),
+      sampleRate_(sampleRate),
       nodeManager_(std::make_shared<AudioNodeManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry) {}
@@ -49,15 +50,17 @@ void BaseAudioContext::initialize() {
 }
 
 ContextState BaseAudioContext::getState() {
-  if (isDriverRunning() || state_ == ContextState::CLOSED) {
-    return state_;
+  auto state = state_.load(std::memory_order_acquire);
+
+  if (state == ContextState::CLOSED || isDriverRunning()) {
+    return state;
   }
 
   return ContextState::SUSPENDED;
 }
 
 float BaseAudioContext::getSampleRate() const {
-  return sampleRate_;
+  return sampleRate_.load(std::memory_order_acquire);
 }
 
 std::size_t BaseAudioContext::getCurrentSampleFrame() const {
@@ -72,6 +75,10 @@ double BaseAudioContext::getCurrentTime() const {
 
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
   return destination_;
+}
+
+void BaseAudioContext::setState(audioapi::ContextState state) {
+    state_.store(state, std::memory_order_release);
 }
 
 std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
@@ -191,8 +198,8 @@ std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOpt
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
-    int length) {
-  return std::make_shared<PeriodicWave>(sampleRate_, complexData, length, disableNormalization);
+    int length) const {
+  return std::make_shared<PeriodicWave>(getSampleRate(), complexData, length, disableNormalization);
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser(const AnalyserOptions &options) {
@@ -213,52 +220,48 @@ std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(const WaveSha
   return waveShaper;
 }
 
-AudioNodeManager *BaseAudioContext::getNodeManager() {
-  return nodeManager_.get();
-}
-
-bool BaseAudioContext::isRunning() const {
-  return state_ == ContextState::RUNNING && isDriverRunning();
-}
-
-bool BaseAudioContext::isSuspended() const {
-  return state_ == ContextState::SUSPENDED || !isDriverRunning();
-}
-
-bool BaseAudioContext::isClosed() const {
-  return state_ == ContextState::CLOSED;
-}
-
 float BaseAudioContext::getNyquistFrequency() const {
-  return sampleRate_ / 2.0f;
+  return getSampleRate() / 2.0f;
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
-        cachedSineWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSineWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSineWave_;
     case OscillatorType::SQUARE:
       if (cachedSquareWave_ == nullptr) {
-        cachedSquareWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSquareWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSquareWave_;
     case OscillatorType::SAWTOOTH:
       if (cachedSawtoothWave_ == nullptr) {
-        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedSawtoothWave_;
     case OscillatorType::TRIANGLE:
       if (cachedTriangleWave_ == nullptr) {
-        cachedTriangleWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedTriangleWave_ = std::make_shared<PeriodicWave>(getSampleRate(), type, false);
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:
       throw std::invalid_argument("You can't get a custom wave form. You need to create it.");
       break;
   }
+}
+
+std::shared_ptr<AudioNodeManager> BaseAudioContext::getNodeManager() const {
+  return nodeManager_;
+}
+
+std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandlerRegistry() const {
+  return audioEventHandlerRegistry_;
+}
+
+const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
+    return runtimeRegistry_;
 }
 
 } // namespace audioapi

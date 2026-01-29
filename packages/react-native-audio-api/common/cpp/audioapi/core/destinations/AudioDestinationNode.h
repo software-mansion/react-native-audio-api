@@ -29,7 +29,7 @@ class AudioDestinationNode : public AudioNode {
   };
 
  private:
-  std::size_t currentSampleFrame_;
+  std::atomic<std::size_t> currentSampleFrame_;
 };
 
 } // namespace audioapi

@@ -29,8 +29,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
-  std::string getChannelCountMode() const;
-  std::string getChannelInterpretation() const;
+  ChannelCountMode getChannelCountMode() const;
+  ChannelInterpretation getChannelInterpretation() const;
   void connect(const std::shared_ptr<AudioNode> &node);
   void connect(const std::shared_ptr<AudioParam> &param);
   void disconnect();
@@ -51,13 +51,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
-  int channelCount_ = 2;
 
   std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
+  int channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
@@ -74,9 +74,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  private:
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
-
-  static std::string toString(ChannelCountMode mode);
-  static std::string toString(ChannelInterpretation interpretation);
 
   virtual std::shared_ptr<AudioBus> processInputs(
       const std::shared_ptr<AudioBus> &outputBus,
