@@ -1,14 +1,18 @@
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
-
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/core/types/BiquadFilterType.h>
+
 #include <memory>
 
 namespace audioapi {
 
-BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
-    const std::shared_ptr<BiquadFilterNode> &node)
-    : AudioNodeHostObject(node) {
+BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext>& context,
+                                                       const BiquadFilterOptions &options)
+    : AudioNodeHostObject(context->createBiquadFilter(options)) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),
@@ -49,12 +53,13 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, gain) {
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
   auto type = biquadFilterNode->getType();
-  return jsi::String::createFromUtf8(runtime, type);
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::filterTypeToString(type));
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  biquadFilterNode->setType(value.getString(runtime).utf8(runtime));
+  auto type = value.asString(runtime).utf8(runtime);
+  biquadFilterNode->setType(js_enum_parser::filterTypeFromString(type));
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {

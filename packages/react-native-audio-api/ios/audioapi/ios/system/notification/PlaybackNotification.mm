@@ -46,11 +46,11 @@
   // Enable default remote commands
   [self enableRemoteCommand:@"play" enabled:true];
   [self enableRemoteCommand:@"pause" enabled:true];
-  [self enableRemoteCommand:@"next" enabled:true];
-  [self enableRemoteCommand:@"previous" enabled:true];
+  [self enableRemoteCommand:@"nextTrack" enabled:true];
+  [self enableRemoteCommand:@"previousTrack" enabled:true];
   [self enableRemoteCommand:@"skipForward" enabled:true];
   [self enableRemoteCommand:@"skipBackward" enabled:true];
-  [self enableRemoteCommand:@"seek" enabled:true];
+  [self enableRemoteCommand:@"seekTo" enabled:true];
 
   _isInitialized = true;
   return true;
@@ -109,7 +109,6 @@
   [remoteCenter.playCommand removeTarget:self];
   [remoteCenter.pauseCommand removeTarget:self];
   [remoteCenter.stopCommand removeTarget:self];
-  [remoteCenter.togglePlayPauseCommand removeTarget:self];
   [remoteCenter.nextTrackCommand removeTarget:self];
   [remoteCenter.previousTrackCommand removeTarget:self];
   [remoteCenter.skipForwardCommand removeTarget:self];
@@ -270,11 +269,12 @@
 {
   NSSet *validControls = [NSSet setWithObjects:@"play",
                                                @"pause",
-                                               @"next",
-                                               @"previous",
+                                               @"stop",
+                                               @"nextTrack",
+                                               @"previousTrack",
                                                @"skipForward",
                                                @"skipBackward",
-                                               @"seek",
+                                               @"seekTo",
                                                nil];
   if ([validControls containsObject:control]) {
     [self enableRemoteCommand:control enabled:enabled];
@@ -291,15 +291,11 @@
     [self enableCommand:remoteCenter.pauseCommand withSelector:@selector(onPause:) enabled:enabled];
   } else if ([name isEqualToString:@"stop"]) {
     [self enableCommand:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:enabled];
-  } else if ([name isEqualToString:@"togglePlayPause"]) {
-    [self enableCommand:remoteCenter.togglePlayPauseCommand
-           withSelector:@selector(onTogglePlayPause:)
-                enabled:enabled];
-  } else if ([name isEqualToString:@"next"]) {
+  } else if ([name isEqualToString:@"nextTrack"]) {
     [self enableCommand:remoteCenter.nextTrackCommand
            withSelector:@selector(onNextTrack:)
                 enabled:enabled];
-  } else if ([name isEqualToString:@"previous"]) {
+  } else if ([name isEqualToString:@"previousTrack"]) {
     [self enableCommand:remoteCenter.previousTrackCommand
            withSelector:@selector(onPreviousTrack:)
                 enabled:enabled];
@@ -321,7 +317,7 @@
     [self enableCommand:remoteCenter.seekBackwardCommand
            withSelector:@selector(onSeekBackward:)
                 enabled:enabled];
-  } else if ([name isEqualToString:@"seek"]) {
+  } else if ([name isEqualToString:@"seekTo"]) {
     [self enableCommand:remoteCenter.changePlaybackPositionCommand
            withSelector:@selector(onChangePlaybackPosition:)
                 enabled:enabled];
@@ -341,67 +337,72 @@
 
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationPlay" eventBody:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PLAY
+                                        eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationPause" eventBody:@{}];
+  [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PAUSE
+                                        eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationStop" eventBody:@{}];
-  return MPRemoteCommandHandlerStatusSuccess;
-}
-
-- (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent *)event
-{
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationTogglePlayPause"
+  [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_STOP
                                         eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationNext" eventBody:@{}];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_NEXT_TRACK
+                       eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationPrevious" eventBody:@{}];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PREVIOUS_TRACK
+                       eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekForward" eventBody:@{}];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_FORWARD
+                       eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent *)event
 {
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekBackward"
-                                        eventBody:@{}];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_BACKWARD
+                       eventBody:@{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
   NSDictionary *body = @{@"value" : @(event.interval)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipForward"
-                                        eventBody:body];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SKIP_FORWARD
+                       eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
   NSDictionary *body = @{@"value" : @(event.interval)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSkipBackward"
-                                        eventBody:body];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SKIP_BACKWARD
+                       eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -409,7 +410,9 @@
     (MPChangePlaybackPositionCommandEvent *)event
 {
   NSDictionary *body = @{@"value" : @(event.positionTime)};
-  [self.audioAPIModule invokeHandlerWithEventName:@"playbackNotificationSeekTo" eventBody:body];
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_TO
+                       eventBody:body];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

@@ -1,5 +1,9 @@
 package com.swmansion.audioapi
 
+import android.media.AudioManager
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import com.facebook.jni.HybridData
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
@@ -39,7 +43,7 @@ class AudioAPIModule(
   private external fun injectJSIBindings()
 
   external fun invokeHandlerWithEventNameAndEventBody(
-    eventName: String,
+    eventOrdinal: Int,
     eventBody: Map<String, Any>,
   )
 
@@ -106,6 +110,7 @@ class AudioAPIModule(
     mode: String?,
     options: ReadableArray?,
     allowHaptics: Boolean,
+    notifyOthersOnDeactivation: Boolean,
   ) {
     // noting to do here
   }
@@ -114,8 +119,21 @@ class AudioAPIModule(
     // nothing to do here
   }
 
-  override fun observeAudioInterruptions(enabled: Boolean) {
-    MediaSessionManager.observeAudioInterruptions(enabled)
+  override fun observeAudioInterruptions(
+    focusType: String?,
+    enabled: Boolean,
+  ) {
+    if (!enabled) {
+      MediaSessionManager.abandonAudioFocus()
+      return
+    }
+    when (focusType) {
+      "gain" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
+      "gainTransient" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+      "gainTransientMayDuck" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+      "gainTransientExclusive" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+      else -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
+    }
   }
 
   override fun activelyReclaimSession(enabled: Boolean) {
@@ -144,11 +162,13 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.checkNotificationPermissions())
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   override fun getDevicesInfo(promise: Promise) {
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
   // Notification system methods
+  @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   override fun showNotification(
     type: String?,
     key: String?,

@@ -3,10 +3,12 @@ import { InvalidStateError, RangeError } from '../errors';
 import AudioParam from './AudioParam';
 import AudioBuffer from './AudioBuffer';
 import BaseAudioContext from './BaseAudioContext';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
-import { globalTag } from './custom/LoadCustomWasm';
+import { TAudioBufferSourceOptions } from '../types';
+import { AudioBufferSourceOptions } from '../defaults';
+import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
 interface ScheduleOptions {
   rate?: number;
@@ -173,8 +175,6 @@ class IStretcherNodeAudioParam implements globalThis.AudioParam {
 
 type DefaultSource = globalThis.AudioBufferSourceNode;
 
-type IAudioBufferSourceNode = DefaultSource | IStretcherNode;
-
 declare global {
   interface Window {
     [globalTag]: (
@@ -183,10 +183,28 @@ declare global {
   }
 }
 
-export default class AudioBufferSourceNode<
-  T extends IAudioBufferSourceNode = DefaultSource,
-> extends AudioScheduledSourceNode {
-  private _pitchCorrection: boolean;
+interface IAudioAPIBufferSourceNodeWeb {
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam;
+  disconnect(destination?: AudioNode | AudioParam): void;
+  start(when?: number, offset?: number, duration?: number): void;
+  stop(when: number): void;
+  setDetune(value: number, when?: number): void;
+  setPlaybackRate(value: number, when?: number): void;
+  get buffer(): AudioBuffer | null;
+  set buffer(buffer: AudioBuffer | null);
+  get loop(): boolean;
+  set loop(value: boolean);
+  get loopStart(): number;
+  set loopStart(value: number);
+  get loopEnd(): number;
+  set loopEnd(value: number);
+}
+
+class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
+  private stretcherPromise: Promise<IStretcherNode> | null = null;
+  private node: IStretcherNode | null = null;
+  private hasBeenStarted: boolean = false;
+  private context: BaseAudioContext;
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
@@ -196,173 +214,86 @@ export default class AudioBufferSourceNode<
 
   private _buffer: AudioBuffer | null = null;
 
-  constructor(context: BaseAudioContext, node: T, pitchCorrection: boolean) {
-    super(context, node);
+  constructor(context: BaseAudioContext) {
+    const promise = async () => {
+      await globalWasmPromise;
+      return window[globalTag](new window.AudioContext());
+    };
+    this.context = context;
+    this.stretcherPromise = promise();
+    this.stretcherPromise.then((node) => {
+      this.node = node;
+    });
 
-    this._pitchCorrection = pitchCorrection;
+    this.detune = new AudioParam(
+      new IStretcherNodeAudioParam(
+        0,
+        this.setDetune.bind(this),
+        'a-rate',
+        -1200,
+        1200,
+        0
+      ),
+      context
+    );
 
-    if (pitchCorrection) {
-      this.detune = new AudioParam(
-        new IStretcherNodeAudioParam(
-          0,
-          this.setDetune.bind(this),
-          'a-rate',
-          -1200,
-          1200,
-          0
-        ),
-        context
-      );
+    this.playbackRate = new AudioParam(
+      new IStretcherNodeAudioParam(
+        1,
+        this.setPlaybackRate.bind(this),
+        'a-rate',
+        0,
+        Infinity,
+        1
+      ),
+      context
+    );
+  }
 
-      this.playbackRate = new AudioParam(
-        new IStretcherNodeAudioParam(
-          1,
-          this.setPlaybackRate.bind(this),
-          'a-rate',
-          0,
-          Infinity,
-          1
-        ),
-        context
-      );
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    const action = (node: IStretcherNode) => {
+      if (destination instanceof AudioParam) {
+        node.connect(destination.param);
+        return;
+      }
+      node.connect(destination.node);
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
     } else {
-      this.detune = new AudioParam((node as DefaultSource).detune, context);
-      this.playbackRate = new AudioParam(
-        (node as DefaultSource).playbackRate,
-        context
-      );
-    }
-  }
-
-  private isStretcherNode() {
-    return this._pitchCorrection;
-  }
-
-  private asStretcher(): IStretcherNode {
-    return this.node as IStretcherNode;
-  }
-
-  private asBufferSource(): DefaultSource {
-    return this.node as DefaultSource;
-  }
-
-  public setDetune(value: number, when: number = 0): void {
-    if (!this.isStretcherNode() || !this.hasBeenStarted) {
-      return;
+      action(this.node);
     }
 
-    this.asStretcher().schedule({
-      semitones: Math.floor(clamp(value / 100, -12, 12)),
-      output: when,
-    });
+    return destination;
   }
 
-  public setPlaybackRate(value: number, when: number = 0): void {
-    if (!this.isStretcherNode() || !this.hasBeenStarted) {
-      return;
-    }
-
-    this.asStretcher().schedule({
-      rate: value,
-      output: when,
-    });
-  }
-
-  public get buffer(): AudioBuffer | null {
-    if (this.isStretcherNode()) {
-      return this._buffer;
-    }
-
-    const buffer = this.asBufferSource().buffer;
-
-    if (!buffer) {
-      return null;
-    }
-
-    return new AudioBuffer(buffer);
-  }
-
-  public set buffer(buffer: AudioBuffer | null) {
-    if (this.isStretcherNode()) {
-      this._buffer = buffer;
-
-      const stretcher = this.asStretcher();
-      stretcher.dropBuffers();
-
-      if (!buffer) {
+  disconnect(destination?: AudioNode | AudioParam): void {
+    const action = (node: IStretcherNode) => {
+      if (destination === undefined) {
+        node.disconnect();
         return;
       }
 
-      const channelArrays: Float32Array[] = [];
-
-      for (let i = 0; i < buffer.numberOfChannels; i++) {
-        channelArrays.push(buffer.getChannelData(i));
+      if (destination instanceof AudioParam) {
+        node.disconnect(destination.param);
+        return;
       }
+      node.disconnect(destination.node);
+    };
 
-      stretcher.addBuffers(channelArrays);
-      return;
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+    } else {
+      action(this.node);
     }
-
-    if (!buffer) {
-      this.asBufferSource().buffer = null;
-      return;
-    }
-
-    this.asBufferSource().buffer = buffer.buffer;
   }
 
-  public get loop(): boolean {
-    if (this.isStretcherNode()) {
-      return this._loop;
-    }
-
-    return this.asBufferSource().loop;
-  }
-
-  public set loop(value: boolean) {
-    if (this.isStretcherNode()) {
-      this._loop = value;
-      return;
-    }
-
-    this.asBufferSource().loop = value;
-  }
-
-  public get loopStart(): number {
-    if (this.isStretcherNode()) {
-      return this._loopStart;
-    }
-
-    return this.asBufferSource().loopStart;
-  }
-
-  public set loopStart(value: number) {
-    if (this.isStretcherNode()) {
-      this._loopStart = value;
-      return;
-    }
-
-    this.asBufferSource().loopStart = value;
-  }
-
-  public get loopEnd(): number {
-    if (this.isStretcherNode()) {
-      return this._loopEnd;
-    }
-
-    return this.asBufferSource().loopEnd;
-  }
-
-  public set loopEnd(value: number) {
-    if (this.isStretcherNode()) {
-      this._loopEnd = value;
-      return;
-    }
-
-    this.asBufferSource().loopEnd = value;
-  }
-
-  public start(when?: number, offset?: number, duration?: number): void {
+  start(when?: number, offset?: number, duration?: number): void {
     if (when && when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -386,34 +317,203 @@ export default class AudioBufferSourceNode<
     }
 
     this.hasBeenStarted = true;
-
-    if (!this.isStretcherNode()) {
-      this.asBufferSource().start(when, offset, duration);
-      return;
-    }
-
     const startAt =
       !when || when < this.context.currentTime
         ? this.context.currentTime
         : when;
 
-    if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
-      this.asStretcher().schedule({
+    const scheduleAction = (node: IStretcherNode) => {
+      node.schedule({
         loopStart: this._loopStart,
         loopEnd: this._loopEnd,
       });
+    };
+
+    if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
+      if (!this.node) {
+        this.stretcherPromise!.then((node) => {
+          scheduleAction(node);
+        });
+      } else {
+        scheduleAction(this.node);
+      }
     }
 
-    this.asStretcher().start(
-      startAt,
-      offset,
-      duration,
-      this.playbackRate.value,
-      Math.floor(clamp(this.detune.value / 100, -12, 12))
-    );
+    const startAction = (node: IStretcherNode) => {
+      node.start(
+        startAt,
+        offset,
+        duration,
+        this.playbackRate.value,
+        Math.floor(clamp(this.detune.value / 100, -12, 12))
+      );
+    };
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        startAction(node);
+      });
+    } else {
+      startAction(this.node);
+    }
   }
 
-  public stop(when: number = 0): void {
+  stop(when: number): void {
+    if (when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+    const action = (node: IStretcherNode) => {
+      node.stop(when);
+    };
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+      return;
+    }
+    action(this.node);
+  }
+
+  setDetune(value: number, when?: number): void {
+    if (!this.hasBeenStarted) {
+      return;
+    }
+    const action = (node: IStretcherNode) => {
+      node.schedule({
+        semitones: Math.floor(clamp(value / 100, -12, 12)),
+        output: when,
+      });
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+      return;
+    }
+
+    action(this.node);
+  }
+
+  setPlaybackRate(value: number, when?: number): void {
+    if (!this.hasBeenStarted) {
+      return;
+    }
+    const action = (node: IStretcherNode) => {
+      node.schedule({
+        rate: value,
+        output: when,
+      });
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+      return;
+    }
+
+    action(this.node);
+  }
+
+  get buffer(): AudioBuffer | null {
+    return this._buffer;
+  }
+
+  set buffer(buffer: AudioBuffer | null) {
+    this._buffer = buffer;
+
+    const action = (node: IStretcherNode) => {
+      node.dropBuffers();
+
+      if (!buffer) {
+        return;
+      }
+
+      const channelArrays: Float32Array[] = [];
+
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        channelArrays.push(buffer.getChannelData(i));
+      }
+
+      node.addBuffers(channelArrays);
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+      return;
+    }
+    action(this.node);
+  }
+
+  get loop(): boolean {
+    return this._loop;
+  }
+
+  set loop(value: boolean) {
+    this._loop = value;
+  }
+
+  get loopStart(): number {
+    return this._loopStart;
+  }
+
+  set loopStart(value: number) {
+    this._loopStart = value;
+  }
+
+  get loopEnd(): number {
+    return this._loopEnd;
+  }
+
+  set loopEnd(value: number) {
+    this._loopEnd = value;
+  }
+}
+
+class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
+  private node: DefaultSource;
+  private hasBeenStarted: boolean = false;
+  readonly playbackRate: AudioParam;
+  readonly detune: AudioParam;
+
+  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
+    this.node = new globalThis.AudioBufferSourceNode(context.context, options);
+    this.detune = new AudioParam(this.node.detune, context);
+    this.playbackRate = new AudioParam(this.node.playbackRate, context);
+  }
+
+  start(when: number = 0, offset?: number, duration?: number): void {
+    if (when && when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (offset && offset < 0) {
+      throw new RangeError(
+        `offset must be a finite non-negative number: ${offset}`
+      );
+    }
+
+    if (duration && duration < 0) {
+      throw new RangeError(
+        `duration must be a finite non-negative number: ${duration}`
+      );
+    }
+
+    if (this.hasBeenStarted) {
+      throw new InvalidStateError('Cannot call start more than once');
+    }
+
+    this.hasBeenStarted = true;
+    this.node.start(when, offset, duration);
+  }
+
+  stop(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -425,12 +525,157 @@ export default class AudioBufferSourceNode<
         'Cannot call stop without calling start first'
       );
     }
+    this.node.stop(when);
+  }
 
-    if (!this.isStretcherNode()) {
-      this.asBufferSource().stop(when);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  setDetune(value: number, when?: number): void {
+    console.warn('setDetune is not implemented for non-pitch-correction mode');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  setPlaybackRate(value: number, when?: number): void {
+    console.warn(
+      'setPlaybackRate is not implemented for non-pitch-correction mode'
+    );
+  }
+
+  get buffer(): AudioBuffer | null {
+    const buffer = this.node.buffer;
+    if (!buffer) {
+      return null;
+    }
+
+    return new AudioBuffer(buffer);
+  }
+
+  set buffer(buffer: AudioBuffer | null) {
+    if (!buffer) {
+      this.node.buffer = null;
       return;
     }
 
-    this.asStretcher().stop(when);
+    this.node.buffer = buffer.buffer;
+  }
+
+  get loop(): boolean {
+    return this.node.loop;
+  }
+
+  set loop(value: boolean) {
+    this.node.loop = value;
+  }
+
+  get loopStart(): number {
+    return this.node.loopStart;
+  }
+
+  set loopStart(value: number) {
+    this.node.loopStart = value;
+  }
+
+  get loopEnd(): number {
+    return this.node.loopEnd;
+  }
+
+  set loopEnd(value: number) {
+    this.node.loopEnd = value;
+  }
+
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    if (destination instanceof AudioParam) {
+      this.node.connect(destination.param);
+    } else {
+      this.node.connect(destination.node);
+    }
+    return destination;
+  }
+
+  disconnect(destination?: AudioNode | AudioParam): void {
+    if (destination === undefined) {
+      this.node.disconnect();
+      return;
+    }
+
+    if (destination instanceof AudioParam) {
+      this.node.disconnect(destination.param);
+      return;
+    }
+    this.node.disconnect(destination.node);
+  }
+}
+
+export default class AudioBufferSourceNode
+  implements IAudioAPIBufferSourceNodeWeb
+{
+  private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
+  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
+    const finalOptions: TAudioBufferSourceOptions = {
+      ...AudioBufferSourceOptions,
+      ...options,
+    };
+    this.node = finalOptions.pitchCorrection
+      ? new AudioBufferSourceNodeStretcher(context)
+      : new AudioBufferSourceNodeWeb(context, options);
+  }
+
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    return this.asAudioBufferSourceNodeWeb().connect(destination);
+  }
+
+  disconnect(destination?: AudioNode | AudioParam): void {
+    this.asAudioBufferSourceNodeWeb().disconnect(destination);
+  }
+
+  asAudioBufferSourceNodeWeb(): IAudioAPIBufferSourceNodeWeb {
+    return this.node as unknown as IAudioAPIBufferSourceNodeWeb;
+  }
+
+  start(when: number = 0, offset?: number, duration?: number): void {
+    this.asAudioBufferSourceNodeWeb().start(when, offset, duration);
+  }
+
+  stop(when: number = 0): void {
+    this.asAudioBufferSourceNodeWeb().stop(when);
+  }
+
+  setDetune(value: number, when?: number): void {
+    this.asAudioBufferSourceNodeWeb().setDetune(value, when);
+  }
+
+  setPlaybackRate(value: number, when?: number): void {
+    this.asAudioBufferSourceNodeWeb().setPlaybackRate(value, when);
+  }
+
+  get buffer(): AudioBuffer | null {
+    return this.asAudioBufferSourceNodeWeb().buffer;
+  }
+
+  set buffer(buffer: AudioBuffer | null) {
+    this.asAudioBufferSourceNodeWeb().buffer = buffer;
+  }
+
+  get loop(): boolean {
+    return this.asAudioBufferSourceNodeWeb().loop;
+  }
+
+  set loop(value: boolean) {
+    this.asAudioBufferSourceNodeWeb().loop = value;
+  }
+
+  get loopStart(): number {
+    return this.asAudioBufferSourceNodeWeb().loopStart;
+  }
+
+  set loopStart(value: number) {
+    this.asAudioBufferSourceNodeWeb().loopStart = value;
+  }
+
+  get loopEnd(): number {
+    return this.asAudioBufferSourceNodeWeb().loopEnd;
+  }
+
+  set loopEnd(value: number) {
+    this.asAudioBufferSourceNodeWeb().loopEnd = value;
   }
 }

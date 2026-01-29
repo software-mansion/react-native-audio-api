@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -10,29 +11,31 @@
 
 namespace audioapi {
 
-WaveShaperNode::WaveShaperNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context), oversample_(OverSampleType::OVERSAMPLE_NONE) {
+WaveShaperNode::WaveShaperNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const WaveShaperOptions &options)
+    : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
   for (int i = 0; i < channelCount_; i++) {
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
-
+  setCurve(options.curve);
   // to change after graph processing improvement - should be max
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   isInitialized_ = true;
 }
 
-std::string WaveShaperNode::getOversample() const {
-  return overSampleTypeToString(oversample_.load(std::memory_order_acquire));
+OverSampleType WaveShaperNode::getOversample() const {
+  return oversample_.load(std::memory_order_acquire);
 }
 
-void WaveShaperNode::setOversample(const std::string &type) {
+void WaveShaperNode::setOversample(OverSampleType type) {
   std::scoped_lock<std::mutex> lock(mutex_);
-  oversample_.store(overSampleTypeFromString(type), std::memory_order_release);
+  oversample_.store(type, std::memory_order_release);
 
   for (int i = 0; i < waveShapers_.size(); i++) {
-    waveShapers_[i]->setOversample(overSampleTypeFromString(type));
+    waveShapers_[i]->setOversample(type);
   }
 }
 

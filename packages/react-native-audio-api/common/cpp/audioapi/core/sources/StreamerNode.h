@@ -59,16 +59,27 @@ struct StreamingData {
 namespace audioapi {
 
 class AudioBus;
+struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(std::shared_ptr<BaseAudioContext> context);
+  explicit StreamerNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StreamerOptions &options);
   ~StreamerNode() override;
 
   /**
    * @brief Initialize all necessary ffmpeg components for streaming audio
   */
   bool initialize(const std::string &inputUrl);
+
+  std::string getStreamPath() const {
+#if !RN_AUDIO_API_TEST
+    return streamPath_;
+#else
+    return "";
+#endif // RN_AUDIO_API_TEST
+  }
 
  protected:
   std::shared_ptr<AudioBus> processNode(
@@ -103,6 +114,7 @@ class StreamerNode : public AudioScheduledSourceNode {
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
+  std::string streamPath_;
 
   /**
    * @brief Setting up the resampler

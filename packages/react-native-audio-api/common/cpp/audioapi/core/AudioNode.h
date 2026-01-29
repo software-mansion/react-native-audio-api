@@ -16,10 +16,14 @@ namespace audioapi {
 class AudioBus;
 class BaseAudioContext;
 class AudioParam;
+struct AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
+  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context);
+  explicit AudioNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioNodeOptions &options);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;
@@ -55,9 +59,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
-  ChannelInterpretation channelInterpretation_ =
-
-      ChannelInterpretation::SPEAKERS;
+  ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
   std::unordered_set<AudioNode *> inputNodes_ = {};
   std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};

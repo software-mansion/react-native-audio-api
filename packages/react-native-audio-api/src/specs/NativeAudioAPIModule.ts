@@ -6,6 +6,11 @@ import { AudioDevicesInfo, PermissionStatus } from '../system/types';
 type OptionsMap = { [key: string]: string | boolean | number | undefined };
 type NotificationOpResponse = { success: boolean; error?: string };
 type NotificationType = 'playback' | 'recording' | 'simple';
+type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
 
 interface Spec extends TurboModule {
   install(): boolean;
@@ -17,12 +22,13 @@ interface Spec extends TurboModule {
     category: string,
     mode: string,
     options: Array<string>,
-    allowHaptics: boolean
+    allowHaptics: boolean,
+    notifyOthersOnDeactivation: boolean
   ): void;
   disableSessionManagement(): void;
 
-  // Remote commands, system events and interruptions
-  observeAudioInterruptions(enabled: boolean): void;
+  // system events and interruptions
+  observeAudioInterruptions(focusType: AudioFocusType, enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
 

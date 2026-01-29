@@ -1,12 +1,14 @@
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { SystemEventCallback, SystemEventName } from '../events/types';
+import { NativeAudioAPIModule } from '../specs';
+import { parseNativeError } from './errors';
 import {
-  SessionOptions,
-  PermissionStatus,
   AudioDevicesInfo,
   IAudioManager,
+  PermissionStatus,
+  SessionOptions,
+  AudioFocusType,
 } from './types';
-import { SystemEventName, SystemEventCallback } from '../events/types';
-import { AudioEventEmitter, AudioEventSubscription } from '../events';
-import { NativeAudioAPIModule } from '../specs';
 
 class AudioManager implements IAudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
@@ -18,8 +20,15 @@ class AudioManager implements IAudioManager {
     return NativeAudioAPIModule.getDevicePreferredSampleRate();
   }
 
-  setAudioSessionActivity(enabled: boolean): Promise<boolean> {
-    return NativeAudioAPIModule.setAudioSessionActivity(enabled);
+  async setAudioSessionActivity(enabled: boolean): Promise<boolean> {
+    try {
+      const success =
+        await NativeAudioAPIModule.setAudioSessionActivity(enabled);
+
+      return success;
+    } catch (error) {
+      throw parseNativeError(error);
+    }
   }
 
   setAudioSessionOptions(options: SessionOptions) {
@@ -27,7 +36,8 @@ class AudioManager implements IAudioManager {
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? [],
-      options.iosAllowHaptics ?? false
+      options.iosAllowHaptics ?? false,
+      options.iosNotifyOthersOnDeactivation ?? true
     );
   }
 
@@ -35,8 +45,13 @@ class AudioManager implements IAudioManager {
     NativeAudioAPIModule.disableSessionManagement();
   }
 
-  observeAudioInterruptions(enabled: boolean) {
-    NativeAudioAPIModule.observeAudioInterruptions(enabled);
+  observeAudioInterruptions(param: AudioFocusType | boolean | null) {
+    if (typeof param === 'string') {
+      NativeAudioAPIModule.observeAudioInterruptions(param, true);
+    } else {
+      // audiofocusgain as default value if not provided
+      NativeAudioAPIModule.observeAudioInterruptions('gain', param === true);
+    }
   }
 
   /**

@@ -18,6 +18,18 @@ For more information about worklets, see our [Introduction to worklets](/docs/wo
 
 ## Constructor
 
+```tsx
+constructor(
+  context: BaseAudioContext,
+  runtime: AudioWorkletRuntime,
+  callback: (
+    audioData: Array<Float32Array>,
+    framesToProcess: number,
+    currentTime: number,
+    startOffset: number
+  ) => void)
+```
+Or by using `BaseAudioContext` factory method:
 [`BaseAudioContext.createWorkletSourceNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletsourcenode-)
 
 ## Example

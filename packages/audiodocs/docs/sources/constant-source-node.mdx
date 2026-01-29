@@ -18,7 +18,18 @@ Just like `AudioScheduledSourceNode`, it can be started only once.
 
 ## Constructor
 
-[`BaseAudioContext.createConstantSource()`](/docs/core/base-audio-context#createconstantsource)
+```tsx
+constructor(context: BaseAudioContext, options?: ConstantSourceOptions)
+```
+
+### `ConstantSourceOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `offset` <Optional /> | `number` | 1 | Initial value for [`offset`](/docs/sources/constant-source-node#properties) |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createConstantSource()`](/docs/core/base-audio-context#createconstantsource) that creates node with default values.
 
 ## Example
 
@@ -27,7 +38,7 @@ import React, { useRef } from 'react';
 import { Text } from 'react-native';
 import {
   AudioContext,
-  OscillatorNode, 
+  OscillatorNode,
   GainNode,
   ConstantSourceNode
 } from 'react-native-audio-api';
@@ -55,7 +66,7 @@ function App() {
   oscillator2.connect(gainNode2);
   gainNode2.connect(audioContext.destination);
 
-  // We connect the constant source to the gain nodes gain AudioParams 
+  // We connect the constant source to the gain nodes gain AudioParams
   // to control both of them at the same time
   constantSource.connect(gainNode1.gain);
   constantSource.connect(gainNode2.gain);
@@ -71,14 +82,9 @@ function App() {
 It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 | Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------- |
-| `offset` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 1 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
+| :----: | :----: | :--------: | :------- |
+| `offset` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 1.0 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
 
 ## Methods
 
 It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
-
-## Remarks
-
-#### `offset`
-- Float. Default: 1.

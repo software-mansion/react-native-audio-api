@@ -17,6 +17,15 @@ This node lets you execute a worklet on the UI thread. bufferLength specifies th
 
 ## Constructor
 
+```tsx
+constructor(
+  context: BaseAudioContext,
+  runtime: AudioWorkletRuntime,
+  callback: (audioData: Array<Float32Array>, channelCount: number) => void,
+  bufferLength: number,
+  inputChannelCount: number)
+```
+Or by using `BaseAudioContext` factory method:
 [`BaseAudioContext.createWorkletNode(worklet, bufferLength, inputChannelCount, workletRuntime)`](/docs/core/base-audio-context#createworkletnode-)
 
 ## Example

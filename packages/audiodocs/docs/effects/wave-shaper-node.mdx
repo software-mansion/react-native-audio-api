@@ -3,7 +3,7 @@ sidebar_position: 6
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { ReadOnly } from '@site/src/components/Badges';
+import { ReadOnly, Optional } from '@site/src/components/Badges';
 
 # WaveShaperNode
 
@@ -16,7 +16,21 @@ Non-linear distortion is commonly used for both subtle non-linear warming, or mo
 
 ## Constructor
 
-[`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper)
+```tsx
+constructor(context: BaseAudioContext, waveShaperOptions?: WaveShaperOptions)
+```
+
+### `WaveShaperOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `curve` <Optional /> | `Float32Array` | - | Array representing curve values |
+| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | - | Value representing oversample property |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createwaveshaper)
 
 ## Properties
 

@@ -3,7 +3,7 @@ sidebar_position: 3
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly } from '@site/src/components/Badges';
 import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 
@@ -43,7 +43,20 @@ You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.
 
 ## Constructor
 
-[`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain)
+```tsx
+constructor(context: BaseAudioContext, options?: GainOptions)
+```
+
+### `GainOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `gain` <Optional /> | `number` | 1.0 | Initial value for [`gain`](/docs/effects/gain-node#properties) |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain) that creates node with default values.
 
 ## Properties
 
@@ -61,5 +74,4 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `gain`
-- Default value is 1.0.
 - Nominal range is -∞ to ∞.

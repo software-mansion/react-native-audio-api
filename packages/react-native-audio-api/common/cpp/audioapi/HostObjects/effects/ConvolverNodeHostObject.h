@@ -7,11 +7,14 @@
 namespace audioapi {
 using namespace facebook;
 
-class ConvolverNode;
+struct ConvolverOptions;
+class BaseAudioContext;
 
 class ConvolverNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit ConvolverNodeHostObject(const std::shared_ptr<ConvolverNode> &node);
+  explicit ConvolverNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const ConvolverOptions &options);
   JSI_PROPERTY_GETTER_DECL(normalize);
   JSI_PROPERTY_GETTER_DECL(buffer);
   JSI_PROPERTY_SETTER_DECL(normalize);

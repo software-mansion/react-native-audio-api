@@ -8,12 +8,18 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioBufferQueueSourceNode;
+struct BaseAudioBufferSourceOptions;
+class BaseAudioContext;
 
 class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
   explicit AudioBufferQueueSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferQueueSourceNode> &node);
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BaseAudioBufferSourceOptions &options);
+
+  ~AudioBufferQueueSourceNodeHostObject() override;
+
+  JSI_PROPERTY_SETTER_DECL(onBufferEnded);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(pause);

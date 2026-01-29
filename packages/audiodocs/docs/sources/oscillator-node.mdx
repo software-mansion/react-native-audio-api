@@ -25,6 +25,21 @@ Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If y
 
 ## Constructor
 
+```tsx
+constructor(context: BaseAudioContext, options?: OscillatorOptions)
+```
+
+### `OscillatorOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `type` <Optional /> | [`OscillatorType`](/docs/types/oscillator-type) | `sine` | Initial value for [`type`](/docs/sources/oscillator-node#properties). |
+| `frequency` <Optional /> | `number` | 440 | Initial value for [`frequency`](/docs/sources/oscillator-node#properties). |
+| `detune` <Optional /> | `number` | 0 | Initial value for [`detune`](/docs/sources/oscillator-node#properties). |
+
+Or by using `BaseAudioContext` factory method:
 [`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator)
 
 ## Example

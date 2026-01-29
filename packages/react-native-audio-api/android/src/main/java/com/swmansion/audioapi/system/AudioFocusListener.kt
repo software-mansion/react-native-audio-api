@@ -25,7 +25,7 @@ class AudioFocusListener(
             put("shouldResume", false)
             isTransientLoss = false
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
 
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
@@ -35,7 +35,7 @@ class AudioFocusListener(
             put("shouldResume", false)
             isTransientLoss = true
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
 
       AudioManager.AUDIOFOCUS_GAIN -> {
@@ -45,22 +45,26 @@ class AudioFocusListener(
             put("shouldResume", isTransientLoss)
             isTransientLoss = false
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
+      }
+
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.DUCK.ordinal, emptyMap())
       }
     }
   }
 
-  fun requestAudioFocus() {
+  fun requestAudioFocus(focus: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       this.focusRequest =
         AudioFocusRequest
-          .Builder(AudioManager.AUDIOFOCUS_GAIN)
+          .Builder(focus)
           .setOnAudioFocusChangeListener(this)
           .build()
 
       audioManager.get()?.requestAudioFocus(focusRequest!!)
     } else {
-      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, focus)
     }
   }
 

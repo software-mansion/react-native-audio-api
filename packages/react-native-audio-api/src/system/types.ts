@@ -1,5 +1,5 @@
-import type { SystemEventName, SystemEventCallback } from '../events/types';
 import type { AudioEventSubscription } from '../events';
+import type { SystemEventCallback, SystemEventName } from '../events/types';
 
 export type IOSCategory =
   | 'record'
@@ -30,11 +30,25 @@ export type IOSOption =
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
 
+export type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
+
 export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
   iosAllowHaptics?: boolean;
+  /**
+   * Setting this to `true` will allow other audio apps to resume playing when
+   * the session is deactivated.
+   *
+   * Has no effect when using PlaybackNotificationManager as it takes over the
+   * "Now playing" controls.
+   */
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
@@ -60,7 +74,7 @@ export interface IAudioManager {
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
-  observeVolumeChanges(enabled: boolean): void;
+  observeAudioInterruptions(param: AudioFocusType | boolean | null): void;
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,
     callback: SystemEventCallback<Name>

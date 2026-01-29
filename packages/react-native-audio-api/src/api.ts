@@ -29,7 +29,7 @@ export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 
 export { default as useSystemVolume } from './hooks/useSystemVolume';
-export { default as AudioManager } from './system';
+export { default as PeriodicWave } from './core/PeriodicWave';
 
 export * from './errors';
 export * from './system/types';
@@ -39,6 +39,8 @@ export { default as FilePreset } from './utils/filePresets';
 // Notification System
 export { PlaybackNotificationManager } from './system/notification';
 export { RecordingNotificationManager } from './system/notification';
+
+export { default as AudioManager } from './system';
 
 export {
   NotificationManager,

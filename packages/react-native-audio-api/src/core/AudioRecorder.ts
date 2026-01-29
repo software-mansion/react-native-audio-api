@@ -1,3 +1,4 @@
+import { AudioApiError } from '../errors';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import {
   OnAudioReadyEventType,
@@ -7,6 +8,7 @@ import { IAudioRecorder } from '../interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -15,7 +17,6 @@ import {
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import RecorderAdapterNode from './RecorderAdapterNode';
-import { AudioApiError } from '../errors';
 
 // Enforces default options, making sure that all properties are defined
 // for the contract with native code.
@@ -25,7 +26,7 @@ function withDefaultOptions(
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
-    fileNamePrefix: 'recording_',
+    fileNamePrefix: 'recording',
     channelCount: 2,
     format: FileFormat.M4A,
     batchDurationSeconds: 0,
@@ -74,13 +75,13 @@ export default class AudioRecorder {
   }
 
   /** Starts the audio recording process with configured output options */
-  start(): Result<{ path: string }> {
+  start(options?: AudioRecorderStartOptions): Result<{ path: string }> {
     if (!this.isFileOutputEnabled) {
       this.recorder.start();
       return { status: 'success', path: '' };
     }
 
-    return this.recorder.start();
+    return this.recorder.start(options?.fileNameOverride);
   }
 
   /** Stops the audio recording process and releases internal resources */

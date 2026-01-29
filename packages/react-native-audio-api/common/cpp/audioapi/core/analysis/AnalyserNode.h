@@ -15,24 +15,27 @@ namespace audioapi {
 class AudioBus;
 class AudioArray;
 class CircularAudioArray;
+struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
  public:
   enum class WindowType { BLACKMAN, HANN };
-  explicit AnalyserNode(std::shared_ptr<BaseAudioContext> context);
+  explicit AnalyserNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AnalyserOptions &options);
 
   int getFftSize() const;
   int getFrequencyBinCount() const;
   float getMinDecibels() const;
   float getMaxDecibels() const;
   float getSmoothingTimeConstant() const;
-  std::string getWindowType() const;
+  AnalyserNode::WindowType getWindowType() const;
 
   void setFftSize(int fftSize);
   void setMinDecibels(float minDecibels);
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
-  void setWindowType(const std::string &type);
+  void setWindowType(AnalyserNode::WindowType);
 
   void getFloatFrequencyData(float *data, int length);
   void getByteFrequencyData(uint8_t *data, int length);
@@ -61,30 +64,6 @@ class AnalyserNode : public AudioNode {
   std::vector<std::complex<float>> complexData_;
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_{true};
-
-  static WindowType fromString(const std::string &type) {
-    std::string lowerType = type;
-    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
-    if (lowerType == "blackman") {
-      return WindowType::BLACKMAN;
-    }
-    if (lowerType == "hann") {
-      return WindowType::HANN;
-    }
-
-    throw std::invalid_argument("Unknown window type");
-  }
-
-  static std::string toString(WindowType type) {
-    switch (type) {
-      case WindowType::BLACKMAN:
-        return "blackman";
-      case WindowType::HANN:
-        return "hann";
-      default:
-        throw std::invalid_argument("Unknown window type");
-    }
-  }
 
   void doFFTAnalysis();
 

@@ -9,25 +9,14 @@ namespace audioapi {
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : IAudioEventHandlerRegistry() {
-  runtime_ = runtime;
-  callInvoker_ = callInvoker;
-
-  for (const auto &eventName : SYSTEM_EVENT_NAMES) {
-    eventHandlers_[std::string(eventName)] = {};
-  }
-
-  for (const auto &eventName : AUDIO_API_EVENT_NAMES) {
-    eventHandlers_[std::string(eventName)] = {};
-  }
-}
+    : IAudioEventHandlerRegistry(), callInvoker_(callInvoker), runtime_(runtime) {}
 
 AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
   eventHandlers_.clear();
 }
 
 uint64_t AudioEventHandlerRegistry::registerHandler(
-    const std::string &eventName,
+    AudioEvent eventName,
     const std::shared_ptr<jsi::Function> &handler) {
   uint64_t listenerId = listenerIdCounter_++;
 
@@ -45,7 +34,7 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(
-    const std::string &eventName,
+    AudioEvent eventName,
     uint64_t listenerId) {
   if (callInvoker_ == nullptr || runtime_ == nullptr) {
     // If callInvoker or runtime is not valid, we cannot unregister the handler
@@ -69,7 +58,7 @@ void AudioEventHandlerRegistry::unregisterHandler(
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
-    const std::string &eventName,
+    AudioEvent eventName,
     const std::unordered_map<std::string, EventValue> &body) {
   // callInvoker_ and runtime_ must be valid to invoke handlers
   // this might happen when react-native is reloaded or the app is closed
@@ -100,7 +89,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         jsi::Object eventObject(*runtime_);
         // handle special logic for microphone, because we pass audio buffer
         // which has significant size
-        if (eventName.compare("audioReady") == 0) {
+        if (eventName == AudioEvent::AUDIO_READY) {
           auto bufferIt = body.find("buffer");
           if (bufferIt != body.end()) {
             auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
@@ -117,14 +106,14 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
         throw;
       } catch (...) {
         printf(
-            "Unknown exception occurred while invoking handler for event: %s\n", eventName.c_str());
+            "Unknown exception occurred while invoking handler for event: %d\n", eventName);
       }
     }
   });
 }
 
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
-    const std::string &eventName,
+    AudioEvent eventName,
     uint64_t listenerId,
     const std::unordered_map<std::string, EventValue> &body) {
   // callInvoker_ and runtime_ must be valid to invoke handlers
@@ -164,7 +153,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       jsi::Object eventObject(*runtime_);
       // handle special logic for microphone, because we pass audio buffer which
       // has significant size
-      if (eventName.compare("audioReady") == 0) {
+      if (eventName == AudioEvent::AUDIO_READY) {
         auto bufferIt = body.find("buffer");
         if (bufferIt != body.end()) {
           auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
@@ -181,7 +170,7 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
       throw;
     } catch (...) {
       printf(
-          "Unknown exception occurred while invoking handler for event: %s\n", eventName.c_str());
+          "Unknown exception occurred while invoking handler for event: %d\n", eventName);
     }
   });
 }

@@ -13,6 +13,7 @@ namespace audioapi {
 using namespace facebook;
 
 class BaseAudioContext;
+class AudioDestinationNodeHostObject;
 
 class BaseAudioContextHostObject : public JsiHostObject {
  public:
@@ -20,6 +21,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
       const std::shared_ptr<BaseAudioContext> &context,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
+
+  ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
   JSI_PROPERTY_GETTER_DECL(state);
@@ -46,10 +49,11 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(createWaveShaper);
   JSI_HOST_FUNCTION_DECL(createDelay);
 
-  std::shared_ptr<BaseAudioContext> context_;
-
  protected:
+  std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
+
+  std::shared_ptr<AudioDestinationNodeHostObject> destination_;
 };
 } // namespace audioapi

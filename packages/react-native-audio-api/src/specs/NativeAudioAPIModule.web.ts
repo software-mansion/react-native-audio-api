@@ -1,5 +1,9 @@
 import { TurboModule } from 'react-native';
-import { AudioDevicesInfo, PermissionStatus } from '../system/types';
+import {
+  AudioDevicesInfo,
+  AudioFocusType,
+  PermissionStatus,
+} from '../system/types';
 
 // copy of spec from NativeAudioAPIModule.ts
 type OptionsMap = {
@@ -18,12 +22,13 @@ interface Spec extends TurboModule {
     category: string,
     mode: string,
     options: Array<string>,
-    allowHaptics: boolean
+    allowHaptics: boolean,
+    notifyOthersOnDeactivation: boolean
   ): void;
   disableSessionManagement(): void;
 
   // Remote commands, system events and interruptions
-  observeAudioInterruptions(enabled: boolean): void;
+  observeAudioInterruptions(focusType: AudioFocusType, enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
 

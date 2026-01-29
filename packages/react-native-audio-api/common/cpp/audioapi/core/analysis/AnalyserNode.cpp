@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/dsp/AudioUtils.h>
@@ -6,18 +7,22 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace audioapi {
-AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context),
-      fftSize_(2048),
-      minDecibels_(-100),
-      maxDecibels_(-30),
-      smoothingTimeConstant_(0.8),
+
+AnalyserNode::AnalyserNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AnalyserOptions &options)
+    : AudioNode(context, options),
+      fftSize_(options.fftSize),
+      minDecibels_(options.minDecibels),
+      maxDecibels_(options.maxDecibels),
+      smoothingTimeConstant_(options.smoothingTimeConstant),
       windowType_(WindowType::BLACKMAN),
       inputBuffer_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBus_(std::make_unique<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
@@ -49,8 +54,8 @@ float AnalyserNode::getSmoothingTimeConstant() const {
   return smoothingTimeConstant_;
 }
 
-std::string AnalyserNode::getWindowType() const {
-  return AnalyserNode::toString(windowType_);
+AnalyserNode::WindowType AnalyserNode::getWindowType() const {
+  return windowType_;
 }
 
 void AnalyserNode::setFftSize(int fftSize) {
@@ -78,9 +83,8 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::setWindowType(const std::string &type) {
-  setWindowData(windowType_, fftSize_);
-  windowType_ = AnalyserNode::fromString(type);
+void AnalyserNode::setWindowType(AnalyserNode::WindowType type) {
+  setWindowData(type, fftSize_);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
@@ -187,12 +191,13 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(audioapi::AnalyserNode::WindowType type, int size) {
-  if (windowType_ == type && windowData_ && windowData_->getSize() == size) {
+void AnalyserNode::setWindowData(AnalyserNode::WindowType type, int size) {
+  if (windowType_ == type && windowData_ != nullptr && windowData_->getSize() == size) {
     return;
   }
 
-  if (!windowData_ || windowData_->getSize() != size) {
+  windowType_ = type;
+  if (windowData_ == nullptr || windowData_->getSize() != size) {
     windowData_ = std::make_shared<AudioArray>(size);
   }
 

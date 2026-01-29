@@ -21,6 +21,8 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace audioapi {
 
@@ -104,7 +106,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// RN side requires their "file://" prefix, but sometimes it returned raw path.
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
-Result<std::string, std::string> AndroidAudioRecorder::start() {
+Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (!isIdle()) {
@@ -218,7 +220,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
 
-  if (!isRecording()) {
+  if (isIdle()) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Recorder is not in recording state.");
   }
@@ -503,7 +505,16 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
-      // TODO: call error callback
+      uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
+
+      if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+        return;
+      }
+
+      std::string message = "Android recorder error: " + streamResult.unwrap_err();
+      std::unordered_map<std::string, EventValue> eventPayload{{"message", std::move(message)}};
+      audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+          AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
       return;
     }
 

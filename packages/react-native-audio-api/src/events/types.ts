@@ -28,30 +28,16 @@ export interface OnRecorderErrorEventType {
   message: string;
 }
 
-interface RemoteCommandEvents {
-  remotePlay: EventEmptyType;
-  remotePause: EventEmptyType;
-  remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType;
-  remoteChangePlaybackRate: EventTypeWithValue;
-  remoteNextTrack: EventEmptyType;
-  remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventTypeWithValue;
-  remoteSkipBackward: EventTypeWithValue;
-  remoteSeekForward: EventEmptyType;
-  remoteSeekBackward: EventEmptyType;
-  remoteChangePlaybackPosition: EventTypeWithValue;
-}
-
-type SystemEvents = RemoteCommandEvents & {
+type SystemEvents = {
   volumeChange: EventTypeWithValue;
   interruption: OnInterruptionEventType;
+  duck: EventEmptyType;
   routeChange: OnRouteChangeEventType;
 };
 
-export interface OnEndedEventType extends EventEmptyType {
-  bufferId: string | undefined;
-  isLast: boolean | undefined;
+export interface OnBufferEndEventType {
+  bufferId: string;
+  isLastBufferInQueue: boolean;
 }
 
 /**
@@ -79,12 +65,11 @@ export interface OnAudioReadyEventType {
 }
 
 interface AudioAPIEvents {
-  ended: OnEndedEventType;
+  ended: EventEmptyType;
   loopEnded: EventEmptyType;
   audioReady: OnAudioReadyEventType;
   positionChanged: EventTypeWithValue;
-  audioError: EventEmptyType; // to change
-  systemStateChanged: EventEmptyType; // to change
+  bufferEnded: OnBufferEndEventType;
   recorderError: OnRecorderErrorEventType;
 }
 

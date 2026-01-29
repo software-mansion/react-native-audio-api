@@ -1,12 +1,20 @@
 import { IConvolverNode } from '../interfaces';
+import { ConvolverOptions } from '../defaults';
+import { TConvolverOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
 
 export default class ConvolverNode extends AudioNode {
-  constructor(context: BaseAudioContext, node: IConvolverNode) {
-    super(context, node);
-    this.normalize = node.normalize;
+  constructor(context: BaseAudioContext, options?: TConvolverOptions) {
+    const finalOptions: TConvolverOptions = {
+      ...ConvolverOptions,
+      ...options,
+    };
+    const convolverNode: IConvolverNode =
+      context.context.createConvolver(finalOptions);
+    super(context, convolverNode);
+    this.normalize = convolverNode.normalize;
   }
 
   public get buffer(): AudioBuffer | null {

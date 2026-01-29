@@ -24,6 +24,13 @@ interface IIRFilterNodeOptions {
 }
 ```
 
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | One or both of the input arrays exceeds 20 members. |
+| `InvalidStateError` | All of the feedforward coefficients are 0, or the first feedback coefficient is 0. |
+
 ## Properties
 It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 

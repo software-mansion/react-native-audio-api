@@ -1,11 +1,12 @@
+#import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/system/SystemNotificationManager.h>
 
-@implementation NotificationManager
+@implementation SystemNotificationManager
 
-static NSString *NotificationManagerContext = @"NotificationManagerContext";
+static NSString *NotificationManagerContext = @"SystemNotificationManagerContext";
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
@@ -101,7 +102,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   if ([keyPath isEqualToString:@"outputVolume"]) {
     NSDictionary *body = @{@"value" : [NSNumber numberWithFloat:[change[@"new"] floatValue]]};
     if (self.volumeChangesObserved) {
-      [self.audioAPIModule invokeHandlerWithEventName:@"volumeChange" eventBody:body];
+      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::VOLUME_CHANGE
+                                            eventBody:body];
     }
   }
 }
@@ -124,7 +126,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
     if (self.audioInterruptionsObserved) {
       NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
-      [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                            eventBody:body];
     }
 
     return;
@@ -134,7 +137,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
   if (self.audioInterruptionsObserved) {
     NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @(shouldResume)};
-    [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+    [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                          eventBody:body];
   } else {
     dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
@@ -155,7 +159,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
     if (self.audioInterruptionsObserved) {
       NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
-      [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                            eventBody:body];
     }
     return;
   }
@@ -164,7 +169,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
   if (self.audioInterruptionsObserved) {
     NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @(shouldResume)};
-    [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+    [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                          eventBody:body];
   } else {
     dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
@@ -208,7 +214,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
   NSDictionary *body = @{@"reason" : reasonStr};
 
-  [self.audioAPIModule invokeHandlerWithEventName:@"routeChange" eventBody:body];
+  [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::ROUTE_CHANGE
+                                        eventBody:body];
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
@@ -216,8 +223,13 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   NSLog(
       @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine restartAudioEngine]; });
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [sessionManager markInactive];
+    [sessionManager setActive:YES error:nil];
+    [audioEngine restartAudioEngine];
+  });
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
@@ -275,7 +287,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
     NSDictionary *body = @{@"type" : @"began", @"shouldResume" : @false};
 
     if (self.audioInterruptionsObserved) {
-      [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                            eventBody:body];
     }
 
     return;
@@ -284,7 +297,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   NSDictionary *body = @{@"type" : @"ended", @"shouldResume" : @true};
 
   if (self.audioInterruptionsObserved) {
-    [self.audioAPIModule invokeHandlerWithEventName:@"interruption" eventBody:body];
+    [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                          eventBody:body];
   } else {
     dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
   }

@@ -17,12 +17,6 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-});
-
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
@@ -47,7 +41,7 @@ const Record: FC = () => {
       resumeIconResourceName: 'resume',
       color: 0xff6200,
     });
-  }
+  };
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
@@ -67,14 +61,32 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    const success = await AudioManager.setAudioSessionActivity(true);
+    let success = false;
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playAndRecord',
+      iosMode: 'default',
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    });
 
-    if (!success) {
+    try {
+      success = await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error(error);
       Alert.alert('Error', 'Failed to activate audio session for recording.');
+      setState(RecordingState.Idle);
       return;
     }
 
-    const result = Recorder.start();
+    if (!success) {
+      Alert.alert('Error', 'Failed to activate audio session for recording.');
+      setState(RecordingState.Idle);
+      return;
+    }
+
+    const result = Recorder.start({
+      fileNameOverride: `overridden_name_${Date.now()}`,
+    });
+
     setupNotification(false);
 
     if (result.status === 'success') {

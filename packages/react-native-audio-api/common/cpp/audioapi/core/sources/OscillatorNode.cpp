@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/dsp/AudioUtils.h>
@@ -8,23 +9,26 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioScheduledSourceNode(context),
-      frequencyParam_(
-          std::make_shared<AudioParam>(
-              444.0,
-              -context->getNyquistFrequency(),
-              context->getNyquistFrequency(),
-              context)),
-      detuneParam_(
-          std::make_shared<AudioParam>(
-              0.0,
-              -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-              1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      type_(OscillatorType::SINE),
-      periodicWave_(context->getBasicWaveForm(type_)) {
+OscillatorNode::OscillatorNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const OscillatorOptions &options)
+    : AudioScheduledSourceNode(context) {
+  frequencyParam_ = std::make_shared<AudioParam>(
+      options.frequency, -context->getNyquistFrequency(), context->getNyquistFrequency(), context);
+  detuneParam_ = std::make_shared<AudioParam>(
+      options.detune,
+      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      context);
+  type_ = options.type;
+  if (options.periodicWave) {
+    periodicWave_ = options.periodicWave;
+  } else {
+    periodicWave_ = context->getBasicWaveForm(type_);
+  }
+
   audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
+
   isInitialized_ = true;
 }
 
@@ -36,13 +40,13 @@ std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
   return detuneParam_;
 }
 
-std::string OscillatorNode::getType() {
-  return OscillatorNode::toString(type_);
+OscillatorType OscillatorNode::getType() {
+  return type_;
 }
 
-void OscillatorNode::setType(const std::string &type) {
+void OscillatorNode::setType(OscillatorType type) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    type_ = OscillatorNode::fromString(type);
+    type_ = type;
     periodicWave_ = context->getBasicWaveForm(type_);
   }
 }
@@ -64,7 +68,13 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
     return processingBus;
   }
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();

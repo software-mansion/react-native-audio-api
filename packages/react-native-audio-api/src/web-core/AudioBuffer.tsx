@@ -1,4 +1,6 @@
 import { IndexSizeError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
+import { TAudioBufferOptions } from '../types';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -9,12 +11,24 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: globalThis.AudioBuffer;
 
-  constructor(buffer: globalThis.AudioBuffer) {
-    this.buffer = buffer;
-    this.length = buffer.length;
-    this.duration = buffer.duration;
-    this.sampleRate = buffer.sampleRate;
-    this.numberOfChannels = buffer.numberOfChannels;
+  constructor(buffer: globalThis.AudioBuffer);
+  constructor(context: BaseAudioContext, options: TAudioBufferOptions);
+
+  constructor(
+    contextOrBuffer: BaseAudioContext | globalThis.AudioBuffer,
+    options?: TAudioBufferOptions
+  ) {
+    let buf: globalThis.AudioBuffer;
+    if (contextOrBuffer instanceof BaseAudioContext) {
+      buf = new globalThis.AudioBuffer(options!);
+    } else {
+      buf = contextOrBuffer as globalThis.AudioBuffer;
+    }
+    this.buffer = buf;
+    this.length = buf.length;
+    this.duration = buf.duration;
+    this.sampleRate = buf.sampleRate;
+    this.numberOfChannels = buf.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {

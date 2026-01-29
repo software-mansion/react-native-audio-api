@@ -15,8 +15,8 @@ extern "C" {
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
-#include <sys/stat.h>
 
+#include <sys/stat.h>
 #include <algorithm>
 #include <cassert>
 #include <memory>
@@ -62,7 +62,7 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 OpenFileResult FFmpegAudioFileWriter::openFile() {
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
-  auto filePathResult = fileoptions::getFilePath(fileProperties_);
+  auto filePathResult = fileoptions::getFilePath(fileProperties_, "");
 
   if (!filePathResult.is_ok()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());

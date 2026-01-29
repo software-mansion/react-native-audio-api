@@ -11,7 +11,7 @@
 #import <audioapi/AudioAPIModuleInstaller.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/ios/system/NotificationManager.h>
+#import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 
 #import <audioapi/events/AudioEventHandlerRegistry.h>
@@ -66,7 +66,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
   self.audioEngine = [[AudioEngine alloc] init];
-  self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
+  self.notificationManager = [[SystemNotificationManager alloc] initWithAudioAPIModule:self];
   self.notificationRegistry = [[NotificationRegistry alloc] initWithAudioAPIModule:self];
 
   auto jsiRuntime = reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime);
@@ -123,7 +123,28 @@ RCT_EXPORT_METHOD(
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    auto success = [self.audioSessionManager setActive:enabled];
+    NSError *error = nil;
+
+    auto success = [self.audioSessionManager setActive:enabled error:&error];
+
+    if (!success) {
+      NSDictionary *meta = @{
+        @"nativeCode" : @(error.code),
+        @"nativeDomain" : error.domain ?: @"",
+        @"nativeDesc" : error.description ?: @"",
+      };
+
+      NSError *jsError =
+          [NSError errorWithDomain:@"AudioAPIModule"
+                              code:error.code
+                          userInfo:@{
+                            NSLocalizedDescriptionKey : @"Failed to set audio session active state",
+                            @"meta" : meta,
+                          }];
+
+      reject(@"E_AUDIO_SESSION", @"Failed to set audio session active state", jsError);
+      return;
+    }
 
     resolve(@(success));
   });
@@ -131,7 +152,8 @@ RCT_EXPORT_METHOD(
 
 RCT_EXPORT_METHOD(
     setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics)
+        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
+            notifyOthersOnDeactivation)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -139,10 +161,11 @@ RCT_EXPORT_METHOD(
   [self.audioSessionManager setAudioSessionOptions:category
                                               mode:mode
                                            options:options
-                                      allowHaptics:allowHaptics];
+                                      allowHaptics:allowHaptics
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
 }
 
-RCT_EXPORT_METHOD(observeAudioInterruptions : (BOOL)enabled)
+RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
 {
   [self.notificationManager observeAudioInterruptions:enabled];
 }
@@ -259,10 +282,9 @@ RCT_EXPORT_METHOD(
 }
 #endif // RCT_NEW_ARCH_ENABLED
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody
+- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
+                         eventBody:(NSDictionary *)eventBody
 {
-  auto name = [eventName UTF8String];
-
   std::unordered_map<std::string, EventValue> body = {};
 
   for (NSString *key in eventBody) {
@@ -287,7 +309,7 @@ RCT_EXPORT_METHOD(
   }
 
   if (_eventHandler != nullptr) {
-    _eventHandler->invokeHandlerWithEventBody(name, body);
+    _eventHandler->invokeHandlerWithEventBody(eventName, body);
   }
 }
 

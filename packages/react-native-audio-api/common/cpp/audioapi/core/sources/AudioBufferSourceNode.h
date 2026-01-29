@@ -13,10 +13,13 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
+struct AudioBufferSourceOptions;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(std::shared_ptr<BaseAudioContext> context, bool pitchCorrection);
+  explicit AudioBufferSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioBufferSourceOptions &options);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
@@ -69,7 +72,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       size_t offsetLength,
       float playbackRate) override;
 
-  double getVirtualStartFrame(float sampleRate);
+  double getVirtualStartFrame(float sampleRate) const;
   double getVirtualEndFrame(float sampleRate);
 };
 

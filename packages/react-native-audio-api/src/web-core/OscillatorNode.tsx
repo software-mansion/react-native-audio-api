@@ -1,4 +1,4 @@
-import { OscillatorType } from '../types';
+import { OscillatorType, TOscillatorOptions } from '../types';
 import { InvalidStateError } from '../errors';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import BaseAudioContext from './BaseAudioContext';
@@ -9,7 +9,8 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, node: globalThis.OscillatorNode) {
+  constructor(context: BaseAudioContext, options?: TOscillatorOptions) {
+    const node = new globalThis.OscillatorNode(context.context, options);
     super(context, node);
 
     this.detune = new AudioParam(node.detune, context);

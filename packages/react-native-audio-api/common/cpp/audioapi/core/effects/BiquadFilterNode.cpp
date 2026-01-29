@@ -26,6 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
@@ -38,34 +39,32 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(std::shared_ptr<BaseAudioContext> context) : AudioNode(context) {
+BiquadFilterNode::BiquadFilterNode(const std::shared_ptr<BaseAudioContext>& context, const BiquadFilterOptions &options) : AudioNode(context, options) {
   frequencyParam_ =
-      std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency(), context);
+      std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0f,
+      options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
   QParam_ = std::make_shared<AudioParam>(
-      1.0f, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      0.0f, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = BiquadFilterType::LOWPASS;
+      options.gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
+  type_ = options.type;
   x1_.resize(MAX_CHANNEL_COUNT, 0.0f);
   x2_.resize(MAX_CHANNEL_COUNT, 0.0f);
   y1_.resize(MAX_CHANNEL_COUNT, 0.0f);
   y2_.resize(MAX_CHANNEL_COUNT, 0.0f);
   isInitialized_ = true;
-  channelCountMode_ = ChannelCountMode::MAX;
-  isInitialized_ = true;
 }
 
-std::string BiquadFilterNode::getType() {
-  return BiquadFilterNode::toString(type_);
+BiquadFilterType BiquadFilterNode::getType() {
+  return type_;
 }
 
-void BiquadFilterNode::setType(const std::string &type) {
-  type_ = BiquadFilterNode::fromString(type);
+void BiquadFilterNode::setType(BiquadFilterType type) {
+  type_ = type;
 }
 
 std::shared_ptr<AudioParam> BiquadFilterNode::getFrequencyParam() const {
@@ -113,11 +112,11 @@ void BiquadFilterNode::getFrequencyResponse(
 #endif
 
   // Use double precision for later calculations
-  double b0 = static_cast<double>(b0_);
-  double b1 = static_cast<double>(b1_);
-  double b2 = static_cast<double>(b2_);
-  double a1 = static_cast<double>(a1_);
-  double a2 = static_cast<double>(a2_);
+  auto b0 = static_cast<double>(b0_);
+  auto b1 = static_cast<double>(b1_);
+  auto b2 = static_cast<double>(b2_);
+  auto a1 = static_cast<double>(a1_);
+  auto a2 = static_cast<double>(a2_);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (!context)

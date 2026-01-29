@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
@@ -18,19 +19,21 @@
 namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
-    bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context, pitchCorrection), buffers_() {
+    const std::shared_ptr<BaseAudioContext> &context,
+    const BaseAudioBufferSourceOptions &options)
+    : AudioBufferBaseSourceNode(context, options) {
+  buffers_ = {};
   stretch_->presetDefault(channelCount_, context->getSampleRate());
 
-  if (pitchCorrection) {
+  if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
 
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    tailBuffer_ =
-        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
+    auto audioBufferOptions = AudioBufferOptions(
+        extraTailFrames, static_cast<size_t>(channelCount_), context->getSampleRate());
+    tailBuffer_ = std::make_shared<AudioBuffer>(audioBufferOptions);
 
     tailBuffer_->bus_->zero();
   }
@@ -74,6 +77,10 @@ void AudioBufferQueueSourceNode::pause() {
 std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   auto locker = Locker(getBufferLock());
   buffers_.emplace(bufferId_, buffer);
+
+  if (tailBuffer_ != nullptr) {
+    addExtraTailFrames_ = true;
+  }
 
   return std::to_string(bufferId_++);
 }
@@ -122,6 +129,14 @@ void AudioBufferQueueSourceNode::disable() {
   buffers_ = {};
 }
 
+void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId) {
+  auto oldCallbackId = onBufferEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, oldCallbackId);
+  }
+}
+
 std::shared_ptr<AudioBus> AudioBufferQueueSourceNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
@@ -152,6 +167,18 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
         playedBuffersDuration_;
   } else {
     return 0.0;
+  }
+}
+
+void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
+  auto onBufferEndedCallbackId = onBufferEndedCallbackId_.load(std::memory_order_acquire);
+
+  if (onBufferEndedCallbackId != 0) {
+    std::unordered_map<std::string, EventValue> body = {
+        {"bufferId", std::to_string(bufferId)}, {"isLastBufferInQueue", isLastBufferInQueue}};
+
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::BUFFER_ENDED, onBufferEndedCallbackId, body);
   }
 }
 
@@ -193,20 +220,15 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
       playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
-      std::unordered_map<std::string, EventValue> body = {
-          {"bufferId", std::to_string(bufferId)}, {"isLast", buffers_.empty()}};
-      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-        context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-            "ended", onEndedCallbackId_, body);
+      if (!(buffers_.empty() && addExtraTailFrames_)) {
+        sendOnBufferEndedEvent(bufferId, buffers_.empty());
       }
 
       if (buffers_.empty()) {
         if (addExtraTailFrames_) {
-          buffers_.emplace(bufferId_, tailBuffer_);
-          bufferId_++;
-
+          buffers_.emplace(bufferId, tailBuffer_);
           addExtraTailFrames_ = false;
-        } else if (buffers_.empty()) {
+        } else {
           processingBus->zero(writeIndex, framesLeft);
           readIndex = 0;
 
@@ -281,11 +303,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
       playedBuffersDuration_ += buffer->getDuration();
       buffers_.pop();
 
-      std::unordered_map<std::string, EventValue> body = {{"bufferId", std::to_string(bufferId)}};
-      if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-        context->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-            "ended", onEndedCallbackId_, body);
-      }
+      sendOnBufferEndedEvent(bufferId, buffers_.empty());
 
       if (buffers_.empty()) {
         processingBus->zero(writeIndex, framesLeft);

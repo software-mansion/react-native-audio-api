@@ -282,7 +282,7 @@ ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
 ma_result MiniAudioFileWriter::initializeEncoder() {
   ma_result result;
   Result<std::string, std::string> filePathResult =
-      android::fileoptions::getFilePath(fileProperties_);
+      android::fileoptions::getFilePath(fileProperties_, "");
 
   if (!filePathResult.is_ok()) {
     return MA_ERROR;

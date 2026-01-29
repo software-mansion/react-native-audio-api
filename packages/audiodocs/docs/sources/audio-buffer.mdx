@@ -17,7 +17,20 @@ Once you have data in `AudioBuffer`, audio can be played by passing it to [`Audi
 
 ## Constructor
 
-[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/docs/core/base-audio-context#createbuffer)
+```tsx
+constructor(context: BaseAudioContext, options: AudioBufferOptions)
+```
+
+### `AudioBufferOptions`
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `numberOfChannels` <Optional /> | `number` | 1.0 | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
+| `length` | `number` | - | [`Length`](/docs/sources/audio-buffer#properties) of the buffer |
+| `sampleRate` | `number` | - | [`Sample rate`](/docs/sources/audio-buffer#properties) of the buffer in Hz |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/docs/core/base-audio-context#createbuffer) that creates buffer with default values.
 
 ## Decoding
 

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -26,7 +27,7 @@ class StereoPannerTest : public ::testing::Test {
 class TestableStereoPannerNode : public StereoPannerNode {
  public:
   explicit TestableStereoPannerNode(std::shared_ptr<BaseAudioContext> context)
-      : StereoPannerNode(context) {}
+      : StereoPannerNode(context, StereoPannerOptions()) {}
 
   void setPanParam(float value) {
     getPanParam()->setValue(value);
@@ -40,7 +41,7 @@ class TestableStereoPannerNode : public StereoPannerNode {
 };
 
 TEST_F(StereoPannerTest, StereoPannerCanBeCreated) {
-  auto panner = context->createStereoPanner();
+  auto panner = context->createStereoPanner(StereoPannerOptions());
   ASSERT_NE(panner, nullptr);
 }
 

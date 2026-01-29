@@ -11,12 +11,13 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
+struct BaseAudioBufferSourceOptions;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(
-      std::shared_ptr<BaseAudioContext> context,
-      bool pitchCorrection);
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BaseAudioBufferSourceOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
