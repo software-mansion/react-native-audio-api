@@ -1,5 +1,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
@@ -75,6 +76,7 @@ AudioGraphManager::AudioGraphManager() {
   sourceNodes_.reserve(kInitialCapacity);
   processingNodes_.reserve(kInitialCapacity);
   audioParams_.reserve(kInitialCapacity);
+  audioBuffers_.reserve(kInitialCapacity);
 
   auto channel_pair = channels::spsc::channel<
       std::unique_ptr<Event>,
@@ -117,8 +119,9 @@ void AudioGraphManager::addPendingParamConnection(
 
 void AudioGraphManager::preProcessGraph() {
   settlePendingConnections();
-  prepareNodesForDestruction(sourceNodes_);
-  prepareNodesForDestruction(processingNodes_);
+  AudioGraphManager::prepareForDestruction(sourceNodes_, nodeDestructor_);
+  AudioGraphManager::prepareForDestruction(processingNodes_, nodeDestructor_);
+  AudioGraphManager::prepareForDestruction(audioBuffers_, bufferDestructor_);
 }
 
 void AudioGraphManager::addProcessingNode(const std::shared_ptr<AudioNode> &node) {
@@ -146,6 +149,11 @@ void AudioGraphManager::addAudioParam(const std::shared_ptr<AudioParam> &param) 
   event->payload.audioParam = param;
 
   sender_.send(std::move(event));
+}
+
+void AudioGraphManager::addAudioBuffeForDestruction(std::shared_ptr<AudioBuffer> buffer) {
+  // direct access because this is called from the Audio thread
+  audioBuffers_.push_back(std::move(buffer));
 }
 
 void AudioGraphManager::settlePendingConnections() {
@@ -214,71 +222,6 @@ void AudioGraphManager::handleAddToDeconstructionEvent(std::unique_ptr<Event> ev
   }
 }
 
-template <typename U>
-inline bool AudioGraphManager::nodeCanBeDestructed(std::shared_ptr<U> const &node) {
-  // If the node is an AudioScheduledSourceNode, we need to check if it is
-  // playing
-  if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
-    return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
-  } else if (node->requiresTailProcessing()) {
-    // if the node requires tail processing, its own implementation handles disabling it at the right time
-    return node.use_count() == 1 && !node->isEnabled();
-  }
-  return node.use_count() == 1;
-}
-
-template <typename U>
-void AudioGraphManager::prepareNodesForDestruction(std::vector<std::shared_ptr<U>> &vec) {
-  if (vec.empty()) {
-    return;
-  }
-  /// An example of input-output
-  /// for simplicity we will be considering vector where each value represents
-  /// use_count() of an element vec = [1, 2, 1, 3, 1] our end result will be vec
-  /// = [2, 3, 1, 1, 1] After this operation all nodes with use_count() == 1
-  /// will be at the end and we will try to send them After sending, we will
-  /// only keep nodes with use_count() > 1 or which failed vec = [2, 3, failed,
-  /// sent, sent] // failed will be always before sents vec = [2, 3, failed] and
-  /// we resize
-  /// @note if there are no nodes with use_count() == 1 `begin` will be equal to
-  /// vec.size()
-  /// @note if all nodes have use_count() == 1 `begin` will be 0
-
-  int begin = 0;
-  int end = vec.size() - 1; // can be -1 (edge case)
-
-  // Moves all nodes with use_count() == 1 to the end
-  // nodes in range [begin, vec.size()) should be deleted
-  // so new size of the vector will be `begin`
-  while (begin <= end) {
-    while (begin < end && AudioGraphManager::nodeCanBeDestructed(vec[end])) {
-      end--;
-    }
-    if (AudioGraphManager::nodeCanBeDestructed(vec[begin])) {
-      std::swap(vec[begin], vec[end]);
-      end--;
-    }
-    begin++;
-  }
-
-  for (int i = begin; i < vec.size(); i++) {
-    if (vec[i])
-      vec[i]->cleanup();
-
-    /// If we fail to add we can't safely remove the node from the vector
-    /// so we swap it and advance begin cursor
-    /// @note vec[i] does NOT get moved out if it is not successfully added.
-    if (!nodeDestructor_.tryAddForDeconstruction(std::move(vec[i]))) {
-      std::swap(vec[i], vec[begin]);
-      begin++;
-    }
-  }
-  if (begin < vec.size()) {
-    // it does not realocate if newer size is < current size
-    vec.resize(begin);
-  }
-}
-
 void AudioGraphManager::cleanup() {
   for (auto it = sourceNodes_.begin(), end = sourceNodes_.end(); it != end; ++it) {
     it->get()->cleanup();
@@ -291,6 +234,7 @@ void AudioGraphManager::cleanup() {
   sourceNodes_.clear();
   processingNodes_.clear();
   audioParams_.clear();
+  audioBuffers_.clear();
 }
 
 } // namespace audioapi
