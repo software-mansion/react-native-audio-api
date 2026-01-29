@@ -22,10 +22,9 @@ class AudioBuffer;
       channels::spsc::WaitStrategy::BUSY_LOOP
 
 template <typename T>
-concept HasCleanupMethod =
-    requires(T t) {
-      { t->cleanup() }
-    }
+concept HasCleanupMethod = requires(T t) {
+  { t->cleanup() };
+};
 
 class AudioGraphManager {
  public:
