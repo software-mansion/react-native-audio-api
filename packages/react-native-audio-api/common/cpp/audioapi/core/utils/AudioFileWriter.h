@@ -15,11 +15,11 @@ class AudioEventHandlerRegistry;
 typedef Result<std::string, std::string> OpenFileResult;
 typedef Result<std::tuple<double, double>, std::string> CloseFileResult;
 
-#ifdef ANDROID
-typedef void *AudioDataType;
-#else
+#if defined(__APPLE__)
 #include <CoreAudio/CoreAudioTypes.h>
 typedef const AudioBufferList *AudioDataType;
+#else
+typedef void *AudioDataType;
 #endif
 
 class AudioFileWriter {
