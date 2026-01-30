@@ -48,7 +48,7 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->normalize();
 
-  currentSampleFrame_.fetch_add(numFrames, std::memory_order_acq_rel);
+  currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 }
 
 } // namespace audioapi

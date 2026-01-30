@@ -28,7 +28,7 @@ class AudioParam {
 
   // JS-Thread only
   [[nodiscard]] inline float getValue() const noexcept {
-    return value_.load(std::memory_order_acquire);
+    return value_.load(std::memory_order_relaxed);
   }
 
   // JS-Thread only

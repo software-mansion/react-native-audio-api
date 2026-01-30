@@ -14,8 +14,7 @@ namespace audioapi {
 template <typename T>
 class AudioDestructor {
  public:
-  AudioDestructor() {
-    isExiting_.store(false, std::memory_order_release);
+  AudioDestructor() : isExiting_(false) {
     auto [sender, receiver] = channels::spsc::channel<
         std::shared_ptr<T>,
         channels::spsc::OverflowStrategy::WAIT_ON_FULL,

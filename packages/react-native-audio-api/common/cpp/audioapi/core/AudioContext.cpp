@@ -40,7 +40,7 @@ void AudioContext::close() {
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-    getGraphManager()->cleanup();
+  getGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {

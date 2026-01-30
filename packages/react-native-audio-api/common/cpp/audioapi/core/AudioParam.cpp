@@ -29,7 +29,7 @@ AudioParam::AudioParam(
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
-    return value_.load(std::memory_order_acquire);
+    return value_.load(std::memory_order_relaxed);
   };
 }
 

@@ -165,9 +165,9 @@ class AudioGraphManager {
     /// for simplicity we will be considering vector where each value represents
     /// use_count() of an element vec = [1, 2, 1, 3, 1] our end result will be vec
     /// = [2, 3, 1, 1, 1] After this operation all nodes with use_count() == 1
-    /// will be at the end and we will try to send them After sending, we will
+    /// will be at the end and we will try to send them. After sending, we will
     /// only keep audio objects with use_count() > 1 or which failed vec = [2, 3, failed,
-    /// sent, sent] // failed will be always before sents vec = [2, 3, failed] and
+    /// sent, sent] failed will be always before sents vec = [2, 3, failed] and
     /// we resize
     /// @note if there are no nodes with use_count() == 1 `begin` will be equal to
     /// vec.size()
