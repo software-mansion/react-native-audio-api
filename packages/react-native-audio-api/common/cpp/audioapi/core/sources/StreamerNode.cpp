@@ -26,7 +26,7 @@ namespace audioapi {
 StreamerNode::StreamerNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const StreamerOptions &options)
-    : AudioScheduledSourceNode(context),
+    : AudioScheduledSourceNode(context, options),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
       decoder_(nullptr),

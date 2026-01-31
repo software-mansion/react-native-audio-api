@@ -2,7 +2,6 @@ import { IAudioBuffer } from '../interfaces';
 import { IndexSizeError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import { TAudioBufferOptions } from '../types';
-import { AudioBufferOptions } from '../defaults';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -21,12 +20,11 @@ export default class AudioBuffer {
   ) {
     let buf: IAudioBuffer;
     if (contextOrBuffer instanceof BaseAudioContext) {
-      const finalOptions = {
-        ...AudioBufferOptions,
-        ...options,
-      };
       const context = contextOrBuffer;
-      buf = context.context.createBuffer(finalOptions);
+      if (options?.numberOfChannels) {
+        options.numberOfChannels = 1;
+      }
+      buf = context.context.createBuffer(options!);
     } else {
       buf = contextOrBuffer;
     }

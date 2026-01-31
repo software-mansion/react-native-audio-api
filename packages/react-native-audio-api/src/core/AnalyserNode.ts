@@ -1,5 +1,4 @@
 import BaseAudioContext from './BaseAudioContext';
-import { AnalyserOptions } from '../defaults';
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
 import { WindowType, TAnalyserOptions } from '../types';
@@ -12,14 +11,10 @@ export default class AnalyserNode extends AudioNode {
   ];
 
   constructor(context: BaseAudioContext, options?: TAnalyserOptions) {
-    const finalOptions: TAnalyserOptions = {
-      ...AnalyserOptions,
-      ...options,
-    };
-
-    AnalyserOptionsValidator.validate(finalOptions);
-    const analyserNode: IAnalyserNode =
-      context.context.createAnalyser(finalOptions);
+    AnalyserOptionsValidator.validate(options);
+    const analyserNode: IAnalyserNode = context.context.createAnalyser(
+      options || {}
+    );
     super(context, analyserNode);
   }
 

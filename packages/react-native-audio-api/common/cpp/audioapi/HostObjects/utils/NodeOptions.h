@@ -17,75 +17,90 @@
 namespace audioapi {
 struct AudioNodeOptions {
   int channelCount = 2;
-  ChannelCountMode channelCountMode;
-  ChannelInterpretation channelInterpretation;
+  ChannelCountMode channelCountMode = ChannelCountMode::MAX;
+  ChannelInterpretation channelInterpretation = ChannelInterpretation::SPEAKERS;
+  int numberOfInputs = 1;
+  int numberOfOutputs = 1;
+  bool requiresTailProcessing = false;
+};
+
+struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
+  AudioScheduledSourceNodeOptions() {
+    numberOfInputs = 0;
+  }
+};
+
+struct RequirerTailProcessingOptions : AudioNodeOptions {
+  RequirerTailProcessingOptions() {
+    requiresTailProcessing = true;
+  }
 };
 
 struct GainOptions : AudioNodeOptions {
-  float gain;
+  float gain = 1.0f;
 };
 
 struct StereoPannerOptions : AudioNodeOptions {
-  float pan;
+  float pan = 0.0f;
 };
 
-struct ConvolverOptions : AudioNodeOptions {
+struct ConvolverOptions : RequirerTailProcessingOptions {
   std::shared_ptr<AudioBuffer> bus;
-  bool disableNormalization;
+  bool disableNormalization = false;
 };
 
 struct ConstantSourceOptions {
-  float offset;
+  float offset = 1.0f;
 };
 
 struct AnalyserOptions : AudioNodeOptions {
-  int fftSize;
-  float minDecibels;
-  float maxDecibels;
-  float smoothingTimeConstant;
+  int fftSize = 2048;
+  float minDecibels = -100.0f;
+  float maxDecibels = -30.0f;
+  float smoothingTimeConstant = 0.8f;
 };
 
 struct BiquadFilterOptions : AudioNodeOptions {
-  BiquadFilterType type;
-  float frequency;
-  float detune;
-  float Q;
-  float gain;
+  BiquadFilterType type = BiquadFilterType::LOWPASS;
+  float frequency = 350.0f;
+  float detune = 0.0f;
+  float Q = 1.0f;
+  float gain = 0.0f;
 };
 
-struct OscillatorOptions {
+struct OscillatorOptions : AudioScheduledSourceNodeOptions {
   std::shared_ptr<PeriodicWave> periodicWave;
-  float frequency;
-  float detune;
-  OscillatorType type;
+  float frequency = 440.0f;
+  float detune = 0.0f;
+  OscillatorType type = OscillatorType::SINE;
 };
 
-struct BaseAudioBufferSourceOptions {
-  float detune;
-  bool pitchCorrection;
-  float playbackRate;
+struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
+  float detune = 0.0f;
+  bool pitchCorrection = false;
+  float playbackRate = 1.0f;
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   std::shared_ptr<AudioBuffer> buffer;
-  bool loop;
-  float loopStart;
-  float loopEnd;
+  bool loop = false;
+  float loopStart = 0.0f;
+  float loopEnd = 0.0f;
 };
 
-struct StreamerOptions {
+struct StreamerOptions : AudioScheduledSourceNodeOptions {
   std::string streamPath;
 };
 
 struct AudioBufferOptions {
-  int numberOfChannels;
-  size_t length;
-  float sampleRate;
+  int numberOfChannels = 1;
+  size_t length = 0;
+  float sampleRate = 44100.0f;
 };
 
-struct DelayOptions : AudioNodeOptions {
-  float maxDelayTime;
-  float delayTime;
+struct DelayOptions : RequirerTailProcessingOptions {
+  float maxDelayTime = 1.0f;
+  float delayTime = 0.0f;
 };
 
 struct IIRFilterOptions : AudioNodeOptions {
@@ -105,7 +120,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 
 struct WaveShaperOptions : AudioNodeOptions {
   std::shared_ptr<AudioArray> curve;
-  OverSampleType oversample;
+  OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
 };
 
 } // namespace audioapi

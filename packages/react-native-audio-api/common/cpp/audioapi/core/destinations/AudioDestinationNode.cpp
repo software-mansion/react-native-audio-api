@@ -9,8 +9,6 @@ namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
     : AudioNode(context), currentSampleFrame_(0) {
-  numberOfOutputs_ = 0;
-  numberOfInputs_ = 1;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
   isInitialized_ = true;
 }

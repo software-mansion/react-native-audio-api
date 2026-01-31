@@ -102,7 +102,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
-  createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
+  createConvolver: (convolverOptions?: TConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: TWaveShaperOptions) => IWaveShaperNode;
 }

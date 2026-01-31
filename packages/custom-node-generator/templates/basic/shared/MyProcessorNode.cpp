@@ -2,7 +2,7 @@
 #include <audioapi/utils/AudioBus.h>
 
 namespace audioapi {
-MyProcessorNode::MyProcessorNode(BaseAudioContext *context)
+MyProcessorNode::MyProcessorNode(std::shared_ptr<BaseAudioContext> context)
     : AudioNode(context) {
     isInitialized_ = true;
 }

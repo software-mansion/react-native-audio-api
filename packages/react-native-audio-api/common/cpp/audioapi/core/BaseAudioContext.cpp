@@ -45,7 +45,7 @@ BaseAudioContext::BaseAudioContext(
       runtimeRegistry_(runtimeRegistry) {}
 
 void BaseAudioContext::initialize() {
-  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
+  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this(), AudioNodeOptions{});
 }
 
 ContextState BaseAudioContext::getState() {

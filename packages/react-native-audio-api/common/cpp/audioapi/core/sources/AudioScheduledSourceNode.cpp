@@ -16,14 +16,12 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context),
+AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context, const AudioScheduledSourceNodeOptions &options)
+    : AudioNode(context, options),
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {
-  numberOfInputs_ = 0;
-}
+      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {}
 
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST

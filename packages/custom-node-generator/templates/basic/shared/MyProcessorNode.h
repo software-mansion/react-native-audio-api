@@ -6,7 +6,7 @@ class AudioBus;
 
 class MyProcessorNode : public AudioNode {
 public:
-  explicit MyProcessorNode(BaseAudioContext *context);
+  explicit MyProcessorNode(std::shared_ptr<BaseAudioContext> context);
 
 protected:
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &bus,

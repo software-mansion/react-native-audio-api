@@ -3,7 +3,6 @@ import { IBiquadFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
-import { BiquadFilterOptions } from '../defaults';
 import { TBiquadFilterOptions } from '../types';
 
 export default class BiquadFilterNode extends AudioNode {
@@ -13,12 +12,9 @@ export default class BiquadFilterNode extends AudioNode {
   readonly gain: AudioParam;
 
   constructor(context: BaseAudioContext, options?: TBiquadFilterOptions) {
-    const finalOptions: TBiquadFilterOptions = {
-      ...BiquadFilterOptions,
-      ...options,
-    };
-    const biquadFilter: IBiquadFilterNode =
-      context.context.createBiquadFilter(finalOptions);
+    const biquadFilter: IBiquadFilterNode = context.context.createBiquadFilter(
+      options || {}
+    );
     super(context, biquadFilter);
     this.frequency = new AudioParam(biquadFilter.frequency, context);
     this.detune = new AudioParam(biquadFilter.detune, context);

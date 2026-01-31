@@ -131,7 +131,7 @@ export interface TAnalyserOptions extends TAudioNodeOptions {
 }
 
 export interface OptionsValidator<T> {
-  validate(options: T): void;
+  validate(options?: T): void;
 }
 
 export interface TBiquadFilterOptions extends TAudioNodeOptions {

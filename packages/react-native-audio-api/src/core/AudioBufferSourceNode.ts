@@ -6,18 +6,13 @@ import { EventEmptyType } from '../events/types';
 import { AudioEventSubscription } from '../events';
 import { TAudioBufferSourceOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
-import { AudioBufferSourceOptions } from '../defaults';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   private onLoopEndedSubscription?: AudioEventSubscription;
   private onLoopEndedCallback?: (event: EventEmptyType) => void;
 
   constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    const finalOptions: TAudioBufferSourceOptions = {
-      ...AudioBufferSourceOptions,
-      ...options,
-    };
-    const node = context.context.createBufferSource(finalOptions);
+    const node = context.context.createBufferSource(options || {});
     super(context, node);
   }
 

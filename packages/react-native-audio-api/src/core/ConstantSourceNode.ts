@@ -1,5 +1,4 @@
 import { IConstantSourceNode } from '../interfaces';
-import { ConstantSourceOptions } from '../defaults';
 import { TConstantSourceOptions } from '../types';
 import AudioParam from './AudioParam';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
@@ -9,12 +8,9 @@ export default class ConstantSourceNode extends AudioScheduledSourceNode {
   readonly offset: AudioParam;
 
   constructor(context: BaseAudioContext, options?: TConstantSourceOptions) {
-    const finalOptions: TConstantSourceOptions = {
-      ...ConstantSourceOptions,
-      ...options,
-    };
-    const node: IConstantSourceNode =
-      context.context.createConstantSource(finalOptions);
+    const node: IConstantSourceNode = context.context.createConstantSource(
+      options || {}
+    );
     super(context, node);
     this.offset = new AudioParam(node.offset, context);
   }
