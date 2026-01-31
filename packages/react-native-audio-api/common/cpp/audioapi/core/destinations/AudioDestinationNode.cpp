@@ -3,13 +3,13 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
 
 namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
-    : AudioNode(context), currentSampleFrame_(0) {
-  channelCountMode_ = ChannelCountMode::EXPLICIT;
+    : AudioNode(context, AudioDestinationOptions()), currentSampleFrame_(0) {
   isInitialized_ = true;
 }
 

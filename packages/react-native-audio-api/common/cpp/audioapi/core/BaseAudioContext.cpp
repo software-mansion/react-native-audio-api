@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -46,7 +46,7 @@ BaseAudioContext::BaseAudioContext(
       runtimeRegistry_(runtimeRegistry) {}
 
 void BaseAudioContext::initialize() {
-  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this(), AudioNodeOptions{});
+  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 
 ContextState BaseAudioContext::getState() {

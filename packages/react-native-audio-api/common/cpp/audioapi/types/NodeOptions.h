@@ -24,15 +24,16 @@ struct AudioNodeOptions {
   bool requiresTailProcessing = false;
 };
 
-struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
-  AudioScheduledSourceNodeOptions() {
-    numberOfInputs = 0;
+struct AudioDestinationOptions : AudioNodeOptions {
+  AudioDestinationOptions() {
+    numberOfOutputs = 0;
+    channelCountMode = ChannelCountMode::EXPLICIT;
   }
 };
 
-struct RequirerTailProcessingOptions : AudioNodeOptions {
-  RequirerTailProcessingOptions() {
-    requiresTailProcessing = true;
+struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
+  AudioScheduledSourceNodeOptions() {
+    numberOfInputs = 0;
   }
 };
 
@@ -44,9 +45,13 @@ struct StereoPannerOptions : AudioNodeOptions {
   float pan = 0.0f;
 };
 
-struct ConvolverOptions : RequirerTailProcessingOptions {
+struct ConvolverOptions : AudioNodeOptions {
   std::shared_ptr<AudioBuffer> bus;
   bool disableNormalization = false;
+
+  explicit ConvolverOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+        requiresTailProcessing = true;
+  }
 };
 
 struct ConstantSourceOptions {
@@ -98,9 +103,13 @@ struct AudioBufferOptions {
   float sampleRate = 44100.0f;
 };
 
-struct DelayOptions : RequirerTailProcessingOptions {
+struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;
+
+    explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+        requiresTailProcessing = true;
+    }
 };
 
 struct IIRFilterOptions : AudioNodeOptions {

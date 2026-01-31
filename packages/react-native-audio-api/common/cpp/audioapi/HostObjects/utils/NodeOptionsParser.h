@@ -9,7 +9,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {
 AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {

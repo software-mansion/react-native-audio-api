@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
 
 #include <algorithm>

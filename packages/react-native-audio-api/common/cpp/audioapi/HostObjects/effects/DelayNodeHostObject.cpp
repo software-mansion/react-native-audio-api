@@ -2,7 +2,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <memory>
 

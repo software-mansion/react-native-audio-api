@@ -3,6 +3,7 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <cassert>
 #include <cstddef>
@@ -16,14 +17,12 @@ namespace audioapi {
 class AudioBus;
 class BaseAudioContext;
 class AudioParam;
-struct AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context);
   explicit AudioNode(
       const std::shared_ptr<BaseAudioContext> &context,
-      const AudioNodeOptions &options);
+      const AudioNodeOptions &options = AudioNodeOptions());
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;
