@@ -192,8 +192,8 @@ export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
 
 export interface TAudioBufferOptions {
   numberOfChannels?: number;
-  length: number;
-  sampleRate: number;
+  length?: number;
+  sampleRate?: number;
 }
 
 export interface TIIRFilterOptions extends TAudioNodeOptions {

@@ -10,7 +10,6 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioScheduledSourceNode;
-struct AudioScheduledSourceNodeOptions;
 
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:

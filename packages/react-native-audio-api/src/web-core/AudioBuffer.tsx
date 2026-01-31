@@ -20,7 +20,11 @@ export default class AudioBuffer {
   ) {
     let buf: globalThis.AudioBuffer;
     if (contextOrBuffer instanceof BaseAudioContext) {
-      buf = new globalThis.AudioBuffer(options!);
+      buf = new globalThis.AudioBuffer({
+        numberOfChannels: options?.numberOfChannels || undefined,
+        length: options?.length || 0,
+        sampleRate: options?.sampleRate || contextOrBuffer.sampleRate,
+      });
     } else {
       buf = contextOrBuffer as globalThis.AudioBuffer;
     }
@@ -58,7 +62,11 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
+    this.buffer.copyFromChannel(
+      destination as Float32Array<ArrayBuffer>,
+      channelNumber,
+      startInChannel
+    );
   }
 
   public copyToChannel(
@@ -78,6 +86,10 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyToChannel(source, channelNumber, startInChannel);
+    this.buffer.copyToChannel(
+      source as Float32Array<ArrayBuffer>,
+      channelNumber,
+      startInChannel
+    );
   }
 }

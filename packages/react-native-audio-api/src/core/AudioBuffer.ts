@@ -21,10 +21,14 @@ export default class AudioBuffer {
     let buf: IAudioBuffer;
     if (contextOrBuffer instanceof BaseAudioContext) {
       const context = contextOrBuffer;
-      if (options?.numberOfChannels) {
-        options.numberOfChannels = 1;
+
+      if (!options) {
+        options = {
+          numberOfChannels: 1,
+        };
       }
-      buf = context.context.createBuffer(options!);
+
+      buf = context.context.createBuffer(options);
     } else {
       buf = contextOrBuffer;
     }
