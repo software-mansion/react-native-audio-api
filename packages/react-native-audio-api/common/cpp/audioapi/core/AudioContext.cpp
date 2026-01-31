@@ -6,7 +6,7 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <memory>
 #include <string>
 
@@ -19,7 +19,7 @@ AudioContext::AudioContext(
     isInitialized_(false) {}
 
 AudioContext::~AudioContext() {
-  if (!isClosed()) {
+  if (getState() != ContextState::CLOSED) {
     close();
   }
 }
@@ -28,32 +28,32 @@ void AudioContext::initialize() {
   BaseAudioContext::initialize();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
 #endif
 }
 
 void AudioContext::close() {
-  state_ = ContextState::CLOSED;
+  setState(ContextState::CLOSED);
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-  nodeManager_->cleanup();
+  getGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {
-  if (isClosed()) {
+  if (getState() == ContextState::CLOSED) {
     return false;
   }
 
-  if (isRunning()) {
+  if (getState() == ContextState::RUNNING) {
     return true;
   }
 
   if (isInitialized_ && audioPlayer_->resume()) {
-    state_ = ContextState::RUNNING;
+    setState(ContextState::RUNNING);
     return true;
   }
 
@@ -61,28 +61,28 @@ bool AudioContext::resume() {
 }
 
 bool AudioContext::suspend() {
-  if (isClosed()) {
+  if (getState() == ContextState::CLOSED) {
     return false;
   }
 
-  if (isSuspended()) {
+  if (getState() == ContextState::SUSPENDED) {
     return true;
   }
 
   audioPlayer_->suspend();
 
-  state_ = ContextState::SUSPENDED;
+  setState(ContextState::SUSPENDED);
   return true;
 }
 
 bool AudioContext::start() {
-  if (isClosed()) {
+  if (getState() == ContextState::CLOSED) {
     return false;
   }
 
   if (!isInitialized_ && audioPlayer_->start()) {
     isInitialized_ = true;
-    state_ = ContextState::RUNNING;
+    setState(ContextState::RUNNING);
 
     return true;
   }

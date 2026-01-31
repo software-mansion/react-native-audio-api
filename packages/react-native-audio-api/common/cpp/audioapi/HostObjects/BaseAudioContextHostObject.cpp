@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
-#include <audioapi/HostObjects/WorkletNodeHostObject.h>
-#include <audioapi/HostObjects/WorkletProcessingNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
@@ -97,9 +97,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
   auto shouldUseUiRuntime = args[1].getBool();
   auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
-    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+    workletRuntime = context_->getRuntimeRegistry().uiRuntime;
   } else {
-    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+    workletRuntime = context_->getRuntimeRegistry().audioRuntime;
   }
 
   auto workletSourceNode =
@@ -120,9 +120,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
   auto shouldUseUiRuntime = args[1].getBool();
   auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
-    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+    workletRuntime = context_->getRuntimeRegistry().uiRuntime;
   } else {
-    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+    workletRuntime = context_->getRuntimeRegistry().audioRuntime;
   }
   auto bufferLength = static_cast<size_t>(args[2].getNumber());
   auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
@@ -148,9 +148,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletProcessingNode) 
   auto shouldUseUiRuntime = args[1].getBool();
   auto shouldLockRuntime = shouldUseUiRuntime;
   if (shouldUseUiRuntime) {
-    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+    workletRuntime = context_->getRuntimeRegistry().uiRuntime;
   } else {
-    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+    workletRuntime = context_->getRuntimeRegistry().audioRuntime;
   }
 
   auto workletProcessingNode =

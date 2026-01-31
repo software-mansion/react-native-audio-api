@@ -3,7 +3,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.h>
@@ -31,13 +31,13 @@ OfflineAudioContext::OfflineAudioContext(
       resultBus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
-  nodeManager_->cleanup();
+    getGraphManager()->cleanup();
 }
 
 void OfflineAudioContext::resume() {
   Locker locker(mutex_);
 
-  if (state_ == ContextState::RUNNING) {
+  if (getState() == ContextState::RUNNING) {
     return;
   }
 
@@ -49,7 +49,7 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 
   // we can only suspend once per render quantum at the end of the quantum
   // first quantum is [0, RENDER_QUANTUM_SIZE)
-  auto frame = static_cast<size_t>(when * sampleRate_);
+  auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (scheduledSuspends_.find(frame) != scheduledSuspends_.end()) {
@@ -62,9 +62,10 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 }
 
 void OfflineAudioContext::renderAudio() {
-  state_ = ContextState::RUNNING;
+  setState(ContextState::RUNNING);
+
   std::thread([this]() {
-    auto audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, numberOfChannels_, sampleRate_);
+    auto audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
 
     while (currentSampleFrame_ < length_) {
       Locker locker(mutex_);
@@ -88,7 +89,7 @@ void OfflineAudioContext::renderAudio() {
         assert(currentSampleFrame_ < length_);
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
-        state_ = ContextState::SUSPENDED;
+        setState(ContextState::SUSPENDED);
         callback();
         return;
       }

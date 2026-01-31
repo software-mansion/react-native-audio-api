@@ -4,6 +4,7 @@
 #include <audioapi/core/AudioNode.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -30,7 +31,7 @@ class AudioDestinationNode : public AudioNode {
   };
 
  private:
-  std::size_t currentSampleFrame_;
+  std::atomic<std::size_t> currentSampleFrame_;
 };
 
 } // namespace audioapi

@@ -2,6 +2,8 @@
 
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/types/BiquadFilterType.h>
+#include <audioapi/core/types/ChannelCountMode.h>
+#include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
@@ -19,4 +21,6 @@ std::string filterTypeToString(BiquadFilterType type);
 BiquadFilterType filterTypeFromString(const std::string &type);
 AudioEvent audioEventFromString(const std::string &event);
 std::string contextStateToString(ContextState state);
+std::string channelCountModeToString(ChannelCountMode mode);
+std::string channelInterpretationToString(ChannelInterpretation interpretation);
 } // namespace audioapi::js_enum_parser

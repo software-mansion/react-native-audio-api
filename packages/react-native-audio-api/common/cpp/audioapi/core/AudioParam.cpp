@@ -12,7 +12,7 @@ AudioParam::AudioParam(
     float defaultValue,
     float minValue,
     float maxValue,
-    std::shared_ptr<BaseAudioContext> context)
+    const std::shared_ptr<BaseAudioContext>& context)
     : context_(context),
       value_(defaultValue),
       defaultValue_(defaultValue),
@@ -29,7 +29,7 @@ AudioParam::AudioParam(
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
-    return value_;
+    return value_.load(std::memory_order_relaxed);
   };
 }
 
@@ -43,7 +43,7 @@ float AudioParam::getValueAtTime(double time) {
     endTime_ = event.getEndTime();
     startValue_ = event.getStartValue();
     endValue_ = event.getEndValue();
-    calculateValue_ = std::move(event.getCalculateValue());
+    calculateValue_ = event.getCalculateValue();
   }
 
   // Calculate value using the current automation function and clamp to valid
@@ -174,7 +174,7 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
 }
 
 void AudioParam::setValueCurveAtTime(
-    std::shared_ptr<std::vector<float>> values,
+    const std::shared_ptr<std::vector<float>>& values,
     size_t length,
     double startTime,
     double duration) {

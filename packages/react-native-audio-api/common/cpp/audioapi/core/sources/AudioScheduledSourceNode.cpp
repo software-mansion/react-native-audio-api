@@ -1,6 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
@@ -16,12 +16,14 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context, const AudioScheduledSourceNodeOptions &options)
+AudioScheduledSourceNode::AudioScheduledSourceNode(
+    std::shared_ptr<BaseAudioContext> context,
+    const AudioScheduledSourceNodeOptions &options)
     : AudioNode(context, options),
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {}
+      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()) {}
 
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST

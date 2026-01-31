@@ -21,14 +21,14 @@ class AudioParam {
       float defaultValue,
       float minValue,
       float maxValue,
-      std::shared_ptr<BaseAudioContext> context);
+      const std::shared_ptr<BaseAudioContext> &context);
 
   /// JS-Thread only methods
   /// These methods are called only from HostObjects invoked on the JS thread.
 
   // JS-Thread only
   [[nodiscard]] inline float getValue() const noexcept {
-    return value_;
+    return value_.load(std::memory_order_relaxed);
   }
 
   // JS-Thread only
@@ -48,7 +48,7 @@ class AudioParam {
 
   // JS-Thread only
   inline void setValue(float value) {
-    value_ = std::clamp(value, minValue_, maxValue_);
+    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
   // JS-Thread only
@@ -65,7 +65,7 @@ class AudioParam {
 
   // JS-Thread only
   void setValueCurveAtTime(
-      std::shared_ptr<std::vector<float>> values,
+      const std::shared_ptr<std::vector<float>> &values,
       size_t length,
       double startTime,
       double duration);
@@ -79,10 +79,10 @@ class AudioParam {
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
-  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioGraphManager)
   void addInputNode(AudioNode *node);
 
-  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioGraphManager)
   void removeInputNode(AudioNode *node);
 
   // Audio-Thread only
@@ -94,7 +94,7 @@ class AudioParam {
  private:
   // Core parameter state
   std::weak_ptr<BaseAudioContext> context_;
-  float value_;
+  std::atomic<float> value_;
   float defaultValue_;
   float minValue_;
   float maxValue_;

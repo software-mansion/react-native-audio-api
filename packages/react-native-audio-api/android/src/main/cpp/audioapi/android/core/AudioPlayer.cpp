@@ -15,7 +15,10 @@ AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio), sampleRate_(sampleRate), channelCount_(channelCount) {
+    : renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount),
+      isRunning_(false) {
   isInitialized_ = openAudioStream();
 }
 
@@ -39,36 +42,44 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
-  mBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   return true;
 }
 
 bool AudioPlayer::start() {
-  if (mStream_) {
-    auto result = mStream_->requestStart();
-    return result == oboe::Result::OK;
+  if (mStream_ != nullptr) {
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
   }
 
   return false;
 }
 
 void AudioPlayer::stop() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
+    isRunning_.store(false, std::memory_order_release);
     mStream_->requestStop();
   }
 }
 
 bool AudioPlayer::resume() {
-  if (mStream_) {
-    auto result = mStream_->requestStart();
-    return result == oboe::Result::OK;
+  if (isRunning()) {
+    return true;
+  }
+
+  if (mStream_ != nullptr) {
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
   }
 
   return false;
 }
 
 void AudioPlayer::suspend() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
+    isRunning_.store(false, std::memory_order_release);
     mStream_->requestPause();
   }
 }
@@ -76,14 +87,15 @@ void AudioPlayer::suspend() {
 void AudioPlayer::cleanup() {
   isInitialized_ = false;
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->close();
     mStream_.reset();
   }
 }
 
 bool AudioPlayer::isRunning() const {
-  return mStream_ && mStream_->getState() == oboe::StreamState::Started;
+  return mStream_ && mStream_->getState() == oboe::StreamState::Started &&
+      isRunning_.load(std::memory_order_acquire);
 }
 
 DataCallbackResult
@@ -95,17 +107,19 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
   auto buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
 
-  assert(buffer != nullptr);
-
   while (processedFrames < numFrames) {
     int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
-    renderAudio_(mBus_, framesToProcess);
 
-    // TODO: optimize this with SIMD?
+    if (isRunning_.load(std::memory_order_acquire)) {
+      renderAudio_(audioBus_, framesToProcess);
+    } else {
+      audioBus_->zero();
+    }
+
     for (int i = 0; i < framesToProcess; i++) {
-      for (int channel = 0; channel < channelCount_; channel += 1) {
+      for (int channel = 0; channel < channelCount_; channel++) {
         buffer[(processedFrames + i) * channelCount_ + channel] =
-            mBus_->getChannel(channel)->getData()[i];
+            audioBus_->getChannel(channel)->getData()[i];
       }
     }
 
@@ -124,5 +138,4 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
     }
   }
 }
-
 } // namespace audioapi

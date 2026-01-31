@@ -1,7 +1,8 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
-
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -38,11 +39,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCount) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCountMode) {
-  return jsi::String::createFromUtf8(runtime, node_->getChannelCountMode());
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::channelCountModeToString(node_->getChannelCountMode()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
-  return jsi::String::createFromUtf8(runtime, node_->getChannelInterpretation());
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::channelInterpretationToString(node_->getChannelInterpretation()));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {

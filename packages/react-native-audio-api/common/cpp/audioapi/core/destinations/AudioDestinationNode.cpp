@@ -1,7 +1,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/utils/AudioBus.h>
 #include <memory>
 
@@ -14,12 +14,12 @@ AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContex
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
-  return currentSampleFrame_;
+  return currentSampleFrame_.load(std::memory_order_acquire);
 }
 
 double AudioDestinationNode::getCurrentTime() const {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    return static_cast<double>(currentSampleFrame_) / context->getSampleRate();
+    return static_cast<double>(getCurrentSampleFrame()) / context->getSampleRate();
   } else {
     return 0.0;
   }
@@ -33,7 +33,7 @@ void AudioDestinationNode::renderAudio(
   }
 
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->preProcessGraph();
+      context->getGraphManager()->preProcessGraph();
   }
 
   destinationBus->zero();
@@ -46,7 +46,7 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->normalize();
 
-  currentSampleFrame_ += numFrames;
+  currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 }
 
 } // namespace audioapi
