@@ -11,7 +11,7 @@ namespace audioapi {
 GainNodeHostObject::GainNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const GainOptions &options)
-    : AudioNodeHostObject(context->createGain(options)) {
+    : AudioNodeHostObject(context->createGain(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(GainNodeHostObject, gain));
 }
 

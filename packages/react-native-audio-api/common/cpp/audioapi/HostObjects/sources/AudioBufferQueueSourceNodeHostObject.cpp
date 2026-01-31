@@ -11,7 +11,7 @@ namespace audioapi {
 AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
-    : AudioBufferBaseSourceNodeHostObject(context->createBufferQueueSource(options)) {
+    : AudioBufferBaseSourceNodeHostObject(context->createBufferQueueSource(options), options) {
   functions_->erase("start");
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));

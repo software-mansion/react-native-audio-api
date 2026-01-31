@@ -9,10 +9,10 @@
 
 namespace audioapi {
 
-RecorderAdapterNode::RecorderAdapterNode(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(context) {
+RecorderAdapterNode::RecorderAdapterNode(const std::shared_ptr<BaseAudioContext>& context)
+    : AudioNode(context, AudioScheduledSourceNodeOptions()) {
   // It should be marked as initialized only after it is connected to the
-  // recorder. Internall buffer size is based on the recorder's buffer length.
+  // recorder. Internal buffer size is based on the recorder's buffer length.
   isInitialized_ = false;
 }
 

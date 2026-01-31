@@ -9,7 +9,7 @@
 namespace audioapi {
 
 DelayNodeHostObject::DelayNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const DelayOptions &options)
-    : AudioNodeHostObject(context->createDelay(options)) {
+    : AudioNodeHostObject(context->createDelay(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
 

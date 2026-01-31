@@ -1,12 +1,14 @@
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
-
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/types/NodeOptions.h>
+
 #include <memory>
 
 namespace audioapi {
 
 AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
-    const std::shared_ptr<AudioScheduledSourceNode> &node)
+    const std::shared_ptr<AudioScheduledSourceNode> &node,
+    const AudioScheduledSourceNodeOptions &options)
     : AudioNodeHostObject(node) {
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
 

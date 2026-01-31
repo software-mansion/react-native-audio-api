@@ -10,7 +10,7 @@ namespace audioapi {
 ConstantSourceNodeHostObject::ConstantSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createConstantSource(options)) {
+    : AudioScheduledSourceNodeHostObject(context->createConstantSource(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(ConstantSourceNodeHostObject, offset));
 }
 

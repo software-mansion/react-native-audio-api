@@ -7,7 +7,8 @@
 
 namespace audioapi {
 
-AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node) : node_(node) {
+AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node,
+                                         const AudioNodeOptions &options) : node_(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioNodeHostObject, numberOfInputs),
       JSI_EXPORT_PROPERTY_GETTER(AudioNodeHostObject, numberOfOutputs),

@@ -9,7 +9,7 @@ namespace audioapi {
 IIRFilterNodeHostObject::IIRFilterNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const IIRFilterOptions &options)
-    : AudioNodeHostObject(context->createIIRFilter(options)) {
+    : AudioNodeHostObject(context->createIIRFilter(options), options) {
 
   addFunctions(JSI_EXPORT_FUNCTION(IIRFilterNodeHostObject, getFrequencyResponse));
 }

@@ -50,12 +50,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
-  int channelCount_;
-  int numberOfInputs_;
-  int numberOfOutputs_;
-  ChannelCountMode channelCountMode_;
-  ChannelInterpretation channelInterpretation_;
-  bool requiresTailProcessing_;
 
   std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
@@ -63,6 +57,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::unordered_set<AudioNode *> inputNodes_ = {};
   std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
   std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
+
+  const int numberOfInputs_;
+  const int numberOfOutputs_;
+  const bool requiresTailProcessing_;
+  int channelCount_;
+  const ChannelCountMode channelCountMode_;
+  const ChannelInterpretation channelInterpretation_;
 
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;

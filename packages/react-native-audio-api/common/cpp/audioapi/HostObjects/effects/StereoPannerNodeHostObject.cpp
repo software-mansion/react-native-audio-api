@@ -11,7 +11,7 @@ namespace audioapi {
 StereoPannerNodeHostObject::StereoPannerNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const StereoPannerOptions &options)
-    : AudioNodeHostObject(context->createStereoPanner(options)) {
+    : AudioNodeHostObject(context->createStereoPanner(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
 }
 

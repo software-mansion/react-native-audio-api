@@ -19,7 +19,7 @@ class AudioBus;
 /// @note it will push silence if it is not connected to any Recorder
 class RecorderAdapterNode : public AudioNode {
  public:
-  explicit RecorderAdapterNode(std::shared_ptr<BaseAudioContext> context);
+  explicit RecorderAdapterNode(const std::shared_ptr<BaseAudioContext> &context);
 
   /// @brief Initialize the RecorderAdapterNode with a buffer size and channel count.
   /// @note This method should be called ONLY ONCE when the buffer size is known.

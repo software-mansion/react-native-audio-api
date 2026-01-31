@@ -12,7 +12,7 @@ namespace audioapi {
 
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext>& context,
                                                        const BiquadFilterOptions &options)
-    : AudioNodeHostObject(context->createBiquadFilter(options)) {
+    : AudioNodeHostObject(context->createBiquadFilter(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),

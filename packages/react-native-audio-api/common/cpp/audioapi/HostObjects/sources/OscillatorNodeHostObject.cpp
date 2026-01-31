@@ -13,7 +13,7 @@ namespace audioapi {
 OscillatorNodeHostObject::OscillatorNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createOscillator(options)) {
+    : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),

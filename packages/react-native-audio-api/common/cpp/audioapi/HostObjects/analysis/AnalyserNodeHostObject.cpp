@@ -9,7 +9,7 @@
 namespace audioapi {
 
 AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const AnalyserOptions &options)
-    : AudioNodeHostObject(context->createAnalyser(options)) {
+    : AudioNodeHostObject(context->createAnalyser(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, frequencyBinCount),

@@ -11,7 +11,7 @@ namespace audioapi {
 AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioBufferSourceOptions &options)
-    : AudioBufferBaseSourceNodeHostObject(context->createBufferSource(options)) {
+    : AudioBufferBaseSourceNodeHostObject(context->createBufferSource(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),

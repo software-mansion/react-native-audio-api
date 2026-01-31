@@ -12,7 +12,7 @@ namespace audioapi {
 StreamerNodeHostObject::StreamerNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const StreamerOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createStreamer(options)) {
+    : AudioScheduledSourceNodeHostObject(context->createStreamer(options), options) {
   addFunctions(JSI_EXPORT_FUNCTION(StreamerNodeHostObject, initialize));
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StreamerNodeHostObject, streamPath));
 }

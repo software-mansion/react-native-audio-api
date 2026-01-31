@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -13,7 +14,9 @@ class AudioNode;
 
 class AudioNodeHostObject : public JsiHostObject {
  public:
-  explicit AudioNodeHostObject(const std::shared_ptr<AudioNode> &node);
+  explicit AudioNodeHostObject(
+      const std::shared_ptr<AudioNode> &node,
+      const AudioNodeOptions &options = AudioNodeOptions());
   ~AudioNodeHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(numberOfInputs);

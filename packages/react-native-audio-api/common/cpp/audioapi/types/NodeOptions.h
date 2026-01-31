@@ -43,18 +43,30 @@ struct GainOptions : AudioNodeOptions {
 
 struct StereoPannerOptions : AudioNodeOptions {
   float pan = 0.0f;
+
+  StereoPannerOptions() {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+
+  explicit StereoPannerOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
 };
 
 struct ConvolverOptions : AudioNodeOptions {
   std::shared_ptr<AudioBuffer> bus;
   bool disableNormalization = false;
 
+  ConvolverOptions() {
+    requiresTailProcessing = true;
+  }
+
   explicit ConvolverOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
 };
 
-struct ConstantSourceOptions {
+struct ConstantSourceOptions : AudioScheduledSourceNodeOptions {
   float offset = 1.0f;
 };
 
@@ -107,6 +119,10 @@ struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;
 
+  DelayOptions() {
+    requiresTailProcessing = true;
+  }
+
   explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
@@ -130,6 +146,16 @@ struct IIRFilterOptions : AudioNodeOptions {
 struct WaveShaperOptions : AudioNodeOptions {
   std::shared_ptr<AudioArray> curve;
   OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
+
+  WaveShaperOptions() {
+    // to change after graph processing improvement - should be max
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+
+  explicit WaveShaperOptions(const AudioNodeOptions &&options) : AudioNodeOptions(options) {
+    // to change after graph processing improvement - should be max
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
 };
 
 } // namespace audioapi

@@ -18,7 +18,6 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext>& context, const Del
                   1), // +1 to enable delayTime equal to maxDelayTime
               channelCount_,
               context->getSampleRate())) {
-  requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <memory>
 #include <vector>
@@ -9,11 +10,13 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioScheduledSourceNode;
+struct AudioScheduledSourceNodeOptions;
 
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
-      const std::shared_ptr<AudioScheduledSourceNode> &node);
+      const std::shared_ptr<AudioScheduledSourceNode> &node,
+      const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
 
   ~AudioScheduledSourceNodeHostObject() override;
 

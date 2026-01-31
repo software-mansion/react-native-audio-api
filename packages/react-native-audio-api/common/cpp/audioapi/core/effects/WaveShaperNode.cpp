@@ -21,8 +21,6 @@ WaveShaperNode::WaveShaperNode(
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
   setCurve(options.curve);
-  // to change after graph processing improvement - should be max
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   isInitialized_ = true;
 }
 

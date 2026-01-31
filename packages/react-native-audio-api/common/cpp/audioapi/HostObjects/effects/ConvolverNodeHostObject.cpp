@@ -9,7 +9,7 @@
 namespace audioapi {
 
 ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const ConvolverOptions &options)
-    : AudioNodeHostObject(context->createConvolver(options)) {
+    : AudioNodeHostObject(context->createConvolver(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, buffer));
