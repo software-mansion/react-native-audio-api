@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
 #include <atomic>
@@ -28,7 +28,7 @@ class AudioScheduledSourceNode : public AudioNode {
   // FINISHED: The node has finished playing.
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
   explicit AudioScheduledSourceNode(
-      const std::shared_ptr<BaseAudioContext>& context,
+      const std::shared_ptr<BaseAudioContext> &context,
       const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
 
   virtual void start(double when);

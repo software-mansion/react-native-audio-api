@@ -50,7 +50,7 @@ struct ConvolverOptions : AudioNodeOptions {
   bool disableNormalization = false;
 
   explicit ConvolverOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
-        requiresTailProcessing = true;
+    requiresTailProcessing = true;
   }
 };
 
@@ -107,9 +107,9 @@ struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;
 
-    explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
-        requiresTailProcessing = true;
-    }
+  explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+    requiresTailProcessing = true;
+  }
 };
 
 struct IIRFilterOptions : AudioNodeOptions {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
 #include <atomic>
