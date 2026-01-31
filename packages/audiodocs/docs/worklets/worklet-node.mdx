@@ -30,14 +30,17 @@ Or by using `BaseAudioContext` factory method:
 
 ## Example
 ```tsx
-import { AudioContext, AudioRecorder } from 'react-native-audio-api';
+import { AudioContext, AudioRecorder, AudioManager } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+    iosCategory: "playAndRecord",
+    iosMode: "measurement",
+    iosOptions: ["mixWithOthers"],
+})
 
 // This example shows how we can use a WorkletNode to process microphone audio data in real-time.
-function App() {
-    const recorder = new AudioRecorder({
-      sampleRate: 16000,
-      bufferLengthInSamples: 16000,
-    });
+async function App() {
+    const recorder = new AudioRecorder();
 
     const audioContext = new AudioContext({ sampleRate: 16000 });
     const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
@@ -50,10 +53,15 @@ function App() {
     const workletNode = audioContext.createWorkletNode(worklet, 1024, 2, 'UIRuntime');
     const adapterNode = audioContext.createRecorderAdapter();
 
+    const canSetAudioSessionActivity = await AudioManager.setAudioSessionActivity(true);
+    if (!canSetAudioSessionActivity) {
+        throw new Error("Could not activate the audio session");
+    }
     adapterNode.connect(workletNode);
     workletNode.connect(audioContext.destination);
     recorder.connect(adapterNode);
     recorder.start();
+    audioContext.resume();
 }
 ```
 
