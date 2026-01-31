@@ -22,13 +22,11 @@ export default class AudioBuffer {
     if (contextOrBuffer instanceof BaseAudioContext) {
       const context = contextOrBuffer;
 
-      if (!options) {
-        options = {
-          numberOfChannels: 1,
-        };
-      }
-
-      buf = context.context.createBuffer(options);
+      buf = context.context.createBuffer({
+        numberOfChannels: options?.numberOfChannels || undefined,
+        length: options?.length || undefined,
+        sampleRate: options?.sampleRate || context.sampleRate,
+      });
     } else {
       buf = contextOrBuffer;
     }

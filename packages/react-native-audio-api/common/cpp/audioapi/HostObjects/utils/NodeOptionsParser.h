@@ -16,12 +16,12 @@ AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object 
   AudioNodeOptions options;
 
   auto channelCountValue = optionsObject.getProperty(runtime, "channelCount");
-  if (!channelCountValue.isUndefined()) {
+  if (channelCountValue.isNumber()) {
     options.channelCount = static_cast<int>(channelCountValue.getNumber());
   }
 
   auto channelCountModeValue = optionsObject.getProperty(runtime, "channelCountMode");
-  if (!channelCountModeValue.isUndefined()) {
+  if (channelCountModeValue.isString()) {
     auto channelCountModeStr = channelCountModeValue.asString(runtime).utf8(runtime);
     if (channelCountModeStr == "max") {
       options.channelCountMode = ChannelCountMode::MAX;
@@ -33,7 +33,7 @@ AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object 
   }
 
   auto channelInterpretationValue = optionsObject.getProperty(runtime, "channelInterpretation");
-  if (!channelInterpretationValue.isUndefined()) {
+  if (channelInterpretationValue.isString()) {
     auto channelInterpretationStr = channelInterpretationValue.asString(runtime).utf8(runtime);
     if (channelInterpretationStr == "speakers") {
       options.channelInterpretation = ChannelInterpretation::SPEAKERS;
@@ -49,7 +49,7 @@ GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsOb
   GainOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto gainValue = optionsObject.getProperty(runtime, "gain");
-  if (!gainValue.isUndefined()) {
+  if (gainValue.isNumber()) {
     options.gain = static_cast<float>(gainValue.getNumber());
   }
 
@@ -62,7 +62,7 @@ StereoPannerOptions parseStereoPannerOptions(
   StereoPannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto panValue = optionsObject.getProperty(runtime, "pan");
-  if (!panValue.isUndefined()) {
+  if (panValue.isNumber()) {
     options.pan = static_cast<float>(panValue.getNumber());
   }
 
@@ -73,7 +73,7 @@ ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object 
   ConvolverOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto disableNormalizationValue = optionsObject.getProperty(runtime, "disableNormalization");
-  if (!disableNormalizationValue.isUndefined()) {
+  if (disableNormalizationValue.isBool()) {
     options.disableNormalization = disableNormalizationValue.getBool();
   }
 
@@ -92,7 +92,7 @@ ConstantSourceOptions parseConstantSourceOptions(
   ConstantSourceOptions options;
 
   auto offsetValue = optionsObject.getProperty(runtime, "offset");
-  if (!offsetValue.isUndefined()) {
+  if (offsetValue.isNumber()) {
     options.offset = static_cast<float>(offsetValue.getNumber());
   }
 
@@ -103,22 +103,22 @@ AnalyserOptions parseAnalyserOptions(jsi::Runtime &runtime, const jsi::Object &o
   AnalyserOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto fftSizeValue = optionsObject.getProperty(runtime, "fftSize");
-  if (!fftSizeValue.isUndefined()) {
+  if (fftSizeValue.isNumber()) {
     options.fftSize = static_cast<int>(fftSizeValue.getNumber());
   }
 
   auto minDecibelsValue = optionsObject.getProperty(runtime, "minDecibels");
-  if (!minDecibelsValue.isUndefined()) {
+  if (minDecibelsValue.isNumber()) {
     options.minDecibels = static_cast<float>(minDecibelsValue.getNumber());
   }
 
   auto maxDecibelsValue = optionsObject.getProperty(runtime, "maxDecibels");
-  if (!maxDecibelsValue.isUndefined()) {
+  if (maxDecibelsValue.isNumber()) {
     options.maxDecibels = static_cast<float>(maxDecibelsValue.getNumber());
   }
 
   auto smoothingTimeConstantValue = optionsObject.getProperty(runtime, "smoothingTimeConstant");
-  if (!smoothingTimeConstantValue.isUndefined()) {
+  if (smoothingTimeConstantValue.isNumber()) {
     options.smoothingTimeConstant = static_cast<float>(smoothingTimeConstantValue.getNumber());
   }
 
@@ -131,7 +131,7 @@ BiquadFilterOptions parseBiquadFilterOptions(
   BiquadFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto typeValue = optionsObject.getProperty(runtime, "type");
-  if (!typeValue.isUndefined()) {
+  if (typeValue.isString()) {
     auto typeStr = typeValue.asString(runtime).utf8(runtime);
     if (typeStr == "lowpass") {
       options.type = BiquadFilterType::LOWPASS;
@@ -153,22 +153,22 @@ BiquadFilterOptions parseBiquadFilterOptions(
   }
 
   auto frequencyValue = optionsObject.getProperty(runtime, "frequency");
-  if (!frequencyValue.isUndefined()) {
+  if (frequencyValue.isNumber()) {
     options.frequency = static_cast<float>(frequencyValue.getNumber());
   }
 
   auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (!detuneValue.isUndefined()) {
+  if (detuneValue.isNumber()) {
     options.detune = static_cast<float>(detuneValue.getNumber());
   }
 
   auto QValue = optionsObject.getProperty(runtime, "Q");
-  if (!QValue.isUndefined()) {
+  if (QValue.isNumber()) {
     options.Q = static_cast<float>(QValue.getNumber());
   }
 
   auto gainValue = optionsObject.getProperty(runtime, "gain");
-  if (!gainValue.isUndefined()) {
+  if (gainValue.isNumber()) {
     options.gain = static_cast<float>(gainValue.getNumber());
   }
 
@@ -179,7 +179,7 @@ OscillatorOptions parseOscillatorOptions(jsi::Runtime &runtime, const jsi::Objec
   OscillatorOptions options;
 
   auto typeValue = optionsObject.getProperty(runtime, "type");
-  if (!typeValue.isUndefined()) {
+  if (typeValue.isString()) {
     auto typeStr = typeValue.asString(runtime).utf8(runtime);
     if (typeStr == "sine") {
       options.type = OscillatorType::SINE;
@@ -195,17 +195,17 @@ OscillatorOptions parseOscillatorOptions(jsi::Runtime &runtime, const jsi::Objec
   }
 
   auto frequencyValue = optionsObject.getProperty(runtime, "frequency");
-  if (!frequencyValue.isUndefined()) {
+  if (frequencyValue.isNumber()) {
     options.frequency = static_cast<float>(frequencyValue.getNumber());
   }
 
   auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (!detuneValue.isUndefined()) {
+  if (detuneValue.isNumber()) {
     options.detune = static_cast<float>(detuneValue.getNumber());
   }
 
   auto periodicWaveValue = optionsObject.getProperty(runtime, "periodicWave");
-  if (!periodicWaveValue.isUndefined()) {
+  if (periodicWaveValue.isObject()) {
     auto periodicWaveHostObject =
         periodicWaveValue.getObject(runtime).asHostObject<PeriodicWaveHostObject>(runtime);
     options.periodicWave = periodicWaveHostObject->periodicWave_;
@@ -220,17 +220,17 @@ BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
   BaseAudioBufferSourceOptions options;
 
   auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (!detuneValue.isUndefined()) {
+  if (detuneValue.isNumber()) {
     options.detune = static_cast<float>(detuneValue.getNumber());
   }
 
   auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
-  if (!playbackRateValue.isUndefined()) {
+  if (playbackRateValue.isNumber()) {
     options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
   }
 
   auto pitchCorrectionValue = optionsObject.getProperty(runtime, "pitchCorrection");
-  if (!pitchCorrectionValue.isUndefined()) {
+  if (pitchCorrectionValue.isBool()) {
     options.pitchCorrection = static_cast<bool>(pitchCorrectionValue.getBool());
   }
 
@@ -250,17 +250,17 @@ AudioBufferSourceOptions parseAudioBufferSourceOptions(
   }
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");
-  if (!loopValue.isUndefined()) {
+  if (loopValue.isBool()) {
     options.loop = static_cast<bool>(loopValue.getBool());
   }
 
   auto loopStartValue = optionsObject.getProperty(runtime, "loopStart");
-  if (!loopStartValue.isUndefined()) {
+  if (loopStartValue.isNumber()) {
     options.loopStart = static_cast<float>(loopStartValue.getNumber());
   }
 
   auto loopEndValue = optionsObject.getProperty(runtime, "loopEnd");
-  if (!loopEndValue.isUndefined()) {
+  if (loopEndValue.isNumber()) {
     options.loopEnd = static_cast<float>(loopEndValue.getNumber());
   }
 
@@ -282,17 +282,17 @@ AudioBufferOptions parseAudioBufferOptions(
   AudioBufferOptions options;
 
   auto numberOfChannelsValue = optionsObject.getProperty(runtime, "numberOfChannels");
-  if (!numberOfChannelsValue.isUndefined()) {
+  if (numberOfChannelsValue.isNumber()) {
     options.numberOfChannels = static_cast<int>(numberOfChannelsValue.getNumber());
   }
 
   auto lengthValue = optionsObject.getProperty(runtime, "length");
-  if (!lengthValue.isUndefined()) {
+  if (lengthValue.isNumber()) {
     options.length = static_cast<size_t>(lengthValue.getNumber());
   }
 
   auto sampleRateValue = optionsObject.getProperty(runtime, "sampleRate");
-  if (!sampleRateValue.isUndefined()) {
+  if (sampleRateValue.isNumber()) {
     options.sampleRate = static_cast<float>(sampleRateValue.getNumber());
   }
 
@@ -303,12 +303,12 @@ DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &options
   DelayOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto maxDelayTimeValue = optionsObject.getProperty(runtime, "maxDelayTime");
-  if (!maxDelayTimeValue.isUndefined()) {
+  if (maxDelayTimeValue.isNumber()) {
     options.maxDelayTime = static_cast<float>(maxDelayTimeValue.getNumber());
   }
 
   auto delayTimeValue = optionsObject.getProperty(runtime, "delayTime");
-  if (!delayTimeValue.isUndefined()) {
+  if (delayTimeValue.isNumber()) {
     options.delayTime = static_cast<float>(delayTimeValue.getNumber());
   }
 
@@ -319,7 +319,7 @@ IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object 
   IIRFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto feedforwardValue = optionsObject.getProperty(runtime, "feedforward");
-  if (!feedforwardValue.isUndefined()) {
+  if (feedforwardValue.isObject()) {
     auto feedforwardArray = feedforwardValue.asObject(runtime).asArray(runtime);
     size_t feedforwardLength = feedforwardArray.size(runtime);
     options.feedforward.reserve(feedforwardLength);
@@ -330,7 +330,7 @@ IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object 
   }
 
   auto feedbackValue = optionsObject.getProperty(runtime, "feedback");
-  if (!feedbackValue.isUndefined()) {
+  if (feedbackValue.isObject()) {
     auto feedbackArray = feedbackValue.asObject(runtime).asArray(runtime);
     size_t feedbackLength = feedbackArray.size(runtime);
     options.feedback.reserve(feedbackLength);
@@ -347,7 +347,7 @@ WaveShaperOptions parseWaveShaperOptions(jsi::Runtime &runtime, const jsi::Objec
   WaveShaperOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto oversampleValue = optionsObject.getProperty(runtime, "oversample");
-  if (!oversampleValue.isUndefined()) {
+  if (oversampleValue.isString()) {
     auto oversampleStr = oversampleValue.asString(runtime).utf8(runtime);
     if (oversampleStr == "none") {
       options.oversample = OverSampleType::OVERSAMPLE_NONE;
