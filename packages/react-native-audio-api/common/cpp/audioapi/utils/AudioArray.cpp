@@ -108,6 +108,10 @@ void AudioArray::sum(
 }
 
 void AudioArray::multiply(const AudioArray &source) {
+  multiply(source, size_);
+}
+
+void AudioArray::multiply(const audioapi::AudioArray &source, size_t length) {
   if (data_ == nullptr || source.data_ == nullptr) {
     return;
   }
@@ -115,15 +119,7 @@ void AudioArray::multiply(const AudioArray &source) {
   float* __restrict dest = data_.get();
   const float* __restrict src = source.data_.get();
 
-  dsp::multiply(src, dest, dest, size_);
-}
-
-void AudioArray::multiplyByScalar(float value) {
-    if (data_ == nullptr) {
-        return;
-    }
-
-    dsp::multiplyByScalar(data_.get(), value, data_.get(), size_);
+  dsp::multiply(src, dest, dest, length);
 }
 
 void AudioArray::copy(const AudioArray &source) {

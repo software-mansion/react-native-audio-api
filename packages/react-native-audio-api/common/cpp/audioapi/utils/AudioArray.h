@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
+#include <span>
 
 namespace audioapi {
 
@@ -50,6 +51,21 @@ class AudioArray {
     return data_.get() + size_;
   }
 
+  [[nodiscard]] inline std::span<float> span() noexcept {
+    return {data_.get(), size_};
+  }
+
+  [[nodiscard]] inline std::span<const float> span() const noexcept {
+    return {data_.get(), size_};
+  }
+
+  [[nodiscard]] inline std::span<float> subSpan(size_t length, size_t offset = 0) {
+    if (offset + length > size_) {
+        throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
+    }
+    return {data_.get() + offset, length};
+  }
+
   void resize(size_t size);
 
   void zero() noexcept;
@@ -79,7 +95,14 @@ class AudioArray {
   /// @param source The source AudioArray to multiply with.
   /// @note Assumes that source and this AudioArray are not the same.
   void multiply(const AudioArray &source);
-  void multiplyByScalar(float value);
+
+  /// @brief Multiplies this AudioArray by the source AudioArray element-wise.
+  /// @param source The source AudioArray to multiply with.
+  /// @param length The number of samples to multiply.
+  /// @note Assumes that source and this AudioArray are not the same.
+  void multiply(
+      const AudioArray &source,
+      size_t length);
 
   void copy(const AudioArray &source);
   void copy(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
@@ -90,7 +113,7 @@ class AudioArray {
   [[nodiscard]] float getMaxAbsValue() const;
   [[nodiscard]] float computeConvolution(const AudioArray &kernel, size_t startIndex = 0) const;
 
- private:
+ protected:
   std::unique_ptr<float[]> data_ = nullptr;
   size_t size_ = 0;
 };
