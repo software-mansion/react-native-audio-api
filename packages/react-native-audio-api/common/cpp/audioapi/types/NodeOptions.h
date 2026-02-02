@@ -109,12 +109,6 @@ struct StreamerOptions : AudioScheduledSourceNodeOptions {
   std::string streamPath;
 };
 
-struct AudioBufferOptions {
-  int numberOfChannels = 1;
-  size_t length = 0;
-  float sampleRate = 44100.0f;
-};
-
 struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;

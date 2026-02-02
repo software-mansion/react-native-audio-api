@@ -106,7 +106,7 @@ export default class AudioContext implements BaseAudioContext {
       );
     }
 
-    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
+    return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(

@@ -14,13 +14,13 @@ namespace audioapi {
 AudioNode::AudioNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioNodeOptions &options)
-    : channelCount_(options.channelCount),
+    : context_(context),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
-      channelCountMode_(options.channelCountMode),
-      channelInterpretation_(options.channelInterpretation),
       requiresTailProcessing_(options.requiresTailProcessing),
-      context_(context) {
+      channelCount_(options.channelCount),
+      channelCountMode_(options.channelCountMode),
+      channelInterpretation_(options.channelInterpretation) {
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }

@@ -21,7 +21,6 @@ import type {
   TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
   TStreamerOptions,
-  TAudioBufferOptions,
   TDelayOptions,
   TIIRFilterOptions,
   TWaveShaperOptions,
@@ -95,7 +94,6 @@ export interface IBaseAudioContext {
   createBufferQueueSource: (
     audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
-  createBuffer: (audioBufferOptions: TAudioBufferOptions) => IAudioBuffer;
   createPeriodicWave: (
     real: Float32Array,
     imag: Float32Array,

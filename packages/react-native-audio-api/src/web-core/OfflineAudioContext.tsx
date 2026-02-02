@@ -113,7 +113,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
+    return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(

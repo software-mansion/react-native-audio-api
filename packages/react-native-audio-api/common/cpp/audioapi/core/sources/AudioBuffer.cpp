@@ -9,8 +9,8 @@
 
 namespace audioapi {
 
-AudioBuffer::AudioBuffer(const AudioBufferOptions &options)
-    : bus_(std::make_shared<AudioBus>(options.length, options.numberOfChannels, options.sampleRate)) {}
+AudioBuffer::AudioBuffer(int numberOfChannels, size_t length, float sampleRate)
+    : bus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
 
 AudioBuffer::AudioBuffer(std::shared_ptr<AudioBus> bus) {
   bus_ = std::move(bus);

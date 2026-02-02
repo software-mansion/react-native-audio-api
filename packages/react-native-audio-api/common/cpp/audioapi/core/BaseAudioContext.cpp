@@ -191,10 +191,6 @@ std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueS
   return bufferSource;
 }
 
-std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOptions &options) {
-  return std::make_shared<AudioBuffer>(options);
-}
-
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,

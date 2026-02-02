@@ -29,11 +29,8 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
-
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    auto audioBufferOptions = AudioBufferOptions(
-        extraTailFrames, static_cast<size_t>(channelCount_), context->getSampleRate());
-    tailBuffer_ = std::make_shared<AudioBuffer>(audioBufferOptions);
+    tailBuffer_ = std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
 
     tailBuffer_->bus_->zero();
   }

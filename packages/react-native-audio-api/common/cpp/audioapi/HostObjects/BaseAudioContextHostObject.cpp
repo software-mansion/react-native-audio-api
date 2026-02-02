@@ -60,7 +60,6 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
@@ -258,19 +257,6 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
   auto bufferStreamSourceHostObject = std::make_shared<AudioBufferQueueSourceNodeHostObject>(
       context_, baseAudioBufferSourceOptions);
   return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBuffer) {
-  const auto options = args[0].asObject(runtime);
-  const auto audioBufferOptions =
-      audioapi::option_parser::parseAudioBufferOptions(runtime, options);
-  auto buffer = BaseAudioContext::createBuffer(audioBufferOptions);
-  auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-
-  auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
-  jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
-
-  return jsiObject;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {

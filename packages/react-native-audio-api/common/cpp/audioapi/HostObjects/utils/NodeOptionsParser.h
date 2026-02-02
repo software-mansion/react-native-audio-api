@@ -276,29 +276,6 @@ StreamerOptions parseStreamerOptions(jsi::Runtime &runtime, const jsi::Object &o
   return options;
 }
 
-AudioBufferOptions parseAudioBufferOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  AudioBufferOptions options;
-
-  auto numberOfChannelsValue = optionsObject.getProperty(runtime, "numberOfChannels");
-  if (numberOfChannelsValue.isNumber()) {
-    options.numberOfChannels = static_cast<int>(numberOfChannelsValue.getNumber());
-  }
-
-  auto lengthValue = optionsObject.getProperty(runtime, "length");
-  if (lengthValue.isNumber()) {
-    options.length = static_cast<size_t>(lengthValue.getNumber());
-  }
-
-  auto sampleRateValue = optionsObject.getProperty(runtime, "sampleRate");
-  if (sampleRateValue.isNumber()) {
-    options.sampleRate = static_cast<float>(sampleRateValue.getNumber());
-  }
-
-  return options;
-}
-
 DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   DelayOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
