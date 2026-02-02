@@ -1,121 +1,218 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+
 #include <algorithm>
+#include <utility>
+#include <memory>
+
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 namespace audioapi {
 
-AudioArray::AudioArray(size_t size) : data_(nullptr), size_(size) {
-  resize(size);
-}
-
-AudioArray::AudioArray(const AudioArray &other) : data_(nullptr), size_(0) {
-  resize(other.size_);
-
-  copy(&other);
+AudioArray::AudioArray(size_t size): size_(size) {
+    if (size_ > 0) {
+        data_ = std::make_unique<float[]>(size_);
+        zero();
+    }
 }
 
 AudioArray::AudioArray(const float *data, size_t size) : size_(size) {
-  data_ = new float[size_];
-  memcpy(data_, data, size_ * sizeof(float));
+    if (size_ > 0) {
+        data_ = std::make_unique<float[]>(size_);
+        std::memcpy(data_.get(), data, size_ * sizeof(float));
+    }
 }
 
-AudioArray::~AudioArray() {
-  if (data_) {
-    delete[] data_;
-    data_ = nullptr;
-  }
+AudioArray::AudioArray(const AudioArray &other) : size_(other.size_) {
+    if (size_ > 0 && other.data_) {
+        data_ = std::make_unique<float[]>(size_);
+        std::memcpy(data_.get(), other.data_.get(), size_ * sizeof(float));
+    }
 }
 
-size_t AudioArray::getSize() const {
-  return size_;
+AudioArray::AudioArray(audioapi::AudioArray &&other) noexcept : data_(std::move(other.data_)), size_(other.size_) {
+  other.size_ = 0;
 }
 
-float *AudioArray::getData() const {
-  return data_;
+AudioArray &AudioArray::operator=(const audioapi::AudioArray &other) {
+    if (this != &other) {
+      if (size_ != other.size_) {
+        size_ = other.size_;
+        data_ = (size_ > 0) ? std::make_unique<float[]>(size_) : nullptr;
+      }
+
+      if (size_ > 0 && data_) {
+      std::memcpy(data_.get(), other.data_.get(), size_ * sizeof(float));
+      }
+    }
+
+    return *this;
 }
 
-float &AudioArray::operator[](size_t index) {
-  return data_[index];
-}
+AudioArray &AudioArray::operator=(audioapi::AudioArray &&other) noexcept {
+    if (this != &other) {
+        data_ = std::move(other.data_);
+        size_ = other.size_;
+        other.size_ = 0;
+    }
 
-const float &AudioArray::operator[](size_t index) const {
-  return data_[index];
-}
-
-void AudioArray::normalize() {
-  float maxAbsValue = getMaxAbsValue();
-
-  if (maxAbsValue == 0.0f || maxAbsValue == 1.0f) {
-    return;
-  }
-
-  dsp::multiplyByScalar(data_, 1.0f / maxAbsValue, data_, size_);
+    return *this;
 }
 
 void AudioArray::resize(size_t size) {
-  if (size == size_) {
-    if (!data_) {
-      data_ = new float[size];
-    }
-
-    zero(0, size);
+  if (size == size_ && data_ != nullptr) {
+    zero();
     return;
   }
 
-  delete[] data_;
   size_ = size;
-  data_ = new float[size_];
+  data_ = (size_ > 0) ? std::make_unique<float[]>(size_) : nullptr;
+  if (data_ != nullptr) {
+    zero();
+  }
+}
 
+void AudioArray::zero() noexcept {
   zero(0, size_);
 }
 
-void AudioArray::scale(float value) {
-  dsp::multiplyByScalar(data_, value, data_, size_);
+void AudioArray::zero(size_t start, size_t length) noexcept {
+    if (data_ == nullptr || length <= 0) {
+      return;
+    }
+
+  memset(data_.get() + start, 0, length * sizeof(float));
 }
 
-float AudioArray::getMaxAbsValue() const {
-  return dsp::maximumMagnitude(data_, size_);
-}
-
-void AudioArray::zero() {
-  zero(0, size_);
-}
-
-void AudioArray::zero(size_t start, size_t length) {
-  memset(data_ + start, 0, length * sizeof(float));
-}
-
-void AudioArray::sum(const AudioArray *source) {
-  sum(source, 0, 0, size_);
-}
-
-void AudioArray::sum(const AudioArray *source, size_t start, size_t length) {
-  sum(source, start, start, length);
+void AudioArray::sum(const AudioArray &source, float gain) {
+  sum(source, 0, 0, size_, gain);
 }
 
 void AudioArray::sum(
-    const AudioArray *source,
+    const AudioArray &source,
     size_t sourceStart,
     size_t destinationStart,
-    size_t length) {
-  dsp::add(
-      data_ + destinationStart, source->getData() + sourceStart, data_ + destinationStart, length);
+    size_t length,
+    float gain) {
+  if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
+    return;
+  }
+
+  // Using restrict to inform the compiler that the source and destination do not overlap
+  float* __restrict dest = data_.get() + destinationStart;
+  const float* __restrict src = source.data_.get() + sourceStart;
+
+  dsp::multiplyByScalarThenAddToOutput(src, gain, dest, length);
 }
 
-void AudioArray::copy(const AudioArray *source) {
-  copy(source, 0, size_);
+void AudioArray::multiply(const AudioArray &source) {
+  if (data_ == nullptr || source.data_ == nullptr) {
+    return;
+  }
+
+  float* __restrict dest = data_.get();
+  const float* __restrict src = source.data_.get();
+
+  dsp::multiply(src, dest, dest, size_);
 }
 
-void AudioArray::copy(const AudioArray *source, size_t start, size_t length) {
-  copy(source, start, start, length);
+void AudioArray::multiplyByScalar(float value) {
+    if (data_ == nullptr) {
+        return;
+    }
+
+    dsp::multiplyByScalar(data_.get(), value, data_.get(), size_);
+}
+
+void AudioArray::copy(const AudioArray &source) {
+  copy(source, 0, 0, size_);
 }
 
 void AudioArray::copy(
-    const AudioArray *source,
+    const AudioArray &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  memcpy(data_ + destinationStart, source->getData() + sourceStart, length * sizeof(float));
+    if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
+        return;
+    }
+
+  memcpy(data_.get() + destinationStart, source.data_.get() + sourceStart, length * sizeof(float));
+}
+
+void AudioArray::reverse() {
+    if (data_ == nullptr && size_ > 1) {
+        return;
+    }
+
+  std::reverse(begin(), end());
+}
+
+void AudioArray::normalize() {
+    float maxAbsValue = getMaxAbsValue();
+
+    if (maxAbsValue == 0.0f || maxAbsValue == 1.0f) {
+        return;
+    }
+
+    dsp::multiplyByScalar(data_.get(), 1.0f / maxAbsValue, data_.get(), size_);
+}
+
+void AudioArray::scale(float value) {
+    if (data_ == nullptr) {
+        return;
+    }
+
+    dsp::multiplyByScalar(data_.get(), value, data_.get(), size_);
+}
+
+float AudioArray::getMaxAbsValue() const {
+    if (data_ == nullptr) {
+        return 0.0f;
+    }
+
+    return dsp::maximumMagnitude(data_.get(), size_);
+}
+
+float AudioArray::computeConvolution(const audioapi::AudioArray &kernel, size_t startIndex) const {
+    const auto kernelSize = kernel.size_;
+
+    if (startIndex + kernelSize > size_ || !data_ || !kernel.data_) {
+        return 0.0f;
+    }
+
+    const auto stateStart = data_.get() + startIndex;
+    const auto kernelStart = kernel.data_.get();
+
+    float sum = 0.0f;
+    size_t k = 0;
+
+#ifdef __ARM_NEON
+    float32x4_t vSum = vdupq_n_f32(0.0f);
+
+  // process 4 samples at a time
+  for (; k <= kernelSize_ - 4; k += 4) {
+    float32x4_t vState = vld1q_f32(stateStart + k);
+    float32x4_t vKernel = vld1q_f32(kernelStart + k);
+
+    // fused multiply-add: vSum += vState * vKernel
+    vSum = vmlaq_f32(vSum, vState, vKernel);
+  }
+
+  // horizontal reduction: Sum the 4 lanes of vSum into a single float
+  sum += vgetq_lane_f32(vSum, 0);
+  sum += vgetq_lane_f32(vSum, 1);
+  sum += vgetq_lane_f32(vSum, 2);
+  sum += vgetq_lane_f32(vSum, 3);
+#endif
+
+    for (; k < kernelSize; ++k) {
+        sum += stateStart[k] * kernelStart[k];
+    }
+
+    return sum;
 }
 
 } // namespace audioapi
