@@ -96,11 +96,8 @@ class AudioBus {
       size_t sourceStart,
       size_t destinationStart,
       size_t length) const;
-  void sumByUpMixing(
-      const AudioBus &source,
-      size_t sourceStart,
-      size_t destinationStart,
-      size_t length);
+  void
+  sumByUpMixing(const AudioBus &source, size_t sourceStart, size_t destinationStart, size_t length);
   void sumByDownMixing(
       const AudioBus &source,
       size_t sourceStart,
