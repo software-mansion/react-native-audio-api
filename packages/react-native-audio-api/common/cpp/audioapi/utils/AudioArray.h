@@ -7,9 +7,15 @@
 
 namespace audioapi {
 
+/// @brief AudioArray is a simple wrapper around a float array for audio data manipulation.
+/// It provides various utility functions for audio processing.
+/// @note AudioArray manages its own memory and provides copy and move semantics.
+/// @note Not thread-safe.
 class AudioArray {
  public:
   explicit AudioArray(size_t size);
+
+  /// @brief Constructs an AudioArray from existing data.
   /// @note The data is copied, so it does not take ownership of the pointer
   AudioArray(const float *data, size_t size);
   ~AudioArray() = default;
@@ -49,7 +55,19 @@ class AudioArray {
   void zero() noexcept;
   void zero(size_t start, size_t length) noexcept;
 
+  /// @brief Sums the source AudioArray into this AudioArray with an optional gain.
+  /// @param source The source AudioArray to sum from.
+  /// @param gain The gain to apply to the source before summing. Default is 1.0f.
+  /// @note Assumes that source and this AudioArray are not the same.
   void sum(const AudioArray &source, float gain = 1.0f);
+
+  /// @brief Sums the source AudioArray into this AudioArray with an optional gain.
+  /// @param source The source AudioArray to sum from.
+  /// @param sourceStart The starting index in the source AudioArray.
+  /// @param destinationStart The starting index in this AudioArray.
+  /// @param length The number of samples to sum.
+  /// @param gain The gain to apply to the source before summing. Default is 1.0f.
+  /// @note Assumes that source and this AudioArray are not the same.
   void sum(
       const AudioArray &source,
       size_t sourceStart,
@@ -57,6 +75,9 @@ class AudioArray {
       size_t length,
       float gain = 1.0f);
 
+  /// @brief Multiplies this AudioArray by the source AudioArray element-wise.
+  /// @param source The source AudioArray to multiply with.
+  /// @note Assumes that source and this AudioArray are not the same.
   void multiply(const AudioArray &source);
   void multiplyByScalar(float value);
 

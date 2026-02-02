@@ -41,8 +41,19 @@ class AudioBus {
     return size_;
   }
 
+  /// @brief Get the AudioArray for a specific channel index.
+  /// @param index The channel index.
+  /// @return Pointer to the AudioArray for the specified channel - not owning.
   [[nodiscard]] AudioArray *getChannel(int index) const;
+
+  /// @brief Get the AudioArray for a specific channel type.
+  /// @param channelType The channel type (e.g., ChannelLeft, ChannelRight).
+  /// @return Pointer to the AudioArray for the specified channel type - not owning.
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
+
+  /// @brief Get a shared pointer to the AudioArray for a specific channel index.
+  /// @param index The channel index.
+  /// @return Shared pointer to the AudioArray for the specified channel - owning.
   [[nodiscard]] std::shared_ptr<AudioArray> getSharedChannel(int index) const;
 
   AudioArray &operator[](size_t index) {
@@ -85,8 +96,11 @@ class AudioBus {
       size_t sourceStart,
       size_t destinationStart,
       size_t length) const;
-  void
-  sumByUpMixing(const AudioBus &source, size_t sourceStart, size_t destinationStart, size_t length);
+  void sumByUpMixing(
+      const AudioBus &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
   void sumByDownMixing(
       const AudioBus &source,
       size_t sourceStart,
