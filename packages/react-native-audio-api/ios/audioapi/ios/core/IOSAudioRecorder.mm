@@ -54,7 +54,7 @@ IOSAudioRecorder::IOSAudioRecorder(
           float *channelData = (float *)inputBuffer->mBuffers[channel].mData;
 
           // TODO
-//          adapterNode_->buff_[channel]->write(channelData, numFrames);
+          //          adapterNode_->buff_[channel]->write(channelData, numFrames);
         }
       }
     }

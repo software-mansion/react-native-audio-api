@@ -29,7 +29,7 @@ IOSAudioPlayer::IOSAudioPlayer(
 
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
-        
+
         audioBus_->getChannel(channel)->copyTo(outputChannel, 0, processedFrames, framesToProcess);
       }
 
