@@ -51,9 +51,9 @@ class AudioBus {
   /// @return Pointer to the AudioArray for the specified channel type - not owning.
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
-  /// @brief Get a shared pointer to the AudioArray for a specific channel index.
+  /// @brief Get a copy of shared pointer to the AudioArray for a specific channel index.
   /// @param index The channel index.
-  /// @return Shared pointer to the AudioArray for the specified channel - owning.
+  /// @return Copy of shared pointer to the AudioArray for the specified channel
   [[nodiscard]] std::shared_ptr<AudioArray> getSharedChannel(int index) const;
 
   AudioArray &operator[](size_t index) {

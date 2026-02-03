@@ -26,14 +26,14 @@ class AudioArray {
   AudioArray &operator=(const AudioArray &other);
   AudioArray &operator=(AudioArray &&other) noexcept;
 
-  [[nodiscard]] inline size_t getSize() const {
+  [[nodiscard]] inline size_t getSize() const noexcept {
     return size_;
   }
 
-  inline float &operator[](size_t index) {
+  inline float &operator[](size_t index) noexcept {
     return data_[index];
   }
-  inline const float &operator[](size_t index) const {
+  inline const float &operator[](size_t index) const noexcept {
     return data_[index];
   }
 
@@ -61,7 +61,7 @@ class AudioArray {
 
   [[nodiscard]] inline std::span<float> subSpan(size_t length, size_t offset = 0) {
     if (offset + length > size_) {
-        throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
+      throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
     }
     return {data_.get() + offset, length};
   }
@@ -100,9 +100,7 @@ class AudioArray {
   /// @param source The source AudioArray to multiply with.
   /// @param length The number of samples to multiply.
   /// @note Assumes that source and this AudioArray are not the same.
-  void multiply(
-      const AudioArray &source,
-      size_t length);
+  void multiply(const AudioArray &source, size_t length);
 
   void copy(const AudioArray &source);
   void copy(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
