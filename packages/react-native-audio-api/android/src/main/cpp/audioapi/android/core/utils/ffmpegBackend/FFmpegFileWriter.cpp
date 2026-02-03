@@ -134,7 +134,6 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
 }
 
 /// @brief Writes audio data to the currently opened file.
-/// This method should be called only from the audio thread (or audio side-effect thread in the future).
 void FFmpegAudioFileWriter::taskOffloaderFunction(WriterData data) {
   auto [audioData, numFrames] = data;
   if (!isFileOpen()) {
