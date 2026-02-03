@@ -105,6 +105,14 @@ class AudioArray {
   void copy(const AudioArray &source);
   void copy(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
 
+  /// @brief Copies data from the source AudioArray in reverse order into this AudioArray.
+  /// @param source The source AudioArray to copy from.
+  /// @param sourceStart The starting index in the source AudioArray.
+  /// @param destinationStart The starting index in this AudioArray.
+  /// @param length The number of samples to copy.
+  /// @note Assumes that source and this AudioArray are not the same.
+  void copyReverse(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
+
   void reverse();
   void normalize();
   void scale(float value);

@@ -138,6 +138,21 @@ void AudioArray::copy(
   memcpy(data_.get() + destinationStart, source.data_.get() + sourceStart, length * sizeof(float));
 }
 
+void AudioArray::copyReverse(const audioapi::AudioArray &source, size_t sourceStart,
+                                 size_t destinationStart, size_t length) {
+    if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
+        return;
+    }
+
+    auto dstView = this->subSpan(length, destinationStart);
+    auto srcView = source.span();
+    const float* __restrict srcPtr = &srcView[sourceStart];
+
+    for (size_t i = 0; i < length; ++i) {
+        dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
+    }
+}
+
 void AudioArray::reverse() {
     if (data_ == nullptr && size_ > 1) {
         return;

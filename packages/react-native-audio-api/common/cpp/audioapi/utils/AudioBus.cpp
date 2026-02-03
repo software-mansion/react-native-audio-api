@@ -34,6 +34,19 @@ AudioBus::AudioBus(const AudioBus &other): numberOfChannels_(other.numberOfChann
   }
 }
 
+AudioBus::AudioBus(std::vector<std::shared_ptr<AudioArray>> channels, float sampleRate)
+        : channels_(std::move(channels)),
+          sampleRate_(sampleRate) {
+
+    numberOfChannels_ = static_cast<int>(channels_.size());
+
+    if (numberOfChannels_ > 0 && channels_[0] != nullptr) {
+      size_ = channels_[0]->getSize();
+    } else {
+      size_ = 0;
+    }
+}
+
 AudioBus::AudioBus(audioapi::AudioBus &&other) noexcept :
   channels_(std::move(other.channels_)),
   numberOfChannels_(other.numberOfChannels_),
