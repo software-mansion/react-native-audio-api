@@ -1,6 +1,8 @@
 #pragma once
 
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -9,9 +11,9 @@
 
 namespace audioapi {
 
-class AudioArray;
+struct AudioBufferOptions;
 
-class AudioBus {
+class AudioBuffer {
  public:
   enum {
     ChannelMono = 0,
@@ -23,14 +25,14 @@ class AudioBus {
     ChannelSurroundRight = 5,
   };
 
-  explicit AudioBus() = default;
-  explicit AudioBus(size_t size, int numberOfChannels, float sampleRate);
-  AudioBus(std::vector<std::shared_ptr<AudioArray>> channels, float sampleRate);
-  AudioBus(const AudioBus &other);
-  AudioBus(AudioBus &&other) noexcept;
-  AudioBus &operator=(const AudioBus &other);
-  AudioBus &operator=(AudioBus &&other) noexcept;
-  ~AudioBus() = default;
+  explicit AudioBuffer() = default;
+  explicit AudioBuffer(size_t size, int numberOfChannels, float sampleRate);
+  explicit AudioBuffer(const AudioBufferOptions &options);
+  AudioBuffer(const AudioBuffer &other);
+  AudioBuffer(AudioBuffer &&other) noexcept;
+  AudioBuffer &operator=(const AudioBuffer &other);
+  AudioBuffer &operator=(AudioBuffer &&other) noexcept;
+  ~AudioBuffer() = default;
 
   [[nodiscard]] inline int getNumberOfChannels() const noexcept {
     return numberOfChannels_;
@@ -40,6 +42,10 @@ class AudioBus {
   }
   [[nodiscard]] inline size_t getSize() const noexcept {
     return size_;
+  }
+
+  [[nodiscard]] double getDuration() const noexcept {
+    return static_cast<double>(size_) / getSampleRate();
   }
 
   /// @brief Get the AudioArray for a specific channel index.
@@ -55,7 +61,7 @@ class AudioBus {
   /// @brief Get a copy of shared pointer to the AudioArray for a specific channel index.
   /// @param index The channel index.
   /// @return Copy of shared pointer to the AudioArray for the specified channel
-  [[nodiscard]] std::shared_ptr<AudioArray> getSharedChannel(int index) const;
+  [[nodiscard]] std::shared_ptr<AudioArrayBuffer> getSharedChannel(int index) const;
 
   AudioArray &operator[](size_t index) {
     return *channels_[index];
@@ -68,24 +74,24 @@ class AudioBus {
   void zero(size_t start, size_t length);
 
   void sum(
-      const AudioBus &source,
+      const AudioBuffer &source,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
   void sum(
-      const AudioBus &source,
+      const AudioBuffer &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
 
-  void copy(const AudioBus &source);
-  void copy(const AudioBus &source, size_t sourceStart, size_t destinationStart, size_t length);
+  void copy(const AudioBuffer &source);
+  void copy(const AudioBuffer &source, size_t sourceStart, size_t destinationStart, size_t length);
 
   void normalize();
   void scale(float value);
   [[nodiscard]] float maxAbsValue() const;
 
  private:
-  std::vector<std::shared_ptr<AudioArray>> channels_;
+  std::vector<std::shared_ptr<AudioArrayBuffer>> channels_;
 
   int numberOfChannels_ = 0;
   float sampleRate_ = 0.0f;
@@ -93,14 +99,17 @@ class AudioBus {
 
   void createChannels();
   void discreteSum(
-      const AudioBus &source,
+      const AudioBuffer &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) const;
-  void
-  sumByUpMixing(const AudioBus &source, size_t sourceStart, size_t destinationStart, size_t length);
+  void sumByUpMixing(
+      const AudioBuffer &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length);
   void sumByDownMixing(
-      const AudioBus &source,
+      const AudioBuffer &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length);

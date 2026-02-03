@@ -3,10 +3,10 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/jsi/JsiUtils.h>
+#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioFileProperties.h>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else

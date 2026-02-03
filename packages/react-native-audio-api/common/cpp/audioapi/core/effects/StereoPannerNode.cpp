@@ -3,7 +3,7 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
@@ -22,8 +22,8 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-std::shared_ptr<AudioBus> StereoPannerNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
@@ -31,46 +31,43 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
-  auto *inputLeft = processingBus->getChannelByType(AudioBus::ChannelLeft);
-  auto panParamValues =
-      panParam_->processARateParam(framesToProcess, time)->getChannel(0)->getData();
+  auto panParamValues = panParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  auto *outputLeft = audioBus_->getChannelByType(AudioBus::ChannelLeft);
-  auto *outputRight = audioBus_->getChannelByType(AudioBus::ChannelRight);
+  auto outputLeft = audioBus_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto outputRight = audioBus_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
   // Input is mono
   if (processingBus->getNumberOfChannels() == 1) {
+    auto inputLeft = processingBus->getChannelByType(AudioBuffer::ChannelMono)->span();
+
     for (int i = 0; i < framesToProcess; i++) {
-      auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
-      auto x = (pan + 1) / 2;
+      const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
+      const auto x = (pan + 1) / 2;
+      const auto angle = x * (PI / 2);
+      const float input = inputLeft[i];
 
-      auto gainL = static_cast<float>(cos(x * PI / 2));
-      auto gainR = static_cast<float>(sin(x * PI / 2));
-
-      float input = (*inputLeft)[i];
-
-      (*outputLeft)[i] = input * gainL;
-      (*outputRight)[i] = input * gainR;
+      outputLeft[i] = input * std::cos(angle);
+      outputRight[i] = input * std::sin(angle);
       time += deltaTime;
     }
   } else { // Input is stereo
-    auto *inputRight = processingBus->getChannelByType(AudioBus::ChannelRight);
+    auto inputLeft = processingBus->getChannelByType(AudioBuffer::ChannelMono)->span();
+    auto inputRight = processingBus->getChannelByType(AudioBuffer::ChannelRight)->span();
+
     for (int i = 0; i < framesToProcess; i++) {
-      auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
-      auto x = (pan <= 0 ? pan + 1 : pan);
-
-      auto gainL = static_cast<float>(cos(x * PI / 2));
-      auto gainR = static_cast<float>(sin(x * PI / 2));
-
-      float inputL = (*inputLeft)[i];
-      float inputR = (*inputRight)[i];
+      const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
+      const auto x = (pan <= 0 ? pan + 1 : pan);
+      const auto gainL = static_cast<float>(cos(x * PI / 2));
+      const auto gainR = static_cast<float>(sin(x * PI / 2));
+      const float inputL = inputLeft[i];
+      const float inputR = inputRight[i];
 
       if (pan <= 0) {
-        (*outputLeft)[i] = inputL + inputR * gainL;
-        (*outputRight)[i] = inputR * gainR;
+        outputLeft[i] = inputL + inputR * gainL;
+        outputRight[i] = inputR * gainR;
       } else {
-        (*outputLeft)[i] = inputL * gainL;
-        (*outputRight)[i] = inputR + inputL * gainR;
+        outputLeft[i] = inputL * gainL;
+        outputRight[i] = inputR + inputL * gainR;
       }
 
       time += deltaTime;

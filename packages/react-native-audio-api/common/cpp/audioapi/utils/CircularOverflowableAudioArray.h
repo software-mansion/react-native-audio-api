@@ -23,13 +23,13 @@ class CircularOverflowableAudioArray : public AudioArray {
   /// @note Might wait for read operation to finish if it is in progress. It ignores writes that exceed the buffer size.
   /// @param data Pointer to the input buffer.
   /// @param size Number of frames to write.
-  void write(const float *data, size_t size);
+  void write(const AudioArray &data, size_t size);
 
   /// @brief Reads data from the circular buffer.
   /// @param output Pointer to the output buffer.
   /// @param size Number of frames to read.
   /// @return The number of frames actually read.
-  size_t read(float *output, size_t size) const;
+  size_t read(AudioArray &data, size_t size) const;
 
  private:
   std::atomic<size_t> vWriteIndex_ = {0};

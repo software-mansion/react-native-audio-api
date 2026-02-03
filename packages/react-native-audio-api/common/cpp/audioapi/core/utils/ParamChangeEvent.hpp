@@ -17,18 +17,25 @@ class ParamChangeEvent {
       float startValue,
       float endValue,
       std::function<float(double, double, float, float, double)> &&calculateValue,
-      ParamChangeEventType type);
+      ParamChangeEventType type)
+      : startTime_(startTime),
+        endTime_(endTime),
+        calculateValue_(std::move(calculateValue)),
+        startValue_(startValue),
+        endValue_(endValue),
+        type_(type) {}
 
   ParamChangeEvent(const ParamChangeEvent &other) = delete;
   ParamChangeEvent &operator=(const ParamChangeEvent &other) = delete;
 
-  explicit ParamChangeEvent(ParamChangeEvent &&other) noexcept
+  ParamChangeEvent(ParamChangeEvent &&other) noexcept
       : startTime_(other.startTime_),
         endTime_(other.endTime_),
         calculateValue_(std::move(other.calculateValue_)),
         startValue_(other.startValue_),
         endValue_(other.endValue_),
         type_(other.type_) {}
+
   ParamChangeEvent &operator=(ParamChangeEvent &&other) noexcept {
     if (this != &other) {
       startTime_ = other.startTime_;
@@ -72,11 +79,11 @@ class ParamChangeEvent {
   }
 
  private:
-  double startTime_;
-  double endTime_;
+  double startTime_ = 0.0;
+  double endTime_ = 0.0;
   std::function<float(double, double, float, float, double)> calculateValue_;
-  float startValue_;
-  float endValue_;
+  float startValue_ = 0.0f;
+  float endValue_ = 0.0f;
   ParamChangeEventType type_;
 };
 

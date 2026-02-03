@@ -1,9 +1,9 @@
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
@@ -20,8 +20,8 @@ std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -44,16 +44,13 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     processingBus->zero();
     return processingBus;
   }
-  auto offsetBus = offsetParam_->processARateParam(framesToProcess, context->getCurrentTime());
-  auto offsetChannelData = offsetBus->getChannel(0)->getData();
+
+  auto offsetChannel =
+      offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
   for (int channel = 0; channel < processingBus->getNumberOfChannels(); ++channel) {
-    auto outputChannelData = processingBus->getChannel(channel)->getData();
-
-    std::copy(
-        offsetChannelData + startOffset,
-        offsetChannelData + startOffset + offsetLength,
-        outputChannelData + startOffset);
+    processingBus->getChannel(channel)->copy(
+        *offsetChannel, startOffset, startOffset, offsetLength);
   }
 
   if (isStopScheduled()) {

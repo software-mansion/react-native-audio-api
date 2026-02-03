@@ -5,7 +5,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -24,8 +24,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
   playbackRateParam_ = std::make_shared<AudioParam>(
       options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
 
-  playbackRateBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+  playbackRateBus_ = std::make_shared<AudioBuffer>(
+      RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
 }
@@ -99,7 +99,7 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -145,7 +145,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 }
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
-    const std::shared_ptr<AudioBus> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;

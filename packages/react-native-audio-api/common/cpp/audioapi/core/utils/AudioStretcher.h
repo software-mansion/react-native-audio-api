@@ -5,7 +5,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioBuffer;
 
 class AudioStretcher {

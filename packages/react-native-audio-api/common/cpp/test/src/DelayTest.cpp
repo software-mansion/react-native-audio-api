@@ -3,7 +3,7 @@
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -26,14 +26,15 @@ class DelayTest : public ::testing::Test {
 
 class TestableDelayNode : public DelayNode {
  public:
-  explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions& options) : DelayNode(context, options) {}
+  explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions &options)
+      : DelayNode(context, options) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override {
     return DelayNode::processNode(processingBus, framesToProcess);
   }
@@ -52,9 +53,9 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = i + 1;
+    (*bus->getChannel(0))[i] = i + 1;
   }
 
   auto resultBus = delayNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -71,9 +72,9 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = i + 1;
+    (*bus->getChannel(0))[i] = i + 1;
   }
 
   auto resultBus = delayNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -97,9 +98,9 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = i + 1;
+    (*bus->getChannel(0))[i] = i + 1;
   }
 
   delayNode.processNode(bus, FRAMES_TO_PROCESS);

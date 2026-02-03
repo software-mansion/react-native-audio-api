@@ -3,7 +3,7 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -33,8 +33,8 @@ class TestableStereoPannerNode : public StereoPannerNode {
     getPanParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override {
     return StereoPannerNode::processNode(processingBus, framesToProcess);
   }
@@ -51,9 +51,9 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
+    (*bus->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
   }
 
   auto resultBus = panNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -62,11 +62,11 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelLeft))[i],
         (i + 1) * 0.38268343236508984,
         1e-4);
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelRight))[i],
         (i + 1) * 0.9238795325112867,
         1e-4);
   }
@@ -78,10 +78,10 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
-    (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;
+    (*bus->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
+    (*bus->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
   auto resultBus = panNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -90,11 +90,11 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
   // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelLeft))[i],
         (i + 1) + (i + 1) * 0.7071067811865476,
         1e-4);
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelRight))[i],
         (i + 1) * 0.7071067811865476,
         1e-4);
   }
@@ -106,10 +106,10 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannelByType(AudioBus::ChannelLeft))[i] = i + 1;
-    (*bus->getChannelByType(AudioBus::ChannelRight))[i] = i + 1;
+    (*bus->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
+    (*bus->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
   auto resultBus = panNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -118,11 +118,11 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelLeft))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelLeft))[i],
         (i + 1) * 0.38268343236508984,
         1e-4);
     EXPECT_NEAR(
-        (*resultBus->getChannelByType(AudioBus::ChannelRight))[i],
+        (*resultBus->getChannelByType(AudioBuffer::ChannelRight))[i],
         (i + 1) + (i + 1) * 0.9238795325112867,
         1e-4);
   }

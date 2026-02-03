@@ -28,7 +28,7 @@
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -39,9 +39,7 @@ namespace audioapi {
 IIRFilterNode::IIRFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const IIRFilterOptions &options)
-    : AudioNode(context, options),
-      feedforward_(std::move(options.feedforward)),
-      feedback_(std::move(options.feedback)) {
+    : AudioNode(context, options), feedforward_(options.feedforward), feedback_(options.feedback) {
 
   int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);
@@ -123,8 +121,8 @@ void IIRFilterNode::getFrequencyResponse(
 
 // TODO: tail
 
-std::shared_ptr<AudioBus> IIRFilterNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   int numChannels = processingBus->getNumberOfChannels();
 
@@ -135,31 +133,38 @@ std::shared_ptr<AudioBus> IIRFilterNode::processNode(
   int mask = bufferLength - 1;
 
   for (int c = 0; c < numChannels; ++c) {
-    auto channelData = processingBus->getChannel(c)->getData();
+    auto channel = processingBus->getChannel(c)->subSpan(0, framesToProcess);
+
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];
     size_t bufferIndex = bufferIndices[c];
 
-    for (int n = 0; n < framesToProcess; ++n) {
-      float yn = feedforward_[0] * channelData[n];
+    for (float &sample : channel) {
+      const float x_n = sample;
+      float y_n = feedforward_[0] * sample;
 
       for (int k = 1; k < minLength; ++k) {
         int m = (bufferIndex - k) & mask;
-        yn = std::fma(feedforward_[k], x[m], yn);
-        yn = std::fma(-feedback_[k], y[m], yn);
+        y_n = std::fma(feedforward_[k], x[m], y_n);
+        y_n = std::fma(-feedback_[k], y[m], y_n);
       }
 
       for (int k = minLength; k < feedforwardLength; ++k) {
-        yn = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], yn);
+        y_n = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], y_n);
       }
       for (int k = minLength; k < feedbackLength; ++k) {
-        yn = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], yn);
+        y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], y_n);
       }
 
-      channelData[n] = yn;
+      // Avoid denormalized numbers
+      if (std::abs(y_n) < 1e-15f) {
+        y_n = 0.0f;
+      }
 
-      x[bufferIndex] = channelData[n];
-      y[bufferIndex] = yn;
+      sample = y_n;
+
+      x[bufferIndex] = x_n;
+      y[bufferIndex] = y_n;
 
       bufferIndex = (bufferIndex + 1) & (bufferLength - 1);
     }

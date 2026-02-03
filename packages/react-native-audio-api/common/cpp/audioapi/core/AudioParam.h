@@ -3,8 +3,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/AudioParamEventQueue.h>
-#include <audioapi/core/utils/ParamChangeEvent.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/ParamChangeEvent.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <cstddef>
@@ -65,7 +65,7 @@ class AudioParam {
 
   // JS-Thread only
   void setValueCurveAtTime(
-      const std::shared_ptr<std::vector<float>> &values,
+      const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
       double duration);
@@ -86,7 +86,7 @@ class AudioParam {
   void removeInputNode(AudioNode *node);
 
   // Audio-Thread only
-  std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
+  std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
 
   // Audio-Thread only
   float processKRateParam(int framesToProcess, double time);
@@ -111,8 +111,8 @@ class AudioParam {
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
-  std::shared_ptr<AudioBus> audioBus_;
-  std::vector<std::shared_ptr<AudioBus>> inputBuses_;
+  std::shared_ptr<AudioBuffer> audioBus_;
+  std::vector<std::shared_ptr<AudioBuffer>> inputBuses_;
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
@@ -145,12 +145,12 @@ class AudioParam {
   }
   float getValueAtTime(double time);
   void processInputs(
-      const std::shared_ptr<AudioBus> &outputBus,
+      const std::shared_ptr<AudioBuffer> &outputBus,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
-  std::shared_ptr<AudioBus> calculateInputs(
-      const std::shared_ptr<AudioBus> &processingBus,
+  void mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBus);
+  std::shared_ptr<AudioBuffer> calculateInputs(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess);
 };
 

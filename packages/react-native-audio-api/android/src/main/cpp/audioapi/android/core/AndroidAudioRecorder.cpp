@@ -12,7 +12,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
@@ -375,12 +375,13 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
   if (isConnected()) {
     if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
       for (int channel = 0; channel < streamChannelCount_; ++channel) {
+        auto channelData = deinterleavingBuffer_->span();
         for (int frame = 0; frame < numFrames; ++frame) {
-          deinterleavingBuffer_->getData()[frame] =
+          channelData[frame] =
               static_cast<float *>(audioData)[frame * streamChannelCount_ + channel];
         }
 
-        adapterNode_->buff_[channel]->write(deinterleavingBuffer_->getData(), numFrames);
+        adapterNode_->buff_[channel]->write(*deinterleavingBuffer_, numFrames);
       }
     }
   }

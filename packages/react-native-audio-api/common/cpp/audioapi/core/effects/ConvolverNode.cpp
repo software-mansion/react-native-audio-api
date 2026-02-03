@@ -1,18 +1,20 @@
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <vector>
 
 namespace audioapi {
-ConvolverNode::ConvolverNode(const std::shared_ptr<BaseAudioContext>& context, const ConvolverOptions &options)
+ConvolverNode::ConvolverNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const ConvolverOptions &options)
     : AudioNode(context, options),
       gainCalibrationSampleRate_(context->getSampleRate()),
       remainingSegments_(0),
@@ -25,7 +27,7 @@ ConvolverNode::ConvolverNode(const std::shared_ptr<BaseAudioContext>& context, c
       internalBuffer_(nullptr) {
   setBuffer(options.bus);
   audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
@@ -58,20 +60,18 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
     convolvers_.clear();
     for (int i = 0; i < buffer->getNumberOfChannels(); ++i) {
       convolvers_.emplace_back();
-      AudioArray channelData(buffer->getLength());
-      memcpy(channelData.getData(), buffer->getChannelData(i), buffer->getLength() * sizeof(float));
-      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+      AudioArray channelData(*buffer->getChannel(i));
+      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getSize());
     }
     if (buffer->getNumberOfChannels() == 1) {
       // add one more convolver, because right now input is always stereo
       convolvers_.emplace_back();
-      AudioArray channelData(buffer->getLength());
-      memcpy(channelData.getData(), buffer->getChannelData(0), buffer->getLength() * sizeof(float));
-      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getLength());
+      AudioArray channelData(*buffer->getChannel(0));
+      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getSize());
     }
-    internalBuffer_ =
-        std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
-    intermediateBus_ = std::make_shared<AudioBus>(
+    internalBuffer_ = std::make_shared<AudioBuffer>(
+        RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
+    intermediateBus_ = std::make_shared<AudioBuffer>(
         RENDER_QUANTUM_SIZE, convolvers_.size(), buffer->getSampleRate());
     internalBufferIndex_ = 0;
   }
@@ -85,8 +85,8 @@ void ConvolverNode::onInputDisabled() {
   }
 }
 
-std::shared_ptr<AudioBus> ConvolverNode::processInputs(
-    const std::shared_ptr<AudioBus> &outputBus,
+std::shared_ptr<AudioBuffer> ConvolverNode::processInputs(
+    const std::shared_ptr<AudioBuffer> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (internalBufferIndex_ < framesToProcess) {
@@ -97,8 +97,8 @@ std::shared_ptr<AudioBus> ConvolverNode::processInputs(
 
 // processing pipeline: processingBus -> intermediateBus_ -> audioBus_ (mixing
 // with intermediateBus_)
-std::shared_ptr<AudioBus> ConvolverNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> ConvolverNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   if (signalledToStop_) {
     if (remainingSegments_ > 0) {
@@ -112,30 +112,23 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
   }
   if (internalBufferIndex_ < framesToProcess) {
     performConvolution(processingBus); // result returned to intermediateBus_
-    audioBus_->sum(intermediateBus_.get());
+    audioBus_->sum(*intermediateBus_);
 
-    internalBuffer_->copy(audioBus_.get(), 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
+    internalBuffer_->copy(*audioBus_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
   }
   audioBus_->zero();
-  audioBus_->copy(internalBuffer_.get(), 0, 0, framesToProcess);
+  audioBus_->copy(*internalBuffer_, 0, 0, framesToProcess);
   int remainingFrames = internalBufferIndex_ - framesToProcess;
   if (remainingFrames > 0) {
     for (int i = 0; i < internalBuffer_->getNumberOfChannels(); ++i) {
-      memmove(
-          internalBuffer_->getChannel(i)->getData(),
-          internalBuffer_->getChannel(i)->getData() + framesToProcess,
-          remainingFrames * sizeof(float));
+      internalBuffer_->copy(*internalBuffer_, framesToProcess, 0, remainingFrames);
     }
   }
   internalBufferIndex_ -= framesToProcess;
 
   for (int i = 0; i < audioBus_->getNumberOfChannels(); ++i) {
-    dsp::multiplyByScalar(
-        audioBus_->getChannel(i)->getData(),
-        scaleFactor_,
-        audioBus_->getChannel(i)->getData(),
-        framesToProcess);
+    audioBus_->getChannel(i)->scale(scaleFactor_);
   }
 
   return audioBus_;
@@ -143,13 +136,13 @@ std::shared_ptr<AudioBus> ConvolverNode::processNode(
 
 void ConvolverNode::calculateNormalizationScale() {
   int numberOfChannels = buffer_->getNumberOfChannels();
-  int length = buffer_->getLength();
+  auto length = buffer_->getSize();
 
   float power = 0;
 
   for (int channel = 0; channel < numberOfChannels; ++channel) {
     float channelPower = 0;
-    auto channelData = buffer_->getChannelData(channel);
+    auto channelData = buffer_->getChannel(channel)->span();
     for (int i = 0; i < length; ++i) {
       float sample = channelData[i];
       channelPower += sample * sample;
@@ -166,12 +159,11 @@ void ConvolverNode::calculateNormalizationScale() {
   scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 }
 
-void ConvolverNode::performConvolution(const std::shared_ptr<AudioBus> &processingBus) {
+void ConvolverNode::performConvolution(const std::shared_ptr<AudioBuffer> &processingBus) {
   if (processingBus->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([&, i] {
-        convolvers_[i].process(
-            processingBus->getChannel(0)->getData(), intermediateBus_->getChannel(i)->getData());
+        convolvers_[i].process(*processingBus->getChannel(0), *intermediateBus_->getChannel(i));
       });
     }
   } else if (processingBus->getNumberOfChannels() == 2) {
@@ -187,8 +179,8 @@ void ConvolverNode::performConvolution(const std::shared_ptr<AudioBus> &processi
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBus] {
         convolvers_[i].process(
-            processingBus->getChannel(inputChannelMap[i])->getData(),
-            intermediateBus_->getChannel(outputChannelMap[i])->getData());
+            *processingBus->getChannel(inputChannelMap[i]),
+            *intermediateBus_->getChannel(outputChannelMap[i]));
       });
     }
   }

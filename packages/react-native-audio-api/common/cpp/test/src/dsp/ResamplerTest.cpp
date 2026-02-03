@@ -1,16 +1,16 @@
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/dsp/Resampler.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
-#include <audioapi/core/utils/Constants.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <memory>
 
 using namespace audioapi;
 
 class ResamplerTest : public ::testing::Test {
-  protected:
-    static constexpr int KERNEL_SIZE = RENDER_QUANTUM_SIZE;
+ protected:
+  static constexpr int KERNEL_SIZE = RENDER_QUANTUM_SIZE;
 };
 
 class TestableUpSampler : public UpSampler {
@@ -39,7 +39,8 @@ TEST_F(ResamplerTest, UpSamplerCanBeCreated) {
 }
 
 TEST_F(ResamplerTest, DownSamplerCanBeCreated) {
-  auto downSampler = std::make_unique<DownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
+  auto downSampler =
+      std::make_unique<DownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
   ASSERT_NE(downSampler, nullptr);
 }
 
@@ -109,8 +110,8 @@ TEST_F(ResamplerTest, UpDownSamplingProcess) {
   int upSamplerOutputFrames;
   int downSamplerOutputFrames;
 
-  EXPECT_NO_THROW(upSamplerOutputFrames = upSampler->process(inputArray, outputArray, 4));
-  EXPECT_NO_THROW(downSamplerOutputFrames = downSampler->process(outputArray, inputArray, 8));
+  EXPECT_NO_THROW(upSamplerOutputFrames = upSampler->process(*inputArray, *outputArray, 4));
+  EXPECT_NO_THROW(downSamplerOutputFrames = downSampler->process(*outputArray, *inputArray, 8));
 
   EXPECT_EQ(upSamplerOutputFrames, 8);
   EXPECT_EQ(downSamplerOutputFrames, 4);

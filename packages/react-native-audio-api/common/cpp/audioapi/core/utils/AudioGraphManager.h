@@ -55,8 +55,8 @@ class AudioGraphManager {
     EventPayloadType payloadType;
     EventPayload payload;
 
-    Event(Event &&other);
-    Event &operator=(Event &&other);
+    Event(Event &&other) noexcept;
+    Event &operator=(Event &&other) noexcept;
     Event() : type(ConnectionType::CONNECT), payloadType(EventPayloadType::NODES), payload() {}
     ~Event();
   };

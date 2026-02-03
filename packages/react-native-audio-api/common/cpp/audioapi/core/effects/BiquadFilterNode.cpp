@@ -30,7 +30,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <string>
 
@@ -39,9 +39,12 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(const std::shared_ptr<BaseAudioContext>& context, const BiquadFilterOptions &options) : AudioNode(context, options) {
-  frequencyParam_ =
-      std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context);
+BiquadFilterNode::BiquadFilterNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const BiquadFilterOptions &options)
+    : AudioNode(context, options) {
+  frequencyParam_ = std::make_shared<AudioParam>(
+      options.frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
@@ -383,8 +386,8 @@ void BiquadFilterNode::applyFilter() {
   }
 }
 
-std::shared_ptr<AudioBus> BiquadFilterNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   int numChannels = processingBus->getNumberOfChannels();
 
@@ -400,24 +403,30 @@ std::shared_ptr<AudioBus> BiquadFilterNode::processNode(
   float x1, x2, y1, y2;
 
   for (int c = 0; c < numChannels; ++c) {
-    auto channelData = processingBus->getChannel(c)->getData();
+    auto channel = processingBus->getChannel(c)->subSpan(framesToProcess);
 
     x1 = x1_[c];
     x2 = x2_[c];
     y1 = y1_[c];
     y2 = y2_[c];
 
-    for (int i = 0; i < framesToProcess; ++i) {
-      float input = channelData[i];
-      float output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    for (float &sample : channel) {
+      auto input = sample;
+      auto output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
-      channelData[i] = output;
+      // Avoid denormalized numbers
+      if (std::abs(output) < 1e-15f) {
+        output = 0.0f;
+      }
+
+      sample = output;
 
       x2 = x1;
       x1 = input;
       y2 = y1;
       y1 = output;
     }
+
     x1_[c] = x1;
     x2_[c] = x2;
     y1_[c] = y1;

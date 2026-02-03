@@ -7,21 +7,22 @@
 namespace audioapi {
 
 WorkletNode::WorkletNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     size_t bufferLength,
     size_t inputChannelCount,
     WorkletsRunner &&runtime)
     : AudioNode(context),
       workletRunner_(std::move(runtime)),
-      bus_(std::make_shared<AudioBus>(bufferLength, inputChannelCount, context->getSampleRate())),
+      bus_(
+          std::make_shared<AudioBuffer>(bufferLength, inputChannelCount, context->getSampleRate())),
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
   isInitialized_ = true;
 }
 
-std::shared_ptr<AudioBus> WorkletNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> WorkletNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   size_t processed = 0;
   size_t channelCount_ =
@@ -34,7 +35,7 @@ std::shared_ptr<AudioBus> WorkletNode::processNode(
     /// here we copy
     /// to [curBuffIndex_, curBuffIndex_ + shouldProcess]
     /// from [processed, processed + shouldProcess]
-    bus_->copy(processingBus.get(), processed, curBuffIndex_, shouldProcess);
+    bus_->copy(*processingBus, processed, curBuffIndex_, shouldProcess);
 
     processed += shouldProcess;
     curBuffIndex_ += shouldProcess;
@@ -48,10 +49,9 @@ std::shared_ptr<AudioBus> WorkletNode::processNode(
     workletRunner_.executeOnRuntimeSync([this, channelCount_](jsi::Runtime &uiRuntimeRaw) {
       /// Arguments preparation
       auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
-      for (size_t ch = 0; ch < channelCount_; ch++) {
-        auto audioArray = std::make_shared<AudioArray>(bufferLength_);
-        audioArray->copy(bus_->getChannel(ch));
-        auto sharedAudioArray = std::make_shared<AudioArrayBuffer>(audioArray);
+      for (int ch = 0; ch < channelCount_; ch++) {
+        auto sharedAudioArray = std::make_shared<AudioArrayBuffer>(bufferLength_);
+        sharedAudioArray->copy(*bus_->getChannel(ch));
         auto sharedAudioArraySize = sharedAudioArray->size();
         auto arrayBuffer = jsi::ArrayBuffer(uiRuntimeRaw, std::move(sharedAudioArray));
         arrayBuffer.setExternalMemoryPressure(uiRuntimeRaw, sharedAudioArraySize);

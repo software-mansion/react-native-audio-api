@@ -1,10 +1,12 @@
 #include <audioapi/utils/CircularAudioArray.h>
 
+#include <algorithm>
+
 namespace audioapi {
 
 CircularAudioArray::CircularAudioArray(size_t size) : AudioArray(size) {}
 
-void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvailableSpaceCheck) {
+void CircularAudioArray::push_back(const AudioArray & data, size_t size, bool skipAvailableSpaceCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
@@ -15,16 +17,17 @@ void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvai
 
   if (vWriteIndex_ + size > size_) {
     auto partSize = size_ - vWriteIndex_;
-    memcpy(data_ + vWriteIndex_, data, partSize * sizeof(float));
-    memcpy(data_, data + partSize, (size - partSize) * sizeof(float));
+
+    copy(data, 0, vWriteIndex_, partSize);
+    copy(data, partSize, 0, size - partSize);
   } else {
-    memcpy(data_ + vWriteIndex_, data, size * sizeof(float));
+    copy(data, 0, vWriteIndex_, size);
   }
 
   vWriteIndex_ = vWriteIndex_ + size > size_ ? vWriteIndex_ + size - size_ : vWriteIndex_ + size;
 }
 
-void CircularAudioArray::pop_front(float *data, size_t size, bool skipAvailableDataCheck) {
+void CircularAudioArray::pop_front(AudioArray &data, size_t size, bool skipAvailableDataCheck) {
   if (size > size_) {
     throw std::overflow_error("size exceeds CircularAudioArray size_");
   }
@@ -35,17 +38,17 @@ void CircularAudioArray::pop_front(float *data, size_t size, bool skipAvailableD
 
   if (vReadIndex_ + size > size_) {
     auto partSize = size_ - vReadIndex_;
-    memcpy(data, data_ + vReadIndex_, partSize * sizeof(float));
-    memcpy(data + partSize, data_, (size - partSize) * sizeof(float));
+    data.copy(*this, vReadIndex_, 0, partSize);
+    data.copy(*this, 0, partSize, size - partSize);
   } else {
-    memcpy(data, data_ + vReadIndex_, size * sizeof(float));
+    data.copy(*this, vReadIndex_, 0, size);
   }
 
   vReadIndex_ = vReadIndex_ + size > size_ ? vReadIndex_ + size - size_ : vReadIndex_ + size;
 }
 
 void CircularAudioArray::pop_back(
-    float *data,
+    AudioArray &data,
     size_t size,
     size_t offset,
     bool skipAvailableDataCheck) {
@@ -58,13 +61,13 @@ void CircularAudioArray::pop_back(
   }
 
   if (vWriteIndex_ <= offset) {
-    memcpy(data, data_ + size_ - (offset - vWriteIndex_) - size, size * sizeof(float));
+    data.copy(*this, size_ - (offset - vWriteIndex_) - size, 0, size);
   } else if (vWriteIndex_ <= size + offset) {
     auto partSize = size + offset - vWriteIndex_;
-    memcpy(data, data_ + size_ - partSize, partSize * sizeof(float));
-    memcpy(data + partSize, data_, (size - partSize) * sizeof(float));
+    data.copy(*this, size_ - partSize, 0, partSize);
+    data.copy(*this, 0, partSize, size - partSize);
   } else {
-    memcpy(data, data_ + vWriteIndex_ - size - offset, size * sizeof(float));
+    data.copy(*this, vWriteIndex_ - size - offset, 0, size);
   }
 
   vReadIndex_ = vWriteIndex_ - offset < 0 ? size + vWriteIndex_ - offset : vWriteIndex_ - offset;

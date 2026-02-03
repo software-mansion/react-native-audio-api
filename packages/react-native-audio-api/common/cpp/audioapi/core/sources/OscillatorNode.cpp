@@ -1,9 +1,9 @@
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <string>
 
@@ -27,7 +27,7 @@ OscillatorNode::OscillatorNode(
     periodicWave_ = context->getBasicWaveForm(type_);
   }
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
+  audioBus_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 
   isInitialized_ = true;
 }
@@ -56,8 +56,8 @@ void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &period
   type_ = OscillatorType::CUSTOM;
 }
 
-std::shared_ptr<AudioBus> OscillatorNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -83,25 +83,41 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
 
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) * 1.0 / context->getSampleRate();
-  auto detuneParamValues = detuneParam_->processARateParam(framesToProcess, time);
-  auto frequencyParamValues = frequencyParam_->processARateParam(framesToProcess, time);
+  auto detuneSpan = detuneParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  auto freqSpan = frequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = std::pow(2.0f, detuneParamValues->getChannel(0)->getData()[i] / 1200.0f);
-    auto detunedFrequency = frequencyParamValues->getChannel(0)->getData()[i] * detuneRatio;
-    auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
+  const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
+  const auto tableScale = periodicWave_->getScale();
+  const auto numChannels = processingBus->getNumberOfChannels();
 
-    float sample = periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
+  auto finalPhase = phase_;
 
-    for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
-      (*processingBus->getChannel(j))[i] = sample;
+  for (int ch = 0; ch < numChannels; ch += 1) {
+    auto channelSpan = processingBus->getChannel(ch)->span();
+    float currentPhase = phase_;
+
+    for (size_t i = startOffset; i < offsetLength; i += 1) {
+      auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : std::pow(2.0f, detuneSpan[i] / 1200.0f);
+      auto detunedFrequency = freqSpan[i] * detuneRatio;
+      auto phaseIncrement = detunedFrequency * tableScale;
+
+      channelSpan[i] = periodicWave_->getSample(detunedFrequency, currentPhase, phaseIncrement);
+
+      currentPhase += phaseIncrement;
+
+      if (currentPhase >= tableSize) {
+        currentPhase -= tableSize;
+      } else if (currentPhase < 0.0f) {
+        currentPhase += tableSize;
+      }
     }
 
-    phase_ += phaseIncrement;
-    phase_ -= floor(phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
-        static_cast<float>(periodicWave_->getPeriodicWaveSize());
+    if (ch == 0) {
+      finalPhase = currentPhase;
+    }
   }
 
+  phase_ = finalPhase;
   handleStopScheduled();
 
   return processingBus;

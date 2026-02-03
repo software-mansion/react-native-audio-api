@@ -3,16 +3,17 @@
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
 
-DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext>& context, const DelayOptions &options)
+DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const DelayOptions &options)
     : AudioNode(context, options),
-      delayTimeParam_(std::make_shared<AudioParam>(options.delayTime, 0, options.maxDelayTime, context)),
+      delayTimeParam_(
+          std::make_shared<AudioParam>(options.delayTime, 0, options.maxDelayTime, context)),
       delayBuffer_(
-          std::make_shared<AudioBus>(
+          std::make_shared<AudioBuffer>(
               static_cast<size_t>(
                   options.maxDelayTime * context->getSampleRate() +
                   1), // +1 to enable delayTime equal to maxDelayTime
@@ -39,7 +40,7 @@ void DelayNode::onInputDisabled() {
 }
 
 void DelayNode::delayBufferOperation(
-    const std::shared_ptr<AudioBus> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess,
     size_t &operationStartingIndex,
     DelayNode::BufferAction action) {
@@ -51,10 +52,10 @@ void DelayNode::delayBufferOperation(
 
     if (action == BufferAction::WRITE) {
       delayBuffer_->sum(
-          processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToEnd);
+          *processingBus, processingBusStartIndex, operationStartingIndex, framesToEnd);
     } else { // READ
       processingBus->sum(
-          delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToEnd);
+          *delayBuffer_, operationStartingIndex, processingBusStartIndex, framesToEnd);
     }
 
     operationStartingIndex = 0;
@@ -64,11 +65,11 @@ void DelayNode::delayBufferOperation(
 
   if (action == BufferAction::WRITE) {
     delayBuffer_->sum(
-        processingBus.get(), processingBusStartIndex, operationStartingIndex, framesToProcess);
+        *processingBus, processingBusStartIndex, operationStartingIndex, framesToProcess);
     processingBus->zero();
   } else { // READ
     processingBus->sum(
-        delayBuffer_.get(), operationStartingIndex, processingBusStartIndex, framesToProcess);
+        *delayBuffer_, operationStartingIndex, processingBusStartIndex, framesToProcess);
     delayBuffer_->zero(operationStartingIndex, framesToProcess);
   }
 
@@ -79,8 +80,8 @@ void DelayNode::delayBufferOperation(
 // processing is split into two parts
 // 1. writing to delay buffer (mixing if needed) from processing bus
 // 2. reading from delay buffer to processing bus (mixing if needed) with delay
-std::shared_ptr<AudioBus> DelayNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> DelayNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   // handling tail processing
   if (signalledToStop_) {

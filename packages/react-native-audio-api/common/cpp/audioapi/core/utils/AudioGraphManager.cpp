@@ -1,22 +1,22 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <utility>
 #include <vector>
 
 namespace audioapi {
 
-AudioGraphManager::Event::Event(Event &&other) {
+AudioGraphManager::Event::Event(Event &&other) noexcept {
   *this = std::move(other);
 }
 
-AudioGraphManager::Event &AudioGraphManager::Event::operator=(Event &&other) {
+AudioGraphManager::Event &AudioGraphManager::Event::operator=(Event &&other) noexcept {
   if (this != &other) {
     // Clean up current resources
     this->~Event();

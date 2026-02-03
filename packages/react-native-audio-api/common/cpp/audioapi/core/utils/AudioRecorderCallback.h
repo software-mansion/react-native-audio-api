@@ -8,7 +8,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioArray;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
@@ -26,7 +26,7 @@ class AudioRecorderCallback {
   virtual void cleanup() = 0;
 
   void emitAudioData(bool flush = false);
-  void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
+  void invokeCallback(const std::shared_ptr<AudioBuffer> &bus, int numFrames);
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
@@ -45,7 +45,7 @@ class AudioRecorderCallback {
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
-  // TODO: CircularAudioBus
+  // TODO: CircularAudioBuffer
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
 };
 

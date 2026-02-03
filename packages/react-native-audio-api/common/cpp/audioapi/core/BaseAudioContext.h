@@ -16,7 +16,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class GainNode;
 class DelayNode;
 class AudioBuffer;

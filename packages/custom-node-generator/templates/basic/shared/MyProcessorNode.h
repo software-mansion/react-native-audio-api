@@ -2,15 +2,15 @@
 #include <audioapi/core/AudioNode.h>
 
 namespace audioapi {
-class AudioBus;
+class AudioBuffer;
 
 class MyProcessorNode : public AudioNode {
 public:
   explicit MyProcessorNode(BaseAudioContext *context);
 
 protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &bus,
-                   int framesToProcess) override;
-
+  std::shared_ptr<AudioBuffer>
+  processNode(const std::shared_ptr<AudioBuffer> &bus,
+              int framesToProcess) override;
 };
 } // namespace audioapi

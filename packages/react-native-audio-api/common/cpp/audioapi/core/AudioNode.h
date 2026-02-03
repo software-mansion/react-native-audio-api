@@ -13,7 +13,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class BaseAudioContext;
 class AudioParam;
 struct AudioNodeOptions;
@@ -36,8 +36,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void disconnect();
   void disconnect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioParam> &param);
-  virtual std::shared_ptr<AudioBus> processAudio(
-      const std::shared_ptr<AudioBus> &outputBus,
+  virtual std::shared_ptr<AudioBuffer> processAudio(
+      const std::shared_ptr<AudioBuffer> &outputBus,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
@@ -53,7 +53,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class DelayNodeHostObject;
 
   std::weak_ptr<BaseAudioContext> context_;
-  std::shared_ptr<AudioBus> audioBus_;
+  std::shared_ptr<AudioBuffer> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
@@ -73,17 +73,18 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::size_t lastRenderedFrame_{SIZE_MAX};
 
  private:
-  std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
+  std::vector<std::shared_ptr<AudioBuffer>> inputBuses_ = {};
 
-  virtual std::shared_ptr<AudioBus> processInputs(
-      const std::shared_ptr<AudioBus> &outputBus,
+  virtual std::shared_ptr<AudioBuffer> processInputs(
+      const std::shared_ptr<AudioBuffer> &outputBus,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) = 0;
+  virtual std::shared_ptr<AudioBuffer> processNode(const std::shared_ptr<AudioBuffer> &, int) = 0;
 
   bool isAlreadyProcessed();
-  std::shared_ptr<AudioBus> applyChannelCountMode(const std::shared_ptr<AudioBus> &processingBus);
-  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
+  std::shared_ptr<AudioBuffer> applyChannelCountMode(
+      const std::shared_ptr<AudioBuffer> &processingBus);
+  void mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBus);
 
   void connectNode(const std::shared_ptr<AudioNode> &node);
   void disconnectNode(const std::shared_ptr<AudioNode> &node);

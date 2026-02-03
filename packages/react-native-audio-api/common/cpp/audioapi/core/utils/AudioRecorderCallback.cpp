@@ -4,7 +4,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>
@@ -56,27 +56,26 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
   }
 
   while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
-    auto bus = std::make_shared<AudioBus>(sizeLimit, channelCount_, sampleRate_);
+    auto bus = std::make_shared<AudioBuffer>(sizeLimit, channelCount_, sampleRate_);
 
     for (int i = 0; i < channelCount_; ++i) {
-      auto *outputChannel = bus->getChannel(i)->getData();
-      circularBus_[i]->pop_front(outputChannel, sizeLimit);
+      circularBus_[i]->pop_front(*bus->getChannel(i), sizeLimit);
     }
 
     invokeCallback(bus, static_cast<int>(sizeLimit));
   }
 }
 
-void AudioRecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames) {
-  auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
+void AudioRecorderCallback::invokeCallback(const std::shared_ptr<AudioBuffer> &bus, int numFrames) {
+  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(bus);
 
   std::unordered_map<std::string, EventValue> eventPayload = {};
   eventPayload.insert({"buffer", audioBufferHostObject});
   eventPayload.insert({"numFrames", numFrames});
 
   if (audioEventHandlerRegistry_) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::AUDIO_READY, callbackId_, eventPayload);
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::AUDIO_READY, callbackId_, eventPayload);
   }
 }
 
@@ -98,7 +97,8 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
   }
 
   std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+      AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
 }
 
 } // namespace audioapi

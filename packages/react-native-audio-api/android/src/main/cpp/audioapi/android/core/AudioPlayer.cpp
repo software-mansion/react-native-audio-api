@@ -3,7 +3,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <jni.h>
 
 #include <algorithm>
@@ -12,7 +12,7 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio),
@@ -42,7 +42,7 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  audioBus_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   return true;
 }
 
@@ -119,7 +119,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     for (int i = 0; i < framesToProcess; i++) {
       for (int channel = 0; channel < channelCount_; channel++) {
         buffer[(processedFrames + i) * channelCount_ + channel] =
-            audioBus_->getChannel(channel)->getData()[i];
+            (*audioBus_->getChannel(channel))[i];
       }
     }
 

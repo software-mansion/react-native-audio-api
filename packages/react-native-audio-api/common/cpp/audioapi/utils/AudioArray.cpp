@@ -21,6 +21,7 @@ AudioArray::AudioArray(size_t size): size_(size) {
 AudioArray::AudioArray(const float *data, size_t size) : size_(size) {
     if (size_ > 0) {
         data_ = std::make_unique<float[]>(size_);
+        copy(data, 0, 0, size_);
         std::memcpy(data_.get(), data, size_ * sizeof(float));
     }
 }
@@ -135,7 +136,7 @@ void AudioArray::copy(
         return;
     }
 
-  memcpy(data_.get() + destinationStart, source.data_.get() + sourceStart, length * sizeof(float));
+  copy(source.data_.get(), sourceStart, destinationStart, length);
 }
 
 void AudioArray::copyReverse(const audioapi::AudioArray &source, size_t sourceStart,
@@ -151,6 +152,24 @@ void AudioArray::copyReverse(const audioapi::AudioArray &source, size_t sourceSt
     for (size_t i = 0; i < length; ++i) {
         dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
     }
+}
+
+void AudioArray::copy(const float *source, size_t sourceStart, size_t destinationStart,
+                      size_t length) {
+    if (length == 0 || data_ == nullptr || source == nullptr) {
+        return;
+    }
+
+    memcpy(data_.get() + destinationStart, source + sourceStart, length * sizeof(float));
+}
+
+void AudioArray::copyTo(float *destination, size_t sourceStart, size_t destinationStart,
+                        size_t length) const {
+    if (length == 0 || data_ == nullptr || destination == nullptr) {
+        return;
+    }
+
+    memcpy(destination + destinationStart, data_.get() + sourceStart, length * sizeof(float));
 }
 
 void AudioArray::reverse() {
@@ -204,7 +223,7 @@ float AudioArray::computeConvolution(const audioapi::AudioArray &kernel, size_t 
     float32x4_t vSum = vdupq_n_f32(0.0f);
 
   // process 4 samples at a time
-  for (; k <= kernelSize_ - 4; k += 4) {
+  for (; k <= kernelSize - 4; k += 4) {
     float32x4_t vState = vld1q_f32(stateStart + k);
     float32x4_t vKernel = vld1q_f32(kernelStart + k);
 

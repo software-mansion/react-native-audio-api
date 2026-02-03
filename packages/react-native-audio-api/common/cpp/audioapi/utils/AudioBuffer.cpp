@@ -1,7 +1,9 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -19,14 +21,18 @@ namespace audioapi {
  * Public interfaces - memory management
  */
 
-AudioBus::AudioBus(size_t size, int numberOfChannels, float sampleRate)
+AudioBuffer::AudioBuffer(size_t size, int numberOfChannels, float sampleRate)
     : numberOfChannels_(numberOfChannels), sampleRate_(sampleRate), size_(size) {
   createChannels();
 }
 
-AudioBus::AudioBus(const AudioBus &other): numberOfChannels_(other.numberOfChannels_),
-                                           sampleRate_(other.sampleRate_),
-                                           size_(other.size_) {
+AudioBuffer::AudioBuffer(const audioapi::AudioBufferOptions &options)
+    : AudioBuffer(options.length, options.numberOfChannels, options.sampleRate) {}
+
+AudioBuffer::AudioBuffer(const AudioBuffer &other)
+    : numberOfChannels_(other.numberOfChannels_),
+      sampleRate_(other.sampleRate_),
+      size_(other.size_) {
   createChannels();
 
   for (int i = 0; i < numberOfChannels_; i += 1) {
@@ -34,71 +40,58 @@ AudioBus::AudioBus(const AudioBus &other): numberOfChannels_(other.numberOfChann
   }
 }
 
-AudioBus::AudioBus(std::vector<std::shared_ptr<AudioArray>> channels, float sampleRate)
-        : channels_(std::move(channels)),
-          sampleRate_(sampleRate) {
-
-    numberOfChannels_ = static_cast<int>(channels_.size());
-
-    if (numberOfChannels_ > 0 && channels_[0] != nullptr) {
-      size_ = channels_[0]->getSize();
-    } else {
-      size_ = 0;
-    }
+AudioBuffer::AudioBuffer(audioapi::AudioBuffer &&other) noexcept
+    : channels_(std::move(other.channels_)),
+      numberOfChannels_(other.numberOfChannels_),
+      sampleRate_(other.sampleRate_),
+      size_(other.size_) {
+  other.numberOfChannels_ = 0;
+  other.sampleRate_ = 0.0f;
+  other.size_ = 0;
 }
 
-AudioBus::AudioBus(audioapi::AudioBus &&other) noexcept :
-  channels_(std::move(other.channels_)),
-  numberOfChannels_(other.numberOfChannels_),
-  sampleRate_(other.sampleRate_),
-  size_(other.size_) {
-    other.numberOfChannels_ = 0;
-    other.sampleRate_ = 0.0f;
-    other.size_ = 0;
-}
-
-AudioBus &AudioBus::operator=(const AudioBus &other) {
+AudioBuffer &AudioBuffer::operator=(const AudioBuffer &other) {
   if (this != &other) {
-      if (numberOfChannels_ != other.numberOfChannels_ || size_ != other.size_) {
-          numberOfChannels_ = other.numberOfChannels_;
-          size_ = other.size_;
-          createChannels();
-      }
+    if (numberOfChannels_ != other.numberOfChannels_ || size_ != other.size_) {
+      numberOfChannels_ = other.numberOfChannels_;
+      size_ = other.size_;
+      createChannels();
+    }
 
-      sampleRate_ = other.sampleRate_;
+    sampleRate_ = other.sampleRate_;
 
-      for (int i = 0; i < numberOfChannels_; i += 1) {
-          *channels_[i] = *other.channels_[i];
-      }
+    for (int i = 0; i < numberOfChannels_; i += 1) {
+      *channels_[i] = *other.channels_[i];
+    }
   }
 
   return *this;
 }
 
-AudioBus &AudioBus::operator=(audioapi::AudioBus &&other) noexcept {
-    if (this != &other) {
-      channels_ = std::move(other.channels_);
+AudioBuffer &AudioBuffer::operator=(audioapi::AudioBuffer &&other) noexcept {
+  if (this != &other) {
+    channels_ = std::move(other.channels_);
 
-      numberOfChannels_ = other.numberOfChannels_;
-      sampleRate_ = other.sampleRate_;
-      size_ = other.size_;
+    numberOfChannels_ = other.numberOfChannels_;
+    sampleRate_ = other.sampleRate_;
+    size_ = other.size_;
 
-      other.numberOfChannels_ = 0;
-      other.sampleRate_ = 0.0f;
-      other.size_ = 0;
-    }
-    return *this;
+    other.numberOfChannels_ = 0;
+    other.sampleRate_ = 0.0f;
+    other.size_ = 0;
+  }
+  return *this;
 }
 
 /**
  * Public interfaces - getters
  */
 
-AudioArray *AudioBus::getChannel(int index) const {
+AudioArray *AudioBuffer::getChannel(int index) const {
   return channels_[index].get();
 }
 
-AudioArray *AudioBus::getChannelByType(int channelType) const {
+AudioArray *AudioBuffer::getChannelByType(int channelType) const {
   switch (getNumberOfChannels()) {
     case 1: // mono
       if (channelType == ChannelMono) {
@@ -168,7 +161,7 @@ AudioArray *AudioBus::getChannelByType(int channelType) const {
   }
 }
 
-std::shared_ptr<AudioArray> AudioBus::getSharedChannel(int index) const {
+std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(int index) const {
   return channels_[index];
 }
 
@@ -176,22 +169,22 @@ std::shared_ptr<AudioArray> AudioBus::getSharedChannel(int index) const {
  * Public interfaces - audio processing and setters
  */
 
-void AudioBus::zero() {
+void AudioBuffer::zero() {
   zero(0, getSize());
 }
 
-void AudioBus::zero(size_t start, size_t length) {
+void AudioBuffer::zero(size_t start, size_t length) {
   for (auto it = channels_.begin(); it != channels_.end(); it += 1) {
     it->get()->zero(start, length);
   }
 }
 
-void AudioBus::sum(const AudioBus& source, ChannelInterpretation interpretation) {
+void AudioBuffer::sum(const AudioBuffer &source, ChannelInterpretation interpretation) {
   sum(source, 0, 0, getSize(), interpretation);
 }
 
-void AudioBus::sum(
-    const AudioBus& source,
+void AudioBuffer::sum(
+    const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length,
@@ -226,12 +219,12 @@ void AudioBus::sum(
   }
 }
 
-void AudioBus::copy(const AudioBus& source) {
+void AudioBuffer::copy(const AudioBuffer &source) {
   copy(source, 0, 0, getSize());
 }
 
-void AudioBus::copy(
-    const AudioBus& source,
+void AudioBuffer::copy(
+    const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
@@ -252,50 +245,50 @@ void AudioBus::copy(
   sum(source, sourceStart, destinationStart, length);
 }
 
-void AudioBus::normalize() {
-    float maxAbsValue = this->maxAbsValue();
+void AudioBuffer::normalize() {
+  float maxAbsValue = this->maxAbsValue();
 
-    if (maxAbsValue == 0.0f || maxAbsValue == 1.0f) {
-        return;
-    }
+  if (maxAbsValue == 0.0f || maxAbsValue == 1.0f) {
+    return;
+  }
 
-    float scale = 1.0f / maxAbsValue;
-    this->scale(scale);
+  float scale = 1.0f / maxAbsValue;
+  this->scale(scale);
 }
 
-void AudioBus::scale(float value) {
-    for (auto &channel : channels_) {
-        channel->scale(value);
-    }
+void AudioBuffer::scale(float value) {
+  for (auto &channel : channels_) {
+    channel->scale(value);
+  }
 }
 
-float AudioBus::maxAbsValue() const {
-    float maxAbsValue = 1.0f;
+float AudioBuffer::maxAbsValue() const {
+  float maxAbsValue = 1.0f;
 
-    for (const auto &channel : channels_) {
-        float channelMaxAbsValue = channel->getMaxAbsValue();
-        maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
-    }
+  for (const auto &channel : channels_) {
+    float channelMaxAbsValue = channel->getMaxAbsValue();
+    maxAbsValue = std::max(maxAbsValue, channelMaxAbsValue);
+  }
 
-    return maxAbsValue;
+  return maxAbsValue;
 }
 
 /**
  * Internal tooling - channel initialization
  */
 
-void AudioBus::createChannels() {
+void AudioBuffer::createChannels() {
   if (channels_.size() != static_cast<size_t>(numberOfChannels_)) {
-      channels_.clear();
-      channels_.reserve(numberOfChannels_);
+    channels_.clear();
+    channels_.reserve(numberOfChannels_);
 
-      for (int i = 0; i < numberOfChannels_; i += 1) {
-        channels_.emplace_back(std::make_shared<AudioArray>(size_));
-      }
+    for (int i = 0; i < numberOfChannels_; i += 1) {
+      channels_.emplace_back(std::make_shared<AudioArrayBuffer>(size_));
+    }
   } else {
-      for (int i = 0; i < numberOfChannels_; i += 1) {
-        channels_[i]->resize(size_);
-      }
+    for (int i = 0; i < numberOfChannels_; i += 1) {
+      channels_[i]->resize(size_);
+    }
   }
 }
 
@@ -303,8 +296,8 @@ void AudioBus::createChannels() {
  * Internal tooling - channel summing
  */
 
-void AudioBus::discreteSum(
-    const AudioBus& source,
+void AudioBuffer::discreteSum(
+    const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) const {
@@ -318,8 +311,8 @@ void AudioBus::discreteSum(
   }
 }
 
-void AudioBus::sumByUpMixing(
-    const AudioBus& source,
+void AudioBuffer::sumByUpMixing(
+    const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
@@ -361,15 +354,16 @@ void AudioBus::sumByUpMixing(
     getChannelByType(ChannelSurroundLeft)
         ->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
     getChannelByType(ChannelSurroundRight)
-        ->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
+        ->sum(
+            *source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
     return;
   }
 
   discreteSum(source, sourceStart, destinationStart, length);
 }
 
-void AudioBus::sumByDownMixing(
-    const AudioBus& source,
+void AudioBuffer::sumByDownMixing(
+    const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
@@ -380,8 +374,10 @@ void AudioBus::sumByDownMixing(
   if (numberOfSourceChannels == 2 && numberOfChannels == 1) {
     auto destinationData = getChannelByType(ChannelMono);
 
-    destinationData->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationData->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
     return;
   }
 
@@ -391,10 +387,22 @@ void AudioBus::sumByDownMixing(
   if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
     auto destinationData = getChannelByType(ChannelMono);
 
-    destinationData->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.25f);
-    destinationData->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.25f);
-    destinationData->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.25f);
-    destinationData->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length, 0.25f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.25f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.25f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelSurroundLeft),
+        sourceStart,
+        destinationStart,
+        length,
+        0.25f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelSurroundRight),
+        sourceStart,
+        destinationStart,
+        length,
+        0.25f);
     return;
   }
 
@@ -404,11 +412,20 @@ void AudioBus::sumByDownMixing(
   if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
     auto destinationData = getChannelByType(ChannelMono);
 
-    destinationData->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationData->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationData->sum(*source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length);
-    destinationData->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationData->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length, 0.5f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationData->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationData->sum(
+        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length);
+    destinationData->sum(
+        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
+    destinationData->sum(
+        *source.getChannelByType(ChannelSurroundRight),
+        sourceStart,
+        destinationStart,
+        length,
+        0.5f);
     return;
   }
 
@@ -419,11 +436,19 @@ void AudioBus::sumByDownMixing(
     auto destinationLeft = getChannelByType(ChannelLeft);
     auto destinationRight = getChannelByType(ChannelRight);
 
-    destinationLeft->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationLeft->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
 
-    destinationRight->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
-    destinationRight->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length, 0.5f);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelSurroundRight),
+        sourceStart,
+        destinationStart,
+        length,
+        0.5f);
     return;
   }
 
@@ -435,13 +460,27 @@ void AudioBus::sumByDownMixing(
     auto destinationLeft = getChannelByType(ChannelLeft);
     auto destinationRight = getChannelByType(ChannelRight);
 
-    destinationLeft->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    destinationLeft->sum(*source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationLeft->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelSurroundLeft),
+        sourceStart,
+        destinationStart,
+        length,
+        SQRT_HALF);
 
-    destinationRight->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    destinationRight->sum(*source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationRight->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelSurroundRight),
+        sourceStart,
+        destinationStart,
+        length,
+        SQRT_HALF);
     return;
   }
 
@@ -456,14 +495,20 @@ void AudioBus::sumByDownMixing(
     auto destinationSurroundLeft = getChannelByType(ChannelSurroundLeft);
     auto destinationSurroundRight = getChannelByType(ChannelSurroundRight);
 
-    destinationLeft->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    destinationLeft->sum(*source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
+    destinationLeft->sum(
+        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
 
-    destinationRight->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    destinationRight->sum(*source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
+    destinationRight->sum(
+        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
 
-    destinationSurroundLeft->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
-    destinationSurroundRight->sum(*source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
+    destinationSurroundLeft->sum(
+        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
+    destinationSurroundRight->sum(
+        *source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
     return;
   }
 

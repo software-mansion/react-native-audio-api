@@ -11,7 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -40,10 +40,10 @@ static constexpr bool VERBOSE = false;
 static constexpr int CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
-  audioapi::AudioBus bus;
+  audioapi::AudioBuffer bus;
   size_t size;
   StreamingData() = default;
-  StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
+  StreamingData(audioapi::AudioBuffer b, size_t s) : bus(b), size(s) {}
   StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
   StreamingData(StreamingData &&data) noexcept : bus(std::move(data.bus)), size(data.size) {}
   StreamingData &operator=(const StreamingData &data) {
@@ -58,7 +58,7 @@ struct StreamingData {
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
@@ -82,8 +82,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   }
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override;
 
  private:
@@ -97,9 +97,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   SwrContext *swrCtx_;
   uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusSize_;                // size of currently buffered bus
-  int audio_stream_index_;                // index of the audio stream channel in the input
+  std::shared_ptr<AudioBuffer> bufferedBus_; // audio bus for buffering hls frames
+  size_t bufferedBusSize_;                   // size of currently buffered bus
+  int audio_stream_index_;                   // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
@@ -128,7 +128,7 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
    */
-  bool processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context);
+  bool processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
 
   /**
    * @brief Thread function to continuously read and process audio frames

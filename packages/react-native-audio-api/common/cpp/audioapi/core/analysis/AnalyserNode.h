@@ -12,7 +12,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioArray;
 class CircularAudioArray;
 struct AnalyserOptions;
@@ -43,8 +43,8 @@ class AnalyserNode : public AudioNode {
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override;
 
  private:
@@ -57,7 +57,7 @@ class AnalyserNode : public AudioNode {
   std::shared_ptr<AudioArray> windowData_;
 
   std::unique_ptr<CircularAudioArray> inputBuffer_;
-  std::unique_ptr<AudioBus> downMixBus_;
+  std::unique_ptr<AudioBuffer> downMixBus_;
   std::unique_ptr<AudioArray> tempBuffer_;
 
   std::unique_ptr<dsp::FFT> fft_;

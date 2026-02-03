@@ -11,7 +11,6 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
@@ -26,7 +25,7 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <memory>
 #include <string>
@@ -78,7 +77,7 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
 }
 
 void BaseAudioContext::setState(audioapi::ContextState state) {
-    state_.store(state, std::memory_order_release);
+  state_.store(state, std::memory_order_release);
 }
 
 std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
@@ -122,7 +121,8 @@ std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
   return recorderAdapter;
 }
 
-std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(const OscillatorOptions &options) {
+std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(
+    const OscillatorOptions &options) {
   auto oscillator = std::make_shared<OscillatorNode>(shared_from_this(), options);
   graphManager_->addSourceNode(oscillator);
   return oscillator;
@@ -192,7 +192,7 @@ std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueS
 }
 
 std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOptions &options) {
-  return std::make_shared<AudioBuffer>(options);
+  return std::make_shared<AudioBuffer>(options.length, options.numberOfChannels, options.sampleRate);
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
@@ -214,7 +214,8 @@ std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(const Convolver
   return convolver;
 }
 
-std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(const WaveShaperOptions &options) {
+std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(
+    const WaveShaperOptions &options) {
   auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this(), options);
   graphManager_->addProcessingNode(waveShaper);
   return waveShaper;
@@ -261,7 +262,7 @@ std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandl
 }
 
 const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
-    return runtimeRegistry_;
+  return runtimeRegistry_;
 }
 
 } // namespace audioapi

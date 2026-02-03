@@ -45,14 +45,14 @@ For the sake of a simplicity, we will use value as a raw `double` type, not wrap
 #include <audioapi/core/AudioNode.h>
 
 namespace audioapi {
-    class AudioBus;
+    class AudioBuffer;
 
     class MyProcessorNode : public AudioNode {
     public:
       explicit MyProcessorNode(BaseAudioContext *context);
 
     protected:
-      void processNode(const std::shared_ptr<AudioBus> &bus,
+      void processNode(const std::shared_ptr<AudioBuffer> &bus,
                     int framesToProcess) override;
 
     // highlight-start
@@ -69,7 +69,7 @@ namespace audioapi {
 
 ```cpp
 #include "MyProcessorNode.h"
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioArray.h>
 
 namespace audioapi {
@@ -79,7 +79,7 @@ namespace audioapi {
         isInitialized_ = true;
     }
 
-    void MyProcessorNode::processNode(const std::shared_ptr<AudioBus> &bus,
+    void MyProcessorNode::processNode(const std::shared_ptr<AudioBuffer> &bus,
                                     int framesToProcess) {
       // highlight-start
       for (int channel = 0; channel < bus->getNumberOfChannels(); ++channel) {

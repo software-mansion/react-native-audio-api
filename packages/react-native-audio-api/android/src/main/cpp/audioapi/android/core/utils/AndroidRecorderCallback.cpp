@@ -4,7 +4,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>
@@ -165,13 +165,13 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
   auto *inputData = static_cast<float *>(data);
 
   for (int channel = 0; channel < channelCount_; ++channel) {
-    float *channelData = deinterleavingArray_->getData();
+    auto channelData = deinterleavingArray_->span();
 
     for (int frame = 0; frame < numFrames; ++frame) {
       channelData[frame] = inputData[frame * channelCount_ + channel];
     }
 
-    circularBus_[channel]->push_back(channelData, numFrames);
+    circularBus_[channel]->push_back(*deinterleavingArray_, numFrames);
   }
 }
 

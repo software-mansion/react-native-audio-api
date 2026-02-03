@@ -1,6 +1,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioArray.h>
+
 #include <memory>
 #include <utility>
 
@@ -80,7 +82,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto rawValues = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime));
-  auto values = std::make_unique<std::vector<float>>(rawValues, rawValues + length);
+  auto values = std::make_unique<AudioArray>(rawValues, length);
 
   double startTime = args[1].getNumber();
   double duration = args[2].getNumber();

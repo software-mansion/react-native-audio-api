@@ -2,8 +2,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <memory>
@@ -39,12 +39,12 @@ void WaveShaperNode::setOversample(OverSampleType type) {
   }
 }
 
-std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
+std::shared_ptr<AudioArrayBuffer> WaveShaperNode::getCurve() const {
   std::scoped_lock<std::mutex> lock(mutex_);
   return curve_;
 }
 
-void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
+void WaveShaperNode::setCurve(const std::shared_ptr<AudioArrayBuffer> &curve) {
   std::scoped_lock<std::mutex> lock(mutex_);
   curve_ = curve;
 
@@ -53,8 +53,8 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<AudioBus> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   if (!isInitialized_) {
     return processingBus;
@@ -71,9 +71,9 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
   }
 
   for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
-    auto channelData = processingBus->getSharedChannel(channel);
+    auto channelData = processingBus->getChannel(channel);
 
-    waveShapers_[channel]->process(channelData, framesToProcess);
+    waveShapers_[channel]->process(*channelData, framesToProcess);
   }
 
   return processingBus;

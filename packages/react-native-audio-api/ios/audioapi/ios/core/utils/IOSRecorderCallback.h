@@ -13,7 +13,7 @@ typedef struct objc_object AVAudioConverter;
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 

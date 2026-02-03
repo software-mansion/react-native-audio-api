@@ -5,12 +5,12 @@
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
@@ -42,7 +42,7 @@ IOSAudioPlayer::IOSAudioPlayer(
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+  audioBus_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

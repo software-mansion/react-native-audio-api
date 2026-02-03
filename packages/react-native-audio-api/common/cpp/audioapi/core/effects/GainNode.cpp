@@ -3,7 +3,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
@@ -23,8 +23,8 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
-std::shared_ptr<AudioBus> GainNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> GainNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBus,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
@@ -32,11 +32,9 @@ std::shared_ptr<AudioBus> GainNode::processNode(
   double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
   for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-    dsp::multiply(
-        processingBus->getChannel(i)->getData(),
-        gainParamValues->getChannel(0)->getData(),
-        processingBus->getChannel(i)->getData(),
-        framesToProcess);
+    auto channel = processingBus->getChannel(i);
+    auto gainValues = gainParamValues->getChannel(0);
+    channel->multiply(*gainValues, framesToProcess);
   }
 
   return processingBus;

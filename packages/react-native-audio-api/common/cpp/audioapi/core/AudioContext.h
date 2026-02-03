@@ -37,7 +37,7 @@ class AudioContext : public BaseAudioContext {
 
   bool isDriverRunning() const override;
 
-  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
+  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio();
 };
 
 } // namespace audioapi

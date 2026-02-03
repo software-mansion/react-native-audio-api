@@ -3,7 +3,7 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -33,8 +33,8 @@ class TestableConstantSourceNode : public ConstantSourceNode {
     getOffsetParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override {
     return ConstantSourceNode::processNode(processingBus, framesToProcess);
   }
@@ -48,7 +48,7 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   // constantSource.start(context->getCurrentTime());
   // auto resultBus = constantSource.processNode(bus, FRAMES_TO_PROCESS);

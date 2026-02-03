@@ -3,7 +3,7 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -26,14 +26,15 @@ class GainTest : public ::testing::Test {
 
 class TestableGainNode : public GainNode {
  public:
-  explicit TestableGainNode(std::shared_ptr<BaseAudioContext> context) : GainNode(context, GainOptions()) {}
+  explicit TestableGainNode(std::shared_ptr<BaseAudioContext> context)
+      : GainNode(context, GainOptions()) {}
 
   void setGainParam(float value) {
     getGainParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBus,
       int framesToProcess) override {
     return GainNode::processNode(processingBus, framesToProcess);
   }
@@ -50,9 +51,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = i + 1;
+    (*bus->getChannel(0))[i] = i + 1;
   }
 
   auto resultBus = gainNode.processNode(bus, FRAMES_TO_PROCESS);
@@ -67,10 +68,10 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = i + 1;
-    bus->getChannel(1)->getData()[i] = -i - 1;
+    (*bus->getChannel(0))[i] = i + 1;
+    (*bus->getChannel(1))[i] = -i - 1;
   }
 
   auto resultBus = gainNode.processNode(bus, FRAMES_TO_PROCESS);

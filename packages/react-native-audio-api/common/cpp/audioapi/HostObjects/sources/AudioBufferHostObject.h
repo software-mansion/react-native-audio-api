@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <jsi/jsi.h>
 #include <cstddef>
@@ -29,7 +29,7 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   [[nodiscard]] inline size_t getSizeInBytes() const {
-    return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() * sizeof(float);
+    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float);
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

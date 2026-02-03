@@ -6,13 +6,14 @@
 #include <vector>
 
 #include <audioapi/core/effects/PeriodicWave.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 
 namespace audioapi {
 struct AudioNodeOptions {
@@ -104,7 +105,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 };
 
 struct WaveShaperOptions : AudioNodeOptions {
-  std::shared_ptr<AudioArray> curve;
+  std::shared_ptr<AudioArrayBuffer> curve;
   OverSampleType oversample;
 };
 

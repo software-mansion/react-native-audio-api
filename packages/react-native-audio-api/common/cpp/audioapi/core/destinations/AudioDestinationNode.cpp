@@ -2,7 +2,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
@@ -28,14 +28,14 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<AudioBus> &destinationBus,
+    const std::shared_ptr<AudioBuffer> &destinationBus,
     int numFrames) {
   if (numFrames < 0 || !destinationBus || !isInitialized_) {
     return;
   }
 
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      context->getGraphManager()->preProcessGraph();
+    context->getGraphManager()->preProcessGraph();
   }
 
   destinationBus->zero();
@@ -43,7 +43,7 @@ void AudioDestinationNode::renderAudio(
   auto processedBus = processAudio(destinationBus, numFrames, true);
 
   if (processedBus && processedBus != destinationBus) {
-    destinationBus->copy(processedBus.get());
+    destinationBus->copy(*processedBus);
   }
 
   destinationBus->normalize();

@@ -16,7 +16,7 @@ AudioContext::AudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
-    isInitialized_(false) {}
+      isInitialized_(false) {}
 
 AudioContext::~AudioContext() {
   if (getState() != ContextState::CLOSED) {
@@ -90,8 +90,8 @@ bool AudioContext::start() {
   return false;
 }
 
-std::function<void(std::shared_ptr<AudioBus>, int)> AudioContext::renderAudio() {
-  return [this](const std::shared_ptr<AudioBus> &data, int frames) {
+std::function<void(std::shared_ptr<AudioBuffer>, int)> AudioContext::renderAudio() {
+  return [this](const std::shared_ptr<AudioBuffer> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }

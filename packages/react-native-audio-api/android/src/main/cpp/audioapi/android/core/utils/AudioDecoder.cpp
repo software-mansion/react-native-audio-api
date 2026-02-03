@@ -1,9 +1,8 @@
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/base64/base64.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
@@ -54,15 +53,15 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   }
 
   auto outputFrames = buffer.size() / outputChannels;
-  auto audioBus = std::make_shared<AudioBus>(outputFrames, outputChannels, outputSampleRate);
+  auto audioBus = std::make_shared<AudioBuffer>(outputFrames, outputChannels, outputSampleRate);
 
   for (int ch = 0; ch < outputChannels; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->getData();
+    auto channelData = audioBus->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = buffer[i * outputChannels + ch];
     }
   }
-  return std::make_shared<AudioBuffer>(audioBus);
+  return audioBus;
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
@@ -162,10 +161,11 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
   size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));
 
-  auto audioBus = std::make_shared<AudioBus>(numFramesDecoded, inputChannelCount, inputSampleRate);
+  auto audioBus =
+      std::make_shared<AudioBuffer>(numFramesDecoded, inputChannelCount, inputSampleRate);
 
   for (int ch = 0; ch < inputChannelCount; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->getData();
+    auto channelData = audioBus->getChannel(ch)->span();
 
     for (size_t i = 0; i < numFramesDecoded; ++i) {
       size_t offset;
@@ -180,7 +180,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
       channelData[i] = uint8ToFloat(uint8Data[offset], uint8Data[offset + 1]);
     }
   }
-  return std::make_shared<AudioBuffer>(audioBus);
+  return audioBus;
 }
 
 } // namespace audioapi
