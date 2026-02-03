@@ -45,10 +45,11 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  private:
   std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
-  std::shared_ptr<AudioBus> mBus_;
+  std::shared_ptr<AudioBus> audioBus_;
   bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;
+  std::atomic<bool> isRunning_;
 
   bool openAudioStream();
 

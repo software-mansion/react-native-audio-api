@@ -1,5 +1,6 @@
 import { Image } from 'react-native';
 
+import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../interfaces';
 import { DecodeDataInput } from '../types';
 import {
@@ -8,7 +9,6 @@ import {
   isRemoteSource,
 } from '../utils/paths';
 import AudioBuffer from './AudioBuffer';
-import { AudioApiError } from '../errors';
 
 class AudioDecoder {
   private static instance: AudioDecoder | null = null;
@@ -62,7 +62,7 @@ class AudioDecoder {
       return new AudioBuffer(buffer);
     }
 
-    if (!(typeof input === 'string')) {
+    if (!(typeof stringSource === 'string')) {
       throw new TypeError('Input must be a module, uri or ArrayBuffer');
     }
 

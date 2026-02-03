@@ -14,7 +14,7 @@
 namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(
-    std::shared_ptr<BaseAudioContext> context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const AudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
       loop_(options.loop),
@@ -105,8 +105,8 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
   }
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+  playbackRateBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
 }
@@ -141,7 +141,7 @@ void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
   auto oldCallbackId = onLoopEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
   if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("loopEnded", oldCallbackId);
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, oldCallbackId);
   }
 }
 
@@ -176,7 +176,8 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
   auto onLoopEndedCallbackId = onLoopEndedCallbackId_.load(std::memory_order_acquire);
   if (onLoopEndedCallbackId != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("loopEnded", onLoopEndedCallbackId, {});
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId, {});
   }
 }
 

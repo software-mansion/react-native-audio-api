@@ -26,7 +26,7 @@ function withDefaultOptions(
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
-    fileNamePrefix: 'recording_',
+    fileNamePrefix: 'recording',
     channelCount: 2,
     format: FileFormat.Wav,
     batchDurationSeconds: 0,

@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <memory>
 
 namespace audioapi {
@@ -18,7 +19,7 @@ JSI_HOST_FUNCTION_IMPL(AudioEventHandlerRegistryHostObject, addAudioEventListene
   auto eventName = args[0].getString(runtime).utf8(runtime);
   auto callback = std::make_shared<jsi::Function>(args[1].getObject(runtime).getFunction(runtime));
 
-  auto listenerId = eventHandlerRegistry_->registerHandler(eventName, callback);
+  auto listenerId = eventHandlerRegistry_->registerHandler(js_enum_parser::audioEventFromString(eventName), callback);
 
   return jsi::String::createFromUtf8(runtime, std::to_string(listenerId));
 }
@@ -27,7 +28,7 @@ JSI_HOST_FUNCTION_IMPL(AudioEventHandlerRegistryHostObject, removeAudioEventList
   auto eventName = args[0].getString(runtime).utf8(runtime);
   uint64_t listenerId = std::stoull(args[1].getString(runtime).utf8(runtime));
 
-  eventHandlerRegistry_->unregisterHandler(eventName, listenerId);
+  eventHandlerRegistry_->unregisterHandler(js_enum_parser::audioEventFromString(eventName), listenerId);
 
   return jsi::Value::undefined();
 }

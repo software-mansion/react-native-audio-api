@@ -3,6 +3,7 @@
 
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
+#include <audioapi/utils/TaskOffloader.hpp>
 #include <memory>
 #include <vector>
 #include <string>
@@ -14,6 +15,11 @@ class AudioArray;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
+struct CallbackData {
+  void *data;
+  int numFrames;
+};
+
 class AndroidRecorderCallback : public AudioRecorderCallback {
  public:
   AndroidRecorderCallback(
@@ -22,7 +28,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
-  ~AndroidRecorderCallback();
+  ~AndroidRecorderCallback() override;
 
   Result<NoneType, std::string> prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
   void cleanup() override;
@@ -41,6 +47,11 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
   std::shared_ptr<AudioArray> deinterleavingArray_;
 
   void deinterleaveAndPushAudioData(void *data, int numFrames);
+
+ private:
+  // delay initialization of offloader until prepare is called
+  std::unique_ptr<task_offloader::TaskOffloader<CallbackData, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY, AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>> offloader_;
+  void taskOffloaderFunction(CallbackData data);
 };
 
 } // namespace audioapi

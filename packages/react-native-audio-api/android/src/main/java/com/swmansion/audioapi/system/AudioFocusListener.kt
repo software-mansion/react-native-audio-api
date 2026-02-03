@@ -25,7 +25,7 @@ class AudioFocusListener(
             put("shouldResume", false)
             isTransientLoss = false
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
 
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
@@ -35,7 +35,7 @@ class AudioFocusListener(
             put("shouldResume", false)
             isTransientLoss = true
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
 
       AudioManager.AUDIOFOCUS_GAIN -> {
@@ -45,11 +45,11 @@ class AudioFocusListener(
             put("shouldResume", isTransientLoss)
             isTransientLoss = false
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
 
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("duck", emptyMap())
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.DUCK.ordinal, emptyMap())
       }
     }
   }

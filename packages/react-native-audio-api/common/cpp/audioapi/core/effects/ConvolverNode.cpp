@@ -12,7 +12,7 @@
 #include <vector>
 
 namespace audioapi {
-ConvolverNode::ConvolverNode(std::shared_ptr<BaseAudioContext> context, const ConvolverOptions &options)
+ConvolverNode::ConvolverNode(const std::shared_ptr<BaseAudioContext>& context, const ConvolverOptions &options)
     : AudioNode(context, options),
       gainCalibrationSampleRate_(context->getSampleRate()),
       remainingSegments_(0),

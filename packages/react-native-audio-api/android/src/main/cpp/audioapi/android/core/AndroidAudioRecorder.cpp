@@ -19,6 +19,8 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace audioapi {
 
@@ -53,7 +55,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
     }
   }
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->requestStop();
     mStream_->close();
     mStream_.reset();
@@ -66,7 +68,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Callable from the JS thread only.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     return Result<NoneType, std::string>::Ok(None);
   }
 
@@ -115,7 +117,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
     return Result<std::string, std::string>::Err(streamResult.unwrap_err());
   }
 
-  if (!mStream_) {
+  if (mStream_ == nullptr) {
     return Result<std::string, std::string>::Err("Audio stream is not initialized.");
   }
 
@@ -172,7 +174,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
         "Recorder is not in recording state.");
   }
 
-  if (!mStream_) {
+  if (mStream_ == nullptr) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err(
         "Audio stream is not initialized.");
   }
@@ -402,7 +404,7 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   state_.store(RecorderState::Idle, std::memory_order_release);
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->close();
     mStream_.reset();
   }
@@ -420,7 +422,16 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
-      // TODO: call error callback
+      uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
+
+      if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+        return;
+      }
+
+      std::string message = "Android recorder error: " + streamResult.unwrap_err();
+      std::unordered_map<std::string, EventValue> eventPayload{{"message", std::move(message)}};
+      audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+          AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
       return;
     }
 

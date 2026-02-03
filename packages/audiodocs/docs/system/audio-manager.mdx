@@ -16,7 +16,7 @@ import { AudioManager } from 'react-native-audio-api';
 import { useEffect } from 'react';
 
 function App() {
-    // set AVAudioSession example options (iOS only)
+    // set AVAudioSession example options (iOS)
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
@@ -27,22 +27,6 @@ function App() {
     AudioManager.getDevicesInfo().then(console.log);
 
   useEffect(() => {
-    // callback to be invoked on 'remotePlay' event
-    const remotePlaySubscription = AudioManager.addSystemEventListener(
-      'remotePlay',
-      (event) => {
-        console.log('remotePlay event:', event);
-      }
-    );
-
-    // callback to be invoked on 'remotePause' event
-    const remotePauseSubscription = AudioManager.addSystemEventListener(
-      'remotePause',
-      (event) => {
-        console.log('remotePause event:', event);
-      }
-    );
-
     // callback to be invoked on 'interruption' event
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
@@ -52,8 +36,6 @@ function App() {
     );
 
     return () => {
-      remotePlaySubscription?.remove();
-      remotePauseSubscription?.remove();
       interruptionSubscription?.remove();
     };
   }, []);
@@ -231,6 +213,9 @@ interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
+  iosAllowHaptics?: boolean;
+  // Has no effect when using PlaybackNotificationManager as it takes over the "Now playing" controls
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 ```
 </details>
@@ -317,8 +302,8 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS only
-  currentOutputs: AudioDeviceList; // iOS only
+  currentInputs: AudioDeviceList; // iOS
+  currentOutputs: AudioDeviceList; // iOS
 }
 ```
 </details>

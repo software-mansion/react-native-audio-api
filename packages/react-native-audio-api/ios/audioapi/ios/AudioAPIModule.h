@@ -7,6 +7,7 @@
 #endif // RCT_NEW_ARCH_ENABLED
 
 #import <React/RCTEventEmitter.h>
+#import <audioapi/events/AudioEvent.h>
 
 @class AudioEngine;
 @class SystemNotificationManager;
@@ -25,6 +26,7 @@
 @property (nonatomic, strong) AudioSessionManager *audioSessionManager;
 @property (nonatomic, strong) NotificationRegistry *notificationRegistry;
 
-- (void)invokeHandlerWithEventName:(NSString *)eventName eventBody:(NSDictionary *)eventBody;
+- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
+                         eventBody:(NSDictionary *)eventBody;
 
 @end

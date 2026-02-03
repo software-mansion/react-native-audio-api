@@ -9,13 +9,12 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(std::shared_ptr<BaseAudioContext> context, const OscillatorOptions &options)
+OscillatorNode::OscillatorNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const OscillatorOptions &options)
     : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      options.frequency,
-      -context->getNyquistFrequency(),
-      context->getNyquistFrequency(),
-      context);
+      options.frequency, -context->getNyquistFrequency(), context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
@@ -69,7 +68,13 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
     return processingBus;
   }
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();

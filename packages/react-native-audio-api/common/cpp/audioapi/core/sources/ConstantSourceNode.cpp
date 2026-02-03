@@ -7,7 +7,9 @@
 #include <memory>
 
 namespace audioapi {
-ConstantSourceNode::ConstantSourceNode(std::shared_ptr<BaseAudioContext> context, const ConstantSourceOptions &options)
+ConstantSourceNode::ConstantSourceNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const ConstantSourceOptions &options)
     : AudioScheduledSourceNode(context) {
   offsetParam_ = std::make_shared<AudioParam>(
       options.offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
@@ -30,7 +32,13 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     return processingBus;
   }
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBus,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();

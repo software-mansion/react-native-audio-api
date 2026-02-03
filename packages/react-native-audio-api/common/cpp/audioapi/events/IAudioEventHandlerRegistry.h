@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ReactCommon/CallInvoker.h>
+#include <audioapi/events/AudioEvent.h>
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>
@@ -17,15 +18,15 @@ class IAudioEventHandlerRegistry {
   virtual ~IAudioEventHandlerRegistry() = default;
 
   virtual uint64_t registerHandler(
-      const std::string &eventName,
+      AudioEvent eventName,
       const std::shared_ptr<facebook::jsi::Function> &handler) = 0;
-  virtual void unregisterHandler(const std::string &eventName, uint64_t listenerId) = 0;
+  virtual void unregisterHandler(AudioEvent eventName, uint64_t listenerId) = 0;
 
   virtual void invokeHandlerWithEventBody(
-      const std::string &eventName,
+      AudioEvent eventName,
       const std::unordered_map<std::string, EventValue> &body) = 0;
   virtual void invokeHandlerWithEventBody(
-      const std::string &eventName,
+      AudioEvent eventName,
       uint64_t listenerId,
       const std::unordered_map<std::string, EventValue> &body) = 0;
 };

@@ -41,6 +41,14 @@ export interface SessionOptions {
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
   iosAllowHaptics?: boolean;
+  /**
+   * Setting this to `true` will allow other audio apps to resume playing when
+   * the session is deactivated.
+   *
+   * Has no effect when using PlaybackNotificationManager as it takes over the
+   * "Now playing" controls.
+   */
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';

@@ -124,4 +124,91 @@ namespace audioapi::js_enum_parser {
     }
   }
 
+  AudioEvent audioEventFromString(const std::string &event) {
+    if (event == "playbackNotificationPlay")
+        return AudioEvent::PLAYBACK_NOTIFICATION_PLAY;
+    if (event == "playbackNotificationPause")
+        return AudioEvent::PLAYBACK_NOTIFICATION_PAUSE;
+    if (event == "playbackNotificationStop")
+        return AudioEvent::PLAYBACK_NOTIFICATION_STOP;
+    if (event == "playbackNotificationNextTrack")
+        return AudioEvent::PLAYBACK_NOTIFICATION_NEXT_TRACK;
+    if (event == "playbackNotificationPreviousTrack")
+        return AudioEvent::PLAYBACK_NOTIFICATION_PREVIOUS_TRACK;
+    if (event == "playbackNotificationSkipForward")
+        return AudioEvent::PLAYBACK_NOTIFICATION_SKIP_FORWARD;
+    if (event == "playbackNotificationSkipBackward")
+        return AudioEvent::PLAYBACK_NOTIFICATION_SKIP_BACKWARD;
+    if (event == "playbackNotificationSeekForward")
+        return AudioEvent::PLAYBACK_NOTIFICATION_SEEK_FORWARD;
+    if (event == "playbackNotificationSeekBackward")
+        return AudioEvent::PLAYBACK_NOTIFICATION_SEEK_BACKWARD;
+    if (event == "playbackNotificationSeekTo")
+        return AudioEvent::PLAYBACK_NOTIFICATION_SEEK_TO;
+    if (event == "playbackNotificationDismissed")
+        return AudioEvent::PLAYBACK_NOTIFICATION_DISMISSED;
+    if (event == "recordingNotificationResume")
+        return AudioEvent::RECORDING_NOTIFICATION_RESUME;
+    if (event == "recordingNotificationPause")
+        return AudioEvent::RECORDING_NOTIFICATION_PAUSE;
+    if (event == "routeChange")
+        return AudioEvent::ROUTE_CHANGE;
+    if (event == "interruption")
+        return AudioEvent::INTERRUPTION;
+    if (event == "volumeChange")
+        return AudioEvent::VOLUME_CHANGE;
+    if (event == "duck")
+        return AudioEvent::DUCK;
+    if (event == "ended")
+        return AudioEvent::ENDED;
+    if (event == "loopEnded")
+      return AudioEvent::LOOP_ENDED;
+    if (event == "audioReady")
+      return AudioEvent::AUDIO_READY;
+    if (event == "positionChanged")
+      return AudioEvent::POSITION_CHANGED;
+    if (event == "bufferEnded")
+      return AudioEvent::BUFFER_ENDED;
+    if (event == "recorderError")
+      return AudioEvent::RECORDER_ERROR;
+
+    throw std::invalid_argument("Unknown audio event: " + event);
+  }
+
+  std::string contextStateToString(ContextState state) {
+    switch (state) {
+      case ContextState::SUSPENDED:
+        return "suspended";
+      case ContextState::RUNNING:
+        return "running";
+      case ContextState::CLOSED:
+        return "closed";
+      default:
+        throw std::invalid_argument("Unknown context state");
+    }
+  }
+
+    std::string channelCountModeToString(ChannelCountMode mode) {
+        switch (mode) {
+            case ChannelCountMode::MAX:
+                return "max";
+            case ChannelCountMode::CLAMPED_MAX:
+                return "clamped-max";
+            case ChannelCountMode::EXPLICIT:
+                return "explicit";
+            default:
+                throw std::invalid_argument("Unknown channel count mode");
+        }
+    }
+
+    std::string channelInterpretationToString(ChannelInterpretation interpretation) {
+        switch (interpretation) {
+            case ChannelInterpretation::SPEAKERS:
+                return "speakers";
+            case ChannelInterpretation::DISCRETE:
+                return "discrete";
+            default:
+                throw std::invalid_argument("Unknown channel interpretation");
+        }
+    }
 } // namespace audioapi::js_enum_parser

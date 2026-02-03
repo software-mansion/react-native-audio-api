@@ -1,18 +1,20 @@
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <memory>
 
 namespace audioapi {
 
 AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
-    const std::shared_ptr<AudioBufferQueueSourceNode> &node)
-    : AudioBufferBaseSourceNodeHostObject(node) {
+    const std::shared_ptr<BaseAudioContext> &context,
+    const BaseAudioBufferSourceOptions &options)
+    : AudioBufferBaseSourceNodeHostObject(context->createBufferQueueSource(options)) {
   functions_->erase("start");
 
-  addSetters(
-  JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
@@ -32,9 +34,10 @@ AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
-    auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+  auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-    audioBufferQueueSourceNode->setOnBufferEndedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+  audioBufferQueueSourceNode->setOnBufferEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {

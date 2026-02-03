@@ -1,6 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
@@ -21,7 +21,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioCont
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {
+      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()) {
   numberOfInputs_ = 0;
 }
 
@@ -66,7 +66,7 @@ void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
   auto oldCallbackId = onEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
 
   if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler("ended", oldCallbackId);
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, oldCallbackId);
   }
 }
 
@@ -167,7 +167,7 @@ void AudioScheduledSourceNode::disable() {
 
   auto onEndedCallbackId = onEndedCallbackId_.load(std::memory_order_acquire);
   if (onEndedCallbackId != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("ended", onEndedCallbackId, {});
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::ENDED, onEndedCallbackId, {});
   }
 }
 

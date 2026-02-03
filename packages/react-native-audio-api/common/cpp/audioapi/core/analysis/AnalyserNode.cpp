@@ -7,6 +7,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -14,7 +15,9 @@
 
 namespace audioapi {
 
-AnalyserNode::AnalyserNode(std::shared_ptr<BaseAudioContext> context, const AnalyserOptions &options)
+AnalyserNode::AnalyserNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AnalyserOptions &options)
     : AudioNode(context, options),
       fftSize_(options.fftSize),
       minDecibels_(options.minDecibels),
@@ -194,7 +197,7 @@ void AnalyserNode::setWindowData(AnalyserNode::WindowType type, int size) {
   }
 
   windowType_ = type;
-  if (windowData_ == nullptr|| windowData_->getSize() != size) {
+  if (windowData_ == nullptr || windowData_->getSize() != size) {
     windowData_ = std::make_shared<AudioArray>(size);
   }
 

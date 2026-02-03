@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -14,7 +15,7 @@ class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(std::shared_ptr<BaseAudioContext> context);
+  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context);
 
   std::size_t getCurrentSampleFrame() const;
   double getCurrentTime() const;
@@ -29,7 +30,7 @@ class AudioDestinationNode : public AudioNode {
   };
 
  private:
-  std::size_t currentSampleFrame_;
+  std::atomic<std::size_t> currentSampleFrame_;
 };
 
 } // namespace audioapi

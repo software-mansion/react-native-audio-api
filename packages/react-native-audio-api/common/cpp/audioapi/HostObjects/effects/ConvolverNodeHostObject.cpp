@@ -1,13 +1,15 @@
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
-
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
+
 #include <memory>
 
 namespace audioapi {
 
-ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<ConvolverNode> &node)
-    : AudioNodeHostObject(node) {
+ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const ConvolverOptions &options)
+    : AudioNodeHostObject(context->createConvolver(options)) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
       JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, buffer));

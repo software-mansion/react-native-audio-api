@@ -1,8 +1,6 @@
-#define MINIAUDIO_IMPLEMENTATION
-#import <audioapi/libs/miniaudio/miniaudio.h>
-
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
+#include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/AudioDecoder.h>

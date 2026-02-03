@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
-#include <audioapi/core/types/BiquadFilterType.h>
 
 #include <memory>
 #include <string>
@@ -10,11 +9,14 @@
 namespace audioapi {
 using namespace facebook;
 
-class BiquadFilterNode;
+struct BiquadFilterOptions;
+class BaseAudioContext;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit BiquadFilterNodeHostObject(const std::shared_ptr<BiquadFilterNode> &node);
+  explicit BiquadFilterNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BiquadFilterOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

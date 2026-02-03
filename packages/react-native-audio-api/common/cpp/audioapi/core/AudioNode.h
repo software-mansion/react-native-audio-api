@@ -16,19 +16,21 @@ namespace audioapi {
 class AudioBus;
 class BaseAudioContext;
 class AudioParam;
-class AudioNodeOptions;
+struct AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
-  explicit AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options);
+  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context);
+  explicit AudioNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioNodeOptions &options);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
-  std::string getChannelCountMode() const;
-  std::string getChannelInterpretation() const;
+  ChannelCountMode getChannelCountMode() const;
+  ChannelInterpretation getChannelInterpretation() const;
   void connect(const std::shared_ptr<AudioNode> &node);
   void connect(const std::shared_ptr<AudioParam> &param);
   void disconnect();
@@ -45,21 +47,19 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   virtual void disable();
 
  protected:
-  friend class AudioNodeManager;
+  friend class AudioGraphManager;
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
-  int channelCount_ = 2;
 
   std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
+  int channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
-  ChannelInterpretation channelInterpretation_ =
-
-      ChannelInterpretation::SPEAKERS;
+  ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
   std::unordered_set<AudioNode *> inputNodes_ = {};
   std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
@@ -74,9 +74,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  private:
   std::vector<std::shared_ptr<AudioBus>> inputBuses_ = {};
-
-  static std::string toString(ChannelCountMode mode);
-  static std::string toString(ChannelInterpretation interpretation);
 
   virtual std::shared_ptr<AudioBus> processInputs(
       const std::shared_ptr<AudioBus> &outputBus,

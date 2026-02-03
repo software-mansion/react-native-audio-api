@@ -1,8 +1,13 @@
 #pragma once
+
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/types/BiquadFilterType.h>
+#include <audioapi/core/types/ChannelCountMode.h>
+#include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
+#include <audioapi/events/AudioEvent.h>
 #include <string>
 
 namespace audioapi::js_enum_parser {
@@ -14,4 +19,8 @@ std::string oscillatorTypeToString(OscillatorType type);
 OscillatorType oscillatorTypeFromString(const std::string &type);
 std::string filterTypeToString(BiquadFilterType type);
 BiquadFilterType filterTypeFromString(const std::string &type);
+AudioEvent audioEventFromString(const std::string &event);
+std::string contextStateToString(ContextState state);
+std::string channelCountModeToString(ChannelCountMode mode);
+std::string channelInterpretationToString(ChannelInterpretation interpretation);
 } // namespace audioapi::js_enum_parser

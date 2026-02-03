@@ -12,6 +12,7 @@
   "types": "lib/typescript/index.d.ts",
   "files": [
     "src/",
+    "development/react/",
     "lib/",
     "common/",
     "android/src/main/AndroidManifest.xml",

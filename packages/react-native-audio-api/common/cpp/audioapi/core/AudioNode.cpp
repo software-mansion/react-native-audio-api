@@ -2,7 +2,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <memory>
@@ -11,12 +11,14 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context) : context_(context) {
+AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context) : context_(context) {
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
-AudioNode::AudioNode(std::shared_ptr<BaseAudioContext> context, const AudioNodeOptions &options)
+AudioNode::AudioNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AudioNodeOptions &options)
     : context_(context),
       channelCount_(options.channelCount),
       channelCountMode_(options.channelCountMode),
@@ -43,46 +45,46 @@ int AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-std::string AudioNode::getChannelCountMode() const {
-  return AudioNode::toString(channelCountMode_);
+ChannelCountMode AudioNode::getChannelCountMode() const {
+  return channelCountMode_;
 }
 
-std::string AudioNode::getChannelInterpretation() const {
-  return AudioNode::toString(channelInterpretation_);
+ChannelInterpretation AudioNode::getChannelInterpretation() const {
+  return channelInterpretation_;
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+      context->getGraphManager()->addPendingNodeConnection(
+            shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+      context->getGraphManager()->addPendingParamConnection(
+            shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::disconnect() {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+      context->getGraphManager()->addPendingNodeConnection(
+            shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+      context->getGraphManager()->addPendingNodeConnection(
+            shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+      context->getGraphManager()->addPendingParamConnection(
+            shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
@@ -115,30 +117,6 @@ void AudioNode::disable() {
 
   for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisabled();
-  }
-}
-
-std::string AudioNode::toString(ChannelCountMode mode) {
-  switch (mode) {
-    case ChannelCountMode::MAX:
-      return "max";
-    case ChannelCountMode::CLAMPED_MAX:
-      return "clamped-max";
-    case ChannelCountMode::EXPLICIT:
-      return "explicit";
-    default:
-      throw std::invalid_argument("Unknown channel count mode");
-  }
-}
-
-std::string AudioNode::toString(ChannelInterpretation interpretation) {
-  switch (interpretation) {
-    case ChannelInterpretation::SPEAKERS:
-      return "speakers";
-    case ChannelInterpretation::DISCRETE:
-      return "discrete";
-    default:
-      throw std::invalid_argument("Unknown channel interpretation");
   }
 }
 
