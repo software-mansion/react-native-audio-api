@@ -28,7 +28,7 @@ function withDefaultOptions(
     subDirectory: 'AudioAPI',
     fileNamePrefix: 'recording',
     channelCount: 2,
-    format: FileFormat.Wav,
+    format: FileFormat.M4A,
     batchDurationSeconds: 0,
     preset: FilePreset.High,
     androidFlushIntervalMs: 500,

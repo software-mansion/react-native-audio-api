@@ -103,8 +103,16 @@ OpenFileResult MiniAudioFileWriter::openFile(
         "Failed to initialize encoder" + std::string(ma_result_description(result)));
   }
 
+  auto offloaderLambda = [this](WriterData data) {
+    taskOffloaderFunction(data);
+  };
+
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+
   isFileOpen_.store(true, std::memory_order_release);
-  fileWriterThread_ = std::thread(&MiniAudioFileWriter::fileWriterThreadHandler, this);
   return OpenFileResult ::Ok(filePath_);
 }
 
@@ -160,7 +168,7 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     fclose(file);
     fileSizeInMB = static_cast<double>(fileSizeInBytes) / MB_IN_BYTES;
   }
-  stopFileWriterThread();
+  offloader_.reset();
 
   filePath_ = "";
   return CloseFileResult ::Ok({fileSizeInMB, durationInSeconds});
@@ -169,44 +177,42 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
 /// @brief Writes audio data to the file.
 /// If possible (sample format, channel count, and interleaving matches),
 /// the data is written directly, otherwise in-memory conversion is performed first
-void MiniAudioFileWriter::fileWriterThreadHandler() {
-  while (!stopFileWriterThread_.load(std::memory_order_acquire)) {
-    auto [data, numFrames] = receiver_.receive();
-    ma_uint64 framesWritten = 0;
-    ma_result result;
+void MiniAudioFileWriter::taskOffloaderFunction(WriterData data) {
+  auto [audioData, numFrames] = data;
+  ma_uint64 framesWritten = 0;
+  ma_result result;
 
-    if (!isFileOpen()) {
-      return;
-    }
+  if (!isFileOpen()) {
+    return;
+  }
 
-    if (!isConverterRequired()) {
-      result = ma_encoder_write_pcm_frames(encoder_.get(), data, numFrames, &framesWritten);
-
-      if (result != MA_SUCCESS) {
-        invokeOnErrorCallback(
-            "Failed to write audio data to file: " + filePath_ +
-            std::string(ma_result_description(result)));
-        return;
-      }
-
-      framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
-      continue;
-    }
-
-    ma_uint64 convertedFrameCount = convertBuffer(data, numFrames);
-
-    result = ma_encoder_write_pcm_frames(
-        encoder_.get(), processingBuffer_, convertedFrameCount, &framesWritten);
+  if (!isConverterRequired()) {
+    result = ma_encoder_write_pcm_frames(encoder_.get(), audioData, numFrames, &framesWritten);
 
     if (result != MA_SUCCESS) {
       invokeOnErrorCallback(
-          "Failed to write converted audio data to file: " + filePath_ +
+          "Failed to write audio data to file: " + filePath_ +
           std::string(ma_result_description(result)));
       return;
     }
 
     framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+    return;
   }
+
+  ma_uint64 convertedFrameCount = convertBuffer(audioData, numFrames);
+
+  result = ma_encoder_write_pcm_frames(
+      encoder_.get(), processingBuffer_, convertedFrameCount, &framesWritten);
+
+  if (result != MA_SUCCESS) {
+    invokeOnErrorCallback(
+        "Failed to write converted audio data to file: " + filePath_ +
+        std::string(ma_result_description(result)));
+    return;
+  }
+
+  framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
 }
 
 /// @brief Converts the audio data buffer if necessary.

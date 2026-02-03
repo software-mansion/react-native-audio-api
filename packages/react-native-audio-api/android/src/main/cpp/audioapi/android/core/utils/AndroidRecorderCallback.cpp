@@ -105,9 +105,8 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   };
   offloader_ = std::make_unique<task_offloader::TaskOffloader<
       CallbackData,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
-      AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 

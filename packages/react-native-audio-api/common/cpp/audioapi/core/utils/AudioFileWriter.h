@@ -45,10 +45,6 @@ class AudioFileWriter {
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto FILE_WRITER_SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
   static constexpr auto FILE_WRITER_CHANNEL_CAPACITY = 64;
-
-  std::thread fileWriterThread_;
-  std::atomic<bool> stopFileWriterThread_;
-  virtual void fileWriterThreadHandler() = 0;
 };
 
 } // namespace audioapi

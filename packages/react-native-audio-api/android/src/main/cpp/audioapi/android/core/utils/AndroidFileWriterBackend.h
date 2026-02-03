@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <audioapi/utils/TaskOffloader.hpp>
 #include <tuple>
 #include <string>
 #include <memory>
@@ -29,13 +30,14 @@ class AndroidFileWriterBackend : public AudioFileWriter {
   double getCurrentDuration() const override { return static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / streamSampleRate_; }
 
  protected:
-  void stopFileWriterThread();
   float streamSampleRate_{0};
   int32_t streamChannelCount_{0};
   int32_t streamMaxBufferSize_{0};
   std::string filePath_;
-  channels::spsc::Sender<WriterData, AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY, AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY> sender_;
-  channels::spsc::Receiver<WriterData, AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY, AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY> receiver_;
+
+  // delay initialization of offloader until prepare is called
+  std::unique_ptr<task_offloader::TaskOffloader<WriterData, FILE_WRITER_SPSC_OVERFLOW_STRATEGY, FILE_WRITER_SPSC_WAIT_STRATEGY>> offloader_;
+  virtual void taskOffloaderFunction(WriterData data) = 0;
 };
 
 } // namespace audioapi

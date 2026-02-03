@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <audioapi/utils/TaskOffloader.hpp>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -57,17 +58,13 @@ class IOSFileWriter : public AudioFileWriter {
   AVAudioPCMBuffer *converterOutputBuffer_;
 
  private:
-  channels::spsc::Sender<
+  // delay initialization of offloader until prepare is called
+  std::unique_ptr<task_offloader::TaskOffloader<
       WriterData,
-      AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY>
-      sender_;
-  channels::spsc::Receiver<
-      WriterData,
-      AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY>
-      receiver_;
-  void fileWriterThreadHandler() override;
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>
+      offloader_;
+  void taskOffloaderFunction(WriterData data);
 };
 
 } // namespace audioapi

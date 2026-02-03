@@ -14,14 +14,6 @@ IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioFileProperties> &fileProperties)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties)
 {
-  auto [sender, receiver] = channels::spsc::channel<
-      WriterData,
-      AudioFileWriter::FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      AudioFileWriter::FILE_WRITER_SPSC_WAIT_STRATEGY>(
-      AudioFileWriter::FILE_WRITER_CHANNEL_CAPACITY);
-  sender_ = std::move(sender);
-  receiver_ = std::move(receiver);
-  stopFileWriterThread_.store(false, std::memory_order_release);
 }
 
 IOSFileWriter::~IOSFileWriter()
@@ -107,7 +99,15 @@ OpenFileResult IOSFileWriter::openFile(
       return OpenFileResult::Err("Error creating converter buffers");
     }
 
-    fileWriterThread_ = std::thread(&IOSFileWriter::fileWriterThreadHandler, this);
+    auto offloaderLambda = [this](WriterData data) {
+      taskOffloaderFunction(data);
+    };
+
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        WriterData,
+        FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+        FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+
     return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
   }
 }
@@ -143,12 +143,7 @@ CloseFileResult IOSFileWriter::closeFile()
 
     fileURL_ = nil;
     framesWritten_.store(0, std::memory_order_release);
-
-    stopFileWriterThread_.store(true, std::memory_order_release);
-    sender_.send({nullptr, 0});
-    if (fileWriterThread_.joinable()) {
-      fileWriterThread_.join();
-    }
+    offloader_.reset();
 
     return CloseFileResult::Ok(std::make_tuple(fileDuration, fileSizeBytesMb));
   }
@@ -161,82 +156,32 @@ void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
   if (audioFile_ == nil) {
     invokeOnErrorCallback("Attempted to write audio data when file is not open");
   } else {
-    sender_.send({audioBufferList, numFrames});
+    offloader_->getSender()->send({audioBufferList, numFrames});
   }
 }
 
-void IOSFileWriter::fileWriterThreadHandler()
+void IOSFileWriter::taskOffloaderFunction(WriterData data)
 {
-  while (!stopFileWriterThread_.load(std::memory_order_acquire)) {
-    auto [audioBufferList, numFrames] = receiver_.receive();
-    if (audioBufferList == nullptr)
-      continue;
-    @autoreleasepool {
-      NSError *error = nil;
-      AVAudioFormat *fileFormat = [audioFile_ processingFormat];
+  auto [audioBufferList, numFrames] = data;
+  if (audioBufferList == nullptr)
+    return;
+  @autoreleasepool {
+    NSError *error = nil;
+    AVAudioFormat *fileFormat = [audioFile_ processingFormat];
 
-      if (bufferFormat_.sampleRate == fileFormat.sampleRate &&
-          bufferFormat_.channelCount == fileFormat.channelCount &&
-          bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
-        // We can use the converter input buffer as a "transport" layer to the file
-        for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-          memcpy(
-              converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-              audioBufferList->mBuffers[i].mData,
-              audioBufferList->mBuffers[i].mDataByteSize);
-        }
-        converterInputBuffer_.frameLength = numFrames;
-
-        [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
-
-        if (error != nil) {
-          invokeOnErrorCallback(
-              std::string("Error writing audio data to file, native error: ") +
-              [[error debugDescription] UTF8String]);
-          return;
-        }
-
-        framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
-        return;
-      }
-
+    if (bufferFormat_.sampleRate == fileFormat.sampleRate &&
+        bufferFormat_.channelCount == fileFormat.channelCount &&
+        bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
+      // We can use the converter input buffer as a "transport" layer to the file
       for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
         memcpy(
             converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
             audioBufferList->mBuffers[i].mData,
             audioBufferList->mBuffers[i].mDataByteSize);
       }
-
       converterInputBuffer_.frameLength = numFrames;
 
-      __block BOOL handedOff = false;
-      AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
-          AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-      {
-        if (handedOff) {
-          *outStatus = AVAudioConverterInputStatus_NoDataNow;
-          return nil;
-        }
-
-        handedOff = true;
-        *outStatus = AVAudioConverterInputStatus_HaveData;
-        return converterInputBuffer_;
-      };
-
-      [converter_ convertToBuffer:converterOutputBuffer_
-                            error:&error
-               withInputFromBlock:inputBlock];
-      converterOutputBuffer_.frameLength =
-          fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
-
-      if (error != nil) {
-        invokeOnErrorCallback(
-            std::string("Error during audio conversion, native error: ") +
-            [[error debugDescription] UTF8String]);
-        return;
-      }
-
-      [audioFile_ writeFromBuffer:converterOutputBuffer_ error:&error];
+      [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
 
       if (error != nil) {
         invokeOnErrorCallback(
@@ -246,7 +191,53 @@ void IOSFileWriter::fileWriterThreadHandler()
       }
 
       framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+      return;
     }
+
+    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
+      memcpy(
+          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mDataByteSize);
+    }
+
+    converterInputBuffer_.frameLength = numFrames;
+
+    __block BOOL handedOff = false;
+    AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
+        AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+    {
+      if (handedOff) {
+        *outStatus = AVAudioConverterInputStatus_NoDataNow;
+        return nil;
+      }
+
+      handedOff = true;
+      *outStatus = AVAudioConverterInputStatus_HaveData;
+      return converterInputBuffer_;
+    };
+
+    [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
+    converterOutputBuffer_.frameLength =
+        fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
+
+    if (error != nil) {
+      invokeOnErrorCallback(
+          std::string("Error during audio conversion, native error: ") +
+          [[error debugDescription] UTF8String]);
+      return;
+    }
+
+    [audioFile_ writeFromBuffer:converterOutputBuffer_ error:&error];
+
+    if (error != nil) {
+      invokeOnErrorCallback(
+          std::string("Error writing audio data to file, native error: ") +
+          [[error debugDescription] UTF8String]);
+      return;
+    }
+
+    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
   }
 }
 

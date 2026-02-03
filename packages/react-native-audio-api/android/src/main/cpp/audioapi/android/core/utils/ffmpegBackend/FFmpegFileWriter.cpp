@@ -76,6 +76,15 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     return OpenFileResult::Err("Unsupported codec for the given file format");
   }
 
+  auto offloaderLambda = [this](WriterData data) {
+    taskOffloaderFunction(data);
+  };
+
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+
   return initializeFormatContext(codec)
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
       .and_then([this](auto) { return initializeStream(); })
@@ -87,10 +96,6 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
         initializeBuffers(streamMaxBufferSize);
         isFileOpen_.store(true, std::memory_order_release);
         return OpenFileResult::Ok(filePath);
-      })
-      .and_then([this](const auto &res) {
-        fileWriterThread_ = std::thread(&FFmpegAudioFileWriter::fileWriterThreadHandler, this);
-        return OpenFileResult::Ok(res);
       });
 }
 
@@ -123,30 +128,27 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
   if (writeEncodedPackets() < 0) {
     return CloseFileResult::Err("Failed to drain encoder packets");
   }
-
-  stopFileWriterThread();
+  offloader_.reset();
 
   return finalizeOutput();
 }
 
 /// @brief Writes audio data to the currently opened file.
 /// This method should be called only from the audio thread (or audio side-effect thread in the future).
-void FFmpegAudioFileWriter::fileWriterThreadHandler() {
-  while (!stopFileWriterThread_.load(std::memory_order_acquire)) {
-    auto [data, numFrames] = receiver_.receive();
-    if (!isFileOpen()) {
-      return;
-    }
+void FFmpegAudioFileWriter::taskOffloaderFunction(WriterData data) {
+  auto [audioData, numFrames] = data;
+  if (!isFileOpen()) {
+    return;
+  }
 
-    if (!resampleAndPushToFifo(data, numFrames)) {
-      return;
-    }
+  if (!resampleAndPushToFifo(audioData, numFrames)) {
+    return;
+  }
 
-    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+  framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
 
-    if (processFifo(false) < 0) {
-      return;
-    }
+  if (processFifo(false) < 0) {
+    return;
   }
 }
 
