@@ -15,6 +15,8 @@ The `useAudioInput` hook provides an interface for:
 - Getting the currently active input device
 - Switching between different input devices
 
+<IOS /> **Platform support:** Input device selection is currently only supported on iOS. On Android, `useAudioInput` is implemented as a no-op: the hook will not list or switch input devices, and any selection calls will effectively be ignored.
+
 ## Usage
 
 ```tsx

@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
@@ -198,6 +198,17 @@ const Record: FC = () => {
     );
   };
 
+  const onSelect = useCallback(
+    (uid: string) => {
+      const input = availableInputs.find((d) => d.uid === uid);
+
+      if (input) {
+        onSelectInput(input);
+      }
+    },
+    [availableInputs, onSelectInput]
+  );
+
   useEffect(() => {
     return () => {
       audioRecorder.stop();
@@ -214,9 +225,7 @@ const Record: FC = () => {
       <View>
         <Select
           value={currentInput?.uid || ''}
-          onChange={(uid) =>
-            onSelectInput(availableInputs.find((d) => d.uid === uid)!)
-          }
+          onChange={onSelect}
           options={availableInputs.map((d) => d.uid) || []}
         />
       </View>
