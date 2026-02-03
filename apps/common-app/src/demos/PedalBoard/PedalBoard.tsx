@@ -12,7 +12,6 @@ import { audioContext } from '../../singletons';
 import { ActivityIndicator, View, Button, StyleSheet, ScrollView, Dimensions, Alert } from 'react-native';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
-import EchoPedal from './EchoPedal';
 import AutoWahPedal from './AutoWahPedal';
 
 const screenWdith = Dimensions.get('window').width;
@@ -21,8 +20,7 @@ const URL = 'https://files.catbox.moe/xbj6gn.flac';
 const PEDALS = [
   { id: 0, component: OverdrivePedal },
   { id: 1, component: AutoWahPedal },
-  { id: 2, component: EchoPedal },
-  { id: 3, component: ReverbPedal },
+  { id: 2, component: ReverbPedal },
 ];
 
 let permissionsGranted = false;
