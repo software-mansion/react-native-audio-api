@@ -150,7 +150,8 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       // Directly write to circular buffer
       for (int i = 0; i < channelCount_; ++i) {
         auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
-        circularBus_[i]->push_back(inputChannel, numFrames);
+        // TODO
+//        circularBus_[i]->push_back(inputChannel, numFrames);
       }
 
       if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
@@ -197,7 +198,8 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     for (int i = 0; i < channelCount_; ++i) {
       auto *inputChannel =
           static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      circularBus_[i]->push_back(inputChannel, outputFrameCount);
+      // TODO
+      //circularBus_[i]->push_back(inputChannel, outputFrameCount);
     }
 
     if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {

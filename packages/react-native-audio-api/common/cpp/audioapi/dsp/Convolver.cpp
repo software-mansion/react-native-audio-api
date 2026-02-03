@@ -38,8 +38,12 @@ void Convolver::reset() {
   _segments.clear();
   _segmentsIR.clear();
   _preMultiplied.clear();
-  _fftBuffer->zero();
-  _inputBuffer->zero();
+  if (_fftBuffer) {
+    _fftBuffer->zero();
+  }
+  if (_inputBuffer) {
+    _inputBuffer->zero();
+  }
 }
 
 bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t irLen) {

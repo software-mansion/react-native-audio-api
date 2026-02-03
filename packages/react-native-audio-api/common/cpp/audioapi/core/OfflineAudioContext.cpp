@@ -74,7 +74,7 @@ void OfflineAudioContext::renderAudio() {
 
       destination_->renderAudio(audioBus, framesToProcess);
 
-      resultBus_->copy(*audioBus, currentSampleFrame_, 0, framesToProcess);
+      resultBus_->copy(*audioBus, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 

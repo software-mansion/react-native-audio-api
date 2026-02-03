@@ -97,7 +97,7 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
     size_t totalSize = buffer_->getSize() + extraTailFrames;
 
     alignedBus_ = std::make_shared<AudioBuffer>(totalSize, channelCount_, buffer_->getSampleRate());
-    alignedBus_->copy(*buffer_);
+    alignedBus_->copy(*buffer_, 0, 0, buffer_->getSize());
 
     alignedBus_->zero(buffer_->getSize(), extraTailFrames);
   } else {
