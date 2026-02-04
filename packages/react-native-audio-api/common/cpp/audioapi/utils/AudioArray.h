@@ -63,6 +63,7 @@ class AudioArray {
     if (offset + length > size_) {
       throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
     }
+
     return {data_.get() + offset, length};
   }
 

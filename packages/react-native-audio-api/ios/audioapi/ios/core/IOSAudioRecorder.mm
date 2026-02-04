@@ -51,10 +51,14 @@ IOSAudioRecorder::IOSAudioRecorder(
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
-          float *channelData = (float *)inputBuffer->mBuffers[channel].mData;
-
-          // TODO
-          //          adapterNode_->buff_[channel]->write(channelData, numFrames);
+          float *data = (float *)inputBuffer->mBuffers[channel].mData;
+          auto channelData = deinterleavingArray_->span();
+          
+          for (int frame = 0; frame < numFrames; ++frame) {
+            channelData[frame] = data[frame];
+          }
+          
+          adapterNode_->buff_[channel]->write(*deinterleavingArray_, numFrames);
         }
       }
     }
@@ -100,12 +104,12 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   [AudioEngine.sharedInstance stopIfNecessary];
 
   // Estimate the maximum input buffer lengths that can be expected from the sink node
-  size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
+  maxBufferSizeInFrames_ = [nativeRecorder_ getBufferSize];
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
     auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                          ->openFile(inputFormat, maxInputBufferLength, fileNameOverride);
+                          ->openFile(inputFormat, maxBufferSizeInFrames_, fileNameOverride);
 
     if (fileResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -117,7 +121,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
 
   if (usesCallback()) {
     auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                              ->prepare(inputFormat, maxInputBufferLength);
+                              ->prepare(inputFormat, maxBufferSizeInFrames_);
 
     if (callbackResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -126,8 +130,9 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
+    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     // TODO: pass sample rate, in case conversion is necessary
-    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
+    adapterNode_->init(maxBufferSizeInFrames_, inputFormat.channelCount);
   }
 
   [nativeRecorder_ start];
@@ -227,8 +232,8 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
   adapterNode_ = node;
 
   if (!isIdle()) {
-    adapterNode_->init(
-        [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
+    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
+    adapterNode_->init(maxBufferSizeInFrames_, [nativeRecorder_ getInputFormat].channelCount);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -240,6 +245,7 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 void IOSAudioRecorder::disconnect()
 {
   std::scoped_lock lock(adapterNodeMutex_);
+  deinterleavingArray_ = nullptr;
   adapterNode_ = nullptr;
   isConnected_.store(false, std::memory_order_release);
 }

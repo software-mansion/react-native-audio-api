@@ -22,7 +22,6 @@ AudioArray::AudioArray(const float *data, size_t size) : size_(size) {
     if (size_ > 0) {
         data_ = std::make_unique<float[]>(size_);
         copy(data, 0, 0, size_);
-        std::memcpy(data_.get(), data, size_ * sizeof(float));
     }
 }
 
@@ -173,9 +172,9 @@ void AudioArray::copyTo(float *destination, size_t sourceStart, size_t destinati
 }
 
 void AudioArray::reverse() {
-    if (data_ == nullptr && size_ > 1) {
-        return;
-    }
+  if (data_ == nullptr && size_ > 1) {
+      return;
+  }
 
   std::reverse(begin(), end());
 }

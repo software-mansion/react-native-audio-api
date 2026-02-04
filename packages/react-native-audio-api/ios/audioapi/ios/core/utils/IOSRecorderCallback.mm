@@ -71,6 +71,8 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 
     converterOutputBufferSize_ = std::max(
         (double)maxInputBufferLength, sampleRate_ / bufferFormat.sampleRate * maxInputBufferLength);
+    
+    deinterleavingArray_ = std::make_shared<AudioArray>(converterOutputBufferSize_);
 
     callbackFormat_ = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                        sampleRate:sampleRate_
@@ -150,8 +152,13 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       // Directly write to circular buffer
       for (int i = 0; i < channelCount_; ++i) {
         auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
-        // TODO
-        //        circularBus_[i]->push_back(inputChannel, numFrames);
+        auto channelData = deinterleavingArray_->span();
+
+        for (int frame = 0; frame < numFrames; ++frame) {
+          channelData[frame] = inputChannel[frame];
+        }
+        
+        circularBus_[i]->push_back(*deinterleavingArray_, numFrames);
       }
 
       if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
@@ -198,8 +205,13 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     for (int i = 0; i < channelCount_; ++i) {
       auto *inputChannel =
           static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      // TODO
-      //circularBus_[i]->push_back(inputChannel, outputFrameCount);
+      auto channelData = deinterleavingArray_->span();
+
+      for (int frame = 0; frame < numFrames; ++frame) {
+        channelData[frame] = inputChannel[frame];
+      }
+      
+      circularBus_[i]->push_back(*deinterleavingArray_, outputFrameCount);
     }
 
     if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {

@@ -44,8 +44,6 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
   ma_uint64 processingBufferLength_{0};
   std::unique_ptr<ma_data_converter> converter_{nullptr};
 
-  std::shared_ptr<AudioArray> deinterleavingArray_;
-
   void deinterleaveAndPushAudioData(void *data, int numFrames);
 
  private:

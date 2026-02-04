@@ -55,11 +55,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:
-  std::shared_ptr<AudioArray> deinterleavingBuffer_;
-
   float streamSampleRate_;
   int32_t streamChannelCount_;
-  int32_t streamMaxBufferSizeInFrames_;
 
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 

@@ -11,6 +11,7 @@ typedef struct objc_object NativeAudioRecorder;
 
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/AudioArray.h>
 
 #include <mutex>
 
