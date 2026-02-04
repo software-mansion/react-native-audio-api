@@ -656,13 +656,32 @@ void multiplyByScalarThenAddToOutput(
 
 #endif
 
-void linearToDecibels(
-    const float *inputVector,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
-  for (int i = 0; i < numberOfElementsToProcess; i++) {
-    outputVector[i] = dsp::linearToDecibels(inputVector[i]);
-  }
-}
+float computeConvolution(const float *state, const float *kernel, size_t kernelSize) {
+    float sum = 0.0f;
+    int k = 0;
 
+#ifdef HAVE_ARM_NEON_INTRINSICS
+    float32x4_t vSum = vdupq_n_f32(0.0f);
+
+  // process 4 samples at a time
+  for (; k <= kernelSize - 4; k += 4) {
+    float32x4_t vState = vld1q_f32(state + k);
+    float32x4_t vKernel = vld1q_f32(kernel + k);
+
+    // fused multiply-add: vSum += vState * vKernel
+    vSum = vmlaq_f32(vSum, vState, vKernel);
+  }
+
+  // horizontal reduction: Sum the 4 lanes of vSum into a single float
+  sum += vgetq_lane_f32(vSum, 0);
+  sum += vgetq_lane_f32(vSum, 1);
+  sum += vgetq_lane_f32(vSum, 2);
+  sum += vgetq_lane_f32(vSum, 3);
+#endif
+    for (; k < kernelSize; ++k) {
+        sum += state[k] * kernel[k];
+    }
+
+    return sum;
+}
 } // namespace audioapi::dsp

@@ -24,12 +24,12 @@ AnalyserNode::AnalyserNode(
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant),
       windowType_(WindowType::BLACKMAN),
-      inputBuffer_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
+      inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBus_(std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
-      tempBuffer_(std::make_unique<AudioArray>(fftSize_)),
+      tempArray_(std::make_unique<AudioArray>(fftSize_)),
       fft_(std::make_unique<dsp::FFT>(fftSize_)),
       complexData_(std::vector<std::complex<float>>(fftSize_)),
-      magnitudeBuffer_(std::make_unique<AudioArray>(fftSize_ / 2)) {
+      magnitudeArray_(std::make_unique<AudioArray>(fftSize_ / 2)) {
   setWindowData(windowType_, fftSize_);
   isInitialized_ = true;
 }
@@ -66,8 +66,8 @@ void AnalyserNode::setFftSize(int fftSize) {
   fftSize_ = fftSize;
   fft_ = std::make_unique<dsp::FFT>(fftSize_);
   complexData_ = std::vector<std::complex<float>>(fftSize_);
-  magnitudeBuffer_ = std::make_unique<AudioArray>(fftSize_ / 2);
-  tempBuffer_ = std::make_unique<AudioArray>(fftSize_);
+  magnitudeArray_ = std::make_unique<AudioArray>(fftSize_ / 2);
+  tempArray_ = std::make_unique<AudioArray>(fftSize_);
   setWindowData(windowType_, fftSize_);
 }
 
@@ -90,16 +90,19 @@ void AnalyserNode::setWindowType(AnalyserNode::WindowType type) {
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
-  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
-  // TODO
-  //  dsp::linearToDecibels(magnitudeBuffer_->getData(), data, length);
+  length = std::min(static_cast<int>(magnitudeArray_->getSize()), length);
+  auto magnitudeSpan = magnitudeArray_->span();
+
+  for (int i = 0; i < length; i++) {
+      data[i] = dsp::linearToDecibels(magnitudeSpan[i]);
+  }
 }
 
 void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   doFFTAnalysis();
 
-  auto magnitudeBufferData = magnitudeBuffer_->span();
-  length = std::min(static_cast<int>(magnitudeBuffer_->getSize()), length);
+  auto magnitudeBufferData = magnitudeArray_->span();
+  length = std::min(static_cast<int>(magnitudeArray_->getSize()), length);
 
   const auto rangeScaleFactor =
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
@@ -122,16 +125,17 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
 
 void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto size = std::min(fftSize_, length);
-//   TODO
-//    inputBuffer_->pop_back(data, size, std::max(0, fftSize_ - size), true);
+
+  inputArray_->pop_back(*tempArray_, size, std::max(0, fftSize_ - size), true);
+  tempArray_->copyTo(data, 0, 0, size);
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto size = std::min(fftSize_, length);
 
-  inputBuffer_->pop_back(*tempBuffer_, fftSize_, std::max(0, fftSize_ - size), true);
+  inputArray_->pop_back(*tempArray_, size, std::max(0, fftSize_ - size), true);
 
-  auto values = tempBuffer_->span();
+  auto values = tempArray_->span();
 
   for (int i = 0; i < size; i++) {
     float scaledValue = 128 * (values[i] + 1);
@@ -156,7 +160,7 @@ std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
   // Down mix the input bus to mono
   downMixBus_->copy(*processingBus);
   // Copy the down mixed bus to the input buffer (circular buffer)
-  inputBuffer_->push_back(*downMixBus_->getChannel(0), framesToProcess, true);
+  inputArray_->push_back(*downMixBus_->getChannel(0), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
 
@@ -172,20 +176,20 @@ void AnalyserNode::doFFTAnalysis() {
 
   // We want to copy last fftSize_ elements added to the input buffer to apply
   // the window.
-  inputBuffer_->pop_back(*tempBuffer_, fftSize_, 0, true);
+  inputArray_->pop_back(*tempArray_, fftSize_, 0, true);
 
-  tempBuffer_->multiply(*windowData_, fftSize_);
+  tempArray_->multiply(*windowData_, fftSize_);
 
   // do fft analysis - get frequency domain data
-  fft_->doFFT(*tempBuffer_, complexData_);
+  fft_->doFFT(*tempArray_, complexData_);
 
   // Zero out nquist component
   complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
 
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize_);
-  auto magnitudeBufferData = magnitudeBuffer_->span();
+  auto magnitudeBufferData = magnitudeArray_->span();
 
-  for (int i = 0; i < magnitudeBuffer_->getSize(); i++) {
+  for (int i = 0; i < magnitudeArray_->getSize(); i++) {
     auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
         smoothingTimeConstant_ * magnitudeBufferData[i] +

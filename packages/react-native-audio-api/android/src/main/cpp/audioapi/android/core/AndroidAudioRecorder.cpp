@@ -26,9 +26,7 @@ namespace audioapi {
 
 AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(audioEventHandlerRegistry),
-      streamSampleRate_(0.0),
-      streamChannelCount_(0) {}
+    : AudioRecorder(audioEventHandlerRegistry), streamSampleRate_(0.0), streamChannelCount_(0) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// TODO: Possibly locks here are not necessary, but we might have an issue with oboe having raw pointer to the
@@ -121,12 +119,10 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   }
 
   if (usesFileOutput()) {
-    auto fileResult = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-                          ->openFile(
-                              streamSampleRate_,
-                              streamChannelCount_,
-                              maxBufferSizeInFrames_,
-                              fileNameOverride);
+    auto fileResult =
+        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+            ->openFile(
+                streamSampleRate_, streamChannelCount_, maxBufferSizeInFrames_, fileNameOverride);
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(

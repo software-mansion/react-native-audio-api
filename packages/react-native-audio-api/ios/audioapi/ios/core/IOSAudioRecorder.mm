@@ -52,12 +52,8 @@ IOSAudioRecorder::IOSAudioRecorder(
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
           float *data = (float *)inputBuffer->mBuffers[channel].mData;
-          auto channelData = deinterleavingArray_->span();
-          
-          for (int frame = 0; frame < numFrames; ++frame) {
-            channelData[frame] = data[frame];
-          }
-          
+
+          deinterleavingArray_->copy(data, 0, 0, numFrames);
           adapterNode_->buff_[channel]->write(*deinterleavingArray_, numFrames);
         }
       }

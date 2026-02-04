@@ -56,13 +56,13 @@ class AnalyserNode : public AudioNode {
   WindowType windowType_;
   std::shared_ptr<AudioArray> windowData_;
 
-  std::unique_ptr<CircularAudioArray> inputBuffer_;
+  std::unique_ptr<CircularAudioArray> inputArray_;
   std::unique_ptr<AudioBuffer> downMixBus_;
-  std::unique_ptr<AudioArray> tempBuffer_;
+  std::unique_ptr<AudioArray> tempArray_;
 
   std::unique_ptr<dsp::FFT> fft_;
   std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<AudioArray> magnitudeBuffer_;
+  std::unique_ptr<AudioArray> magnitudeArray_;
   bool shouldDoFFTAnalysis_{true};
 
   void doFFTAnalysis();

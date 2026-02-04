@@ -5,10 +5,6 @@
 #include <utility>
 #include <memory>
 
-#if defined(__ARM_NEON)
-#include <arm_neon.h>
-#endif
-
 namespace audioapi {
 
 AudioArray::AudioArray(size_t size): size_(size) {
@@ -79,10 +75,6 @@ void AudioArray::zero() noexcept {
 }
 
 void AudioArray::zero(size_t start, size_t length) noexcept {
-    if (data_ == nullptr || length <= 0) {
-      return;
-    }
-
   memset(data_.get() + start, 0, length * sizeof(float));
 }
 
@@ -96,9 +88,9 @@ void AudioArray::sum(
     size_t destinationStart,
     size_t length,
     float gain) {
-  if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
-    return;
-  }
+    if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
+        throw std::out_of_range("Not enough data to sum two vectors.");
+    }
 
   // Using restrict to inform the compiler that the source and destination do not overlap
   float* __restrict dest = data_.get() + destinationStart;
@@ -112,8 +104,8 @@ void AudioArray::multiply(const AudioArray &source) {
 }
 
 void AudioArray::multiply(const audioapi::AudioArray &source, size_t length) {
-  if (data_ == nullptr || source.data_ == nullptr) {
-    return;
+  if (size_ < length || source.size_ < length) {
+    throw std::out_of_range("Not enough data to perform vector multiplication.");
   }
 
   float* __restrict dest = data_.get();
@@ -131,17 +123,17 @@ void AudioArray::copy(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-    if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
-        return;
-    }
+  if (source.size_ - sourceStart < length) {
+    throw std::out_of_range("Not enough data to copy from source.");
+  }
 
   copy(source.data_.get(), sourceStart, destinationStart, length);
 }
 
 void AudioArray::copyReverse(const audioapi::AudioArray &source, size_t sourceStart,
                                  size_t destinationStart, size_t length) {
-    if (length == 0 || data_ == nullptr || source.data_ == nullptr) {
-        return;
+    if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
+        throw std::out_of_range("Not enough space to copy to destination or from source.");
     }
 
     auto dstView = this->subSpan(length, destinationStart);
@@ -155,8 +147,8 @@ void AudioArray::copyReverse(const audioapi::AudioArray &source, size_t sourceSt
 
 void AudioArray::copy(const float *source, size_t sourceStart, size_t destinationStart,
                       size_t length) {
-    if (length == 0 || data_ == nullptr || source == nullptr) {
-        return;
+    if (size_ - destinationStart < length) {
+        throw std::out_of_range("Not enough space to copy to destination.");
     }
 
     memcpy(data_.get() + destinationStart, source + sourceStart, length * sizeof(float));
@@ -164,15 +156,15 @@ void AudioArray::copy(const float *source, size_t sourceStart, size_t destinatio
 
 void AudioArray::copyTo(float *destination, size_t sourceStart, size_t destinationStart,
                         size_t length) const {
-    if (length == 0 || data_ == nullptr || destination == nullptr) {
-        return;
+    if (size_ - sourceStart < length) {
+        throw std::out_of_range("Not enough data to copy from source.");
     }
 
     memcpy(destination + destinationStart, data_.get() + sourceStart, length * sizeof(float));
 }
 
 void AudioArray::reverse() {
-  if (data_ == nullptr && size_ > 1) {
+  if (size_ > 1) {
       return;
   }
 
@@ -190,58 +182,19 @@ void AudioArray::normalize() {
 }
 
 void AudioArray::scale(float value) {
-    if (data_ == nullptr) {
-        return;
-    }
-
     dsp::multiplyByScalar(data_.get(), value, data_.get(), size_);
 }
 
 float AudioArray::getMaxAbsValue() const {
-    if (data_ == nullptr) {
-        return 0.0f;
-    }
-
     return dsp::maximumMagnitude(data_.get(), size_);
 }
 
 float AudioArray::computeConvolution(const audioapi::AudioArray &kernel, size_t startIndex) const {
-    const auto kernelSize = kernel.size_;
-
-    if (startIndex + kernelSize > size_ || !data_ || !kernel.data_) {
-        return 0.0f;
+    if (kernel.size_ > size_ - startIndex) {
+        throw std::out_of_range("Kernal size exceeds available data for convolution.");
     }
 
-    const auto stateStart = data_.get() + startIndex;
-    const auto kernelStart = kernel.data_.get();
-
-    float sum = 0.0f;
-    size_t k = 0;
-
-#ifdef __ARM_NEON
-    float32x4_t vSum = vdupq_n_f32(0.0f);
-
-  // process 4 samples at a time
-  for (; k <= kernelSize - 4; k += 4) {
-    float32x4_t vState = vld1q_f32(stateStart + k);
-    float32x4_t vKernel = vld1q_f32(kernelStart + k);
-
-    // fused multiply-add: vSum += vState * vKernel
-    vSum = vmlaq_f32(vSum, vState, vKernel);
-  }
-
-  // horizontal reduction: Sum the 4 lanes of vSum into a single float
-  sum += vgetq_lane_f32(vSum, 0);
-  sum += vgetq_lane_f32(vSum, 1);
-  sum += vgetq_lane_f32(vSum, 2);
-  sum += vgetq_lane_f32(vSum, 3);
-#endif
-
-    for (; k < kernelSize; ++k) {
-        sum += stateStart[k] * kernelStart[k];
-    }
-
-    return sum;
+    return dsp::computeConvolution(data_.get() + startIndex, kernel.data_.get(), kernel.size_);
 }
 
 } // namespace audioapi

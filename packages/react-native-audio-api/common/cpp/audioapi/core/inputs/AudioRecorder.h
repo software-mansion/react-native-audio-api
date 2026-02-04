@@ -1,7 +1,7 @@
 #pragma once
 
-#include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>
 #include <mutex>
