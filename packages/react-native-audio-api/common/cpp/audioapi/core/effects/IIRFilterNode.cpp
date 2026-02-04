@@ -122,9 +122,9 @@ void IIRFilterNode::getFrequencyResponse(
 // TODO: tail
 
 std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  int numChannels = processingBus->getNumberOfChannels();
+  int numChannels = processingBuffer->getNumberOfChannels();
 
   size_t feedforwardLength = feedforward_.size();
   size_t feedbackLength = feedback_.size();
@@ -133,7 +133,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
   int mask = bufferLength - 1;
 
   for (int c = 0; c < numChannels; ++c) {
-    auto channel = processingBus->getChannel(c)->subSpan(framesToProcess);
+    auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
 
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];
@@ -170,7 +170,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
     }
     bufferIndices[c] = bufferIndex;
   }
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

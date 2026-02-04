@@ -146,27 +146,27 @@ void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!alignedBus_) {
-      processingBus->zero();
-      return processingBus;
+      processingBuffer->zero();
+      return processingBuffer;
     }
 
     if (!pitchCorrection_) {
-      processWithoutPitchCorrection(processingBus, framesToProcess);
+      processWithoutPitchCorrection(processingBuffer, framesToProcess);
     } else {
-      processWithPitchCorrection(processingBus, framesToProcess);
+      processWithPitchCorrection(processingBuffer, framesToProcess);
     }
 
     handleStopScheduled();
   } else {
-    processingBus->zero();
+    processingBuffer->zero();
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
@@ -186,7 +186,7 @@ void AudioBufferSourceNode::sendOnLoopEndedEvent() {
  */
 
 void AudioBufferSourceNode::processWithoutInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -201,7 +201,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     frameStart = static_cast<size_t>(getVirtualStartFrame(context->getSampleRate()));
     frameEnd = static_cast<size_t>(getVirtualEndFrame(context->getSampleRate()));
   } else {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
   size_t frameDelta = frameEnd - frameStart;
@@ -224,14 +224,14 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     assert(readIndex >= 0);
     assert(writeIndex >= 0);
     assert(readIndex + framesToCopy <= alignedBus_->getSize());
-    assert(writeIndex + framesToCopy <= processingBus->getSize());
+    assert(writeIndex + framesToCopy <= processingBuffer->getSize());
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
-      processingBus->copy(*alignedBus_, readIndex, writeIndex, framesToCopy);
+      processingBuffer->copy(*alignedBus_, readIndex, writeIndex, framesToCopy);
     } else {
-      for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch += 1) {
-        processingBus->getChannel(ch)->copyReverse(
+      for (int ch = 0; ch < processingBuffer->getNumberOfChannels(); ch += 1) {
+        processingBuffer->getChannel(ch)->copyReverse(
             *alignedBus_->getChannel(ch), readIndex, writeIndex, framesToCopy);
       }
     }
@@ -246,7 +246,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
       readIndex -= direction * frameDelta;
 
       if (!loop_) {
-        processingBus->zero(writeIndex, framesLeft);
+        processingBuffer->zero(writeIndex, framesLeft);
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }
@@ -260,7 +260,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 }
 
 void AudioBufferSourceNode::processWithInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -274,7 +274,7 @@ void AudioBufferSourceNode::processWithInterpolation(
     vFrameStart = getVirtualStartFrame(context->getSampleRate());
     vFrameEnd = getVirtualEndFrame(context->getSampleRate());
   } else {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
   auto vFrameDelta = vFrameEnd - vFrameStart;
@@ -298,8 +298,8 @@ void AudioBufferSourceNode::processWithInterpolation(
       nextReadIndex = loop_ ? frameStart : readIndex;
     }
 
-    for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-      auto destination = processingBus->getChannel(i)->span();
+    for (int i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
+      auto destination = processingBuffer->getChannel(i)->span();
       const auto source = alignedBus_->getChannel(i)->span();
 
       destination[writeIndex] = dsp::linearInterpolate(source, readIndex, nextReadIndex, factor);
@@ -313,7 +313,7 @@ void AudioBufferSourceNode::processWithInterpolation(
       vReadIndex_ -= static_cast<double>(direction) * vFrameDelta;
 
       if (!loop_) {
-        processingBus->zero(writeIndex, framesLeft);
+        processingBuffer->zero(writeIndex, framesLeft);
         playbackState_ = PlaybackState::STOP_SCHEDULED;
         break;
       }

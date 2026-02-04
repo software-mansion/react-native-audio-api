@@ -21,19 +21,19 @@ std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
 }
 
 std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -41,15 +41,15 @@ std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
       context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   auto offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels(); ++channel) {
-    processingBus->getChannel(channel)->copy(
+  for (int channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {
+    processingBuffer->getChannel(channel)->copy(
         *offsetChannel, startOffset, startOffset, offsetLength);
   }
 
@@ -57,6 +57,6 @@ std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
     handleStopScheduled();
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 } // namespace audioapi

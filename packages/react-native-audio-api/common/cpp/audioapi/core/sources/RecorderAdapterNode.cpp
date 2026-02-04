@@ -53,17 +53,17 @@ void RecorderAdapterNode::cleanup() {
 }
 
 std::shared_ptr<AudioBuffer> RecorderAdapterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (!isInitialized_) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   readFrames(framesToProcess);
 
-  processingBus->sum(*adapterOutputBus_, ChannelInterpretation::SPEAKERS);
-  return processingBus;
+  processingBuffer->sum(*adapterOutputBus_, ChannelInterpretation::SPEAKERS);
+  return processingBuffer;
 }
 
 void RecorderAdapterNode::readFrames(const size_t framesToRead) {

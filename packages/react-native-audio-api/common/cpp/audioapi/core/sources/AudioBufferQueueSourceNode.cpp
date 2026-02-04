@@ -138,27 +138,27 @@ void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId)
 }
 
 std::shared_ptr<AudioBuffer> AudioBufferQueueSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // no audio data to fill, zero the output and return.
     if (buffers_.empty()) {
-      processingBus->zero();
-      return processingBus;
+      processingBuffer->zero();
+      return processingBuffer;
     }
 
     if (!pitchCorrection_) {
-      processWithoutPitchCorrection(processingBus, framesToProcess);
+      processWithoutPitchCorrection(processingBuffer, framesToProcess);
     } else {
-      processWithPitchCorrection(processingBus, framesToProcess);
+      processWithPitchCorrection(processingBuffer, framesToProcess);
     }
 
     handleStopScheduled();
   } else {
-    processingBus->zero();
+    processingBuffer->zero();
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
@@ -187,7 +187,7 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
  */
 
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -208,9 +208,9 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
     assert(readIndex >= 0);
     assert(writeIndex >= 0);
     assert(readIndex + framesToCopy <= buffer->getSize());
-    assert(writeIndex + framesToCopy <= processingBus->getSize());
+    assert(writeIndex + framesToCopy <= processingBuffer->getSize());
 
-    processingBus->copy(*buffer, readIndex, writeIndex, framesToCopy);
+    processingBuffer->copy(*buffer, readIndex, writeIndex, framesToCopy);
 
     writeIndex += framesToCopy;
     readIndex += framesToCopy;
@@ -229,7 +229,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
           buffers_.emplace(bufferId, tailBuffer_);
           addExtraTailFrames_ = false;
         } else {
-          processingBus->zero(writeIndex, framesLeft);
+          processingBuffer->zero(writeIndex, framesLeft);
           readIndex = 0;
 
           break;
@@ -248,7 +248,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
 }
 
 void AudioBufferQueueSourceNode::processWithInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -279,8 +279,8 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
       }
     }
 
-    for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-      const auto destination = processingBus->getChannel(i)->span();
+    for (int i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
+      const auto destination = processingBuffer->getChannel(i)->span();
       const auto currentSource = buffer->getChannel(i)->span();
 
       if (crossBufferInterpolation) {
@@ -306,7 +306,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
       sendOnBufferEndedEvent(bufferId, buffers_.empty());
 
       if (buffers_.empty()) {
-        processingBus->zero(writeIndex, framesLeft);
+        processingBuffer->zero(writeIndex, framesLeft);
         vReadIndex_ = 0.0;
         break;
       }

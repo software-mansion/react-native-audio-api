@@ -34,9 +34,9 @@ class TestableDelayNode : public DelayNode {
   }
 
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override {
-    return DelayNode::processNode(processingBus, framesToProcess);
+    return DelayNode::processNode(processingBuffer, framesToProcess);
   }
 };
 

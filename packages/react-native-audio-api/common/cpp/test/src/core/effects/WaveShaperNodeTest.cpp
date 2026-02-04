@@ -36,9 +36,9 @@ class TestableWaveShaperNode : public WaveShaperNode {
   }
 
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override {
-    return WaveShaperNode::processNode(processingBus, framesToProcess);
+    return WaveShaperNode::processNode(processingBuffer, framesToProcess);
   }
 
   std::shared_ptr<AudioArrayBuffer> testCurve_;

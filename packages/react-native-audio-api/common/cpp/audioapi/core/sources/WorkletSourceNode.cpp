@@ -20,11 +20,11 @@ WorkletSourceNode::WorkletSourceNode(
 }
 
 std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (isUnscheduled() || isFinished() || !isEnabled()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   size_t startOffset = 0;
@@ -32,11 +32,11 @@ std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       nonSilentFramesToProcess,
@@ -44,11 +44,11 @@ std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
       context->getCurrentSampleFrame());
 
   if (nonSilentFramesToProcess == 0) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
-  size_t outputChannelCount = processingBus->getNumberOfChannels();
+  size_t outputChannelCount = processingBuffer->getNumberOfChannels();
 
   auto result = workletRunner_.executeOnRuntimeSync(
       [this, nonSilentFramesToProcess, startOffset, time = context->getCurrentTime()](
@@ -72,19 +72,19 @@ std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
   // If the worklet execution failed, zero the output
   // It might happen if the runtime is not available
   if (!result.has_value()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   // Copy the processed data back to the AudioBuffer
   for (int i = 0; i < outputChannelCount; ++i) {
-    processingBus->getChannel(i)->copy(
+    processingBuffer->getChannel(i)->copy(
         *outputBuffsHandles_[i], 0, startOffset, nonSilentFramesToProcess);
   }
 
   handleStopScheduled();
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

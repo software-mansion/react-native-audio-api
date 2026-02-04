@@ -55,22 +55,22 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   void sendOnPositionChangedEvent();
 
   void processWithPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess);
   void processWithoutPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess);
 
   float getComputedPlaybackRateValue(int framesToProcess, double time);
 
   virtual void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;
 
   virtual void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;

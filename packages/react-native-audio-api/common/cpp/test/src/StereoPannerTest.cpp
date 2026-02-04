@@ -34,9 +34,9 @@ class TestableStereoPannerNode : public StereoPannerNode {
   }
 
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override {
-    return StereoPannerNode::processNode(processingBus, framesToProcess);
+    return StereoPannerNode::processNode(processingBuffer, framesToProcess);
   }
 };
 

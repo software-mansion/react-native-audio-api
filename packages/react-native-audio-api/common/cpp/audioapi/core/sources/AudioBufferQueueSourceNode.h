@@ -38,7 +38,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
   double getCurrentPosition() const override;
@@ -59,13 +59,13 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   std::atomic<uint64_t> onBufferEndedCallbackId_ = 0; // 0 means no callback
 
   void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;
 
   void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;

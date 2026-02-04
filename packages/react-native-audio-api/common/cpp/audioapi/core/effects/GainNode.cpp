@@ -24,21 +24,21 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
 }
 
 std::shared_ptr<AudioBuffer> GainNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
-    return processingBus;
+    return processingBuffer;
   double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
   auto gainValues = gainParamValues->getChannel(0);
 
-  for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-    auto channel = processingBus->getChannel(i);
+  for (int i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
+    auto channel = processingBuffer->getChannel(i);
     channel->multiply(*gainValues, framesToProcess);
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

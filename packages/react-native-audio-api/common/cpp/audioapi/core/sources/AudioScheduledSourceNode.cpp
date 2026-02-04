@@ -71,7 +71,7 @@ void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess,
     size_t &startOffset,
     size_t &nonSilentFramesToProcess,
@@ -118,10 +118,10 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     // stop will happen in the same render quantum
     if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
-      processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+      processingBuffer->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     }
 
-    processingBus->zero(0, startOffset);
+    processingBuffer->zero(0, startOffset);
     return;
   }
 
@@ -137,7 +137,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     assert(startOffset <= framesToProcess);
     assert(nonSilentFramesToProcess <= framesToProcess);
 
-    processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+    processingBuffer->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     return;
   }
 

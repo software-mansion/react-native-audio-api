@@ -109,18 +109,18 @@ bool StreamerNode::initialize(const std::string &input_url) {
 }
 
 std::shared_ptr<AudioBuffer> StreamerNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -129,15 +129,15 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   int bufferRemaining = bufferedBusSize_ - processedSamples_;
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
     if (bufferedBus_ != nullptr) {
-      processingBus->copy(*bufferedBus_, processedSamples_, 0, bufferRemaining);
+      processingBuffer->copy(*bufferedBus_, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
     }
@@ -152,12 +152,12 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     }
   }
   if (bufferedBus_ != nullptr) {
-    processingBus->copy(*bufferedBus_, processedSamples_, alreadyProcessed, framesToProcess);
+    processingBuffer->copy(*bufferedBus_, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
-  return processingBus;
+  return processingBuffer;
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -260,10 +260,8 @@ bool StreamerNode::processFrameWithResampler(
     return true;
   }
 
-  AudioBuffer buffer = AudioBuffer(
-      converted_samples,
-      codecCtx_->ch_layout.nb_channels,
-      context->getSampleRate());
+  AudioBuffer buffer =
+      AudioBuffer(converted_samples, codecCtx_->ch_layout.nb_channels, context->getSampleRate());
 
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);

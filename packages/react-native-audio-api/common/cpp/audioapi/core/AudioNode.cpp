@@ -133,18 +133,18 @@ std::shared_ptr<AudioBuffer> AudioNode::processAudio(
   }
 
   // Process inputs and return the bus with the most channels.
-  auto processingBus = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
+  auto processingBuffer = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
 
   // Apply channel count mode.
-  processingBus = applyChannelCountMode(processingBus);
+  processingBuffer = applyChannelCountMode(processingBuffer);
 
   // Mix all input buses into the processing bus.
-  mixInputsBuses(processingBus);
+  mixInputsBuses(processingBuffer);
 
-  assert(processingBus != nullptr);
+  assert(processingBuffer != nullptr);
 
   // Finally, process the node itself.
-  return processNode(processingBus, framesToProcess);
+  return processNode(processingBuffer, framesToProcess);
 }
 
 bool AudioNode::isAlreadyProcessed() {
@@ -170,8 +170,8 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
     const std::shared_ptr<AudioBuffer> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  auto processingBus = audioBus_;
-  processingBus->zero();
+  auto processingBuffer = audioBus_;
+  processingBuffer->zero();
 
   int maxNumberOfChannels = 0;
   for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
@@ -187,15 +187,15 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
 
     if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
       maxNumberOfChannels = inputBus->getNumberOfChannels();
-      processingBus = inputBus;
+      processingBuffer = inputBus;
     }
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<AudioBuffer> &processingBus) {
+    const std::shared_ptr<AudioBuffer> &processingBuffer) {
   // If the channelCountMode is EXPLICIT, the node should output the number of
   // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
@@ -205,18 +205,18 @@ std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
   // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
   // number of channels clamped to channelCount.
   if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
-      processingBus->getNumberOfChannels() >= channelCount_) {
+      processingBuffer->getNumberOfChannels() >= channelCount_) {
     return audioBus_;
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
-void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBus) {
-  assert(processingBus != nullptr);
+void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+  assert(processingBuffer != nullptr);
 
   for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
-    processingBus->sum(**it, channelInterpretation_);
+    processingBuffer->sum(**it, channelInterpretation_);
   }
 
   inputBuses_.clear();

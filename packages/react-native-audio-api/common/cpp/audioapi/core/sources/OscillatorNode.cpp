@@ -57,19 +57,19 @@ void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &period
 }
 
 std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -77,8 +77,8 @@ std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
       context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
   auto time =
@@ -88,12 +88,12 @@ std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
 
   const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
   const auto tableScale = periodicWave_->getScale();
-  const auto numChannels = processingBus->getNumberOfChannels();
+  const auto numChannels = processingBuffer->getNumberOfChannels();
 
   auto finalPhase = phase_;
 
   for (int ch = 0; ch < numChannels; ch += 1) {
-    auto channelSpan = processingBus->getChannel(ch)->span();
+    auto channelSpan = processingBuffer->getChannel(ch)->span();
     float currentPhase = phase_;
 
     for (size_t i = startOffset; i < offsetLength; i += 1) {
@@ -120,7 +120,7 @@ std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
   phase_ = finalPhase;
   handleStopScheduled();
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

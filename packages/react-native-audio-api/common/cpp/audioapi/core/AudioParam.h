@@ -148,9 +148,9 @@ class AudioParam {
       const std::shared_ptr<AudioBuffer> &outputBus,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBus);
+  void mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBuffer);
   std::shared_ptr<AudioBuffer> calculateInputs(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess);
 };
 

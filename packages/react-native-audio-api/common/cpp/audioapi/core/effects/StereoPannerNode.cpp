@@ -23,11 +23,11 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
 }
 
 std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
-    return processingBus;
+    return processingBuffer;
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
@@ -37,8 +37,8 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
   auto outputRight = audioBus_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
   // Input is mono
-  if (processingBus->getNumberOfChannels() == 1) {
-    auto inputLeft = processingBus->getChannelByType(AudioBuffer::ChannelMono)->span();
+  if (processingBuffer->getNumberOfChannels() == 1) {
+    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelMono)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
@@ -51,8 +51,8 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
       time += deltaTime;
     }
   } else { // Input is stereo
-    auto inputLeft = processingBus->getChannelByType(AudioBuffer::ChannelMono)->span();
-    auto inputRight = processingBus->getChannelByType(AudioBuffer::ChannelRight)->span();
+    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelMono)->span();
+    auto inputRight = processingBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);

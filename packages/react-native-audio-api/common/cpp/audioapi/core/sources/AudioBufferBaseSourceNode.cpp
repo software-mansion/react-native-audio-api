@@ -99,14 +99,14 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
   auto time = context->getCurrentTime();
@@ -128,14 +128,14 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       context->getCurrentSampleFrame());
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
 
   processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength, playbackRate);
 
   stretch_->process(
-      playbackRateBus_.get()[0], framesNeededToStretch, processingBus.get()[0], framesToProcess);
+      playbackRateBus_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);
@@ -145,20 +145,20 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 }
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
   auto computedPlaybackRate =
       getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -166,14 +166,14 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
       context->getCurrentSampleFrame());
 
   if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
-    processingBus->zero();
+    processingBuffer->zero();
     return;
   }
 
   if (std::fabs(computedPlaybackRate) == 1.0) {
-    processWithoutInterpolation(processingBus, startOffset, offsetLength, computedPlaybackRate);
+    processWithoutInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
   } else {
-    processWithInterpolation(processingBus, startOffset, offsetLength, computedPlaybackRate);
+    processWithInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
   }
 
   sendOnPositionChangedEvent();

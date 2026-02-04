@@ -54,29 +54,29 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArrayBuffer> &curve) {
 }
 
 std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (!isInitialized_) {
-    return processingBus;
+    return processingBuffer;
   }
 
   std::unique_lock<std::mutex> lock(mutex_, std::try_to_lock);
 
   if (!lock.owns_lock()) {
-    return processingBus;
+    return processingBuffer;
   }
 
   if (curve_ == nullptr) {
-    return processingBus;
+    return processingBuffer;
   }
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
-    auto channelData = processingBus->getChannel(channel);
+  for (int channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
+    auto channelData = processingBuffer->getChannel(channel);
 
     waveShapers_[channel]->process(*channelData, framesToProcess);
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

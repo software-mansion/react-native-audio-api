@@ -34,7 +34,7 @@ class RecorderAdapterNode : public AudioNode {
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
   std::shared_ptr<AudioBuffer> adapterOutputBus_;
 
