@@ -73,9 +73,23 @@ class AudioBuffer {
   void zero();
   void zero(size_t start, size_t length);
 
+  /// @brief Sums audio data from a source AudioBuffer into this AudioBuffer.
+  /// @param source The source AudioBuffer to sum from.
+  /// @param interpretation The channel interpretation to use for summing (default is SPEAKERS).
+  /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
+  /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void sum(
       const AudioBuffer &source,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
+
+  /// @brief Sums audio data from a source AudioBuffer into this AudioBuffer.
+  /// @param source The source AudioBuffer to sum from.
+  /// @param sourceStart The starting index in the source AudioBuffer.
+  /// @param destinationStart The starting index in this AudioBuffer.
+  /// @param length The number of samples to sum.
+  /// @param interpretation The channel interpretation to use for summing (default is SPEAKERS).
+  /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
+  /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void sum(
       const AudioBuffer &source,
       size_t sourceStart,
@@ -83,7 +97,19 @@ class AudioBuffer {
       size_t length,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS);
 
+  /// @brief Copies audio data from a source AudioBuffer into this AudioBuffer.
+  /// @param source The source AudioBuffer to copy from.
+  /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
+  /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const AudioBuffer &source);
+
+  /// @brief Copies audio data from a source AudioBuffer into this AudioBuffer.
+  /// @param source The source AudioBuffer to copy from.
+  /// @param sourceStart The starting index in the source AudioBuffer.
+  /// @param destinationStart The starting index in this AudioBuffer.
+  /// @param length The number of samples to copy.
+  /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
+  /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const AudioBuffer &source, size_t sourceStart, size_t destinationStart, size_t length);
 
   /// @brief Interleave audio data from this AudioBuffer into a destination buffer.
@@ -93,6 +119,7 @@ class AudioBuffer {
   /// according to the number of channels in this AudioBuffer.
   /// Example of interleaved data for stereo (2 channels):
   /// [L0, R0, L1, R1, L2, R2, ...]
+  /// Assumes that this and destination are located in two distinct, non-overlapping memory locations.
   void interleaveTo(float *destination, size_t frames) const;
 
   void normalize();
