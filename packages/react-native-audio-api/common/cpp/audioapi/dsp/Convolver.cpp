@@ -172,7 +172,7 @@ void Convolver::process(const AudioArray &input, AudioArray &output) {
   // The input buffer acts as a 2B-point sliding window of the input signal.
   // With each new input block, the right half of the input buffer is shifted
   // to the left and the new block is stored in the right half.
-  _inputBuffer->copy(*_inputBuffer, _blockSize, 0, _blockSize);
+  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
   _inputBuffer->copy(input, 0, _blockSize, _blockSize);
 
   // All contents (DFT spectra) in the FDL are shifted up by one slot.

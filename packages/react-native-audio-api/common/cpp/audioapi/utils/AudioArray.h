@@ -141,9 +141,9 @@ class AudioArray {
   /// @note Assumes that destination and this are located in two distinct, non-overlapping memory locations.
   void copyTo(float *destination, size_t sourceStart, size_t destinationStart, size_t length) const;
 
-  /// @brief Moves data inside this AudioArray.
-  /// @param sourceStart The starting index in the source float pointer.
-  /// @param destinationStart The starting index of memory.
+  /// @brief Copies a sub-section of the array to another location within itself.
+  /// @param sourceStart The index where the data to be copied begins.
+  /// @param destinationStart The index where the data should be placed.
   /// @param length The number of samples to copy.
   void copyWithin(size_t sourceStart, size_t destinationStart, size_t length);
 

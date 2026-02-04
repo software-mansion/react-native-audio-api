@@ -121,10 +121,11 @@ std::shared_ptr<AudioBuffer> ConvolverNode::processNode(
   audioBus_->copy(*internalBuffer_, 0, 0, framesToProcess);
   int remainingFrames = internalBufferIndex_ - framesToProcess;
   if (remainingFrames > 0) {
-    for (int i = 0; i < internalBuffer_->getNumberOfChannels(); ++i) {
-      internalBuffer_->copy(*internalBuffer_, framesToProcess, 0, remainingFrames);
+    for (int ch = 0; ch < internalBuffer_->getNumberOfChannels(); ++ch) {
+      internalBuffer_->getChannel(ch)->copyWithin(framesToProcess, 0, remainingFrames);
     }
   }
+
   internalBufferIndex_ -= framesToProcess;
 
   for (int i = 0; i < audioBus_->getNumberOfChannels(); ++i) {

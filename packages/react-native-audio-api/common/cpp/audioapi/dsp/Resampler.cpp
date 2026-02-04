@@ -107,7 +107,7 @@ int UpSampler::process(
   }
 
   // move new data to history [ NEW DATA | EMPTY ]
-  stateBuffer_->copy(*stateBuffer_, framesToProcess, 0, kernelSize_);
+  stateBuffer_->copyWithin(framesToProcess, 0, kernelSize_);
 
   return framesToProcess * 2;
 }
@@ -151,7 +151,7 @@ int DownSampler::process(
   }
 
   // move new data to history [ NEW DATA | EMPTY ]
-  stateBuffer_->copy(*stateBuffer_, framesToProcess, 0, kernelSize_);
+  stateBuffer_->copyWithin(framesToProcess, 0, kernelSize_);
 
   return outputCount;
 }
