@@ -149,6 +149,15 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
+  override fun setInputDevice(
+    deviceId: String?,
+    promise: Promise?,
+  ) {
+    // TODO: noop for now, but it should be moved to upcoming
+    // audio engine implementation for android (duplex stream)
+    Promise.resolve(true)
+  }
+
   // Notification system methods
   @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   override fun showNotification(

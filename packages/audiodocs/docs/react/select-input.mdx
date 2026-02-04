@@ -1,0 +1,69 @@
+---
+sidebar_position: 1
+---
+
+import { IOS } from '@site/src/components/Badges';
+
+# useAudioInput
+
+<br />
+
+React hook for managing audio input device selection and monitoring available audio input devices. Current input will be available after first activation of the audio session. Not all connected devices might be listed as available inputs, some might be filtered out as incompatible with current session configuration.
+
+The `useAudioInput` hook provides an interface for:
+- Retrieving all available audio input devices
+- Getting the currently active input device
+- Switching between different input devices
+
+<IOS /> **Platform support:** Input device selection is currently only supported on iOS. On Android, `useAudioInput` is implemented as a no-op: the hook will not list or switch input devices, and any selection calls will effectively be ignored.
+
+## Usage
+
+```tsx
+import React from 'react';
+import { View, Text, Button } from 'react-native';
+import { useAudioInput } from 'react-native-audio-api';
+
+function AudioInputSelector() {
+  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+
+  return (
+    <View>
+      <Text>Current Input: {currentInput?.name || 'None'}</Text>
+
+      {availableInputs.map((input) => (
+        <Button
+          key={input.uid}
+          title={`${input.name} (${input.category})`}
+          onPress={() => onSelectInput(input)}
+        />
+      ))}
+    </View>
+  );
+}
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+### `availableInputs: AudioDeviceInfo[]`
+
+An array of all available audio input devices. Each device contains:
+- `uid: string` - Unique device identifier
+- `name: string` - Human-readable device name
+- `category: string` - Device category (e.g., "Built-In Microphone", "Bluetooth")
+
+### `currentInput: AudioDeviceInfo | null`
+
+The currently active audio input device, or `null` if no device is selected.
+
+### `onSelectInput: (device: AudioDeviceInfo) => Promise<void>`
+
+Function to programmatically select an audio input device. Takes an `AudioDeviceInfo` object and attempts to set it as the active input device.
+
+## Related
+
+- [AudioManager](/docs/system/audio-manager) - For managing audio sessions and permissions
+- [AudioRecorder](/docs/inputs/audio-recorder) - For capturing audio from the selected input device
+

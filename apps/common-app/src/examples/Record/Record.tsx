@@ -1,11 +1,12 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioManager,
+  useAudioInput,
 } from 'react-native-audio-api';
 
-import { Button, Container } from '../../components';
+import { Button, Container, Select } from '../../components';
 import { colors } from '../../styles';
 
 import { audioContext, audioRecorder } from '../../singletons';
@@ -18,6 +19,8 @@ enum Status {
 }
 
 const Record: FC = () => {
+  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
 
@@ -40,8 +43,8 @@ const Record: FC = () => {
 
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosMode: 'voiceChat',
+      iosOptions: ['allowBluetoothHFP'],
     });
 
     const success = await AudioManager.setAudioSessionActivity(true);
@@ -195,6 +198,17 @@ const Record: FC = () => {
     );
   };
 
+  const onSelect = useCallback(
+    (uid: string) => {
+      const input = availableInputs.find((d) => d.uid === uid);
+
+      if (input) {
+        onSelectInput(input);
+      }
+    },
+    [availableInputs, onSelectInput]
+  );
+
   useEffect(() => {
     return () => {
       audioRecorder.stop();
@@ -207,6 +221,13 @@ const Record: FC = () => {
         <Text style={{ color: colors.white, fontSize: 20 }}>
           Status: {status}
         </Text>
+      </View>
+      <View>
+        <Select
+          value={currentInput?.uid || ''}
+          onChange={onSelect}
+          options={availableInputs.map((d) => d.uid) || []}
+        />
       </View>
       <View style={{ alignItems: 'center', gap: 10 }}>
         <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>
