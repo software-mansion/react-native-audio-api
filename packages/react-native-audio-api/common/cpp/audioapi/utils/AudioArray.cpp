@@ -163,6 +163,14 @@ void AudioArray::copyTo(float *destination, size_t sourceStart, size_t destinati
     memcpy(destination + destinationStart, data_.get() + sourceStart, length * sizeof(float));
 }
 
+void AudioArray::copyWithin(size_t sourceStart, size_t destinationStart, size_t length) {
+    if (size_ - sourceStart < length || size_ - destinationStart < length) {
+        throw std::out_of_range("Not enough space for moving data or data to move.");
+    }
+
+    memmove(data_.get() + destinationStart, data_.get() + sourceStart, length);
+}
+
 void AudioArray::reverse() {
   if (size_ <= 1) {
       return;

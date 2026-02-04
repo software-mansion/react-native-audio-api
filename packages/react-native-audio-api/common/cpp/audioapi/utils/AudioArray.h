@@ -75,7 +75,7 @@ class AudioArray {
   /// @brief Sums the source AudioArray into this AudioArray with an optional gain.
   /// @param source The source AudioArray to sum from.
   /// @param gain The gain to apply to the source before summing. Default is 1.0f.
-  /// @note Assumes that source and this AudioArray are not the same.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void sum(const AudioArray &source, float gain = 1.0f);
 
   /// @brief Sums the source AudioArray into this AudioArray with an optional gain.
@@ -84,7 +84,7 @@ class AudioArray {
   /// @param destinationStart The starting index in this AudioArray.
   /// @param length The number of samples to sum.
   /// @param gain The gain to apply to the source before summing. Default is 1.0f.
-  /// @note Assumes that source and this AudioArray are not the same.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void sum(
       const AudioArray &source,
       size_t sourceStart,
@@ -94,16 +94,26 @@ class AudioArray {
 
   /// @brief Multiplies this AudioArray by the source AudioArray element-wise.
   /// @param source The source AudioArray to multiply with.
-  /// @note Assumes that source and this AudioArray are not the same.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void multiply(const AudioArray &source);
 
   /// @brief Multiplies this AudioArray by the source AudioArray element-wise.
   /// @param source The source AudioArray to multiply with.
   /// @param length The number of samples to multiply.
-  /// @note Assumes that source and this AudioArray are not the same.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void multiply(const AudioArray &source, size_t length);
 
+  /// @brief Copies source AudioArray into this AudioArray
+  /// @param source The source AudioArray to copy.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const AudioArray &source);
+
+  /// @brief Copies source AudioArray into this AudioArray
+  /// @param source The source AudioArray to copy.
+  /// @param sourceStart The starting index in the source AudioArray.
+  /// @param destinationStart The starting index in this AudioArray.
+  /// @param length The number of samples to copy.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
 
   /// @brief Copies data from the source AudioArray in reverse order into this AudioArray.
@@ -111,12 +121,31 @@ class AudioArray {
   /// @param sourceStart The starting index in the source AudioArray.
   /// @param destinationStart The starting index in this AudioArray.
   /// @param length The number of samples to copy.
-  /// @note Assumes that source and this AudioArray are not the same.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void
   copyReverse(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
 
+  /// @brief Copies data from a raw float pointer into this AudioArray.
+  /// @param source The source float pointer to copy from.
+  /// @param sourceStart The starting index in the source float pointer.
+  /// @param destinationStart The starting index in this AudioArray.
+  /// @param length The number of samples to copy.
+  /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const float *source, size_t sourceStart, size_t destinationStart, size_t length);
+
+  /// @brief Copies data to a raw float pointer from this AudioArray.
+  /// @param destination The destination float pointer to copy to.
+  /// @param sourceStart The starting index in the this AudioArray.
+  /// @param destinationStart The starting index in the destination float pointer.
+  /// @param length The number of samples to copy.
+  /// @note Assumes that destination and this are located in two distinct, non-overlapping memory locations.
   void copyTo(float *destination, size_t sourceStart, size_t destinationStart, size_t length) const;
+
+  /// @brief Moves data inside this AudioArray.
+  /// @param sourceStart The starting index in the source float pointer.
+  /// @param destinationStart The starting index of memory.
+  /// @param length The number of samples to copy.
+  void copyWithin(size_t sourceStart, size_t destinationStart, size_t length);
 
   void reverse();
   void normalize();
