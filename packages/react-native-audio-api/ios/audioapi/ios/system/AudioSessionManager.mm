@@ -298,7 +298,7 @@ static AudioSessionManager *_sharedInstance = nil;
     [deviceList addObject:@{
       @"name" : device.portName,
       @"category" : device.portType,
-      @"uid" : device.UID,
+      @"id" : device.UID,
     }];
   }
 

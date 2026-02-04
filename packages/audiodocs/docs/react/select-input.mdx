@@ -33,7 +33,7 @@ function AudioInputSelector() {
 
       {availableInputs.map((input) => (
         <Button
-          key={input.uid}
+          key={input.id}
           title={`${input.name} (${input.category})`}
           onPress={() => onSelectInput(input)}
         />
@@ -50,7 +50,7 @@ The hook returns an object with the following properties:
 ### `availableInputs: AudioDeviceInfo[]`
 
 An array of all available audio input devices. Each device contains:
-- `uid: string` - Unique device identifier
+- `id: string` - Unique device identifier
 - `name: string` - Human-readable device name
 - `category: string` - Device category (e.g., "Built-In Microphone", "Bluetooth")
 

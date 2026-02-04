@@ -173,7 +173,7 @@ class AudioAPIModule(
   ) {
     // TODO: noop for now, but it should be moved to upcoming
     // audio engine implementation for android (duplex stream)
-    Promise.resolve(true)
+    promise?.resolve(true)
   }
 
   // Notification system methods
