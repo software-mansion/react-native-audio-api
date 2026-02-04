@@ -74,11 +74,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   bool initialize(const std::string &inputUrl);
 
   std::string getStreamPath() const {
-#if !RN_AUDIO_API_TEST
     return streamPath_;
-#else
-    return "";
-#endif // RN_AUDIO_API_TEST
   }
 
  protected:
@@ -87,6 +83,8 @@ class StreamerNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
+  std::string streamPath_;
+
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
   AVCodecContext *codecCtx_;
@@ -114,7 +112,6 @@ class StreamerNode : public AudioScheduledSourceNode {
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
-  std::string streamPath_;
 
   /**
    * @brief Setting up the resampler
