@@ -209,6 +209,7 @@ object MediaSessionManager {
 
     for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
       val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("id", inputDevice.getId().toString())
       deviceInfo.putString("name", inputDevice.productName.toString())
       deviceInfo.putString("type", parseDeviceType(inputDevice))
 
@@ -217,6 +218,7 @@ object MediaSessionManager {
 
     for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
       val deviceInfo = Arguments.createMap()
+      deviceInfo.putString("id", outputDevice.getId().toString())
       deviceInfo.putString("name", outputDevice.productName.toString())
       deviceInfo.putString("type", parseDeviceType(outputDevice))
 

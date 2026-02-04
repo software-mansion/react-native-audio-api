@@ -199,8 +199,8 @@ const Record: FC = () => {
   };
 
   const onSelect = useCallback(
-    (uid: string) => {
-      const input = availableInputs.find((d) => d.uid === uid);
+    (id: string) => {
+      const input = availableInputs.find((d) => d.id === id);
 
       if (input) {
         onSelectInput(input);
@@ -224,9 +224,9 @@ const Record: FC = () => {
       </View>
       <View>
         <Select
-          value={currentInput?.uid || ''}
+          value={currentInput?.id || ''}
           onChange={onSelect}
-          options={availableInputs.map((d) => d.uid) || []}
+          options={availableInputs.map((d) => d.id) || []}
         />
       </View>
       <View style={{ alignItems: 'center', gap: 10 }}>

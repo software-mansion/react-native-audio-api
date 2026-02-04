@@ -30,10 +30,10 @@ export default function useAudioInput() {
   const [currentInput, setCurrentInput] = useState<string | null>(null);
 
   const onSelectInput = useCallback(async (device: AudioDeviceInfo) => {
-    const success = await AudioManager.setInputDevice(device.uid);
+    const success = await AudioManager.setInputDevice(device.id);
 
     if (success) {
-      setCurrentInput(device.uid);
+      setCurrentInput(device.id);
     }
 
     const devicesInfo: AudioDevicesInfo = await AudioManager.getDevicesInfo();
@@ -43,12 +43,12 @@ export default function useAudioInput() {
   useEffect(() => {
     async function fetchAvailableInputs() {
       const audioDevices = await AudioManager.getDevicesInfo();
-      const currentDeviceUid = audioDevices.currentInputs.length
-        ? audioDevices.currentInputs[0].uid
+      const currentDeviceId = audioDevices.currentInputs.length
+        ? audioDevices.currentInputs[0].id
         : null;
 
       setAvailableInputs(audioDevices.availableInputs);
-      setCurrentInput(currentDeviceUid);
+      setCurrentInput(currentDeviceId);
     }
 
     async function handleRouteChange(event: OnRouteChangeEventType) {
@@ -81,7 +81,7 @@ export default function useAudioInput() {
        * The currently selected audio input device, or null if none is yet
        * decided by the system.
        */
-      currentInput: availableInputs.find((d) => d.uid === currentInput) || null,
+      currentInput: availableInputs.find((d) => d.id === currentInput) || null,
       /**
        * Selects the given device as the current input. Returns true if
        * successful, throws otherwise.

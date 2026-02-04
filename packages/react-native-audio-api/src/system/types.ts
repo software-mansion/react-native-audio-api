@@ -40,7 +40,7 @@ export interface SessionOptions {
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
 export interface AudioDeviceInfo {
-  uid: string;
+  id: string;
   name: string;
   category: string;
 }
