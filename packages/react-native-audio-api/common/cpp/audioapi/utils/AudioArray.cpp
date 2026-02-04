@@ -164,7 +164,7 @@ void AudioArray::copyTo(float *destination, size_t sourceStart, size_t destinati
 }
 
 void AudioArray::reverse() {
-  if (size_ > 1) {
+  if (size_ <= 1) {
       return;
   }
 
