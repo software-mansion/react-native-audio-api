@@ -94,6 +94,10 @@ class AudioManager implements IAudioManager {
   async getDevicesInfo(): Promise<AudioDevicesInfo> {
     return NativeAudioAPIModule.getDevicesInfo();
   }
+
+  async setInputDevice(deviceId: string): Promise<boolean> {
+    return NativeAudioAPIModule.setInputDevice(deviceId);
+  }
 }
 
 export default new AudioManager();

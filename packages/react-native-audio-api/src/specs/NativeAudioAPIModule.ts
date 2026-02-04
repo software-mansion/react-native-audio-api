@@ -34,6 +34,7 @@ interface Spec extends TurboModule {
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
+  setInputDevice(deviceId: string): Promise<boolean>;
 
   // Notification system
   showNotification(
@@ -45,6 +46,6 @@ interface Spec extends TurboModule {
   isNotificationActive(key: string): Promise<boolean>;
 }
 
-const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule');
+const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule')!;
 
 export { NativeAudioAPIModule };

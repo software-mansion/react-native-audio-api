@@ -70,12 +70,18 @@ class StreamerNode : public AudioScheduledSourceNode {
   */
   bool initialize(const std::string &inputUrl);
 
+  std::string getStreamPath() const {
+    return streamPath_;
+  }
+
  protected:
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override;
 
  private:
+  std::string streamPath_;
+
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
   AVCodecContext *codecCtx_;

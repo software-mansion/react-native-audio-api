@@ -24,8 +24,8 @@ export type IOSOption =
   | 'duckOthers'
   | 'allowAirPlay'
   | 'mixWithOthers'
-  | 'allowBluetooth'
   | 'defaultToSpeaker'
+  | 'allowBluetoothHFP'
   | 'allowBluetoothA2DP'
   | 'overrideMutedMicrophoneInterruption'
   | 'interruptSpokenAudioAndMixWithOthers';
@@ -40,6 +40,7 @@ export interface SessionOptions {
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
 export interface AudioDeviceInfo {
+  id: string;
   name: string;
   category: string;
 }
@@ -70,4 +71,5 @@ export interface IAudioManager {
   requestNotificationPermissions(): Promise<PermissionStatus>;
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
+  setInputDevice(deviceId: string): Promise<boolean>;
 }
