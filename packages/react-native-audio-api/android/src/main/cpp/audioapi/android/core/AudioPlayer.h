@@ -42,7 +42,7 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  private:
   std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
-  std::shared_ptr<AudioBuffer> audioBus_;
+  std::shared_ptr<AudioBuffer> buffer_;
   bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;

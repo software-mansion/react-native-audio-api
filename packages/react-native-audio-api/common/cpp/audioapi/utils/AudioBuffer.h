@@ -86,6 +86,15 @@ class AudioBuffer {
   void copy(const AudioBuffer &source);
   void copy(const AudioBuffer &source, size_t sourceStart, size_t destinationStart, size_t length);
 
+  /// @brief Interleave audio data from this AudioBuffer into a destination buffer.
+  /// @param destination Pointer to the destination buffer where interleaved audio data will be written.
+  /// @param frames Number of frames to interleave into the destination buffer.
+  /// @note The destination buffer should have enough space to hold the interleaved data
+  /// according to the number of channels in this AudioBuffer.
+  /// Example of interleaved data for stereo (2 channels):
+  /// [L0, R0, L1, R1, L2, R2, ...]
+  void interleaveTo(float *destination, size_t frames) const;
+
   void normalize();
   void scale(float value);
   [[nodiscard]] float maxAbsValue() const;

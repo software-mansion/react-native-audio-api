@@ -71,4 +71,10 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
 
 float computeConvolution(const float *state, const float *kernel, size_t kernelSize);
 
+void interleaveStereo(
+    const float *inputLeft,
+    const float *inputRight,
+    float *outputInterleaved,
+    size_t numberOfFrames);
+
 } // namespace audioapi::dsp

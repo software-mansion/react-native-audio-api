@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/HostObjects/utils/NodeOptions.h>
+
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -243,6 +244,38 @@ void AudioBuffer::copy(
   // zero + sum is equivalent to copy, but takes care of up/down-mixing.
   zero(destinationStart, length);
   sum(source, sourceStart, destinationStart, length);
+}
+
+void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
+  if (frames == 0) {
+    return;
+  }
+
+  if (numberOfChannels_ == 1) {
+    channels_[0]->copyTo(destination, 0, 0, frames);
+    return;
+  }
+
+  if (numberOfChannels_ == 2) {
+      dsp::interleaveStereo(channels_[0]->begin(), channels_[1]->begin(), destination, frames);
+      return;
+  }
+
+    float* channelsPtrs[MAX_CHANNEL_COUNT];
+    for (int i = 0; i < numberOfChannels_; ++i) {
+        channelsPtrs[i] = channels_[i]->begin();
+    }
+
+    constexpr size_t kBlockSize = 64;
+    for (size_t blockStart = 0; blockStart < frames; blockStart += kBlockSize) {
+        size_t blockEnd = std::min(blockStart + kBlockSize, frames);
+        for (size_t i = blockStart; i < blockEnd; ++i) {
+            float* frameDest = destination + (i * numberOfChannels_);
+            for (int ch = 0; ch < numberOfChannels_; ++ch) {
+                frameDest[ch] = channelsPtrs[ch][i];
+            }
+        }
+    }
 }
 
 void AudioBuffer::normalize() {

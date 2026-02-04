@@ -97,6 +97,22 @@ void multiplyByScalarThenAddToOutput(
   vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
+float computeConvolution(const float *state, const float *kernel, size_t kernelSize) {
+    float result = 0.0f;
+    vDSP_conv(state, 1, kernel, 1, &result, 1, 1, kernelSize);
+    return result;
+}
+
+void interleaveStereo(
+    const float* __restrict inputLeft,
+    const float* __restrict inputRight,
+    float* __restrict outputInterleaved,
+    size_t numberOfFrames) {
+    float zero = 0.0f;
+    vDSP_vsadd(inputLeft, 1, &zero, outputInterleaved, 2, numberOfFrames);
+    vDSP_vsadd(inputRight, 1, &zero, outputInterleaved + 1, 2, numberOfFrames);
+}
+
 #else
 
 #if defined(HAVE_X86_SSE2)
@@ -654,8 +670,6 @@ void multiplyByScalarThenAddToOutput(
   }
 }
 
-#endif
-
 float computeConvolution(const float *state, const float *kernel, size_t kernelSize) {
     float sum = 0.0f;
     int k = 0;
@@ -684,4 +698,61 @@ float computeConvolution(const float *state, const float *kernel, size_t kernelS
 
     return sum;
 }
+
+void interleaveStereo(
+        const float * __restrict inputLeft,
+        const float * __restrict inputRight,
+        float * __restrict outputInterleaved,
+        size_t numberOfFrames) {
+
+    size_t n = numberOfFrames;
+
+#if defined(HAVE_ARM_NEON_INTRINSICS)
+    // process 4 frames (8 samples) at a time
+    size_t group = n / 4;
+    while (group--) {
+        // load contiguous planar data
+        float32x4_t vL = vld1q_f32(inputLeft);
+        float32x4_t vR = vld1q_f32(inputRight);
+
+        // vst2q_f32 takes two registers and interleaves them during the store:
+        float32x4x2_t vOut = { vL, vR };
+        vst2q_f32(outputInterleaved, vOut);
+
+        inputLeft += 4;
+        inputRight += 4;
+        outputInterleaved += 8;
+    }
+    n %= 4;
+#elif defined(HAVE_X86_SSE2)
+    // process 4 frames (8 samples) at a time
+    size_t group = n / 4;
+    while (group--) {
+        __m128 vL = _mm_loadu_ps(inputLeft);
+        __m128 vR = _mm_loadu_ps(inputRight);
+
+        // unpack low: Interleaves first two elements of each register
+        __m128 vLow = _mm_unpacklo_ps(vL, vR);
+
+        // unpack high: Interleaves last two elements of each register
+        __m128 vHigh = _mm_unpackhi_ps(vL, vR);
+
+        _mm_storeu_ps(outputInterleaved, vLow);
+        _mm_storeu_ps(outputInterleaved + 4, vHigh);
+
+        inputLeft += 4;
+        inputRight += 4;
+        outputInterleaved += 8;
+    }
+    n %= 4;
+#endif
+
+    while (n--) {
+        *outputInterleaved++ = *inputLeft++;
+        *outputInterleaved++ = *inputRight++;
+    }
+}
+
+#endif
+
 } // namespace audioapi::dsp
