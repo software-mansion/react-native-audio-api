@@ -131,24 +131,6 @@ void AudioArray::copy(
   copy(source.data_.get(), sourceStart, destinationStart, length);
 }
 
-void AudioArray::copyReverse(
-    const audioapi::AudioArray &source,
-    size_t sourceStart,
-    size_t destinationStart,
-    size_t length) {
-  if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
-    throw std::out_of_range("Not enough space to copy to destination or from source.");
-  }
-
-  auto dstView = this->subSpan(length, destinationStart);
-  auto srcView = source.span();
-  const float *__restrict srcPtr = &srcView[sourceStart];
-
-  for (size_t i = 0; i < length; ++i) {
-    dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
-  }
-}
-
 void AudioArray::copy(
     const float *source,
     size_t sourceStart,
@@ -159,6 +141,24 @@ void AudioArray::copy(
   }
 
   memcpy(data_.get() + destinationStart, source + sourceStart, length * sizeof(float));
+}
+
+void AudioArray::copyReverse(
+        const audioapi::AudioArray &source,
+        size_t sourceStart,
+        size_t destinationStart,
+        size_t length) {
+    if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
+        throw std::out_of_range("Not enough space to copy to destination or from source.");
+    }
+
+    auto dstView = this->subSpan(length, destinationStart);
+    auto srcView = source.span();
+    const float *__restrict srcPtr = &srcView[sourceStart];
+
+    for (size_t i = 0; i < length; ++i) {
+        dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
+    }
 }
 
 void AudioArray::copyTo(

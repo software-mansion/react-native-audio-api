@@ -152,19 +152,19 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 }
 
 std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBus,
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   // Analyser should behave like a sniffer node, it should not modify the
-  // processingBus but instead copy the data to its own input buffer.
+  // processingBuffer but instead copy the data to its own input buffer.
 
   // Down mix the input bus to mono
-  downMixBus_->copy(*processingBus);
+  downMixBus_->copy(*processingBuffer);
   // Copy the down mixed bus to the input buffer (circular buffer)
   inputArray_->push_back(*downMixBus_->getChannel(0), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
 
-  return processingBus;
+  return processingBuffer;
 }
 
 void AnalyserNode::doFFTAnalysis() {

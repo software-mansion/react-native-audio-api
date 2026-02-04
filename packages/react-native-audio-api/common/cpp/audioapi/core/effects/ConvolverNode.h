@@ -32,7 +32,7 @@ class ConvolverNode : public AudioNode {
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
@@ -47,7 +47,7 @@ class ConvolverNode : public AudioNode {
   bool normalize_;
   bool signalledToStop_;
   float scaleFactor_;
-  std::shared_ptr<AudioBuffer> intermediateBus_;
+  std::shared_ptr<AudioBuffer> intermediateBuffer_;
 
   // impulse response buffer
   std::shared_ptr<AudioBuffer> buffer_;
@@ -58,7 +58,7 @@ class ConvolverNode : public AudioNode {
   std::shared_ptr<ThreadPool> threadPool_;
 
   void calculateNormalizationScale();
-  void performConvolution(const std::shared_ptr<AudioBuffer> &processingBus);
+  void performConvolution(const std::shared_ptr<AudioBuffer> &processingBuffer);
 };
 
 } // namespace audioapi

@@ -138,7 +138,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   }
 
   if (isConnected()) {
-    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
+    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     adapterNode_->init(maxBufferSizeInFrames_, streamChannelCount_);
   }
 
@@ -319,7 +319,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &n
   adapterNode_ = node;
 
   if (!isIdle()) {
-    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
+    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     adapterNode_->init(maxBufferSizeInFrames_, streamChannelCount_);
   }
 
@@ -332,7 +332,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &n
 void AndroidAudioRecorder::disconnect() {
   std::scoped_lock adapterLock(adapterNodeMutex_);
   isConnected_.store(false, std::memory_order_release);
-  deinterleavingArray_ = nullptr;
+  tempArray_ = nullptr;
   adapterNode_ = nullptr;
 }
 
@@ -370,13 +370,13 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
   if (isConnected()) {
     if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
       for (int channel = 0; channel < streamChannelCount_; ++channel) {
-        auto channelData = deinterleavingArray_->span();
+        auto channelData = tempArray_->span();
         for (int frame = 0; frame < numFrames; ++frame) {
           channelData[frame] =
               static_cast<float *>(audioData)[frame * streamChannelCount_ + channel];
         }
 
-        adapterNode_->buff_[channel]->write(*deinterleavingArray_, numFrames);
+        adapterNode_->buff_[channel]->write(*tempArray_, numFrames);
       }
     }
   }

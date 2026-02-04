@@ -53,8 +53,8 @@ IOSAudioRecorder::IOSAudioRecorder(
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
           float *data = (float *)inputBuffer->mBuffers[channel].mData;
 
-          deinterleavingArray_->copy(data, 0, 0, numFrames);
-          adapterNode_->buff_[channel]->write(*deinterleavingArray_, numFrames);
+          tempArray_->copy(data, 0, 0, numFrames);
+          adapterNode_->buff_[channel]->write(*tempArray_, numFrames);
         }
       }
     }
@@ -126,7 +126,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
-    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
+    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     // TODO: pass sample rate, in case conversion is necessary
     adapterNode_->init(maxBufferSizeInFrames_, inputFormat.channelCount);
   }
@@ -228,7 +228,7 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
   adapterNode_ = node;
 
   if (!isIdle()) {
-    deinterleavingArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
+    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     adapterNode_->init(maxBufferSizeInFrames_, [nativeRecorder_ getInputFormat].channelCount);
   }
 
@@ -241,7 +241,7 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 void IOSAudioRecorder::disconnect()
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  deinterleavingArray_ = nullptr;
+  tempArray_ = nullptr;
   adapterNode_ = nullptr;
   isConnected_.store(false, std::memory_order_release);
 }

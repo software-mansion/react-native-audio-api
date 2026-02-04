@@ -31,9 +31,10 @@ std::shared_ptr<AudioBuffer> GainNode::processNode(
     return processingBus;
   double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
+  auto gainValues = gainParamValues->getChannel(0);
+
   for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
     auto channel = processingBus->getChannel(i);
-    auto gainValues = gainParamValues->getChannel(0);
     channel->multiply(*gainValues, framesToProcess);
   }
 

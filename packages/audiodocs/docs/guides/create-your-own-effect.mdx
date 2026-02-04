@@ -55,6 +55,11 @@ protected:
   std::shared_ptr<AudioBuffer>
   processNode(const std::shared_ptr<AudioBuffer> &buffer,
               int framesToProcess) override;
+
+// highlight-start
+private:
+  double gain; // value responsible for gain value
+// highlight-end
 };
 } // namespace audioapi
 ```

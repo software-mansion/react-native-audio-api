@@ -133,7 +133,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
   int mask = bufferLength - 1;
 
   for (int c = 0; c < numChannels; ++c) {
-    auto channel = processingBus->getChannel(c)->subSpan(0, framesToProcess);
+    auto channel = processingBus->getChannel(c)->subSpan(framesToProcess);
 
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];

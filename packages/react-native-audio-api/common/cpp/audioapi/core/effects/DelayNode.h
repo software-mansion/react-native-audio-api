@@ -19,14 +19,14 @@ class DelayNode : public AudioNode {
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   void onInputDisabled() override;
   enum class BufferAction { READ, WRITE };
   void delayBufferOperation(
-      const std::shared_ptr<AudioBuffer> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &operationStartingIndex,
       BufferAction action);
