@@ -28,7 +28,7 @@ class AudioRecorderCallback {
   virtual void cleanup() = 0;
 
   void emitAudioData(bool flush = false);
-  void invokeCallback(const std::shared_ptr<AudioBuffer> &bus, int numFrames);
+  void invokeCallback(const std::shared_ptr<AudioBuffer> &buffer, int numFrames);
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();

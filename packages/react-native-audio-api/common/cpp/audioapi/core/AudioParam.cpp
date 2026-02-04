@@ -24,7 +24,8 @@ AudioParam::AudioParam(
       endTime_(0),
       startValue_(defaultValue),
       endValue_(defaultValue),
-      audioBus_(std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
+      audioBuffer_(
+          std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
   inputBuses_.reserve(4);
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
@@ -256,13 +257,13 @@ std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
 
 std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
   processScheduledEvents();
-  auto processingBuffer = calculateInputs(audioBus_, framesToProcess);
+  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
     return processingBuffer;
   float sampleRate = context->getSampleRate();
-  auto busData = processingBuffer->getChannel(0)->span();
+  auto bufferData = processingBuffer->getChannel(0)->span();
   float timeCache = time;
   float timeStep = 1.0f / sampleRate;
   float sample = 0.0f;
@@ -270,15 +271,15 @@ std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, 
   // Add automated parameter value to each sample
   for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     sample = getValueAtTime(timeCache);
-    busData[i] += sample;
+    bufferData[i] += sample;
   }
-  // processingBuffer is a mono bus containing per-sample parameter values
+  // processingBuffer is a mono buffer containing per-sample parameter values
   return processingBuffer;
 }
 
 float AudioParam::processKRateParam(int framesToProcess, double time) {
   processScheduledEvents();
-  auto processingBuffer = calculateInputs(audioBus_, framesToProcess);
+  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   // Return block-rate parameter value plus first sample of input modulation
   return processingBuffer->getChannel(0)->span()[0] + getValueAtTime(time);
@@ -296,7 +297,7 @@ void AudioParam::processInputs(
       continue;
     }
 
-    // Process this input node and store its output bus
+    // Process this input node and store its output buffer
     auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
     inputBuses_.emplace_back(inputBus);
   }
@@ -305,7 +306,7 @@ void AudioParam::processInputs(
 void AudioParam::mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
-  // Sum all input buses into the processing bus
+  // Sum all input buffers into the processing buffer
   for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
     processingBuffer->sum(**it, ChannelInterpretation::SPEAKERS);
   }

@@ -51,12 +51,12 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = i + 1;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = gainNode.processNode(bus, FRAMES_TO_PROCESS);
+  auto resultBus = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
   }
@@ -68,13 +68,13 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = i + 1;
-    (*bus->getChannel(1))[i] = -i - 1;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
+    (*buffer->getChannel(1))[i] = -i - 1;
   }
 
-  auto resultBus = gainNode.processNode(bus, FRAMES_TO_PROCESS);
+  auto resultBus = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
     EXPECT_FLOAT_EQ((*resultBus->getChannel(1))[i], (-i - 1) * GAIN_VALUE);

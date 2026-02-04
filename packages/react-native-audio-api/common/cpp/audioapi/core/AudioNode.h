@@ -53,7 +53,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class DelayNodeHostObject;
 
   std::weak_ptr<BaseAudioContext> context_;
-  std::shared_ptr<AudioBuffer> audioBus_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;

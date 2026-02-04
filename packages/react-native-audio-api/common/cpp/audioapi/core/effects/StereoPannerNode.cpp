@@ -33,8 +33,8 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
 
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  auto outputLeft = audioBus_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  auto outputRight = audioBus_->getChannelByType(AudioBuffer::ChannelRight)->span();
+  auto outputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto outputRight = audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
   // Input is mono
   if (processingBuffer->getNumberOfChannels() == 1) {
@@ -74,7 +74,7 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
     }
   }
 
-  return audioBus_;
+  return audioBuffer_;
 }
 
 } // namespace audioapi

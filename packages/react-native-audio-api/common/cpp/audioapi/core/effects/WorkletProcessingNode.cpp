@@ -63,7 +63,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
             jsi::Value(rt, time));
       });
 
-  // Copy processed output data back to the processing bus or zero on failure
+  // Copy processed output data back to the processing buffer or zero on failure
   for (int ch = 0; ch < channelCount; ch++) {
     auto channelData = processingBuffer->getChannel(ch);
 

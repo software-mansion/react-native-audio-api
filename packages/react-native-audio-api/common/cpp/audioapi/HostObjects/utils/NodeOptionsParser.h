@@ -63,7 +63,7 @@ ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object 
     auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
                                 .getObject(runtime)
                                 .asHostObject<AudioBufferHostObject>(runtime);
-    options.bus = bufferHostObject->audioBuffer_;
+    options.buffer = bufferHostObject->audioBuffer_;
   }
   return options;
 }

@@ -51,16 +51,16 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   }
 
   auto outputFrames = buffer.size() / outputChannels;
-  auto audioBus = std::make_shared<AudioBuffer>(outputFrames, outputChannels, outputSampleRate);
+  auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, outputChannels, outputSampleRate);
 
   for (int ch = 0; ch < outputChannels; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->span();
+    auto channelData = audioBuffer->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = buffer[i * outputChannels + ch];
     }
   }
 
-  return audioBus;
+  return audioBuffer;
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
@@ -152,11 +152,11 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
   const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
   size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));
 
-  auto audioBus =
+  auto audioBuffer =
       std::make_shared<AudioBuffer>(numFramesDecoded, inputChannelCount, inputSampleRate);
 
   for (int ch = 0; ch < inputChannelCount; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->span();
+    auto channelData = audioBuffer->getChannel(ch)->span();
 
     for (size_t i = 0; i < numFramesDecoded; ++i) {
       size_t offset;
@@ -171,7 +171,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
       channelData[i] = uint8ToFloat(uint8Data[offset], uint8Data[offset + 1]);
     }
   }
-  return audioBus;
+  return audioBuffer;
 }
 
 } // namespace audioapi

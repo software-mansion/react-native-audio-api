@@ -17,7 +17,6 @@ void CircularAudioArray::push_back(const AudioArray & data, size_t size, bool sk
 
   if (vWriteIndex_ + size > size_) {
     auto partSize = size_ - vWriteIndex_;
-
     copy(data, 0, vWriteIndex_, partSize);
     copy(data, partSize, 0, size - partSize);
   } else {

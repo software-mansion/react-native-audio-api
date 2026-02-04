@@ -12,7 +12,7 @@
 namespace audioapi {
 
 AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext> &context) : context_(context) {
-  audioBus_ =
+  audioBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
@@ -23,7 +23,7 @@ AudioNode::AudioNode(
       channelCount_(options.channelCount),
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation) {
-  audioBus_ =
+  audioBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
@@ -129,16 +129,16 @@ std::shared_ptr<AudioBuffer> AudioNode::processAudio(
   }
 
   if (checkIsAlreadyProcessed && isAlreadyProcessed()) {
-    return audioBus_;
+    return audioBuffer_;
   }
 
-  // Process inputs and return the bus with the most channels.
+  // Process inputs and return the buffer with the most channels.
   auto processingBuffer = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
 
   // Apply channel count mode.
   processingBuffer = applyChannelCountMode(processingBuffer);
 
-  // Mix all input buses into the processing bus.
+  // Mix all input buffers into the processing buffer.
   mixInputsBuses(processingBuffer);
 
   assert(processingBuffer != nullptr);
@@ -170,7 +170,7 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
     const std::shared_ptr<AudioBuffer> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  auto processingBuffer = audioBus_;
+  auto processingBuffer = audioBuffer_;
   processingBuffer->zero();
 
   int maxNumberOfChannels = 0;
@@ -199,14 +199,14 @@ std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
   // If the channelCountMode is EXPLICIT, the node should output the number of
   // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
-    return audioBus_;
+    return audioBuffer_;
   }
 
   // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
   // number of channels clamped to channelCount.
   if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
       processingBuffer->getNumberOfChannels() >= channelCount_) {
-    return audioBus_;
+    return audioBuffer_;
   }
 
   return processingBuffer;

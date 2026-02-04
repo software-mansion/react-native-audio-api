@@ -111,7 +111,7 @@ class AudioParam {
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
-  std::shared_ptr<AudioBuffer> audioBus_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
   std::vector<std::shared_ptr<AudioBuffer>> inputBuses_;
 
   /// @brief Get the end time of the parameter queue.

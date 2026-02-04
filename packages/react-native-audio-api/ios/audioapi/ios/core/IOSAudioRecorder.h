@@ -10,7 +10,6 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <mutex>

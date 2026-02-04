@@ -12,7 +12,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <chrono>
@@ -20,7 +19,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -90,7 +88,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBus_ =
+  audioBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
@@ -144,7 +142,7 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     StreamingData data;
     auto res = receiver_.try_receive(data);
     if (res == channels::spsc::ResponseStatus::SUCCESS) {
-      bufferedBus_ = std::make_shared<AudioBuffer>(std::move(data.bus));
+      bufferedBus_ = std::make_shared<AudioBuffer>(std::move(data.buffer));
       bufferedBusSize_ = data.size;
       processedSamples_ = 0;
     } else {

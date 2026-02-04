@@ -94,7 +94,7 @@ void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   auto magnitudeSpan = magnitudeArray_->span();
 
   for (int i = 0; i < length; i++) {
-      data[i] = dsp::linearToDecibels(magnitudeSpan[i]);
+    data[i] = dsp::linearToDecibels(magnitudeSpan[i]);
   }
 }
 
@@ -157,9 +157,9 @@ std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBuffer but instead copy the data to its own input buffer.
 
-  // Down mix the input bus to mono
+  // Down mix the input buffer to mono
   downMixBus_->copy(*processingBuffer);
-  // Copy the down mixed bus to the input buffer (circular buffer)
+  // Copy the down mixed buffer to the input buffer (circular buffer)
   inputArray_->push_back(*downMixBus_->getChannel(0), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;

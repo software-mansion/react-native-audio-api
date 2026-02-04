@@ -40,17 +40,17 @@ inline constexpr auto VERBOSE = false;
 inline constexpr auto CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
-  audioapi::AudioBuffer bus;
+  audioapi::AudioBuffer buffer;
   size_t size;
   StreamingData() = default;
-  StreamingData(audioapi::AudioBuffer b, size_t s) : bus(b), size(s) {}
-  StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
-  StreamingData(StreamingData &&data) noexcept : bus(std::move(data.bus)), size(data.size) {}
+  StreamingData(audioapi::AudioBuffer b, size_t s) : buffer(b), size(s) {}
+  StreamingData(const StreamingData &data) : buffer(data.buffer), size(data.size) {}
+  StreamingData(StreamingData &&data) noexcept : buffer(std::move(data.buffer)), size(data.size) {}
   StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
     }
-    bus = data.bus;
+    buffer = data.buffer;
     size = data.size;
     return *this;
   }
@@ -97,8 +97,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   SwrContext *swrCtx_;
   uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBuffer> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusSize_;                   // size of currently buffered bus
+  std::shared_ptr<AudioBuffer> bufferedBus_; // audio buffer for buffering hls frames
+  size_t bufferedBusSize_;                   // size of currently buffered buffer
   int audio_stream_index_;                   // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
@@ -133,7 +133,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   /**
    * @brief Thread function to continuously read and process audio frames
    * @details This function runs in a separate thread to avoid blocking the main audio processing thread
-   * @note It will read frames from the input stream, resample them, and store them in the buffered bus
+   * @note It will read frames from the input stream, resample them, and store them in the buffered buffer
    * @note The thread will stop when streamFlag is set to false
    */
   void streamAudio();

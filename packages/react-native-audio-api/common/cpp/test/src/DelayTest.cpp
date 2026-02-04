@@ -53,12 +53,12 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = i + 1;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = delayNode.processNode(bus, FRAMES_TO_PROCESS);
+  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], static_cast<float>(i + 1));
   }
@@ -72,12 +72,12 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = i + 1;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = delayNode.processNode(bus, FRAMES_TO_PROCESS);
+  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be zero due to delay
       EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 0.0f);
@@ -85,7 +85,7 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
       EXPECT_FLOAT_EQ(
           (*resultBus->getChannel(0))[i],
           static_cast<float>(
-              i + 1 - FRAMES_TO_PROCESS / 2)); // Last 64 samples should be 1st part of bus
+              i + 1 - FRAMES_TO_PROCESS / 2)); // Last 64 samples should be 1st part of buffer
     }
   }
 }
@@ -98,15 +98,15 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = i + 1;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  delayNode.processNode(bus, FRAMES_TO_PROCESS);
-  auto resultBus = delayNode.processNode(bus, FRAMES_TO_PROCESS);
+  delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of bus
+    if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of buffer
       EXPECT_FLOAT_EQ(
           (*resultBus->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
     } else {

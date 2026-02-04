@@ -31,7 +31,7 @@ struct StereoPannerOptions : AudioNodeOptions {
 };
 
 struct ConvolverOptions : AudioNodeOptions {
-  std::shared_ptr<AudioBuffer> bus;
+  std::shared_ptr<AudioBuffer> buffer;
   bool disableNormalization;
 };
 

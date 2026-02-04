@@ -64,7 +64,7 @@ void OfflineAudioContext::renderAudio() {
   setState(ContextState::RUNNING);
 
   std::thread([this]() {
-    auto audioBus =
+    auto audioBuffer =
         std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
 
     while (currentSampleFrame_ < length_) {
@@ -72,9 +72,9 @@ void OfflineAudioContext::renderAudio() {
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
-      destination_->renderAudio(audioBus, framesToProcess);
+      destination_->renderAudio(audioBuffer, framesToProcess);
 
-      resultBus_->copy(*audioBus, 0, currentSampleFrame_, framesToProcess);
+      resultBus_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 

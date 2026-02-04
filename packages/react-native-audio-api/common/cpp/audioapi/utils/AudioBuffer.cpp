@@ -1,9 +1,9 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 
 #include <algorithm>
 #include <memory>
@@ -202,13 +202,13 @@ void AudioBuffer::sum(
     return;
   }
 
-  // Source channel count is smaller than current bus, we need to up-mix.
+  // Source channel count is smaller than current buffer, we need to up-mix.
   if (numberOfSourceChannels < numberOfChannels) {
     sumByUpMixing(source, sourceStart, destinationStart, length);
     return;
   }
 
-  // Source channel count is larger than current bus, we need to down-mix.
+  // Source channel count is larger than current buffer, we need to down-mix.
   if (numberOfSourceChannels > numberOfChannels) {
     sumByDownMixing(source, sourceStart, destinationStart, length);
     return;
@@ -257,25 +257,25 @@ void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
   }
 
   if (numberOfChannels_ == 2) {
-      dsp::interleaveStereo(channels_[0]->begin(), channels_[1]->begin(), destination, frames);
-      return;
+    dsp::interleaveStereo(channels_[0]->begin(), channels_[1]->begin(), destination, frames);
+    return;
   }
 
-    float* channelsPtrs[MAX_CHANNEL_COUNT];
-    for (int i = 0; i < numberOfChannels_; ++i) {
-        channelsPtrs[i] = channels_[i]->begin();
-    }
+  float *channelsPtrs[MAX_CHANNEL_COUNT];
+  for (int i = 0; i < numberOfChannels_; ++i) {
+    channelsPtrs[i] = channels_[i]->begin();
+  }
 
-    constexpr size_t kBlockSize = 64;
-    for (size_t blockStart = 0; blockStart < frames; blockStart += kBlockSize) {
-        size_t blockEnd = std::min(blockStart + kBlockSize, frames);
-        for (size_t i = blockStart; i < blockEnd; ++i) {
-            float* frameDest = destination + (i * numberOfChannels_);
-            for (int ch = 0; ch < numberOfChannels_; ++ch) {
-                frameDest[ch] = channelsPtrs[ch][i];
-            }
-        }
+  constexpr size_t kBlockSize = 64;
+  for (size_t blockStart = 0; blockStart < frames; blockStart += kBlockSize) {
+    size_t blockEnd = std::min(blockStart + kBlockSize, frames);
+    for (size_t i = blockStart; i < blockEnd; ++i) {
+      float *frameDest = destination + (i * numberOfChannels_);
+      for (int ch = 0; ch < numberOfChannels_; ++ch) {
+        frameDest[ch] = channelsPtrs[ch][i];
+      }
     }
+  }
 }
 
 void AudioBuffer::normalize() {

@@ -56,18 +56,20 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
   }
 
   while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
-    auto bus = std::make_shared<AudioBuffer>(sizeLimit, channelCount_, sampleRate_);
+    auto buffer = std::make_shared<AudioBuffer>(sizeLimit, channelCount_, sampleRate_);
 
     for (int i = 0; i < channelCount_; ++i) {
-      circularBus_[i]->pop_front(*bus->getChannel(i), sizeLimit);
+      circularBus_[i]->pop_front(*buffer->getChannel(i), sizeLimit);
     }
 
-    invokeCallback(bus, static_cast<int>(sizeLimit));
+    invokeCallback(buffer, static_cast<int>(sizeLimit));
   }
 }
 
-void AudioRecorderCallback::invokeCallback(const std::shared_ptr<AudioBuffer> &bus, int numFrames) {
-  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(bus);
+void AudioRecorderCallback::invokeCallback(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    int numFrames) {
+  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
   std::unordered_map<std::string, EventValue> eventPayload = {};
   eventPayload.insert({"buffer", audioBufferHostObject});

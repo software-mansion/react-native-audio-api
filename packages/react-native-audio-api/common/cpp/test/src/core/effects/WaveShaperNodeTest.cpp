@@ -61,12 +61,12 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   waveShaper->setOversample(OverSampleType::OVERSAMPLE_NONE);
   waveShaper->setCurve(waveShaper->testCurve_);
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    (*bus->getChannel(0))[i] = -1.0f + i * 0.5f;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = -1.0f + i * 0.5f;
   }
 
-  auto resultBus = waveShaper->processNode(bus, FRAMES_TO_PROCESS);
+  auto resultBus = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
   auto curveData = waveShaper->testCurve_->span();
   auto resultData = resultBus->getChannel(0)->span();
 

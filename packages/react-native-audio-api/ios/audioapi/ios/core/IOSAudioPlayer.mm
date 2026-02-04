@@ -13,7 +13,7 @@ IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
+    : renderAudio_(renderAudio), channelCount_(channelCount), audioBuffer_(0), isRunning_(false)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -22,15 +22,16 @@ IOSAudioPlayer::IOSAudioPlayer(
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
       if (isRunning_.load(std::memory_order_acquire)) {
-        renderAudio_(audioBus_, framesToProcess);
+        renderAudio_(audioBuffer_, framesToProcess);
       } else {
-        audioBus_->zero();
+        audioBuffer_->zero();
       }
 
       for (int channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
 
-        audioBus_->getChannel(channel)->copyTo(outputChannel, 0, processedFrames, framesToProcess);
+        audioBuffer_->getChannel(channel)->copyTo(
+            outputChannel, 0, processedFrames, framesToProcess);
       }
 
       processedFrames += framesToProcess;
@@ -41,7 +42,7 @@ IOSAudioPlayer::IOSAudioPlayer(
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
 
-  audioBus_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+  audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -96,8 +97,8 @@ void IOSAudioPlayer::cleanup()
   stop();
   [audioPlayer_ cleanup];
 
-  if (audioBus_) {
-    audioBus_ = nullptr;
+  if (audioBuffer_) {
+    audioBuffer_ = nullptr;
   }
 }
 

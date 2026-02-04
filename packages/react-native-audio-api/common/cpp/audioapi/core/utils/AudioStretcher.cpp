@@ -59,16 +59,16 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
   stretchedBuffer.resize(outputFrames * outputChannels);
   stretch_deinit(stretcher);
 
-  auto audioBus = std::make_shared<AudioBuffer>(outputFrames, outputChannels, sampleRate);
+  auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, outputChannels, sampleRate);
 
   for (int ch = 0; ch < outputChannels; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->span();
+    auto channelData = audioBuffer->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = int16ToFloat(stretchedBuffer[i * outputChannels + ch]);
     }
   }
 
-  return audioBus;
+  return audioBuffer;
 }
 
 } // namespace audioapi

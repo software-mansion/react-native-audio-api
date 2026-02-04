@@ -32,7 +32,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
 
   // This assumes that the sample rate is the same in audio context and recorder.
   // (recorder is not enforcing any sample rate on the system*). This means that only
-  // channel mixing might be required. To do so, we create an output bus with
+  // channel mixing might be required. To do so, we create an output buffer with
   // the desired channel count and will take advantage of the AudioBuffer sum method.
   //
   // * any allocations required by the recorder (including this method) are during recording start

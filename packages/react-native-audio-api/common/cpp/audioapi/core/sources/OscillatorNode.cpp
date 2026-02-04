@@ -27,7 +27,7 @@ OscillatorNode::OscillatorNode(
     periodicWave_ = context->getBasicWaveForm(type_);
   }
 
-  audioBus_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
+  audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 
   isInitialized_ = true;
 }

@@ -51,7 +51,7 @@ class WorkletNode : public AudioNode {
 
  private:
   WorkletsRunner workletRunner_;
-  std::shared_ptr<AudioBuffer> bus_;
+  std::shared_ptr<AudioBuffer> buffer_;
 
   /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer
   size_t bufferLength_;

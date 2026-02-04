@@ -78,8 +78,8 @@ void DelayNode::delayBufferOperation(
 
 // delay buffer always has channelCount_ channels
 // processing is split into two parts
-// 1. writing to delay buffer (mixing if needed) from processing bus
-// 2. reading from delay buffer to processing bus (mixing if needed) with delay
+// 1. writing to delay buffer (mixing if needed) from processing buffer
+// 2. reading from delay buffer to processing buffer (mixing if needed) with delay
 std::shared_ptr<AudioBuffer> DelayNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
@@ -91,7 +91,8 @@ std::shared_ptr<AudioBuffer> DelayNode::processNode(
       return processingBuffer;
     }
 
-    delayBufferOperation(processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
+    delayBufferOperation(
+        processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
     remainingFrames_ -= framesToProcess;
     return processingBuffer;
   }
@@ -103,8 +104,10 @@ std::shared_ptr<AudioBuffer> DelayNode::processNode(
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();
-  delayBufferOperation(processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
-  delayBufferOperation(processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
+  delayBufferOperation(
+      processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
+  delayBufferOperation(
+      processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
 
   return processingBuffer;
 }

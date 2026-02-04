@@ -48,17 +48,17 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto bus = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   // constantSource.start(context->getCurrentTime());
-  // auto resultBus = constantSource.processNode(bus, FRAMES_TO_PROCESS);
+  // auto resultBus = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
 
   // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
   //   EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 1.0f);
   // }
 
   // constantSource.setOffsetParam(0.5f);
-  // resultBus = constantSource.processNode(bus, FRAMES_TO_PROCESS);
+  // resultBus = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
   // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
   //   EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 0.5f);
   // }

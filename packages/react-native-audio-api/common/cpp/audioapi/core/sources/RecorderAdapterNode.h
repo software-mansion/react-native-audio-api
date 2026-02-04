@@ -39,7 +39,7 @@ class RecorderAdapterNode : public AudioNode {
   std::shared_ptr<AudioBuffer> adapterOutputBus_;
 
  private:
-  /// @brief Read audio frames from the recorder's internal circular buffer into output buss.
+  /// @brief Read audio frames from the recorder's internal circular buffer into output buffers.
   /// @note If `framesToRead` is greater than the number of available frames, it will fill empty space with silence.
   /// @param framesToRead Number of frames to read.
   void readFrames(size_t framesToRead);

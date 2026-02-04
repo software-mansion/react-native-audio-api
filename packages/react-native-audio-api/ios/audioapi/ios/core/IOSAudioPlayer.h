@@ -30,7 +30,7 @@ class IOSAudioPlayer {
   bool isRunning() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> audioBus_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
   std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio_;
   int channelCount_;

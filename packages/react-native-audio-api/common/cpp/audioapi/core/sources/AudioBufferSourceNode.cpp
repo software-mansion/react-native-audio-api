@@ -103,7 +103,7 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
   } else {
     alignedBus_ = std::make_shared<AudioBuffer>(*buffer_);
   }
-  audioBus_ =
+  audioBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   playbackRateBus_ = std::make_shared<AudioBuffer>(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
