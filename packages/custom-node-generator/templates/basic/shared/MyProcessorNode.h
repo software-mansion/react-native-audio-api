@@ -6,11 +6,11 @@ class AudioBuffer;
 
 class MyProcessorNode : public AudioNode {
 public:
-  explicit MyProcessorNode(BaseAudioContext *context);
+  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context, );
 
 protected:
   std::shared_ptr<AudioBuffer>
-  processNode(const std::shared_ptr<AudioBuffer> &bus,
+  processNode(const std::shared_ptr<AudioBuffer> &buffer,
               int framesToProcess) override;
 };
 } // namespace audioapi
