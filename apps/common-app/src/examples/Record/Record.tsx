@@ -20,7 +20,6 @@ enum Status {
 
 const Record: FC = () => {
   const { availableInputs, currentInput, onSelectInput } = useAudioInput();
-  console.log('Available inputs:', availableInputs);
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
