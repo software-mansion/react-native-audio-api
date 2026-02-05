@@ -112,6 +112,15 @@ class AudioBuffer {
   /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
   void copy(const AudioBuffer &source, size_t sourceStart, size_t destinationStart, size_t length);
 
+  /// @brief Deinterleave audio data from a source buffer into this AudioBuffer.
+  /// @param source Pointer to the source buffer containing interleaved audio data.
+  /// @param frames Number of frames to deinterleave from the source buffer.
+  /// @note The source buffer should contain interleaved audio data according to the number of channels in this AudioBuffer.
+  /// Example of interleaved data for stereo (2 channels):
+  /// [L0, R0, L1, R1, L2, R2, ...]
+  /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
+  void deinterleaveFrom(const float *source, size_t frames);
+
   /// @brief Interleave audio data from this AudioBuffer into a destination buffer.
   /// @param destination Pointer to the destination buffer where interleaved audio data will be written.
   /// @param frames Number of frames to interleave into the destination buffer.

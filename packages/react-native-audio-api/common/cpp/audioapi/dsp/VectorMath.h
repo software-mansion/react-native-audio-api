@@ -77,4 +77,10 @@ void interleaveStereo(
     float *outputInterleaved,
     size_t numberOfFrames);
 
+void deinterleaveStereo(
+    const float *inputInterleaved,
+    float *outputLeft,
+    float *outputRight,
+    size_t numberOfFrames);
+
 } // namespace audioapi::dsp

@@ -103,6 +103,16 @@ float computeConvolution(const float *state, const float *kernel, size_t kernelS
     return result;
 }
 
+void deinterleaveStereo(
+        const float * __restrict inputInterleaved,
+        float * __restrict outputLeft,
+        float * __restrict outputRight,
+        size_t numberOfFrames) {
+    float zero = 0.0f;
+    vDSP_vsadd(inputInterleaved, 2, &zero, outputLeft, 1, numberOfFrames);
+    vDSP_vsadd(inputInterleaved + 1, 2, &zero, outputRight, 1, numberOfFrames);
+}
+
 void interleaveStereo(
     const float* __restrict inputLeft,
     const float* __restrict inputRight,
@@ -697,6 +707,58 @@ float computeConvolution(const float *state, const float *kernel, size_t kernelS
     }
 
     return sum;
+}
+
+void deinterleaveStereo(
+        const float * __restrict inputInterleaved,
+        float * __restrict outputLeft,
+        float * __restrict outputRight,
+        size_t numberOfFrames) {
+
+    size_t n = numberOfFrames;
+
+#if defined(HAVE_ARM_NEON_INTRINSICS)
+    // process 4 frames (8 samples) at a time using NEON
+    size_t group = n / 4;
+    while (group--) {
+        // vld2q_f32 deinterleaves L and R into separate registers in one hardware op
+        float32x4x2_t v = vld2q_f32(inputInterleaved);
+        vst1q_f32(outputLeft, v.val[0]);
+        vst1q_f32(outputRight, v.val[1]);
+
+        inputInterleaved += 8;
+        outputLeft += 4;
+        outputRight += 4;
+    }
+    n %= 4;
+#elif defined(HAVE_X86_SSE2)
+    // process 4 frames (8 samples) at a time using SSE
+    size_t group = n / 4;
+    while (group--) {
+        // load two 128-bit registers (8 floats total)
+        __m128 s0 = _mm_loadu_ps(inputInterleaved);
+        __m128 s1 = _mm_loadu_ps(inputInterleaved + 4);
+
+        // use shuffle to group the Left samples and Right samples
+        // mask 0x88 (2,0,2,0) picks indices 0 and 2 from both s0 and s1
+        // mask 0xDD (3,1,3,1) picks indices 1 and 3 from both s0 and s1
+        __m128 left_v  = _mm_shuffle_ps(s0, s1, _MM_SHUFFLE(2, 0, 2, 0));
+        __m128 right_v = _mm_shuffle_ps(s0, s1, _MM_SHUFFLE(3, 1, 3, 1));
+
+        _mm_storeu_ps(outputLeft, left_v);
+        _mm_storeu_ps(outputRight, right_v);
+
+        inputInterleaved += 8;
+        outputLeft += 4;
+        outputRight += 4;
+    }
+    n %= 4;
+#endif
+
+    while (n--) {
+        *outputLeft++ = *inputInterleaved++;
+        *outputRight++ = *inputInterleaved++;
+    }
 }
 
 void interleaveStereo(

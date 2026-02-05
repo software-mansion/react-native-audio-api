@@ -14,13 +14,10 @@
 // source:
 // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/AudioBus.cpp
 
-const float SQRT_HALF = sqrtf(0.5f);
-
 namespace audioapi {
 
-/**
- * Public interfaces - memory management
- */
+const float SQRT_HALF = sqrtf(0.5f);
+constexpr int BLOCK_SIZE = 64;
 
 AudioBuffer::AudioBuffer(size_t size, int numberOfChannels, float sampleRate)
     : numberOfChannels_(numberOfChannels), sampleRate_(sampleRate), size_(size) {
@@ -83,10 +80,6 @@ AudioBuffer &AudioBuffer::operator=(audioapi::AudioBuffer &&other) noexcept {
   }
   return *this;
 }
-
-/**
- * Public interfaces - getters
- */
 
 AudioArray *AudioBuffer::getChannel(int index) const {
   return channels_[index].get();
@@ -166,10 +159,6 @@ std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(int index) const
   return channels_[index];
 }
 
-/**
- * Public interfaces - audio processing and setters
- */
-
 void AudioBuffer::zero() {
   zero(0, getSize());
 }
@@ -246,6 +235,37 @@ void AudioBuffer::copy(
   sum(source, sourceStart, destinationStart, length);
 }
 
+void AudioBuffer::deinterleaveFrom(const float *source, size_t frames) {
+    if (frames == 0) {
+        return;
+    }
+
+    if (numberOfChannels_ == 1) {
+        channels_[0]->copy(source, 0, 0, frames);
+        return;
+    }
+
+    if (numberOfChannels_ == 2) {
+        dsp::deinterleaveStereo(source, channels_[0]->begin(), channels_[1]->begin(), frames);
+        return;
+    }
+
+    float *channelsPtrs[MAX_CHANNEL_COUNT];
+    for (int i = 0; i < numberOfChannels_; ++i) {
+        channelsPtrs[i] = channels_[i]->begin();
+    }
+
+    for (size_t blockStart = 0; blockStart < frames; blockStart += BLOCK_SIZE) {
+        size_t blockEnd = std::min(blockStart + BLOCK_SIZE, frames);
+        for (size_t i = blockStart; i < blockEnd; ++i) {
+        const float *frameSource = source + (i * numberOfChannels_);
+        for (int ch = 0; ch < numberOfChannels_; ++ch) {
+            channelsPtrs[ch][i] = frameSource[ch];
+        }
+        }
+    }
+}
+
 void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
   if (frames == 0) {
     return;
@@ -266,9 +286,8 @@ void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
     channelsPtrs[i] = channels_[i]->begin();
   }
 
-  constexpr size_t kBlockSize = 64;
-  for (size_t blockStart = 0; blockStart < frames; blockStart += kBlockSize) {
-    size_t blockEnd = std::min(blockStart + kBlockSize, frames);
+  for (size_t blockStart = 0; blockStart < frames; blockStart += BLOCK_SIZE) {
+    size_t blockEnd = std::min(blockStart + BLOCK_SIZE, frames);
     for (size_t i = blockStart; i < blockEnd; ++i) {
       float *frameDest = destination + (i * numberOfChannels_);
       for (int ch = 0; ch < numberOfChannels_; ++ch) {
@@ -324,10 +343,6 @@ void AudioBuffer::createChannels() {
     }
   }
 }
-
-/**
- * Internal tooling - channel summing
- */
 
 void AudioBuffer::discreteSum(
     const AudioBuffer &source,

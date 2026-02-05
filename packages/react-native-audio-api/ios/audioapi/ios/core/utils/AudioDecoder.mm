@@ -53,12 +53,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   auto outputFrames = buffer.size() / outputChannels;
   auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, outputChannels, outputSampleRate);
 
-  for (int ch = 0; ch < outputChannels; ++ch) {
-    auto channelData = audioBuffer->getChannel(ch)->span();
-    for (int i = 0; i < outputFrames; ++i) {
-      channelData[i] = buffer[i * outputChannels + ch];
-    }
-  }
+  audioBuffer->deinterleaveFrom(buffer.data(), outputFrames);
 
   return audioBuffer;
 }
