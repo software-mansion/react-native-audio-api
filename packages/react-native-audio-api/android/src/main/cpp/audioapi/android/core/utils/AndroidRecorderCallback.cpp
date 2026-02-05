@@ -96,7 +96,8 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 
   processingBufferLength_ = std::max(processingBufferLength_, (ma_uint64)maxInputBufferLength_);
 
-  tempArray_ = std::make_shared<AudioArray>(processingBufferLength_);
+  deinterleavingBuffer_ =
+      std::make_shared<AudioBuffer>(processingBufferLength_, channelCount_, sampleRate_);
   processingBuffer_ = ma_malloc(
       processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), nullptr);
 
@@ -150,15 +151,10 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
 /// @param numFrames Number of frames in the audio data.
 void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFrames) {
   auto *inputData = static_cast<float *>(data);
+  deinterleavingBuffer_->deinterleaveFrom(inputData, numFrames);
 
-  for (int channel = 0; channel < channelCount_; ++channel) {
-    auto channelData = tempArray_->span();
-
-    for (int frame = 0; frame < numFrames; ++frame) {
-      channelData[frame] = inputData[frame * channelCount_ + channel];
-    }
-
-    circularBus_[channel]->push_back(*tempArray_, numFrames);
+  for (int ch = 0; ch < channelCount_; ++ch) {
+    circularBus_[ch]->push_back(*deinterleavingBuffer_->getChannel(ch), numFrames);
   }
 }
 

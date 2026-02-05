@@ -43,8 +43,6 @@ class AudioRecorderCallback {
   uint64_t callbackId_;
   size_t ringBufferSize_;
 
-  std::shared_ptr<AudioArray> tempArray_;
-
   std::atomic<uint64_t> errorCallbackId_{0};
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;

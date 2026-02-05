@@ -126,8 +126,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
 void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto size = std::min(fftSize_, length);
 
-  inputArray_->pop_back(*tempArray_, size, std::max(0, fftSize_ - size), true);
-  tempArray_->copyTo(data, 0, 0, size);
+  inputArray_->pop_back(data, size, std::max(0, fftSize_ - size), true);
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {

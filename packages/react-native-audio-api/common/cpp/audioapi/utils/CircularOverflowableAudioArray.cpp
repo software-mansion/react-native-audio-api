@@ -9,45 +9,53 @@ CircularOverflowableAudioArray::CircularOverflowableAudioArray(size_t size) noex
     : AudioArray(size) {}
 
 void CircularOverflowableAudioArray::write(const AudioArray &data, const size_t size) {
-  size_t writeIndex = vWriteIndex_.load(std::memory_order_relaxed);
+  write(data.begin(), size);
+}
 
-  if (size > size_) {
-    return; // Ignore write if size exceeds buffer size
-  }
+void CircularOverflowableAudioArray::write(const float *data, size_t size) {
+    size_t writeIndex = vWriteIndex_.load(std::memory_order_relaxed);
 
-  /// Advances the read index if there is not enough space
-  readLock_.lock();
-  size_t availableSpace = (size_ + vReadIndex_ - writeIndex - 1) % size_;
-  if (size > availableSpace) {
-    vReadIndex_ = (writeIndex + size + 1) % size_;
-  }
-  readLock_.unlock();
+    if (size > size_) {
+        return; // Ignore write if size exceeds buffer size
+    }
 
-  size_t partSize = size_ - writeIndex;
-  if (size > partSize) {
-    copy(data, 0, writeIndex, partSize);
-    copy(data, partSize, 0, size - partSize);
-  } else {
-    copy(data, 0, writeIndex, size);
-  }
-  vWriteIndex_.store((writeIndex + size) % size_, std::memory_order_relaxed);
+    /// Advances the read index if there is not enough space
+    readLock_.lock();
+    size_t availableSpace = (size_ + vReadIndex_ - writeIndex - 1) % size_;
+    if (size > availableSpace) {
+        vReadIndex_ = (writeIndex + size + 1) % size_;
+    }
+    readLock_.unlock();
+
+    size_t partSize = size_ - writeIndex;
+    if (size > partSize) {
+        copy(data, 0, writeIndex, partSize);
+        copy(data, partSize, 0, size - partSize);
+    } else {
+        copy(data, 0, writeIndex, size);
+    }
+    vWriteIndex_.store((writeIndex + size) % size_, std::memory_order_relaxed);
 }
 
 size_t CircularOverflowableAudioArray::read(AudioArray &data, size_t size) const {
-  readLock_.lock();
-  size_t availableSpace = getAvailableSpace();
-  size_t readSize = std::min(size, availableSpace);
+  return read(data.begin(), size);
+}
 
-  size_t partSize = size_ - vReadIndex_;
-  if (readSize > partSize) {
-    data.copy(*this, vReadIndex_, 0, partSize);
-    data.copy(*this, 0, partSize, readSize - partSize);
-  } else {
-    data.copy(*this, vReadIndex_, 0, readSize);
-  }
-  vReadIndex_ = (vReadIndex_ + readSize) % size_;
-  readLock_.unlock();
-  return readSize;
+size_t CircularOverflowableAudioArray::read(float *data, size_t size) const {
+    readLock_.lock();
+    size_t availableSpace = getAvailableSpace();
+    size_t readSize = std::min(size, availableSpace);
+
+    size_t partSize = size_ - vReadIndex_;
+    if (readSize > partSize) {
+        copyTo(data, vReadIndex_, 0, partSize);
+        copyTo(data, 0, partSize, readSize - partSize);
+    } else {
+        copyTo(data, vReadIndex_, 0, readSize);
+    }
+    vReadIndex_ = (vReadIndex_ + readSize) % size_;
+    readLock_.unlock();
+    return readSize;
 }
 
 size_t CircularOverflowableAudioArray::getAvailableSpace() const {

@@ -66,9 +66,6 @@ class AudioRecorder {
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
 
-  std::shared_ptr<AudioArray> tempArray_;
-  size_t maxBufferSizeInFrames_ = 0;
-
   std::mutex callbackMutex_;
   std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;

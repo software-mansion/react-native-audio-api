@@ -53,8 +53,7 @@ IOSAudioRecorder::IOSAudioRecorder(
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
           float *data = (float *)inputBuffer->mBuffers[channel].mData;
 
-          tempArray_->copy(data, 0, 0, numFrames);
-          adapterNode_->buff_[channel]->write(*tempArray_, numFrames);
+          adapterNode_->buff_[channel]->write(data, numFrames);
         }
       }
     }
@@ -100,12 +99,12 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   [AudioEngine.sharedInstance stopIfNecessary];
 
   // Estimate the maximum input buffer lengths that can be expected from the sink node
-  maxBufferSizeInFrames_ = [nativeRecorder_ getBufferSize];
+  size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
     auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
-                          ->openFile(inputFormat, maxBufferSizeInFrames_, fileNameOverride);
+                          ->openFile(inputFormat, maxInputBufferLength, fileNameOverride);
 
     if (fileResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -117,7 +116,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
 
   if (usesCallback()) {
     auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                              ->prepare(inputFormat, maxBufferSizeInFrames_);
+                              ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -126,9 +125,8 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
-    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
     // TODO: pass sample rate, in case conversion is necessary
-    adapterNode_->init(maxBufferSizeInFrames_, inputFormat.channelCount);
+    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
   }
 
   [nativeRecorder_ start];
@@ -228,8 +226,8 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
   adapterNode_ = node;
 
   if (!isIdle()) {
-    tempArray_ = std::make_shared<AudioArray>(maxBufferSizeInFrames_);
-    adapterNode_->init(maxBufferSizeInFrames_, [nativeRecorder_ getInputFormat].channelCount);
+    adapterNode_->init(
+        [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -241,7 +239,6 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 void IOSAudioRecorder::disconnect()
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  tempArray_ = nullptr;
   adapterNode_ = nullptr;
   isConnected_.store(false, std::memory_order_release);
 }
