@@ -10,10 +10,6 @@
 #include <utility>
 #include <vector>
 
-// Implementation of channel summing/mixing is based on the WebKit approach,
-// source:
-// https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/AudioBus.cpp
-
 namespace audioapi {
 
 const float SQRT_HALF = sqrtf(0.5f);
