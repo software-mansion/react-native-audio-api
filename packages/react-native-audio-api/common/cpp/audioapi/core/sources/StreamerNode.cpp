@@ -34,8 +34,8 @@ StreamerNode::StreamerNode(
       frame_(nullptr),
       swrCtx_(nullptr),
       resampledData_(nullptr),
-      bufferedBus_(nullptr),
-      bufferedBusSize_(0),
+      bufferedAudioBuffer_(nullptr),
+      bufferedAudioBufferSize_(0),
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {}
@@ -131,26 +131,26 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     return processingBuffer;
   }
 
-  int bufferRemaining = bufferedBusSize_ - processedSamples_;
+  int bufferRemaining = bufferedAudioBufferSize_ - processedSamples_;
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
-    if (bufferedBus_ != nullptr) {
-      processingBuffer->copy(*bufferedBus_, processedSamples_, 0, bufferRemaining);
+    if (bufferedAudioBuffer_ != nullptr) {
+      processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
     }
     StreamingData data;
     auto res = receiver_.try_receive(data);
     if (res == channels::spsc::ResponseStatus::SUCCESS) {
-      bufferedBus_ = std::make_shared<AudioBuffer>(std::move(data.buffer));
-      bufferedBusSize_ = data.size;
+      bufferedAudioBuffer_ = std::make_shared<AudioBuffer>(std::move(data.buffer));
+      bufferedAudioBufferSize_ = data.size;
       processedSamples_ = 0;
     } else {
-      bufferedBus_ = nullptr;
+      bufferedAudioBuffer_ = nullptr;
     }
   }
-  if (bufferedBus_ != nullptr) {
-    processingBuffer->copy(*bufferedBus_, processedSamples_, alreadyProcessed, framesToProcess);
+  if (bufferedAudioBuffer_ != nullptr) {
+    processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -261,7 +261,7 @@ bool StreamerNode::processFrameWithResampler(
   AudioBuffer buffer =
       AudioBuffer(converted_samples, codecCtx_->ch_layout.nb_channels, context->getSampleRate());
 
-  for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
+  for (size_t ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
     buffer.getChannel(ch)->copy(src, 0, 0, converted_samples);
   }

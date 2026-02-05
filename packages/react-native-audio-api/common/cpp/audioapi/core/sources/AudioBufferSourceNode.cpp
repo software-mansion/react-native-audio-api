@@ -22,7 +22,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
   buffer_ = std::shared_ptr<AudioBuffer>(options.buffer);
-  alignedBus_ = std::shared_ptr<AudioBuffer>(nullptr);
+  alignedBuffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
   isInitialized_ = true;
 }
@@ -31,7 +31,7 @@ AudioBufferSourceNode::~AudioBufferSourceNode() {
   Locker locker(getBufferLock());
 
   buffer_.reset();
-  alignedBus_.reset();
+  alignedBuffer_.reset();
 }
 
 bool AudioBufferSourceNode::getLoop() const {
@@ -81,7 +81,7 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
 
   if (buffer == nullptr || context == nullptr) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-    alignedBus_ = std::shared_ptr<AudioBuffer>(nullptr);
+    alignedBuffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     loopEnd_ = 0;
     return;
   }
@@ -89,23 +89,23 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
   buffer_ = buffer;
   channelCount_ = buffer_->getNumberOfChannels();
 
-  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
+  stretch_->presetDefault(static_cast<int>(channelCount_), buffer_->getSampleRate());
 
   if (pitchCorrection_) {
     int extraTailFrames =
         static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
     size_t totalSize = buffer_->getSize() + extraTailFrames;
 
-    alignedBus_ = std::make_shared<AudioBuffer>(totalSize, channelCount_, buffer_->getSampleRate());
-    alignedBus_->copy(*buffer_, 0, 0, buffer_->getSize());
+    alignedBuffer_ = std::make_shared<AudioBuffer>(totalSize, channelCount_, buffer_->getSampleRate());
+    alignedBuffer_->copy(*buffer_, 0, 0, buffer_->getSize());
 
-    alignedBus_->zero(buffer_->getSize(), extraTailFrames);
+    alignedBuffer_->zero(buffer_->getSize(), extraTailFrames);
   } else {
-    alignedBus_ = std::make_shared<AudioBuffer>(*buffer_);
+    alignedBuffer_ = std::make_shared<AudioBuffer>(*buffer_);
   }
   audioBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  playbackRateBus_ = std::make_shared<AudioBuffer>(
+  playbackRateBuffer_ = std::make_shared<AudioBuffer>(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
@@ -118,23 +118,23 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     AudioScheduledSourceNode::stop(when + duration);
   }
 
-  if (!alignedBus_) {
+  if (!alignedBuffer_) {
     return;
   }
 
   offset =
-      std::min(offset, static_cast<double>(alignedBus_->getSize()) / alignedBus_->getSampleRate());
+      std::min(offset, static_cast<double>(alignedBuffer_->getSize()) / alignedBuffer_->getSampleRate());
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);
   }
 
-  vReadIndex_ = static_cast<double>(alignedBus_->getSampleRate() * offset);
+  vReadIndex_ = static_cast<double>(alignedBuffer_->getSampleRate() * offset);
 }
 
 void AudioBufferSourceNode::disable() {
   AudioScheduledSourceNode::disable();
-  alignedBus_.reset();
+  alignedBuffer_.reset();
 }
 
 void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
@@ -150,7 +150,7 @@ std::shared_ptr<AudioBuffer> AudioBufferSourceNode::processNode(
     int framesToProcess) {
   if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
-    if (!alignedBus_) {
+    if (!alignedBuffer_) {
       processingBuffer->zero();
       return processingBuffer;
     }
@@ -223,16 +223,16 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 
     assert(readIndex >= 0);
     assert(writeIndex >= 0);
-    assert(readIndex + framesToCopy <= alignedBus_->getSize());
+    assert(readIndex + framesToCopy <= alignedBuffer_->getSize());
     assert(writeIndex + framesToCopy <= processingBuffer->getSize());
 
     // Direction is forward, we can normally copy the data
     if (direction == 1) {
-      processingBuffer->copy(*alignedBus_, readIndex, writeIndex, framesToCopy);
+      processingBuffer->copy(*alignedBuffer_, readIndex, writeIndex, framesToCopy);
     } else {
-      for (int ch = 0; ch < processingBuffer->getNumberOfChannels(); ch += 1) {
+      for (size_t ch = 0; ch < processingBuffer->getNumberOfChannels(); ch += 1) {
         processingBuffer->getChannel(ch)->copyReverse(
-            *alignedBus_->getChannel(ch), readIndex, writeIndex, framesToCopy);
+            *alignedBuffer_->getChannel(ch), readIndex, writeIndex, framesToCopy);
       }
     }
 
@@ -298,9 +298,9 @@ void AudioBufferSourceNode::processWithInterpolation(
       nextReadIndex = loop_ ? frameStart : readIndex;
     }
 
-    for (int i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
+    for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i++) {
       auto destination = processingBuffer->getChannel(i)->span();
-      const auto source = alignedBus_->getChannel(i)->span();
+      const auto source = alignedBuffer_->getChannel(i)->span();
 
       destination[writeIndex] = dsp::linearInterpolate(source, readIndex, nextReadIndex, factor);
     }
@@ -329,7 +329,7 @@ double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {
 }
 
 double AudioBufferSourceNode::getVirtualEndFrame(float sampleRate) {
-  auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
+  auto inputBufferLength = static_cast<double>(alignedBuffer_->getSize());
   auto loopEndFrame = loopEnd_ * sampleRate;
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_

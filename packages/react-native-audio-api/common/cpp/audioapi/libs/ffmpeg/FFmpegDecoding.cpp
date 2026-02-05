@@ -249,7 +249,7 @@ std::shared_ptr<AudioBuffer> decodeAudioFrames(
   auto audioBuffer =
       std::make_shared<AudioBuffer>(outputFrames, output_channel_count, output_sample_rate);
 
-  for (int ch = 0; ch < output_channel_count; ++ch) {
+  for (size_t ch = 0; ch < output_channel_count; ++ch) {
     auto channelData = audioBuffer->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = decoded_buffer[i * output_channel_count + ch];

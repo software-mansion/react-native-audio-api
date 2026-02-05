@@ -26,48 +26,46 @@ class AudioArray {
   AudioArray &operator=(const AudioArray &other);
   AudioArray &operator=(AudioArray &&other) noexcept;
 
-  [[nodiscard]] inline size_t getSize() const noexcept {
+  [[nodiscard]] size_t getSize() const noexcept {
     return size_;
   }
 
-  inline float &operator[](size_t index) noexcept {
+  float &operator[](size_t index) noexcept {
     return data_[index];
   }
-  inline const float &operator[](size_t index) const noexcept {
+  const float &operator[](size_t index) const noexcept {
     return data_[index];
   }
 
-  [[nodiscard]] inline float *begin() noexcept {
+  [[nodiscard]] float *begin() noexcept {
     return data_.get();
   }
-  [[nodiscard]] inline float *end() noexcept {
+  [[nodiscard]] float *end() noexcept {
     return data_.get() + size_;
   }
 
-  [[nodiscard]] inline const float *begin() const noexcept {
+  [[nodiscard]] const float *begin() const noexcept {
     return data_.get();
   }
-  [[nodiscard]] inline const float *end() const noexcept {
+  [[nodiscard]] const float *end() const noexcept {
     return data_.get() + size_;
   }
 
-  [[nodiscard]] inline std::span<float> span() noexcept {
+  [[nodiscard]] std::span<float> span() noexcept {
     return {data_.get(), size_};
   }
 
-  [[nodiscard]] inline std::span<const float> span() const noexcept {
+  [[nodiscard]] std::span<const float> span() const noexcept {
     return {data_.get(), size_};
   }
 
-  [[nodiscard]] inline std::span<float> subSpan(size_t length, size_t offset = 0) {
+  [[nodiscard]] std::span<float> subSpan(size_t length, size_t offset = 0) {
     if (offset + length > size_) {
       throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
     }
 
     return {data_.get() + offset, length};
   }
-
-  void resize(size_t size);
 
   void zero() noexcept;
   void zero(size_t start, size_t length) noexcept;

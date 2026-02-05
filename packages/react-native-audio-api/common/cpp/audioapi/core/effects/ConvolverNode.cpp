@@ -58,7 +58,7 @@ void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
       calculateNormalizationScale();
     threadPool_ = std::make_shared<ThreadPool>(4);
     convolvers_.clear();
-    for (int i = 0; i < buffer->getNumberOfChannels(); ++i) {
+    for (size_t i = 0; i < buffer->getNumberOfChannels(); ++i) {
       convolvers_.emplace_back();
       AudioArray channelData(*buffer->getChannel(i));
       convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getSize());
@@ -121,7 +121,7 @@ std::shared_ptr<AudioBuffer> ConvolverNode::processNode(
   audioBuffer_->copy(*internalBuffer_, 0, 0, framesToProcess);
   int remainingFrames = internalBufferIndex_ - framesToProcess;
   if (remainingFrames > 0) {
-    for (int ch = 0; ch < internalBuffer_->getNumberOfChannels(); ++ch) {
+    for (size_t ch = 0; ch < internalBuffer_->getNumberOfChannels(); ++ch) {
       internalBuffer_->getChannel(ch)->copyWithin(framesToProcess, 0, remainingFrames);
     }
   }
@@ -141,7 +141,7 @@ void ConvolverNode::calculateNormalizationScale() {
 
   float power = 0;
 
-  for (int channel = 0; channel < numberOfChannels; ++channel) {
+  for (size_t channel = 0; channel < numberOfChannels; ++channel) {
     float channelPower = 0;
     auto channelData = buffer_->getChannel(channel)->span();
     for (int i = 0; i < length; ++i) {

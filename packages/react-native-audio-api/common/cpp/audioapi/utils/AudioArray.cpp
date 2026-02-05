@@ -24,7 +24,7 @@ AudioArray::AudioArray(const float *data, size_t size) : size_(size) {
 AudioArray::AudioArray(const AudioArray &other) : size_(other.size_) {
   if (size_ > 0 && other.data_) {
     data_ = std::make_unique<float[]>(size_);
-    std::memcpy(data_.get(), other.data_.get(), size_ * sizeof(float));
+    copy(other);
   }
 }
 
@@ -58,19 +58,6 @@ AudioArray &AudioArray::operator=(audioapi::AudioArray &&other) noexcept {
   return *this;
 }
 
-void AudioArray::resize(size_t size) {
-  if (size == size_ && data_ != nullptr) {
-    zero();
-    return;
-  }
-
-  size_ = size;
-  data_ = (size_ > 0) ? std::make_unique<float[]>(size_) : nullptr;
-  if (data_ != nullptr) {
-    zero();
-  }
-}
-
 void AudioArray::zero() noexcept {
   zero(0, size_);
 }
@@ -89,7 +76,7 @@ void AudioArray::sum(
     size_t destinationStart,
     size_t length,
     float gain) {
-  if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
+  if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
     throw std::out_of_range("Not enough data to sum two vectors.");
   }
 
@@ -105,7 +92,7 @@ void AudioArray::multiply(const AudioArray &source) {
 }
 
 void AudioArray::multiply(const audioapi::AudioArray &source, size_t length) {
-  if (size_ < length || source.size_ < length) {
+  if (size_ < length || source.size_ < length) [[unlikely]] {
     throw std::out_of_range("Not enough data to perform vector multiplication.");
   }
 
@@ -124,7 +111,7 @@ void AudioArray::copy(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  if (source.size_ - sourceStart < length) {
+  if (source.size_ - sourceStart < length) [[unlikely]] {
     throw std::out_of_range("Not enough data to copy from source.");
   }
 
@@ -136,7 +123,7 @@ void AudioArray::copy(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  if (size_ - destinationStart < length) {
+  if (size_ - destinationStart < length) [[unlikely]] {
     throw std::out_of_range("Not enough space to copy to destination.");
   }
 
@@ -148,7 +135,7 @@ void AudioArray::copyReverse(
         size_t sourceStart,
         size_t destinationStart,
         size_t length) {
-    if (size_ - destinationStart < length || source.size_ - sourceStart < length) {
+    if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
         throw std::out_of_range("Not enough space to copy to destination or from source.");
     }
 
@@ -166,7 +153,7 @@ void AudioArray::copyTo(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) const {
-  if (size_ - sourceStart < length) {
+  if (size_ - sourceStart < length) [[unlikely]] {
     throw std::out_of_range("Not enough data to copy from source.");
   }
 
@@ -174,7 +161,7 @@ void AudioArray::copyTo(
 }
 
 void AudioArray::copyWithin(size_t sourceStart, size_t destinationStart, size_t length) {
-  if (size_ - sourceStart < length || size_ - destinationStart < length) {
+  if (size_ - sourceStart < length || size_ - destinationStart < length) [[unlikely]] {
     throw std::out_of_range("Not enough space for moving data or data to move.");
   }
 
@@ -208,7 +195,7 @@ float AudioArray::getMaxAbsValue() const {
 }
 
 float AudioArray::computeConvolution(const audioapi::AudioArray &kernel, size_t startIndex) const {
-  if (kernel.size_ > size_ - startIndex) {
+  if (kernel.size_ > size_ - startIndex) [[unlikely]] {
     throw std::out_of_range("Kernal size exceeds available data for convolution.");
   }
 

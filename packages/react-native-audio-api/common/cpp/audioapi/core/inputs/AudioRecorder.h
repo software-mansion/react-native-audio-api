@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>

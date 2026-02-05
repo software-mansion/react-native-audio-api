@@ -15,7 +15,7 @@ std::vector<int16_t> AudioStretcher::castToInt16Buffer(AudioBuffer &buffer) {
 
   std::vector<int16_t> int16Buffer(numFrames * numChannels);
 
-  for (int ch = 0; ch < numChannels; ++ch) {
+  for (size_t ch = 0; ch < numChannels; ++ch) {
     auto channelData = buffer.getChannel(ch)->span();
     for (size_t i = 0; i < numFrames; ++i) {
       int16Buffer[i * numChannels + ch] = floatToInt16(channelData[i]);
@@ -61,7 +61,7 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
 
   auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, outputChannels, sampleRate);
 
-  for (int ch = 0; ch < outputChannels; ++ch) {
+  for (size_t ch = 0; ch < outputChannels; ++ch) {
     auto channelData = audioBuffer->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = int16ToFloat(stretchedBuffer[i * outputChannels + ch]);

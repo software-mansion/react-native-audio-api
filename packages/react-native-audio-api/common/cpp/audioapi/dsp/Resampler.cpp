@@ -145,7 +145,7 @@ int DownSampler::process(
 
   auto outputCount = framesToProcess / 2;
 
-  for (int i = 0; i < outputCount; ++i) {
+  for (size_t i = 0; i < outputCount; ++i) {
     // convolution for downsampled samples
     output[i] = stateBuffer_->computeConvolution(*kernel_, 2 * i + 1);
   }

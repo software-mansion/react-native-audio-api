@@ -41,7 +41,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
   // we would need to add sample rate conversion as well or other weird bullshit like resampling
   // context output and not enforcing anything on the system output/input configuration.
   // A lot of words for a couple of lines of implementation :shrug:
-  adapterOutputBus_ =
+  adapterOutputBuffer_ =
       std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   isInitialized_ = true;
 }
@@ -49,7 +49,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
 void RecorderAdapterNode::cleanup() {
   isInitialized_ = false;
   buff_.clear();
-  adapterOutputBus_.reset();
+  adapterOutputBuffer_.reset();
 }
 
 std::shared_ptr<AudioBuffer> RecorderAdapterNode::processNode(
@@ -62,15 +62,15 @@ std::shared_ptr<AudioBuffer> RecorderAdapterNode::processNode(
 
   readFrames(framesToProcess);
 
-  processingBuffer->sum(*adapterOutputBus_, ChannelInterpretation::SPEAKERS);
+  processingBuffer->sum(*adapterOutputBuffer_, ChannelInterpretation::SPEAKERS);
   return processingBuffer;
 }
 
 void RecorderAdapterNode::readFrames(const size_t framesToRead) {
-  adapterOutputBus_->zero();
+  adapterOutputBuffer_->zero();
 
   for (size_t channel = 0; channel < channelCount_; ++channel) {
-    buff_[channel]->read(*adapterOutputBus_->getChannel(channel), framesToRead);
+    buff_[channel]->read(*adapterOutputBuffer_->getChannel(channel), framesToRead);
   }
 }
 

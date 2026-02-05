@@ -24,7 +24,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
   playbackRateParam_ = std::make_shared<AudioParam>(
       options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
 
-  playbackRateBus_ = std::make_shared<AudioBuffer>(
+  playbackRateBuffer_ = std::make_shared<AudioBuffer>(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
@@ -115,12 +115,12 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   auto detune =
       std::clamp(detuneParam_->processKRateParam(framesToProcess, time) / 100.0f, -12.0f, 12.0f);
 
-  playbackRateBus_->zero();
+  playbackRateBuffer_->zero();
 
   auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
   updatePlaybackInfo(
-      playbackRateBus_,
+      playbackRateBuffer_,
       framesNeededToStretch,
       startOffset,
       offsetLength,
@@ -132,10 +132,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
 
-  processWithoutInterpolation(playbackRateBus_, startOffset, offsetLength, playbackRate);
+  processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
 
   stretch_->process(
-      playbackRateBus_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
+      playbackRateBuffer_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);

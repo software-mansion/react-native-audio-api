@@ -29,10 +29,11 @@ namespace audioapi::dsp {
 }
 
 [[nodiscard]] inline float linearToDecibels(float value) {
-  return 20 * log10f(value);
+  return 20.0f * log10f(value);
 }
 
 [[nodiscard]] inline float decibelsToLinear(float value) {
   return static_cast<float>(pow(10, value / 20));
 }
+
 } // namespace audioapi::dsp

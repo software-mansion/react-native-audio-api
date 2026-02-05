@@ -39,7 +39,7 @@ IOSRecorderCallback::~IOSRecorderCallback()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (int i = 0; i < channelCount_; ++i) {
+    for (size_t i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
   }
@@ -116,7 +116,7 @@ void IOSRecorderCallback::cleanup()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (int i = 0; i < channelCount_; ++i) {
+    for (size_t i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
     offloader_.reset();
@@ -148,7 +148,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     if (bufferFormat_.sampleRate == sampleRate_ && bufferFormat_.channelCount == channelCount_ &&
         !bufferFormat_.isInterleaved) {
       // Directly write to circular buffer
-      for (int i = 0; i < channelCount_; ++i) {
+      for (size_t i = 0; i < channelCount_; ++i) {
         auto *data = static_cast<float *>(inputBuffer->mBuffers[i].mData);
         circularBus_[i]->push_back(data, numFrames);
       }
@@ -194,7 +194,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
-    for (int i = 0; i < channelCount_; ++i) {
+    for (size_t i = 0; i < channelCount_; ++i) {
       auto *data = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
       circularBus_[i]->push_back(data, outputFrameCount);
     }

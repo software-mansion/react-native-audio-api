@@ -36,7 +36,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
-  std::shared_ptr<AudioBuffer> playbackRateBus_;
+  std::shared_ptr<AudioBuffer> playbackRateBuffer_;
 
   // k-rate params
   std::shared_ptr<AudioParam> detuneParam_;

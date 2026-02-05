@@ -21,7 +21,10 @@ constexpr int BLOCK_SIZE = 64;
 
 AudioBuffer::AudioBuffer(size_t size, int numberOfChannels, float sampleRate)
     : numberOfChannels_(numberOfChannels), sampleRate_(sampleRate), size_(size) {
-  createChannels();
+  channels_.reserve(numberOfChannels_);
+  for (size_t i = 0; i < numberOfChannels_; i += 1) {
+    channels_.emplace_back(std::make_shared<AudioArrayBuffer>(size_));
+  }
 }
 
 AudioBuffer::AudioBuffer(const audioapi::AudioBufferOptions &options)
@@ -31,10 +34,9 @@ AudioBuffer::AudioBuffer(const AudioBuffer &other)
     : numberOfChannels_(other.numberOfChannels_),
       sampleRate_(other.sampleRate_),
       size_(other.size_) {
-  createChannels();
-
-  for (int i = 0; i < numberOfChannels_; i += 1) {
-    *channels_[i] = *other.channels_[i];
+  channels_.reserve(numberOfChannels_);
+  for (const auto& channel : other.channels_) {
+    channels_.emplace_back(std::make_shared<AudioArrayBuffer>(*channel));
   }
 }
 
@@ -50,15 +52,26 @@ AudioBuffer::AudioBuffer(audioapi::AudioBuffer &&other) noexcept
 
 AudioBuffer &AudioBuffer::operator=(const AudioBuffer &other) {
   if (this != &other) {
-    if (numberOfChannels_ != other.numberOfChannels_ || size_ != other.size_) {
-      numberOfChannels_ = other.numberOfChannels_;
-      size_ = other.size_;
-      createChannels();
-    }
-
     sampleRate_ = other.sampleRate_;
 
-    for (int i = 0; i < numberOfChannels_; i += 1) {
+    if (numberOfChannels_ != other.numberOfChannels_) {
+      numberOfChannels_ = other.numberOfChannels_;
+      size_ = other.size_;
+      channels_.clear();
+      channels_.reserve(numberOfChannels_);
+
+      for (const auto& channel : other.channels_) {
+        channels_.emplace_back(std::make_shared<AudioArrayBuffer>(*channel));
+      }
+
+      return *this;
+    }
+
+    if (size_ != other.size_) {
+      size_ = other.size_;
+    }
+
+    for (size_t i = 0; i < numberOfChannels_; i += 1) {
       *channels_[i] = *other.channels_[i];
     }
   }
@@ -81,7 +94,7 @@ AudioBuffer &AudioBuffer::operator=(audioapi::AudioBuffer &&other) noexcept {
   return *this;
 }
 
-AudioArray *AudioBuffer::getChannel(int index) const {
+AudioArray *AudioBuffer::getChannel(size_t index) const {
   return channels_[index].get();
 }
 
@@ -155,7 +168,7 @@ AudioArray *AudioBuffer::getChannelByType(int channelType) const {
   }
 }
 
-std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(int index) const {
+std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(size_t index) const {
   return channels_[index];
 }
 
@@ -183,8 +196,8 @@ void AudioBuffer::sum(
     return;
   }
 
-  int numberOfSourceChannels = source.getNumberOfChannels();
-  int numberOfChannels = getNumberOfChannels();
+  auto numberOfSourceChannels = source.getNumberOfChannels();
+  auto numberOfChannels = getNumberOfChannels();
 
   if (interpretation == ChannelInterpretation::DISCRETE) {
     discreteSum(source, sourceStart, destinationStart, length);
@@ -204,7 +217,7 @@ void AudioBuffer::sum(
   }
 
   // Source and destination channel counts are the same. Just sum the channels.
-  for (int i = 0; i < getNumberOfChannels(); i += 1) {
+  for (size_t i = 0; i < getNumberOfChannels(); i += 1) {
     channels_[i]->sum(*source.channels_[i], sourceStart, destinationStart, length);
   }
 }
@@ -223,7 +236,7 @@ void AudioBuffer::copy(
   }
 
   if (source.getNumberOfChannels() == getNumberOfChannels()) {
-    for (int i = 0; i < getNumberOfChannels(); i += 1) {
+    for (size_t i = 0; i < getNumberOfChannels(); i += 1) {
       channels_[i]->copy(*source.channels_[i], sourceStart, destinationStart, length);
     }
 
@@ -251,7 +264,7 @@ void AudioBuffer::deinterleaveFrom(const float *source, size_t frames) {
     }
 
     float *channelsPtrs[MAX_CHANNEL_COUNT];
-    for (int i = 0; i < numberOfChannels_; ++i) {
+    for (size_t i = 0; i < numberOfChannels_; ++i) {
         channelsPtrs[i] = channels_[i]->begin();
     }
 
@@ -259,7 +272,7 @@ void AudioBuffer::deinterleaveFrom(const float *source, size_t frames) {
         size_t blockEnd = std::min(blockStart + BLOCK_SIZE, frames);
         for (size_t i = blockStart; i < blockEnd; ++i) {
         const float *frameSource = source + (i * numberOfChannels_);
-        for (int ch = 0; ch < numberOfChannels_; ++ch) {
+        for (size_t ch = 0; ch < numberOfChannels_; ++ch) {
             channelsPtrs[ch][i] = frameSource[ch];
         }
         }
@@ -282,7 +295,7 @@ void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
   }
 
   float *channelsPtrs[MAX_CHANNEL_COUNT];
-  for (int i = 0; i < numberOfChannels_; ++i) {
+  for (size_t i = 0; i < numberOfChannels_; ++i) {
     channelsPtrs[i] = channels_[i]->begin();
   }
 
@@ -290,7 +303,7 @@ void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
     size_t blockEnd = std::min(blockStart + BLOCK_SIZE, frames);
     for (size_t i = blockStart; i < blockEnd; ++i) {
       float *frameDest = destination + (i * numberOfChannels_);
-      for (int ch = 0; ch < numberOfChannels_; ++ch) {
+      for (size_t ch = 0; ch < numberOfChannels_; ++ch) {
         frameDest[ch] = channelsPtrs[ch][i];
       }
     }
@@ -329,32 +342,17 @@ float AudioBuffer::maxAbsValue() const {
  * Internal tooling - channel initialization
  */
 
-void AudioBuffer::createChannels() {
-  if (channels_.size() != static_cast<size_t>(numberOfChannels_)) {
-    channels_.clear();
-    channels_.reserve(numberOfChannels_);
-
-    for (int i = 0; i < numberOfChannels_; i += 1) {
-      channels_.emplace_back(std::make_shared<AudioArrayBuffer>(size_));
-    }
-  } else {
-    for (int i = 0; i < numberOfChannels_; i += 1) {
-      channels_[i]->resize(size_);
-    }
-  }
-}
-
 void AudioBuffer::discreteSum(
     const AudioBuffer &source,
     size_t sourceStart,
     size_t destinationStart,
     size_t length) const {
-  int numberOfChannels = std::min(getNumberOfChannels(), source.getNumberOfChannels());
+  auto numberOfChannels = std::min(getNumberOfChannels(), source.getNumberOfChannels());
 
   // In case of source > destination, we "down-mix" and drop the extra channels.
   // In case of source < destination, we "up-mix" as many channels as we have,
   // leaving the remaining channels untouched.
-  for (int i = 0; i < numberOfChannels; i++) {
+  for (size_t i = 0; i < numberOfChannels; i++) {
     channels_[i]->sum(*source.channels_[i], sourceStart, destinationStart, length);
   }
 }
@@ -364,8 +362,8 @@ void AudioBuffer::sumByUpMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  int numberOfSourceChannels = source.getNumberOfChannels();
-  int numberOfChannels = getNumberOfChannels();
+  auto numberOfSourceChannels = source.getNumberOfChannels();
+  auto numberOfChannels = getNumberOfChannels();
 
   // Mono to stereo (1 -> 2, 4)
   if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
@@ -415,8 +413,8 @@ void AudioBuffer::sumByDownMixing(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  int numberOfSourceChannels = source.getNumberOfChannels();
-  int numberOfChannels = getNumberOfChannels();
+  auto numberOfSourceChannels = source.getNumberOfChannels();
+  auto numberOfChannels = getNumberOfChannels();
 
   // Stereo to mono (2 -> 1): output += 0.5 * (input.left + input.right).
   if (numberOfSourceChannels == 2 && numberOfChannels == 1) {

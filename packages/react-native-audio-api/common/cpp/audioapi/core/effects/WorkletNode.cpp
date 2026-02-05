@@ -49,7 +49,7 @@ std::shared_ptr<AudioBuffer> WorkletNode::processNode(
     workletRunner_.executeOnRuntimeSync([this, channelCount_](jsi::Runtime &uiRuntimeRaw) {
       /// Arguments preparation
       auto jsArray = jsi::Array(uiRuntimeRaw, channelCount_);
-      for (int ch = 0; ch < channelCount_; ch++) {
+      for (size_t ch = 0; ch < channelCount_; ch++) {
         auto sharedAudioArray = std::make_shared<AudioArrayBuffer>(bufferLength_);
         sharedAudioArray->copy(*buffer_->getChannel(ch));
         auto sharedAudioArraySize = sharedAudioArray->size();

@@ -36,7 +36,7 @@ class RecorderAdapterNode : public AudioNode {
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
-  std::shared_ptr<AudioBuffer> adapterOutputBus_;
+  std::shared_ptr<AudioBuffer> adapterOutputBuffer_;
 
  private:
   /// @brief Read audio frames from the recorder's internal circular buffer into output buffers.

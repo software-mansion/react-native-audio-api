@@ -17,7 +17,7 @@ WaveShaperNode::WaveShaperNode(
     : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
-  for (int i = 0; i < channelCount_; i++) {
+  for (size_t i = 0; i < channelCount_; i++) {
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
   setCurve(options.curve);
@@ -70,7 +70,7 @@ std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
     return processingBuffer;
   }
 
-  for (int channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
+  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
     auto channelData = processingBuffer->getChannel(channel);
 
     waveShapers_[channel]->process(*channelData, framesToProcess);

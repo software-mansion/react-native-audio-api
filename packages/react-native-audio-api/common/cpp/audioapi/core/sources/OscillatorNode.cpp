@@ -92,7 +92,7 @@ std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
 
   auto finalPhase = phase_;
 
-  for (int ch = 0; ch < numChannels; ch += 1) {
+  for (size_t ch = 0; ch < numChannels; ch += 1) {
     auto channelSpan = processingBuffer->getChannel(ch)->span();
     float currentPhase = phase_;
 

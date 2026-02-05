@@ -379,7 +379,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
       auto const data = static_cast<float *>(audioData);
       deinterleavingBuffer_->deinterleaveFrom(data, numFrames);
 
-      for (int ch = 0; ch < streamChannelCount_; ++ch) {
+      for (size_t ch = 0; ch < streamChannelCount_; ++ch) {
         adapterNode_->buff_[ch]->write(*deinterleavingBuffer_->getChannel(ch), numFrames);
       }
     }

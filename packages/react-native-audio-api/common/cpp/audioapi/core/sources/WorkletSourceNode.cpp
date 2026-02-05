@@ -77,7 +77,7 @@ std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
   }
 
   // Copy the processed data back to the AudioBuffer
-  for (int i = 0; i < outputChannelCount; ++i) {
+  for (size_t i = 0; i < outputChannelCount; ++i) {
     processingBuffer->getChannel(i)->copy(
         *outputBuffsHandles_[i], 0, startOffset, nonSilentFramesToProcess);
   }

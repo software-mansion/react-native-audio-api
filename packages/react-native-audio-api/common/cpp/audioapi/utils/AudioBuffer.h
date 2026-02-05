@@ -34,34 +34,36 @@ class AudioBuffer {
   AudioBuffer &operator=(AudioBuffer &&other) noexcept;
   ~AudioBuffer() = default;
 
-  [[nodiscard]] inline int getNumberOfChannels() const noexcept {
+  [[nodiscard]] size_t getNumberOfChannels() const noexcept {
     return numberOfChannels_;
   }
-  [[nodiscard]] inline float getSampleRate() const noexcept {
+  [[nodiscard]] float getSampleRate() const noexcept {
     return sampleRate_;
   }
-  [[nodiscard]] inline size_t getSize() const noexcept {
+  [[nodiscard]] size_t getSize() const noexcept {
     return size_;
   }
 
   [[nodiscard]] double getDuration() const noexcept {
-    return static_cast<double>(size_) / getSampleRate();
+    return static_cast<double>(size_) / static_cast<double>(getSampleRate());
   }
 
   /// @brief Get the AudioArray for a specific channel index.
   /// @param index The channel index.
   /// @return Pointer to the AudioArray for the specified channel - not owning.
-  [[nodiscard]] AudioArray *getChannel(int index) const;
+  [[nodiscard]] AudioArray *getChannel(size_t index) const;
 
   /// @brief Get the AudioArray for a specific channel type.
-  /// @param channelType The channel type (e.g., ChannelLeft, ChannelRight).
+  /// @param channelType The channel type: ChannelMono = 0, ChannelLeft = 0,
+  /// ChannelRight = 1, ChannelCenter = 2, ChannelLFE = 3,
+  /// ChannelSurroundLeft = 4, ChannelSurroundRight = 5
   /// @return Pointer to the AudioArray for the specified channel type - not owning.
   [[nodiscard]] AudioArray *getChannelByType(int channelType) const;
 
   /// @brief Get a copy of shared pointer to the AudioArray for a specific channel index.
   /// @param index The channel index.
   /// @return Copy of shared pointer to the AudioArray for the specified channel
-  [[nodiscard]] std::shared_ptr<AudioArrayBuffer> getSharedChannel(int index) const;
+  [[nodiscard]] std::shared_ptr<AudioArrayBuffer> getSharedChannel(size_t index) const;
 
   AudioArray &operator[](size_t index) {
     return *channels_[index];
@@ -138,11 +140,10 @@ class AudioBuffer {
  private:
   std::vector<std::shared_ptr<AudioArrayBuffer>> channels_;
 
-  int numberOfChannels_ = 0;
+  size_t numberOfChannels_ = 0;
   float sampleRate_ = 0.0f;
   size_t size_ = 0;
 
-  void createChannels();
   void discreteSum(
       const AudioBuffer &source,
       size_t sourceStart,

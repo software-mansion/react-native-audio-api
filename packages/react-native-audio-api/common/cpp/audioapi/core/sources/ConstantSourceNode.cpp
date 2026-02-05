@@ -48,7 +48,7 @@ std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
   auto offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
-  for (int channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {
+  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {
     processingBuffer->getChannel(channel)->copy(
         *offsetChannel, startOffset, startOffset, offsetLength);
   }

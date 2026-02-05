@@ -150,7 +150,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithPCMInBase64(
   auto audioBuffer =
       std::make_shared<AudioBuffer>(numFramesDecoded, inputChannelCount, inputSampleRate);
 
-  for (int ch = 0; ch < inputChannelCount; ++ch) {
+  for (size_t ch = 0; ch < inputChannelCount; ++ch) {
     auto channelData = audioBuffer->getChannel(ch)->span();
 
     for (size_t i = 0; i < numFramesDecoded; ++i) {

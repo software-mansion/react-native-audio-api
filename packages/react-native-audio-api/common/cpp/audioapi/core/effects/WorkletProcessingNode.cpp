@@ -29,7 +29,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
       static_cast<size_t>(processingBuffer->getNumberOfChannels()));
 
   // Copy input data to pre-allocated input buffers
-  for (int ch = 0; ch < channelCount; ch++) {
+  for (size_t ch = 0; ch < channelCount; ch++) {
     inputBuffsHandles_[ch]->copy(*processingBuffer->getChannel(ch), 0, 0, framesToProcess);
   }
 
@@ -64,7 +64,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
       });
 
   // Copy processed output data back to the processing buffer or zero on failure
-  for (int ch = 0; ch < channelCount; ch++) {
+  for (size_t ch = 0; ch < channelCount; ch++) {
     auto channelData = processingBuffer->getChannel(ch);
 
     if (result.has_value()) {

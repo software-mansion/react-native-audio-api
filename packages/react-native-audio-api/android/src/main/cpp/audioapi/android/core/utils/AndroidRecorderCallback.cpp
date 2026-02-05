@@ -153,7 +153,7 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
   auto *inputData = static_cast<float *>(data);
   deinterleavingBuffer_->deinterleaveFrom(inputData, numFrames);
 
-  for (int ch = 0; ch < channelCount_; ++ch) {
+  for (size_t ch = 0; ch < channelCount_; ++ch) {
     circularBus_[ch]->push_back(*deinterleavingBuffer_->getChannel(ch), numFrames);
   }
 }

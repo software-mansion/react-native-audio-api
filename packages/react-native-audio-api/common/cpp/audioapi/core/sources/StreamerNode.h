@@ -97,9 +97,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   SwrContext *swrCtx_;
   uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBuffer> bufferedBus_; // audio buffer for buffering hls frames
-  size_t bufferedBusSize_;                   // size of currently buffered buffer
-  int audio_stream_index_;                   // index of the audio stream channel in the input
+  std::shared_ptr<AudioBuffer> bufferedAudioBuffer_; // audio buffer for buffering hls frames
+  size_t bufferedAudioBufferSize_;                   // size of currently buffered buffer
+  int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 

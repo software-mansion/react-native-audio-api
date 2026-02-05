@@ -55,7 +55,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  std::shared_ptr<AudioBuffer> alignedBus_;
+  std::shared_ptr<AudioBuffer> alignedBuffer_;
 
   std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
   void sendOnLoopEndedEvent();

@@ -57,7 +57,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
+  size_t channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
