@@ -89,6 +89,7 @@ const Record: FC = () => {
   /// This stops only the recording, not the audio context
   const stopEcho = async () => {
     audioRecorder.stop();
+    audioContext.suspend();
 
     audioRecorder.disconnect();
     setStatus(Status.Idle);
@@ -109,7 +110,7 @@ const Record: FC = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
     });
 
     const success = await AudioManager.setAudioSessionActivity(true);
@@ -146,6 +147,16 @@ const Record: FC = () => {
       return;
     }
 
+    const result = audioRecorder.start();
+
+    if (result.status === 'error') {
+      Alert.alert(
+        'Recording Error',
+        `Failed to start recording: ${result.message}`
+      );
+      return;
+    }
+
     setStatus(Status.Recording);
 
     setTimeout(async () => {
@@ -174,11 +185,12 @@ const Record: FC = () => {
     }
 
     if (audioContext.state === 'suspended') {
-      audioContext.resume();
+      await audioContext.resume();
     }
 
     const tNow = audioContext.currentTime;
     let nextStartAt = tNow + 1;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     capturedBuffers.forEach((buffer) => {
       const source = audioContext.createBufferSource();
@@ -191,7 +203,9 @@ const Record: FC = () => {
     setStatus(Status.Playback);
 
     setTimeout(
-      () => {
+      async () => {
+        await audioContext.suspend();
+        await AudioManager.setAudioSessionActivity(false);
         setStatus(Status.Idle);
       },
       (nextStartAt - tNow) * 1000
