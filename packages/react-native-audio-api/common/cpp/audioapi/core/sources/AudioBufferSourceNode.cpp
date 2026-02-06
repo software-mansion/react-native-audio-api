@@ -28,8 +28,6 @@ AudioBufferSourceNode::AudioBufferSourceNode(
 }
 
 AudioBufferSourceNode::~AudioBufferSourceNode() {
-  Locker locker(getBufferLock());
-
   buffer_.reset();
   alignedBuffer_.reset();
 }
@@ -76,7 +74,6 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 }
 
 void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  Locker locker(getBufferLock());
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (buffer == nullptr || context == nullptr) {
@@ -148,7 +145,6 @@ void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
 std::shared_ptr<AudioBuffer> AudioBufferSourceNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (auto locker = Locker::tryLock(getBufferLock())) {
     // No audio data to fill, zero the output and return.
     if (!alignedBuffer_) {
       processingBuffer->zero();
@@ -162,9 +158,6 @@ std::shared_ptr<AudioBuffer> AudioBufferSourceNode::processNode(
     }
 
     handleStopScheduled();
-  } else {
-    processingBuffer->zero();
-  }
 
   return processingBuffer;
 }

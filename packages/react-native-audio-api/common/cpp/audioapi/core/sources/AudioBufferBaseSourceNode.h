@@ -34,7 +34,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
  protected:
   // pitch correction
-  bool pitchCorrection_;
+  const bool pitchCorrection_;
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;

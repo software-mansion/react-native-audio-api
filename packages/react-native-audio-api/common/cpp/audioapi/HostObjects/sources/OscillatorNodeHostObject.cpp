@@ -56,11 +56,12 @@ JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
 
 JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
+  auto type = js_enum_parser::oscillatorTypeFromString(value.asString(runtime).utf8(runtime));
 
-  auto event = [oscillatorNode, type = value.asString(runtime).utf8(runtime)](BaseAudioContext &) {
-    oscillatorNode->setType(js_enum_parser::oscillatorTypeFromString(type));
+  auto event = [oscillatorNode, type](BaseAudioContext &) {
+    oscillatorNode->setType(type);
   };
-  type_ = js_enum_parser::oscillatorTypeFromString(value.asString(runtime).utf8(runtime));
+  type_ = type;
 
   oscillatorNode->scheduleAudioEvent(std::move(event));
 }

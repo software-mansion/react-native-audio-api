@@ -39,8 +39,6 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 }
 
 AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {
-  Locker locker(getBufferLock());
-
   buffers_ = {};
 }
 
@@ -72,7 +70,6 @@ void AudioBufferQueueSourceNode::pause() {
 }
 
 std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  auto locker = Locker(getBufferLock());
   buffers_.emplace(bufferId_, buffer);
 
   if (tailBuffer_ != nullptr) {
@@ -83,7 +80,6 @@ std::string AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<Audi
 }
 
 void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
-  auto locker = Locker(getBufferLock());
   if (buffers_.empty()) {
     return;
   }
@@ -107,7 +103,6 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 }
 
 void AudioBufferQueueSourceNode::clearBuffers() {
-  auto locker = Locker(getBufferLock());
   buffers_ = {};
   vReadIndex_ = 0.0;
 }
@@ -137,23 +132,19 @@ void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId)
 std::shared_ptr<AudioBuffer> AudioBufferQueueSourceNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (auto locker = Locker::tryLock(getBufferLock())) {
-    // no audio data to fill, zero the output and return.
-    if (buffers_.empty()) {
-      processingBuffer->zero();
-      return processingBuffer;
-    }
-
-    if (!pitchCorrection_) {
-      processWithoutPitchCorrection(processingBuffer, framesToProcess);
-    } else {
-      processWithPitchCorrection(processingBuffer, framesToProcess);
-    }
-
-    handleStopScheduled();
-  } else {
+  // no audio data to fill, zero the output and return.
+  if (buffers_.empty()) {
     processingBuffer->zero();
+    return processingBuffer;
   }
+
+  if (!pitchCorrection_) {
+    processWithoutPitchCorrection(processingBuffer, framesToProcess);
+  } else {
+    processWithPitchCorrection(processingBuffer, framesToProcess);
+  }
+
+  handleStopScheduled();
 
   return processingBuffer;
 }
