@@ -20,7 +20,7 @@ class GainNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_GETTER_DECL(gain);
 
-private:
-    std::shared_ptr<AudioParamHostObject> gainParam_;
+ private:
+  std::shared_ptr<AudioParamHostObject> gainParam_;
 };
 } // namespace audioapi

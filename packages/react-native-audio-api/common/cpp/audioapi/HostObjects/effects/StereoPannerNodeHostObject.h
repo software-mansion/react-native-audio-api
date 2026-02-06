@@ -21,7 +21,7 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_GETTER_DECL(pan);
 
-private:
-    std::shared_ptr<AudioParamHostObject> panParam_;
+ private:
+  std::shared_ptr<AudioParamHostObject> panParam_;
 };
 } // namespace audioapi

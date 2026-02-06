@@ -22,7 +22,7 @@ class DelayNodeHostObject : public AudioNodeHostObject {
 
   JSI_PROPERTY_GETTER_DECL(delayTime);
 
-private:
-    std::shared_ptr<AudioParamHostObject> delayTimeParam_;
+ private:
+  std::shared_ptr<AudioParamHostObject> delayTimeParam_;
 };
 } // namespace audioapi
