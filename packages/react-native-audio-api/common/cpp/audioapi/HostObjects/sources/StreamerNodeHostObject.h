@@ -1,6 +1,9 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/sources/StreamerNode.h>
 
 #include <memory>
 #include <string>
@@ -16,14 +19,11 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit StreamerNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      const StreamerOptions &options);
+      const StreamerOptions &options) : AudioScheduledSourceNodeHostObject(context->createStreamer(options), options) {}
 
   [[nodiscard]] static inline size_t getSizeInBytes() {
     return SIZE;
   }
-
-  JSI_PROPERTY_GETTER_DECL(streamPath);
-  JSI_HOST_FUNCTION_DECL(initialize);
 
  private:
   static constexpr size_t SIZE = 4'000'000; // 4MB

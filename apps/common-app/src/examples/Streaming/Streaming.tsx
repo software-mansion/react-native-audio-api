@@ -30,11 +30,8 @@ const Streaming: FC = () => {
       console.error('StreamerNode is already initialized');
       return;
     }
-    streamerRef.current = aCtxRef.current.createStreamer();
+    streamerRef.current = aCtxRef.current.createStreamer('https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8');
 
-    streamerRef.current.initialize(
-      'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8'
-    );
     streamerRef.current.connect(gainRef.current);
     gainRef.current.connect(aCtxRef.current.destination);
     streamerRef.current.start(aCtxRef.current.currentTime);

@@ -68,15 +68,6 @@ class StreamerNode : public AudioScheduledSourceNode {
       const StreamerOptions &options);
   ~StreamerNode() override;
 
-  /**
-   * @brief Initialize all necessary ffmpeg components for streaming audio
-  */
-  bool initialize(const std::string &inputUrl);
-
-  std::string getStreamPath() const {
-    return streamPath_;
-  }
-
  protected:
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
@@ -112,6 +103,12 @@ class StreamerNode : public AudioScheduledSourceNode {
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
+
+  /// @brief Initialize the StreamerNode by opening the input stream,
+  /// finding the audio stream, setting up the decoder, and starting the streaming thread.
+  /// @param inputUrl The URL of the input stream
+  /// @return true if initialization was successful, false otherwise
+  bool initialize(const std::string &inputUrl);
 
   /**
    * @brief Setting up the resampler

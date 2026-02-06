@@ -461,27 +461,11 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
 }
 
 class StreamerNodeMock extends AudioScheduledSourceNodeMock {
-  private hasBeenSetup: boolean = false;
-  private _streamPath: string = '';
+  readonly streamPath: string = '';
 
-  constructor(context: BaseAudioContextMock, options?: TStreamerOptions) {
-    super(context, {});
-    if (options?.streamPath) {
-      this.initialize(options.streamPath);
-    }
-  }
-
-  initialize(streamPath: string): boolean {
-    if (this.hasBeenSetup) {
-      throw new Error('Node is already setup');
-    }
-    this._streamPath = streamPath;
-    this.hasBeenSetup = true;
-    return true;
-  }
-
-  get streamPath(): string {
-    return this._streamPath;
+  constructor(context: BaseAudioContextMock, options: TStreamerOptions) {
+    super(context, options);
+    this.streamPath = options.streamPath;
   }
 
   pause(): void {}
@@ -659,8 +643,8 @@ class BaseAudioContextMock {
     return new AudioBufferQueueSourceNodeMock(this, options);
   }
 
-  createStreamer(options?: TStreamerOptions): StreamerNodeMock {
-    return new StreamerNodeMock(this, options);
+  createStreamer(streamPath: string): StreamerNodeMock {
+    return new StreamerNodeMock(this, { streamPath });
   }
 
   createWorkletNode(

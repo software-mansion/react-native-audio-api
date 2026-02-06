@@ -178,7 +178,7 @@ export interface TConstantSourceOptions {
 }
 
 export interface TStreamerOptions {
-  streamPath?: string;
+  streamPath: string;
 }
 
 export interface TPeriodicWaveConstraints {

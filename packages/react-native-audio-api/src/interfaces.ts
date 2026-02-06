@@ -101,7 +101,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions?: TConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
+  createStreamer: (streamerOptions: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: TWaveShaperOptions) => IWaveShaperNode;
 }
 
@@ -195,10 +195,7 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
-export interface IStreamerNode extends IAudioNode {
-  readonly streamPath: string;
-  initialize(streamPath: string): boolean;
-}
+export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;
