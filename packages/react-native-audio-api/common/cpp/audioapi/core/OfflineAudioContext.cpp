@@ -27,7 +27,7 @@ OfflineAudioContext::OfflineAudioContext(
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0),
-      resultBus_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
+      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
   getGraphManager()->cleanup();
@@ -74,7 +74,7 @@ void OfflineAudioContext::renderAudio() {
 
       destination_->renderAudio(audioBuffer, framesToProcess);
 
-      resultBus_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
+      resultBuffer_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 
@@ -91,7 +91,7 @@ void OfflineAudioContext::renderAudio() {
     }
 
     // Rendering completed
-    resultCallback_(resultBus_);
+    resultCallback_(resultBuffer_);
   }).detach();
 }
 

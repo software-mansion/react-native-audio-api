@@ -51,8 +51,8 @@ class IOSRecorderCallback : public AudioRecorderCallback {
  private:
   std::unique_ptr<task_offloader::TaskOffloader<
       CallbackData,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
       offloader_;
   // delay initialization of offloader until prepare is called
   void taskOffloaderFunction(CallbackData data);

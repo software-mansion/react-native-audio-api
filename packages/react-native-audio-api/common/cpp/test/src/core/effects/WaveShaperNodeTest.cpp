@@ -1,8 +1,8 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
@@ -66,9 +66,9 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
     (*buffer->getChannel(0))[i] = -1.0f + i * 0.5f;
   }
 
-  auto resultBus = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
   auto curveData = waveShaper->testCurve_->span();
-  auto resultData = resultBus->getChannel(0)->span();
+  auto resultData = resultBuffer->getChannel(0)->span();
 
   EXPECT_FLOAT_EQ(resultData[0], curveData[0]);
   EXPECT_FLOAT_EQ(resultData[1], -1.0f);

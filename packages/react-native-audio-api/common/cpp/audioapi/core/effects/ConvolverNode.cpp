@@ -1,9 +1,9 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/FFT.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <iostream>
@@ -26,9 +26,6 @@ ConvolverNode::ConvolverNode(
       buffer_(nullptr),
       internalBuffer_(nullptr) {
   setBuffer(options.buffer);
-  audioBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
 
@@ -86,13 +83,13 @@ void ConvolverNode::onInputDisabled() {
 }
 
 std::shared_ptr<AudioBuffer> ConvolverNode::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBus,
+    const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (internalBufferIndex_ < framesToProcess) {
-    return AudioNode::processInputs(outputBus, RENDER_QUANTUM_SIZE, false);
+    return AudioNode::processInputs(outputBuffer, RENDER_QUANTUM_SIZE, false);
   }
-  return AudioNode::processInputs(outputBus, 0, false);
+  return AudioNode::processInputs(outputBuffer, 0, false);
 }
 
 // processing pipeline: processingBuffer -> intermediateBuffer_ -> audioBuffer_ (mixing

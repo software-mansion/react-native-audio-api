@@ -8,7 +8,10 @@ import {
 } from './types';
 
 export const AnalyserOptionsValidator: OptionsValidator<TAnalyserOptions> = {
-  validate(options: TAnalyserOptions): void {
+  validate(options?: TAnalyserOptions): void {
+    if (!options) {
+      return;
+    }
     const allowedFFTSize: number[] = [
       32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
     ];
@@ -23,7 +26,10 @@ export const AnalyserOptionsValidator: OptionsValidator<TAnalyserOptions> = {
 };
 
 export const ConvolverOptionsValidator: OptionsValidator<TConvolverOptions> = {
-  validate(options: TConvolverOptions): void {
+  validate(options?: TConvolverOptions): void {
+    if (!options) {
+      return;
+    }
     if (options.buffer) {
       const numberOfChannels = options.buffer.numberOfChannels;
       if (
@@ -41,7 +47,10 @@ export const ConvolverOptionsValidator: OptionsValidator<TConvolverOptions> = {
 
 export const OscillatorOptionsValidator: OptionsValidator<TOscillatorOptions> =
   {
-    validate(options: TOscillatorOptions): void {
+    validate(options?: TOscillatorOptions): void {
+      if (!options) {
+        return;
+      }
       if (options.type === 'custom' && !options.periodicWave) {
         throw new NotSupportedError(
           "'type' cannot be set to 'custom' without providing a 'periodicWave'."
@@ -52,7 +61,10 @@ export const OscillatorOptionsValidator: OptionsValidator<TOscillatorOptions> =
 
 export const PeriodicWaveOptionsValidator: OptionsValidator<TPeriodicWaveOptions> =
   {
-    validate(options: TPeriodicWaveOptions): void {
+    validate(options?: TPeriodicWaveOptions): void {
+      if (!options) {
+        return;
+      }
       if (
         options.real &&
         options.imag &&

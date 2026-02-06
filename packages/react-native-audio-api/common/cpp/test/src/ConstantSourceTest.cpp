@@ -1,7 +1,7 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
@@ -51,15 +51,15 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   // constantSource.start(context->getCurrentTime());
-  // auto resultBus = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
+  // auto resultBuffer = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
 
   // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
-  //   EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 1.0f);
+  //   EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
   // }
 
   // constantSource.setOffsetParam(0.5f);
-  // resultBus = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
+  // resultBuffer = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
   // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
-  //   EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 0.5f);
+  //   EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.5f);
   // }
 }

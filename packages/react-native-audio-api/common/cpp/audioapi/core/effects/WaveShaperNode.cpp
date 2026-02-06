@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -21,8 +21,6 @@ WaveShaperNode::WaveShaperNode(
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
   setCurve(options.curve);
-  // to change after graph processing improvement - should be max
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   isInitialized_ = true;
 }
 

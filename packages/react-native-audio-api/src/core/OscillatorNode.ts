@@ -4,7 +4,6 @@ import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
-import { OscillatorOptions } from '../defaults';
 import { TOscillatorOptions } from '../types';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
@@ -12,16 +11,11 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly detune: AudioParam;
 
   constructor(context: BaseAudioContext, options?: TOscillatorOptions) {
-    const finalOptions: TOscillatorOptions = {
-      ...OscillatorOptions,
-      ...options,
-    };
-
-    if (finalOptions.periodicWave) {
-      finalOptions.type = 'custom';
+    if (options?.periodicWave) {
+      options.type = 'custom';
     }
 
-    const node = context.context.createOscillator(finalOptions);
+    const node = context.context.createOscillator(options || {});
     super(context, node);
     this.frequency = new AudioParam(node.frequency, context);
     this.detune = new AudioParam(node.detune, context);

@@ -37,7 +37,7 @@ class ConvolverNode : public AudioNode {
 
  private:
   std::shared_ptr<AudioBuffer> processInputs(
-      const std::shared_ptr<AudioBuffer> &outputBus,
+      const std::shared_ptr<AudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed) override;
   void onInputDisabled() override;

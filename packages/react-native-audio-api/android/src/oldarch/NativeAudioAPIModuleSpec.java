@@ -88,6 +88,10 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
 
   @ReactMethod
   @DoNotStrip
+  public abstract void setInputDevice(String deviceId, Promise promise);
+
+  @ReactMethod
+  @DoNotStrip
   public abstract void showNotification(String type, String key, ReadableMap options, Promise promise);
 
   @ReactMethod

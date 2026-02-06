@@ -48,7 +48,7 @@ class AudioRecorderCallback {
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   // TODO: CircularAudioBuffer
-  std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
+  std::vector<std::shared_ptr<CircularAudioArray>> circularBuffer_;
   static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =

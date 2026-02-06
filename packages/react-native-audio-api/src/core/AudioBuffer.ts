@@ -1,8 +1,6 @@
 import { IAudioBuffer } from '../interfaces';
-import { IndexSizeError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import { IndexSizeError, NotSupportedError } from '../errors';
 import { TAudioBufferOptions } from '../types';
-import { AudioBufferOptions } from '../defaults';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -12,29 +10,20 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: IAudioBuffer;
 
-  constructor(buffer: IAudioBuffer);
-  constructor(context: BaseAudioContext, options: TAudioBufferOptions);
+  constructor(options: TAudioBufferOptions);
 
-  constructor(
-    contextOrBuffer: BaseAudioContext | IAudioBuffer,
-    options?: TAudioBufferOptions
-  ) {
-    let buf: IAudioBuffer;
-    if (contextOrBuffer instanceof BaseAudioContext) {
-      const finalOptions = {
-        ...AudioBufferOptions,
-        ...options,
-      };
-      const context = contextOrBuffer;
-      buf = context.context.createBuffer(finalOptions);
-    } else {
-      buf = contextOrBuffer;
-    }
-    this.buffer = buf;
-    this.length = buf.length;
-    this.duration = buf.duration;
-    this.sampleRate = buf.sampleRate;
-    this.numberOfChannels = buf.numberOfChannels;
+  /** @internal */
+  constructor(buffer: IAudioBuffer);
+
+  /** @internal */
+  constructor(arg: TAudioBufferOptions | IAudioBuffer) {
+    this.buffer = this.isAudioBuffer(arg)
+      ? arg
+      : AudioBuffer.createBufferFromOptions(arg);
+    this.length = this.buffer.length;
+    this.duration = this.buffer.duration;
+    this.sampleRate = this.buffer.sampleRate;
+    this.numberOfChannels = this.buffer.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {
@@ -84,5 +73,36 @@ export default class AudioBuffer {
     }
 
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
+  }
+
+  private static createBufferFromOptions(
+    options: TAudioBufferOptions
+  ): IAudioBuffer {
+    const { numberOfChannels = 1, length, sampleRate } = options;
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+      throw new NotSupportedError(
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
+      );
+    }
+    if (length <= 0) {
+      throw new NotSupportedError(
+        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
+      );
+    }
+    if (sampleRate < 8000 || sampleRate > 96000) {
+      throw new NotSupportedError(
+        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
+      );
+    }
+    return global.createAudioBuffer(numberOfChannels, length, sampleRate);
+  }
+
+  private isAudioBuffer(obj: unknown): obj is IAudioBuffer {
+    return (
+      typeof obj === 'object' &&
+      obj !== null &&
+      'getChannelData' in obj &&
+      typeof (obj as IAudioBuffer).getChannelData === 'function'
+    );
   }
 }

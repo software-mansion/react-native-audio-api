@@ -8,7 +8,7 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
@@ -25,7 +25,7 @@ namespace audioapi {
 StreamerNode::StreamerNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const StreamerOptions &options)
-    : AudioScheduledSourceNode(context),
+    : AudioScheduledSourceNode(context, options),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
       decoder_(nullptr),

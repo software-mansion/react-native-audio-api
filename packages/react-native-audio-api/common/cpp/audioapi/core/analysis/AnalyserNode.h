@@ -57,7 +57,7 @@ class AnalyserNode : public AudioNode {
   std::shared_ptr<AudioArray> windowData_;
 
   std::unique_ptr<CircularAudioArray> inputArray_;
-  std::unique_ptr<AudioBuffer> downMixBus_;
+  std::unique_ptr<AudioBuffer> downMixBuffer_;
   std::unique_ptr<AudioArray> tempArray_;
 
   std::unique_ptr<dsp::FFT> fft_;

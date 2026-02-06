@@ -47,8 +47,8 @@ AndroidRecorderCallback::~AndroidRecorderCallback() {
     processingBufferLength_ = 0;
   }
 
-  for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i]->zero();
+  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
+    circularBuffer_[i]->zero();
   }
 }
 
@@ -106,14 +106,13 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   };
   offloader_ = std::make_unique<task_offloader::TaskOffloader<
       CallbackData,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
-      AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 
 void AndroidRecorderCallback::cleanup() {
-  if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+  if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
     emitAudioData(true);
   }
 
@@ -128,8 +127,8 @@ void AndroidRecorderCallback::cleanup() {
     processingBufferLength_ = 0;
   }
 
-  for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i]->zero();
+  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
+    circularBuffer_[i]->zero();
   }
   offloader_.reset();
 }
@@ -154,7 +153,7 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
   deinterleavingBuffer_->deinterleaveFrom(inputData, numFrames);
 
   for (size_t ch = 0; ch < channelCount_; ++ch) {
-    circularBus_[ch]->push_back(*deinterleavingBuffer_->getChannel(ch), numFrames);
+    circularBuffer_[ch]->push_back(*deinterleavingBuffer_->getChannel(ch), numFrames);
   }
 }
 
@@ -169,7 +168,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
       streamChannelCount_ == channelCount_) {
     deinterleaveAndPushAudioData(data, numFrames);
 
-    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
     return;
@@ -183,7 +182,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
 
   deinterleaveAndPushAudioData(processingBuffer_, static_cast<int>(outputFrameCount));
 
-  if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+  if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
     emitAudioData();
   }
 }

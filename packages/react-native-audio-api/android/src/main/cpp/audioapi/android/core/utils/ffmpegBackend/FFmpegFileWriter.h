@@ -32,7 +32,6 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize, const std::string &fileNameOverride) override;
   CloseFileResult closeFile() override;
 
-  bool writeAudioData(void *data, int numFrames) override;
 
  private:
   av_unique_ptr<AVCodecContext> encoderCtx_{nullptr};
@@ -64,6 +63,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
 
   // Finalization helper methods
   CloseFileResult finalizeOutput();
+  void taskOffloaderFunction(WriterData data) override;
 };
 
 } // namespace android::ffmpeg

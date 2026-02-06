@@ -20,6 +20,7 @@ export { default as DelayNode } from './core/DelayNode';
 export { default as GainNode } from './core/GainNode';
 export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';
+export { default as PeriodicWave } from './core/PeriodicWave';
 export { default as RecorderAdapterNode } from './core/RecorderAdapterNode';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
 export { default as StreamerNode } from './core/StreamerNode';
@@ -28,17 +29,16 @@ export { default as WorkletNode } from './core/WorkletNode';
 export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 
-export { default as useSystemVolume } from './hooks/useSystemVolume';
-export { default as PeriodicWave } from './core/PeriodicWave';
-
 export * from './errors';
 export * from './system/types';
 export * from './types';
 export { default as FilePreset } from './utils/filePresets';
 
 // Notification System
-export { PlaybackNotificationManager } from './system/notification';
-export { RecordingNotificationManager } from './system/notification';
+export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+} from './system/notification';
 
 export { default as AudioManager } from './system';
 

@@ -1,9 +1,9 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/Windows.hpp>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -25,7 +25,8 @@ AnalyserNode::AnalyserNode(
       smoothingTimeConstant_(options.smoothingTimeConstant),
       windowType_(WindowType::BLACKMAN),
       inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
-      downMixBus_(std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      downMixBuffer_(
+          std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
       tempArray_(std::make_unique<AudioArray>(fftSize_)),
       fft_(std::make_unique<dsp::FFT>(fftSize_)),
       complexData_(std::vector<std::complex<float>>(fftSize_)),
@@ -157,9 +158,9 @@ std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
   // processingBuffer but instead copy the data to its own input buffer.
 
   // Down mix the input buffer to mono
-  downMixBus_->copy(*processingBuffer);
+  downMixBuffer_->copy(*processingBuffer);
   // Copy the down mixed buffer to the input buffer (circular buffer)
-  inputArray_->push_back(*downMixBus_->getChannel(0), framesToProcess, true);
+  inputArray_->push_back(*downMixBuffer_->getChannel(0), framesToProcess, true);
 
   shouldDoFFTAnalysis_ = true;
 

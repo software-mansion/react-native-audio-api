@@ -1,7 +1,6 @@
 import { IPeriodicWave } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
 import { TPeriodicWaveOptions } from '../types';
-import { PeriodicWaveConstraints } from '../defaults';
 import { PeriodicWaveOptionsValidator } from '../options-validators';
 
 export function generateRealAndImag(
@@ -25,7 +24,7 @@ export function generateRealAndImag(
   }
   const norm: boolean = options?.disableNormalization
     ? options.disableNormalization
-    : PeriodicWaveConstraints.disableNormalization!;
+    : false;
   return { real, imag, disableNormalization: norm };
 }
 

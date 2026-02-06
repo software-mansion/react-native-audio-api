@@ -119,7 +119,7 @@ export interface TGainOptions extends TAudioNodeOptions {
   gain?: number;
 }
 
-export interface TSteroPannerOptions extends TAudioNodeOptions {
+export interface TStereoPannerOptions extends TAudioNodeOptions {
   pan?: number;
 }
 
@@ -131,7 +131,7 @@ export interface TAnalyserOptions extends TAudioNodeOptions {
 }
 
 export interface OptionsValidator<T> {
-  validate(options: T): void;
+  validate(options?: T): void;
 }
 
 export interface TBiquadFilterOptions extends TAudioNodeOptions {
@@ -191,8 +191,8 @@ export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
 }
 
 export interface TAudioBufferOptions {
-  numberOfChannels?: number;
   length: number;
+  numberOfChannels?: number;
   sampleRate: number;
 }
 

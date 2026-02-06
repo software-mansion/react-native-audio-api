@@ -7,7 +7,6 @@ import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
 import { TAudioBufferSourceOptions } from '../types';
-import { AudioBufferSourceOptions } from '../defaults';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
 interface ScheduleOptions {
@@ -610,11 +609,7 @@ export default class AudioBufferSourceNode
 {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
   constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    const finalOptions: TAudioBufferSourceOptions = {
-      ...AudioBufferSourceOptions,
-      ...options,
-    };
-    this.node = finalOptions.pitchCorrection
+    this.node = options?.pitchCorrection
       ? new AudioBufferSourceNodeStretcher(context)
       : new AudioBufferSourceNodeWeb(context, options);
   }

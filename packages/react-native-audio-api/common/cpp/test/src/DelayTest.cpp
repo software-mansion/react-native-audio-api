@@ -1,7 +1,7 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
@@ -58,9 +58,9 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], static_cast<float>(i + 1));
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1));
   }
 }
 
@@ -77,13 +77,13 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be zero due to delay
-      EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], 0.0f);
+      EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.0f);
     } else {
       EXPECT_FLOAT_EQ(
-          (*resultBus->getChannel(0))[i],
+          (*resultBuffer->getChannel(0))[i],
           static_cast<float>(
               i + 1 - FRAMES_TO_PROCESS / 2)); // Last 64 samples should be 1st part of buffer
     }
@@ -104,13 +104,13 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   }
 
   delayNode.processNode(buffer, FRAMES_TO_PROCESS);
-  auto resultBus = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of buffer
       EXPECT_FLOAT_EQ(
-          (*resultBus->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
+          (*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
     } else {
-      EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i],
+      EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i],
                       0.0f); // Last 64 samples should be zero
     }
   }

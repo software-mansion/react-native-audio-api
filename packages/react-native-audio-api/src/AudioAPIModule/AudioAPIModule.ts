@@ -60,6 +60,7 @@ class AudioAPIModule implements IAudioAPIModule {
       global.createAudioContext != null &&
       global.createOfflineAudioContext != null &&
       global.createAudioRecorder != null &&
+      global.createAudioBuffer != null &&
       global.createAudioDecoder != null &&
       global.createAudioStretcher != null &&
       global.AudioEventEmitter != null

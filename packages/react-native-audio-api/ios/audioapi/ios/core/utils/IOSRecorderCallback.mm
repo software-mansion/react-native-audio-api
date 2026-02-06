@@ -40,7 +40,7 @@ IOSRecorderCallback::~IOSRecorderCallback()
     converterOutputBuffer_ = nil;
 
     for (size_t i = 0; i < channelCount_; ++i) {
-      circularBus_[i]->zero();
+      circularBuffer_[i]->zero();
     }
   }
 }
@@ -93,9 +93,8 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
     };
     offloader_ = std::make_unique<task_offloader::TaskOffloader<
         CallbackData,
-        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
-        AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+        RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+        RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -106,7 +105,7 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 void IOSRecorderCallback::cleanup()
 {
   @autoreleasepool {
-    if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
     }
 
@@ -117,7 +116,7 @@ void IOSRecorderCallback::cleanup()
     converterOutputBuffer_ = nil;
 
     for (size_t i = 0; i < channelCount_; ++i) {
-      circularBus_[i]->zero();
+      circularBuffer_[i]->zero();
     }
     offloader_.reset();
   }
@@ -150,10 +149,10 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       // Directly write to circular buffer
       for (size_t i = 0; i < channelCount_; ++i) {
         auto *data = static_cast<float *>(inputBuffer->mBuffers[i].mData);
-        circularBus_[i]->push_back(data, numFrames);
+        circularBuffer_[i]->push_back(data, numFrames);
       }
 
-      if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
       return;
@@ -196,10 +195,10 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
 
     for (size_t i = 0; i < channelCount_; ++i) {
       auto *data = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      circularBus_[i]->push_back(data, outputFrameCount);
+      circularBuffer_[i]->push_back(data, outputFrameCount);
     }
 
-    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
   }

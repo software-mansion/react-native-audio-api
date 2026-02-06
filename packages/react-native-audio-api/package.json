@@ -13,6 +13,7 @@
   "files": [
     "src/",
     "development/react/",
+    "mock/",
     "lib/",
     "common/",
     "android/src/main/AndroidManifest.xml",

@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>

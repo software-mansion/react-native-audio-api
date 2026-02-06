@@ -1,7 +1,7 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
@@ -56,9 +56,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBus = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
   }
 }
 
@@ -74,9 +74,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     (*buffer->getChannel(1))[i] = -i - 1;
   }
 
-  auto resultBus = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_FLOAT_EQ((*resultBus->getChannel(0))[i], (i + 1) * GAIN_VALUE);
-    EXPECT_FLOAT_EQ((*resultBus->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
   }
 }

@@ -10,21 +10,20 @@ import type {
   OscillatorType,
   OverSampleType,
   Result,
-  WindowType,
-  TGainOptions,
-  TSteroPannerOptions,
-  TConvolverOptions,
-  TConstantSourceOptions,
   TAnalyserOptions,
-  TBiquadFilterOptions,
-  TOscillatorOptions,
-  TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
-  TStreamerOptions,
-  TAudioBufferOptions,
+  TBaseAudioBufferSourceOptions,
+  TBiquadFilterOptions,
+  TConstantSourceOptions,
+  TConvolverOptions,
   TDelayOptions,
+  TGainOptions,
   TIIRFilterOptions,
+  TOscillatorOptions,
+  TStereoPannerOptions,
+  TStreamerOptions,
   TWaveShaperOptions,
+  WindowType,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -82,7 +81,7 @@ export interface IBaseAudioContext {
   ): IConstantSourceNode;
   createGain(gainOptions: TGainOptions): IGainNode;
   createStereoPanner(
-    stereoPannerOptions: TSteroPannerOptions
+    stereoPannerOptions: TStereoPannerOptions
   ): IStereoPannerNode;
   createBiquadFilter: (
     biquadFilterOptions: TBiquadFilterOptions
@@ -95,14 +94,13 @@ export interface IBaseAudioContext {
   createBufferQueueSource: (
     audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
-  createBuffer: (audioBufferOptions: TAudioBufferOptions) => IAudioBuffer;
   createPeriodicWave: (
     real: Float32Array,
     imag: Float32Array,
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
-  createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
+  createConvolver: (convolverOptions?: TConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: TWaveShaperOptions) => IWaveShaperNode;
 }

@@ -26,7 +26,7 @@ AudioParam::AudioParam(
       endValue_(defaultValue),
       audioBuffer_(
           std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
-  inputBuses_.reserve(4);
+  inputBuffers_.reserve(4);
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
@@ -251,7 +251,7 @@ std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
     return processingBuffer;
   }
   processInputs(processingBuffer, framesToProcess, true);
-  mixInputsBuses(processingBuffer);
+  mixInputsBuffers(processingBuffer);
   return processingBuffer;
 }
 
@@ -286,7 +286,7 @@ float AudioParam::processKRateParam(int framesToProcess, double time) {
 }
 
 void AudioParam::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBus,
+    const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
@@ -298,21 +298,22 @@ void AudioParam::processInputs(
     }
 
     // Process this input node and store its output buffer
-    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
-    inputBuses_.emplace_back(inputBus);
+    auto inputBuffer =
+        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
+    inputBuffers_.emplace_back(inputBuffer);
   }
 }
 
-void AudioParam::mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+void AudioParam::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
   // Sum all input buffers into the processing buffer
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
+  for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
     processingBuffer->sum(**it, ChannelInterpretation::SPEAKERS);
   }
 
   // Clear for next processing cycle
-  inputBuses_.clear();
+  inputBuffers_.clear();
 }
 
 } // namespace audioapi

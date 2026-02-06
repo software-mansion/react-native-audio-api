@@ -1,4 +1,3 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
@@ -22,9 +21,6 @@ AudioBuffer::AudioBuffer(size_t size, int numberOfChannels, float sampleRate)
     channels_.emplace_back(std::make_shared<AudioArrayBuffer>(size_));
   }
 }
-
-AudioBuffer::AudioBuffer(const audioapi::AudioBufferOptions &options)
-    : AudioBuffer(options.length, options.numberOfChannels, options.sampleRate) {}
 
 AudioBuffer::AudioBuffer(const AudioBuffer &other)
     : numberOfChannels_(other.numberOfChannels_),

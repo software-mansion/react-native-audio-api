@@ -38,7 +38,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, duration) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
-  return {audioBuffer_->getNumberOfChannels()};
+  return { static_cast<int>(audioBuffer_->getNumberOfChannels()) };
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {

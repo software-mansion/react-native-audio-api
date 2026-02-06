@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <test/src/biquad/BiquadFilterChromium.h>
 #include <test/src/biquad/BiquadFilterTest.h>
 #include <memory>

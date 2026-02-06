@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <memory>
@@ -10,7 +10,7 @@ namespace audioapi {
 ConstantSourceNodeHostObject::ConstantSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createConstantSource(options)) {
+    : AudioScheduledSourceNodeHostObject(context->createConstantSource(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(ConstantSourceNodeHostObject, offset));
 }
 

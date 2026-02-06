@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -189,10 +189,6 @@ std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueS
   auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(shared_from_this(), options);
   graphManager_->addSourceNode(bufferSource);
   return bufferSource;
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOptions &options) {
-  return std::make_shared<AudioBuffer>(options.length, options.numberOfChannels, options.sampleRate);
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(

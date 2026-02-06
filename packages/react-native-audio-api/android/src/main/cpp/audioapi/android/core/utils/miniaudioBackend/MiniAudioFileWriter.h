@@ -20,7 +20,6 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize, const std::string &fileNameOverride) override;
   CloseFileResult closeFile() override;
 
-  bool writeAudioData(void *data, int numFrames) override;
 
  private:
   std::atomic<bool> isConverterRequired_{false};
@@ -35,6 +34,7 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   ma_uint64 convertBuffer(void *data, int numFrames);
 
   bool isConverterRequired();
+  void taskOffloaderFunction(WriterData data) override;
 };
 
 } // namespace audioapi

@@ -1,5 +1,4 @@
-import { IndexSizeError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import { IndexSizeError, NotSupportedError } from '../errors';
 import { TAudioBufferOptions } from '../types';
 
 export default class AudioBuffer {
@@ -11,24 +10,20 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: globalThis.AudioBuffer;
 
-  constructor(buffer: globalThis.AudioBuffer);
-  constructor(context: BaseAudioContext, options: TAudioBufferOptions);
+  constructor(options: TAudioBufferOptions);
 
-  constructor(
-    contextOrBuffer: BaseAudioContext | globalThis.AudioBuffer,
-    options?: TAudioBufferOptions
-  ) {
-    let buf: globalThis.AudioBuffer;
-    if (contextOrBuffer instanceof BaseAudioContext) {
-      buf = new globalThis.AudioBuffer(options!);
-    } else {
-      buf = contextOrBuffer as globalThis.AudioBuffer;
-    }
-    this.buffer = buf;
-    this.length = buf.length;
-    this.duration = buf.duration;
-    this.sampleRate = buf.sampleRate;
-    this.numberOfChannels = buf.numberOfChannels;
+  /** @internal */
+  constructor(buffer: globalThis.AudioBuffer);
+
+  /** @internal */
+  constructor(arg: TAudioBufferOptions | globalThis.AudioBuffer) {
+    this.buffer = this.isAudioBuffer(arg)
+      ? arg
+      : AudioBuffer.createBufferFromOptions(arg);
+    this.length = this.buffer.length;
+    this.duration = this.buffer.duration;
+    this.sampleRate = this.buffer.sampleRate;
+    this.numberOfChannels = this.buffer.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {
@@ -58,7 +53,11 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
+    this.buffer.copyFromChannel(
+      destination as Float32Array<ArrayBuffer>,
+      channelNumber,
+      startInChannel
+    );
   }
 
   public copyToChannel(
@@ -78,6 +77,41 @@ export default class AudioBuffer {
       );
     }
 
-    this.buffer.copyToChannel(source, channelNumber, startInChannel);
+    this.buffer.copyToChannel(
+      source as Float32Array<ArrayBuffer>,
+      channelNumber,
+      startInChannel
+    );
+  }
+
+  private static createBufferFromOptions(
+    options: TAudioBufferOptions
+  ): globalThis.AudioBuffer {
+    const { numberOfChannels = 1, length, sampleRate } = options;
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+      throw new NotSupportedError(
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
+      );
+    }
+    if (length <= 0) {
+      throw new NotSupportedError(
+        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
+      );
+    }
+    if (sampleRate < 8000 || sampleRate > 96000) {
+      throw new NotSupportedError(
+        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
+      );
+    }
+    return new globalThis.AudioBuffer({ numberOfChannels, length, sampleRate });
+  }
+
+  private isAudioBuffer(obj: unknown): obj is globalThis.AudioBuffer {
+    return (
+      typeof obj === 'object' &&
+      obj !== null &&
+      'getChannelData' in obj &&
+      typeof (obj as globalThis.AudioBuffer).getChannelData === 'function'
+    );
   }
 }

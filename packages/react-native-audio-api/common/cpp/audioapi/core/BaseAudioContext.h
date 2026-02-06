@@ -50,7 +50,6 @@ struct OscillatorOptions;
 struct BaseAudioBufferSourceOptions;
 struct AudioBufferSourceOptions;
 struct StreamerOptions;
-struct AudioBufferOptions;
 struct DelayOptions;
 struct IIRFilterOptions;
 struct WaveShaperOptions;
@@ -98,7 +97,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const AudioBufferSourceOptions &options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
-  static std::shared_ptr<AudioBuffer> createBuffer(const AudioBufferOptions &options);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,

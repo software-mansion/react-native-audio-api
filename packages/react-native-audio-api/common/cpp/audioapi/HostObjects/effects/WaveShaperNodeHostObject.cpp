@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
@@ -13,7 +13,7 @@ namespace audioapi {
 WaveShaperNodeHostObject::WaveShaperNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const WaveShaperOptions &options)
-    : AudioNodeHostObject(context->createWaveShaper(options)) {
+    : AudioNodeHostObject(context->createWaveShaper(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample),
       JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, curve));

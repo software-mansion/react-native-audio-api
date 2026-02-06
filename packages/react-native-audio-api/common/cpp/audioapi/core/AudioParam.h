@@ -112,7 +112,7 @@ class AudioParam {
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
   std::shared_ptr<AudioBuffer> audioBuffer_;
-  std::vector<std::shared_ptr<AudioBuffer>> inputBuses_;
+  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_;
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
@@ -145,10 +145,10 @@ class AudioParam {
   }
   float getValueAtTime(double time);
   void processInputs(
-      const std::shared_ptr<AudioBuffer> &outputBus,
+      const std::shared_ptr<AudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBuffer> &processingBuffer);
+  void mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer);
   std::shared_ptr<AudioBuffer> calculateInputs(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess);

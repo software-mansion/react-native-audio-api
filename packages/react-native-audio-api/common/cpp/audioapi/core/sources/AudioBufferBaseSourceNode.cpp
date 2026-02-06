@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
@@ -14,7 +14,7 @@ namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
-    : AudioScheduledSourceNode(context),
+    : AudioScheduledSourceNode(context, options),
       pitchCorrection_(options.pitchCorrection),
       vReadIndex_(0.0) {
   onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);

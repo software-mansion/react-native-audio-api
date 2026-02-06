@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/types/BiquadFilterType.h>
@@ -12,7 +12,7 @@ namespace audioapi {
 
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext>& context,
                                                        const BiquadFilterOptions &options)
-    : AudioNodeHostObject(context->createBiquadFilter(options)) {
+    : AudioNodeHostObject(context->createBiquadFilter(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),

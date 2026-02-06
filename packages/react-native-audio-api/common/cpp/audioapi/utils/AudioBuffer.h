@@ -11,7 +11,7 @@
 
 namespace audioapi {
 
-struct AudioBufferOptions;
+class AudioArrayBuffer;
 
 class AudioBuffer {
  public:
@@ -27,7 +27,6 @@ class AudioBuffer {
 
   explicit AudioBuffer() = default;
   explicit AudioBuffer(size_t size, int numberOfChannels, float sampleRate);
-  explicit AudioBuffer(const AudioBufferOptions &options);
   AudioBuffer(const AudioBuffer &other);
   AudioBuffer(AudioBuffer &&other) noexcept;
   AudioBuffer &operator=(const AudioBuffer &other);
