@@ -44,13 +44,17 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void disable() override;
 
+  /// @note JS Thread only.
+  /// Thread safe, because does not access state of the node.
+  void unregisterOnEndedCallback(uint64_t callbackId);
+
  protected:
   double startTime_;
   double stopTime_;
 
   PlaybackState playbackState_;
 
-  std::atomic<uint64_t> onEndedCallbackId_ = 0;
+  uint64_t onEndedCallbackId_ = 0;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(

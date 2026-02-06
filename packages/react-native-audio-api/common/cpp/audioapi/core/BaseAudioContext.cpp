@@ -1,4 +1,3 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -16,6 +15,7 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/types/NodeOptions.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -42,7 +42,10 @@ BaseAudioContext::BaseAudioContext(
       sampleRate_(sampleRate),
       graphManager_(std::make_shared<AudioGraphManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      runtimeRegistry_(runtimeRegistry) {}
+      runtimeRegistry_(runtimeRegistry),
+      audioEventScheduler_(
+          std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(AUDIO_SCHEDULER_CAPACITY)) {
+}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());

@@ -145,6 +145,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
+  static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   std::unique_ptr<CrossThreadEventScheduler<BaseAudioContext>> audioEventScheduler_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
