@@ -31,24 +31,8 @@ AudioNode::~AudioNode() {
   }
 }
 
-int AudioNode::getNumberOfInputs() const {
-  return numberOfInputs_;
-}
-
-int AudioNode::getNumberOfOutputs() const {
-  return numberOfOutputs_;
-}
-
 size_t AudioNode::getChannelCount() const {
   return channelCount_;
-}
-
-ChannelCountMode AudioNode::getChannelCountMode() const {
-  return channelCountMode_;
-}
-
-ChannelInterpretation AudioNode::getChannelInterpretation() const {
-  return channelInterpretation_;
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
