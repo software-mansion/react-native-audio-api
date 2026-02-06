@@ -26,7 +26,7 @@ ConvolverNode::ConvolverNode(
       buffer_(nullptr),
       internalBuffer_(nullptr) {
   setBuffer(options.buffer);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 bool ConvolverNode::getNormalize_() const {

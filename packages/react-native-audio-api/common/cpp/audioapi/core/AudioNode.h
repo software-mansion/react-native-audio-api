@@ -73,7 +73,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
 
   int numberOfEnabledInputNodes_ = 0;
-  bool isInitialized_ = false;
+  std::atomic<bool> isInitialized_ = false;
 
   std::size_t lastRenderedFrame_{SIZE_MAX};
 

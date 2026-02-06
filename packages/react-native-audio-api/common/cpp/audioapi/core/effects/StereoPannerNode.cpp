@@ -15,7 +15,7 @@ StereoPannerNode::StereoPannerNode(
     const StereoPannerOptions &options)
     : AudioNode(context, options),
       panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {

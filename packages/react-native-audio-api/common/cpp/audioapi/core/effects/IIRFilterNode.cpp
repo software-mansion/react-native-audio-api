@@ -64,7 +64,7 @@ IIRFilterNode::IIRFilterNode(
 
     feedback_[0] = 1.0f;
   }
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 // Compute Z-transform of the filter

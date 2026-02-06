@@ -77,12 +77,6 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     size_t &nonSilentFramesToProcess,
     float sampleRate,
     size_t currentSampleFrame) {
-  if (!isInitialized_) {
-    startOffset = 0;
-    nonSilentFramesToProcess = 0;
-    return;
-  }
-
   auto firstFrame = currentSampleFrame;
   size_t lastFrame = firstFrame + framesToProcess - 1;
 

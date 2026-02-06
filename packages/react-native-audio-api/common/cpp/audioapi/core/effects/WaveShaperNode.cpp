@@ -21,7 +21,7 @@ WaveShaperNode::WaveShaperNode(
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
   setCurve(options.curve);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 OverSampleType WaveShaperNode::getOversample() const {
@@ -54,10 +54,6 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArrayBuffer> &curve) {
 std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (!isInitialized_) {
-    return processingBuffer;
-  }
-
   std::unique_lock<std::mutex> lock(mutex_, std::try_to_lock);
 
   if (!lock.owns_lock()) {

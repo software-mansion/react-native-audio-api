@@ -24,7 +24,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   buffer_ = std::shared_ptr<AudioBuffer>(options.buffer);
   alignedBuffer_ = std::shared_ptr<AudioBuffer>(nullptr);
 
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 AudioBufferSourceNode::~AudioBufferSourceNode() {

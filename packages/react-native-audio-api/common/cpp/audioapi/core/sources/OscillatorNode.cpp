@@ -29,7 +29,7 @@ OscillatorNode::OscillatorNode(
 
   audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {

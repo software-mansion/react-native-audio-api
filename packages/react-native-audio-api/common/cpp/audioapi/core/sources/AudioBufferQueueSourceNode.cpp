@@ -35,7 +35,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     tailBuffer_->zero();
   }
 
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 AudioBufferQueueSourceNode::~AudioBufferQueueSourceNode() {

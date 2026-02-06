@@ -32,7 +32,7 @@ AnalyserNode::AnalyserNode(
       complexData_(std::vector<std::complex<float>>(fftSize_)),
       magnitudeArray_(std::make_unique<AudioArray>(fftSize_ / 2)) {
   setWindowData(windowType_, fftSize_);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 int AnalyserNode::getFftSize() const {

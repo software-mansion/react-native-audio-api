@@ -59,7 +59,7 @@ BiquadFilterNode::BiquadFilterNode(
   x2_.resize(MAX_CHANNEL_COUNT, 0.0f);
   y1_.resize(MAX_CHANNEL_COUNT, 0.0f);
   y2_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 BiquadFilterType BiquadFilterNode::getType() {

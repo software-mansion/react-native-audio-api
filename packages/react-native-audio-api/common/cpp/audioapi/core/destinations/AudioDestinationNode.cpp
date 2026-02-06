@@ -10,7 +10,7 @@ namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
     : AudioNode(context, AudioDestinationOptions()), currentSampleFrame_(0) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
@@ -28,7 +28,7 @@ double AudioDestinationNode::getCurrentTime() const {
 void AudioDestinationNode::renderAudio(
     const std::shared_ptr<AudioBuffer> &destinationBuffer,
     int numFrames) {
-  if (numFrames < 0 || !destinationBuffer || !isInitialized_) {
+  if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 

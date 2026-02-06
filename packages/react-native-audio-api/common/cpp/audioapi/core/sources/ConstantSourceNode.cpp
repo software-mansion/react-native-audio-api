@@ -13,7 +13,7 @@ ConstantSourceNode::ConstantSourceNode(
     : AudioScheduledSourceNode(context) {
   offsetParam_ = std::make_shared<AudioParam>(
       options.offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
