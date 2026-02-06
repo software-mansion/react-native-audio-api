@@ -190,7 +190,6 @@ const Record: FC = () => {
 
     const tNow = audioContext.currentTime;
     let nextStartAt = tNow + 1;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     capturedBuffers.forEach((buffer) => {
       const source = audioContext.createBufferSource();
