@@ -6,7 +6,6 @@
 namespace audioapi {
 
 class AudioBuffer;
-class AudioBuffer;
 
 class AudioStretcher {
  public:

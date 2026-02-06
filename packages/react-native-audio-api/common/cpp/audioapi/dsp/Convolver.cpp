@@ -38,10 +38,10 @@ void Convolver::reset() {
   _segments.clear();
   _segmentsIR.clear();
   _preMultiplied.clear();
-  if (_fftBuffer) {
+  if (_fftBuffer != nullptr) {
     _fftBuffer->zero();
   }
-  if (_inputBuffer) {
+  if (_inputBuffer != nullptr) {
     _inputBuffer->zero();
   }
 }

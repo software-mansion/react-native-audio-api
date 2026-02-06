@@ -6,7 +6,6 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/utils/AudioBuffer.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
