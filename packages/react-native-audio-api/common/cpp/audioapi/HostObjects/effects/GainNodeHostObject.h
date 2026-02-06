@@ -10,6 +10,7 @@ using namespace facebook;
 
 struct GainOptions;
 class BaseAudioContext;
+class AudioParamHostObject;
 
 class GainNodeHostObject : public AudioNodeHostObject {
  public:
@@ -18,5 +19,8 @@ class GainNodeHostObject : public AudioNodeHostObject {
       const GainOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(gain);
+
+private:
+    std::shared_ptr<AudioParamHostObject> gainParam_;
 };
 } // namespace audioapi
