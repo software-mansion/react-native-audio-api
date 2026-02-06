@@ -25,7 +25,11 @@ class FatFunctionTest : public ::testing::Test {
 TEST(FatFunctionTest, BasicFunctionality) {
   FatFunction<64, IntOp> add = [](int a, int b) { return a + b; };
   EXPECT_EQ(add(2, 3), 5);
-  EXPECT_EQ(sizeof(add), 64 + sizeof(void*) * 3); // Storage + function pointers
+  // Account for alignment padding
+  constexpr size_t dataSize = 64 + sizeof(void*) * 3;
+  constexpr size_t alignment = alignof(std::max_align_t);
+  constexpr size_t expectedSize = (dataSize + alignment - 1) & ~(alignment - 1);
+  EXPECT_EQ(sizeof(add), expectedSize);
 }
 
 TEST(FatFunctionTest, MoveSemantics) {
