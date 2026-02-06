@@ -226,6 +226,15 @@ RCT_EXPORT_METHOD(
   });
 }
 
+RCT_EXPORT_METHOD(
+    setInputDevice : (NSString *)deviceId resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    [self.audioSessionManager setInputDevice:deviceId resolve:resolve reject:reject];
+  });
+}
+
 RCT_EXPORT_METHOD(disableSessionManagement)
 {
   [self.audioSessionManager disableSessionManagement];

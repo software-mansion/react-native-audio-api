@@ -43,11 +43,11 @@ export default function ReverbPedal({
     let buffer: AudioBuffer;
     let desiredDuration: number;
     if (level < 0.33) {
-      desiredDuration = 1;
+      desiredDuration = 0.4;
     } else if (level < 0.66) {
-      desiredDuration = 2;
+      desiredDuration = 0.7;
     } else {
-      desiredDuration = 4;
+      desiredDuration = 1;
     }
     if (convolverNodeRef.current?.buffer) {
       if (convolverNodeRef.current.buffer.duration === desiredDuration) {
@@ -57,18 +57,18 @@ export default function ReverbPedal({
       inputNode.disconnect(convolverNodeRef.current);
     }
     if (level < 0.33) {
-      buffer = makeReverbCurve(1, context);
+      buffer = makeReverbCurve(desiredDuration, context);
     } else if (level < 0.66) {
-      buffer = makeReverbCurve(2, context);
+      buffer = makeReverbCurve(desiredDuration, context);
     } else {
-      buffer = makeReverbCurve(4, context);
+      buffer = makeReverbCurve(desiredDuration, context);
     }
     const convolver = context.createConvolver();
     convolver.buffer = buffer;
     convolverNodeRef.current = convolver;
     inputNode.connect(convolver).connect(outputNode);
     inputNode.disconnect(outputNode);
-    (outputNode as GainNode).gain.value = 2.5;
+    (outputNode as GainNode).gain.value = 2;
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {

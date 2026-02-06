@@ -1,0 +1,6 @@
+{
+  "main": "../../lib/module/mock/index",
+  "module": "../../lib/module/mock/index",
+  "react-native": "../../src/mock/index",
+  "types": "../../lib/typescript/mock/index.d.ts"
+}

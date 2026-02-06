@@ -93,8 +93,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>(CHANNEL_CAPACITY);
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
   sender_ = std::move(sender);
   receiver_ = std::move(receiver);
 

@@ -7,21 +7,25 @@ export interface EventTypeWithValue {
   value: number;
 }
 
-interface OnInterruptionEventType {
-  type: 'ended' | 'began';
+export type InterruptionType = 'began' | 'ended';
+
+export interface OnInterruptionEventType {
+  type: InterruptionType;
   shouldResume: boolean;
 }
 
-interface OnRouteChangeEventType {
-  reason:
-    | 'Unknown'
-    | 'Override'
-    | 'CategoryChange'
-    | 'WakeFromSleep'
-    | 'NewDeviceAvailable'
-    | 'OldDeviceUnavailable'
-    | 'ConfigurationChange'
-    | 'NoSuitableRouteForCategory';
+export type RouteChangeReason =
+  | 'Unknown'
+  | 'Override'
+  | 'CategoryChange'
+  | 'WakeFromSleep'
+  | 'NewDeviceAvailable'
+  | 'OldDeviceUnavailable'
+  | 'ConfigurationChange'
+  | 'NoSuitableRouteForCategory';
+
+export interface OnRouteChangeEventType {
+  reason: RouteChangeReason;
 }
 
 export interface OnRecorderErrorEventType {

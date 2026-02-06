@@ -23,7 +23,7 @@ class AudioBuffer;
 
 template <typename T>
 concept HasCleanupMethod = requires(T t) {
-  { t->cleanup() };
+  { t.cleanup() };
 };
 
 class AudioGraphManager {
@@ -146,10 +146,13 @@ class AudioGraphManager {
     // playing
     if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
       return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
-    } else if (node->requiresTailProcessing()) {
+    }
+
+    if (node->requiresTailProcessing()) {
       // if the node requires tail processing, its own implementation handles disabling it at the right time
       return node.use_count() == 1 && !node->isEnabled();
     }
+
     return node.use_count() == 1;
   }
 

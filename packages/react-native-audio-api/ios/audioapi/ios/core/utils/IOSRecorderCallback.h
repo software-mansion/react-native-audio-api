@@ -11,6 +11,11 @@ typedef struct objc_object AVAudioConverter;
 #include <memory>
 #include <vector>
 
+struct CallbackData {
+  const AudioBufferList *audioBufferList;
+  int numFrames;
+};
+
 namespace audioapi {
 
 class AudioBus;
@@ -42,6 +47,15 @@ class IOSRecorderCallback : public AudioRecorderCallback {
 
   AVAudioPCMBuffer *converterInputBuffer_;
   AVAudioPCMBuffer *converterOutputBuffer_;
+
+ private:
+  std::unique_ptr<task_offloader::TaskOffloader<
+      CallbackData,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
+      offloader_;
+  // delay initialization of offloader until prepare is called
+  void taskOffloaderFunction(CallbackData data);
 };
 
 } // namespace audioapi

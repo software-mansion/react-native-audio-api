@@ -11,6 +11,7 @@
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
+#include <utility>
 
 namespace audioapi {
 
@@ -87,6 +88,14 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
     converterOutputBuffer_ =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
+    auto offloaderLambda = [this](CallbackData data) {
+      taskOffloaderFunction(data);
+    };
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        CallbackData,
+        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+        AudioRecorderCallback::RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
+        AudioRecorderCallback::RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -110,6 +119,7 @@ void IOSRecorderCallback::cleanup()
     for (int i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
+    offloader_.reset();
   }
 }
 
@@ -123,7 +133,15 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
+  offloader_->getSender()->send({inputBuffer, numFrames});
+}
 
+void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
+{
+  auto [inputBuffer, numFrames] = data;
+  // dummy data to wake up thread after cleanup, skip processing it
+  if (inputBuffer == nullptr)
+    return;
   @autoreleasepool {
     NSError *error = nil;
 
@@ -187,5 +205,4 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
     }
   }
 }
-
 } // namespace audioapi

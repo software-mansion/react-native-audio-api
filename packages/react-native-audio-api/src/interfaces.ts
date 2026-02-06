@@ -10,20 +10,20 @@ import type {
   OscillatorType,
   OverSampleType,
   Result,
-  WindowType,
-  TGainOptions,
-  TSteroPannerOptions,
-  TConvolverOptions,
-  TConstantSourceOptions,
   TAnalyserOptions,
-  TBiquadFilterOptions,
-  TOscillatorOptions,
-  TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
-  TStreamerOptions,
+  TBaseAudioBufferSourceOptions,
+  TBiquadFilterOptions,
+  TConstantSourceOptions,
+  TConvolverOptions,
   TDelayOptions,
+  TGainOptions,
   TIIRFilterOptions,
+  TOscillatorOptions,
+  TStereoPannerOptions,
+  TStreamerOptions,
   TWaveShaperOptions,
+  WindowType,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -81,7 +81,7 @@ export interface IBaseAudioContext {
   ): IConstantSourceNode;
   createGain(gainOptions: TGainOptions): IGainNode;
   createStereoPanner(
-    stereoPannerOptions: TSteroPannerOptions
+    stereoPannerOptions: TStereoPannerOptions
   ): IStereoPannerNode;
   createBiquadFilter: (
     biquadFilterOptions: TBiquadFilterOptions
