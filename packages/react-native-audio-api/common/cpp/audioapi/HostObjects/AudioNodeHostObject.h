@@ -1,9 +1,9 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <jsi/jsi.h>
 #include <memory>

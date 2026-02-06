@@ -8,12 +8,12 @@
 
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include <vector>
-#include <functional>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -46,7 +46,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   template <typename F>
   bool inline scheduleAudioEvent(F &&event) noexcept {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-        return context->scheduleAudioEvent(std::forward<F>(event));
+      return context->scheduleAudioEvent(std::forward<F>(event));
     }
 
     return false;
