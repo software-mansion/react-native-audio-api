@@ -54,8 +54,8 @@ struct StereoPannerOptions : AudioNodeOptions {
 };
 
 struct ConvolverOptions : AudioNodeOptions {
-  std::shared_ptr<AudioBuffer> bus;
   bool disableNormalization = false;
+  std::shared_ptr<AudioBuffer> bus;
 
   ConvolverOptions() {
     requiresTailProcessing = true;
@@ -93,16 +93,16 @@ struct OscillatorOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
-  float detune = 0.0f;
   bool pitchCorrection = false;
+  float detune = 0.0f;
   float playbackRate = 1.0f;
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   std::shared_ptr<AudioBuffer> buffer;
-  bool loop = false;
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
+  bool loop = false;
 };
 
 struct StreamerOptions : AudioScheduledSourceNodeOptions {

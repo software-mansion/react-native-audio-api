@@ -60,8 +60,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   const int numberOfInputs_;
   const int numberOfOutputs_;
-  const bool requiresTailProcessing_;
   int channelCount_;
+  const bool requiresTailProcessing_;
   const ChannelCountMode channelCountMode_;
   const ChannelInterpretation channelInterpretation_;
 
