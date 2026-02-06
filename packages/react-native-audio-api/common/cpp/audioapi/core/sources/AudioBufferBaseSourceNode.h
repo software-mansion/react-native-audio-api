@@ -28,11 +28,13 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] double getInputLatency() const;
   [[nodiscard]] double getOutputLatency() const;
 
+  /// @note JS Thread only.
+  /// Thread safe, because does not access state of the node.
+  void unregisterOnPositionChangedCallback(uint64_t callbackId);
+
  protected:
   // pitch correction
   bool pitchCorrection_;
-
-  std::mutex bufferLock_;
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
@@ -45,11 +47,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // internal helper
   double vReadIndex_;
 
-  std::atomic<uint64_t> onPositionChangedCallbackId_ = 0; // 0 means no callback
+  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
 
-  std::mutex &getBufferLock();
   virtual double getCurrentPosition() const = 0;
 
   void sendOnPositionChangedEvent();

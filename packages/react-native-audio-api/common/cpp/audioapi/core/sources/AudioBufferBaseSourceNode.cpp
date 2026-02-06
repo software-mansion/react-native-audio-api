@@ -39,11 +39,7 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam() co
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto oldCallbackId = onPositionChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
-
-  if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, oldCallbackId);
-  }
+  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
@@ -55,10 +51,6 @@ void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
 
 int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
   return onPositionChangedInterval_;
-}
-
-std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
-  return bufferLock_;
 }
 
 double AudioBufferBaseSourceNode::getInputLatency() const {
@@ -83,14 +75,16 @@ double AudioBufferBaseSourceNode::getOutputLatency() const {
   return 0;
 }
 
-void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  auto onPositionChangedCallbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
+void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
+}
 
-  if (onPositionChangedCallbackId != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
+void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
+  if (onPositionChangedCallbackId_ != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId, body);
+        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
 
     onPositionChangedTime_ = 0;
   }

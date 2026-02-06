@@ -10,6 +10,7 @@ using namespace facebook;
 
 class AudioBufferBaseSourceNode;
 struct BaseAudioBufferSourceOptions;
+class AudioParamHostObject;
 
 class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
@@ -28,6 +29,19 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
 
   JSI_HOST_FUNCTION_DECL(getInputLatency);
   JSI_HOST_FUNCTION_DECL(getOutputLatency);
+
+protected:
+    std::shared_ptr<AudioParamHostObject> detuneParam_;
+    std::shared_ptr<AudioParamHostObject> playbackRateParam_;
+
+    int onPositionChangedInterval_;
+    uint64_t onPositionChangedCallbackId_ = 0;
+
+    double inputLatency_;
+    double outputLatency_;
+    bool pitchCorrection_;
+
+    void setOnPositionChangedCallbackId(uint64_t callbackId);
 };
 
 } // namespace audioapi
