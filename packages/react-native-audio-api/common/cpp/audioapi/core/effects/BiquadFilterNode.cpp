@@ -62,10 +62,6 @@ BiquadFilterNode::BiquadFilterNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-BiquadFilterType BiquadFilterNode::getType() {
-  return type_;
-}
-
 void BiquadFilterNode::setType(BiquadFilterType type) {
   type_ = type;
 }

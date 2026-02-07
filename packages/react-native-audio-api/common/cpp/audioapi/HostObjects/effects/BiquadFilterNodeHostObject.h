@@ -11,6 +11,7 @@ using namespace facebook;
 
 struct BiquadFilterOptions;
 class BaseAudioContext;
+class AudioParamHostObject;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:
@@ -27,5 +28,13 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_SETTER_DECL(type);
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
+
+private:
+  std::shared_ptr<AudioParamHostObject> frequencyParam_;
+  std::shared_ptr<AudioParamHostObject> detuneParam_;
+  std::shared_ptr<AudioParamHostObject> QParam_;
+  std::shared_ptr<AudioParamHostObject> gainParam_;
+
+  BiquadFilterType type_;
 };
 } // namespace audioapi

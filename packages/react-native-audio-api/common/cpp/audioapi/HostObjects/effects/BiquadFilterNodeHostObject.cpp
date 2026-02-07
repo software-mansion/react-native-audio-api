@@ -7,12 +7,19 @@
 #include <audioapi/core/types/BiquadFilterType.h>
 
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext>& context,
                                                        const BiquadFilterOptions &options)
-    : AudioNodeHostObject(context->createBiquadFilter(options), options) {
+    : AudioNodeHostObject(context->createBiquadFilter(options), options), type_(options.type) {
+    auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
+  frequencyParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getFrequencyParam());
+    detuneParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getDetuneParam());
+    QParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getQParam());
+    gainParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getGainParam());
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),
@@ -26,40 +33,34 @@ BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<Bas
 }
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, frequency) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto frequencyParam_ =
-      std::make_shared<AudioParamHostObject>(biquadFilterNode->getFrequencyParam());
   return jsi::Object::createFromHostObject(runtime, frequencyParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, detune) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto detuneParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getDetuneParam());
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, Q) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto QParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getQParam());
   return jsi::Object::createFromHostObject(runtime, QParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, gain) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto gainParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getGainParam());
   return jsi::Object::createFromHostObject(runtime, gainParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto type = biquadFilterNode->getType();
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::filterTypeToString(type));
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::filterTypeToString(type_));
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  auto type = value.asString(runtime).utf8(runtime);
-  biquadFilterNode->setType(js_enum_parser::filterTypeFromString(type));
+
+  auto type = js_enum_parser::filterTypeFromString(value.asString(runtime).utf8(runtime));
+  auto event = [&biquadFilterNode, type](BaseAudioContext&) {
+    biquadFilterNode->setType(type);
+  };
+  biquadFilterNode->scheduleAudioEvent(std::move(event));
+  type_ = type;
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {

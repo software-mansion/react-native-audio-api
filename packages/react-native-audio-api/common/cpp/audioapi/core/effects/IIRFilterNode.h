@@ -73,17 +73,17 @@ class IIRFilterNode : public AudioNode {
     return result;
   }
 
- static std::vector<float> createNormalizedVector(
-        const std::vector<float>& inputVector,
-        float scaleFactor) {
-     std::vector<float> result = inputVector;
-     if (scaleFactor != 1.0f && scaleFactor != 0.0f && !result.empty()) {
-         for (float &val : result) {
-             val /= scaleFactor;
-         }
-     }
+  static std::vector<float> createNormalizedVector(
+      const std::vector<float> &inputVector,
+      float scaleFactor) {
+    std::vector<float> result = inputVector;
+    if (scaleFactor != 1.0f && scaleFactor != 0.0f && !result.empty()) {
+      for (float &val : result) {
+        val /= scaleFactor;
+      }
+    }
 
-     return result;
+    return result;
   }
 };
 } // namespace audioapi
