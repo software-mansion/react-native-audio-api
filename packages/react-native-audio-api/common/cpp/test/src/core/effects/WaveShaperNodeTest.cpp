@@ -3,7 +3,7 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
@@ -28,7 +28,7 @@ class TestableWaveShaperNode : public WaveShaperNode {
  public:
   explicit TestableWaveShaperNode(std::shared_ptr<BaseAudioContext> context)
       : WaveShaperNode(context, WaveShaperOptions()) {
-    testCurve_ = std::make_shared<AudioArrayBuffer>(3);
+    testCurve_ = std::make_shared<AudioArray>(3);
     auto data = testCurve_->span();
     data[0] = -2.0f;
     data[1] = 0.0f;
@@ -41,7 +41,7 @@ class TestableWaveShaperNode : public WaveShaperNode {
     return WaveShaperNode::processNode(processingBuffer, framesToProcess);
   }
 
-  std::shared_ptr<AudioArrayBuffer> testCurve_;
+  std::shared_ptr<AudioArray> testCurve_;
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
@@ -52,7 +52,6 @@ TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
 TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
   auto waveShaper = context->createWaveShaper(WaveShaperOptions());
   ASSERT_NO_THROW(waveShaper->setCurve(nullptr));
-  ASSERT_EQ(waveShaper->getCurve(), nullptr);
 }
 
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {

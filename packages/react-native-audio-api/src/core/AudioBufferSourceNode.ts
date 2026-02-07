@@ -11,13 +11,17 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   private onLoopEndedSubscription?: AudioEventSubscription;
   private onLoopEndedCallback?: (event: EventEmptyType) => void;
 
-  private _buffer: AudioBuffer | null;
+  private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
 
   constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
     const node = context.context.createBufferSource(options || {});
     super(context, node);
-    this._buffer = options?.buffer ? options.buffer : null;
+
+    if (options?.buffer) {
+      this._buffer = options.buffer;
+      this.bufferHasBeenSet = true;
+    }
   }
 
   public get buffer(): AudioBuffer | null {
