@@ -11,26 +11,37 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   private onLoopEndedSubscription?: AudioEventSubscription;
   private onLoopEndedCallback?: (event: EventEmptyType) => void;
 
+  private _buffer: AudioBuffer | null;
+  private bufferHasBeenSet: boolean = false;
+
   constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
     const node = context.context.createBufferSource(options || {});
     super(context, node);
+    this._buffer = options?.buffer ? options.buffer : null;
   }
 
   public get buffer(): AudioBuffer | null {
-    const buffer = (this.node as IAudioBufferSourceNode).buffer;
-    if (!buffer) {
-      return null;
-    }
-    return new AudioBuffer(buffer);
+    return this._buffer;
   }
 
   public set buffer(buffer: AudioBuffer | null) {
-    if (!buffer) {
-      (this.node as IAudioBufferSourceNode).setBuffer(null);
+    if (buffer === null) {
+      if (this.buffer !== null) {
+        (this.node as IAudioBufferSourceNode).setBuffer(null);
+        this._buffer = null;
+      }
+
       return;
     }
 
+    if (this.bufferHasBeenSet) {
+      throw new InvalidStateError(
+        'The buffer can only be set once and cannot be changed afterwards.'
+      );
+    }
+
     (this.node as IAudioBufferSourceNode).setBuffer(buffer.buffer);
+    this._buffer = buffer;
   }
 
   public get loopSkip(): boolean {

@@ -22,23 +22,26 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       const AudioBufferSourceOptions &options);
   ~AudioBufferSourceNode() override;
 
-  [[nodiscard]] bool getLoop() const;
-  [[nodiscard]] bool getLoopSkip() const;
-  [[nodiscard]] double getLoopStart() const;
-  [[nodiscard]] double getLoopEnd() const;
-  [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
-
   void setLoop(bool loop);
   void setLoopSkip(bool loopSkip);
   void setLoopStart(double loopStart);
   void setLoopEnd(double loopEnd);
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+
+  /// @note Buffer can be set (not to nullptr) only once.
+  /// This is consistent with Web Audio API.
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      const std::shared_ptr<AudioBuffer> &playbackRateBuffer,
+      const std::shared_ptr<AudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
   void start(double when, double offset, double duration = -1);
   void disable() override;
 
   void setOnLoopEndedCallbackId(uint64_t callbackId);
+
+  /// @note Thread safe, because does not access state of the node.
+  void unregisterOnLoopEndedCallback(uint64_t callbackId);
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -55,9 +58,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  std::shared_ptr<AudioBuffer> alignedBuffer_;
 
-  std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
+  uint64_t onLoopEndedCallbackId_ = 0; // 0 means no callback
   void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(

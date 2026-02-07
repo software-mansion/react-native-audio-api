@@ -150,12 +150,8 @@ std::shared_ptr<AudioBuffer> AudioBufferQueueSourceNode::processNode(
 }
 
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), context->getSampleRate()) +
-        playedBuffersDuration_;
-  } else {
-    return 0.0;
-  }
+  return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), getContextSampleRate()) +
+      playedBuffersDuration_;
 }
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {

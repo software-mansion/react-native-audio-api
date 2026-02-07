@@ -43,10 +43,8 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    onPositionChangedInterval_ =
-        static_cast<int>(context->getSampleRate() * static_cast<float>(interval) / 1000);
-  }
+  onPositionChangedInterval_ =
+      static_cast<int>(getContextSampleRate() * static_cast<float>(interval) / 1000);
 }
 
 int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
@@ -55,22 +53,14 @@ int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
 
 double AudioBufferBaseSourceNode::getInputLatency() const {
   if (pitchCorrection_) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      return static_cast<double>(stretch_->inputLatency()) / context->getSampleRate();
-    } else {
-      return 0;
-    }
+    return static_cast<double>(stretch_->inputLatency()) / getContextSampleRate();
   }
   return 0;
 }
 
 double AudioBufferBaseSourceNode::getOutputLatency() const {
   if (pitchCorrection_) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      return static_cast<double>(stretch_->outputLatency()) / context->getSampleRate();
-    } else {
-      return 0;
-    }
+    return static_cast<double>(stretch_->outputLatency()) / getContextSampleRate();
   }
   return 0;
 }

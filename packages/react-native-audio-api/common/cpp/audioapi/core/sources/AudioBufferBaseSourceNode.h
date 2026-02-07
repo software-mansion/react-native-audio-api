@@ -28,8 +28,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] double getInputLatency() const;
   [[nodiscard]] double getOutputLatency() const;
 
-  /// @note JS Thread only.
-  /// Thread safe, because does not access state of the node.
+  /// @note Thread safe, because does not access state of the node.
   void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
  protected:

@@ -44,8 +44,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void disable() override;
 
-  /// @note JS Thread only.
-  /// Thread safe, because does not access state of the node.
+  /// @note Thread safe, because does not access state of the node.
   void unregisterOnEndedCallback(uint64_t callbackId);
 
  protected:

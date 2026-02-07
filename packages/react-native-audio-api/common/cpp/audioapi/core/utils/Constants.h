@@ -11,6 +11,7 @@ namespace audioapi {
 static constexpr int RENDER_QUANTUM_SIZE = 128;
 static constexpr size_t MAX_FFT_SIZE = 32768;
 static constexpr int MAX_CHANNEL_COUNT = 32;
+static constexpr float DEFAULT_SAMPLE_RATE = 44100.0f;
 
 // stretcher
 static constexpr float UPPER_FREQUENCY_LIMIT_DETECTION = 333.0f;

@@ -22,11 +22,7 @@ JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
 size_t DelayNodeHostObject::getSizeInBytes() const {
   auto delayNode = std::static_pointer_cast<DelayNode>(node_);
   auto base = sizeof(float) * delayNode->getDelayTimeParam()->getMaxValue();
-  if (std::shared_ptr<BaseAudioContext> context = delayNode->context_.lock()) {
-    return base * context->getSampleRate();
-  } else {
-    return base * 44100; // Fallback to common sample rate
-  }
+  return base * delayNode->getContextSampleRate();
 }
 
 } // namespace audioapi

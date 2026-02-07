@@ -38,6 +38,14 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
+  float getContextSampleRate() const {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->getSampleRate();
+    }
+
+    return DEFAULT_SAMPLE_RATE;
+  }
+
   /// @note JS Thread only
   bool isEnabled() const;
   /// @note JS Thread only
