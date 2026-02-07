@@ -23,10 +23,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
@@ -39,7 +39,9 @@ namespace audioapi {
 IIRFilterNode::IIRFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const IIRFilterOptions &options)
-    : AudioNode(context, options), feedforward_(options.feedforward), feedback_(options.feedback) {
+    : AudioNode(context, options),
+      feedforward_(createNormalizedVector(options.feedforward, options.feedback[0])),
+      feedback_(createNormalizedVector(options.feedback, options.feedback[0])) {
 
   int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);
@@ -51,19 +53,6 @@ IIRFilterNode::IIRFilterNode(
     yBuffers_[c].resize(bufferLength, 0.0f);
   }
 
-  size_t feedforwardLength = feedforward_.size();
-  size_t feedbackLength = feedback_.size();
-
-  if (feedback_[0] != 1) {
-    float scale = feedback_[0];
-    for (unsigned k = 1; k < feedbackLength; ++k)
-      feedback_[k] /= scale;
-
-    for (unsigned k = 0; k < feedforwardLength; ++k)
-      feedforward_[k] /= scale;
-
-    feedback_[0] = 1.0f;
-  }
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -88,7 +77,7 @@ void IIRFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
-    size_t length) {
+    size_t length) const {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
     return;

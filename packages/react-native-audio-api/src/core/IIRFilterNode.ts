@@ -6,7 +6,7 @@ import BaseAudioContext from './BaseAudioContext';
 
 export default class IIRFilterNode extends AudioNode {
   constructor(context: BaseAudioContext, options: TIIRFilterOptions) {
-    const iirFilterNode = context.context.createIIRFilter(options || {});
+    const iirFilterNode = context.context.createIIRFilter(options);
     super(context, iirFilterNode);
   }
 

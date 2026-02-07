@@ -42,11 +42,12 @@ class IIRFilterNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const IIRFilterOptions &options);
 
+  /// @note Thread safe, because feedforward_ and feedback_ are readonly after construction.
   void getFrequencyResponse(
       const float *frequencyArray,
       float *magResponseOutput,
       float *phaseResponseOutput,
-      size_t length);
+      size_t length) const;
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -56,8 +57,8 @@ class IIRFilterNode : public AudioNode {
  private:
   static constexpr size_t bufferLength = 32;
 
-  std::vector<float> feedforward_;
-  std::vector<float> feedback_;
+  const std::vector<float> feedforward_;
+  const std::vector<float> feedback_;
 
   std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
   std::vector<std::vector<float>> yBuffers_;
@@ -70,6 +71,19 @@ class IIRFilterNode : public AudioNode {
     for (int k = order; k >= 0; --k)
       result = result * z + std::complex<float>(coefficients[k]);
     return result;
+  }
+
+ static std::vector<float> createNormalizedVector(
+        const std::vector<float>& inputVector,
+        float scaleFactor) {
+     std::vector<float> result = inputVector;
+     if (scaleFactor != 1.0f && scaleFactor != 0.0f && !result.empty()) {
+         for (float &val : result) {
+             val /= scaleFactor;
+         }
+     }
+
+     return result;
   }
 };
 } // namespace audioapi
