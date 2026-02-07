@@ -29,7 +29,7 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
 
-private:
+ private:
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> QParam_;

@@ -5,48 +5,43 @@
 #include <audioapi/core/effects/ConvolverNode.h>
 
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const ConvolverOptions &options)
-    : AudioNodeHostObject(context->createConvolver(options), options) {
-  addGetters(
-      JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, normalize),
-      JSI_EXPORT_PROPERTY_GETTER(ConvolverNodeHostObject, buffer));
+    : AudioNodeHostObject(context->createConvolver(options), options), normalize_(!options.disableNormalization) {
   addSetters(JSI_EXPORT_PROPERTY_SETTER(ConvolverNodeHostObject, normalize));
   addFunctions(JSI_EXPORT_FUNCTION(ConvolverNodeHostObject, setBuffer));
 }
 
-JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, normalize) {
-  auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
-  return {convolverNode->getNormalize_()};
-}
-
-JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, buffer) {
-  auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
-  auto buffer = convolverNode->getBuffer();
-  auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-  auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
-  jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes() + 16);
-  return jsiObject;
-}
-
 JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
   auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
-  convolverNode->setNormalize(value.getBool());
+  auto normalize = value.getBool();
+
+  auto event = [convolverNode, normalize](BaseAudioContext&) {
+    convolverNode->setNormalize(normalize);
+  };
+  convolverNode->scheduleAudioEvent(std::move(event));
+  normalize_ = normalize;
 }
 
 JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
-  if (args[0].isUndefined()) {
-    convolverNode->setBuffer(nullptr);
-    return jsi::Value::undefined();
-  }
 
-  auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  convolverNode->setBuffer(bufferHostObject->audioBuffer_);
-  thisValue.asObject(runtime).setExternalMemoryPressure(
-      runtime, bufferHostObject->getSizeInBytes() + 16);
+  std::shared_ptr<AudioBuffer> copiedBuffer;
+
+  if (args[0].isObject()) {
+    auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    thisValue.asObject(runtime).setExternalMemoryPressure(
+          runtime, bufferHostObject->getSizeInBytes());
+    copiedBuffer = std::make_shared<AudioBuffer>(*bufferHostObject->audioBuffer_);
+  }
+  auto event = [convolverNode, copiedBuffer](BaseAudioContext&) {
+    convolverNode->setBuffer(copiedBuffer);
+  };
+  convolverNode->scheduleAudioEvent(std::move(event));
+
   return jsi::Value::undefined();
 }
 } // namespace audioapi

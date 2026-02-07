@@ -29,14 +29,6 @@ ConvolverNode::ConvolverNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-bool ConvolverNode::getNormalize_() const {
-  return normalize_;
-}
-
-const std::shared_ptr<AudioBuffer> &ConvolverNode::getBuffer() const {
-  return buffer_;
-}
-
 void ConvolverNode::setNormalize(bool normalize) {
   if (normalize_ != normalize) {
     normalize_ = normalize;
