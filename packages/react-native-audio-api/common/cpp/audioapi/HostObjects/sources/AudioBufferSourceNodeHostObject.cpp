@@ -19,6 +19,10 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
+  if (options.buffer != nullptr) {
+      setBuffer(options.buffer);
+  }
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),

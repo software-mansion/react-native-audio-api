@@ -23,13 +23,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-  buffer_ = std::shared_ptr<AudioBuffer>(options.buffer);
-
   isInitialized_.store(true, std::memory_order_release);
-}
-
-AudioBufferSourceNode::~AudioBufferSourceNode() {
-  buffer_.reset();
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
@@ -114,7 +108,6 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
 
 void AudioBufferSourceNode::disable() {
   AudioScheduledSourceNode::disable();
-  buffer_.reset();
 }
 
 void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {

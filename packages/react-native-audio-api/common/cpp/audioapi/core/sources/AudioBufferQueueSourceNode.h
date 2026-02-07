@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <list>
 #include <memory>
-#include <queue>
 #include <string>
 
 namespace audioapi {
@@ -21,7 +21,6 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   explicit AudioBufferQueueSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
-  ~AudioBufferQueueSourceNode() override;
 
   void stop(double when) override;
 
@@ -29,12 +28,15 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset);
   void pause();
 
-  std::string enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t bufferId);
   void dequeueBuffer(size_t bufferId);
   void clearBuffers();
   void disable() override;
 
   void setOnBufferEndedCallbackId(uint64_t callbackId);
+
+  /// @note Thread safe, because does not access state of the node.
+  void unregisterOnBufferEndedCallback(uint64_t callbackId);
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -47,8 +49,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
  private:
   // User provided buffers
-  std::queue<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
-  size_t bufferId_ = 0;
+  std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 
   bool isPaused_ = false;
   bool addExtraTailFrames_ = false;
@@ -56,7 +57,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   double playedBuffersDuration_ = 0;
 
-  std::atomic<uint64_t> onBufferEndedCallbackId_ = 0; // 0 means no callback
+  uint64_t onBufferEndedCallbackId_ = 0; // 0 means no callback
 
   void processWithoutInterpolation(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
