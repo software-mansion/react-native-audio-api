@@ -42,6 +42,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
     (this.node as IAudioBufferSourceNode).setBuffer(buffer.buffer);
     this._buffer = buffer;
+    this.bufferHasBeenSet = true;
   }
 
   public get loopSkip(): boolean {

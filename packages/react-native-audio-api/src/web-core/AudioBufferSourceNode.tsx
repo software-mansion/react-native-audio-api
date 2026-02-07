@@ -429,6 +429,9 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
     }
 
     this._buffer = buffer;
+    if (buffer !== null) {
+      this.bufferHasBeenSet = true;
+    }
 
     const action = (node: IStretcherNode) => {
       node.dropBuffers();
