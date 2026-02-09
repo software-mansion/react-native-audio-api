@@ -83,73 +83,18 @@ AudioArray *AudioBuffer::getChannel(size_t index) const {
 }
 
 AudioArray *AudioBuffer::getChannelByType(int channelType) const {
-  switch (getNumberOfChannels()) {
-    case 1: // mono
-      if (channelType == ChannelMono) {
-        return getChannel(0);
-      }
-      return nullptr;
+    auto it = kChannelLayouts.find(getNumberOfChannels());
+    if (it == kChannelLayouts.end()) {
+        return nullptr;
+    }
+    const auto& channelOrder = it->second;
+    for (size_t i = 0; i < channelOrder.size(); ++i) {
+        if (channelOrder[i] == channelType) {
+            return getChannel(i);
+        }
+    }
 
-    case 2: // stereo
-      switch (channelType) {
-        case ChannelLeft:
-          return getChannel(0);
-        case ChannelRight:
-          return getChannel(1);
-        default:
-          return nullptr;
-      }
-
-    case 4: // quad
-      switch (channelType) {
-        case ChannelLeft:
-          return getChannel(0);
-        case ChannelRight:
-          return getChannel(1);
-        case ChannelSurroundLeft:
-          return getChannel(2);
-        case ChannelSurroundRight:
-          return getChannel(3);
-        default:
-          return nullptr;
-      }
-
-    case 5: // 5.0
-      switch (channelType) {
-        case ChannelLeft:
-          return getChannel(0);
-        case ChannelRight:
-          return getChannel(1);
-        case ChannelCenter:
-          return getChannel(2);
-        case ChannelSurroundLeft:
-          return getChannel(3);
-        case ChannelSurroundRight:
-          return getChannel(4);
-        default:
-          return nullptr;
-      }
-
-    case 6: // 5.1
-      switch (channelType) {
-        case ChannelLeft:
-          return getChannel(0);
-        case ChannelRight:
-          return getChannel(1);
-        case ChannelCenter:
-          return getChannel(2);
-        case ChannelLFE:
-          return getChannel(3);
-        case ChannelSurroundLeft:
-          return getChannel(4);
-        case ChannelSurroundRight:
-          return getChannel(5);
-        default:
-          return nullptr;
-      }
-    default:
-      return nullptr;
-  }
+    return nullptr;
 }
 
 std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(size_t index) const {

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace audioapi {
@@ -142,6 +143,19 @@ class AudioBuffer {
   size_t numberOfChannels_ = 0;
   float sampleRate_ = 0.0f;
   size_t size_ = 0;
+
+  inline static const std::unordered_map<size_t, std::vector<int>> kChannelLayouts = {
+      {1, {ChannelMono}},
+      {2, {ChannelLeft, ChannelRight}},
+      {4, {ChannelLeft, ChannelRight, ChannelSurroundLeft, ChannelSurroundRight}},
+      {5, {ChannelLeft, ChannelRight, ChannelCenter, ChannelSurroundLeft, ChannelSurroundRight}},
+      {6,
+       {ChannelLeft,
+        ChannelRight,
+        ChannelCenter,
+        ChannelLFE,
+        ChannelSurroundLeft,
+        ChannelSurroundRight}}};
 
   void discreteSum(
       const AudioBuffer &source,

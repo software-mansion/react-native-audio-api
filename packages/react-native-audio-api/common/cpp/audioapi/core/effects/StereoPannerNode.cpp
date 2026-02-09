@@ -51,7 +51,7 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
       time += deltaTime;
     }
   } else { // Input is stereo
-    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelMono)->span();
+    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelLeft)->span();
     auto inputRight = processingBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
