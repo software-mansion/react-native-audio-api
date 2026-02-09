@@ -18,7 +18,6 @@ WorkletNode::WorkletNode(
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
-
   isInitialized_.store(true, std::memory_order_release);
 }
 
