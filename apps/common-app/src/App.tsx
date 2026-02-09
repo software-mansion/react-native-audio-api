@@ -170,7 +170,8 @@ const App: FC = () => {
             headerTintColor: colors.white,
             headerBackTitle: 'Back',
             headerBackAccessibilityLabel: 'Go back',
-          }}>
+          }}
+        >
           <Stack.Screen
             name="MainTabs"
             component={MainTabsScreen}

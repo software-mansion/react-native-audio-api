@@ -7,6 +7,8 @@ import BaseAudioContext from './BaseAudioContext';
 
 export default class AudioContext extends BaseAudioContext {
   constructor(options?: AudioContextOptions) {
+    console.log('Creating AudioContext with options:', options);
+
     if (
       options &&
       options.sampleRate &&
