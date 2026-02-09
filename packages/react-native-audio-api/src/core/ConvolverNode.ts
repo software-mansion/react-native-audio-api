@@ -26,9 +26,11 @@ export default class ConvolverNode extends AudioNode {
   public set buffer(buffer: AudioBuffer | null) {
     if (!buffer) {
       (this.node as IConvolverNode).setBuffer(null);
+      this._buffer = null;
       return;
     }
     (this.node as IConvolverNode).setBuffer(buffer.buffer);
+    this._buffer = buffer;
   }
 
   public get normalize(): boolean {

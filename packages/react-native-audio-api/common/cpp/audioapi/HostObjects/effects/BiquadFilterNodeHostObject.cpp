@@ -56,7 +56,7 @@ JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
 
   auto type = js_enum_parser::filterTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [&biquadFilterNode, type](BaseAudioContext&) {
+  auto event = [biquadFilterNode, type](BaseAudioContext&) {
     biquadFilterNode->setType(type);
   };
   biquadFilterNode->scheduleAudioEvent(std::move(event));

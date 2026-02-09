@@ -1,8 +1,6 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <string>
 
-using WindowType = audioapi::AnalyserNode::WindowType;
-
 namespace audioapi::js_enum_parser {
 
   WindowType windowTypeFromString(const std::string &type) {
