@@ -98,7 +98,7 @@ std::shared_ptr<AudioBuffer> DelayNode::processNode(
     processingBuffer->zero();
     return processingBuffer;
   }
-  
+
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();

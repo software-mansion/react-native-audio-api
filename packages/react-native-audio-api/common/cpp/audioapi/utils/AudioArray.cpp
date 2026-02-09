@@ -29,9 +29,7 @@ AudioArray::AudioArray(const AudioArray &other) : size_(other.size_) {
 }
 
 AudioArray::AudioArray(audioapi::AudioArray &&other) noexcept
-    : data_(std::move(other.data_)), size_(other.size_) {
-  other.size_ = 0;
-}
+    : data_(std::move(other.data_)), size_(std::exchange(other.size_, 0)) {}
 
 AudioArray &AudioArray::operator=(const audioapi::AudioArray &other) {
   if (this != &other) {
@@ -41,7 +39,7 @@ AudioArray &AudioArray::operator=(const audioapi::AudioArray &other) {
     }
 
     if (size_ > 0 && data_) {
-      std::memcpy(data_.get(), other.data_.get(), size_ * sizeof(float));
+      copy(other);
     }
   }
 
@@ -51,8 +49,7 @@ AudioArray &AudioArray::operator=(const audioapi::AudioArray &other) {
 AudioArray &AudioArray::operator=(audioapi::AudioArray &&other) noexcept {
   if (this != &other) {
     data_ = std::move(other.data_);
-    size_ = other.size_;
-    other.size_ = 0;
+    size_ = std::exchange(other.size_, 0);
   }
 
   return *this;

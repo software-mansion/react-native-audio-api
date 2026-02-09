@@ -8,7 +8,6 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/utils/AudioBuffer.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED

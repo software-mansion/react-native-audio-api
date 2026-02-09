@@ -51,7 +51,7 @@ IOSAudioRecorder::IOSAudioRecorder(
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
-          float *data = (float *)inputBuffer->mBuffers[channel].mData;
+          auto data = (float *)inputBuffer->mBuffers[channel].mData;
 
           adapterNode_->buff_[channel]->write(data, numFrames);
         }

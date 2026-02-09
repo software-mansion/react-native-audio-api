@@ -96,10 +96,7 @@ void IOSAudioPlayer::cleanup()
 {
   stop();
   [audioPlayer_ cleanup];
-
-  if (audioBuffer_) {
-    audioBuffer_ = nullptr;
-  }
+  audioBuffer_ = nullptr;
 }
 
 } // namespace audioapi
