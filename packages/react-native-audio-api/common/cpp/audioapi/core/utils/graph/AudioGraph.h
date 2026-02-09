@@ -2,27 +2,22 @@
 #include <concepts>
 #include <memory>
 #include <vector>
-#if RN_AUDIO_API_TEST
-#include <gtest/gtest_prod.h>
-#endif // RN_AUDIO_API_TEST
 
 namespace audioapi::utils::graph {
 
 // Forward declarations
-#if RN_AUDIO_API_TEST
-class AudioGraphTest;
-#endif // RN_AUDIO_API_TEST
 class HostGraph;
+class AudioGraph;
+class TestGraphUtils;
 
+/// @brief AudioGraph is only a structure allowing topological traversal
+/// @note it is fully managed by events provided by HostGraph
 class AudioGraph {
  public:
   struct Node {
     // std::unique_ptr<AudioNode> audioNode;
     std::vector<Node *> inputs;
-
-    Node *next = nullptr;        // next in topological order
-    Node *prev = nullptr;        // previous in topological order
-    size_t topologicalIndex = 0; // for swapping
+    Node *next = nullptr; // next in topological order
 
 #if RN_AUDIO_API_TEST
     // Identifier for testing purposes only
@@ -39,22 +34,28 @@ class AudioGraph {
     Node *current = nullptr;
   };
 
-  AudioGraph() = default;
+  AudioGraph();
+
+  AudioGraph(const AudioGraph &) = delete;
+  AudioGraph &operator=(const AudioGraph &) = delete;
+
+  AudioGraph(AudioGraph &&other) noexcept;
+  AudioGraph &operator=(AudioGraph &&other) noexcept;
 
   /// @brief Destructor that cleans up all nodes in the graph
   /// @note Graph owns all of its nodes so they are deleted here
   ~AudioGraph();
 
+  Iterator iterator() const {
+    return Iterator(head->next);
+  }
+
  private:
+  // Head is a dummy node that helps with events execution without worrying about edge case of node being head.
   Node *head = nullptr;
 
-  void swapNodesInTopologicalOrder(Node *nodeA, Node *nodeB);
-
-// Granting access
-#if RN_AUDIO_API_TEST
-  friend class AudioGraphTest;
-#endif // RN_AUDIO_API_TEST
   friend class HostGraph;
+  friend class TestGraphUtils;
 };
 
 } // namespace audioapi::utils::graph
