@@ -23,7 +23,7 @@ AnalyserNode::AnalyserNode(
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant),
-      windowType_(WindowType::BLACKMAN),
+      windowType_(options.windowType),
       inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
           std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
@@ -33,30 +33,6 @@ AnalyserNode::AnalyserNode(
       magnitudeArray_(std::make_unique<AudioArray>(fftSize_ / 2)) {
   setWindowData(windowType_, fftSize_);
   isInitialized_.store(true, std::memory_order_release);
-}
-
-int AnalyserNode::getFftSize() const {
-  return fftSize_;
-}
-
-int AnalyserNode::getFrequencyBinCount() const {
-  return fftSize_ / 2;
-}
-
-float AnalyserNode::getMinDecibels() const {
-  return minDecibels_;
-}
-
-float AnalyserNode::getMaxDecibels() const {
-  return maxDecibels_;
-}
-
-float AnalyserNode::getSmoothingTimeConstant() const {
-  return smoothingTimeConstant_;
-}
-
-AnalyserNode::WindowType AnalyserNode::getWindowType() const {
-  return windowType_;
 }
 
 void AnalyserNode::setFftSize(int fftSize) {
@@ -84,7 +60,7 @@ void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
 }
 
-void AnalyserNode::setWindowType(AnalyserNode::WindowType type) {
+void AnalyserNode::setWindowType(WindowType type) {
   setWindowData(type, fftSize_);
 }
 
@@ -197,7 +173,7 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(AnalyserNode::WindowType type, int size) {
+void AnalyserNode::setWindowData(WindowType type, int size) {
   if (windowType_ == type && windowData_ != nullptr && windowData_->getSize() == size) {
     return;
   }

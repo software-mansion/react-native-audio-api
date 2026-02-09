@@ -1,10 +1,10 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/core/types/WindowType.h>
 
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
@@ -19,7 +19,6 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
       const AnalyserOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(fftSize);
-  JSI_PROPERTY_GETTER_DECL(frequencyBinCount);
   JSI_PROPERTY_GETTER_DECL(minDecibels);
   JSI_PROPERTY_GETTER_DECL(maxDecibels);
   JSI_PROPERTY_GETTER_DECL(smoothingTimeConstant);
@@ -35,6 +34,13 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   JSI_HOST_FUNCTION_DECL(getByteFrequencyData);
   JSI_HOST_FUNCTION_DECL(getFloatTimeDomainData);
   JSI_HOST_FUNCTION_DECL(getByteTimeDomainData);
+
+ private:
+  int fftSize_;
+  float minDecibels_;
+  float maxDecibels_;
+  float smoothingTimeConstant_;
+  WindowType windowType_;
 };
 
 } // namespace audioapi

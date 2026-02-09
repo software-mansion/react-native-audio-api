@@ -83,7 +83,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public get frequencyBinCount(): number {
-    return (this.node as IAnalyserNode).frequencyBinCount;
+    return Math.floor((this.node as IAnalyserNode).fftSize / 2);
   }
 
   public getFloatFrequencyData(array: Float32Array): void {
