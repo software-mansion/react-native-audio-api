@@ -7,8 +7,8 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/events/AudioEvent.h>
 #include <audioapi/core/types/WindowType.h>
+#include <audioapi/events/AudioEvent.h>
 #include <string>
 
 namespace audioapi::js_enum_parser {
