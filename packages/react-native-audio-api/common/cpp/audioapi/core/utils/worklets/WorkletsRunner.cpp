@@ -8,29 +8,14 @@ WorkletsRunner::WorkletsRunner(
     std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
     const std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
     bool shouldLockRuntime)
-    : weakRuntime_(std::move(weakRuntime)), shouldLockRuntime(shouldLockRuntime) {
-  auto strongRuntime = weakRuntime_.lock();
-  if (strongRuntime == nullptr) {
-    return;
-  }
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  // NOTE: We construct the worklet function directly from the runtime.
-  // This avoids relying on deprecated Worklets APIs.
-  unsafeRuntimePtr = &strongRuntime->getJSIRuntime();
-  /// Placement new to avoid dynamic memory allocation
-  new (reinterpret_cast<jsi::Function *>(&unsafeWorklet))
-      jsi::Function(shareableWorklet->toJSValue(*unsafeRuntimePtr)
-                        .asObject(*unsafeRuntimePtr)
-                        .asFunction(*unsafeRuntimePtr));
-  workletInitialized = true;
-#else
-  unsafeRuntimePtr = nullptr;
-  workletInitialized = false;
-#endif
+    : weakRuntime_(std::move(weakRuntime)),
+      shareableWorklet_(shareableWorklet),
+      shouldLockRuntime(shouldLockRuntime) {
 }
 
 WorkletsRunner::WorkletsRunner(WorkletsRunner &&other)
     : weakRuntime_(std::move(other.weakRuntime_)),
+      shareableWorklet_(std::move(other.shareableWorklet_)),
       unsafeRuntimePtr(other.unsafeRuntimePtr),
       workletInitialized(other.workletInitialized),
       shouldLockRuntime(other.shouldLockRuntime) {
@@ -54,6 +39,30 @@ WorkletsRunner::~WorkletsRunner() {
   workletInitialized = false;
 }
 
+bool WorkletsRunner::ensureWorkletInitialized(jsi::Runtime &rt) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  if (workletInitialized) {
+    return true;
+  }
+  if (!shareableWorklet_) {
+    return false;
+  }
+  auto valueUnpacker = rt.global().getProperty(rt, "__valueUnpacker");
+  if (!valueUnpacker.isObject()) {
+    return false;
+  }
+  unsafeRuntimePtr = &rt;
+  /// Placement new to avoid dynamic memory allocation
+  new (reinterpret_cast<jsi::Function *>(&unsafeWorklet))
+      jsi::Function(shareableWorklet_->toJSValue(rt).asObject(rt).asFunction(rt));
+  workletInitialized = true;
+  return true;
+#else
+  (void)rt;
+  return false;
+#endif
+}
+
 std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeGuarded(
     const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job)) {
   auto strongRuntime = weakRuntime_.lock();
@@ -61,9 +70,10 @@ std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeGuarded(
     return std::nullopt;
   }
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  // Worklets no longer expose an executeSync(job) API.
-  // Execute the job directly on the runtime instance.
   auto &rt = strongRuntime->getJSIRuntime();
+  if (!const_cast<WorkletsRunner *>(this)->ensureWorkletInitialized(rt)) {
+    return std::nullopt;
+  }
   return job(rt);
 #else
   return std::nullopt;
@@ -73,7 +83,18 @@ std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeGuarded(
 std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeUnsafe(
     const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job)) {
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  return job(*unsafeRuntimePtr);
+  jsi::Runtime *rt = unsafeRuntimePtr;
+  if (rt == nullptr) {
+    auto strongRuntime = weakRuntime_.lock();
+    if (strongRuntime == nullptr) {
+      return std::nullopt;
+    }
+    rt = &strongRuntime->getJSIRuntime();
+  }
+  if (!const_cast<WorkletsRunner *>(this)->ensureWorkletInitialized(*rt)) {
+    return std::nullopt;
+  }
+  return job(*rt);
 #else
   return std::nullopt;
 #endif
