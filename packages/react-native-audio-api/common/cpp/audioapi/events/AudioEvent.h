@@ -26,5 +26,7 @@ enum class AudioEvent {
   POSITION_CHANGED,
   BUFFER_ENDED,
   RECORDER_ERROR,
+  CONTEXT_STATE_CHANGED,
 };
+
 } // namespace audioapi

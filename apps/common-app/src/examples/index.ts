@@ -4,6 +4,7 @@ import { icons } from 'lucide-react-native';
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import DrumMachine from './DrumMachine';
+import LFCHooks from './LFCHooks';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
@@ -26,6 +27,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  LFCHooks: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -109,5 +111,11 @@ export const Examples: Example[] = [
     title: 'Streamer',
     Icon: icons.Radio,
     screen: Streaming,
+  },
+  {
+    key: 'LFCHooks',
+    title: 'LFC Hooks',
+    Icon: icons.Wifi,
+    screen: LFCHooks,
   },
 ] as const;

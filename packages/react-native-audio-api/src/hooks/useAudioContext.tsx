@@ -1,4 +1,11 @@
-import React, { ReactNode, createContext, useContext, useMemo } from 'react';
+import React, {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { AudioContext, AudioContextOptions } from '../api';
 
@@ -25,17 +32,19 @@ export const AudioContextProvider: React.FC<AudioContextProviderProps> = ({
   options,
   children,
 }) => {
+  const { sampleRate } = options || {};
+
   const rCtx = useMemo(() => {
     if (context) {
       return context;
     }
 
-    if (options) {
-      return new AudioContext(options);
+    if (typeof sampleRate === 'number') {
+      return new AudioContext({ sampleRate });
     }
 
     return getGlobalAudioContextInstance();
-  }, [context, options]);
+  }, [context, sampleRate]);
 
   return (
     <ReactAudioContext.Provider value={rCtx}>
@@ -45,11 +54,20 @@ export const AudioContextProvider: React.FC<AudioContextProviderProps> = ({
 };
 
 export function useAudioContext(): AudioContext {
-  const reactContext = useContext(ReactAudioContext);
+  const context =
+    useContext(ReactAudioContext) ?? getGlobalAudioContextInstance();
+  // Keep track of the state to trigger re-renders when it changes
+  const [, setState] = useState(context.state);
 
-  if (reactContext) {
-    return reactContext;
-  }
+  useEffect(() => {
+    context.onStateChanged = () => {
+      setState(context.state);
+    };
 
-  return getGlobalAudioContextInstance();
+    return () => {
+      context.onStateChanged = null;
+    };
+  }, [context]);
+
+  return context;
 }

@@ -75,6 +75,7 @@ interface AudioAPIEvents {
   positionChanged: EventTypeWithValue;
   bufferEnded: OnBufferEndEventType;
   recorderError: OnRecorderErrorEventType;
+  contextStateChanged: EventEmptyType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

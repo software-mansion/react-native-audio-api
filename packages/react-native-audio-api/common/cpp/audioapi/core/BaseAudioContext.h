@@ -113,10 +113,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   virtual void initialize();
 
+  void setOnStateChangedCallbackId(uint64_t callbackId);
+
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
 
  private:
+  std::atomic<uint64_t> onStateChangedCallbackId_ = 0; // 0 means no callback
   std::atomic<ContextState> state_;
   std::atomic<float> sampleRate_;
   std::shared_ptr<AudioGraphManager> graphManager_;
@@ -129,6 +132,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
+  void sendOnStateChangedEvent();
 };
 
 } // namespace audioapi

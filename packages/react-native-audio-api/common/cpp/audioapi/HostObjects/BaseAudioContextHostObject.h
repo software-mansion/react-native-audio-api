@@ -29,6 +29,8 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
+  JSI_PROPERTY_SETTER_DECL(onStateChanged);
+
   JSI_HOST_FUNCTION_DECL(createWorkletSourceNode);
   JSI_HOST_FUNCTION_DECL(createWorkletNode);
   JSI_HOST_FUNCTION_DECL(createWorkletProcessingNode);
@@ -55,4 +57,5 @@ class BaseAudioContextHostObject : public JsiHostObject {
 
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
 };
+
 } // namespace audioapi

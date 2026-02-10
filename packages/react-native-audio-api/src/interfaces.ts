@@ -60,6 +60,8 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
   readonly stretcher: IAudioStretcher;
 
+  set onStateChanged(callbackId: string);
+
   createRecorderAdapter(): IRecorderAdapterNode;
   createWorkletSourceNode(
     shareableWorklet: ShareableWorkletCallback,

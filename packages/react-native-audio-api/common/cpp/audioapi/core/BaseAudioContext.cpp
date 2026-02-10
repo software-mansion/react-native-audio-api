@@ -78,6 +78,7 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
 
 void BaseAudioContext::setState(audioapi::ContextState state) {
   state_.store(state, std::memory_order_release);
+  sendOnStateChangedEvent();
 }
 
 std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
@@ -259,6 +260,23 @@ std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandl
 
 const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
   return runtimeRegistry_;
+}
+
+void BaseAudioContext::setOnStateChangedCallbackId(uint64_t callbackId) {
+  auto oldCallbackId = onStateChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::CONTEXT_STATE_CHANGED, oldCallbackId);
+  }
+}
+
+void BaseAudioContext::sendOnStateChangedEvent() {
+  auto onStateChangedCallbackId = onStateChangedCallbackId_.load(std::memory_order_acquire);
+
+  if (onStateChangedCallbackId != 0) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::CONTEXT_STATE_CHANGED, onStateChangedCallbackId, {});
+  }
 }
 
 } // namespace audioapi

@@ -3,6 +3,8 @@ import {
   InvalidStateError,
   NotSupportedError,
 } from '../errors';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { EventEmptyType } from '../events/types';
 import { IBaseAudioContext } from '../interfaces';
 import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
 import { assertWorkletsEnabled } from '../utils';
@@ -32,6 +34,11 @@ export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
   readonly context: IBaseAudioContext;
+  private onStateChangedSubscription?: AudioEventSubscription;
+  private onStateChangedCallback?: (event: EventEmptyType) => void;
+  protected readonly audioEventEmitter = new AudioEventEmitter(
+    global.AudioEventEmitter
+  );
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
@@ -236,5 +243,32 @@ export default class BaseAudioContext {
 
   createWaveShaper(): WaveShaperNode {
     return new WaveShaperNode(this);
+  }
+
+  public get onStateChanged(): ((event: EventEmptyType) => void) | undefined {
+    return this.onStateChangedCallback;
+  }
+
+  public set onStateChanged(
+    callback: ((event: EventEmptyType) => void) | null
+  ) {
+    if (!callback) {
+      this.context.onStateChanged = '0';
+      this.onStateChangedSubscription?.remove();
+      this.onStateChangedSubscription = undefined;
+      this.onStateChangedCallback = undefined;
+
+      return;
+    }
+
+    this.onStateChangedCallback = callback;
+    this.onStateChangedSubscription =
+      this.audioEventEmitter.addAudioEventListener(
+        'contextStateChanged',
+        callback
+      );
+
+    this.context.onStateChanged =
+      this.onStateChangedSubscription.subscriptionId;
   }
 }

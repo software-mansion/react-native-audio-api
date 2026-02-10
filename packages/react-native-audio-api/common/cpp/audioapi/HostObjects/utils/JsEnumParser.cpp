@@ -171,6 +171,8 @@ namespace audioapi::js_enum_parser {
       return AudioEvent::BUFFER_ENDED;
     if (event == "recorderError")
       return AudioEvent::RECORDER_ERROR;
+    if (event == "contextStateChanged")
+      return AudioEvent::CONTEXT_STATE_CHANGED;
 
     throw std::invalid_argument("Unknown audio event: " + event);
   }

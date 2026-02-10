@@ -44,6 +44,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+        
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(BaseAudioContextHostObject, onStateChanged));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
@@ -87,6 +89,10 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
   return {context_->getCurrentTime()};
+}
+
+JSI_PROPERTY_SETTER_IMPL(BaseAudioContextHostObject, onStateChanged) {
+  context_->setOnStateChangedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
@@ -312,4 +318,5 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWaveShaper) {
       std::make_shared<WaveShaperNodeHostObject>(context_, waveShaperOptions);
   return jsi::Object::createFromHostObject(runtime, waveShaperHostObject);
 }
+
 } // namespace audioapi
