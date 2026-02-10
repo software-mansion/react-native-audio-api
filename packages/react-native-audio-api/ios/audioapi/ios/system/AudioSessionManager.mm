@@ -1,6 +1,150 @@
+#import <TargetConditionals.h>
+#if !TARGET_OS_MACCATALYST
 #import <AVFAudio/AVFAudio.h>
+#endif
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+#if TARGET_OS_MACCATALYST
+@implementation AudioSessionManager
+
+static AudioSessionManager *_sharedInstance = nil;
+
+- (instancetype)init
+{
+  if (self = [super init]) {
+    self.audioSession = nil;
+
+    self.isActive = false;
+    self.shouldManageSession = true;
+
+    self.desiredCategory = @"playback";
+    self.desiredMode = @"default";
+    self.desiredOptions = 0;
+    self.allowHapticsAndSounds = false;
+    self.notifyOthersOnDeactivation = true;
+  }
+
+  _sharedInstance = self;
+  return self;
+}
+
++ (instancetype)sharedInstance
+{
+  return _sharedInstance;
+}
+
+- (void)cleanup
+{
+  self.audioSession = nil;
+}
+
+- (bool)configureAudioSession
+{
+  return true;
+}
+
+- (void)setAudioSessionOptions:(NSString *)categoryStr
+                          mode:(NSString *)modeStr
+                       options:(NSArray *)optionsArray
+                  allowHaptics:(BOOL)allowHaptics
+    notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation
+{
+  (void)optionsArray;
+  self.desiredCategory = categoryStr;
+  self.desiredMode = modeStr;
+  self.desiredOptions = 0;
+  self.allowHapticsAndSounds = allowHaptics;
+  self.notifyOthersOnDeactivation = notifyOthersOnDeactivation;
+}
+
+- (bool)setActive:(bool)active error:(NSError **)error
+{
+  (void)error;
+  if (!self.shouldManageSession) {
+    return true;
+  }
+
+  self.isActive = active;
+  return true;
+}
+
+- (void)markInactive
+{
+  self.isActive = false;
+}
+
+- (void)disableSessionManagement
+{
+  self.shouldManageSession = false;
+}
+
+- (NSNumber *)getDevicePreferredSampleRate
+{
+  return @(48000);
+}
+
+- (NSNumber *)getDevicePreferredInputChannelCount
+{
+  return @(2);
+}
+
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject
+{
+  (void)reject;
+  resolve(@"Granted");
+}
+
+- (NSString *)requestRecordingPermissions
+{
+  return @"Granted";
+}
+
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  (void)reject;
+  resolve(@"Granted");
+}
+
+- (NSString *)checkRecordingPermissions
+{
+  return @"Granted";
+}
+
+- (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  (void)reject;
+  resolve(@{
+    @"availableInputs" : @[],
+    @"currentInputs" : @[],
+    @"availableOutputs" : @[],
+    @"currentOutputs" : @[],
+  });
+}
+
+- (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices
+{
+  (void)devices;
+  return @[];
+}
+
+- (void)setInputDevice:(NSString *)deviceId
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject
+{
+  (void)resolve;
+  (void)deviceId;
+  reject(nil, @"Input device selection is not supported on Mac Catalyst", nil);
+}
+
+- (bool)isSessionActive
+{
+  return self.isActive;
+}
+
+@end
+#else
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -435,3 +579,4 @@ static AudioSessionManager *_sharedInstance = nil;
 }
 
 @end
+#endif

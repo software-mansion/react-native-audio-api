@@ -16,6 +16,7 @@ worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=
 
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
+mac_catalyst_cflags = '-DMA_NO_LIBOPUS -DMA_NO_LIBVORBIS'
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -103,6 +104,7 @@ Pod::Spec.new do |s|
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
     'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
+    'OTHER_CFLAGS[sdk=macosx*]' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag} #{mac_catalyst_cflags}",
   }
 
   s.xcconfig = {

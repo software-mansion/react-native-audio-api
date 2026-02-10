@@ -1,3 +1,4 @@
+#import <TargetConditionals.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -278,6 +279,10 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)logAudioEngineState
 {
+#if TARGET_OS_MACCATALYST
+  NSLog(@"[AudioEngine] logAudioEngineState is not available on Mac Catalyst.");
+  return;
+#else
   AVAudioSession *session = [AVAudioSession sharedInstance];
 
   NSLog(@"================ 🎧 AVAudioEngine STATE ================");
@@ -312,6 +317,7 @@ static AudioEngine *_sharedInstance = nil;
   NSLog(@"📐 Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
 
   NSLog(@"=======================================================");
+#endif
 }
 
 @end
