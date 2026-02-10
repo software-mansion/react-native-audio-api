@@ -1,3 +1,4 @@
+#import <TargetConditionals.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
@@ -61,6 +62,12 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
 - (int)getBufferSize
 {
+#if TARGET_OS_MACCATALYST
+  AVAudioFormat *format = [self getInputFormat];
+  double sampleRate = format.sampleRate > 0 ? format.sampleRate : 48000.0;
+  float bufferDuration = 0.2;
+  return nextPowerOfTwo(ceil(bufferDuration * sampleRate));
+#else
   // NOTE: this method should be called only after the session is activated
   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
 
@@ -72,6 +79,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
   // IOS returns buffer duration rounded, but expects the buffer size to be power of two in runtime
   return nextPowerOfTwo(ceil(bufferDuration * audioSession.sampleRate));
+#endif
 }
 
 - (void)start

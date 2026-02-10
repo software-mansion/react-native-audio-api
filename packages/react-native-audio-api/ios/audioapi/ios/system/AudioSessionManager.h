@@ -1,7 +1,13 @@
 #pragma once
 
-#import <AVFoundation/AVFoundation.h>
+#import <TargetConditionals.h>
 #import <Foundation/Foundation.h>
+#if !TARGET_OS_MACCATALYST
+#import <AVFoundation/AVFoundation.h>
+#else
+@class AVAudioSession;
+@class AVAudioSessionPortDescription;
+#endif
 #import <React/RCTBridgeModule.h>
 
 @interface AudioSessionManager : NSObject
@@ -13,9 +19,15 @@
 @property (nonatomic, assign) bool shouldManageSession;
 
 // Session configuration options (desired by user)
+#if TARGET_OS_MACCATALYST
+@property (nonatomic, copy) NSString *desiredMode;
+@property (nonatomic, copy) NSString *desiredCategory;
+@property (nonatomic, assign) NSUInteger desiredOptions;
+#else
 @property (nonatomic, assign) AVAudioSessionMode desiredMode;
 @property (nonatomic, assign) AVAudioSessionCategory desiredCategory;
 @property (nonatomic, assign) AVAudioSessionCategoryOptions desiredOptions;
+#endif
 @property (nonatomic, assign) bool allowHapticsAndSounds;
 @property (nonatomic, assign) bool notifyOthersOnDeactivation;
 
