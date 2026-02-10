@@ -1,4 +1,4 @@
-import { TStereoPannerOptions } from '../types';
+import { StereoPannerOptions } from '../types';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
@@ -8,7 +8,7 @@ export default class StereoPannerNode extends AudioNode {
 
   constructor(
     context: BaseAudioContext,
-    stereoPannerOptions?: TStereoPannerOptions
+    stereoPannerOptions?: StereoPannerOptions
   ) {
     const pan = new globalThis.StereoPannerNode(
       context.context,

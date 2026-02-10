@@ -4,13 +4,13 @@ import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
-import { TOscillatorOptions } from '../types';
+import { OscillatorOptions } from '../types';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, options?: TOscillatorOptions) {
+  constructor(context: BaseAudioContext, options?: OscillatorOptions) {
     if (options?.periodicWave) {
       options.type = 'custom';
     }

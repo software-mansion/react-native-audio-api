@@ -1,5 +1,6 @@
 import AudioBuffer from './core/AudioBuffer';
 import PeriodicWave from './core/PeriodicWave';
+import { IAudioBuffer } from './interfaces';
 
 export type Result<T> =
   | ({ status: 'success' } & T)
@@ -109,21 +110,21 @@ export type WindowType = 'blackman' | 'hann';
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
-export interface TAudioNodeOptions {
+export interface AudioNodeOptions {
   channelCount?: number;
   channelCountMode?: ChannelCountMode;
   channelInterpretation?: ChannelInterpretation;
 }
 
-export interface TGainOptions extends TAudioNodeOptions {
+export interface GainOptions extends AudioNodeOptions {
   gain?: number;
 }
 
-export interface TStereoPannerOptions extends TAudioNodeOptions {
+export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }
 
-export interface TAnalyserOptions extends TAudioNodeOptions {
+export interface AnalyserOptions extends AudioNodeOptions {
   fftSize?: number;
   minDecibels?: number;
   maxDecibels?: number;
@@ -134,7 +135,7 @@ export interface OptionsValidator<T> {
   validate(options?: T): void;
 }
 
-export interface TBiquadFilterOptions extends TAudioNodeOptions {
+export interface BiquadFilterOptions extends AudioNodeOptions {
   type?: BiquadFilterType;
   frequency?: number;
   detune?: number;
@@ -142,61 +143,70 @@ export interface TBiquadFilterOptions extends TAudioNodeOptions {
   gain?: number;
 }
 
-export interface TOscillatorOptions {
+export interface OscillatorOptions {
   type?: OscillatorType;
   frequency?: number;
   detune?: number;
   periodicWave?: PeriodicWave;
 }
 
-export interface TBaseAudioBufferSourceOptions {
+export interface BaseAudioBufferSourceOptions {
   detune?: number;
   playbackRate?: number;
   pitchCorrection?: boolean;
 }
 
-export interface TAudioBufferSourceOptions
-  extends TBaseAudioBufferSourceOptions {
+export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBuffer;
   loop?: boolean;
   loopStart?: number;
   loopEnd?: number;
 }
 
-export interface TConvolverOptions extends TAudioNodeOptions {
+// options that are passed to c++ layer
+export interface IAudioBufferSourceOptions
+  extends BaseAudioBufferSourceOptions {
+  buffer?: IAudioBuffer;
+  loop?: boolean;
+  loopStart?: number;
+  loopEnd?: number;
+}
+
+export interface ConvolverOptions extends AudioNodeOptions {
   buffer?: AudioBuffer;
   disableNormalization?: boolean;
 }
 
-export interface TWebConvolverOptions {
-  buffer?: globalThis.AudioBuffer | null;
-  normalize?: boolean;
-}
-
-export interface TConstantSourceOptions {
-  offset?: number;
-}
-
-export interface TStreamerOptions {
-  streamPath?: string;
-}
-
-export interface TPeriodicWaveConstraints {
+// options that are passed to c++ layer
+export interface IConvolverOptions extends AudioNodeOptions {
+  buffer?: IAudioBuffer;
   disableNormalization?: boolean;
 }
 
-export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
+export interface ConstantSourceOptions {
+  offset?: number;
+}
+
+export interface StreamerOptions {
+  streamPath?: string;
+}
+
+export interface PeriodicWaveConstraints {
+  disableNormalization?: boolean;
+}
+
+export interface PeriodicWaveOptions extends PeriodicWaveConstraints {
   real?: Float32Array;
   imag?: Float32Array;
 }
 
-export interface TAudioBufferOptions {
+export interface AudioBufferOptions {
   length: number;
   numberOfChannels?: number;
   sampleRate: number;
 }
 
-export interface TIIRFilterOptions extends TAudioNodeOptions {
+export interface IIRFilterOptions extends AudioNodeOptions {
   feedforward: number[];
   feedback: number[];
 }
@@ -224,12 +234,12 @@ export interface AudioRecorderCallbackOptions {
   channelCount: number;
 }
 
-export interface TDelayOptions extends TAudioNodeOptions {
+export interface DelayOptions extends AudioNodeOptions {
   maxDelayTime?: number;
   delayTime?: number;
 }
 
-export interface TWaveShaperOptions extends TAudioNodeOptions {
+export interface WaveShaperOptions extends AudioNodeOptions {
   curve?: Float32Array;
   oversample?: OverSampleType;
 }

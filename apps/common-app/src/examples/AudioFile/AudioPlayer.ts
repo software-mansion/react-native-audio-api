@@ -52,7 +52,7 @@ class AudioPlayer {
     this.volumeNode = this.audioContext.createGain();
     this.volumeNode.gain.value = this.volume;
 
-    this.sourceNode.connect(this.audioContext.destination);
+    this.sourceNode.connect(this.volumeNode).connect(this.audioContext.destination);
     this.sourceNode.onPositionChangedInterval = 1000;
     this.sourceNode.onPositionChanged = (event) => {
       PlaybackNotificationManager.show({
@@ -108,12 +108,7 @@ class AudioPlayer {
   };
 
   loadBuffer = async (asset: string | number) => {
-    const buffer = await decodeAudioData(asset, 0, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
-      },
-    });
+    const buffer = await this.audioContext.decodeAudioData(asset);
 
     if (buffer) {
       this.audioBuffer = buffer;

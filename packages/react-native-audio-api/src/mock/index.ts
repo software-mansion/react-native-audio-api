@@ -16,19 +16,19 @@ import {
   OscillatorType,
   OverSampleType,
   Result,
-  TAnalyserOptions,
-  TAudioBufferSourceOptions,
-  TBaseAudioBufferSourceOptions,
-  TBiquadFilterOptions,
-  TConstantSourceOptions,
-  TConvolverOptions,
-  TDelayOptions,
-  TGainOptions,
-  TOscillatorOptions,
-  TPeriodicWaveOptions,
-  TStereoPannerOptions,
-  TStreamerOptions,
-  TWaveShaperOptions,
+  AnalyserOptions,
+  AudioBufferSourceOptions,
+  BaseAudioBufferSourceOptions,
+  BiquadFilterOptions,
+  ConstantSourceOptions,
+  ConvolverOptions,
+  DelayOptions,
+  GainOptions,
+  OscillatorOptions,
+  PeriodicWaveOptions,
+  StereoPannerOptions,
+  StreamerOptions,
+  WaveShaperOptions,
 } from '../types';
 
 /* eslint-disable no-useless-constructor */
@@ -220,7 +220,7 @@ class AnalyserNodeMock extends AudioNodeMock {
   public maxDecibels: number = -30;
   public smoothingTimeConstant: number = 0.8;
 
-  constructor(context: BaseAudioContextMock, _options?: TAnalyserOptions) {
+  constructor(context: BaseAudioContextMock, _options?: AnalyserOptions) {
     super(context, {});
   }
 
@@ -233,7 +233,7 @@ class AnalyserNodeMock extends AudioNodeMock {
 class GainNodeMock extends AudioNodeMock {
   readonly gain: AudioParamMock;
 
-  constructor(context: BaseAudioContextMock, _options?: TGainOptions) {
+  constructor(context: BaseAudioContextMock, _options?: GainOptions) {
     super(context, {});
     this.gain = new AudioParamMock({}, context);
     this.gain.value = 1;
@@ -243,7 +243,7 @@ class GainNodeMock extends AudioNodeMock {
 class DelayNodeMock extends AudioNodeMock {
   readonly delayTime: AudioParamMock;
 
-  constructor(context: BaseAudioContextMock, _options?: TDelayOptions) {
+  constructor(context: BaseAudioContextMock, _options?: DelayOptions) {
     super(context, {});
     this.delayTime = new AudioParamMock({}, context);
     this.delayTime.maxValue = 1;
@@ -257,7 +257,7 @@ class BiquadFilterNodeMock extends AudioNodeMock {
   readonly Q: AudioParamMock;
   readonly gain: AudioParamMock;
 
-  constructor(context: BaseAudioContextMock, _options?: TBiquadFilterOptions) {
+  constructor(context: BaseAudioContextMock, _options?: BiquadFilterOptions) {
     super(context, {});
     this.frequency = new AudioParamMock({}, context);
     this.detune = new AudioParamMock({}, context);
@@ -288,7 +288,7 @@ class ConvolverNodeMock extends AudioNodeMock {
   private _buffer: AudioBufferMock | null = null;
   public normalize: boolean = true;
 
-  constructor(context: BaseAudioContextMock, _options?: TConvolverOptions) {
+  constructor(context: BaseAudioContextMock, _options?: ConvolverOptions) {
     super(context, {});
   }
 
@@ -305,7 +305,7 @@ class WaveShaperNodeMock extends AudioNodeMock {
   private _curve: Float32Array | null = null;
   private _oversample: OverSampleType = 'none';
 
-  constructor(context: BaseAudioContextMock, _options?: TWaveShaperOptions) {
+  constructor(context: BaseAudioContextMock, _options?: WaveShaperOptions) {
     super(context, {});
   }
 
@@ -329,7 +329,7 @@ class WaveShaperNodeMock extends AudioNodeMock {
 class StereoPannerNodeMock extends AudioNodeMock {
   readonly pan: AudioParamMock;
 
-  constructor(context: BaseAudioContextMock, _options?: TStereoPannerOptions) {
+  constructor(context: BaseAudioContextMock, _options?: StereoPannerOptions) {
     super(context, {});
     this.pan = new AudioParamMock({}, context);
   }
@@ -340,7 +340,7 @@ class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
   readonly frequency: AudioParamMock;
   readonly detune: AudioParamMock;
 
-  constructor(context: BaseAudioContextMock, _options?: TOscillatorOptions) {
+  constructor(context: BaseAudioContextMock, _options?: OscillatorOptions) {
     super(context, {});
     this.frequency = new AudioParamMock({}, context);
     this.detune = new AudioParamMock({}, context);
@@ -361,10 +361,7 @@ class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
 class ConstantSourceNodeMock extends AudioScheduledSourceNodeMock {
   readonly offset: AudioParamMock;
 
-  constructor(
-    context: BaseAudioContextMock,
-    _options?: TConstantSourceOptions
-  ) {
+  constructor(context: BaseAudioContextMock, _options?: ConstantSourceOptions) {
     super(context, {});
     this.offset = new AudioParamMock({}, context);
     this.offset.value = 1;
@@ -380,7 +377,7 @@ class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
 
   constructor(
     context: BaseAudioContextMock,
-    _options?: TAudioBufferSourceOptions
+    _options?: AudioBufferSourceOptions
   ) {
     super(context, {});
     this.playbackRate = new AudioParamMock({}, context);
@@ -438,7 +435,7 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
 
   constructor(
     context: BaseAudioContextMock,
-    _options?: TBaseAudioBufferSourceOptions
+    _options?: BaseAudioBufferSourceOptions
   ) {
     super(context, {});
   }
@@ -464,7 +461,7 @@ class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   private hasBeenSetup: boolean = false;
   private _streamPath: string = '';
 
-  constructor(context: BaseAudioContextMock, options?: TStreamerOptions) {
+  constructor(context: BaseAudioContextMock, options?: StreamerOptions) {
     super(context, {});
     if (options?.streamPath) {
       this.initialize(options.streamPath);
@@ -531,10 +528,7 @@ class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
 }
 
 class PeriodicWaveMock {
-  constructor(
-    _context: BaseAudioContextMock,
-    _options?: TPeriodicWaveOptions
-  ) {}
+  constructor(_context: BaseAudioContextMock, _options?: PeriodicWaveOptions) {}
 }
 
 class AudioDestinationNodeMock extends AudioNodeMock {
@@ -597,16 +591,16 @@ class BaseAudioContextMock {
     );
   }
 
-  createAnalyser(options?: TAnalyserOptions): AnalyserNodeMock {
+  createAnalyser(options?: AnalyserOptions): AnalyserNodeMock {
     return new AnalyserNodeMock(this, options);
   }
 
-  createBiquadFilter(options?: TBiquadFilterOptions): BiquadFilterNodeMock {
+  createBiquadFilter(options?: BiquadFilterOptions): BiquadFilterNodeMock {
     return new BiquadFilterNodeMock(this, options);
   }
 
   createBufferSource(
-    options?: TAudioBufferSourceOptions
+    options?: AudioBufferSourceOptions
   ): AudioBufferSourceNodeMock {
     return new AudioBufferSourceNodeMock(this, options);
   }
@@ -620,32 +614,32 @@ class BaseAudioContextMock {
   }
 
   createConstantSource(
-    options?: TConstantSourceOptions
+    options?: ConstantSourceOptions
   ): ConstantSourceNodeMock {
     return new ConstantSourceNodeMock(this, options);
   }
 
-  createConvolver(options?: TConvolverOptions): ConvolverNodeMock {
+  createConvolver(options?: ConvolverOptions): ConvolverNodeMock {
     return new ConvolverNodeMock(this, options);
   }
 
-  createDelay(options?: TDelayOptions): DelayNodeMock {
+  createDelay(options?: DelayOptions): DelayNodeMock {
     return new DelayNodeMock(this, options);
   }
 
-  createGain(options?: TGainOptions): GainNodeMock {
+  createGain(options?: GainOptions): GainNodeMock {
     return new GainNodeMock(this, options);
   }
 
-  createOscillator(options?: TOscillatorOptions): OscillatorNodeMock {
+  createOscillator(options?: OscillatorOptions): OscillatorNodeMock {
     return new OscillatorNodeMock(this, options);
   }
 
-  createStereoPanner(options?: TStereoPannerOptions): StereoPannerNodeMock {
+  createStereoPanner(options?: StereoPannerOptions): StereoPannerNodeMock {
     return new StereoPannerNodeMock(this, options);
   }
 
-  createWaveShaper(options?: TWaveShaperOptions): WaveShaperNodeMock {
+  createWaveShaper(options?: WaveShaperOptions): WaveShaperNodeMock {
     return new WaveShaperNodeMock(this, options);
   }
 
@@ -654,12 +648,12 @@ class BaseAudioContextMock {
   }
 
   createBufferQueueSource(
-    options?: TBaseAudioBufferSourceOptions
+    options?: BaseAudioBufferSourceOptions
   ): AudioBufferQueueSourceNodeMock {
     return new AudioBufferQueueSourceNodeMock(this, options);
   }
 
-  createStreamer(options?: TStreamerOptions): StreamerNodeMock {
+  createStreamer(options?: StreamerOptions): StreamerNodeMock {
     return new StreamerNodeMock(this, options);
   }
 
@@ -1092,19 +1086,19 @@ export {
   OscillatorType,
   OverSampleType,
   Result,
-  TAnalyserOptions,
-  TAudioBufferSourceOptions,
-  TBaseAudioBufferSourceOptions,
-  TBiquadFilterOptions,
-  TConstantSourceOptions,
-  TConvolverOptions,
-  TDelayOptions,
-  TGainOptions,
-  TOscillatorOptions,
-  TPeriodicWaveOptions,
-  TStereoPannerOptions,
-  TStreamerOptions,
-  TWaveShaperOptions,
+  AnalyserOptions,
+  AudioBufferSourceOptions,
+  BaseAudioBufferSourceOptions,
+  BiquadFilterOptions,
+  ConstantSourceOptions,
+  ConvolverOptions,
+  DelayOptions,
+  GainOptions,
+  OscillatorOptions,
+  PeriodicWaveOptions,
+  StereoPannerOptions,
+  StreamerOptions,
+  WaveShaperOptions,
 };
 
 export default {

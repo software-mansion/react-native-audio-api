@@ -21,9 +21,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(false),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-  buffer_ = std::shared_ptr<AudioBuffer>(options.buffer);
-  alignedBuffer_ = std::shared_ptr<AudioBuffer>(nullptr);
-
+        setBuffer(options.buffer);
   isInitialized_ = true;
 }
 

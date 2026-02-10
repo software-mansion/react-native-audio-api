@@ -6,7 +6,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
-import { TAudioBufferSourceOptions } from '../types';
+import { AudioBufferSourceOptions } from '../types';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
 interface ScheduleOptions {
@@ -479,8 +479,11 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    this.node = new globalThis.AudioBufferSourceNode(context.context, options);
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+    this.node = new globalThis.AudioBufferSourceNode(context.context, {
+      ...options,
+      ...(options?.buffer ? { buffer: options.buffer.buffer } : {}),
+    });
     this.detune = new AudioParam(this.node.detune, context);
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
   }
@@ -608,7 +611,7 @@ export default class AudioBufferSourceNode
   implements IAudioAPIBufferSourceNodeWeb
 {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
-  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
     this.node = options?.pitchCorrection
       ? new AudioBufferSourceNodeStretcher(context)
       : new AudioBufferSourceNodeWeb(context, options);

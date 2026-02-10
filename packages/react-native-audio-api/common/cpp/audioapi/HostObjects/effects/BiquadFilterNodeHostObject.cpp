@@ -66,7 +66,8 @@ JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
   auto arrayBufferFrequency =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
-  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime));
+  // arrayBufferFrequency is Float32Array from JS and size is in bytes thus hardcoded division by 4
+  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime) / 4);
 
   auto arrayBufferMag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
