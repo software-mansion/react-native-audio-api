@@ -2,7 +2,6 @@
 
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <audioapi/core/utils/graph/Disposer.hpp>
-#include <audioapi/utils/DSU.hpp>
 #include <audioapi/utils/FatFunction.hpp>
 
 #include <utility>
