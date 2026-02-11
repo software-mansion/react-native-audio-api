@@ -18,7 +18,12 @@ class TestGraphUtils;
 /// @note It is izomorphic to AudioGraph in terms of nodes and edges, but it also maintains additional data for faster operations
 class HostGraph {
  public:
-  using AGEvent = FatFunction<32, void(AudioGraph&, Disposer&)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
+  using AGEvent = FatFunction<
+      32,
+      void(
+          AudioGraph &,
+          Disposer
+              &)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
   struct TraversalState {
     size_t term = 0; // for classification of temp data as old or new
 
@@ -29,10 +34,10 @@ class HostGraph {
   };
 
   struct Node {
-    std::vector<Node *> inputs;            // reversed edges
-    std::vector<Node *> outputs;           // edges
+    std::vector<Node *> inputs;    // reversed edges
+    std::vector<Node *> outputs;   // edges
     TraversalState traversalState; // for graph traversals
-    uint32_t audioNodeIndex = 0; // index of the corresponding node in AudioGraph
+    uint32_t audioNodeIndex = 0;   // index of the corresponding node in AudioGraph
 
 #if RN_AUDIO_API_TEST
     // Identifier for testing purposes only
@@ -69,10 +74,10 @@ class HostGraph {
 
  private:
   // We own the nodes now
-  std::vector<Node*> nodes;
+  std::vector<Node *> nodes;
   size_t last_term = 0; // for traversal data management
 
-  bool hasPath(Node* from, Node* to);
+  bool hasPath(Node *from, Node *to);
 
   friend class TestGraphUtils;
   friend class HostGraphTest;

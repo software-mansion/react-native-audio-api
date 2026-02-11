@@ -30,7 +30,9 @@ class AudioGraph {
     size_t test_node_identifier__ = 0;
 #endif // RN_AUDIO_API_TEST
 
-    bool isActive() const { return next_free_slot == -1; }
+    bool isActive() const {
+      return next_free_slot == -1;
+    }
   };
 
   AudioGraph();
@@ -52,7 +54,9 @@ class AudioGraph {
   int32_t first_free_slot = 0;
 
   // Helpers
-  void markDirty() { isDirty = true; }
+  void markDirty() {
+    isDirty = true;
+  }
   void process(); // Recomputes topo order if dirty
 
   // Allocator helpers

@@ -10,7 +10,7 @@ class Disposer {
 
   /// @brief Disposes the given audio node.
   /// @param node Pointer to the AudioGraph::Node to be disposed.
-  virtual void dispose(AudioGraph::Node* node) = 0;
+  virtual void dispose(AudioGraph::Node *node) = 0;
 };
 
 } // namespace audioapi::utils::graph
