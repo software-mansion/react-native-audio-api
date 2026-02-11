@@ -1,6 +1,8 @@
 #pragma once
 
 #include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/Disposer.hpp>
+#include <audioapi/utils/DSU.hpp>
 #include <audioapi/utils/FatFunction.hpp>
 
 #include <utility>
@@ -16,8 +18,7 @@ class TestGraphUtils;
 /// @note It is izomorphic to AudioGraph in terms of nodes and edges, but it also maintains additional data for faster operations
 class HostGraph {
  public:
-  using AGEvent = FatFunction<32, void()>;
-
+  using AGEvent = FatFunction<32, void(AudioGraph&, Disposer&)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
   struct TraversalState {
     size_t term = 0; // for classification of temp data as old or new
 
@@ -28,14 +29,10 @@ class HostGraph {
   };
 
   struct Node {
-    AudioGraph::Node *audioNode = nullptr; // pointer to the corresponding node in AudioGraph
     std::vector<Node *> inputs;            // reversed edges
     std::vector<Node *> outputs;           // edges
-
-    Node *next = nullptr;          // next in topological order
-    Node *prev = nullptr;          // previous in topological order
-    size_t topologicalIndex = 0;   // for swapping
     TraversalState traversalState; // for graph traversals
+    uint32_t audioNodeIndex = 0; // index of the corresponding node in AudioGraph
 
 #if RN_AUDIO_API_TEST
     // Identifier for testing purposes only
@@ -56,39 +53,29 @@ class HostGraph {
   HostGraph(HostGraph &&other) noexcept;
   HostGraph &operator=(HostGraph &&other) noexcept;
 
-  /// @brief Adds a new node to the graph, corresponding to the given AudioGraph::Node.
-  /// @param audioNode Pointer to the AudioGraph::Node to be added.
-  /// @return Pointer to the newly created HostGraph::Node. Returned pointer lifetime is tied to the HostGraph instance.
-  /// @return An event that should be applied to corresponding AudioGraph to maintain consistency between graphs. The event is a function that takes an AudioGraph reference and modifies it accordingly (e.g., by adding the corresponding AudioGraph::Node).
-  std::pair<Node *, AGEvent> addNode(AudioGraph::Node *audioNode);
+  /// @brief Adds a new node to the graph.
+  /// @param audioNodeIndex Index of the AudioGraph::Node.
+  std::pair<Node *, AGEvent> addNode(uint32_t audioNodeIndex);
 
   /// @brief Removes a node from the graph.
-  /// @param node Pointer to the HostGraph::Node to be removed.
-  /// @return A function that, when applied to an AudioGraph, will remove the corresponding AudioGraph::Node. The function is a FatFunction that takes an AudioGraph reference and modifies it accordingly (e.g., by removing the corresponding AudioGraph::Node).
-  /// @note The returned function should be applied to the corresponding AudioGraph to maintain consistency between the graphs.
   AGEvent removeNode(Node *node);
 
-  /// @brief Adds an edge from one node to another in the graph.
-  /// @param from Pointer to the source HostGraph::Node.
-  /// @param to Pointer to the destination HostGraph::Node.
-  /// @return A function that, when applied to an AudioGraph, will add the corresponding edge between the AudioGraph::Nodes. The function is a FatFunction that takes an AudioGraph reference and modifies it accordingly (e.g., by adding the corresponding edge between the AudioGraph::Nodes).
+  /// @brief Adds an edge. Checks for cycles using DFS.
+  /// @return Event or empty if cycle detected.
   AGEvent addEdge(Node *from, Node *to);
 
-  /// @brief Removes an edge from one node to another in the graph.
-  /// @param from Pointer to the source HostGraph::Node.
-  /// @param to Pointer to the destination HostGraph::Node.
-  /// @return A function that, when applied to an AudioGraph, will remove the corresponding edge between the AudioGraph::Nodes. The function is a FatFunction that takes an AudioGraph reference and modifies it accordingly (e.g., by removing the corresponding edge between the AudioGraph::Nodes).
+  /// @brief Removes an edge.
   AGEvent removeEdge(Node *from, Node *to);
 
  private:
-  std::vector<std::unique_ptr<Node>> nodes; // all nodes in the graph
-
-  // Dummy head and tail are nodes that help with edge cases
-  Node *head = nullptr; // head of the topologically sorted list of nodes (dummy head)
-  Node *tail = nullptr; // tail of the topologically sorted list of nodes (dummy tail)
+  // We own the nodes now
+  std::vector<Node*> nodes;
   size_t last_term = 0; // for traversal data management
 
+  bool hasPath(Node* from, Node* to);
+
   friend class TestGraphUtils;
+  friend class HostGraphTest;
 };
 
 } // namespace audioapi::utils::graph

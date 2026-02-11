@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <map>
 
 namespace audioapi::utils::graph {
 
@@ -15,37 +16,30 @@ std::pair<AudioGraph, HostGraph> TestGraphUtils::createTestGraph(std::vector<std
 
 std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyList(const AudioGraph &audioGraph) {
   std::vector<std::vector<size_t>> adjacencyList;
+  if (audioGraph.nodes.empty()) return {};
 
-  // First pass: verify we can use test identifiers and determine size
-  // Since AudioGraph is a linked list, we traverse it.
-  // Note: head is dummy.
   size_t maxId = 0;
-  bool empty = true;
-  AudioGraph::Node* current = audioGraph.head->next;
-
-  while (current) {
-    empty = false;
-    if (current->test_node_identifier__ >= maxId) {
-      maxId = current->test_node_identifier__;
+  for (const auto& node : audioGraph.nodes) {
+    if (node.test_node_identifier__ > maxId) {
+      maxId = node.test_node_identifier__;
     }
-    current = current->next;
   }
-
-  if (empty) return {};
 
   adjacencyList.resize(maxId + 1);
 
-  current = audioGraph.head->next;
-  while (current) {
-    size_t nodeId = current->test_node_identifier__;
-    for (AudioGraph::Node* input : current->inputs) {
-      if (input) {
-          adjacencyList[nodeId].push_back(input->test_node_identifier__);
-      }
+  for (const auto& node : audioGraph.nodes) {
+    size_t nodeId = node.test_node_identifier__;
+
+    for (uint32_t inputIdx : node.inputs) {
+        if (inputIdx < audioGraph.nodes.size()) {
+            size_t inputId = audioGraph.nodes[inputIdx].test_node_identifier__;
+            adjacencyList[inputId].push_back(nodeId);
+        }
     }
-    // Sort for consistent comparison
-    std::sort(adjacencyList[nodeId].begin(), adjacencyList[nodeId].end());
-    current = current->next;
+  }
+
+  for(auto& adj : adjacencyList) {
+      std::sort(adj.begin(), adj.end());
   }
 
   return adjacencyList;
@@ -56,19 +50,20 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
   if (hostGraph.nodes.empty()) return {};
 
   size_t maxId = 0;
-  for (const auto& node : hostGraph.nodes) {
-    if (node->test_node_identifier__ > maxId) {
-      maxId = node->test_node_identifier__;
+  for (auto* n : hostGraph.nodes) {
+    if (n->test_node_identifier__ > maxId) {
+      maxId = n->test_node_identifier__;
     }
   }
 
   adjacencyList.resize(maxId + 1);
 
-  for (const auto& node : hostGraph.nodes) {
-    size_t nodeId = node->test_node_identifier__;
-    for (HostGraph::Node* input : node->inputs) {
-      if (input) {
-        adjacencyList[nodeId].push_back(input->test_node_identifier__);
+  for (auto* n : hostGraph.nodes) {
+    size_t nodeId = n->test_node_identifier__;
+    // HostGraph nodes have `outputs`. Use them directly.
+    for (HostGraph::Node* output : n->outputs) {
+      if (output) {
+        adjacencyList[nodeId].push_back(output->test_node_identifier__);
       }
     }
     std::sort(adjacencyList[nodeId].begin(), adjacencyList[nodeId].end());
@@ -79,96 +74,70 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
 
 HostGraph TestGraphUtils::makeFromAdjacencyList(const std::vector<std::vector<size_t>> &adjacencyList) {
   HostGraph graph;
+  // Temporary storage to access nodes by index during construction
+  std::vector<HostGraph::Node*> nodesVec;
+  nodesVec.reserve(adjacencyList.size());
+
   // Create nodes
   for (size_t i = 0; i < adjacencyList.size(); ++i) {
-    graph.nodes.emplace_back(std::make_unique<HostGraph::Node>());
-    graph.nodes.back()->audioNode = new AudioGraph::Node(); // Create corresponding AudioGraph node
-    graph.nodes.back()->test_node_identifier__ = i; // Set test identifier
-    graph.nodes.back()->audioNode->test_node_identifier__ = i; // Set test identifier
+    HostGraph::Node* node = new HostGraph::Node();
+    node->audioNodeIndex = static_cast<uint32_t>(i); // Assume 1:1 mapping for test graph
+    node->test_node_identifier__ = i; // Set test identifier
+    nodesVec.push_back(node);
+    graph.nodes.push_back(node);
   }
 
-  // Create edges based on adjacency list
-  for (size_t toIndex = 0; toIndex < adjacencyList.size(); ++toIndex) {
-    for (size_t fromIndex : adjacencyList[toIndex]) {
-      if (toIndex < graph.nodes.size() && fromIndex < graph.nodes.size()) {
-          HostGraph::Node* fromNode = graph.nodes[fromIndex].get();
-          HostGraph::Node* toNode = graph.nodes[toIndex].get();
+  // Create edges based on adjacency list where index i contains list of OUTPUTS from i
+  // adjacencyList[i] = {j, k} means i -> j, i -> k
+  for (size_t fromIndex = 0; fromIndex < adjacencyList.size(); ++fromIndex) {
+    for (size_t toIndex : adjacencyList[fromIndex]) {
+      if (fromIndex < nodesVec.size() && toIndex < nodesVec.size()) {
+          HostGraph::Node* fromNode = nodesVec[fromIndex];
+          HostGraph::Node* toNode = nodesVec[toIndex];
+
           fromNode->outputs.push_back(toNode);
           toNode->inputs.push_back(fromNode);
-          // Update AudioGraph nodes
-          if (toNode->audioNode && fromNode->audioNode) {
-              toNode->audioNode->inputs.push_back(fromNode->audioNode);
-          }
       }
     }
   }
 
-  size_t term = 1; // for traversal state management
-
-  // This will be naive topological sort but this method is only intended for testing purposes so simplicity is more important than performance here
-  std::sort(graph.nodes.begin(), graph.nodes.end(), [&term](const std::unique_ptr<HostGraph::Node>& a, const std::unique_ptr<HostGraph::Node>& b) {
-    // we should swap if we can reach b from a
-    std::vector<HostGraph::Node*> stack = {a.get()};
-
-    term++;
-
-    while (!stack.empty()) {
-      HostGraph::Node* current = stack.back();
-      stack.pop_back();
-      if (current == b.get()) {
-        return true;
-      }
-      if (current->traversalState.visit(term)) {
-        for (HostGraph::Node* output : current->outputs) {
-          stack.push_back(output);
-        }
-      }
-    }
-    return false; // a should not come before b
-  });
+  size_t term = 1; // for retrieval of order
 
   graph.last_term = term;
-
-  if (!graph.nodes.empty()) {
-      graph.head->next = graph.nodes[0].get();
-      graph.nodes[0]->prev = graph.head;
-      for (size_t i = 1; i < graph.nodes.size(); ++i) {
-        graph.nodes[i-1]->next = graph.nodes[i].get();
-        graph.nodes[i]->prev = graph.nodes[i-1].get();
-        graph.nodes[i]->topologicalIndex = i;
-      }
-      graph.nodes.back()->next = graph.tail;
-      graph.tail->prev = graph.nodes.back().get();
-  } else {
-      graph.head->next = graph.tail;
-      graph.tail->prev = graph.head;
-  }
 
   return graph;
 }
 
 AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGraph) {
   AudioGraph audioGraph;
-  HostGraph::Node *current = hostGraph.head->next;
 
-  if (hostGraph.head->next != hostGraph.tail) {
-       audioGraph.head->next = hostGraph.head->next->audioNode;
-  } else {
-       audioGraph.head->next = nullptr;
+  if (hostGraph.nodes.empty()) return audioGraph;
+
+  // Determine size.
+  // Since we assumed audioNodeIndex is valid and 0-based packed in tests:
+  size_t maxIdx = 0;
+  for (auto* n : hostGraph.nodes) {
+      if (n->audioNodeIndex > maxIdx) maxIdx = n->audioNodeIndex;
   }
 
-  while (current != hostGraph.tail) {
-    if (current->audioNode) {
-        // Reconstruct inputs for AudioGraph::Node
-        current->audioNode->inputs = std::vector<AudioGraph::Node*>(current->inputs.size());
-        for (size_t i = 0; i < current->inputs.size(); ++i) {
-          current->audioNode->inputs[i] = current->inputs[i]->audioNode;
-        }
+  audioGraph.nodes.resize(maxIdx + 1);
 
-        current->audioNode->next = (current->next != hostGraph.tail) ? current->next->audioNode : nullptr;
-    }
-    current = current->next;
+  // Fill nodes
+  for (auto* n : hostGraph.nodes) {
+      auto& audioNode = audioGraph.nodes[n->audioNodeIndex];
+      audioNode.test_node_identifier__ = n->test_node_identifier__;
+
+      // Inputs
+      audioNode.inputs.clear();
+      for (HostGraph::Node* input : n->inputs) {
+          audioNode.inputs.push_back(input->audioNodeIndex);
+      }
   }
+
+  // We should also run process() to build executionOrder?
+  // The tests might expect it.
+  audioGraph.markDirty();
+  audioGraph.process();
 
   return audioGraph;
 }
