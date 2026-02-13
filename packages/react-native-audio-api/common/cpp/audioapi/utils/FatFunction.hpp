@@ -133,6 +133,11 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
     return invoker_(storage_.data(), std::forward<_FpArgs>(args)...);
   }
 
+  /// @brief Checks if the FatFunction contains a valid callable
+  explicit operator bool() const noexcept {
+    return invoker_ != nullptr;
+  }
+
   /// @brief Destructor
   ~FatFunction() {
     reset();

@@ -67,17 +67,19 @@ std::pair<HostGraph::Node*, HostGraph::AGEvent> HostGraph::addNode(uint32_t audi
   return {newNode, event};
 }
 
-HostGraph::AGEvent HostGraph::removeNode(Node *node) {
+HostGraph::Res HostGraph::removeNode(Node *node) {
   auto it = std::find(nodes.begin(), nodes.end(), node);
-  if (it != nodes.end()) {
-      *it = nodes.back();
-      nodes.pop_back();
+  if (it == nodes.end()) {
+      return Res::Err(ResultError::NODE_NOT_FOUND);
   }
+
+  *it = nodes.back();
+  nodes.pop_back();
 
   uint32_t targetIdx = node->audioNodeIndex;
   delete node;
 
-  return [targetIdx](AudioGraph& graph, Disposer&) {
+  return Res::Ok([targetIdx](AudioGraph& graph, Disposer&) {
       // "Ghost Node" strategy: Clear inputs so it disconnects from graph logic
       if (targetIdx < graph.nodes.size()) {
           graph.nodes[targetIdx].inputs.clear();
@@ -94,29 +96,35 @@ HostGraph::AGEvent HostGraph::removeNode(Node *node) {
       }
 
       graph.markDirty();
-  };
+  });
 }
 
-HostGraph::AGEvent HostGraph::addEdge(Node *from, Node *to) {
+HostGraph::Res HostGraph::addEdge(Node *from, Node *to) {
+  // Check if nodes exist in graph
+  if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
+      std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
+      return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+
   // Check if edge exists
   for (Node* out : from->outputs) {
-      if (out == to) return [](AudioGraph&, Disposer&){};
+      if (out == to) return Res::Err(ResultError::EDGE_ALREADY_EXISTS);
   }
 
   // Check for cycle: look for path from 'to' to 'from'
   if (hasPath(to, from)) {
-      return [](AudioGraph&, Disposer&){};
+      return Res::Err(ResultError::CYCLE_DETECTED);
   }
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
 
-  return [fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
+  return Res::Ok([fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
       if (toIdx < graph.nodes.size() && fromIdx < graph.nodes.size()) {
         graph.nodes[toIdx].inputs.push_back(fromIdx);
         graph.markDirty();
       }
-  };
+  });
 }
 
 bool HostGraph::hasPath(Node* start, Node* end) {
@@ -144,10 +152,15 @@ bool HostGraph::hasPath(Node* start, Node* end) {
     return false;
 }
 
-HostGraph::AGEvent HostGraph::removeEdge(Node *from, Node *to) {
+HostGraph::Res HostGraph::removeEdge(Node *from, Node *to) {
   // Check existence
+  if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
+      std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
+      return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+
   auto itOut = std::find(from->outputs.begin(), from->outputs.end(), to);
-  if (itOut == from->outputs.end()) return [](AudioGraph&, Disposer&){};
+  if (itOut == from->outputs.end()) return Res::Err(ResultError::EDGE_NOT_FOUND);
 
   auto itIn = std::find(to->inputs.begin(), to->inputs.end(), from);
   if (itIn != to->inputs.end()) {
@@ -155,7 +168,7 @@ HostGraph::AGEvent HostGraph::removeEdge(Node *from, Node *to) {
   }
   from->outputs.erase(itOut);
 
-  return [fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
+  return Res::Ok([fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
         if (toIdx < graph.nodes.size() && fromIdx < graph.nodes.size()) {
             auto& inputs = graph.nodes[toIdx].inputs;
             auto itIn = std::remove(inputs.begin(), inputs.end(), fromIdx);
@@ -163,7 +176,7 @@ HostGraph::AGEvent HostGraph::removeEdge(Node *from, Node *to) {
 
             graph.markDirty();
         }
-  };
+  });
 }
 
 }; // namespace audioapi::utils::graph

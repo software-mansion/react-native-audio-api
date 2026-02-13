@@ -36,7 +36,8 @@ class HostGraphTest : public ::testing::Test {
     auto initialAudioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
 
     // Action
-    auto event = hostGraph.addEdge(fromNode, toNode);
+    auto result = hostGraph.addEdge(fromNode, toNode);
+    ASSERT_TRUE(result.is_ok()) << "addEdge failed";
 
     // Verify AudioGraph UNCHANGED
     auto intermediateAudioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
@@ -44,6 +45,7 @@ class HostGraphTest : public ::testing::Test {
 
     // Perform Event
     MockDisposer disposer;
+    auto event = std::move(result).unwrap();
     event(audioGraph, disposer);
 
     // Verify AudioGraph UPDATED and CONSISTENT
@@ -223,17 +225,17 @@ TEST_F(HostGraphTest, AddEdge_CycleDetection) {
   HostGraph::Node* node2 = findNode(hostGraph, 2);
 
   // Try adding cycle 2->0
-  auto event = hostGraph.addEdge(node2, node0);
+  auto result = hostGraph.addEdge(node2, node0);
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
 
   // HostGraph should NOT change
   auto hostAdjAfter = TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph);
   EXPECT_EQ(hostAdjBefore, hostAdjAfter) << "HostGraph modified despite cycle detection";
 
-  MockDisposer disposer;
-  // Event should do nothing
-  event(audioGraph, disposer);
+  // AudioGraph should NOT change (no event executed)
   auto audioAdjAfter = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
-  EXPECT_EQ(audioAdjBefore, audioAdjAfter) << "AudioGraph modified by event despite cycle detection";
+  EXPECT_EQ(audioAdjBefore, audioAdjAfter) << "AudioGraph modified";
 }
 
 TEST_F(HostGraphTest, AddEdge_LargeSpecificGraph) {
@@ -287,11 +289,9 @@ TEST_F(HostGraphTest, AddEdge_GridInterconnect) {
   HostGraph::Node* node5 = findNode(hostGraph, 5);
   HostGraph::Node* node0 = findNode(hostGraph, 0);
 
-  auto event = hostGraph.addEdge(node5, node0);
+  auto result = hostGraph.addEdge(node5, node0);
+  EXPECT_TRUE(result.is_err());
   EXPECT_EQ(hostAdjBefore, TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph));
-  MockDisposer disposer;
-  event(audioGraph, disposer);
-  // Should verify audio graph unchanged too inside verifyAddEdge style checks but here manual:
 }
 
 } // namespace audioapi::utils::graph

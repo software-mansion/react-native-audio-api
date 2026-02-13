@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/utils/FatFunction.hpp>
+#include <audioapi/utils/Result.hpp>
 
 #include <utility>
 #include <vector>
@@ -17,12 +18,22 @@ class TestGraphUtils;
 /// @note It is izomorphic to AudioGraph in terms of nodes and edges, but it also maintains additional data for faster operations
 class HostGraph {
  public:
+  enum class ResultError {
+    NODE_NOT_FOUND,
+    CYCLE_DETECTED,
+    EDGE_NOT_FOUND,
+    EDGE_ALREADY_EXISTS,
+  };
+
   using AGEvent = FatFunction<
       32,
       void(
           AudioGraph &,
           Disposer
               &)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
+
+  using Res = Result<AGEvent, ResultError>;
+
   struct TraversalState {
     size_t term = 0; // for classification of temp data as old or new
 
@@ -62,14 +73,14 @@ class HostGraph {
   std::pair<Node *, AGEvent> addNode(uint32_t audioNodeIndex);
 
   /// @brief Removes a node from the graph.
-  AGEvent removeNode(Node *node);
+  Res removeNode(Node *node);
 
   /// @brief Adds an edge. Checks for cycles using DFS.
-  /// @return Event or empty if cycle detected.
-  AGEvent addEdge(Node *from, Node *to);
+  /// @return Event or error if cycle detected.
+  Res addEdge(Node *from, Node *to);
 
   /// @brief Removes an edge.
-  AGEvent removeEdge(Node *from, Node *to);
+  Res removeEdge(Node *from, Node *to);
 
  private:
   // We own the nodes now
