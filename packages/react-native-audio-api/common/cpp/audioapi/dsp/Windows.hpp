@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <span>
 
 namespace audioapi::dsp {
@@ -141,7 +142,7 @@ class Kaiser : public WindowFunction {
 
     bandwidth = std::max(bandwidth, 2.0f);
     auto alpha = std::sqrt(bandwidth * bandwidth * 0.25f - 1.0f);
-    return alpha * PI;
+    return alpha * std::numbers::pi_v<float>;
   }
 };
 

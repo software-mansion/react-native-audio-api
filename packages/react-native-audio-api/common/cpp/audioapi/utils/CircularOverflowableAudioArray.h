@@ -4,7 +4,6 @@
 #include <audioapi/utils/AudioArray.h>
 #include <atomic>
 #include <mutex>
-#include <stdexcept>
 
 namespace audioapi {
 

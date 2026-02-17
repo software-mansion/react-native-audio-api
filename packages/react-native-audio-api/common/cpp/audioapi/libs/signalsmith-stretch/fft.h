@@ -1,5 +1,4 @@
-#ifndef SIGNALSMITH_AUDIO_LINEAR_FFT_H
-#define SIGNALSMITH_AUDIO_LINEAR_FFT_H
+#pragma once
 
 #include <complex>
 #include <vector>
@@ -1378,5 +1377,3 @@ using ModifiedRealFFT = RealFFT<Sample, splitComputation, true>;
 #elif defined(SIGNALSMITH_USE_IPP)
 #	include "./platform/fft-ipp.h"
 #endif
-
-#endif // include guard

@@ -4,10 +4,7 @@
 #include <audioapi/libs/pffft/pffft.h>
 #include <audioapi/utils/AudioArray.h>
 
-#include <algorithm>
-#include <cmath>
 #include <complex>
-#include <utility>
 #include <vector>
 
 namespace audioapi::dsp {

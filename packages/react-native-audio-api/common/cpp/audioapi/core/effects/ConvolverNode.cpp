@@ -6,9 +6,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
-#include <iostream>
 #include <memory>
-#include <thread>
 #include <vector>
 
 namespace audioapi {

@@ -35,12 +35,7 @@
 #include <gtest/gtest_prod.h>
 #endif // RN_AUDIO_API_TEST
 
-#include <algorithm>
-#include <cmath>
-#include <complex>
 #include <memory>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace audioapi {

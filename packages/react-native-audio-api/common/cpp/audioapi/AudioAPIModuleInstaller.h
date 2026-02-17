@@ -18,9 +18,6 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
-#include <string>
-#include <vector>
-
 namespace audioapi {
 
 using namespace facebook;

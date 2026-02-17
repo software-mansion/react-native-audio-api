@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <span>
 
 namespace audioapi::dsp {

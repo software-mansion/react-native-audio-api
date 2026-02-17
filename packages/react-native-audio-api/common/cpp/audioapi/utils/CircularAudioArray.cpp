@@ -1,7 +1,5 @@
 #include <audioapi/utils/CircularAudioArray.h>
 
-#include <algorithm>
-
 namespace audioapi {
 
 CircularAudioArray::CircularAudioArray(size_t size) : AudioArray(size) {}
@@ -21,10 +19,10 @@ void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvai
 
     if (vWriteIndex_ + size > size_) {
         auto partSize = size_ - vWriteIndex_;
-        copy(data, 0, vWriteIndex_, partSize);
-        copy(data, partSize, 0, size - partSize);
+        this->copy(data, 0, vWriteIndex_, partSize);
+        this->copy(data, partSize, 0, size - partSize);
     } else {
-        copy(data, 0, vWriteIndex_, size);
+        this->copy(data, 0, vWriteIndex_, size);
     }
 
     vWriteIndex_ = vWriteIndex_ + size > size_ ? vWriteIndex_ + size - size_ : vWriteIndex_ + size;

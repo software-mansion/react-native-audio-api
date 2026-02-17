@@ -3,7 +3,6 @@
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 
 #include <jsi/jsi.h>
-#include <memory>
 #include <unordered_map>
 #include <utility>
 

@@ -6,7 +6,6 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>
-#include <thread>
 #include <utility>
 
 namespace audioapi {

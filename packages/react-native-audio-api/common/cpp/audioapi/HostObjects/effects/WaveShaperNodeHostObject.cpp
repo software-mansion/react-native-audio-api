@@ -6,7 +6,6 @@
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
