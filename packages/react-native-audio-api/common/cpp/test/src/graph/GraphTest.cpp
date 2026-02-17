@@ -13,9 +13,9 @@
 namespace audioapi::utils::graph {
 
 class MockDisposer : public Disposer {
- public:
-  void dispose(AudioGraph::Node* node) override {
-      // No-op
+ protected:
+  void doDispose(void *ptr, void (*deleter)(void *)) override {
+      // No-op: intentionally leak in tests
   }
 };
 

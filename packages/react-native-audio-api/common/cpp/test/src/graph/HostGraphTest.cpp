@@ -10,8 +10,8 @@
 namespace audioapi::utils::graph {
 
 class MockDisposer : public Disposer {
- public:
-  void dispose(AudioGraph::Node* node) override {
+ protected:
+  void doDispose(void *ptr, void (*deleter)(void *)) override {
     // No-op for vector-based graph. Nodes are managed by pool.
   }
 };
