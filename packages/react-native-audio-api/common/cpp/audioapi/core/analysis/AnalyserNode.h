@@ -12,7 +12,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioArray;
 class CircularAudioArray;
 struct AnalyserOptions;
@@ -43,8 +43,8 @@ class AnalyserNode : public AudioNode {
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
@@ -56,13 +56,13 @@ class AnalyserNode : public AudioNode {
   WindowType windowType_;
   std::shared_ptr<AudioArray> windowData_;
 
-  std::unique_ptr<CircularAudioArray> inputBuffer_;
-  std::unique_ptr<AudioBus> downMixBus_;
-  std::unique_ptr<AudioArray> tempBuffer_;
+  std::unique_ptr<CircularAudioArray> inputArray_;
+  std::unique_ptr<AudioBuffer> downMixBuffer_;
+  std::unique_ptr<AudioArray> tempArray_;
 
   std::unique_ptr<dsp::FFT> fft_;
   std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<AudioArray> magnitudeBuffer_;
+  std::unique_ptr<AudioArray> magnitudeArray_;
   bool shouldDoFFTAnalysis_{true};
 
   void doFFTAnalysis();

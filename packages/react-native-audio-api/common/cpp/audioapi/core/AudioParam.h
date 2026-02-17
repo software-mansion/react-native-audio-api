@@ -3,8 +3,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/AudioParamEventQueue.h>
-#include <audioapi/core/utils/ParamChangeEvent.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/ParamChangeEvent.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <cstddef>
@@ -21,14 +21,14 @@ class AudioParam {
       float defaultValue,
       float minValue,
       float maxValue,
-      std::shared_ptr<BaseAudioContext> context);
+      const std::shared_ptr<BaseAudioContext> &context);
 
   /// JS-Thread only methods
   /// These methods are called only from HostObjects invoked on the JS thread.
 
   // JS-Thread only
   [[nodiscard]] inline float getValue() const noexcept {
-    return value_;
+    return value_.load(std::memory_order_relaxed);
   }
 
   // JS-Thread only
@@ -48,7 +48,7 @@ class AudioParam {
 
   // JS-Thread only
   inline void setValue(float value) {
-    value_ = std::clamp(value, minValue_, maxValue_);
+    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
   // JS-Thread only
@@ -65,7 +65,7 @@ class AudioParam {
 
   // JS-Thread only
   void setValueCurveAtTime(
-      std::shared_ptr<std::vector<float>> values,
+      const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
       double duration);
@@ -79,14 +79,14 @@ class AudioParam {
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
-  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioGraphManager)
   void addInputNode(AudioNode *node);
 
-  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
+  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioGraphManager)
   void removeInputNode(AudioNode *node);
 
   // Audio-Thread only
-  std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
+  std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
 
   // Audio-Thread only
   float processKRateParam(int framesToProcess, double time);
@@ -94,7 +94,7 @@ class AudioParam {
  private:
   // Core parameter state
   std::weak_ptr<BaseAudioContext> context_;
-  float value_;
+  std::atomic<float> value_;
   float defaultValue_;
   float minValue_;
   float maxValue_;
@@ -111,8 +111,8 @@ class AudioParam {
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
-  std::shared_ptr<AudioBus> audioBus_;
-  std::vector<std::shared_ptr<AudioBus>> inputBuses_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
+  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_;
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
@@ -145,12 +145,12 @@ class AudioParam {
   }
   float getValueAtTime(double time);
   void processInputs(
-      const std::shared_ptr<AudioBus> &outputBus,
+      const std::shared_ptr<AudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
-  std::shared_ptr<AudioBus> calculateInputs(
-      const std::shared_ptr<AudioBus> &processingBus,
+  void mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer);
+  std::shared_ptr<AudioBuffer> calculateInputs(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess);
 };
 

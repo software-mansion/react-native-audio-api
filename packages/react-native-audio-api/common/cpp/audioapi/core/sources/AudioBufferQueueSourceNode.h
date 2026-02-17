@@ -1,8 +1,8 @@
 #pragma once
 
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -12,7 +12,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
 
@@ -37,8 +37,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void setOnBufferEndedCallbackId(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
   double getCurrentPosition() const override;
@@ -59,13 +59,13 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   std::atomic<uint64_t> onBufferEndedCallbackId_ = 0; // 0 means no callback
 
   void processWithoutInterpolation(
-      const std::shared_ptr<AudioBus> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;
 
   void processWithInterpolation(
-      const std::shared_ptr<AudioBus> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;

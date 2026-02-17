@@ -17,7 +17,7 @@
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
@@ -51,9 +51,9 @@ IOSAudioRecorder::IOSAudioRecorder(
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
         for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
-          float *channelData = (float *)inputBuffer->mBuffers[channel].mData;
+          auto data = (float *)inputBuffer->mBuffers[channel].mData;
 
-          adapterNode_->buff_[channel]->write(channelData, numFrames);
+          adapterNode_->buff_[channel]->write(data, numFrames);
         }
       }
     }

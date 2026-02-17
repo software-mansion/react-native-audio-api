@@ -4,10 +4,10 @@ import { NativeAudioAPIModule } from '../specs';
 import { parseNativeError } from './errors';
 import {
   AudioDevicesInfo,
+  AudioFocusType,
   IAudioManager,
   PermissionStatus,
   SessionOptions,
-  AudioFocusType,
 } from './types';
 
 class AudioManager implements IAudioManager {
@@ -100,6 +100,10 @@ class AudioManager implements IAudioManager {
 
   async getDevicesInfo(): Promise<AudioDevicesInfo> {
     return NativeAudioAPIModule.getDevicesInfo();
+  }
+
+  async setInputDevice(deviceId: string): Promise<boolean> {
+    return NativeAudioAPIModule.setInputDevice(deviceId);
   }
 }
 

@@ -1,10 +1,17 @@
 #pragma once
 
 #include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/utils/SpscChannel.hpp>
+#include <audioapi/utils/TaskOffloader.hpp>
 #include <tuple>
 #include <string>
 #include <memory>
 #include <audioapi/utils/Result.hpp>
+
+struct WriterData {
+  void *data;
+  int numFrames;
+};
 
 namespace audioapi {
 
@@ -32,7 +39,11 @@ class AndroidFileWriterBackend : public AudioFileWriter {
   float streamSampleRate_{0};
   int32_t streamChannelCount_{0};
   int32_t streamMaxBufferSize_{0};
-  std::string filePath_{""};
+  std::string filePath_;
+
+  // delay initialization of offloader until prepare is called
+  std::unique_ptr<task_offloader::TaskOffloader<WriterData, FILE_WRITER_SPSC_OVERFLOW_STRATEGY, FILE_WRITER_SPSC_WAIT_STRATEGY>> offloader_;
+  virtual void taskOffloaderFunction(WriterData data) = 0;
 };
 
 } // namespace audioapi

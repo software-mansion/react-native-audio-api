@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -53,6 +54,10 @@ class AudioFileWriter {
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   friend class RotatingFileWriter;
+  static constexpr auto FILE_WRITER_SPSC_OVERFLOW_STRATEGY =
+      channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
+  static constexpr auto FILE_WRITER_SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
+  static constexpr auto FILE_WRITER_CHANNEL_CAPACITY = 64;
 };
 
 } // namespace audioapi

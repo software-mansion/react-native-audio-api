@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/types/BiquadFilterType.h>
@@ -12,7 +12,7 @@ namespace audioapi {
 
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext>& context,
                                                        const BiquadFilterOptions &options)
-    : AudioNodeHostObject(context->createBiquadFilter(options)) {
+    : AudioNodeHostObject(context->createBiquadFilter(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, detune),
@@ -66,7 +66,8 @@ JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
   auto arrayBufferFrequency =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
-  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime));
+  // arrayBufferFrequency is Float32Array from JS and size is in bytes thus hardcoded division by 4
+  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime) / 4);
 
   auto arrayBufferMag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);

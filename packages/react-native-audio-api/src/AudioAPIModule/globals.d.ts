@@ -3,6 +3,7 @@ import type {
   IAudioDecoder,
   IAudioEventEmitter,
   IAudioRecorder,
+  IAudioBuffer,
   IAudioStretcher,
   IOfflineAudioContext,
 } from '../interfaces';
@@ -23,6 +24,12 @@ declare global {
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: () => IAudioRecorder;
+
+  var createAudioBuffer: (
+    numberOfChannels: number,
+    length: number,
+    sampleRate: number
+  ) => IAudioBuffer;
 
   var createAudioDecoder: () => IAudioDecoder;
 

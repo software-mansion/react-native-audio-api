@@ -2,13 +2,15 @@
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
 
 namespace audioapi {
 
 AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
-    const std::shared_ptr<AudioBufferBaseSourceNode> &node)
-    : AudioScheduledSourceNodeHostObject(node) {
+    const std::shared_ptr<AudioBufferBaseSourceNode> &node,
+    const BaseAudioBufferSourceOptions &options)
+    : AudioScheduledSourceNodeHostObject(node, options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, detune),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, playbackRate),

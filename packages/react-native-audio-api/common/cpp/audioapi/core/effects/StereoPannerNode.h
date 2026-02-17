@@ -9,7 +9,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {
@@ -21,8 +21,8 @@ class StereoPannerNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

@@ -1,9 +1,9 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <memory>
@@ -17,12 +17,10 @@ WaveShaperNode::WaveShaperNode(
     : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
-  for (int i = 0; i < channelCount_; i++) {
+  for (size_t i = 0; i < channelCount_; i++) {
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
   setCurve(options.curve);
-  // to change after graph processing improvement - should be max
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   isInitialized_ = true;
 }
 
@@ -39,12 +37,12 @@ void WaveShaperNode::setOversample(OverSampleType type) {
   }
 }
 
-std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
+std::shared_ptr<AudioArrayBuffer> WaveShaperNode::getCurve() const {
   std::scoped_lock<std::mutex> lock(mutex_);
   return curve_;
 }
 
-void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
+void WaveShaperNode::setCurve(const std::shared_ptr<AudioArrayBuffer> &curve) {
   std::scoped_lock<std::mutex> lock(mutex_);
   curve_ = curve;
 
@@ -53,30 +51,30 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<AudioBus> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (!isInitialized_) {
-    return processingBus;
+    return processingBuffer;
   }
 
   std::unique_lock<std::mutex> lock(mutex_, std::try_to_lock);
 
   if (!lock.owns_lock()) {
-    return processingBus;
+    return processingBuffer;
   }
 
   if (curve_ == nullptr) {
-    return processingBus;
+    return processingBuffer;
   }
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
-    auto channelData = processingBus->getSharedChannel(channel);
+  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
+    auto channelData = processingBuffer->getChannel(channel);
 
-    waveShapers_[channel]->process(channelData, framesToProcess);
+    waveShapers_[channel]->process(*channelData, framesToProcess);
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

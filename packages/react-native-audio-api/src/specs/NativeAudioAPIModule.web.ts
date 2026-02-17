@@ -40,6 +40,7 @@ interface Spec extends TurboModule {
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
+  setInputDevice(deviceId: string): Promise<boolean>;
 
   // New notification system
   showNotification(
@@ -79,6 +80,7 @@ const NativeAudioAPIModule: Spec = {
     currentInputs: [],
     currentOutputs: [],
   }),
+  setInputDevice: mockAsync(true),
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),

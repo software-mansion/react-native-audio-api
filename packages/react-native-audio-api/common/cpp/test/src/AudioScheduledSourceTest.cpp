@@ -2,7 +2,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -33,14 +33,14 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
   }
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBus> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess,
       float sampleRate,
       size_t currentSampleFrame) {
     AudioScheduledSourceNode::updatePlaybackInfo(
-        processingBus,
+        processingBuffer,
         framesToProcess,
         startOffset,
         nonSilentFramesToProcess,
@@ -48,7 +48,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
         currentSampleFrame);
   }
 
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) override {
+  std::shared_ptr<AudioBuffer> processNode(const std::shared_ptr<AudioBuffer> &, int) override {
     return nullptr;
   }
 
@@ -60,15 +60,16 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       size_t startOffset = 0;
       size_t nonSilentFramesToProcess = 0;
-      auto processingBus = std::make_shared<AudioBus>(128, 2, static_cast<float>(SAMPLE_RATE));
+      auto processingBuffer =
+          std::make_shared<AudioBuffer>(128, 2, static_cast<float>(SAMPLE_RATE));
       updatePlaybackInfo(
-          processingBus,
+          processingBuffer,
           frames,
           startOffset,
           nonSilentFramesToProcess,
           context->getSampleRate(),
           context->getCurrentSampleFrame());
-      context->getDestination()->renderAudio(processingBus, frames);
+      context->getDestination()->renderAudio(processingBuffer, frames);
     }
   }
 };

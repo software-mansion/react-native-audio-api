@@ -1,28 +1,28 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <string>
 #include <utility>
 
 namespace audioapi {
 
-AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context) : context_(context) {
-  audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-}
-
-AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext>& context, const AudioNodeOptions &options)
-    : channelCount_(options.channelCount),
-      context_(context),
+AudioNode::AudioNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AudioNodeOptions &options)
+    : context_(context),
+      numberOfInputs_(options.numberOfInputs),
+      numberOfOutputs_(options.numberOfOutputs),
+      channelCount_(options.channelCount),
       channelCountMode_(options.channelCountMode),
-      channelInterpretation_(options.channelInterpretation) {
-  audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+      channelInterpretation_(options.channelInterpretation),
+      requiresTailProcessing_(options.requiresTailProcessing) {
+  audioBuffer_ =
+      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
 AudioNode::~AudioNode() {
@@ -39,50 +39,50 @@ int AudioNode::getNumberOfOutputs() const {
   return numberOfOutputs_;
 }
 
-int AudioNode::getChannelCount() const {
+size_t AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-std::string AudioNode::getChannelCountMode() const {
-  return AudioNode::toString(channelCountMode_);
+ChannelCountMode AudioNode::getChannelCountMode() const {
+  return channelCountMode_;
 }
 
-std::string AudioNode::getChannelInterpretation() const {
-  return AudioNode::toString(channelInterpretation_);
+ChannelInterpretation AudioNode::getChannelInterpretation() const {
+  return channelInterpretation_;
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+    context->getGraphManager()->addPendingNodeConnection(
+        shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+    context->getGraphManager()->addPendingParamConnection(
+        shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
 void AudioNode::disconnect() {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), nullptr, AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+    context->getGraphManager()->addPendingNodeConnection(
+        shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+    context->getGraphManager()->addPendingNodeConnection(
+        shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getNodeManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+    context->getGraphManager()->addPendingParamConnection(
+        shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
@@ -118,55 +118,31 @@ void AudioNode::disable() {
   }
 }
 
-std::string AudioNode::toString(ChannelCountMode mode) {
-  switch (mode) {
-    case ChannelCountMode::MAX:
-      return "max";
-    case ChannelCountMode::CLAMPED_MAX:
-      return "clamped-max";
-    case ChannelCountMode::EXPLICIT:
-      return "explicit";
-    default:
-      throw std::invalid_argument("Unknown channel count mode");
-  }
-}
-
-std::string AudioNode::toString(ChannelInterpretation interpretation) {
-  switch (interpretation) {
-    case ChannelInterpretation::SPEAKERS:
-      return "speakers";
-    case ChannelInterpretation::DISCRETE:
-      return "discrete";
-    default:
-      throw std::invalid_argument("Unknown channel interpretation");
-  }
-}
-
-std::shared_ptr<AudioBus> AudioNode::processAudio(
-    const std::shared_ptr<AudioBus> &outputBus,
+std::shared_ptr<AudioBuffer> AudioNode::processAudio(
+    const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (!isInitialized_) {
-    return outputBus;
+    return outputBuffer;
   }
 
   if (checkIsAlreadyProcessed && isAlreadyProcessed()) {
-    return audioBus_;
+    return audioBuffer_;
   }
 
-  // Process inputs and return the bus with the most channels.
-  auto processingBus = processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
+  // Process inputs and return the buffer with the most channels.
+  auto processingBuffer = processInputs(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
 
   // Apply channel count mode.
-  processingBus = applyChannelCountMode(processingBus);
+  processingBuffer = applyChannelCountMode(processingBuffer);
 
-  // Mix all input buses into the processing bus.
-  mixInputsBuses(processingBus);
+  // Mix all input buffers into the processing buffer.
+  mixInputsBuffers(processingBuffer);
 
-  assert(processingBus != nullptr);
+  assert(processingBuffer != nullptr);
 
   // Finally, process the node itself.
-  return processNode(processingBus, framesToProcess);
+  return processNode(processingBuffer, framesToProcess);
 }
 
 bool AudioNode::isAlreadyProcessed() {
@@ -188,14 +164,14 @@ bool AudioNode::isAlreadyProcessed() {
   return true;
 }
 
-std::shared_ptr<AudioBus> AudioNode::processInputs(
-    const std::shared_ptr<AudioBus> &outputBus,
+std::shared_ptr<AudioBuffer> AudioNode::processInputs(
+    const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  auto processingBus = audioBus_;
-  processingBus->zero();
+  auto processingBuffer = audioBuffer_;
+  processingBuffer->zero();
 
-  int maxNumberOfChannels = 0;
+  size_t maxNumberOfChannels = 0;
   for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
     auto inputNode = *it;
     assert(inputNode != nullptr);
@@ -204,44 +180,45 @@ std::shared_ptr<AudioBus> AudioNode::processInputs(
       continue;
     }
 
-    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
-    inputBuses_.push_back(inputBus);
+    auto inputBuffer =
+        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
+    inputBuffers_.push_back(inputBuffer);
 
-    if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
-      maxNumberOfChannels = inputBus->getNumberOfChannels();
-      processingBus = inputBus;
+    if (maxNumberOfChannels < inputBuffer->getNumberOfChannels()) {
+      maxNumberOfChannels = inputBuffer->getNumberOfChannels();
+      processingBuffer = inputBuffer;
     }
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
-std::shared_ptr<AudioBus> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<AudioBus> &processingBus) {
+std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
+    const std::shared_ptr<AudioBuffer> &processingBuffer) {
   // If the channelCountMode is EXPLICIT, the node should output the number of
   // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
-    return audioBus_;
+    return audioBuffer_;
   }
 
   // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
   // number of channels clamped to channelCount.
   if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
-      processingBus->getNumberOfChannels() >= channelCount_) {
-    return audioBus_;
+      processingBuffer->getNumberOfChannels() >= channelCount_) {
+    return audioBuffer_;
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
-void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
-  assert(processingBus != nullptr);
+void AudioNode::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+  assert(processingBuffer != nullptr);
 
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
-    processingBus->sum(it->get(), channelInterpretation_);
+  for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
+    processingBuffer->sum(**it, channelInterpretation_);
   }
 
-  inputBuses_.clear();
+  inputBuffers_.clear();
 }
 
 void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {

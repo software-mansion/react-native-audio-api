@@ -1,9 +1,9 @@
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
-#include <audioapi/jsi/AudioArrayBuffer.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@ namespace audioapi {
 WaveShaperNodeHostObject::WaveShaperNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const WaveShaperOptions &options)
-    : AudioNodeHostObject(context->createWaveShaper(options)) {
+    : AudioNodeHostObject(context->createWaveShaper(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample),
       JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, curve));
@@ -37,8 +37,7 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
   }
 
   // copy AudioArray holding curve data to avoid subsequent modifications
-  auto audioArray = std::make_shared<AudioArray>(*curve);
-  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(audioArray);
+  auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(*curve);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
   auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
@@ -58,14 +57,14 @@ JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
 
   if (args[0].isNull()) {
-    waveShaperNode->setCurve(std::shared_ptr<AudioArray>(nullptr));
+    waveShaperNode->setCurve(nullptr);
     return jsi::Value::undefined();
   }
 
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
 
-  auto curve = std::make_shared<AudioArray>(
+  auto curve = std::make_shared<AudioArrayBuffer>(
       reinterpret_cast<float *>(arrayBuffer.data(runtime)),
       static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float)));
 

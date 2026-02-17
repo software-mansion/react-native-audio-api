@@ -38,7 +38,7 @@ class OfflineAudioContext : public BaseAudioContext {
   int numberOfChannels_;
   size_t currentSampleFrame_;
 
-  std::shared_ptr<AudioBus> resultBus_;
+  std::shared_ptr<AudioBuffer> resultBuffer_;
 
   void renderAudio();
 

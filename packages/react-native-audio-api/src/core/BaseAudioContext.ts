@@ -210,25 +210,7 @@ export default class BaseAudioContext {
     length: number,
     sampleRate: number
   ): AudioBuffer {
-    if (numberOfChannels < 1 || numberOfChannels >= 32) {
-      throw new NotSupportedError(
-        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
-      );
-    }
-
-    if (length <= 0) {
-      throw new NotSupportedError(
-        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
-      );
-    }
-
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
-
-    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
+    return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(

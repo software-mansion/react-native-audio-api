@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/types/NodeOptions.h>
 
 #include <memory>
 #include <vector>
@@ -13,7 +14,8 @@ class AudioScheduledSourceNode;
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
-      const std::shared_ptr<AudioScheduledSourceNode> &node);
+      const std::shared_ptr<AudioScheduledSourceNode> &node,
+      const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
 
   ~AudioScheduledSourceNodeHostObject() override;
 

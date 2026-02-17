@@ -5,10 +5,10 @@
 #include <arm_neon.h>
 #endif
 
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -17,17 +17,16 @@
 namespace audioapi {
 
 Convolver::Convolver()
-    : _blockSize(0),
+    : _trueSegmentCount(0),
+      _blockSize(0),
       _segSize(0),
       _segCount(0),
       _fftComplexSize(0),
       _segments(),
       _segmentsIR(),
-      _fftBuffer(0),
       _fft(nullptr),
       _preMultiplied(),
-      _current(0),
-      _inputBuffer(0) {}
+      _current(0) {}
 
 void Convolver::reset() {
   _blockSize = 0;
@@ -39,8 +38,12 @@ void Convolver::reset() {
   _segments.clear();
   _segmentsIR.clear();
   _preMultiplied.clear();
-  _fftBuffer.zero();
-  _inputBuffer.zero();
+  if (_fftBuffer != nullptr) {
+    _fftBuffer->zero();
+  }
+  if (_inputBuffer != nullptr) {
+    _inputBuffer->zero();
+  }
 }
 
 bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t irLen) {
@@ -71,7 +74,7 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
   // complex-conjugate symmetricity
   _fftComplexSize = _segSize / 2 + 1;
   _fft = std::make_shared<dsp::FFT>(static_cast<int>(_segSize));
-  _fftBuffer.resize(_segSize);
+  _fftBuffer = std::make_unique<AudioArray>(_segSize);
 
   // segments preparation
   for (int i = 0; i < _segCount; ++i) {
@@ -86,18 +89,18 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
     const size_t samplesToCopy = std::min(_blockSize, remainingSamples);
 
     if (samplesToCopy > 0) {
-      memcpy(_fftBuffer.getData(), ir.getData() + i * _blockSize, samplesToCopy * sizeof(float));
+      _fftBuffer->copy(ir, i * _blockSize, 0, samplesToCopy);
     }
     // Each sub filter is zero-padded to length 2B and transformed using a
     // 2B-point real-to-complex FFT.
-    memset(_fftBuffer.getData() + _blockSize, 0, _blockSize * sizeof(float));
-    _fft->doFFT(_fftBuffer.getData(), segment);
+    _fftBuffer->zero(_blockSize, _blockSize);
+    _fft->doFFT(*_fftBuffer, segment);
     segment.at(0).imag(0.0f); // ensure DC component is real
     _segmentsIR.push_back(segment);
   }
 
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
-  _inputBuffer.resize(_segSize);
+  _inputBuffer = std::make_unique<AudioArray>(_segSize);
   _current = 0;
 
   return true;
@@ -165,12 +168,12 @@ void pairwise_complex_multiply_fast(
 #endif
 }
 
-void Convolver::process(float *data, float *outputData) {
+void Convolver::process(const AudioArray &input, AudioArray &output) {
   // The input buffer acts as a 2B-point sliding window of the input signal.
   // With each new input block, the right half of the input buffer is shifted
   // to the left and the new block is stored in the right half.
-  memmove(_inputBuffer.getData(), _inputBuffer.getData() + _blockSize, _blockSize * sizeof(float));
-  memcpy(_inputBuffer.getData() + _blockSize, data, _blockSize * sizeof(float));
+  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
+  _inputBuffer->copy(input, 0, _blockSize, _blockSize);
 
   // All contents (DFT spectra) in the FDL are shifted up by one slot.
   _current = (_current > 0) ? _current - 1 : _segCount - 1;
@@ -178,7 +181,7 @@ void Convolver::process(float *data, float *outputData) {
   // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
   // result is stored in the first FDL slot.
   // _current marks first FDL slot, which is the current input block.
-  _fft->doFFT(_inputBuffer.getData(), _segments[_current]);
+  _fft->doFFT(*_inputBuffer, _segments[_current]);
   _segments[_current][0].imag(0.0f); // ensure DC component is real
 
   // The P sub filter spectra are pairwisely multiplied with the input spectra
@@ -194,8 +197,8 @@ void Convolver::process(float *data, float *outputData) {
   // Of the accumulated spectral convolutions, an 2B-point complex-to-real
   // IFFT is computed. From the resulting 2B samples, the left half is
   // discarded and the right half is returned as the next output block.
-  _fft->doInverseFFT(_preMultiplied, _fftBuffer.getData());
+  _fft->doInverseFFT(_preMultiplied, *_fftBuffer);
 
-  memcpy(outputData, _fftBuffer.getData() + _blockSize, _blockSize * sizeof(float));
+  output.copy(*_fftBuffer, _blockSize, 0, _blockSize);
 }
 } // namespace audioapi

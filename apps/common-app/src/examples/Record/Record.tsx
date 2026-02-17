@@ -1,11 +1,12 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioManager,
+  useAudioInput,
 } from 'react-native-audio-api';
 
-import { Button, Container } from '../../components';
+import { Button, Container, Select } from '../../components';
 import { colors } from '../../styles';
 
 import { audioContext, audioRecorder } from '../../singletons';
@@ -18,6 +19,8 @@ enum Status {
 }
 
 const Record: FC = () => {
+  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
 
@@ -40,8 +43,8 @@ const Record: FC = () => {
 
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosMode: 'voiceChat',
+      iosOptions: ['allowBluetoothHFP'],
     });
 
     const success = await AudioManager.setAudioSessionActivity(true);
@@ -86,6 +89,7 @@ const Record: FC = () => {
   /// This stops only the recording, not the audio context
   const stopEcho = async () => {
     audioRecorder.stop();
+    audioContext.suspend();
 
     audioRecorder.disconnect();
     setStatus(Status.Idle);
@@ -106,7 +110,7 @@ const Record: FC = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
     });
 
     const success = await AudioManager.setAudioSessionActivity(true);
@@ -143,6 +147,16 @@ const Record: FC = () => {
       return;
     }
 
+    const result = audioRecorder.start();
+
+    if (result.status === 'error') {
+      Alert.alert(
+        'Recording Error',
+        `Failed to start recording: ${result.message}`
+      );
+      return;
+    }
+
     setStatus(Status.Recording);
 
     setTimeout(async () => {
@@ -171,7 +185,7 @@ const Record: FC = () => {
     }
 
     if (audioContext.state === 'suspended') {
-      audioContext.resume();
+      await audioContext.resume();
     }
 
     const tNow = audioContext.currentTime;
@@ -188,12 +202,25 @@ const Record: FC = () => {
     setStatus(Status.Playback);
 
     setTimeout(
-      () => {
+      async () => {
+        await audioContext.suspend();
+        await AudioManager.setAudioSessionActivity(false);
         setStatus(Status.Idle);
       },
       (nextStartAt - tNow) * 1000
     );
   };
+
+  const onSelect = useCallback(
+    (id: string) => {
+      const input = availableInputs.find((d) => d.id === id);
+
+      if (input) {
+        onSelectInput(input);
+      }
+    },
+    [availableInputs, onSelectInput]
+  );
 
   useEffect(() => {
     return () => {
@@ -207,6 +234,13 @@ const Record: FC = () => {
         <Text style={{ color: colors.white, fontSize: 20 }}>
           Status: {status}
         </Text>
+      </View>
+      <View>
+        <Select
+          value={currentInput?.id || ''}
+          onChange={onSelect}
+          options={availableInputs.map((d) => d.id) || []}
+        />
       </View>
       <View style={{ alignItems: 'center', gap: 10 }}>
         <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>

@@ -1,6 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <memory>
@@ -12,7 +12,7 @@ AudioParam::AudioParam(
     float defaultValue,
     float minValue,
     float maxValue,
-    std::shared_ptr<BaseAudioContext> context)
+    const std::shared_ptr<BaseAudioContext> &context)
     : context_(context),
       value_(defaultValue),
       defaultValue_(defaultValue),
@@ -24,12 +24,13 @@ AudioParam::AudioParam(
       endTime_(0),
       startValue_(defaultValue),
       endValue_(defaultValue),
-      audioBus_(std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
-  inputBuses_.reserve(4);
+      audioBuffer_(
+          std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
+  inputBuffers_.reserve(4);
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
   calculateValue_ = [this](double, double, float, float, double) {
-    return value_;
+    return value_.load(std::memory_order_relaxed);
   };
 }
 
@@ -43,7 +44,7 @@ float AudioParam::getValueAtTime(double time) {
     endTime_ = event.getEndTime();
     startValue_ = event.getStartValue();
     endValue_ = event.getEndValue();
-    calculateValue_ = std::move(event.getCalculateValue());
+    calculateValue_ = event.getCalculateValue();
   }
 
   // Calculate value using the current automation function and clamp to valid
@@ -174,7 +175,7 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
 }
 
 void AudioParam::setValueCurveAtTime(
-    std::shared_ptr<std::vector<float>> values,
+    const std::shared_ptr<AudioArray> &values,
     size_t length,
     double startTime,
     double duration) {
@@ -197,7 +198,7 @@ void AudioParam::setValueCurveAtTime(
             // Calculate interpolation factor between adjacent array elements
             auto factor = static_cast<float>(
                 (time - startTime) * static_cast<double>(length - 1) / (endTime - startTime) - k);
-            return dsp::linearInterpolate(values->data(), k, k + 1, factor);
+            return dsp::linearInterpolate(values->span(), k, k + 1, factor);
           }
 
           return endValue;
@@ -207,7 +208,7 @@ void AudioParam::setValueCurveAtTime(
         startTime,
         startTime + duration,
         param.getQueueEndValue(),
-        values->at(length - 1),
+        values->span()[length - 1],
         std::move(calculateValue),
         ParamChangeEventType::SET_VALUE_CURVE));
   };
@@ -242,27 +243,27 @@ void AudioParam::removeInputNode(AudioNode *node) {
   }
 }
 
-std::shared_ptr<AudioBus> AudioParam::calculateInputs(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  processingBus->zero();
+  processingBuffer->zero();
   if (inputNodes_.empty()) {
-    return processingBus;
+    return processingBuffer;
   }
-  processInputs(processingBus, framesToProcess, true);
-  mixInputsBuses(processingBus);
-  return processingBus;
+  processInputs(processingBuffer, framesToProcess, true);
+  mixInputsBuffers(processingBuffer);
+  return processingBuffer;
 }
 
-std::shared_ptr<AudioBus> AudioParam::processARateParam(int framesToProcess, double time) {
+std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
   processScheduledEvents();
-  auto processingBus = calculateInputs(audioBus_, framesToProcess);
+  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)
-    return processingBus;
+    return processingBuffer;
   float sampleRate = context->getSampleRate();
-  float *busData = processingBus->getChannel(0)->getData();
+  auto bufferData = processingBuffer->getChannel(0)->span();
   float timeCache = time;
   float timeStep = 1.0f / sampleRate;
   float sample = 0.0f;
@@ -270,22 +271,22 @@ std::shared_ptr<AudioBus> AudioParam::processARateParam(int framesToProcess, dou
   // Add automated parameter value to each sample
   for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     sample = getValueAtTime(timeCache);
-    busData[i] += sample;
+    bufferData[i] += sample;
   }
-  // processingBus is a mono bus containing per-sample parameter values
-  return processingBus;
+  // processingBuffer is a mono buffer containing per-sample parameter values
+  return processingBuffer;
 }
 
 float AudioParam::processKRateParam(int framesToProcess, double time) {
   processScheduledEvents();
-  auto processingBus = calculateInputs(audioBus_, framesToProcess);
+  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   // Return block-rate parameter value plus first sample of input modulation
-  return processingBus->getChannel(0)->getData()[0] + getValueAtTime(time);
+  return processingBuffer->getChannel(0)->span()[0] + getValueAtTime(time);
 }
 
 void AudioParam::processInputs(
-    const std::shared_ptr<AudioBus> &outputBus,
+    const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
@@ -296,22 +297,23 @@ void AudioParam::processInputs(
       continue;
     }
 
-    // Process this input node and store its output bus
-    auto inputBus = inputNode->processAudio(outputBus, framesToProcess, checkIsAlreadyProcessed);
-    inputBuses_.emplace_back(inputBus);
+    // Process this input node and store its output buffer
+    auto inputBuffer =
+        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
+    inputBuffers_.emplace_back(inputBuffer);
   }
 }
 
-void AudioParam::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
-  assert(processingBus != nullptr);
+void AudioParam::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+  assert(processingBuffer != nullptr);
 
-  // Sum all input buses into the processing bus
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end; ++it) {
-    processingBus->sum(it->get(), ChannelInterpretation::SPEAKERS);
+  // Sum all input buffers into the processing buffer
+  for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
+    processingBuffer->sum(**it, ChannelInterpretation::SPEAKERS);
   }
 
   // Clear for next processing cycle
-  inputBuses_.clear();
+  inputBuffers_.clear();
 }
 
 } // namespace audioapi

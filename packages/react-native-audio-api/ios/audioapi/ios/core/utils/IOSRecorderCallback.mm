@@ -7,10 +7,11 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
+#include <utility>
 
 namespace audioapi {
 
@@ -38,8 +39,8 @@ IOSRecorderCallback::~IOSRecorderCallback()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (int i = 0; i < channelCount_; ++i) {
-      circularBus_[i]->zero();
+    for (size_t i = 0; i < channelCount_; ++i) {
+      circularBuffer_[i]->zero();
     }
   }
 }
@@ -87,6 +88,13 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
     converterOutputBuffer_ =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
+    auto offloaderLambda = [this](CallbackData data) {
+      taskOffloaderFunction(data);
+    };
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        CallbackData,
+        RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+        RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -97,7 +105,7 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 void IOSRecorderCallback::cleanup()
 {
   @autoreleasepool {
-    if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
     }
 
@@ -107,9 +115,10 @@ void IOSRecorderCallback::cleanup()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (int i = 0; i < channelCount_; ++i) {
-      circularBus_[i]->zero();
+    for (size_t i = 0; i < channelCount_; ++i) {
+      circularBuffer_[i]->zero();
     }
+    offloader_.reset();
   }
 }
 
@@ -123,19 +132,27 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
+  offloader_->getSender()->send({inputBuffer, numFrames});
+}
 
+void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
+{
+  auto [inputBuffer, numFrames] = data;
+  // dummy data to wake up thread after cleanup, skip processing it
+  if (inputBuffer == nullptr)
+    return;
   @autoreleasepool {
     NSError *error = nil;
 
     if (bufferFormat_.sampleRate == sampleRate_ && bufferFormat_.channelCount == channelCount_ &&
         !bufferFormat_.isInterleaved) {
       // Directly write to circular buffer
-      for (int i = 0; i < channelCount_; ++i) {
-        auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
-        circularBus_[i]->push_back(inputChannel, numFrames);
+      for (size_t i = 0; i < channelCount_; ++i) {
+        auto *data = static_cast<float *>(inputBuffer->mBuffers[i].mData);
+        circularBuffer_[i]->push_back(data, numFrames);
       }
 
-      if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+      if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
       return;
@@ -176,16 +193,14 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
       return;
     }
 
-    for (int i = 0; i < channelCount_; ++i) {
-      auto *inputChannel =
-          static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      circularBus_[i]->push_back(inputChannel, outputFrameCount);
+    for (size_t i = 0; i < channelCount_; ++i) {
+      auto *data = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
+      circularBuffer_[i]->push_back(data, outputFrameCount);
     }
 
-    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
   }
 }
-
 } // namespace audioapi

@@ -1,0 +1,9 @@
+{
+  "preset": "react-native",
+  "rootDir": "..",
+  "testMatch": ["**/tests/**/*.test.ts", "**/tests/**/*.test.tsx"],
+  "collectCoverageFrom": ["src/mock/**/*.{ts,tsx}", "!src/mock/**/*.d.ts"],
+  "coverageDirectory": "tests/coverage",
+  "coverageReporters": ["text", "lcov", "html"],
+  "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
+}

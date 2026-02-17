@@ -121,8 +121,15 @@ TEST_F(AudioParamTest, SetTargetAtTime) {
 TEST_F(AudioParamTest, SetValueCurveAtTime) {
   auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setValue(0.5);
-  auto curve = std::make_shared<std::vector<float>>(std::vector<float>{0.1, 0.4, 0.2, 0.8, 0.5});
-  param.setValueCurveAtTime(curve, curve->size(), 0.1, 0.2);
+  auto curve = std::make_shared<AudioArray>(5);
+  auto curveSpan = curve ->span();
+  curveSpan[0] = 0.1f;
+  curveSpan[1] = 0.4f;
+  curveSpan[2] = 0.2f;
+  curveSpan[3] = 0.8f;
+  curveSpan[4] = 0.5f;
+
+  param.setValueCurveAtTime(curve, curve->getSize(), 0.1, 0.2);
   // 5 elements over 0.2s => each element is 0.04s apart
 
   float value = param.processKRateParam(1, 0.05);

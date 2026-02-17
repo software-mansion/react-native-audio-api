@@ -12,7 +12,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct OscillatorOptions;
 
 class OscillatorNode : public AudioScheduledSourceNode {
@@ -28,8 +28,8 @@ class OscillatorNode : public AudioScheduledSourceNode {
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

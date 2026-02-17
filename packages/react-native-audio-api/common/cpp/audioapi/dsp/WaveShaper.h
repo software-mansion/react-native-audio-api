@@ -11,14 +11,14 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioArray;
 
 class WaveShaper {
  public:
   explicit WaveShaper(const std::shared_ptr<AudioArray> &curve);
 
-  void process(const std::shared_ptr<AudioArray> &channelData, int framesToProcess);
+  void process(AudioArray &channelData, int framesToProcess);
 
   void setCurve(const std::shared_ptr<AudioArray> &curve);
   void setOversample(OverSampleType type);
@@ -38,9 +38,9 @@ class WaveShaper {
   std::shared_ptr<AudioArray> tempBuffer2x_;
   std::shared_ptr<AudioArray> tempBuffer4x_;
 
-  void processNone(const std::shared_ptr<AudioArray> &channelData, int framesToProcess);
-  void process2x(const std::shared_ptr<AudioArray> &channelData, int framesToProcess);
-  void process4x(const std::shared_ptr<AudioArray> &channelData, int framesToProcess);
+  void processNone(AudioArray &channelData, int framesToProcess);
+  void process2x(AudioArray &channelData, int framesToProcess);
+  void process4x(AudioArray &channelData, int framesToProcess);
 };
 
 } // namespace audioapi

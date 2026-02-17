@@ -1,10 +1,10 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -28,20 +28,20 @@ class TestableWaveShaperNode : public WaveShaperNode {
  public:
   explicit TestableWaveShaperNode(std::shared_ptr<BaseAudioContext> context)
       : WaveShaperNode(context, WaveShaperOptions()) {
-    testCurve_ = std::make_shared<AudioArray>(3);
-    auto data = testCurve_->getData();
+    testCurve_ = std::make_shared<AudioArrayBuffer>(3);
+    auto data = testCurve_->span();
     data[0] = -2.0f;
     data[1] = 0.0f;
     data[2] = 2.0f;
   }
 
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override {
-    return WaveShaperNode::processNode(processingBus, framesToProcess);
+    return WaveShaperNode::processNode(processingBuffer, framesToProcess);
   }
 
-  std::shared_ptr<AudioArray> testCurve_;
+  std::shared_ptr<AudioArrayBuffer> testCurve_;
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
@@ -61,14 +61,14 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   waveShaper->setOversample(OverSampleType::OVERSAMPLE_NONE);
   waveShaper->setCurve(waveShaper->testCurve_);
 
-  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
-  for (size_t i = 0; i < bus->getSize(); ++i) {
-    bus->getChannel(0)->getData()[i] = -1.0f + i * 0.5f;
+  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = -1.0f + i * 0.5f;
   }
 
-  auto resultBus = waveShaper->processNode(bus, FRAMES_TO_PROCESS);
-  auto curveData = waveShaper->testCurve_->getData();
-  auto resultData = resultBus->getChannel(0)->getData();
+  auto resultBuffer = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
+  auto curveData = waveShaper->testCurve_->span();
+  auto resultData = resultBuffer->getChannel(0)->span();
 
   EXPECT_FLOAT_EQ(resultData[0], curveData[0]);
   EXPECT_FLOAT_EQ(resultData[1], -1.0f);

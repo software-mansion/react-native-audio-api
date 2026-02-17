@@ -2,12 +2,11 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <cassert>
@@ -28,16 +27,16 @@ OfflineAudioContext::OfflineAudioContext(
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0),
-      resultBus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
+      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
-  nodeManager_->cleanup();
+  getGraphManager()->cleanup();
 }
 
 void OfflineAudioContext::resume() {
   Locker locker(mutex_);
 
-  if (state_ == ContextState::RUNNING) {
+  if (getState() == ContextState::RUNNING) {
     return;
   }
 
@@ -49,7 +48,7 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 
   // we can only suspend once per render quantum at the end of the quantum
   // first quantum is [0, RENDER_QUANTUM_SIZE)
-  auto frame = static_cast<size_t>(when * sampleRate_);
+  auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (scheduledSuspends_.find(frame) != scheduledSuspends_.end()) {
@@ -62,23 +61,20 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 }
 
 void OfflineAudioContext::renderAudio() {
-  state_ = ContextState::RUNNING;
+  setState(ContextState::RUNNING);
+
   std::thread([this]() {
-    auto audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, numberOfChannels_, sampleRate_);
+    auto audioBuffer =
+        std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
 
     while (currentSampleFrame_ < length_) {
       Locker locker(mutex_);
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
-      destination_->renderAudio(audioBus, framesToProcess);
+      destination_->renderAudio(audioBuffer, framesToProcess);
 
-      for (int i = 0; i < framesToProcess; i++) {
-        for (int channel = 0; channel < numberOfChannels_; channel += 1) {
-          resultBus_->getChannel(channel)->getData()[currentSampleFrame_ + i] =
-              audioBus->getChannel(channel)->getData()[i];
-        }
-      }
+      resultBuffer_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 
@@ -88,15 +84,14 @@ void OfflineAudioContext::renderAudio() {
         assert(currentSampleFrame_ < length_);
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
-        state_ = ContextState::SUSPENDED;
+        setState(ContextState::SUSPENDED);
         callback();
         return;
       }
     }
 
     // Rendering completed
-    auto buffer = std::make_shared<AudioBuffer>(resultBus_);
-    resultCallback_(buffer);
+    resultCallback_(resultBuffer_);
   }).detach();
 }
 

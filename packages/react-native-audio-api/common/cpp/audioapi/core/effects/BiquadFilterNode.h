@@ -45,7 +45,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct BiquadFilterOptions;
 
 class BiquadFilterNode : public AudioNode {
@@ -72,8 +72,8 @@ class BiquadFilterNode : public AudioNode {
       size_t length);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

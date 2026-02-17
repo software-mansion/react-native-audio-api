@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <memory>
@@ -11,7 +11,7 @@ namespace audioapi {
 AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
-    : AudioBufferBaseSourceNodeHostObject(context->createBufferQueueSource(options)) {
+    : AudioBufferBaseSourceNodeHostObject(context->createBufferQueueSource(options), options) {
   functions_->erase("start");
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));

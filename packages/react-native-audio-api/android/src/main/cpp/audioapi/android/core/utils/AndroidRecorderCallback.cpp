@@ -4,13 +4,14 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace audioapi {
 
@@ -36,18 +37,18 @@ AndroidRecorderCallback::AndroidRecorderCallback(
 
 AndroidRecorderCallback::~AndroidRecorderCallback() {
   if (converter_ != nullptr) {
-    ma_data_converter_uninit(converter_.get(), NULL);
+    ma_data_converter_uninit(converter_.get(), nullptr);
     converter_.reset();
   }
 
   if (processingBuffer_ != nullptr) {
-    ma_free(processingBuffer_, NULL);
+    ma_free(processingBuffer_, nullptr);
     processingBuffer_ = nullptr;
     processingBufferLength_ = 0;
   }
 
-  for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i]->zero();
+  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
+    circularBuffer_[i]->zero();
   }
 }
 
@@ -74,7 +75,7 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
       static_cast<int32_t>(sampleRate_));
 
   converter_ = std::make_unique<ma_data_converter>();
-  result = ma_data_converter_init(&converterConfig, NULL, converter_.get());
+  result = ma_data_converter_init(&converterConfig, nullptr, converter_.get());
 
   if (result != MA_SUCCESS) {
     return Result<NoneType, std::string>::Err(
@@ -95,32 +96,41 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 
   processingBufferLength_ = std::max(processingBufferLength_, (ma_uint64)maxInputBufferLength_);
 
-  deinterleavingArray_ = std::make_shared<AudioArray>(processingBufferLength_);
+  deinterleavingBuffer_ =
+      std::make_shared<AudioBuffer>(processingBufferLength_, channelCount_, sampleRate_);
   processingBuffer_ = ma_malloc(
-      processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), NULL);
+      processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), nullptr);
 
+  auto offloaderLambda = [this](CallbackData data) {
+    taskOffloaderFunction(data);
+  };
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      CallbackData,
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 
 void AndroidRecorderCallback::cleanup() {
-  if (circularBus_[0]->getNumberOfAvailableFrames() > 0) {
+  if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
     emitAudioData(true);
   }
 
   if (converter_ != nullptr) {
-    ma_data_converter_uninit(converter_.get(), NULL);
+    ma_data_converter_uninit(converter_.get(), nullptr);
     converter_.reset();
   }
 
   if (processingBuffer_ != nullptr) {
-    ma_free(processingBuffer_, NULL);
+    ma_free(processingBuffer_, nullptr);
     processingBuffer_ = nullptr;
     processingBufferLength_ = 0;
   }
 
-  for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i]->zero();
+  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
+    circularBuffer_[i]->zero();
   }
+  offloader_.reset();
 }
 
 /// @brief Receives audio data from the recorder, processes it (resampling and deinterleaving if necessary),
@@ -132,6 +142,25 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
     return;
   }
 
+  offloader_->getSender()->send({data, numFrames});
+}
+
+/// @brief Deinterleaves the audio data and pushes it into the circular buffer.
+/// @param data Pointer to the interleaved audio data.
+/// @param numFrames Number of frames in the audio data.
+void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFrames) {
+  auto *inputData = static_cast<float *>(data);
+  deinterleavingBuffer_->deinterleaveFrom(inputData, numFrames);
+
+  for (size_t ch = 0; ch < channelCount_; ++ch) {
+    circularBuffer_[ch]->push_back(*deinterleavingBuffer_->getChannel(ch), numFrames);
+  }
+}
+
+/// @brief The handler function for the callback thread. It continuously receives audio data,
+/// processes it (resampling and deinterleaving if necessary), and pushes it into the circular buffer.
+void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
+  auto [data, numFrames] = callbackData;
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;
 
@@ -139,7 +168,7 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
       streamChannelCount_ == channelCount_) {
     deinterleaveAndPushAudioData(data, numFrames);
 
-    if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
     return;
@@ -153,25 +182,8 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
 
   deinterleaveAndPushAudioData(processingBuffer_, static_cast<int>(outputFrameCount));
 
-  if (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+  if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
     emitAudioData();
-  }
-}
-
-/// @brief Deinterleaves the audio data and pushes it into the circular buffer.
-/// @param data Pointer to the interleaved audio data.
-/// @param numFrames Number of frames in the audio data.
-void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFrames) {
-  auto *inputData = static_cast<float *>(data);
-
-  for (int channel = 0; channel < channelCount_; ++channel) {
-    float *channelData = deinterleavingArray_->getData();
-
-    for (int frame = 0; frame < numFrames; ++frame) {
-      channelData[frame] = inputData[frame * channelCount_ + channel];
-    }
-
-    circularBus_[channel]->push_back(channelData, numFrames);
   }
 }
 

@@ -298,10 +298,46 @@ static AudioSessionManager *_sharedInstance = nil;
     [deviceList addObject:@{
       @"name" : device.portName,
       @"category" : device.portType,
+      @"id" : device.UID,
     }];
   }
 
   return deviceList;
+}
+
+- (void)setInputDevice:(NSString *)deviceId
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject
+{
+  NSError *error = nil;
+  NSArray<AVAudioSessionPortDescription *> *availableInputs = [self.audioSession availableInputs];
+
+  AVAudioSessionPortDescription *selectedInput = nil;
+
+  for (AVAudioSessionPortDescription *input in availableInputs) {
+    if ([input.UID isEqualToString:deviceId]) {
+      selectedInput = input;
+      break;
+    }
+  }
+
+  if (selectedInput == nil) {
+    reject(nil, [NSString stringWithFormat:@"Input device with id %@ not found", deviceId], nil);
+    return;
+  }
+
+  [self.audioSession setPreferredInput:selectedInput error:&error];
+
+  if (error != nil) {
+    reject(
+        nil,
+        [NSString
+            stringWithFormat:@"Error while setting preferred input: %@", [error debugDescription]],
+        error);
+    return;
+  }
+
+  resolve(@(true));
 }
 
 - (AVAudioSessionCategory)categoryFromString:(NSString *)categorySTR
@@ -369,8 +405,13 @@ static AudioSessionManager *_sharedInstance = nil;
       options |= AVAudioSessionCategoryOptionMixWithOthers;
     }
 
-    if ([option isEqualToString:@"allowBluetooth"]) {
-      options |= AVAudioSessionCategoryOptionAllowBluetooth;
+    if ([option isEqualToString:@"allowBluetoothHFP"]) {
+      // XCode 26.x (default support SDK >= 26.x) uses AVAudioSessionCategoryOptionAllowBluetoothHFP as new standard for every platfrom (down to iOS 1.0)
+      // Older Xcode (default support SDKs) versions doesn't define it at all.
+      // Both (AVAudioSessionCategoryOptionAllowBluetooth in SDK < 26.x) and (AVAudioSessionCategoryOptionAllowBluetoothHFP in SDK >= 26.x) resolve to this value
+      // We use it here directly as there is no reliable way to switch between them (no @available for this).
+      // TODO: replace with AVAudioSessionCategoryOptionAllowBluetoothHFP once XCode 16.x will dig its grave
+      options |= 0x4;
     }
 
     if ([option isEqualToString:@"defaultToSpeaker"]) {

@@ -14,8 +14,8 @@
 
 namespace audioapi {
 
-class AudioBus;
-class AudioArray;
+class AudioBuffer;
+class AudioArrayBuffer;
 struct WaveShaperOptions;
 
 class WaveShaperNode : public AudioNode {
@@ -25,19 +25,19 @@ class WaveShaperNode : public AudioNode {
       const WaveShaperOptions &options);
 
   [[nodiscard]] OverSampleType getOversample() const;
-  [[nodiscard]] std::shared_ptr<AudioArray> getCurve() const;
+  [[nodiscard]] std::shared_ptr<AudioArrayBuffer> getCurve() const;
 
   void setOversample(OverSampleType);
-  void setCurve(const std::shared_ptr<AudioArray> &curve);
+  void setCurve(const std::shared_ptr<AudioArrayBuffer> &curve);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   std::atomic<OverSampleType> oversample_;
-  std::shared_ptr<AudioArray> curve_{};
+  std::shared_ptr<AudioArrayBuffer> curve_;
   mutable std::mutex mutex_;
 
   std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};

@@ -69,9 +69,18 @@ void multiply(
 // Finds the maximum magnitude of a float vector.
 float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
 
-void linearToDecibels(
-    const float *inputVector,
-    float *outputVector,
-    size_t numberOfElementsToProcess);
+float computeConvolution(const float *state, const float *kernel, size_t kernelSize);
+
+void interleaveStereo(
+    const float *inputLeft,
+    const float *inputRight,
+    float *outputInterleaved,
+    size_t numberOfFrames);
+
+void deinterleaveStereo(
+    const float *inputInterleaved,
+    float *outputLeft,
+    float *outputRight,
+    size_t numberOfFrames);
 
 } // namespace audioapi::dsp

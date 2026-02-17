@@ -3,9 +3,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
-#include <audioapi/jsi/AudioArrayBuffer.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 #include <jsi/jsi.h>
 
 #include <memory>
@@ -24,10 +24,10 @@ class WorkletNode : public AudioNode {
       : AudioNode(context) {}
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override {
-    return processingBus;
+    return processingBuffer;
   }
 };
 #else
@@ -37,7 +37,7 @@ using namespace facebook;
 class WorkletNode : public AudioNode {
  public:
   explicit WorkletNode(
-      std::shared_ptr<BaseAudioContext> context,
+      const std::shared_ptr<BaseAudioContext> &context,
       size_t bufferLength,
       size_t inputChannelCount,
       WorkletsRunner &&workletRunner);
@@ -45,13 +45,13 @@ class WorkletNode : public AudioNode {
   ~WorkletNode() override = default;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   WorkletsRunner workletRunner_;
-  std::shared_ptr<AudioBus> bus_;
+  std::shared_ptr<AudioBuffer> buffer_;
 
   /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer
   size_t bufferLength_;

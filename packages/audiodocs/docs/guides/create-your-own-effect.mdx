@@ -45,21 +45,22 @@ For the sake of a simplicity, we will use value as a raw `double` type, not wrap
 #include <audioapi/core/AudioNode.h>
 
 namespace audioapi {
-    class AudioBus;
+class AudioBuffer;
 
-    class MyProcessorNode : public AudioNode {
-    public:
-      explicit MyProcessorNode(BaseAudioContext *context);
+class MyProcessorNode : public AudioNode {
+public:
+  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context, );
 
-    protected:
-      void processNode(const std::shared_ptr<AudioBus> &bus,
-                    int framesToProcess) override;
+protected:
+  std::shared_ptr<AudioBuffer>
+  processNode(const std::shared_ptr<AudioBuffer> &buffer,
+              int framesToProcess) override;
 
-    // highlight-start
-    private:
-      double gain; // value responsible for gain value
-    // highlight-end
-    };
+// highlight-start
+private:
+  double gain; // value responsible for gain value
+// highlight-end
+};
 } // namespace audioapi
 ```
 </details>
@@ -69,20 +70,20 @@ namespace audioapi {
 
 ```cpp
 #include "MyProcessorNode.h"
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioArray.h>
 
 namespace audioapi {
-    MyProcessorNode::MyProcessorNode(BaseAudioContext *context)
+    MyProcessorNode::MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context)
         //highlight-next-line
         : AudioNode(context), gain(0.5) {
         isInitialized_ = true;
     }
 
-    void MyProcessorNode::processNode(const std::shared_ptr<AudioBus> &bus,
+    std::shared_ptr<AudioBuffer> MyProcessorNode::processNode(const std::shared_ptr<AudioBuffer> &buffer,
                                     int framesToProcess) {
       // highlight-start
-      for (int channel = 0; channel < bus->getNumberOfChannels(); ++channel) {
+      for (int channel = 0; channel < buffer->getNumberOfChannels(); ++channel) {
         auto *audioArray = bus->getChannel(channel);
         for (size_t i = 0; i < framesToProcess; ++i) {
           // Apply gain to each sample in the audio array

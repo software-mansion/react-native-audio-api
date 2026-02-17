@@ -8,13 +8,12 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/HostObjects/utils/NodeOptions.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <chrono>
 #include <cstdio>
 #include <memory>
@@ -26,7 +25,7 @@ namespace audioapi {
 StreamerNode::StreamerNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const StreamerOptions &options)
-    : AudioScheduledSourceNode(context),
+    : AudioScheduledSourceNode(context, options),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
       decoder_(nullptr),
@@ -35,7 +34,8 @@ StreamerNode::StreamerNode(
       frame_(nullptr),
       swrCtx_(nullptr),
       resampledData_(nullptr),
-      bufferedBus_(nullptr),
+      bufferedAudioBuffer_(nullptr),
+      bufferedAudioBufferSize_(0),
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {}
@@ -88,13 +88,13 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBuffer_ =
+      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>(CHANNEL_CAPACITY);
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
   sender_ = std::move(sender);
   receiver_ = std::move(receiver);
 
@@ -106,19 +106,19 @@ bool StreamerNode::initialize(const std::string &input_url) {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<AudioBus> StreamerNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> StreamerNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
   updatePlaybackInfo(
-      processingBus,
+      processingBuffer,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -127,45 +127,35 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return processingBus;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
-  int bufferRemaining = bufferedBusSize_ - processedSamples_;
+  int bufferRemaining = bufferedAudioBufferSize_ - processedSamples_;
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
-    if (bufferedBus_ != nullptr) {
-      for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
-        memcpy(
-            processingBus->getChannel(ch)->getData(),
-            bufferedBus_->getChannel(ch)->getData() + processedSamples_,
-            bufferRemaining * sizeof(float));
-      }
+    if (bufferedAudioBuffer_ != nullptr) {
+      processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
     }
     StreamingData data;
     auto res = receiver_.try_receive(data);
     if (res == channels::spsc::ResponseStatus::SUCCESS) {
-      bufferedBus_ = std::make_shared<AudioBus>(std::move(data.bus));
-      bufferedBusSize_ = data.size;
+      bufferedAudioBuffer_ = std::make_shared<AudioBuffer>(std::move(data.buffer));
+      bufferedAudioBufferSize_ = data.size;
       processedSamples_ = 0;
     } else {
-      bufferedBus_ = nullptr;
+      bufferedAudioBuffer_ = nullptr;
     }
   }
-  if (bufferedBus_ != nullptr) {
-    for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
-      memcpy(
-          processingBus->getChannel(ch)->getData() + alreadyProcessed,
-          bufferedBus_->getChannel(ch)->getData() + processedSamples_,
-          framesToProcess * sizeof(float));
-    }
+  if (bufferedAudioBuffer_ != nullptr) {
+    processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
-  return processingBus;
+  return processingBuffer;
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -230,7 +220,7 @@ void StreamerNode::streamAudio() {
 
 bool StreamerNode::processFrameWithResampler(
     AVFrame *frame,
-    std::shared_ptr<BaseAudioContext> context) {
+    const std::shared_ptr<BaseAudioContext> &context) {
   // Check if we need to reallocate the resampled buffer
   int out_samples = swr_get_out_samples(swrCtx_, frame->nb_samples);
   if (out_samples > maxResampledSamples_) {
@@ -267,16 +257,16 @@ bool StreamerNode::processFrameWithResampler(
   if (this->isFinished()) {
     return true;
   }
-  auto bus = AudioBus(
-      static_cast<size_t>(converted_samples),
-      codecCtx_->ch_layout.nb_channels,
-      context->getSampleRate());
-  for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
+
+  AudioBuffer buffer =
+      AudioBuffer(converted_samples, codecCtx_->ch_layout.nb_channels, context->getSampleRate());
+
+  for (size_t ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
-    float *dst = bus.getChannel(ch)->getData();
-    memcpy(dst, src, converted_samples * sizeof(float));
+    buffer.getChannel(ch)->copy(src, 0, 0, converted_samples);
   }
-  StreamingData data{std::move(bus), static_cast<size_t>(converted_samples)};
+
+  StreamingData data{std::move(buffer), static_cast<size_t>(converted_samples)};
   sender_.send(std::move(data));
   return true;
 }

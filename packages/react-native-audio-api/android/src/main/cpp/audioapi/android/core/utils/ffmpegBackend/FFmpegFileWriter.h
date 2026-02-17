@@ -66,6 +66,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
 
   // Finalization helper methods
   CloseFileResult finalizeOutput();
+  void taskOffloaderFunction(WriterData data) override;
 };
 
 } // namespace android::ffmpeg

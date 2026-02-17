@@ -3,8 +3,7 @@ import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
-import { TBaseAudioBufferSourceOptions } from '../types';
-import { BaseAudioBufferSourceOptions } from '../defaults';
+import { BaseAudioBufferSourceOptions } from '../types';
 import { AudioEventSubscription } from '../events';
 import { OnBufferEndEventType } from '../events/types';
 
@@ -14,13 +13,9 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
 
   constructor(
     context: BaseAudioContext,
-    options?: TBaseAudioBufferSourceOptions
+    options?: BaseAudioBufferSourceOptions
   ) {
-    const finalOptions: TBaseAudioBufferSourceOptions = {
-      ...BaseAudioBufferSourceOptions,
-      ...options,
-    };
-    const node = context.context.createBufferQueueSource(finalOptions);
+    const node = context.context.createBufferQueueSource(options || {});
     super(context, node);
   }
 

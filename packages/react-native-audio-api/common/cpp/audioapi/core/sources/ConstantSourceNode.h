@@ -9,7 +9,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
@@ -21,8 +21,8 @@ class ConstantSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

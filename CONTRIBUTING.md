@@ -14,7 +14,7 @@ We may suggest changes or request additional improvements, so please enable
 [Allow edits from maintainers](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
 on your PR.
 
-**Contribiuting by implementing your own feature should be preceeded by design doc. It can be any kind of document desciribing all important api and implementation details.**
+**Contributing by implementing your own feature should be preceded by design doc. It can be any kind of document describing all important api and implementation details.**
 
 ## Reporting Issues and Feature Requests
 

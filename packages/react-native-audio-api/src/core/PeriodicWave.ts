@@ -1,12 +1,11 @@
 import { IPeriodicWave } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
-import { TPeriodicWaveOptions } from '../types';
-import { PeriodicWaveConstraints } from '../defaults';
+import { PeriodicWaveOptions } from '../types';
 import { PeriodicWaveOptionsValidator } from '../options-validators';
 
 export function generateRealAndImag(
-  options?: TPeriodicWaveOptions
-): TPeriodicWaveOptions {
+  options?: PeriodicWaveOptions
+): PeriodicWaveOptions {
   let real: Float32Array | undefined;
   let imag: Float32Array | undefined;
   if (!options || (!options.real && !options.imag)) {
@@ -25,7 +24,7 @@ export function generateRealAndImag(
   }
   const norm: boolean = options?.disableNormalization
     ? options.disableNormalization
-    : PeriodicWaveConstraints.disableNormalization!;
+    : false;
   return { real, imag, disableNormalization: norm };
 }
 
@@ -33,7 +32,7 @@ export default class PeriodicWave {
   /** @internal */
   public readonly periodicWave: IPeriodicWave;
 
-  constructor(context: BaseAudioContext, options?: TPeriodicWaveOptions) {
+  constructor(context: BaseAudioContext, options?: PeriodicWaveOptions) {
     const finalOptions = generateRealAndImag(options);
     this.periodicWave = context.context.createPeriodicWave(
       finalOptions.real!,

@@ -187,4 +187,28 @@ namespace audioapi::js_enum_parser {
         throw std::invalid_argument("Unknown context state");
     }
   }
+
+    std::string channelCountModeToString(ChannelCountMode mode) {
+        switch (mode) {
+            case ChannelCountMode::MAX:
+                return "max";
+            case ChannelCountMode::CLAMPED_MAX:
+                return "clamped-max";
+            case ChannelCountMode::EXPLICIT:
+                return "explicit";
+            default:
+                throw std::invalid_argument("Unknown channel count mode");
+        }
+    }
+
+    std::string channelInterpretationToString(ChannelInterpretation interpretation) {
+        switch (interpretation) {
+            case ChannelInterpretation::SPEAKERS:
+                return "speakers";
+            case ChannelInterpretation::DISCRETE:
+                return "discrete";
+            default:
+                throw std::invalid_argument("Unknown channel interpretation");
+        }
+    }
 } // namespace audioapi::js_enum_parser

@@ -11,7 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -31,26 +31,26 @@ extern "C" {
 #include <string>
 #include <utility>
 
-static constexpr audioapi::channels::spsc::OverflowStrategy STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+inline constexpr auto STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-static constexpr audioapi::channels::spsc::WaitStrategy STREAMER_NODE_SPSC_WAIT_STRATEGY =
+inline constexpr auto STREAMER_NODE_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 
-static constexpr bool VERBOSE = false;
-static constexpr int CHANNEL_CAPACITY = 32;
+inline constexpr auto VERBOSE = false;
+inline constexpr auto CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
-  audioapi::AudioBus bus;
+  audioapi::AudioBuffer buffer;
   size_t size;
   StreamingData() = default;
-  StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
-  StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
-  StreamingData(StreamingData &&data) noexcept : bus(std::move(data.bus)), size(data.size) {}
+  StreamingData(audioapi::AudioBuffer b, size_t s) : buffer(b), size(s) {}
+  StreamingData(const StreamingData &data) : buffer(data.buffer), size(data.size) {}
+  StreamingData(StreamingData &&data) noexcept : buffer(std::move(data.buffer)), size(data.size) {}
   StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
     }
-    bus = data.bus;
+    buffer = data.buffer;
     size = data.size;
     return *this;
   }
@@ -58,7 +58,7 @@ struct StreamingData {
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
@@ -74,19 +74,17 @@ class StreamerNode : public AudioScheduledSourceNode {
   bool initialize(const std::string &inputUrl);
 
   std::string getStreamPath() const {
-#if !RN_AUDIO_API_TEST
     return streamPath_;
-#else
-    return "";
-#endif // RN_AUDIO_API_TEST
   }
 
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
+  std::string streamPath_;
+
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
   AVCodecContext *codecCtx_;
@@ -97,9 +95,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   SwrContext *swrCtx_;
   uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBus> bufferedBus_; // audio bus for buffering hls frames
-  size_t bufferedBusSize_;                // size of currently buffered bus
-  int audio_stream_index_;                // index of the audio stream channel in the input
+  std::shared_ptr<AudioBuffer> bufferedAudioBuffer_; // audio buffer for buffering hls frames
+  size_t bufferedAudioBufferSize_;                   // size of currently buffered buffer
+  int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
@@ -114,7 +112,6 @@ class StreamerNode : public AudioScheduledSourceNode {
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
-  std::string streamPath_;
 
   /**
    * @brief Setting up the resampler
@@ -128,12 +125,12 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
    */
-  bool processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context);
+  bool processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
 
   /**
    * @brief Thread function to continuously read and process audio frames
    * @details This function runs in a separate thread to avoid blocking the main audio processing thread
-   * @note It will read frames from the input stream, resample them, and store them in the buffered bus
+   * @note It will read frames from the input stream, resample them, and store them in the buffered buffer
    * @note The thread will stop when streamFlag is set to false
    */
   void streamAudio();
