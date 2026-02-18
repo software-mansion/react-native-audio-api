@@ -1,4 +1,3 @@
-#import <TargetConditionals.h>
 #import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>

@@ -3,7 +3,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 #import <React/RCTBridgeModule.h>
-#import <TargetConditionals.h>
 
 @interface AudioSessionManager : NSObject
 

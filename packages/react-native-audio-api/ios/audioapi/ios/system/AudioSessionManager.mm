@@ -1,5 +1,4 @@
 #import <AVFAudio/AVFAudio.h>
-#import <TargetConditionals.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 @implementation AudioSessionManager

@@ -2,7 +2,6 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
-#import <TargetConditionals.h>
 
 @class AudioAPIModule;
 
