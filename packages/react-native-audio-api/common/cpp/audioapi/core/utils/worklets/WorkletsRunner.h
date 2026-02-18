@@ -69,7 +69,6 @@ class WorkletsRunner {
 
  private:
   std::weak_ptr<worklets::WorkletRuntime> weakRuntime_;
-  std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   jsi::Runtime *unsafeRuntimePtr = nullptr;
 
   /// @note We want to avoid automatic destruction as
@@ -81,8 +80,6 @@ class WorkletsRunner {
   inline jsi::Function &getUnsafeWorklet() {
     return *reinterpret_cast<jsi::Function *>(&unsafeWorklet);
   }
-
-  bool ensureWorkletInitialized(jsi::Runtime &rt);
 
   std::optional<jsi::Value> executeOnRuntimeGuarded(
       const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job));

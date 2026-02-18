@@ -97,7 +97,7 @@ Pod::Spec.new do |s|
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\"",
     ]
-    .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/ffmpeg_include\""])
+    .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""])
     .concat(worklets_enabled ? ['"$(PODS_ROOT)/Headers/Public/RNWorklets"'] : [])
     .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
