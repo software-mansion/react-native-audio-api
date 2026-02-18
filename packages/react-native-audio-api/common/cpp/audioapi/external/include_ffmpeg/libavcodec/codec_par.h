@@ -48,7 +48,7 @@ typedef struct AVCodecParameters {
     /**
      * General type of the encoded data.
      */
-    enum AVMediaTypeFFmpeg codec_type;
+    enum AVMediaType codec_type;
     /**
      * Specific type of the encoded data (the codec used).
      */
