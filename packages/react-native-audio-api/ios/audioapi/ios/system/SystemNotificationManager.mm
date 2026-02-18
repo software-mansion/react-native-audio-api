@@ -5,54 +5,6 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
 
-#if TARGET_OS_MACCATALYST
-@implementation SystemNotificationManager
-
-- (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
-{
-  if (self = [super init]) {
-    self.audioAPIModule = audioAPIModule;
-    self.notificationCenter = [NSNotificationCenter defaultCenter];
-    self.audioInterruptionsObserved = false;
-    self.volumeChangesObserved = false;
-  }
-
-  return self;
-}
-
-- (void)cleanup
-{
-  self.notificationCenter = nil;
-}
-
-- (void)observeAudioInterruptions:(BOOL)enabled
-{
-  self.audioInterruptionsObserved = enabled;
-}
-
-- (void)activelyReclaimSession:(BOOL)enabled
-{
-  (void)enabled;
-}
-
-- (void)observeVolumeChanges:(BOOL)enabled
-{
-  self.volumeChangesObserved = enabled;
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context
-{
-  (void)keyPath;
-  (void)object;
-  (void)change;
-  (void)context;
-}
-
-@end
-#else
 @implementation SystemNotificationManager
 
 static NSString *NotificationManagerContext = @"SystemNotificationManagerContext";
@@ -354,4 +306,3 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 }
 
 @end
-#endif

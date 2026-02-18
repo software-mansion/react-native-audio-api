@@ -1,10 +1,8 @@
 #pragma once
 
+#import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 #import <TargetConditionals.h>
-#if !TARGET_OS_MACCATALYST
-#import <AVFoundation/AVFoundation.h>
-#endif
 
 @class AudioAPIModule;
 
