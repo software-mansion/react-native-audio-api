@@ -4,7 +4,6 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
-#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <unordered_map>
@@ -103,7 +102,7 @@ class AudioBuffer {
   /// @param source The source AudioBuffer to copy from.
   /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
   /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
-  void copy(const AudioBuffer &source);
+  void copy(const AudioBuffer &source); // NOLINT(build/include_what_you_use)
 
   /// @brief Copies audio data from a source AudioBuffer into this AudioBuffer.
   /// @param source The source AudioBuffer to copy from.
@@ -112,7 +111,11 @@ class AudioBuffer {
   /// @param length The number of samples to copy.
   /// @note Handles up-mixing and down-mixing based on the number of channels in both buffers.
   /// Assumes that source and this are located in two distinct, non-overlapping memory locations.
-  void copy(const AudioBuffer &source, size_t sourceStart, size_t destinationStart, size_t length);
+  void copy(
+      const AudioBuffer &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length); // NOLINT(build/include_what_you_use)
 
   /// @brief Deinterleave audio data from a source buffer into this AudioBuffer.
   /// @param source Pointer to the source buffer containing interleaved audio data.

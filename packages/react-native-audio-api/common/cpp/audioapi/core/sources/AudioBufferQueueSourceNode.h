@@ -4,7 +4,6 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <queue>

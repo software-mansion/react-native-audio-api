@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -104,7 +103,7 @@ class AudioArray {
   /// @brief Copies source AudioArray into this AudioArray
   /// @param source The source AudioArray to copy.
   /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
-  void copy(const AudioArray &source);
+  void copy(const AudioArray &source); // NOLINT(build/include_what_you_use)
 
   /// @brief Copies source AudioArray into this AudioArray
   /// @param source The source AudioArray to copy.
@@ -112,7 +111,11 @@ class AudioArray {
   /// @param destinationStart The starting index in this AudioArray.
   /// @param length The number of samples to copy.
   /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
-  void copy(const AudioArray &source, size_t sourceStart, size_t destinationStart, size_t length);
+  void copy(
+      const AudioArray &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length); // NOLINT(build/include_what_you_use)
 
   /// @brief Copies data from a raw float pointer into this AudioArray.
   /// @param source The source float pointer to copy from.
@@ -120,7 +123,11 @@ class AudioArray {
   /// @param destinationStart The starting index in this AudioArray.
   /// @param length The number of samples to copy.
   /// @note Assumes that source and this are located in two distinct, non-overlapping memory locations.
-  void copy(const float *source, size_t sourceStart, size_t destinationStart, size_t length);
+  void copy(
+      const float *source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length); // NOLINT(build/include_what_you_use)
 
   /// @brief Copies data from the source AudioArray in reverse order into this AudioArray.
   /// @param source The source AudioArray to copy from.
