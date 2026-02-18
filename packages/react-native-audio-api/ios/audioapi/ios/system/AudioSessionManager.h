@@ -1,7 +1,7 @@
 #pragma once
 
-#import <TargetConditionals.h>
 #import <Foundation/Foundation.h>
+#import <TargetConditionals.h>
 #if !TARGET_OS_MACCATALYST
 #import <AVFoundation/AVFoundation.h>
 #else

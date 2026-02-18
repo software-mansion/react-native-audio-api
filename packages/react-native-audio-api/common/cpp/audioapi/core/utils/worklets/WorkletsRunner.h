@@ -68,7 +68,7 @@ class WorkletsRunner {
   }
 
  private:
- std::weak_ptr<worklets::WorkletRuntime> weakRuntime_;
+  std::weak_ptr<worklets::WorkletRuntime> weakRuntime_;
   std::shared_ptr<worklets::SerializableWorklet> shareableWorklet_;
   jsi::Runtime *unsafeRuntimePtr = nullptr;
 

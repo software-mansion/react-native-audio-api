@@ -78,8 +78,7 @@ class AudioAPIModuleInstaller {
 #if RN_AUDIO_API_ENABLE_WORKLETS
           auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
           if (count > 1 && args[1].isObject()) {
-            runtimeRegistry.audioRuntime =
-                worklets::extractWorkletRuntime(runtime, args[1]);
+            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[1]);
           }
 #else
           auto runtimeRegistry = RuntimeRegistry{};
@@ -113,8 +112,7 @@ class AudioAPIModuleInstaller {
 #if RN_AUDIO_API_ENABLE_WORKLETS
           auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
           if (count > 3 && args[3].isObject()) {
-            runtimeRegistry.audioRuntime =
-                worklets::extractWorkletRuntime(runtime, args[3]);
+            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[3]);
           }
 #else
           auto runtimeRegistry = RuntimeRegistry{};
