@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
 #include <algorithm>

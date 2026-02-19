@@ -1,79 +1,37 @@
 #include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/utils/AudioBus.h>
-#include <test/src/MockAudioEventHandlerRegistry.h>
+#include "TestGraphUtils.h"
 #include <vector>
 #include <algorithm>
 #include <utility>
 #include <memory>
 
-using namespace audioapi;
-
 namespace audioapi::utils::graph {
-
-// ---------------------------------------------------------------------------
-// MockAudioNode — lightweight AudioNode subclass for testing canBeDestructed
-// ---------------------------------------------------------------------------
-class MockAudioNode : public AudioNode {
- public:
-  explicit MockAudioNode(
-      const std::shared_ptr<BaseAudioContext> &ctx,
-      bool destructible = true)
-      : AudioNode(ctx), destructible_(destructible) {}
-
-  bool canBeDestructed() const override {
-    return destructible_;
-  }
-
-  void setDestructible(bool v) {
-    destructible_ = v;
-  }
-
- protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) override {
-    return nullptr;
-  }
-
- private:
-  bool destructible_;
-};
 
 // ---------------------------------------------------------------------------
 // Test fixture
 // ---------------------------------------------------------------------------
 class AudioGraphTest : public ::testing::Test {
  protected:
-  AudioGraph<AudioNode> graph;
-
-  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
-  std::shared_ptr<OfflineAudioContext> ctx;
-
-  void SetUp() override {
-    eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    ctx = std::make_shared<OfflineAudioContext>(
-        2, 44100 * 5, 44100, eventRegistry, RuntimeRegistry{});
-  }
+  AudioGraph<MockNode> graph;
 
   // Helpers ----------------------------------------------------------------
 
-  /// @brief Creates a shared NodeHandle<AudioNode> with no AudioNode (for structural tests)
-  std::shared_ptr<NodeHandle<AudioNode>> makeHandle(size_t testId = 0) {
-    auto h = std::make_shared<NodeHandle<AudioNode>>(0, nullptr);
+  /// @brief Creates a shared NodeHandle<MockNode> with no node (for structural tests)
+  std::shared_ptr<NodeHandle<MockNode>> makeHandle(size_t testId = 0) {
+    auto h = std::make_shared<NodeHandle<MockNode>>(0, nullptr);
     return h;
   }
 
-  /// @brief Creates a shared NodeHandle<AudioNode> with a MockAudioNode
-  std::shared_ptr<NodeHandle<AudioNode>> makeHandleWithNode(bool destructible = true) {
-    auto node = std::make_unique<MockAudioNode>(ctx, destructible);
-    return std::make_shared<NodeHandle<AudioNode>>(0, std::move(node));
+  /// @brief Creates a shared NodeHandle<MockNode> with a MockNode
+  std::shared_ptr<NodeHandle<MockNode>> makeHandleWithNode(bool destructible = true) {
+    return std::make_shared<NodeHandle<MockNode>>(0, std::make_unique<MockNode>(destructible));
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
-  std::vector<std::shared_ptr<NodeHandle<AudioNode>>> addNodes(size_t n, bool withAudioNode = false) {
-    std::vector<std::shared_ptr<NodeHandle<AudioNode>>> handles;
+  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(size_t n, bool withAudioNode = false) {
+    std::vector<std::shared_ptr<NodeHandle<MockNode>>> handles;
     handles.reserve(n);
     for (size_t i = 0; i < n; i++) {
       auto h = withAudioNode ? makeHandleWithNode() : makeHandle(i);
@@ -332,7 +290,7 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
   EXPECT_EQ(graph.size(), 2u);
 
   // Now make it destructible
-  static_cast<MockAudioNode *>(h1->audioNode.get())->setDestructible(true);
+  h1->audioNode->setDestructible(true);
 
   graph.process(); // second pass: node 1 should be removed
   EXPECT_EQ(graph.size(), 1u);

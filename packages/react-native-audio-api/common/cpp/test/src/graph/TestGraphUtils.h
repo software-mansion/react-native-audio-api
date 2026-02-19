@@ -7,41 +7,65 @@
 
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
+#include <audioapi/core/utils/graph/HostNode.hpp>
+#include <atomic>
+#include <memory>
 #include <utility>
 #include <vector>
 
 namespace audioapi::utils::graph {
 
-class TestGraphUtils {
- public:
-  /// @brief Creates a test graph based on the provided adjacency list.
-  /// @param adjacencyList The adjacency list representing the connections between nodes in the graph.
-  /// @return A pair of AudioGraph<AudioNode> and HostGraph<AudioNode> representing the created test graph.
-  /// It creates a graph based on simple adjacency list where each index corresponds to a node and the vector at that index contains the indices of its input nodes. The function should construct both the AudioGraph<AudioNode> and HostGraph<AudioNode> accordingly, ensuring that the relationships between nodes are correctly established in both graphs.
-  static std::pair<AudioGraph<AudioNode>, HostGraph<AudioNode>> createTestGraph(
-      std::vector<std::vector<size_t>> adjacencyList);
+// ── MockNode ──────────────────────────────────────────────────────────────
+// Minimal type satisfying AudioGraphNode concept. No dependency on AudioNode.
 
-  /// @brief Converts the given AudioGraph<AudioNode> into an adjacency list representation.
-  /// @param audioGraph The AudioGraph<AudioNode> to be converted.
-  /// @return An adjacency list representing the connections between nodes in the graph, where each index corresponds
-  /// @note for equality checks
-  static std::vector<std::vector<size_t>> convertAudioGraphToAdjacencyList(
-      const AudioGraph<AudioNode> &audioGraph);
+struct MockNode {
+  explicit MockNode(bool destructible = true) : destructible_(destructible) {}
 
-  /// @brief Converts the given HostGraph<AudioNode> into an adjacency list representation.
-  /// @param hostGraph The HostGraph<AudioNode> to be converted.
-  /// @return An adjacency list representing the connections between nodes in the graph, where each index corresponds to a node and the vector at that index contains the indices of its input nodes.
-  /// @note for equality checks
-  static std::vector<std::vector<size_t>> convertHostGraphToAdjacencyList(
-      const HostGraph<AudioNode> &hostGraph);
+  [[nodiscard]] bool canBeDestructed() const {
+    return destructible_.load(std::memory_order_acquire);
+  }
+
+  /// @brief Thread-safe setter for use in tests.
+  void setDestructible(bool value) {
+    destructible_.store(value, std::memory_order_release);
+  }
 
  private:
-  // Helper function to create a HostGraph<AudioNode> from an adjacency list
-  static HostGraph<AudioNode> makeFromAdjacencyList(
+  std::atomic<bool> destructible_;
+};
+
+// ── MockHostNode ──────────────────────────────────────────────────────────
+// RAII wrapper around HostNode<MockNode> for testing the HostNode lifecycle.
+
+class MockHostNode : public HostNode<MockNode> {
+ public:
+  explicit MockHostNode(std::shared_ptr<Graph<MockNode>> graph, bool destructible = true)
+      : HostNode(std::move(graph), std::make_unique<MockNode>(destructible)) {}
+};
+
+// ── TestGraphUtils ────────────────────────────────────────────────────────
+
+class TestGraphUtils {
+ public:
+  /// @brief Creates a paired AudioGraph + HostGraph from an adjacency list.
+  /// @param adjacencyList adjacencyList[i] = {j, k} means edges i→j, i→k
+  /// @return (AudioGraph, HostGraph) pair with consistent structure
+  static std::pair<AudioGraph<MockNode>, HostGraph<MockNode>> createTestGraph(
+      std::vector<std::vector<size_t>> adjacencyList);
+
+  /// @brief Converts AudioGraph to adjacency list for equality comparison.
+  static std::vector<std::vector<size_t>> convertAudioGraphToAdjacencyList(
+      const AudioGraph<MockNode> &audioGraph);
+
+  /// @brief Converts HostGraph to adjacency list for equality comparison.
+  static std::vector<std::vector<size_t>> convertHostGraphToAdjacencyList(
+      const HostGraph<MockNode> &hostGraph);
+
+ private:
+  static HostGraph<MockNode> makeFromAdjacencyList(
       const std::vector<std::vector<size_t>> &adjacencyList);
 
-  // Helper function to create an AudioGraph<AudioNode> from a HostGraph<AudioNode>
-  static AudioGraph<AudioNode> createAudioGraphFromHostGraph(const HostGraph<AudioNode> &hostGraph);
+  static AudioGraph<MockNode> createAudioGraphFromHostGraph(const HostGraph<MockNode> &hostGraph);
 };
 
 } // namespace audioapi::utils::graph
