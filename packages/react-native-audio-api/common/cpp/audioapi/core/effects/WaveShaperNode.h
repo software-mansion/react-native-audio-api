@@ -2,14 +2,11 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/dsp/Resampler.h>
 #include <audioapi/dsp/WaveShaper.h>
 
-#include <algorithm>
 #include <atomic>
 #include <memory>
 #include <mutex>
-#include <string>
 #include <vector>
 
 namespace audioapi {

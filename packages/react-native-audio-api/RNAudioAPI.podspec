@@ -41,7 +41,7 @@ Pod::Spec.new do |s|
     end
 
     ss.subspec "audioapi_dsp" do |sss|
-      sss.source_files = "common/cpp/audioapi/dsp/**/*.{cpp}"
+      sss.source_files = "common/cpp/audioapi/dsp/**/*.{cpp,inc}"
       sss.header_dir = "audioapi/dsp"
       sss.header_mappings_dir = "common/cpp/audioapi/dsp"
       sss.compiler_flags = "-O3"

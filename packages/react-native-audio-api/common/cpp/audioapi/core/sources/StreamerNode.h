@@ -24,6 +24,7 @@ extern "C" {
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
+#include <audioapi/dsp/r8brain/Resampler.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
@@ -83,6 +84,8 @@ class StreamerNode : public AudioScheduledSourceNode {
 
  private:
   std::string streamPath_;
+  std::unique_ptr<r8b::MultiChannelResampler> resampler_;
+  float outSampleRate_;
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;

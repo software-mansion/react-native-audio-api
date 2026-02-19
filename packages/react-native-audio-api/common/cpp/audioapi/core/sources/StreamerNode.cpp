@@ -14,10 +14,13 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
+#include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -159,38 +162,10 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 bool StreamerNode::setupResampler(float outSampleRate) {
-  // Allocate resampler context
-  swrCtx_ = swr_alloc();
-  if (swrCtx_ == nullptr) {
-    return false;
-  }
-
-  // Set input parameters (from codec)
-  av_opt_set_chlayout(swrCtx_, "in_chlayout", &codecCtx_->ch_layout, 0);
-  av_opt_set_int(swrCtx_, "in_sample_rate", codecCtx_->sample_rate, 0);
-  av_opt_set_sample_fmt(swrCtx_, "in_sample_fmt", codecCtx_->sample_fmt, 0);
-
-  // Set output parameters (float)
-  av_opt_set_chlayout(swrCtx_, "out_chlayout", &codecCtx_->ch_layout, 0);
-  av_opt_set_int(swrCtx_, "out_sample_rate", outSampleRate, 0);
-  av_opt_set_sample_fmt(swrCtx_, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
-
-  // Initialize the resampler
-  if (swr_init(swrCtx_) < 0) {
-    return false;
-  }
-
-  // Allocate output buffer for resampled data
-  maxResampledSamples_ = INITIAL_MAX_RESAMPLED_SAMPLES;
-  int ret = av_samples_alloc_array_and_samples(
-      &resampledData_,
-      nullptr,
-      codecCtx_->ch_layout.nb_channels,
-      maxResampledSamples_,
-      AV_SAMPLE_FMT_FLTP,
-      0);
-
-  return ret >= 0;
+  int n = codecCtx_->ch_layout.nb_channels;
+  resampler_ = std::make_unique<r8b::MultiChannelResampler>(codecCtx_->sample_rate, outSampleRate, n);
+  outSampleRate_ = outSampleRate;
+  return true;
 }
 
 void StreamerNode::streamAudio() {
@@ -217,56 +192,98 @@ void StreamerNode::streamAudio() {
   }
 }
 
+static void extractChannelAsFloat(
+    const AVFrame *frame,
+    int channel,
+    float *output) {
+  const int nb = frame->nb_samples;
+
+  switch (frame->format) {
+    case AV_SAMPLE_FMT_FLTP: {
+      std::memcpy(
+          output,
+          reinterpret_cast<const float *>(frame->data[channel]),
+          nb * sizeof(float));
+      break;
+    }
+    case AV_SAMPLE_FMT_DBLP: {
+      auto *src = reinterpret_cast<const double *>(frame->data[channel]);
+      for (int i = 0; i < nb; ++i) {
+        output[i] = static_cast<float>(src[i]);
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_S16P: {
+      auto *src = reinterpret_cast<const int16_t *>(frame->data[channel]);
+      for (int i = 0; i < nb; ++i) {
+        output[i] = src[i] / 32768.0f;
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_S32P: {
+      auto *src = reinterpret_cast<const int32_t *>(frame->data[channel]);
+      for (int i = 0; i < nb; ++i) {
+        output[i] = src[i] / 2147483648.0f;
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_U8P: {
+      auto *src = frame->data[channel];
+      for (int i = 0; i < nb; ++i) {
+        output[i] = (src[i] - 128) / 128.0f;
+      }
+      break;
+    }
+    default:
+      std::memset(output, 0, nb * sizeof(float));
+      break;
+  }
+}
+
 bool StreamerNode::processFrameWithResampler(
     AVFrame *frame,
     const std::shared_ptr<BaseAudioContext> &context) {
-  // Check if we need to reallocate the resampled buffer
-  int out_samples = swr_get_out_samples(swrCtx_, frame->nb_samples);
-  if (out_samples > maxResampledSamples_) {
-    av_freep(&resampledData_[0]);
-    av_freep(&resampledData_);
-
-    maxResampledSamples_ = out_samples;
-    int ret = av_samples_alloc_array_and_samples(
-        &resampledData_,
-        nullptr,
-        codecCtx_->ch_layout.nb_channels,
-        maxResampledSamples_,
-        AV_SAMPLE_FMT_FLTP,
-        0);
-
-    if (ret < 0) {
-      return false;
-    }
-  }
-
-  // Convert the frame
-  int converted_samples = swr_convert(
-      swrCtx_,
-      resampledData_,
-      maxResampledSamples_,
-      (const uint8_t **)frame->data,
-      frame->nb_samples);
-
-  if (converted_samples < 0) {
-    return false;
-  }
-
-  // if we would like to finish dont copy anything
   if (this->isFinished()) {
     return true;
   }
 
-  AudioBuffer buffer =
-      AudioBuffer(converted_samples, codecCtx_->ch_layout.nb_channels, context->getSampleRate());
+  const int numChannels = frame->ch_layout.nb_channels;
+  const int nbSamples = frame->nb_samples;
+  const bool needsResample =
+      static_cast<int>(outSampleRate_) != frame->sample_rate;
 
-  for (size_t ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
-    auto *src = reinterpret_cast<float *>(resampledData_[ch]);
-    buffer.getChannel(ch)->copy(src, 0, 0, converted_samples);
+  std::vector<std::vector<float>> inputBuffers(
+      numChannels, std::vector<float>(nbSamples));
+  for (int ch = 0; ch < numChannels; ++ch) {
+    extractChannelAsFloat(frame, ch, inputBuffers[ch].data());
   }
 
-  StreamingData data{std::move(buffer), static_cast<size_t>(converted_samples)};
+  int outSamples;
+  std::vector<float *> copyVector(numChannels, nullptr);
+
+  if (needsResample) {
+    std::vector<float *> inputPtrs(numChannels);
+    for (int ch = 0; ch < numChannels; ++ch) {
+      inputPtrs[ch] = inputBuffers[ch].data();
+    }
+
+    outSamples = resampler_->process(inputPtrs, nbSamples, copyVector);
+  } else {
+    outSamples = nbSamples;
+    for (int ch = 0; ch < numChannels; ++ch) {
+      copyVector[ch] = inputBuffers[ch].data();
+    }
+  }
+
+  auto buffer =
+  AudioBuffer(outSamples, numChannels, context->getSampleRate());
+  for (int ch = 0; ch < numChannels; ++ch) {
+    buffer.getChannel(ch)->copy(copyVector[ch], 0, 0, outSamples);
+  }
+
+  StreamingData data{std::move(buffer), static_cast<size_t>(outSamples)};
   sender_.send(std::move(data));
+
   return true;
 }
 
@@ -344,6 +361,7 @@ void StreamerNode::cleanup() {
     avformat_close_input(&fmtCtx_);
   }
 
+  resampler_.reset();
   audio_stream_index_ = -1;
   isInitialized_ = false;
   decoder_ = nullptr;

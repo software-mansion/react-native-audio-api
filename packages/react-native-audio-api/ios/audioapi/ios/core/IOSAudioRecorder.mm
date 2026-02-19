@@ -126,7 +126,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
 
   if (isConnected()) {
     // TODO: pass sample rate, in case conversion is necessary
-    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
+    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
   }
 
   [nativeRecorder_ start];
@@ -227,7 +227,9 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 
   if (!isIdle()) {
     adapterNode_->init(
-        [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
+        [nativeRecorder_ getBufferSize],
+        [nativeRecorder_ getInputFormat].channelCount,
+        [nativeRecorder_ getInputFormat].sampleRate);
   }
 
   isConnected_.store(true, std::memory_order_release);
