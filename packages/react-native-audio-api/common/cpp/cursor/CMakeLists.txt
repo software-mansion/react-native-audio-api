@@ -4,10 +4,13 @@ cmake_minimum_required(VERSION 3.12.0)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
+
+# Toggle: set to 1 to enable test mode, 0 for normal mode
+set(RN_AUDIO_API_TEST 0)
 set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
 
 
-file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
+file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c" "${COMMON_CPP_DIR}/test/*.cpp")
 list(REMOVE_ITEM COMMON_CPP_SOURCES
   "${COMMON_CPP_DIR}/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp"
 )
@@ -29,6 +32,10 @@ foreach (lib IN ITEMS avcodec avformat avutil swresample)
   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
 endforeach()
 
+target_compile_definitions(rnaudioapi_cursor PRIVATE
+  RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
+)
+
 target_include_directories(
   rnaudioapi_cursor
   PRIVATE
@@ -40,6 +47,7 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactCommon/jsi"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
   "${COMMON_CPP_DIR}/../../ios"
+  "/opt/homebrew/Cellar/googletest/1.17.0/include"
 )
 
 add_library(worklets SHARED IMPORTED)
