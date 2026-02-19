@@ -1,18 +1,21 @@
 #include <gtest/gtest.h>
-#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/core/utils/graph/Disposer.hpp>
+#include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include "TestGraphUtils.h"
 #include <utility>
 #include <vector>
+#include <memory>
 #include <unordered_map>
 
 namespace audioapi::utils::graph {
 
-class MockDisposer : public Disposer {
+class MockDisposer : public Disposer<kDefaultDisposalPayloadSize> {
  protected:
-  void doDispose(void *ptr, void (*deleter)(void *)) override {
-    // No-op for vector-based graph. Nodes are managed by pool.
+  bool doDispose(DisposalPayload<kDefaultDisposalPayloadSize> &&payload) override {
+    // No-op: intentionally skip destruction in tests
+    return true;
   }
 };
 
@@ -71,23 +74,25 @@ TEST_F(HostGraphTest, AddNode) {
     {}         // 2
   });
 
-  uint32_t audioNodeIdx = audioGraph.createNode();
-  AudioGraph::Node& audioNode = audioGraph.nodes[audioNodeIdx];
-  audioNode.test_node_identifier__ = 3;
+  // Create a new handle and add it via HostGraph
+  auto handle = std::make_shared<NodeHandle>(0, nullptr);
+  auto [hostNode, event] = hostGraph.addNode(handle);
 
-  auto [hostNode, event] = hostGraph.addNode(audioNodeIdx);
+  EXPECT_EQ(hostNode->handle, handle);
+  hostNode->test_node_identifier__ = 3;
 
-  EXPECT_EQ(hostNode->audioNodeIndex, audioNodeIdx);
-  hostNode->test_node_identifier__ = 3; // Manually correct testing ID for consistency checking
-
-  EXPECT_EQ(TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph).size(), 4);
+  // AudioGraph unchanged before event
+  EXPECT_EQ(audioGraph.size(), 3u);
 
   MockDisposer disposer;
   event(audioGraph, disposer);
 
-  // Still 4
+  // After event: node added to AudioGraph
+  EXPECT_EQ(audioGraph.size(), 4u);
+  audioGraph[handle->index].test_node_identifier__ = 3;
+
   auto adj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
-  EXPECT_EQ(adj.size(), 4);
+  EXPECT_EQ(adj.size(), 4u);
 }
 
 TEST_F(HostGraphTest, AddEdge_SimpleForward) {

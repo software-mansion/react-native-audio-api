@@ -5,7 +5,7 @@
 #define RN_AUDIO_API_TEST true // for intellisense
 #endif
 
-#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
 #include <utility>
 #include <vector>

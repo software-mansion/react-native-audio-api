@@ -33,6 +33,10 @@ AudioNode::~AudioNode() {
   }
 }
 
+bool AudioNode::canBeDestructed() const {
+  return true;
+}
+
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
 }

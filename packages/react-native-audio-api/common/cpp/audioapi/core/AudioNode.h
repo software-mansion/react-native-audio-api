@@ -46,6 +46,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void enable();
   virtual void disable();
 
+  virtual bool canBeDestructed() const;
+
  protected:
   friend class AudioGraphManager;
   friend class AudioDestinationNode;

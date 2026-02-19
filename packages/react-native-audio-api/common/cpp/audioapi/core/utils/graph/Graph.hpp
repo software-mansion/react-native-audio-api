@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
 
@@ -25,13 +25,14 @@ class Graph {
       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
 
   using HNode = HostGraph::Node;
-  using ANode = AudioGraph::Node;
 
  public:
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  Graph(size_t eventQueueCapacity, std::unique_ptr<Disposer> disposer) {
+  Graph(
+      size_t eventQueueCapacity,
+      std::unique_ptr<Disposer<kDefaultDisposalPayloadSize>> disposer) {
     auto [sender, receiver] = audioapi::channels::spsc::channel<
         HostGraph::AGEvent,
         audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
@@ -54,11 +55,11 @@ class Graph {
   }
 
   /// @brief Adds a new node to the graph and returns a pointer to it.
-  /// @return pointer to the newly added node
-  /// TODO: in future it will get parameters for node creation
-  HNode *addNode() {
-    uint32_t audioNodeIndex = audioGraph.createNode();
-    auto [hostNode, event] = hostGraph.addNode(audioNodeIndex);
+  /// @param audioNode the audio processing node to add (ownership transferred)
+  /// @return pointer to the newly added HostGraph::Node
+  HNode *addNode(std::unique_ptr<AudioNode> audioNode = nullptr) {
+    auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
+    auto [hostNode, event] = hostGraph.addNode(handle);
     eventSender.send(std::move(event));
     return hostNode;
   }
@@ -100,7 +101,7 @@ class Graph {
   // Aligning to cache line size to prevent false sharing between audio and main thread
   alignas(64) AudioGraph audioGraph;
   alignas(64) HostGraph hostGraph;
-  alignas(64) std::unique_ptr<Disposer> disposer;
+  alignas(64) std::unique_ptr<Disposer<kDefaultDisposalPayloadSize>> disposer;
 
   // These are const and their memory won't be modified after initialization, so no false sharing here
   Sender eventSender;

@@ -25,9 +25,6 @@ HostGraph::Node::~Node() {
   }
 }
 
-HostGraph::HostGraph() {
-}
-
 HostGraph::HostGraph(HostGraph&& other) noexcept
     : nodes(std::move(other.nodes)),
       last_term(other.last_term) {
@@ -50,21 +47,16 @@ HostGraph::~HostGraph() {
 }
 
 
-std::pair<HostGraph::Node*, HostGraph::AGEvent> HostGraph::addNode(uint32_t audioNodeIndex) {
+std::pair<HostGraph::Node*, HostGraph::AGEvent> HostGraph::addNode(std::shared_ptr<NodeHandle> handle) {
   Node* newNode = new Node();
-  newNode->audioNodeIndex = audioNodeIndex;
+  newNode->handle = handle;
   nodes.push_back(newNode);
 
-  auto event = [audioNodeIndex](AudioGraph& graph, Disposer&) {
-    // Ensure the node exists in the AudioGraph if it doesn't already
-    // This assumes sequential addition logic or that caller handled it.
-    // If we want to be safe:
-    if (graph.nodes.size() <= audioNodeIndex) {
-        graph.nodes.resize(audioNodeIndex + 1);
-    }
+  auto event = [h = std::move(handle)](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+    graph.addNode(h);
   };
 
-  return {newNode, event};
+  return {newNode, std::move(event)};
 }
 
 HostGraph::Res HostGraph::removeNode(Node *node) {
@@ -76,26 +68,13 @@ HostGraph::Res HostGraph::removeNode(Node *node) {
   *it = nodes.back();
   nodes.pop_back();
 
-  uint32_t targetIdx = node->audioNodeIndex;
+  // Capture handle to look up the current index at event execution time
+  auto handle = std::move(node->handle); // take ownership of the handle
   delete node;
 
-  return Res::Ok([targetIdx](AudioGraph& graph, Disposer&) {
-      // "Ghost Node" strategy: Clear inputs so it disconnects from graph logic
-      if (targetIdx < graph.nodes.size()) {
-          graph.nodes[targetIdx].inputs.clear();
-      }
-
-      for (auto& n : graph.nodes) {
-          if (!n.isActive()) continue;
-
-          auto& inps = n.inputs;
-          auto removeIt = std::remove(inps.begin(), inps.end(), targetIdx);
-          if (removeIt != inps.end()) {
-              inps.erase(removeIt, inps.end());
-          }
-      }
-
-      graph.markDirty();
+  return Res::Ok([h = std::move(handle)](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+      std::uint32_t targetIdx = h->index;
+      graph[targetIdx].orphaned = true;
   });
 }
 
@@ -119,11 +98,9 @@ HostGraph::Res HostGraph::addEdge(Node *from, Node *to) {
   from->outputs.push_back(to);
   to->inputs.push_back(from);
 
-  return Res::Ok([fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
-      if (toIdx < graph.nodes.size() && fromIdx < graph.nodes.size()) {
-        graph.nodes[toIdx].inputs.push_back(fromIdx);
-        graph.markDirty();
-      }
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+      graph[hTo->index].inputs.push_back(hFrom->index);
+      graph.markDirty();
   });
 }
 
@@ -168,14 +145,12 @@ HostGraph::Res HostGraph::removeEdge(Node *from, Node *to) {
   }
   from->outputs.erase(itOut);
 
-  return Res::Ok([fromIdx = from->audioNodeIndex, toIdx = to->audioNodeIndex](AudioGraph& graph, Disposer&) {
-        if (toIdx < graph.nodes.size() && fromIdx < graph.nodes.size()) {
-            auto& inputs = graph.nodes[toIdx].inputs;
-            auto itIn = std::remove(inputs.begin(), inputs.end(), fromIdx);
-            if (itIn != inputs.end()) inputs.erase(itIn, inputs.end());
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+      auto& inputs = graph[hTo->index].inputs;
+      auto itIn = std::remove(inputs.begin(), inputs.end(), hFrom->index);
+      if (itIn != inputs.end()) inputs.erase(itIn, inputs.end());
 
-            graph.markDirty();
-        }
+      graph.markDirty();
   });
 }
 

@@ -2,7 +2,7 @@
 
 
 #include <gtest/gtest.h>
-#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
 
 class SandboxTest : public ::testing::Test {

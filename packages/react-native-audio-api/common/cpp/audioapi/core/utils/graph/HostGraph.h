@@ -1,10 +1,12 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/Disposer.hpp>
+#include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/Result.hpp>
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -29,7 +31,7 @@ class HostGraph {
       32,
       void(
           AudioGraph &,
-          Disposer
+          Disposer<kDefaultDisposalPayloadSize>
               &)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
 
   using Res = Result<AGEvent, ResultError>;
@@ -47,7 +49,8 @@ class HostGraph {
     std::vector<Node *> inputs;    // reversed edges
     std::vector<Node *> outputs;   // edges
     TraversalState traversalState; // for graph traversals
-    uint32_t audioNodeIndex = 0;   // index of the corresponding node in AudioGraph
+    std::shared_ptr<NodeHandle>
+        handle; // shared handle bridging to AudioGraph; AudioGraph also holds a shared_ptr
 
 #if RN_AUDIO_API_TEST
     // Identifier for testing purposes only
@@ -59,7 +62,7 @@ class HostGraph {
     ~Node();
   };
 
-  HostGraph();
+  HostGraph() = default;
   ~HostGraph();
 
   HostGraph(const HostGraph &) = delete;
@@ -69,8 +72,8 @@ class HostGraph {
   HostGraph &operator=(HostGraph &&other) noexcept;
 
   /// @brief Adds a new node to the graph.
-  /// @param audioNodeIndex Index of the AudioGraph::Node.
-  std::pair<Node *, AGEvent> addNode(uint32_t audioNodeIndex);
+  /// @param handle shared handle that bridges HostGraph and AudioGraph
+  std::pair<Node *, AGEvent> addNode(std::shared_ptr<NodeHandle> handle);
 
   /// @brief Removes a node from the graph.
   Res removeNode(Node *node);

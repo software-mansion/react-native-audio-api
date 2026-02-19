@@ -12,10 +12,11 @@
 
 namespace audioapi::utils::graph {
 
-class MockDisposer : public Disposer {
+class MockDisposer : public Disposer<kDefaultDisposalPayloadSize> {
  protected:
-  void doDispose(void *ptr, void (*deleter)(void *)) override {
-      // No-op: intentionally leak in tests
+  bool doDispose(DisposalPayload<kDefaultDisposalPayloadSize> &&payload) override {
+      // No-op: intentionally skip destruction in tests
+      return true;
   }
 };
 
@@ -40,20 +41,18 @@ TEST_F(GraphTest, EventsAreScheduledButNotExecutedUntilProcess) {
     auto* node = graph->addNode();
     ASSERT_NE(node, nullptr);
 
-    // AudioGraph should not be aware of the node structure update yet
-    // Assuming createNode just reserves index but doesn't resize vector which is handled by event
+    // AudioGraph should not be aware of the node yet (event not processed)
     const auto& ag = getAudioGraph();
 
-    size_t sizeBefore = ag.nodes.size();
+    size_t sizeBefore = ag.size();
 
-    // Check if empty/smaller
-    if (ag.nodes.empty()) {
-        EXPECT_EQ(ag.nodes.size(), 0);
+    if (ag.empty()) {
+        EXPECT_EQ(ag.size(), 0u);
     }
 
     graph->processEvents();
 
-    EXPECT_GE(ag.nodes.size(), node->audioNodeIndex + 1);
+    EXPECT_GE(ag.size(), 1u);
 }
 
 TEST_F(GraphTest, NoUselessEventsScheduled) {
