@@ -23,11 +23,12 @@ namespace audioapi::utils::graph {
 /// - When AudioGraph compacts out an orphaned node it disposes its
 ///   shared_ptr through the Disposer, so the actual destruction of the
 ///   AudioNode happens on the disposal thread (not the audio thread).
+template <typename T>
 struct NodeHandle {
-  std::uint32_t index; // current position in AudioGraph::nodes, updated during compaction
-  std::unique_ptr<AudioNode> audioNode; // the actual audio processing node (may be null in tests)
+  std::uint32_t index;          // current position in AudioGraph::nodes, updated during compaction
+  std::unique_ptr<T> audioNode; // the actual audio processing node (may be null in tests)
 
-  NodeHandle(std::uint32_t index, std::unique_ptr<AudioNode> audioNode)
+  NodeHandle(std::uint32_t index, std::unique_ptr<T> audioNode)
       : index(index), audioNode(std::move(audioNode)) {}
 };
 

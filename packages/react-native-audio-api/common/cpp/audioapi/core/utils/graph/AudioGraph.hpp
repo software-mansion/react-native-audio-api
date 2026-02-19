@@ -15,235 +15,286 @@
 
 namespace audioapi::utils::graph {
 
-/// @brief Cache-friendly, index-stable node storage
+template <typename T>
+concept AudioGraphNode = requires(T t) {
+  { t.canBeDestructed() } -> std::convertible_to<bool>;
+};
+
+/// @brief Cache-friendly, index-stable node storage with in-place topological sort.
 ///
-/// Nodes are stored in a flat vector. Which is topologically sorted.
+/// Nodes are stored in a flat vector that is kept topologically sorted
+/// (sources first, sinks last). The graph supports O(V+E) compaction of
+/// orphaned nodes and O(1)-extra-space Kahn's toposort.
 ///
-/// @note it can store at most 2^30 nodes due to bit packaging of indexes (aprox 10^9, it will be more than enough for all practical purposes)
+/// @note Can store at most 2^30 nodes due to bit-packed indices (~10^9).
+template <AudioGraphNode NodeType>
 class AudioGraph {
+  // ── Node ────────────────────────────────────────────────────────────────
+
   struct Node {
     Node() = default;
-    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(handle) {}
+    explicit Node(std::shared_ptr<NodeHandle<NodeType>> handle) : handle(handle) {}
 
-    std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
-    std::vector<std::uint32_t> inputs;            // indices of input nodes
+    std::shared_ptr<NodeHandle<NodeType>> handle = nullptr; // owned handle bridging to HostGraph
+    std::vector<std::uint32_t> inputs;                      // indices of input nodes
 
-    std::uint32_t topo_out_degree : 31 = 0; // scratch space for topological sort
-    unsigned will_be_deleted : 1 = 0;       // scratch space for graph traversals
+    std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
+    unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
     std::int32_t after_compaction_ind : 31 =
-        -1; // used during compaction to store the new index of the node, -1 means the node wasn't moved
+        -1; // scratch — new index after compaction / BFS linked-list next
 
-    // Node removal rules:
-    // - when we loose a handle from host object it is marked as orphaned
-    // - if:
-    //    - node is orphaned
-    //    - has no inputs
-    //    - node.canBeDestructed() == true
-    // then we can safely remove it from the graph and schedule for destruction in audio graph.
+    /// Node is removed when: orphaned && inputs.empty() && canBeDestructed()
     unsigned orphaned : 1 = 0; // means this node was removed from host graph
 
 #if RN_AUDIO_API_TEST
     size_t test_node_identifier__ = 0;
-#endif // RN_AUDIO_API_TEST
+#endif
   };
 
  public:
   AudioGraph() = default;
   ~AudioGraph() = default;
 
+  /// @brief Entry returned by iter() — a reference to the audio node and a view of its inputs.
   template <typename InputsView>
   struct Entry {
-    AudioNode &audioNode;
-    InputsView inputs; // immutable view of the node's inputs
+    NodeType &audioNode;
+    InputsView inputs;
   };
 
-  [[nodiscard]] Node &operator[](std::uint32_t index) {
-    return nodes[index];
-  }
+  // ── Accessors ───────────────────────────────────────────────────────────
 
-  [[nodiscard]] const Node &operator[](std::uint32_t index) const {
-    return nodes[index];
-  }
+  /// @brief Access node by flat-vector index.
+  [[nodiscard]] Node &operator[](std::uint32_t index);
 
-  [[nodiscard]] size_t size() const {
-    return nodes.size();
-  }
+  /// @brief Access node by flat-vector index (const).
+  [[nodiscard]] const Node &operator[](std::uint32_t index) const;
 
-  [[nodiscard]] bool empty() const {
-    return nodes.empty();
-  }
+  /// @brief Number of live nodes in the graph.
+  [[nodiscard]] size_t size() const;
 
-  /// @brief Provides an iterable view of the nodes in topological order
-  /// Each entry contains a reference to the AudioNode and an immutable view of its inputs (as references to AudioNodes).
-  /// @return iterable view
+  /// @brief Whether the graph is empty.
+  [[nodiscard]] bool empty() const;
+
+  /// @brief Provides an iterable view of the nodes in topological order.
+  ///
+  /// Each entry contains a reference to the AudioNode and an immutable view
+  /// of its inputs (as references to AudioNodes).
   ///
   /// ## Example usage:
   /// ```cpp
-  /// for (auto [audioNode, inputs] : nodeStorage.iter()) {
+  /// for (auto [audioNode, inputs] : graph.iter()) {
   ///   // process audioNode and its inputs
   /// }
   /// ```
-  /// @note IMPORTANT: lifetime of the entries is bound to the lifetime of the graph, these are not owned
-  /// @note IMPORTANT: using this iterator after modifying the graph is undefined behavior
-  [[nodiscard]] auto iter() {
-    return nodes | std::views::transform([this](Node &node) {
-             return Entry{
-                 *node.handle->audioNode,
-                 node.inputs |
-                     std::views::transform([this](std::uint32_t idx) -> const AudioNode & {
-                       return *nodes[idx].handle->audioNode;
-                     })};
-           });
-  }
+  /// @note Lifetime of entries is bound to this graph — they are not owned.
+  /// @note Using this iterator after modifying the graph is undefined behavior.
+  [[nodiscard]] auto iter();
 
-  /// @brief Marks the topological ordering dirty
-  void markDirty() {
-    topo_order_dirty = true;
-  }
+  // ── Mutators ────────────────────────────────────────────────────────────
 
-  /// @brief Adds a new node to the storage
-  /// @param handle owned NodeHandle pointer
-  /// @note IMPORTANT: AudioGraph takes ownership of the handle
-  void addNode(std::shared_ptr<NodeHandle> handle) {
-    handle->index = static_cast<std::uint32_t>(nodes.size());
-    nodes.emplace_back(std::move(handle));
-  }
+  /// @brief Marks the topological ordering as dirty so the next process()
+  /// recomputes it.
+  void markDirty();
 
-  /// @brief Preprocesses the graph by recomputing topological order if needed, and performing node deletion and compaction.
-  /// When a node is compacted out its shared_ptr<NodeHandle> is released (refcount drops from 2 to 1).
-  /// HostGraph detects this via use_count() == 1 and destroys the ghost + AudioNode on the main thread.
-  /// Time complexity: O(V + E)
-  /// Space complexity: O(1) — everything is done in place
-  void process() {
-    if (topo_order_dirty) {
-      kahn_toposort();
-      topo_order_dirty = false;
-    }
+  /// @brief Adds a new node. AudioGraph takes shared ownership of the handle.
+  /// @param handle shared NodeHandle bridging to HostGraph
+  void addNode(std::shared_ptr<NodeHandle<NodeType>> handle);
 
-    // mark nodes for deletion and compact
-    std::uint32_t b = 0; // begin of moving window
-    std::uint32_t e = 0; // end of moving window
-
-    for (auto &node : nodes) {
-      // remove all removed inputs from the node.inputs vector
-      node.inputs.erase(
-          std::remove_if(
-              node.inputs.begin(),
-              node.inputs.end(),
-              [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; }),
-          node.inputs.end());
-
-      // if node is orphaned, has no inputs and can be destructed we can mark it for deletion
-      if (node.orphaned && node.inputs.empty() && node.handle->audioNode->canBeDestructed()) {
-        node.will_be_deleted = true;
-        e += 1;
-        continue;
-      }
-
-      // remap all inputs of the node to the new indices
-      for (std::uint32_t &inp : node.inputs) {
-        if (nodes[inp].after_compaction_ind == -1)
-          continue; // input wasn't moved, no need to remap
-        inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
-      }
-
-      if (b != e) {
-        std::swap(nodes[b], nodes[e]);
-        nodes[b].handle->index = b; // update handle to reflect new position
-        nodes[e].after_compaction_ind = static_cast<std::int32_t>(
-            b); // store new index in the node that we just moved to the end of vector, so we can remap it later if needed
-      }
-      b++;
-      e++;
-    }
-
-    // now all live nodes are in the beginning of vector and we can just truncate it
-    // Dropping shared_ptr decrements refcount (2 → 1); HostGraph detects this
-    // and destroys the ghost + AudioNode on the main thread.
-    for (std::uint32_t i = b; i < e; i++) {
-      nodes[i].handle = nullptr; // release our ref — HostGraph still holds one
-    }
-    nodes.resize(b); // truncate — inputs vectors are destroyed here
-    for (auto &node : nodes) {
-      node.after_compaction_ind =
-          -1; // reset after_compaction index for all nodes, we will need it for the next compaction
-      node.will_be_deleted =
-          false; // reset will_be_deleted flag for all nodes, we will need it for the next compaction
-    }
-  }
+  /// @brief Recomputes topological order (if dirty), then compacts the graph
+  /// by removing orphaned, input-free, destructible nodes.
+  ///
+  /// When a node is compacted out its `shared_ptr<NodeHandle>` is released
+  /// (refcount drops 2 → 1). HostGraph detects this via `use_count() == 1`
+  /// and destroys the ghost + AudioNode on the main thread.
+  ///
+  /// Time: O(V + E) &nbsp; Space: O(1) — everything in place.
+  void process();
 
  private:
-  std::vector<Node> nodes; // always topologically sorted
-  bool topo_order_dirty =
-      false; // whether any operation has potentially invalidated the execution order
+  std::vector<Node> nodes;       // always kept topologically sorted
+  bool topo_order_dirty = false; // set by markDirty(), cleared by process()
 
-  /// @brief Performs Kahn's algorithm to sort topologically in place (sources first, sinks last)
-  /// Time: O(V + E), Extra space: O(1) — the BFS queue is embedded in after_compaction_ind as a linked list,
-  /// and the resulting permutation is applied via cycle sort.
-  void kahn_toposort() {
-    const auto n = static_cast<std::uint32_t>(nodes.size());
-    if (n <= 1)
-      return;
+  /// @brief In-place Kahn's toposort (sources first, sinks last).
+  ///
+  /// Uses `after_compaction_ind` as an embedded FIFO linked-list for the
+  /// BFS queue, and cycle-sort for the final permutation.
+  ///
+  /// Time: O(V + E) &nbsp; Extra space: O(1).
+  void kahn_toposort();
+};
 
-    // ── Phase 1: compute out-degree (how many other nodes list this one as input) ──
-    // We assume here that all nodes has topo_out_degree == 0, which is true because new nodes have it eq 0 and after toposort it gets reseted
-    for (const auto &nd : nodes) {
-      for (std::uint32_t inp : nd.inputs)
-        nodes[inp].topo_out_degree++;
+// =========================================================================
+// Implementation
+// =========================================================================
+
+// ── Accessors ─────────────────────────────────────────────────────────────
+
+template <AudioGraphNode NodeType>
+auto AudioGraph<NodeType>::operator[](std::uint32_t index) -> Node & {
+  return nodes[index];
+}
+
+template <AudioGraphNode NodeType>
+auto AudioGraph<NodeType>::operator[](std::uint32_t index) const -> const Node & {
+  return nodes[index];
+}
+
+template <AudioGraphNode NodeType>
+size_t AudioGraph<NodeType>::size() const {
+  return nodes.size();
+}
+
+template <AudioGraphNode NodeType>
+bool AudioGraph<NodeType>::empty() const {
+  return nodes.empty();
+}
+
+template <AudioGraphNode NodeType>
+auto AudioGraph<NodeType>::iter() {
+  return nodes | std::views::transform([this](Node &node) {
+           return Entry{
+               *node.handle->audioNode,
+               node.inputs | std::views::transform([this](std::uint32_t idx) -> const NodeType & {
+                 return *nodes[idx].handle->audioNode;
+               })};
+         });
+}
+
+// ── Mutators ──────────────────────────────────────────────────────────────
+
+template <AudioGraphNode NodeType>
+void AudioGraph<NodeType>::markDirty() {
+  topo_order_dirty = true;
+}
+
+template <AudioGraphNode NodeType>
+void AudioGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle) {
+  handle->index = static_cast<std::uint32_t>(nodes.size());
+  nodes.emplace_back(std::move(handle));
+}
+
+template <AudioGraphNode NodeType>
+void AudioGraph<NodeType>::process() {
+  if (topo_order_dirty) {
+    kahn_toposort();
+    topo_order_dirty = false;
+  }
+
+  // Mark nodes for deletion and compact
+  std::uint32_t b = 0; // begin of moving window
+  std::uint32_t e = 0; // end of moving window
+
+  for (auto &node : nodes) {
+    // Remove deleted inputs
+    node.inputs.erase(
+        std::remove_if(
+            node.inputs.begin(),
+            node.inputs.end(),
+            [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; }),
+        node.inputs.end());
+
+    // Check if node qualifies for removal
+    if (node.orphaned && node.inputs.empty() && node.handle->audioNode->canBeDestructed()) {
+      node.will_be_deleted = true;
+      e += 1;
+      continue;
     }
 
-    // ── Phase 2: reverse Kahn BFS (sinks first → sources last in dequeue order) ──
-    // We embed a FIFO queue as a singly-linked list through after_compaction_ind.
-    std::int32_t qh = -1, qt = -1; // queue head / tail
-    auto enq = [&](std::uint32_t i) {
-      nodes[i].after_compaction_ind = -1; // end-of-list sentinel
-      if (qh == -1) [[unlikely]] {        // this will only happen once on first enqueue
-        qh = qt = static_cast<std::int32_t>(i);
-      } else {
-        nodes[qt].after_compaction_ind = static_cast<std::int32_t>(i);
-        qt = static_cast<std::int32_t>(i);
-      }
-    };
-
-    for (std::uint32_t i = 0; i < n; i++) {
-      if (nodes[i].topo_out_degree == 0)
-        enq(i); // seed with sinks
+    // Remap inputs to post-compaction indices
+    for (std::uint32_t &inp : node.inputs) {
+      if (nodes[inp].after_compaction_ind == -1)
+        continue;
+      inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
     }
 
-    std::uint32_t write = n; // fill from the end → sinks land last
-    while (qh != -1) {
-      auto idx = static_cast<std::uint32_t>(qh);
-      qh = nodes[idx].after_compaction_ind; // pop head
-      nodes[idx].after_compaction_ind =
-          static_cast<std::int32_t>(--write); // record target position
-
-      for (std::uint32_t inp : nodes[idx].inputs) {
-        if (--nodes[inp].topo_out_degree == 0)
-          enq(inp);
-      }
+    if (b != e) {
+      std::swap(nodes[b], nodes[e]);
+      nodes[b].handle->index = b;
+      nodes[e].after_compaction_ind = static_cast<std::int32_t>(b);
     }
+    b++;
+    e++;
+  }
 
-    // ── Phase 3: remap input indices to new positions (before nodes move) ──
-    for (auto &nd : nodes) {
-      for (std::uint32_t &inp : nd.inputs)
-        inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
+  // Truncate — dropping shared_ptr decrements refcount (2 → 1);
+  // HostGraph detects this and destroys the ghost on the main thread.
+  for (std::uint32_t i = b; i < e; i++) {
+    nodes[i].handle = nullptr;
+  }
+  nodes.resize(b);
+
+  // Reset scratch fields for next compaction
+  for (auto &node : nodes) {
+    node.after_compaction_ind = -1;
+    node.will_be_deleted = false;
+  }
+}
+
+// ── Kahn's toposort ───────────────────────────────────────────────────────
+
+template <AudioGraphNode NodeType>
+void AudioGraph<NodeType>::kahn_toposort() {
+  const auto n = static_cast<std::uint32_t>(nodes.size());
+  if (n <= 1)
+    return;
+
+  // Phase 1: compute out-degree
+  for (const auto &nd : nodes) {
+    for (std::uint32_t inp : nd.inputs)
+      nodes[inp].topo_out_degree++;
+  }
+
+  // Phase 2: reverse Kahn BFS — sinks first, sources last in dequeue order.
+  // FIFO queue embedded as a linked list through after_compaction_ind.
+  std::int32_t qh = -1, qt = -1;
+  auto enq = [&](std::uint32_t i) {
+    nodes[i].after_compaction_ind = -1;
+    if (qh == -1) [[unlikely]] {
+      qh = qt = static_cast<std::int32_t>(i);
+    } else {
+      nodes[qt].after_compaction_ind = static_cast<std::int32_t>(i);
+      qt = static_cast<std::int32_t>(i);
     }
+  };
 
-    // ── Phase 4: apply permutation in place via cycle sort ──
-    for (std::uint32_t i = 0; i < n; i++) {
-      while (nodes[i].after_compaction_ind != static_cast<std::int32_t>(i)) {
-        auto t = static_cast<std::uint32_t>(nodes[i].after_compaction_ind);
-        std::swap(nodes[i], nodes[t]);
-      }
-    }
+  for (std::uint32_t i = 0; i < n; i++) {
+    if (nodes[i].topo_out_degree == 0)
+      enq(i);
+  }
 
-    // ── Phase 5: update handle indices & reset scratch ──
-    for (std::uint32_t i = 0; i < n; i++) {
-      if (nodes[i].handle)
-        nodes[i].handle->index = i;
-      nodes[i].after_compaction_ind = -1;
+  std::uint32_t write = n;
+  while (qh != -1) {
+    auto idx = static_cast<std::uint32_t>(qh);
+    qh = nodes[idx].after_compaction_ind;
+    nodes[idx].after_compaction_ind = static_cast<std::int32_t>(--write);
+
+    for (std::uint32_t inp : nodes[idx].inputs) {
+      if (--nodes[inp].topo_out_degree == 0)
+        enq(inp);
     }
   }
-};
+
+  // Phase 3: remap input indices to new positions (before nodes move)
+  for (auto &nd : nodes) {
+    for (std::uint32_t &inp : nd.inputs)
+      inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
+  }
+
+  // Phase 4: apply permutation in place via cycle sort
+  for (std::uint32_t i = 0; i < n; i++) {
+    while (nodes[i].after_compaction_ind != static_cast<std::int32_t>(i)) {
+      auto t = static_cast<std::uint32_t>(nodes[i].after_compaction_ind);
+      std::swap(nodes[i], nodes[t]);
+    }
+  }
+
+  // Phase 5: update handle indices & reset scratch
+  for (std::uint32_t i = 0; i < n; i++) {
+    if (nodes[i].handle)
+      nodes[i].handle->index = i;
+    nodes[i].after_compaction_ind = -1;
+  }
+}
 
 } // namespace audioapi::utils::graph

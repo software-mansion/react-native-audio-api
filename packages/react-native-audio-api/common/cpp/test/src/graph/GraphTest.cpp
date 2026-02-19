@@ -13,17 +13,17 @@ namespace audioapi::utils::graph {
 
 class GraphTest : public ::testing::Test {
  protected:
-  std::unique_ptr<Graph> graph;
+  std::unique_ptr<Graph<AudioNode>> graph;
 
   void SetUp() override {
-    graph = std::make_unique<Graph>(4096);
+    graph = std::make_unique<Graph<AudioNode>>(4096);
   }
 
-  const AudioGraph& getAudioGraph() {
+  const AudioGraph<AudioNode>& getAudioGraph() {
       return graph->audioGraph;
   }
 
-  const HostGraph& getHostGraph() {
+  const HostGraph<AudioNode>& getHostGraph() {
       return graph->hostGraph;
   }
 };
@@ -32,7 +32,7 @@ TEST_F(GraphTest, EventsAreScheduledButNotExecutedUntilProcess) {
     auto* node = graph->addNode();
     ASSERT_NE(node, nullptr);
 
-    // AudioGraph should not be aware of the node yet (event not processed)
+    // AudioGraph<AudioNode> should not be aware of the node yet (event not processed)
     const auto& ag = getAudioGraph();
 
     size_t sizeBefore = ag.size();
@@ -54,25 +54,25 @@ TEST_F(GraphTest, NoUselessEventsScheduled) {
     // Initial state
     const auto& ag = getAudioGraph();
     // Convert to verify
-    auto initialAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph&>(ag)); // casting const away if utils need it, or verifyutils usage
+    auto initialAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph<AudioNode>&>(ag)); // casting const away if utils need it, or verifyutils usage
 
     // Try adding duplicate edge (should fail and NOT schedule event)
     ASSERT_TRUE(graph->addEdge(node1, node2).is_ok()); // Success first time
     graph->processEvents();
 
     // Result of valid op
-    auto intermediateAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph&>(ag));
+    auto intermediateAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph<AudioNode>&>(ag));
 
     // Try adding SAME edge (should fail)
     auto result = graph->addEdge(node1, node2);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+    EXPECT_EQ(result.unwrap_err(), HostGraph<AudioNode>::ResultError::EDGE_ALREADY_EXISTS);
 
     // Even if we call processEvents, state should not change (and no event should be consumed ideally,
     // impossible to check queue count easily without friend or mock, but state check is good enough)
     graph->processEvents();
 
-    auto finalAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph&>(ag));
+    auto finalAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph<AudioNode>&>(ag));
     EXPECT_EQ(intermediateAdj, finalAdj);
 }
 
@@ -82,7 +82,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
     // One thread processes events (consumer)
 
     std::atomic<bool> running{true};
-    std::vector<HostGraph::Node*> nodes;
+    std::vector<HostGraph<AudioNode>::Node*> nodes;
 
     // Add initial nodes
     for(int i=0; i<10; ++i) {
@@ -108,7 +108,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
             nodes.push_back(n);
         } else if (op == 1 && nodes.size() > 2) {
             // Add edge
-            HostGraph::Node *n1, *n2;
+            HostGraph<AudioNode>::Node *n1, *n2;
             {
                n1 = nodes[rand_r(&seed) % nodes.size()];
                n2 = nodes[rand_r(&seed) % nodes.size()];
@@ -119,7 +119,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
             }
         } else if (op == 2 && nodes.size() > 5) {
              // Remove edge
-            HostGraph::Node *n1, *n2;
+            HostGraph<AudioNode>::Node *n1, *n2;
             {
                n1 = nodes[rand_r(&seed) % nodes.size()];
                n2 = nodes[rand_r(&seed) % nodes.size()];
@@ -142,8 +142,8 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
         const auto& ag = getAudioGraph();
         const auto& hg = getHostGraph();
 
-        auto audioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph&>(ag));
-        auto hostAdj = TestGraphUtils::convertHostGraphToAdjacencyList(const_cast<HostGraph&>(hg));
+        auto audioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph<AudioNode>&>(ag));
+        auto hostAdj = TestGraphUtils::convertHostGraphToAdjacencyList(const_cast<HostGraph<AudioNode>&>(hg));
 
         // They should match
         EXPECT_EQ(audioAdj, hostAdj);

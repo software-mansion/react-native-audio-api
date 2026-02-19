@@ -46,7 +46,7 @@ class MockAudioNode : public AudioNode {
 // ---------------------------------------------------------------------------
 class AudioGraphTest : public ::testing::Test {
  protected:
-  AudioGraph graph;
+  AudioGraph<AudioNode> graph;
 
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> ctx;
@@ -59,21 +59,21 @@ class AudioGraphTest : public ::testing::Test {
 
   // Helpers ----------------------------------------------------------------
 
-  /// @brief Creates a shared NodeHandle with no AudioNode (for structural tests)
-  std::shared_ptr<NodeHandle> makeHandle(size_t testId = 0) {
-    auto h = std::make_shared<NodeHandle>(0, nullptr);
+  /// @brief Creates a shared NodeHandle<AudioNode> with no AudioNode (for structural tests)
+  std::shared_ptr<NodeHandle<AudioNode>> makeHandle(size_t testId = 0) {
+    auto h = std::make_shared<NodeHandle<AudioNode>>(0, nullptr);
     return h;
   }
 
-  /// @brief Creates a shared NodeHandle with a MockAudioNode
-  std::shared_ptr<NodeHandle> makeHandleWithNode(bool destructible = true) {
+  /// @brief Creates a shared NodeHandle<AudioNode> with a MockAudioNode
+  std::shared_ptr<NodeHandle<AudioNode>> makeHandleWithNode(bool destructible = true) {
     auto node = std::make_unique<MockAudioNode>(ctx, destructible);
-    return std::make_shared<NodeHandle>(0, std::move(node));
+    return std::make_shared<NodeHandle<AudioNode>>(0, std::move(node));
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
-  std::vector<std::shared_ptr<NodeHandle>> addNodes(size_t n, bool withAudioNode = false) {
-    std::vector<std::shared_ptr<NodeHandle>> handles;
+  std::vector<std::shared_ptr<NodeHandle<AudioNode>>> addNodes(size_t n, bool withAudioNode = false) {
+    std::vector<std::shared_ptr<NodeHandle<AudioNode>>> handles;
     handles.reserve(n);
     for (size_t i = 0; i < n; i++) {
       auto h = withAudioNode ? makeHandleWithNode() : makeHandle(i);

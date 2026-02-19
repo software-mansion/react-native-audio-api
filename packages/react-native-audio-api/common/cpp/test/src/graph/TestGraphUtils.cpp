@@ -8,13 +8,13 @@
 
 namespace audioapi::utils::graph {
 
-std::pair<AudioGraph, HostGraph> TestGraphUtils::createTestGraph(std::vector<std::vector<size_t>> adjacencyList) {
-  HostGraph hostGraph = makeFromAdjacencyList(adjacencyList);
-  AudioGraph audioGraph = createAudioGraphFromHostGraph(hostGraph);
+std::pair<AudioGraph<AudioNode>, HostGraph<AudioNode>> TestGraphUtils::createTestGraph(std::vector<std::vector<size_t>> adjacencyList) {
+  HostGraph<AudioNode> hostGraph = makeFromAdjacencyList(adjacencyList);
+  AudioGraph<AudioNode> audioGraph = createAudioGraphFromHostGraph(hostGraph);
   return {std::move(audioGraph), std::move(hostGraph)};
 }
 
-std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyList(const AudioGraph &audioGraph) {
+std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyList(const AudioGraph<AudioNode> &audioGraph) {
   std::vector<std::vector<size_t>> adjacencyList;
   if (audioGraph.size() == 0) return {};
 
@@ -46,7 +46,7 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyLis
   return adjacencyList;
 }
 
-std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList(const HostGraph &hostGraph) {
+std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList(const HostGraph<AudioNode> &hostGraph) {
   std::vector<std::vector<size_t>> adjacencyList;
   if (hostGraph.nodes.empty()) return {};
 
@@ -61,7 +61,7 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
 
   for (auto* n : hostGraph.nodes) {
     size_t nodeId = n->test_node_identifier__;
-    for (HostGraph::Node* output : n->outputs) {
+    for (HostGraph<AudioNode>::Node* output : n->outputs) {
       if (output) {
         adjacencyList[nodeId].push_back(output->test_node_identifier__);
       }
@@ -72,15 +72,15 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
   return adjacencyList;
 }
 
-HostGraph TestGraphUtils::makeFromAdjacencyList(const std::vector<std::vector<size_t>> &adjacencyList) {
-  HostGraph graph;
-  std::vector<HostGraph::Node*> nodesVec;
+HostGraph<AudioNode> TestGraphUtils::makeFromAdjacencyList(const std::vector<std::vector<size_t>> &adjacencyList) {
+  HostGraph<AudioNode> graph;
+  std::vector<HostGraph<AudioNode>::Node*> nodesVec;
   nodesVec.reserve(adjacencyList.size());
 
   // Create nodes with shared handles
   for (size_t i = 0; i < adjacencyList.size(); ++i) {
-    auto handle = std::make_shared<NodeHandle>(static_cast<uint32_t>(i), nullptr);
-    HostGraph::Node* node = new HostGraph::Node();
+    auto handle = std::make_shared<NodeHandle<AudioNode>>(static_cast<uint32_t>(i), nullptr);
+    HostGraph<AudioNode>::Node* node = new HostGraph<AudioNode>::Node();
     node->handle = handle;
     node->test_node_identifier__ = i;
     nodesVec.push_back(node);
@@ -91,8 +91,8 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(const std::vector<std::vector<si
   for (size_t fromIndex = 0; fromIndex < adjacencyList.size(); ++fromIndex) {
     for (size_t toIndex : adjacencyList[fromIndex]) {
       if (fromIndex < nodesVec.size() && toIndex < nodesVec.size()) {
-          HostGraph::Node* fromNode = nodesVec[fromIndex];
-          HostGraph::Node* toNode = nodesVec[toIndex];
+          HostGraph<AudioNode>::Node* fromNode = nodesVec[fromIndex];
+          HostGraph<AudioNode>::Node* toNode = nodesVec[toIndex];
           fromNode->outputs.push_back(toNode);
           toNode->inputs.push_back(fromNode);
       }
@@ -103,11 +103,11 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(const std::vector<std::vector<si
   return graph;
 }
 
-AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGraph) {
-  AudioGraph audioGraph;
+AudioGraph<AudioNode> TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph<AudioNode> &hostGraph) {
+  AudioGraph<AudioNode> audioGraph;
   if (hostGraph.nodes.empty()) return audioGraph;
 
-  // Add nodes to AudioGraph using shared handles from HostGraph
+  // Add nodes to AudioGraph<AudioNode> using shared handles from HostGraph<AudioNode>
   for (auto* n : hostGraph.nodes) {
     audioGraph.addNode(n->handle);
   }
@@ -118,7 +118,7 @@ AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGr
     audioGraph[idx].test_node_identifier__ = n->test_node_identifier__;
 
     audioGraph[idx].inputs.clear();
-    for (HostGraph::Node* input : n->inputs) {
+    for (HostGraph<AudioNode>::Node* input : n->inputs) {
       audioGraph[idx].inputs.push_back(input->handle->index);
     }
   }
