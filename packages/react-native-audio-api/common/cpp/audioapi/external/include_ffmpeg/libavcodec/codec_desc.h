@@ -37,7 +37,7 @@
  */
 typedef struct AVCodecDescriptor {
     enum AVCodecID     id;
-    enum AVMediaType type;
+    enum AVMediaTypeFFmpeg type;
     /**
      * Name of the codec described by this descriptor. It is non-empty and
      * unique for each codec descriptor. It should contain alphanumeric

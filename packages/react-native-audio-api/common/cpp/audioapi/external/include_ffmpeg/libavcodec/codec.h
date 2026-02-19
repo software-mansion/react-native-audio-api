@@ -182,7 +182,7 @@ typedef struct AVCodec {
      * You should use the NULL_IF_CONFIG_SMALL() macro to define it.
      */
     const char *long_name;
-    enum AVMediaType type;
+    enum AVMediaTypeFFmpeg type;
     enum AVCodecID id;
     /**
      * Codec capabilities.
