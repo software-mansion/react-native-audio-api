@@ -125,6 +125,12 @@ const config = {
   ],
 
   plugins: [
+    [
+      '@docusaurus/plugin-google-tag-manager',
+      {
+        containerId: 'GTM-K8VRM8H4',
+      },
+    ],
     ...[
       process.env.NODE_ENV === 'production' && '@docusaurus/plugin-debug',
     ].filter(Boolean),
