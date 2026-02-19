@@ -1,4 +1,4 @@
-#include <audioapi/dsp/r8brain/resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.h>
 
 namespace r8b {
 
