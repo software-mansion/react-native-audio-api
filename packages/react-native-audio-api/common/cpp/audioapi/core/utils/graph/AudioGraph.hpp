@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
 #include <algorithm>
@@ -111,12 +110,11 @@ class AudioGraph {
   }
 
   /// @brief Preprocesses the graph by recomputing topological order if needed, and performing node deletion and compaction.
-  /// @param disposer
-  /// Time complexity: O(V + E) - we visit each node once for topological sort and once for compaction, and we visit each edge once during topological sort and once during compaction when we remap inputs
-  /// Space complexity: O(1) - at runtime we are doing everything in place, no extra allocations are performed
-  template <size_t D>
-    requires(D >= sizeof(std::unique_ptr<NodeHandle>) && D >= sizeof(std::vector<std::uint32_t>))
-  void process(Disposer<D> &disposer) {
+  /// When a node is compacted out its shared_ptr<NodeHandle> is released (refcount drops from 2 to 1).
+  /// HostGraph detects this via use_count() == 1 and destroys the ghost + AudioNode on the main thread.
+  /// Time complexity: O(V + E)
+  /// Space complexity: O(1) — everything is done in place
+  void process() {
     if (topo_order_dirty) {
       kahn_toposort();
       topo_order_dirty = false;
@@ -160,15 +158,12 @@ class AudioGraph {
     }
 
     // now all live nodes are in the beginning of vector and we can just truncate it
+    // Dropping shared_ptr decrements refcount (2 → 1); HostGraph detects this
+    // and destroys the ghost + AudioNode on the main thread.
     for (std::uint32_t i = b; i < e; i++) {
-      disposer.dispose(
-          std::move(
-              nodes[i]
-                  .handle)); // schedule handle for deletion on audio thread, it will also delete the AudioNode owned by the handle
-      disposer.dispose(std::move(nodes[i].inputs)); // free vector heap allocation off audio thread
-      nodes[i].handle = nullptr;
+      nodes[i].handle = nullptr; // release our ref — HostGraph still holds one
     }
-    nodes.resize(b);
+    nodes.resize(b); // truncate — inputs vectors are destroyed here
     for (auto &node : nodes) {
       node.after_compaction_ind =
           -1; // reset after_compaction index for all nodes, we will need it for the next compaction
@@ -191,8 +186,7 @@ class AudioGraph {
       return;
 
     // ── Phase 1: compute out-degree (how many other nodes list this one as input) ──
-    for (auto &nd : nodes)
-      nd.topo_out_degree = 0;
+    // We assume here that all nodes has topo_out_degree == 0, which is true because new nodes have it eq 0 and after toposort it gets reseted
     for (const auto &nd : nodes) {
       for (std::uint32_t inp : nd.inputs)
         nodes[inp].topo_out_degree++;
@@ -203,7 +197,7 @@ class AudioGraph {
     std::int32_t qh = -1, qt = -1; // queue head / tail
     auto enq = [&](std::uint32_t i) {
       nodes[i].after_compaction_ind = -1; // end-of-list sentinel
-      if (qh == -1) {
+      if (qh == -1) [[unlikely]] {        // this will only happen once on first enqueue
         qh = qt = static_cast<std::int32_t>(i);
       } else {
         nodes[qt].after_compaction_ind = static_cast<std::int32_t>(i);

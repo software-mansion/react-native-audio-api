@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/OfflineAudioContext.h>
@@ -10,6 +9,8 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
+
+using namespace audioapi;
 
 namespace audioapi::utils::graph {
 
@@ -46,7 +47,6 @@ class MockAudioNode : public AudioNode {
 class AudioGraphTest : public ::testing::Test {
  protected:
   AudioGraph graph;
-  DisposerImpl<kDefaultDisposalPayloadSize> disposer;
 
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> ctx;
@@ -137,7 +137,7 @@ TEST_F(AudioGraphTest, TopoSort_LinearChain) {
   graph[h[2]->index].inputs.push_back(h[1]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_LT(posOf(0), posOf(1));
   EXPECT_LT(posOf(1), posOf(2));
@@ -151,7 +151,7 @@ TEST_F(AudioGraphTest, TopoSort_ReversedInsertion) {
   graph[h[1]->index].inputs.push_back(h[0]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_LT(posOf(0), posOf(1));
   EXPECT_LT(posOf(1), posOf(2));
@@ -174,7 +174,7 @@ TEST_F(AudioGraphTest, TopoSort_Diamond) {
   graph[h[3]->index].inputs.push_back(h[2]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_LT(posOf(0), posOf(1));
   EXPECT_LT(posOf(0), posOf(2));
@@ -194,7 +194,7 @@ TEST_F(AudioGraphTest, TopoSort_FanIn) {
   graph[h[3]->index].inputs.push_back(h[2]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_LT(posOf(0), posOf(3));
   EXPECT_LT(posOf(1), posOf(3));
@@ -212,7 +212,7 @@ TEST_F(AudioGraphTest, TopoSort_DisconnectedComponents) {
   graph[h[3]->index].inputs.push_back(h[2]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_LT(posOf(0), posOf(1));
   EXPECT_LT(posOf(2), posOf(3));
@@ -226,7 +226,7 @@ TEST_F(AudioGraphTest, TopoSort_SingleNode) {
   auto h = addNodes(1);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 1u);
   EXPECT_EQ(posOf(0), 0);
@@ -242,12 +242,12 @@ TEST_F(AudioGraphTest, TopoSort_SkippedWhenNotDirty) {
   graph[h[2]->index].inputs.push_back(h[1]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   auto orderAfterFirst = getOrder();
 
   // process again without marking dirty — order should stay identical
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(getOrder(), orderAfterFirst);
 }
@@ -267,7 +267,7 @@ TEST_F(AudioGraphTest, Compact_RemovesOrphanedDestructibleLeaf) {
   graph[h[2]->index].inputs.clear();
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 2u);
   // Node 2 should be gone
@@ -284,7 +284,7 @@ TEST_F(AudioGraphTest, Compact_KeepsOrphanedNodeWithInputs) {
   graph[h[1]->index].orphaned = true;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   // Node 1 is orphaned but still has inputs — should stay
   EXPECT_EQ(graph.size(), 2u);
@@ -307,7 +307,7 @@ TEST_F(AudioGraphTest, Compact_KeepsNonDestructible) {
   // h1 has no inputs, is orphaned, but canBeDestructed() returns false
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 2u); // still 2 — node 1 stays
 }
@@ -328,13 +328,13 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
   graph[h1->index].orphaned = true;
 
   graph.markDirty();
-  graph.process(disposer); // first pass: node 1 stays (not destructible)
+  graph.process(); // first pass: node 1 stays (not destructible)
   EXPECT_EQ(graph.size(), 2u);
 
   // Now make it destructible
   static_cast<MockAudioNode *>(h1->audioNode.get())->setDestructible(true);
 
-  graph.process(disposer); // second pass: node 1 should be removed
+  graph.process(); // second pass: node 1 should be removed
   EXPECT_EQ(graph.size(), 1u);
   EXPECT_EQ(posOf(1), -1);
 }
@@ -351,7 +351,7 @@ TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
   graph[h[3]->index].inputs.push_back(h[2]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   // Now orphan node 1 (remove its inputs so it can be deleted)
   graph[h[1]->index].orphaned = true;
@@ -363,7 +363,7 @@ TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
       std::remove(n2inputs.begin(), n2inputs.end(), h[1]->index),
       n2inputs.end());
 
-  graph.process(disposer);
+  graph.process();
 
   // After compaction: 3 nodes remain (0, 2, 3)
   EXPECT_EQ(graph.size(), 3u);
@@ -385,7 +385,7 @@ TEST_F(AudioGraphTest, Compact_MultipleOrphans) {
   graph[h[3]->index].orphaned = true;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 3u);
   EXPECT_NE(posOf(0), -1);
@@ -414,7 +414,7 @@ TEST_F(AudioGraphTest, Compact_CascadingRemoval) {
   graph[h[0]->index].orphaned = true;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   // Node 0 should be removed (orphaned, no inputs, destructible)
   // Node 1 still references old index of 0 in its inputs — that input will be cleaned on next process()
@@ -432,7 +432,7 @@ TEST_F(AudioGraphTest, Compact_RemoveAllNodes) {
   graph[h[2]->index].orphaned = true;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 0u);
   EXPECT_TRUE(graph.empty());
@@ -443,7 +443,7 @@ TEST_F(AudioGraphTest, Compact_RemoveAllNodes) {
 // =====================================================================
 
 TEST_F(AudioGraphTest, Process_EmptyGraph) {
-  graph.process(disposer);
+  graph.process();
   EXPECT_EQ(graph.size(), 0u);
 }
 
@@ -458,7 +458,7 @@ TEST_F(AudioGraphTest, MarkDirty_Idempotent) {
   graph.markDirty();
   graph.markDirty();
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 2u);
   EXPECT_LT(posOf(0), posOf(1));
@@ -487,7 +487,7 @@ TEST_F(AudioGraphTest, TopoSort_ComplexDAG) {
   graph[h[5]->index].inputs.push_back(h[4]->index);
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   // Check all dependency constraints
   EXPECT_LT(posOf(0), posOf(2));
@@ -513,7 +513,7 @@ TEST_F(AudioGraphTest, Process_AddAndRemoveInterleaved) {
   graph[h1->index].test_node_identifier__ = 1;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
   EXPECT_EQ(graph.size(), 2u);
 
   // Orphan 0, add 2
@@ -523,7 +523,7 @@ TEST_F(AudioGraphTest, Process_AddAndRemoveInterleaved) {
   graph[h2->index].test_node_identifier__ = 2;
 
   graph.markDirty();
-  graph.process(disposer);
+  graph.process();
 
   EXPECT_EQ(graph.size(), 2u);
   EXPECT_EQ(posOf(0), -1);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
 
 #include <audioapi/utils/FatFunction.hpp>
@@ -30,16 +29,13 @@ class Graph {
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  Graph(
-      size_t eventQueueCapacity,
-      std::unique_ptr<Disposer<kDefaultDisposalPayloadSize>> disposer) {
+  explicit Graph(size_t eventQueueCapacity) {
     auto [sender, receiver] = audioapi::channels::spsc::channel<
         HostGraph::AGEvent,
         audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
         audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>(eventQueueCapacity);
     eventSender = std::move(sender);
     eventReceiver = std::move(receiver);
-    this->disposer = std::move(disposer);
   }
   ~Graph() = default;
 
@@ -49,7 +45,7 @@ class Graph {
     HostGraph::AGEvent event;
     while (eventReceiver.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
       if (event) {
-        event(audioGraph, *disposer);
+        event(audioGraph);
       }
     }
   }
@@ -101,7 +97,6 @@ class Graph {
   // Aligning to cache line size to prevent false sharing between audio and main thread
   alignas(64) AudioGraph audioGraph;
   alignas(64) HostGraph hostGraph;
-  alignas(64) std::unique_ptr<Disposer<kDefaultDisposalPayloadSize>> disposer;
 
   // These are const and their memory won't be modified after initialization, so no false sharing here
   Sender eventSender;

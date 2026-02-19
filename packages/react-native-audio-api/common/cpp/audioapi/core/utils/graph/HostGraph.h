@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/Result.hpp>
@@ -29,10 +28,8 @@ class HostGraph {
 
   using AGEvent = FatFunction<
       32,
-      void(
-          AudioGraph &,
-          Disposer<kDefaultDisposalPayloadSize>
-              &)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
+      void(AudioGraph
+               &)>; // Event that modifies AudioGraph to keep it consistent with HostGraph changes
 
   using Res = Result<AGEvent, ResultError>;
 
@@ -51,6 +48,8 @@ class HostGraph {
     TraversalState traversalState; // for graph traversals
     std::shared_ptr<NodeHandle>
         handle; // shared handle bridging to AudioGraph; AudioGraph also holds a shared_ptr
+    bool ghost =
+        false; // marked for removal — kept for cycle detection until AudioGraph confirms deletion
 
 #if RN_AUDIO_API_TEST
     // Identifier for testing purposes only
@@ -91,6 +90,10 @@ class HostGraph {
   size_t last_term = 0; // for traversal data management
 
   bool hasPath(Node *from, Node *to);
+
+  /// @brief Scans ghost nodes and deletes those whose handle has use_count == 1,
+  /// meaning AudioGraph has released its reference during compaction.
+  void collectDisposedNodes();
 
   friend class TestGraphUtils;
   friend class HostGraphTest;

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.h>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include "TestGraphUtils.h"
 #include <utility>
@@ -10,14 +9,6 @@
 #include <unordered_map>
 
 namespace audioapi::utils::graph {
-
-class MockDisposer : public Disposer<kDefaultDisposalPayloadSize> {
- protected:
-  bool doDispose(DisposalPayload<kDefaultDisposalPayloadSize> &&payload) override {
-    // No-op: intentionally skip destruction in tests
-    return true;
-  }
-};
 
 class HostGraphTest : public ::testing::Test {
  protected:
@@ -47,9 +38,8 @@ class HostGraphTest : public ::testing::Test {
     EXPECT_EQ(initialAudioAdj, intermediateAudioAdj) << "AudioGraph changed before event execution";
 
     // Perform Event
-    MockDisposer disposer;
     auto event = std::move(result).unwrap();
-    event(audioGraph, disposer);
+    event(audioGraph);
 
     // Verify AudioGraph UPDATED and CONSISTENT
     auto finalAudioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
@@ -84,8 +74,7 @@ TEST_F(HostGraphTest, AddNode) {
   // AudioGraph unchanged before event
   EXPECT_EQ(audioGraph.size(), 3u);
 
-  MockDisposer disposer;
-  event(audioGraph, disposer);
+  event(audioGraph);
 
   // After event: node added to AudioGraph
   EXPECT_EQ(audioGraph.size(), 4u);
@@ -297,6 +286,56 @@ TEST_F(HostGraphTest, AddEdge_GridInterconnect) {
   auto result = hostGraph.addEdge(node5, node0);
   EXPECT_TRUE(result.is_err());
   EXPECT_EQ(hostAdjBefore, TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph));
+}
+
+// ---------------------------------------------------------------------------
+// BUG demonstration: ghost node in AudioGraph causes accepted cycle
+// ---------------------------------------------------------------------------
+//
+// When a node is removed from HostGraph it is deleted immediately (edges torn
+// down, pointer freed).  The corresponding AudioGraph event only marks the
+// node as `orphaned` — it stays in the vector with all its edges until
+// compaction eventually removes it.
+//
+// This creates a window where HostGraph no longer "sees" the node, so its
+// cycle-detection (hasPath) can miss paths that still exist in AudioGraph.
+// If a new edge is added through that blind-spot, AudioGraph ends up with a
+// cycle and toposort produces garbage.
+//
+TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
+  // Setup: chain  0 → 1 → 2
+  auto [audioGraph, hostGraph] = TestGraphUtils::createTestGraph({
+    {1},  // 0 -> 1
+    {2},  // 1 -> 2
+    {}    // 2
+  });
+
+  HostGraph::Node* node0 = findNode(hostGraph, 0);
+  HostGraph::Node* node1 = findNode(hostGraph, 1);
+  HostGraph::Node* node2 = findNode(hostGraph, 2);
+  ASSERT_NE(node0, nullptr);
+  ASSERT_NE(node1, nullptr);
+  ASSERT_NE(node2, nullptr);
+
+  // ── Step 1: remove node 1 from HostGraph ──
+  auto removeResult = hostGraph.removeNode(node1);
+  ASSERT_TRUE(removeResult.is_ok());
+
+  // Execute the remove-event on AudioGraph (only sets orphaned=true).
+  auto removeEvent = std::move(removeResult).unwrap();
+  removeEvent(audioGraph);
+
+  // AudioGraph still has the ghost: 0 → 1(orphaned) → 2
+  EXPECT_EQ(audioGraph.size(), 3u);
+
+  // ── Step 2: add edge 2 → 0 ──
+  // Because node 1 still bridges 0→2 in AudioGraph, this would create
+  // a cycle: 0 → 1 → 2 → 0.  HostGraph MUST reject it.
+  auto addResult = hostGraph.addEdge(node2, node0);
+
+  EXPECT_TRUE(addResult.is_err())
+      << "HostGraph should detect the cycle through the ghost node";
+  EXPECT_EQ(addResult.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
 }
 
 } // namespace audioapi::utils::graph

@@ -48,11 +48,13 @@ HostGraph::~HostGraph() {
 
 
 std::pair<HostGraph::Node*, HostGraph::AGEvent> HostGraph::addNode(std::shared_ptr<NodeHandle> handle) {
+  collectDisposedNodes();
+
   Node* newNode = new Node();
   newNode->handle = handle;
   nodes.push_back(newNode);
 
-  auto event = [h = std::move(handle)](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+  auto event = [h = std::move(handle)](AudioGraph& graph) {
     graph.addNode(h);
   };
 
@@ -65,23 +67,25 @@ HostGraph::Res HostGraph::removeNode(Node *node) {
       return Res::Err(ResultError::NODE_NOT_FOUND);
   }
 
-  *it = nodes.back();
-  nodes.pop_back();
+  // Mark as ghost — keep edges intact so hasPath can still detect paths through it.
+  // The ghost will be cleaned up by collectDisposedNodes() once AudioGraph
+  // releases its shared_ptr (use_count drops to 1).
+  node->ghost = true;
 
-  // Capture handle to look up the current index at event execution time
-  auto handle = std::move(node->handle); // take ownership of the handle
-  delete node;
-
-  return Res::Ok([h = std::move(handle)](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
-      std::uint32_t targetIdx = h->index;
-      graph[targetIdx].orphaned = true;
+  return Res::Ok([h = node->handle](AudioGraph& graph) {
+      graph[h->index].orphaned = true;
   });
 }
 
 HostGraph::Res HostGraph::addEdge(Node *from, Node *to) {
-  // Check if nodes exist in graph
+  collectDisposedNodes();
+
+  // Check if nodes exist in graph and are not ghosts
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
+      return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+  if (from->ghost || to->ghost) {
       return Res::Err(ResultError::NODE_NOT_FOUND);
   }
 
@@ -91,6 +95,8 @@ HostGraph::Res HostGraph::addEdge(Node *from, Node *to) {
   }
 
   // Check for cycle: look for path from 'to' to 'from'
+  // hasPath traverses all nodes including ghosts, so cycle detection
+  // correctly accounts for nodes still alive in AudioGraph.
   if (hasPath(to, from)) {
       return Res::Err(ResultError::CYCLE_DETECTED);
   }
@@ -98,7 +104,7 @@ HostGraph::Res HostGraph::addEdge(Node *from, Node *to) {
   from->outputs.push_back(to);
   to->inputs.push_back(from);
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph) {
       graph[hTo->index].inputs.push_back(hFrom->index);
       graph.markDirty();
   });
@@ -130,9 +136,14 @@ bool HostGraph::hasPath(Node* start, Node* end) {
 }
 
 HostGraph::Res HostGraph::removeEdge(Node *from, Node *to) {
-  // Check existence
+  collectDisposedNodes();
+
+  // Check existence (reject ghosts)
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
+      return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+  if (from->ghost || to->ghost) {
       return Res::Err(ResultError::NODE_NOT_FOUND);
   }
 
@@ -145,13 +156,28 @@ HostGraph::Res HostGraph::removeEdge(Node *from, Node *to) {
   }
   from->outputs.erase(itOut);
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph, Disposer<kDefaultDisposalPayloadSize>&) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph& graph) {
       auto& inputs = graph[hTo->index].inputs;
       auto itIn = std::remove(inputs.begin(), inputs.end(), hFrom->index);
       if (itIn != inputs.end()) inputs.erase(itIn, inputs.end());
 
       graph.markDirty();
   });
+}
+
+void HostGraph::collectDisposedNodes() {
+  for (auto it = nodes.begin(); it != nodes.end(); ) {
+    Node* n = *it;
+    // A ghost whose handle has use_count == 1 means AudioGraph released its ref.
+    // Safe to destroy the ghost and the AudioNode on the main thread.
+    if (n->ghost && n->handle.use_count() == 1) {
+      *it = nodes.back();
+      nodes.pop_back();
+      delete n; // ~Node tears down edges; last shared_ptr destroys NodeHandle + AudioNode
+    } else {
+      ++it;
+    }
+  }
 }
 
 }; // namespace audioapi::utils::graph

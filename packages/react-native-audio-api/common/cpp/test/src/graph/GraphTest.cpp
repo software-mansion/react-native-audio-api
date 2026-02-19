@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/Graph.hpp>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include "TestGraphUtils.h"
 #include <thread>
 #include <atomic>
@@ -12,20 +11,12 @@
 
 namespace audioapi::utils::graph {
 
-class MockDisposer : public Disposer<kDefaultDisposalPayloadSize> {
- protected:
-  bool doDispose(DisposalPayload<kDefaultDisposalPayloadSize> &&payload) override {
-      // No-op: intentionally skip destruction in tests
-      return true;
-  }
-};
-
 class GraphTest : public ::testing::Test {
  protected:
   std::unique_ptr<Graph> graph;
 
   void SetUp() override {
-    graph = std::make_unique<Graph>(4096, std::make_unique<MockDisposer>());
+    graph = std::make_unique<Graph>(4096);
   }
 
   const AudioGraph& getAudioGraph() {
