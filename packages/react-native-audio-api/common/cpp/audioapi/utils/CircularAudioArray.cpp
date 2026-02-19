@@ -19,10 +19,10 @@ void CircularAudioArray::push_back(const float *data, size_t size, bool skipAvai
 
     if (vWriteIndex_ + size > size_) {
         auto partSize = size_ - vWriteIndex_;
-        this->copy(data, 0, vWriteIndex_, partSize);
-        this->copy(data, partSize, 0, size - partSize);
+        copy(data, 0, vWriteIndex_, partSize); // NOLINT(build/include_what_you_use)
+        copy(data, partSize, 0, size - partSize); // NOLINT(build/include_what_you_use)
     } else {
-        this->copy(data, 0, vWriteIndex_, size);
+        copy(data, 0, vWriteIndex_, size); // NOLINT(build/include_what_you_use)
     }
 
     vWriteIndex_ = vWriteIndex_ + size > size_ ? vWriteIndex_ + size - size_ : vWriteIndex_ + size;
