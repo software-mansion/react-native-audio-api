@@ -2,9 +2,9 @@
 sidebar_position: 3
 ---
 
-import InteractiveExample from '@site/src/components/InteractiveExample';
+<!-- import InteractiveExample from '@site/src/components/InteractiveExample';
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
-import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
+import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground'; -->
 
 # Making a piano keyboard
 
@@ -133,10 +133,10 @@ export default function SimplePiano() {
 
 When we put everything together, we will get something like this:
 
-import ItHangs from '@site/src/examples/SimplePiano/ItHangsComponent';
+<!-- import ItHangs from '@site/src/examples/SimplePiano/ItHangsComponent';
 import ItHangsSrc from '!!raw-loader!@site/src/examples/SimplePiano/ItHangsSource';
 
-<InteractiveExample component={ItHangs} src={ItHangsSrc} />
+<InteractiveExample component={ItHangs} src={ItHangsSrc} /> -->
 
 Great! But there are a few things off here:
 
@@ -185,10 +185,10 @@ const onKeyPressOut = (which: KeyName) => {
 
 Putting it all together again, we get:
 
-import PressOutComponent from '@site/src/examples/SimplePiano/PressOutComponent';
+<!-- import PressOutComponent from '@site/src/examples/SimplePiano/PressOutComponent';
 import PressOutSrc from '!!raw-loader!@site/src/examples/SimplePiano/PressOutSource';
 
-<InteractiveExample component={PressOutComponent} src={PressOutSrc} />
+<InteractiveExample component={PressOutComponent} src={PressOutSrc} /> -->
 
 And they stop on release, just as we wanted. But if we hold the keys for a short time, it sounds a bit strange. Also, have you noticed that the sound is simply cut off when we release the key? 🤔
 It leaves a bit of an unpleasant feeling, right? So let’s try to make it a bit smoother.
@@ -214,7 +214,9 @@ An envelope describes how a sound's amplitude changes over time. The most widely
 - **Sustain** — volume level held while the note is active.
 - **Release** — time to fade out after the note ends.
 
-<InteractivePlayground usePlayground={useGainAdsrPlayground} />
+<!-- <details open>
+  <InteractivePlayground usePlayground={useGainAdsrPlayground} />
+</details> -->
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
 
@@ -294,10 +296,10 @@ const onKeyPressOut = (which: KeyName) => {
 
 As a result, we can hear something like this:
 
-import EnvelopesComponent from '@site/src/examples/SimplePiano/EnvelopesComponent';
+<!-- import EnvelopesComponent from '@site/src/examples/SimplePiano/EnvelopesComponent';
 import EnvelopesSrc from '!!raw-loader!@site/src/examples/SimplePiano/EnvelopesSource';
 
-<InteractiveExample component={EnvelopesComponent} src={EnvelopesSrc} />
+<InteractiveExample component={EnvelopesComponent} src={EnvelopesSrc} /> -->
 
 And it finally sounds smooth and nice. But what about decay and sustain phases? Both are handled by the audio samples themselves, so we do not need to worry about them. To be honest, same goes for the attack phase, but we have implemented it for the sake of this guide. 🙂 <br /><br />
 So, the only piece left is addressing the missing sample files for the 'B' and 'D' keys. What can we do about that?
@@ -368,10 +370,10 @@ const onKeyPressIn = (which: KeyName) => {
 
 As before, you can see the final results in the live example below, along with the full source code.
 
-import SimplePiano from '@site/src/examples/SimplePiano/FinalComponent';
+<!-- import SimplePiano from '@site/src/examples/SimplePiano/FinalComponent';
 import SimplePianoSrc from '!!raw-loader!@site/src/examples/SimplePiano/FinalSource';
 
-<InteractiveExample component={SimplePiano} src={SimplePianoSrc} />
+<InteractiveExample component={SimplePiano} src={SimplePianoSrc} /> -->
 
 ## Summary
 

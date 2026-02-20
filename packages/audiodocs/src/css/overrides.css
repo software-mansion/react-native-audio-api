@@ -231,3 +231,13 @@ button[class*='DocSearch-Button'] {
   border-collapse: collapse;
   box-sizing: border-box;
 }
+
+[class*=alert--warning] {
+  background-color: var(--swm-admonition-color-caution) !important;
+  box-shadow: -8px 8px 0 var(--swm-admonition-color-caution-shadow) !important;
+}
+
+
+details.alert {
+  border-radius: 0 !important;
+}
