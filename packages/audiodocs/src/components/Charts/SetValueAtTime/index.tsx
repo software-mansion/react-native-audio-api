@@ -1,6 +1,8 @@
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Line, ReferenceLine, Label } from 'recharts';
+import { Label, Line, ReferenceLine, Tooltip } from 'recharts';
 
+import AudioParamChartBase, { AudioParamChartBaseProps } from '../common/AudioParamChartBase';
 import styles from '../styles.module.css';
+import { FC } from 'react';
 
 const setValueAtTimeData = [
   { time: 0.0, value: 0.2 },
@@ -16,34 +18,8 @@ const setValueAtTimeData = [
   { time: 0.9, value: 0.8 },
 ];
 
-const SetValueAtTimeChart = () => (
-<LineChart
-    className={styles.chart}
-    responsive
-    data={setValueAtTimeData}
-    margin={{ left: 50, bottom: 20, top: 10 }}
->
-    <CartesianGrid strokeDasharray="3 3"/>
-    <XAxis 
-        dataKey="time"
-        domain={[0, 0.9]}
-        ticks={[]}
-        tick={false}
-        tickLine={true}
-        type="number"
-        label={{ value: 'Time', position: 'insideBottomRight', className: styles.label }}
-        strokeWidth={2}
-        stroke="currentColor"
-    />
-    <YAxis
-        ticks={[]}
-        tick={true}
-        tickLine={true}
-        domain={[0, 1.1]}
-        label={{ value: 'Value', position: 'insideTopRight', offset: 10, className: styles.label }}
-        strokeWidth={2}
-        stroke="currentColor"
-    />
+const SetValueAtTimeChart: FC = () => (
+<AudioParamChartBase data={setValueAtTimeData}>
     <ReferenceLine x={0.3} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
         <Label value="startTime" position="bottom" className={styles.label} />
     </ReferenceLine>
@@ -64,7 +40,7 @@ const SetValueAtTimeChart = () => (
         isAnimationActive={true}
     />
     <Tooltip active={false} />
-</LineChart>
+</AudioParamChartBase>
 );
 
 export default  SetValueAtTimeChart;

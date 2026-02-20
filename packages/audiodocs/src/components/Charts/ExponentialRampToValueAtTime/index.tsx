@@ -1,10 +1,13 @@
-import { LineChart, CartesianGrid, XAxis, YAxis, ReferenceLine, Label, Tooltip, Line} from "recharts";
+import {
+    Label,
+    ReferenceLine
+} from 'recharts';
 
-
+import { FC } from 'react';
+import AudioParamChartBase, { AudioParamDataPoint } from '../common/AudioParamChartBase';
 import styles from '../styles.module.css';
 
-// Generate exponential ramp data with more intermediate points
-const generateExponentialRampData = () => {
+const generateExponentialRampData = (): AudioParamDataPoint[] => {
   const startTime = 0.2;
   const endTime = 0.8;
   const startValue = 0.2;
@@ -17,13 +20,16 @@ const generateExponentialRampData = () => {
   }
 
   // Generate exponential ramp points
-  const steps = 60; // More granular steps for smooth curve
+  const steps = 60;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const time = startTime + t * (endTime - startTime);
     // Exponential interpolation: value = startValue * (targetValue / startValue)^t
     const value = startValue * Math.pow(targetValue / startValue, t);
-    data.push({ time: parseFloat(time.toFixed(3)), value: parseFloat(value.toFixed(3)) });
+    data.push({
+      time: parseFloat(time.toFixed(3)),
+      value: parseFloat(value.toFixed(3)),
+    });
   }
 
   // Add points after the ramp
@@ -34,60 +40,41 @@ const generateExponentialRampData = () => {
   return data;
 };
 
-const exponentialRampToValueAtTimeData = generateExponentialRampData();
-
-const ExponentialRampToValueAtTimeChart = () => (
-    <LineChart
-        className={styles.chart}
-        responsive
-        data={exponentialRampToValueAtTimeData}
-        margin={{ left: 50, bottom: 20, top: 10 }}
-    >
-        <CartesianGrid strokeDasharray="3 3"/>
-        <XAxis 
-            dataKey="time"
-            domain={[0, 0.9]}
-            ticks={[]}
-            tick={false}
-            tickLine={true}
-            type="number"
-            label={{ value: 'Time', position: 'insideBottomRight', className: styles.label }}
-            strokeWidth={2}
-            stroke="currentColor"
-        />
-        <YAxis
-            ticks={[]}
-            tick={true}
-            tickLine={true}
-            domain={[0, 1.1]}
-            label={{ value: 'Value', position: 'insideTopRight', offset: 10, className: styles.label }}
-            strokeWidth={2}
-            stroke="currentColor"
-        />
-        <ReferenceLine x={0.2} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-            <Label value="previous event and time" position="bottom" className={styles.label} />
-        </ReferenceLine>
-        <ReferenceLine x={0.8} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-            <Label value="endTime" position="bottom" className={styles.label} />
-        </ReferenceLine>
-        <ReferenceLine y={0.2} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-            <Label value="previousValue" position="left" className={styles.label}/>
-        </ReferenceLine>
-        <ReferenceLine y={0.8} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-            <Label value="value" position="left" className={styles.label} />
-        </ReferenceLine>
-        <Line 
-            type="linear" 
-            dataKey="value"
-            stroke='currentColor' 
-            className={styles.leadingLine}
-            strokeWidth={2}
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-        />
-        <Tooltip active={false} />
-    </LineChart>
+const ExponentialRampToValueAtTimeChart: FC = () => (
+  <AudioParamChartBase data={generateExponentialRampData()}>
+    <ReferenceLine
+      x={0.2}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5">
+      <Label
+        value="previous event and time"
+        position="bottom"
+        className={styles.label}
+      />
+    </ReferenceLine>
+    <ReferenceLine
+      x={0.8}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5">
+      <Label value="endTime" position="bottom" className={styles.label} />
+    </ReferenceLine>
+    <ReferenceLine
+      y={0.2}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5">
+      <Label value="previousValue" position="left" className={styles.label} />
+    </ReferenceLine>
+    <ReferenceLine
+      y={0.8}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5">
+      <Label value="value" position="left" className={styles.label} />
+    </ReferenceLine>
+  </AudioParamChartBase>
 );
- 
+
 export default ExponentialRampToValueAtTimeChart;

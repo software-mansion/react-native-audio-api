@@ -1,5 +1,6 @@
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Line, ReferenceLine, Label, ReferenceDot } from 'recharts';
+import { Label, ReferenceDot, ReferenceLine } from 'recharts';
 
+import ChartBaseWrapper, { AudioParamDataPoint } from '../common/AudioParamChartBase';
 import styles from '../styles.module.css';
 
 const CustomLabelWithArrow = (props: any) => {
@@ -62,7 +63,7 @@ const CustomLabelWithArrow = (props: any) => {
     );
 };
 
-const generateSetTargetAtTimeData = () => {
+const generateSetTargetAtTimeData = (): AudioParamDataPoint[] => {
     const startTime = 0.3;
     const timeConstant = 0.1;
     const previousValue = 0.2;
@@ -88,33 +89,7 @@ const generateSetTargetAtTimeData = () => {
 }
 
 const SetTargetAtTimeChart = () => (
-    <LineChart
-        className={styles.chart}
-        responsive
-        data={generateSetTargetAtTimeData()}
-        margin={{ left: 50, bottom: 20, top: 10 }}
-    >
-        <CartesianGrid strokeDasharray="3 3"/>
-        <XAxis 
-            dataKey="time"
-            domain={[0, 0.9]}
-            ticks={[]}
-            tick={false}
-            tickLine={true}
-            type="number"
-            label={{ value: 'Time', position: 'insideBottomRight', className: styles.label }}
-            strokeWidth={2}
-            stroke="currentColor"
-    />
-    <YAxis
-        ticks={[]}
-        tick={true}
-        tickLine={true}
-        domain={[0, 1.1]}
-        label={{ value: 'Value', position: 'insideTopRight', offset: 10, className: styles.label }}
-        strokeWidth={2}
-        stroke="currentColor"
-    />
+    <ChartBaseWrapper data={generateSetTargetAtTimeData()}>
     <ReferenceLine x={0.3} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
         <Label value="startTime" position="bottom" className={styles.label} />
     </ReferenceLine>
@@ -124,16 +99,6 @@ const SetTargetAtTimeChart = () => (
     <ReferenceLine y={0.8} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
         <Label value="target" position="left" className={styles.label} />
     </ReferenceLine>
-    <Line 
-        type="linear" 
-        dataKey="value"
-        stroke='currentColor' 
-        className={styles.leadingLine}
-        strokeWidth={2}
-        dot={false}
-        activeDot={false}
-        isAnimationActive={true}
-    />
     <ReferenceDot 
         x={0.65} 
         y={0.7} 
@@ -144,8 +109,7 @@ const SetTargetAtTimeChart = () => (
         visibility={'hidden'}
         label={(props) => <CustomLabelWithArrow {...props} />}
     />
-    <Tooltip active={false} />
-</LineChart>
+</ChartBaseWrapper>
 );
 
 export default SetTargetAtTimeChart;

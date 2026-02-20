@@ -1,7 +1,7 @@
-import  SetValueAtTimeChart from "./SetValueAtTime";
-import LinearRampToValueAtTimeChart from "./LinearRampToValueAtTime";
 import ExponentialRampToValueAtTimeChart from "./ExponentialRampToValueAtTime";
+import LinearRampToValueAtTimeChart from "./LinearRampToValueAtTime";
 import SetTargetAtTimeChart from "./SetTargetAtTime";
+import SetValueAtTimeChart from "./SetValueAtTime";
 import SetValueCurveAtTimeChart from "./SetValueCurveAtTime";
 
-export { SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart, SetTargetAtTimeChart, SetValueCurveAtTimeChart };
+export { ExponentialRampToValueAtTimeChart, LinearRampToValueAtTimeChart, SetTargetAtTimeChart, SetValueAtTimeChart, SetValueCurveAtTimeChart };
