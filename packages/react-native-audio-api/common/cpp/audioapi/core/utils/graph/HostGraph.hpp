@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+class GraphCycleDebugTest;
+
 namespace audioapi::utils::graph {
 
 template <AudioGraphNode NodeType>
@@ -110,6 +112,7 @@ class HostGraph {
 
   friend class TestGraphUtils;
   friend class HostGraphTest;
+  friend class GraphCycleDebugTest;
 };
 
 // =========================================================================
@@ -217,7 +220,7 @@ auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
   to->inputs.push_back(from);
 
   return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph) {
-    graph[hTo->index].inputs.push_back(hFrom->index);
+    graph.pool().push(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
 }
@@ -245,10 +248,7 @@ auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
   from->outputs.erase(itOut);
 
   return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph) {
-    auto &inputs = graph[hTo->index].inputs;
-    auto itIn = std::remove(inputs.begin(), inputs.end(), hFrom->index);
-    if (itIn != inputs.end())
-      inputs.erase(itIn, inputs.end());
+    graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
 }

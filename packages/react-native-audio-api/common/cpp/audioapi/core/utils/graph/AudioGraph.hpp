@@ -1,11 +1,11 @@
 #pragma once
 
+#include <audioapi/core/utils/graph/InputPool.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <functional>
 #include <iterator>
 #include <memory>
 #include <ranges>
@@ -35,7 +35,7 @@ class AudioGraph {
     explicit Node(std::shared_ptr<NodeHandle<NodeType>> handle) : handle(handle) {}
 
     std::shared_ptr<NodeHandle<NodeType>> handle = nullptr; // owned handle bridging to HostGraph
-    std::vector<std::uint32_t> inputs;                      // indices of input nodes
+    std::uint32_t input_head = InputPool::kNull;            // head of input linked list in pool_
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
@@ -53,6 +53,12 @@ class AudioGraph {
  public:
   AudioGraph() = default;
   ~AudioGraph() = default;
+
+  AudioGraph(const AudioGraph &) = delete;
+  AudioGraph &operator=(const AudioGraph &) = delete;
+
+  AudioGraph(AudioGraph &&) noexcept = default;
+  AudioGraph &operator=(AudioGraph &&) noexcept = default;
 
   /// @brief Entry returned by iter() — a reference to the audio node and a view of its inputs.
   template <typename InputsView>
@@ -90,6 +96,10 @@ class AudioGraph {
   /// @note Using this iterator after modifying the graph is undefined behavior.
   [[nodiscard]] auto iter();
 
+  /// @brief Returns a reference to the input pool used for edge storage.
+  [[nodiscard]] InputPool &pool();
+  [[nodiscard]] const InputPool &pool() const;
+
   // ── Mutators ────────────────────────────────────────────────────────────
 
   /// @brief Marks the topological ordering as dirty so the next process()
@@ -107,11 +117,18 @@ class AudioGraph {
   /// (refcount drops 2 → 1). HostGraph detects this via `use_count() == 1`
   /// and destroys the ghost + AudioNode on the main thread.
   ///
-  /// Time: O(V + E) &nbsp; Space: O(1) — everything in place.
+  /// Uses a two-pass approach: pass 1 marks deletions (cascading in topo
+  /// order) and computes index remapping; pass 2 remaps inputs and shifts
+  /// kept nodes left.
+  ///
+  /// Time: O(V + E)
+  ///
+  /// Extra space: O(1) — everything in place.
   void process();
 
  private:
   std::vector<Node> nodes;       // always kept topologically sorted
+  InputPool pool_;               // pool backing all input linked lists
   bool topo_order_dirty = false; // set by markDirty(), cleared by process()
 
   /// @brief In-place Kahn's toposort (sources first, sinks last).
@@ -119,7 +136,9 @@ class AudioGraph {
   /// Uses `after_compaction_ind` as an embedded FIFO linked-list for the
   /// BFS queue, and cycle-sort for the final permutation.
   ///
-  /// Time: O(V + E) &nbsp; Extra space: O(1).
+  /// Time: O(V + E)
+  ///
+  /// Extra space: O(1).
   void kahn_toposort();
 };
 
@@ -154,10 +173,21 @@ auto AudioGraph<NodeType>::iter() {
   return nodes | std::views::transform([this](Node &node) {
            return Entry{
                *node.handle->audioNode,
-               node.inputs | std::views::transform([this](std::uint32_t idx) -> const NodeType & {
-                 return *nodes[idx].handle->audioNode;
-               })};
+               pool_.view(node.input_head) |
+                   std::views::transform([this](std::uint32_t idx) -> const NodeType & {
+                     return *nodes[idx].handle->audioNode;
+                   })};
          });
+}
+
+template <AudioGraphNode NodeType>
+InputPool &AudioGraph<NodeType>::pool() {
+  return pool_;
+}
+
+template <AudioGraphNode NodeType>
+const InputPool &AudioGraph<NodeType>::pool() const {
+  return pool_;
 }
 
 // ── Mutators ──────────────────────────────────────────────────────────────
@@ -176,49 +206,68 @@ void AudioGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle)
 template <AudioGraphNode NodeType>
 void AudioGraph<NodeType>::process() {
   if (topo_order_dirty) {
-    kahn_toposort();
     topo_order_dirty = false;
+    kahn_toposort();
+    if (topo_order_dirty) {
+      return;
+    }
   }
 
-  // Mark nodes for deletion and compact
-  std::uint32_t b = 0; // begin of moving window
-  std::uint32_t e = 0; // end of moving window
+  const auto n = static_cast<std::uint32_t>(nodes.size());
 
+  // ── Pass 1: mark deletions (cascading, left-to-right in topo order) ────
+  // A node is deleted when: orphaned && no live inputs && canBeDestructed().
+  // Because the array is topologically sorted, removing a source first lets
+  // its dependents see the updated input set and potentially cascade.
   for (auto &node : nodes) {
-    // Remove deleted inputs
-    node.inputs.erase(
-        std::remove_if(
-            node.inputs.begin(),
-            node.inputs.end(),
-            [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; }),
-        node.inputs.end());
+    pool_.removeIf(
+        node.input_head, [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; });
 
-    // Check if node qualifies for removal
-    if (node.orphaned && node.inputs.empty() && node.handle->audioNode->canBeDestructed()) {
+    if (node.orphaned && InputPool::isEmpty(node.input_head) &&
+        node.handle->audioNode->canBeDestructed()) {
       node.will_be_deleted = true;
-      e += 1;
-      continue;
     }
+  }
 
-    // Remap inputs to post-compaction indices
-    for (std::uint32_t &inp : node.inputs) {
-      if (nodes[inp].after_compaction_ind == -1)
-        continue;
+  // ── Compute new-position remap (stored in after_compaction_ind) ─────────
+  std::uint32_t new_pos = 0;
+  for (std::uint32_t i = 0; i < n; i++) {
+    if (!nodes[i].will_be_deleted) {
+      nodes[i].after_compaction_ind = static_cast<std::int32_t>(new_pos);
+      new_pos++;
+    }
+    // deleted nodes keep after_compaction_ind == -1 (default)
+  }
+
+  // ── Pass 2a: remap inputs to post-compaction indices ─────────────────────
+  // Must happen BEFORE shifting nodes, because shifting invalidates source
+  // positions that later nodes' inputs may still reference.
+  for (std::uint32_t e = 0; e < n; e++) {
+    if (nodes[e].will_be_deleted)
+      continue;
+    for (auto &inp : pool_.mutableView(nodes[e].input_head)) {
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
     }
+  }
 
+  // ── Pass 2b: compact — shift kept nodes left ───────────────────────────
+  std::uint32_t b = 0;
+  for (std::uint32_t e = 0; e < n; e++) {
+    if (nodes[e].will_be_deleted)
+      continue;
     if (b != e) {
-      std::swap(nodes[b], nodes[e]);
-      nodes[b].handle->index = b;
-      nodes[e].after_compaction_ind = static_cast<std::int32_t>(b);
+      nodes[b] = std::move(nodes[e]);
+      nodes[e].input_head = InputPool::kNull; // prevent double-free in truncation
     }
+    nodes[b].handle->index = b;
     b++;
-    e++;
   }
 
   // Truncate — dropping shared_ptr decrements refcount (2 → 1);
   // HostGraph detects this and destroys the ghost on the main thread.
-  for (std::uint32_t i = b; i < e; i++) {
+  for (std::uint32_t i = b; i < n; i++) {
+    // Free any lingering pool slots (should already be empty for deleted nodes)
+    pool_.freeAll(nodes[i].input_head);
     nodes[i].handle = nullptr;
   }
   nodes.resize(b);
@@ -240,7 +289,7 @@ void AudioGraph<NodeType>::kahn_toposort() {
 
   // Phase 1: compute out-degree
   for (const auto &nd : nodes) {
-    for (std::uint32_t inp : nd.inputs)
+    for (std::uint32_t inp : pool_.view(nd.input_head))
       nodes[inp].topo_out_degree++;
   }
 
@@ -268,7 +317,7 @@ void AudioGraph<NodeType>::kahn_toposort() {
     qh = nodes[idx].after_compaction_ind;
     nodes[idx].after_compaction_ind = static_cast<std::int32_t>(--write);
 
-    for (std::uint32_t inp : nodes[idx].inputs) {
+    for (std::uint32_t inp : pool_.view(nodes[idx].input_head)) {
       if (--nodes[inp].topo_out_degree == 0)
         enq(inp);
     }
@@ -276,7 +325,7 @@ void AudioGraph<NodeType>::kahn_toposort() {
 
   // Phase 3: remap input indices to new positions (before nodes move)
   for (auto &nd : nodes) {
-    for (std::uint32_t &inp : nd.inputs)
+    for (std::uint32_t &inp : pool_.mutableView(nd.input_head))
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
   }
 

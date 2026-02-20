@@ -91,8 +91,8 @@ TEST_F(AudioGraphTest, AddNode_EmptyGraph) {
 TEST_F(AudioGraphTest, TopoSort_LinearChain) {
   // 0 -> 1 -> 2  (inputs: 1 has 0, 2 has 1)
   auto h = addNodes(3);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[1]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
 
   graph.markDirty();
   graph.process();
@@ -105,8 +105,8 @@ TEST_F(AudioGraphTest, TopoSort_ReversedInsertion) {
   // Insert in reverse but edges say 0 -> 1 -> 2
   auto h = addNodes(3);
   // Wire: 2 needs 1, 1 needs 0
-  graph[h[2]->index].inputs.push_back(h[1]->index);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
 
   graph.markDirty();
   graph.process();
@@ -126,10 +126,10 @@ TEST_F(AudioGraphTest, TopoSort_Diamond) {
   //    \ /
   //     3
   auto h = addNodes(4);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[0]->index);
-  graph[h[3]->index].inputs.push_back(h[1]->index);
-  graph[h[3]->index].inputs.push_back(h[2]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
 
   graph.markDirty();
   graph.process();
@@ -147,9 +147,9 @@ TEST_F(AudioGraphTest, TopoSort_Diamond) {
 TEST_F(AudioGraphTest, TopoSort_FanIn) {
   // 0, 1, 2 all feed into 3
   auto h = addNodes(4);
-  graph[h[3]->index].inputs.push_back(h[0]->index);
-  graph[h[3]->index].inputs.push_back(h[1]->index);
-  graph[h[3]->index].inputs.push_back(h[2]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
 
   graph.markDirty();
   graph.process();
@@ -166,8 +166,8 @@ TEST_F(AudioGraphTest, TopoSort_FanIn) {
 TEST_F(AudioGraphTest, TopoSort_DisconnectedComponents) {
   // Two separate chains: 0->1   2->3
   auto h = addNodes(4);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[3]->index].inputs.push_back(h[2]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
 
   graph.markDirty();
   graph.process();
@@ -196,8 +196,8 @@ TEST_F(AudioGraphTest, TopoSort_SingleNode) {
 
 TEST_F(AudioGraphTest, TopoSort_SkippedWhenNotDirty) {
   auto h = addNodes(3);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[1]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
 
   graph.markDirty();
   graph.process();
@@ -217,12 +217,12 @@ TEST_F(AudioGraphTest, TopoSort_SkippedWhenNotDirty) {
 TEST_F(AudioGraphTest, Compact_RemovesOrphanedDestructibleLeaf) {
   // 3 nodes: 0 -> 1 -> 2, mark node 2 as orphaned
   auto h = addNodes(3, /*withAudioNode=*/true);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[1]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
   graph[h[2]->index].orphaned = true;
 
   // also clear node 2's inputs so it qualifies (orphaned + no inputs + canBeDestructed)
-  graph[h[2]->index].inputs.clear();
+  graph.pool().freeAll(graph[h[2]->index].input_head);
 
   graph.markDirty();
   graph.process();
@@ -238,7 +238,7 @@ TEST_F(AudioGraphTest, Compact_RemovesOrphanedDestructibleLeaf) {
 
 TEST_F(AudioGraphTest, Compact_KeepsOrphanedNodeWithInputs) {
   auto h = addNodes(2, /*withAudioNode=*/true);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
   graph[h[1]->index].orphaned = true;
 
   graph.markDirty();
@@ -304,22 +304,19 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
 TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
   auto h = addNodes(4, /*withAudioNode=*/true);
   // Chain: 0 -> 1 -> 2 -> 3
-  graph[h[1]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[1]->index);
-  graph[h[3]->index].inputs.push_back(h[2]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
 
   graph.markDirty();
   graph.process();
 
   // Now orphan node 1 (remove its inputs so it can be deleted)
   graph[h[1]->index].orphaned = true;
-  graph[h[1]->index].inputs.clear();
+  graph.pool().freeAll(graph[h[1]->index].input_head);
 
   // Also remove node 1 from node 2's inputs (otherwise it references a deleted node)
-  auto &n2inputs = graph[h[2]->index].inputs;
-  n2inputs.erase(
-      std::remove(n2inputs.begin(), n2inputs.end(), h[1]->index),
-      n2inputs.end());
+  graph.pool().remove(graph[h[2]->index].input_head, h[1]->index);
 
   graph.process();
 
@@ -366,7 +363,7 @@ TEST_F(AudioGraphTest, Compact_CascadingRemoval) {
   // 0 -> 1 (orphaned), node 1 has no other inputs
   // After removing 1, no further cascade because 0 is not orphaned
   auto h = addNodes(2, /*withAudioNode=*/true);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
 
   // Orphan node 0 — it has no inputs, so it's removable
   graph[h[0]->index].orphaned = true;
@@ -411,7 +408,7 @@ TEST_F(AudioGraphTest, Process_EmptyGraph) {
 
 TEST_F(AudioGraphTest, MarkDirty_Idempotent) {
   auto h = addNodes(2);
-  graph[h[1]->index].inputs.push_back(h[0]->index);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
 
   graph.markDirty();
   graph.markDirty();
@@ -435,14 +432,14 @@ TEST_F(AudioGraphTest, TopoSort_ComplexDAG) {
   //    \ /
   //     5
   auto h = addNodes(6);
-  graph[h[2]->index].inputs.push_back(h[0]->index);
-  graph[h[2]->index].inputs.push_back(h[1]->index);
-  graph[h[3]->index].inputs.push_back(h[0]->index);
-  graph[h[3]->index].inputs.push_back(h[2]->index);
-  graph[h[4]->index].inputs.push_back(h[2]->index);
-  graph[h[4]->index].inputs.push_back(h[1]->index);
-  graph[h[5]->index].inputs.push_back(h[3]->index);
-  graph[h[5]->index].inputs.push_back(h[4]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[h[4]->index].input_head, h[2]->index);
+  graph.pool().push(graph[h[4]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[5]->index].input_head, h[3]->index);
+  graph.pool().push(graph[h[5]->index].input_head, h[4]->index);
 
   graph.markDirty();
   graph.process();

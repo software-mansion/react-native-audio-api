@@ -53,6 +53,22 @@ class Graph {
     }
   }
 
+  /// @brief Runs toposort + compaction on the audio graph.
+  /// @note IMPORTANT: Should be called only from the audio thread.
+  void process() {
+    audioGraph.process();
+  }
+
+  /// @brief Returns an iterable view of nodes in topological order.
+  ///
+  /// Each entry contains a reference to the NodeType and an immutable view
+  /// of its inputs (as references to NodeType).
+  ///
+  /// @note IMPORTANT: Should be called only from the audio thread, after process().
+  [[nodiscard]] auto iter() {
+    return audioGraph.iter();
+  }
+
   /// @brief Adds a new node to the graph and returns a pointer to it.
   /// @param audioNode the audio processing node to add (ownership transferred)
   /// @return pointer to the newly added HostGraph::Node

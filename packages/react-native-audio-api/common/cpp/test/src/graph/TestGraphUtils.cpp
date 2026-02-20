@@ -34,7 +34,7 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyLis
     const auto &node = audioGraph[i];
     size_t nodeId = node.test_node_identifier__;
 
-    for (uint32_t inputIdx : node.inputs) {
+    for (uint32_t inputIdx : audioGraph.pool().view(node.input_head)) {
       if (inputIdx < audioGraph.size()) {
         size_t inputId = audioGraph[inputIdx].test_node_identifier__;
         adjacencyList[inputId].push_back(nodeId);
@@ -121,9 +121,9 @@ AudioGraph<MockNode> TestGraphUtils::createAudioGraphFromHostGraph(
     uint32_t idx = n->handle->index;
     audioGraph[idx].test_node_identifier__ = n->test_node_identifier__;
 
-    audioGraph[idx].inputs.clear();
+    audioGraph.pool().freeAll(audioGraph[idx].input_head);
     for (HostGraph<MockNode>::Node *input : n->inputs) {
-      audioGraph[idx].inputs.push_back(input->handle->index);
+      audioGraph.pool().push(audioGraph[idx].input_head, input->handle->index);
     }
   }
 
