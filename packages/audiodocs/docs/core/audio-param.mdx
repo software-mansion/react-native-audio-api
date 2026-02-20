@@ -3,7 +3,7 @@ sidebar_position: 4
 ---
 
 import { Optional, ReadOnly } from '@site/src/components/Badges';
-import {SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart, SetTargetAtTimeChart  } from '@site/src/components/Charts';
+import { SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart, SetTargetAtTimeChart, SetValueCurveAtTimeChart } from '@site/src/components/Charts';
 
 # AudioParam
 
@@ -118,7 +118,7 @@ This method is useful for decay or release portions of [ADSR envelopes](/docs/ef
 
 Schedules the parameters's value change following a curve defined by given array.
 
-![](/img/setValueCurveAtTime.png)
+<SetValueCurveAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
