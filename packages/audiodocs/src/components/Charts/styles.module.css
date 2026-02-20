@@ -15,4 +15,11 @@
 .label {
     fill: var(--ifm-font-color-base);
     font-weight: normal;
+    font-size: medium;
+}
+
+.referenceLabel {
+    fill: var(--ifm-font-color-base);
+    font-weight: normal;
+    font-size: small;
 }

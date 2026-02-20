@@ -1,6 +1,66 @@
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Line, ReferenceLine, Label } from 'recharts';
+import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Line, ReferenceLine, Label, ReferenceDot } from 'recharts';
 
 import styles from '../styles.module.css';
+
+const CustomLabelWithArrow = (props: any) => {
+    const { viewBox, cx, cy } = props;
+    
+    // Use cx/cy if available (from ReferenceDot), otherwise fallback to viewBox
+    const dotX = cx || viewBox?.cx || viewBox?.x || 0;
+    const dotY = cy || viewBox?.cy || viewBox?.y || 0;
+    
+    // Position label below the dot
+    const labelY = dotY + 30;
+    const arrowStartY = labelY;
+    const arrowEndY = dotY + 8;
+    
+    return (
+        <g>
+            {/* Arrow pointing from label to dot */}
+            <defs>
+                <marker
+                    id="arrow"
+                    markerWidth="10"
+                    markerHeight="10"
+                    refX="0"
+                    refY="3"
+                    orient="auto"
+                    markerUnits="strokeWidth"
+                >
+                    <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+                </marker>
+            </defs>
+            <line
+                x1={dotX}
+                y1={arrowStartY}
+                x2={dotX}
+                y2={arrowEndY}
+                stroke="currentColor"
+                strokeWidth="1.5"
+                markerEnd="url(#arrow)"
+            />
+            {/* Label text */}
+            <text
+                x={dotX}
+                y={labelY + 20}
+                textAnchor="middle"
+                className={styles.referenceLabel}
+                fill="currentColor"
+            >
+                timeConstant controls
+            </text>
+            <text
+                x={dotX}
+                y={labelY + 35}
+                textAnchor="middle"
+                className={styles.referenceLabel}
+                fill="currentColor"
+            >
+                the change rate
+            </text>
+        </g>
+    );
+};
 
 const generateSetTargetAtTimeData = () => {
     const startTime = 0.3;
@@ -74,8 +134,18 @@ const SetTargetAtTimeChart = () => (
         activeDot={false}
         isAnimationActive={true}
     />
+    <ReferenceDot 
+        x={0.65} 
+        y={0.7} 
+        r={4}
+        fill="currentColor" 
+        stroke="currentColor"
+        strokeWidth={2}
+        visibility={'hidden'}
+        label={(props) => <CustomLabelWithArrow {...props} />}
+    />
     <Tooltip active={false} />
 </LineChart>
 );
 
-export default  SetTargetAtTimeChart;
+export default SetTargetAtTimeChart;
