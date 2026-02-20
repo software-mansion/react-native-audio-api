@@ -3,7 +3,7 @@ sidebar_position: 4
 ---
 
 import { Optional, ReadOnly } from '@site/src/components/Badges';
-import { SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart } from '@site/src/components/Charts';
+import {SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart, SetTargetAtTimeChart  } from '@site/src/components/Charts';
 
 # AudioParam
 
@@ -98,6 +98,7 @@ Schedules a gradual change to the new value at the start time.
 This method is useful for decay or release portions of [ADSR envelopes](/docs/effects/gain-node#envelope---adsr).
 
 ![](/img/setTargetAtTime.png)
+<SetTargetAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
