@@ -41,23 +41,16 @@ namespace audioapi {
 BiquadFilterNode::BiquadFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BiquadFilterOptions &options)
-    : AudioNode(context, options) {
-  frequencyParam_ = std::make_shared<AudioParam>(
-      options.frequency, 0.0f, context->getNyquistFrequency(), context);
-  detuneParam_ = std::make_shared<AudioParam>(
-      options.detune,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      context);
-  QParam_ = std::make_shared<AudioParam>(
-      options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  gainParam_ = std::make_shared<AudioParam>(
-      options.gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = options.type;
-  x1_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  x2_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  y1_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  y2_.resize(MAX_CHANNEL_COUNT, 0.0f);
+    : AudioNode(context, options),
+      x1_(MAX_CHANNEL_COUNT),
+      x2_(MAX_CHANNEL_COUNT),
+      y1_(MAX_CHANNEL_COUNT),
+      y2_(MAX_CHANNEL_COUNT),
+      frequencyParam_(std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context)),
+      detuneParam_(std::make_shared<AudioParam>(options.detune, -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT, 1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT, context)),
+      QParam_(std::make_shared<AudioParam>(options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context)),
+      gainParam_(std::make_shared<AudioParam>(options.gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context)),
+      type_(options.type) {
   isInitialized_ = true;
 }
 

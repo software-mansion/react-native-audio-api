@@ -36,7 +36,6 @@
 #endif // RN_AUDIO_API_TEST
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 
@@ -79,10 +78,10 @@ class BiquadFilterNode : public AudioNode {
   BiquadFilterType type_;
 
   // delayed samples, one per channel
-  std::vector<float> x1_;
-  std::vector<float> x2_;
-  std::vector<float> y1_;
-  std::vector<float> y2_;
+  AudioArray x1_;
+  AudioArray x2_;
+  AudioArray y1_;
+  AudioArray y2_;
 
   // coefficients
   float b0_ = 1.0;

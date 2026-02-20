@@ -27,9 +27,10 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <complex>
-#include <vector>
 
 #include <memory>
+#include "audioapi/utils/AudioArray.h"
+#include "audioapi/utils/AudioBuffer.h"
 
 namespace audioapi {
 
@@ -56,15 +57,15 @@ class IIRFilterNode : public AudioNode {
  private:
   static constexpr size_t bufferLength = 32;
 
-  std::vector<float> feedforward_;
-  std::vector<float> feedback_;
+  AudioArray feedforward_;
+  AudioArray feedback_;
 
-  std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
-  std::vector<std::vector<float>> yBuffers_;
-  std::vector<size_t> bufferIndices;
+  AudioBuffer xBuffers_;
+  AudioBuffer yBuffers_;
+  AudioArray bufferIndices_;
 
   static std::complex<float>
-  evaluatePolynomial(const std::vector<float> coefficients, std::complex<float> z, int order) {
+  evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
     for (int k = order; k >= 0; --k)
