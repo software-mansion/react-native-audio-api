@@ -3,7 +3,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 
-#include <functional>
 #include <memory>
 
 namespace audioapi {

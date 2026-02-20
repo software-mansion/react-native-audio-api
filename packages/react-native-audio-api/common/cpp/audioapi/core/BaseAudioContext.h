@@ -8,10 +8,7 @@
 #include <cassert>
 #include <complex>
 #include <cstddef>
-#include <functional>
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 
 namespace audioapi {

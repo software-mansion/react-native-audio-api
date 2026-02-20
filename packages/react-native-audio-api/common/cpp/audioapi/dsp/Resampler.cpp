@@ -27,11 +27,9 @@
  */
 
 #include <audioapi/dsp/Resampler.h>
-#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
-#include <numbers>
 
 #if defined(__ARM_NEON)
 #include <arm_neon.h>

@@ -3,11 +3,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 

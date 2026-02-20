@@ -5,10 +5,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>
 
-#include <algorithm>
-#include <cmath>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 

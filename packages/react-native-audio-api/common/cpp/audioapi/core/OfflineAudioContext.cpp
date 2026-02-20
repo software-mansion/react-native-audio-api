@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 #include <memory>
 #include <thread>
 #include <utility>

@@ -3,7 +3,6 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include "BaseAudioContext.h"
 
-#include <map>
 #include <memory>
 #include <mutex>
 #include <unordered_map>

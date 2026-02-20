@@ -5,7 +5,6 @@
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

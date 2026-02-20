@@ -31,7 +31,6 @@
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
 #include <memory>
-#include <utility>
 #include <vector>
 
 namespace audioapi {

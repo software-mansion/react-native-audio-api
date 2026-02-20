@@ -2,7 +2,6 @@
 
 #include <audioapi/utils/AudioArray.h>
 #include <memory>
-#include <utility>
 
 #if !RN_AUDIO_API_TEST
 #include <jsi/jsi.h>

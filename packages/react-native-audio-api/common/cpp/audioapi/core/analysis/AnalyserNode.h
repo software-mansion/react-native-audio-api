@@ -3,11 +3,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/dsp/FFT.h>
 
-#include <algorithm>
 #include <complex>
 #include <cstddef>
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace audioapi {

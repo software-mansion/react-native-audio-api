@@ -4,7 +4,6 @@
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
@@ -12,7 +11,9 @@
 #include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {
-AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline AudioNodeOptions parseAudioNodeOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   AudioNodeOptions options;
 
   auto channelCountValue = optionsObject.getProperty(runtime, "channelCount");
@@ -45,7 +46,7 @@ AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object 
   return options;
 }
 
-GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   GainOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto gainValue = optionsObject.getProperty(runtime, "gain");
@@ -56,7 +57,7 @@ GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsOb
   return options;
 }
 
-StereoPannerOptions parseStereoPannerOptions(
+inline StereoPannerOptions parseStereoPannerOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   StereoPannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
@@ -69,7 +70,9 @@ StereoPannerOptions parseStereoPannerOptions(
   return options;
 }
 
-ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline ConvolverOptions parseConvolverOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   ConvolverOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto disableNormalizationValue = optionsObject.getProperty(runtime, "disableNormalization");
@@ -86,7 +89,7 @@ ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object 
   return options;
 }
 
-ConstantSourceOptions parseConstantSourceOptions(
+inline ConstantSourceOptions parseConstantSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   ConstantSourceOptions options;
@@ -99,7 +102,9 @@ ConstantSourceOptions parseConstantSourceOptions(
   return options;
 }
 
-AnalyserOptions parseAnalyserOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline AnalyserOptions parseAnalyserOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   AnalyserOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto fftSizeValue = optionsObject.getProperty(runtime, "fftSize");
@@ -125,7 +130,7 @@ AnalyserOptions parseAnalyserOptions(jsi::Runtime &runtime, const jsi::Object &o
   return options;
 }
 
-BiquadFilterOptions parseBiquadFilterOptions(
+inline BiquadFilterOptions parseBiquadFilterOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   BiquadFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
@@ -175,7 +180,9 @@ BiquadFilterOptions parseBiquadFilterOptions(
   return options;
 }
 
-OscillatorOptions parseOscillatorOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline OscillatorOptions parseOscillatorOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   OscillatorOptions options;
 
   auto typeValue = optionsObject.getProperty(runtime, "type");
@@ -214,7 +221,7 @@ OscillatorOptions parseOscillatorOptions(jsi::Runtime &runtime, const jsi::Objec
   return options;
 }
 
-BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
+inline BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   BaseAudioBufferSourceOptions options;
@@ -237,7 +244,7 @@ BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
   return options;
 }
 
-AudioBufferSourceOptions parseAudioBufferSourceOptions(
+inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   AudioBufferSourceOptions options(parseBaseAudioBufferSourceOptions(runtime, optionsObject));
@@ -267,7 +274,9 @@ AudioBufferSourceOptions parseAudioBufferSourceOptions(
   return options;
 }
 
-StreamerOptions parseStreamerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline StreamerOptions parseStreamerOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   auto options = StreamerOptions();
   if (optionsObject.hasProperty(runtime, "streamPath")) {
     options.streamPath =
@@ -276,7 +285,7 @@ StreamerOptions parseStreamerOptions(jsi::Runtime &runtime, const jsi::Object &o
   return options;
 }
 
-DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   DelayOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto maxDelayTimeValue = optionsObject.getProperty(runtime, "maxDelayTime");
@@ -292,7 +301,9 @@ DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &options
   return options;
 }
 
-IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline IIRFilterOptions parseIIRFilterOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   IIRFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto feedforwardValue = optionsObject.getProperty(runtime, "feedforward");
@@ -320,7 +331,9 @@ IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object 
   return options;
 }
 
-WaveShaperOptions parseWaveShaperOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+inline WaveShaperOptions parseWaveShaperOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
   WaveShaperOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto oversampleValue = optionsObject.getProperty(runtime, "oversample");

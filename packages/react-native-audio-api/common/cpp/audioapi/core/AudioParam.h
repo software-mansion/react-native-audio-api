@@ -9,7 +9,6 @@
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <cstddef>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 

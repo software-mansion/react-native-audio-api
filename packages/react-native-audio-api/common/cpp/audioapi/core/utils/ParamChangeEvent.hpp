@@ -3,7 +3,6 @@
 #include <audioapi/core/types/ParamChangeEventType.h>
 
 #include <functional>
-#include <memory>
 #include <utility>
 
 namespace audioapi {

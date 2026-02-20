@@ -9,7 +9,6 @@
 #include <jsi/jsi.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 
