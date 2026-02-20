@@ -85,7 +85,7 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
       EXPECT_FLOAT_EQ(
           (*resultBuffer->getChannel(0))[i],
           static_cast<float>(
-              i + 1 - FRAMES_TO_PROCESS / 2)); // Last 64 samples should be 1st part of buffer
+              i + 1 - FRAMES_TO_PROCESS / 2.0)); // Last 64 samples should be 1st part of buffer
     }
   }
 }
@@ -108,7 +108,7 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of buffer
       EXPECT_FLOAT_EQ(
-          (*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2));
+          (*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2.0));
     } else {
       EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i],
                       0.0f); // Last 64 samples should be zero

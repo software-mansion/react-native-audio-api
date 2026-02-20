@@ -294,47 +294,31 @@ void AudioBuffer::sumByUpMixing(
   auto numberOfSourceChannels = source.getNumberOfChannels();
   auto numberOfChannels = getNumberOfChannels();
 
+  auto mix = [&](int srcType, int dstType) {
+    getChannelByType(dstType)->sum(
+        *source.getChannelByType(srcType), sourceStart, destinationStart, length);
+  };
+
   // Mono to stereo (1 -> 2, 4)
   if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
-    AudioArray *sourceChannel = source.getChannelByType(ChannelMono);
-
-    getChannelByType(ChannelLeft)->sum(*sourceChannel, sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)->sum(*sourceChannel, sourceStart, destinationStart, length);
-    return;
-  }
-
+    mix(ChannelMono, ChannelLeft);
+    mix(ChannelMono, ChannelRight);
   // Mono to 5.1 (1 -> 6)
-  if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
-    AudioArray *sourceChannel = source.getChannel(0);
-
-    getChannelByType(ChannelCenter)->sum(*sourceChannel, sourceStart, destinationStart, length);
-    return;
-  }
-
+  } else if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
+    mix(ChannelMono, ChannelCenter);
   // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
-  if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
-    getChannelByType(ChannelLeft)
-        ->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)
-        ->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    return;
-  }
-
+  } else if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
+    mix(ChannelLeft, ChannelLeft);
+    mix(ChannelRight, ChannelRight);
   // Stereo 4 to 5.1 (4 -> 6)
-  if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
-    getChannelByType(ChannelLeft)
-        ->sum(*source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)
-        ->sum(*source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    getChannelByType(ChannelSurroundLeft)
-        ->sum(*source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
-    getChannelByType(ChannelSurroundRight)
-        ->sum(
-            *source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
-    return;
+  } else if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
+    mix(ChannelLeft, ChannelLeft);
+    mix(ChannelRight, ChannelRight);
+    mix(ChannelSurroundLeft, ChannelSurroundLeft);
+    mix(ChannelSurroundRight, ChannelSurroundRight);
+  } else {
+    discreteSum(source, sourceStart, destinationStart, length);
   }
-
-  discreteSum(source, sourceStart, destinationStart, length);
 }
 
 void AudioBuffer::sumByDownMixing(
@@ -345,149 +329,53 @@ void AudioBuffer::sumByDownMixing(
   auto numberOfSourceChannels = source.getNumberOfChannels();
   auto numberOfChannels = getNumberOfChannels();
 
-  // Stereo to mono (2 -> 1): output += 0.5 * (input.left + input.right).
+  auto mix = [&](int srcType, int dstType, float scale = 1.0f) {
+    getChannelByType(dstType)->sum(
+        *source.getChannelByType(srcType), sourceStart, destinationStart, length, scale);
+  };
+
+  // Stereo to mono (2 -> 1): output += 0.5 * (input.L + input.R)
   if (numberOfSourceChannels == 2 && numberOfChannels == 1) {
-    auto destinationData = getChannelByType(ChannelMono);
-
-    destinationData->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationData->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
-    return;
+    mix(ChannelLeft, ChannelMono, 0.5f);
+    mix(ChannelRight, ChannelMono, 0.5f);
+  // Stereo 4 to mono (4 -> 1): output += 0.25 * (input.L + input.R + input.SL + input.SR)
+  } else if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
+    mix(ChannelLeft, ChannelMono, 0.25f);
+    mix(ChannelRight, ChannelMono, 0.25f);
+    mix(ChannelSurroundLeft, ChannelMono, 0.25f);
+    mix(ChannelSurroundRight, ChannelMono, 0.25f);
+  // 5.1 to mono (6 -> 1): output += sqrt(0.5)*(L+R) + C + 0.5*(SL+SR)
+  } else if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
+    mix(ChannelLeft, ChannelMono, SQRT_HALF);
+    mix(ChannelRight, ChannelMono, SQRT_HALF);
+    mix(ChannelCenter, ChannelMono);
+    mix(ChannelSurroundLeft, ChannelMono, 0.5f);
+    mix(ChannelSurroundRight, ChannelMono, 0.5f);
+  // Stereo 4 to stereo 2 (4 -> 2): L += 0.5*(L+SL), R += 0.5*(R+SR)
+  } else if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
+    mix(ChannelLeft, ChannelLeft, 0.5f);
+    mix(ChannelSurroundLeft, ChannelLeft, 0.5f);
+    mix(ChannelRight, ChannelRight, 0.5f);
+    mix(ChannelSurroundRight, ChannelRight, 0.5f);
+  // 5.1 to stereo (6 -> 2): L += L + sqrt(0.5)*(C+SL), R += R + sqrt(0.5)*(C+SR)
+  } else if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
+    mix(ChannelLeft, ChannelLeft);
+    mix(ChannelCenter, ChannelLeft, SQRT_HALF);
+    mix(ChannelSurroundLeft, ChannelLeft, SQRT_HALF);
+    mix(ChannelRight, ChannelRight);
+    mix(ChannelCenter, ChannelRight, SQRT_HALF);
+    mix(ChannelSurroundRight, ChannelRight, SQRT_HALF);
+  // 5.1 to stereo 4 (6 -> 4): L += L + sqrt(0.5)*C, R += R + sqrt(0.5)*C, SL += SL, SR += SR
+  } else if (numberOfSourceChannels == 6 && numberOfChannels == 4) {
+    mix(ChannelLeft, ChannelLeft);
+    mix(ChannelCenter, ChannelLeft, SQRT_HALF);
+    mix(ChannelRight, ChannelRight);
+    mix(ChannelCenter, ChannelRight, SQRT_HALF);
+    mix(ChannelSurroundLeft, ChannelSurroundLeft);
+    mix(ChannelSurroundRight, ChannelSurroundRight);
+  } else {
+    discreteSum(source, sourceStart, destinationStart, length);
   }
-
-  // Stereo 4 to mono (4 -> 1):
-  // output += 0.25 * (input.left + input.right + input.surroundLeft +
-  // input.surroundRight)
-  if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
-    auto destinationData = getChannelByType(ChannelMono);
-
-    destinationData->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.25f);
-    destinationData->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.25f);
-    destinationData->sum(
-        *source.getChannelByType(ChannelSurroundLeft),
-        sourceStart,
-        destinationStart,
-        length,
-        0.25f);
-    destinationData->sum(
-        *source.getChannelByType(ChannelSurroundRight),
-        sourceStart,
-        destinationStart,
-        length,
-        0.25f);
-    return;
-  }
-
-  // 5.1 to mono (6 -> 1):
-  // output += sqrt(1/2) * (input.left + input.right) + input.center + 0.5 *
-  // (input.surroundLeft + input.surroundRight)
-  if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
-    auto destinationData = getChannelByType(ChannelMono);
-
-    destinationData->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationData->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationData->sum(
-        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length);
-    destinationData->sum(
-        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationData->sum(
-        *source.getChannelByType(ChannelSurroundRight),
-        sourceStart,
-        destinationStart,
-        length,
-        0.5f);
-    return;
-  }
-
-  // Stereo 4 to stereo 2 (4 -> 2):
-  // output.left += 0.5 * (input.left +  input.surroundLeft)
-  // output.right += 0.5 * (input.right + input.surroundRight)
-  if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
-    auto destinationLeft = getChannelByType(ChannelLeft);
-    auto destinationRight = getChannelByType(ChannelRight);
-
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length, 0.5f);
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length, 0.5f);
-
-    destinationRight->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length, 0.5f);
-    destinationRight->sum(
-        *source.getChannelByType(ChannelSurroundRight),
-        sourceStart,
-        destinationStart,
-        length,
-        0.5f);
-    return;
-  }
-
-  // 5.1 to stereo (6 -> 2):
-  // output.left += input.left + sqrt(1/2) * (input.center + input.surroundLeft)
-  // output.right += input.right + sqrt(1/2) * (input.center +
-  // input.surroundRight)
-  if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
-    auto destinationLeft = getChannelByType(ChannelLeft);
-    auto destinationRight = getChannelByType(ChannelRight);
-
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelSurroundLeft),
-        sourceStart,
-        destinationStart,
-        length,
-        SQRT_HALF);
-
-    destinationRight->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    destinationRight->sum(
-        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-    destinationRight->sum(
-        *source.getChannelByType(ChannelSurroundRight),
-        sourceStart,
-        destinationStart,
-        length,
-        SQRT_HALF);
-    return;
-  }
-
-  // 5.1 to stereo 4 (6 -> 4):
-  // output.left += input.left + sqrt(1/2) * input.center
-  // output.right += input.right + sqrt(1/2) * input.center
-  // output.surroundLeft += input.surroundLeft
-  // output.surroundRight += input.surroundRight
-  if (numberOfSourceChannels == 6 && numberOfChannels == 4) {
-    auto destinationLeft = getChannelByType(ChannelLeft);
-    auto destinationRight = getChannelByType(ChannelRight);
-    auto destinationSurroundLeft = getChannelByType(ChannelSurroundLeft);
-    auto destinationSurroundRight = getChannelByType(ChannelSurroundRight);
-
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
-    destinationLeft->sum(
-        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-
-    destinationRight->sum(
-        *source.getChannelByType(ChannelRight), sourceStart, destinationStart, length);
-    destinationRight->sum(
-        *source.getChannelByType(ChannelCenter), sourceStart, destinationStart, length, SQRT_HALF);
-
-    destinationSurroundLeft->sum(
-        *source.getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
-    destinationSurroundRight->sum(
-        *source.getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
-    return;
-  }
-
-  discreteSum(source, sourceStart, destinationStart, length);
 }
 
 } // namespace audioapi

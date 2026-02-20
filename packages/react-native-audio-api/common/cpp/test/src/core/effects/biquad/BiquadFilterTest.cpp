@@ -1,6 +1,6 @@
 #include <audioapi/types/NodeOptions.h>
-#include <test/src/biquad/BiquadFilterChromium.h>
-#include <test/src/biquad/BiquadFilterTest.h>
+#include <test/src/core/effects/biquad/BiquadFilterChromium.h>
+#include <test/src/core/effects/biquad/BiquadFilterTest.h>
 #include <memory>
 #include <vector>
 
