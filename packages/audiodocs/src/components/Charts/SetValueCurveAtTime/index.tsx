@@ -65,11 +65,11 @@ const SetValueCurveAtTimeChart = () => (
         activeDot={false}
         isAnimationActive={true}
     />
-    <ReferenceDot x={0.2} y={0.5} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[0]', position: 'top', className: styles.referenceLabel }}/>
-    <ReferenceDot x={0.3} y={0.35} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[1]', position: 'bottom', className: styles.referenceLabel }}/>
-    <ReferenceDot x={0.4} y={0.6} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[2]', position: 'top', className: styles.referenceLabel }}/>
-    <ReferenceDot x={0.5} y={0.45} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[3]', position: 'bottom', className: styles.referenceLabel }}/>
-    <ReferenceDot x={0.6} y={0.7} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[4]', position: 'top', className: styles.referenceLabel }}/>
+    <ReferenceDot x={0.2} y={0.5} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[0]', position: 'top', className: styles.label }}/>
+    <ReferenceDot x={0.3} y={0.35} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[1]', position: 'bottom', className: styles.label }}/>
+    <ReferenceDot x={0.4} y={0.6} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[2]', position: 'top', className: styles.label }}/>
+    <ReferenceDot x={0.5} y={0.45} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[3]', position: 'bottom', className: styles.label }}/>
+    <ReferenceDot x={0.6} y={0.7} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[4]', position: 'top', className: styles.label }}/>
     <Tooltip active={false} />
 </LineChart>
 );
