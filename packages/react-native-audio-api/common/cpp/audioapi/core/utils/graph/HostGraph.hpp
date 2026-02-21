@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
+#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/Result.hpp>
@@ -16,6 +17,8 @@ namespace audioapi::utils::graph {
 
 template <AudioGraphNode NodeType>
 class HostGraph;
+template <AudioGraphNode NodeType>
+class Graph;
 class TestGraphUtils;
 
 /// @brief Main-thread graph mirror that keeps structure in sync with AudioGraph.
@@ -40,8 +43,12 @@ class HostGraph {
     EDGE_ALREADY_EXISTS,
   };
 
+  /// Size of the Disposer payload (= sizeof(std::unique_ptr<T[]>)).
+  static constexpr size_t kDisposerPayloadSize = 8;
+
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
-  using AGEvent = FatFunction<32, void(AudioGraph<NodeType> &)>;
+  /// The second argument is the Disposer used to offload buffer deallocation.
+  using AGEvent = FatFunction<32, void(AudioGraph<NodeType> &, Disposer<kDisposerPayloadSize> &)>;
 
   using Res = Result<AGEvent, ResultError>;
 
@@ -99,8 +106,15 @@ class HostGraph {
   /// @return AGEvent that removes the input on the AudioGraph side.
   Res removeEdge(Node *from, Node *to);
 
+  /// @brief Current number of live (non-ghost) edges.
+  [[nodiscard]] size_t edgeCount() const;
+
+  /// @brief Current number of nodes (including ghosts).
+  [[nodiscard]] size_t nodeCount() const;
+
  private:
   std::vector<Node *> nodes;
+  size_t edgeCount_ = 0;
   size_t last_term = 0; // monotonic counter for traversal freshness
 
   /// @brief DFS reachability check (traverses ghosts too).
@@ -110,6 +124,7 @@ class HostGraph {
   /// `use_count() == 1`, meaning AudioGraph has released its reference.
   void collectDisposedNodes();
 
+  friend class Graph<NodeType>;
   friend class TestGraphUtils;
   friend class HostGraphTest;
   friend class GraphCycleDebugTest;
@@ -150,7 +165,8 @@ HostGraph<NodeType>::~HostGraph() {
 
 template <AudioGraphNode NodeType>
 HostGraph<NodeType>::HostGraph(HostGraph &&other) noexcept
-    : nodes(std::move(other.nodes)), last_term(other.last_term) {
+    : nodes(std::move(other.nodes)), edgeCount_(other.edgeCount_), last_term(other.last_term) {
+  other.edgeCount_ = 0;
   other.last_term = 0;
 }
 
@@ -160,7 +176,9 @@ auto HostGraph<NodeType>::operator=(HostGraph &&other) noexcept -> HostGraph & {
     for (Node *n : nodes)
       delete n;
     nodes = std::move(other.nodes);
+    edgeCount_ = other.edgeCount_;
     last_term = other.last_term;
+    other.edgeCount_ = 0;
     other.last_term = 0;
   }
   return *this;
@@ -169,13 +187,11 @@ auto HostGraph<NodeType>::operator=(HostGraph &&other) noexcept -> HostGraph & {
 template <AudioGraphNode NodeType>
 auto HostGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle)
     -> std::pair<Node *, AGEvent> {
-  collectDisposedNodes();
-
   Node *newNode = new Node();
   newNode->handle = handle;
   nodes.push_back(newNode);
 
-  auto event = [h = std::move(handle)](auto &graph) {
+  auto event = [h = std::move(handle)](auto &graph, auto &) {
     graph.addNode(h);
   };
 
@@ -192,13 +208,11 @@ auto HostGraph<NodeType>::removeNode(Node *node) -> Res {
   node->ghost = true;
 
   return Res::Ok(
-      [h = node->handle](AudioGraph<NodeType> &graph) { graph[h->index].orphaned = true; });
+      [h = node->handle](AudioGraph<NodeType> &graph, auto &) { graph[h->index].orphaned = true; });
 }
 
 template <AudioGraphNode NodeType>
 auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
-  collectDisposedNodes();
-
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -218,8 +232,9 @@ auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
+  edgeCount_++;
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph, auto &) {
     graph.pool().push(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
@@ -227,8 +242,6 @@ auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
 
 template <AudioGraphNode NodeType>
 auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
-  collectDisposedNodes();
-
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -246,8 +259,9 @@ auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
     to->inputs.erase(itIn);
   }
   from->outputs.erase(itOut);
+  edgeCount_--;
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph, auto &) {
     graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
@@ -282,10 +296,29 @@ bool HostGraph<NodeType>::hasPath(Node *start, Node *end) {
 }
 
 template <AudioGraphNode NodeType>
+size_t HostGraph<NodeType>::edgeCount() const {
+  return edgeCount_;
+}
+
+template <AudioGraphNode NodeType>
+size_t HostGraph<NodeType>::nodeCount() const {
+  return nodes.size();
+}
+
+template <AudioGraphNode NodeType>
 void HostGraph<NodeType>::collectDisposedNodes() {
   for (auto it = nodes.begin(); it != nodes.end();) {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
+      // ~Node() tears down edges from neighbor lists.
+      // Each edge in n->inputs or n->outputs that connects to a non-ghost
+      // peer was already counted in edgeCount_. Ghost-to-ghost edges were
+      // already decremented when the endpoints became ghosts, but the
+      // destructor still cleans the adjacency lists.
+      // We decrement for each unique edge (stored once in outputs).
+      edgeCount_ -= n->outputs.size();
+      // Also for edges where this ghost is a destination (stored in inputs).
+      edgeCount_ -= n->inputs.size();
       *it = nodes.back();
       nodes.pop_back();
       delete n;

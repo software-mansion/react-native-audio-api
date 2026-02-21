@@ -100,6 +100,13 @@ class AudioGraph {
   [[nodiscard]] InputPool &pool();
   [[nodiscard]] const InputPool &pool() const;
 
+  /// @brief Pre-reserves the internal node vector to at least `capacity`.
+  ///
+  /// Call from `processGrowEvents()` (outside the allocation-free zone)
+  /// so that subsequent `addNode` calls within `processEvents()` do not
+  /// trigger vector reallocation.
+  void reserveNodes(std::uint32_t capacity);
+
   // ── Mutators ────────────────────────────────────────────────────────────
 
   /// @brief Marks the topological ordering as dirty so the next process()
@@ -188,6 +195,11 @@ InputPool &AudioGraph<NodeType>::pool() {
 template <AudioGraphNode NodeType>
 const InputPool &AudioGraph<NodeType>::pool() const {
   return pool_;
+}
+
+template <AudioGraphNode NodeType>
+void AudioGraph<NodeType>::reserveNodes(std::uint32_t capacity) {
+  nodes.reserve(capacity);
 }
 
 // ── Mutators ──────────────────────────────────────────────────────────────

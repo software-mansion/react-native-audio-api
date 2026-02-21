@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
+#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include "TestGraphUtils.h"
@@ -12,6 +13,9 @@ namespace audioapi::utils::graph {
 
 class HostGraphTest : public ::testing::Test {
  protected:
+  static constexpr size_t kPayloadSize = HostGraph<MockNode>::kDisposerPayloadSize;
+  DisposerImpl<kPayloadSize> disposer_{64};
+
   void verifyAddEdge(HostGraph<MockNode>& hostGraph, AudioGraph<MockNode>& audioGraph, size_t fromId, size_t toId, const std::vector<std::vector<size_t>>& expectedAdjacencyList) {
     // Find nodes by ID
 
@@ -39,7 +43,7 @@ class HostGraphTest : public ::testing::Test {
 
     // Perform Event
     auto event = std::move(result).unwrap();
-    event(audioGraph);
+    event(audioGraph, disposer_);
 
     // Verify AudioGraph<MockNode> UPDATED and CONSISTENT
     auto finalAudioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
@@ -74,7 +78,7 @@ TEST_F(HostGraphTest, AddNode) {
   // AudioGraph<MockNode> unchanged before event
   EXPECT_EQ(audioGraph.size(), 3u);
 
-  event(audioGraph);
+  event(audioGraph, disposer_);
 
   // After event: node added to AudioGraph<MockNode>
   EXPECT_EQ(audioGraph.size(), 4u);
@@ -323,7 +327,7 @@ TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
 
   // Execute the remove-event on AudioGraph<MockNode> (only sets orphaned=true).
   auto removeEvent = std::move(removeResult).unwrap();
-  removeEvent(audioGraph);
+  removeEvent(audioGraph, disposer_);
 
   // AudioGraph<MockNode> still has the ghost: 0 → 1(orphaned) → 2
   EXPECT_EQ(audioGraph.size(), 3u);

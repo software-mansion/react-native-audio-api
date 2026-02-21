@@ -103,10 +103,10 @@ class MockGraphProcessor {
     AudioThreadGuard::disarm();
 
     while (running_.load(std::memory_order_acquire)) {
-      // Event draining may allocate (vector growth inside AudioGraph) — unguarded
+      // Drain events (grow + graph-mutation). May allocate — unguarded.
       graph_.processEvents();
 
-      // Processing phase must be allocation-free
+      // Everything below must be allocation-free
       {
         AudioThreadGuard::Scope guard;
 

@@ -21,9 +21,12 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   using HNode = HostGraph<MNode>::Node;
   using AGEvent = HostGraph<MNode>::AGEvent;
 
+  static constexpr size_t kPayloadSize = HostGraph<MNode>::kDisposerPayloadSize;
+
   std::mt19937_64 rng;
   AudioGraph<MNode> audioGraph;
   HostGraph<MNode> hostGraph;
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::vector<HNode *> liveNodes;
   size_t nextId = 0;
 
@@ -39,7 +42,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     auto [hostNode, event] = hostGraph.addNode(handle);
     size_t id = nextId++;
     hostNode->test_node_identifier__ = id;
-    event(audioGraph);
+    event(audioGraph, disposer_);
     audioGraph[handle->index].test_node_identifier__ = id;
     liveNodes.push_back(hostNode);
     return hostNode;
@@ -49,7 +52,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     auto result = hostGraph.removeNode(node);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
-      event(audioGraph);
+      event(audioGraph, disposer_);
     }
     // Remove from live tracking
     liveNodes.erase(
@@ -60,7 +63,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
-      event(audioGraph);
+      event(audioGraph, disposer_);
       return true;
     }
     return false;
@@ -70,7 +73,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     auto result = hostGraph.removeEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
-      event(audioGraph);
+      event(audioGraph, disposer_);
       return true;
     }
     return false;
