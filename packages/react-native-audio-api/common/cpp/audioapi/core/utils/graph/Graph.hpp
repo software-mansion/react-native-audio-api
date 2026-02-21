@@ -10,9 +10,9 @@
 
 #include <audioapi/utils/Result.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <algorithm>
 #include <utility>
 
 namespace audioapi::utils::graph {
