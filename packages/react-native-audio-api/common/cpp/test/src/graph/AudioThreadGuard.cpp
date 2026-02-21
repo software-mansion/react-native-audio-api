@@ -94,6 +94,11 @@ bool AudioThreadGuard::Scope::clean() const {
 // Disabled when ASan or TSan is active — they provide their own
 // new/delete interceptors and would conflict.
 
+// __has_feature is Clang-only; GCC uses __SANITIZE_ADDRESS__ / __SANITIZE_THREAD__.
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
 #if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \
     !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer)
 
