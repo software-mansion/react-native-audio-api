@@ -12,7 +12,6 @@
   justify-content: center;
   background-color: var(--swm-off-background);
   color: var(--swm-sidebar-menu-color);
-  transition: background-color 0.2s, border-color 0.2s;
   position: relative;
 }
 
@@ -32,6 +31,10 @@
   margin: -1px;
   margin-top: 24px;
   overflow: scroll;
+}
+
+.codeContainer pre {
+  border-color: var(--swm-tab);
 }
 
 .loopRows {
@@ -71,7 +74,7 @@
 .select {
   width: 100%;
   padding: 8px;
-  border: 1px solid var(--swm-border);
+  border: 1px solid var(--swm-tab);
   background-color: var(--ifm-background-color);
   color: var(--ifm-font-color-base);
 }
@@ -103,6 +106,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  padding: 12px;
 }
 
 .playButton {

@@ -27,7 +27,7 @@ export const WaveformVisualizer: FC<{
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, logicalWidth, logicalHeight);
       context.lineWidth = 2;
-      context.strokeStyle = theme === "dark" ? "#55b1e3" : "#38acdd";
+      context.strokeStyle = theme === "dark" ? "#ff7774" : "#fa7f7c";
       context.beginPath();
 
       const data = new Uint8Array(fftSize);
