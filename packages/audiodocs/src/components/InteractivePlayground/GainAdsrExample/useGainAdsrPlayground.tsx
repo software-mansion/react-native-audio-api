@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import GainAdsrExample from "./GainAdsrExample";
-import LocalMuiTheme from "../interactivePlaygroundMuiTheme";
-
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Slider from "@mui/material/Slider";
+import SliderInput from "@site/src/ui/SliderInput";
+import styles from "../styles.module.css";
 
 const initialState = {
   attack: 1,
@@ -52,57 +49,46 @@ osc.stop(now + ${(attack + decay + release).toFixed(2)});
 `;
 
   const controls = (
-    <LocalMuiTheme>
-      <Box
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Typography gutterBottom>Attack: {attack.toFixed(2)}s</Typography>
-        <Slider
-          value={attack}
-          min={0.01}
-          max={2}
-          step={0.01}
-          onChange={(e, v) => setAttack(v as number)}
-          valueLabelDisplay="auto"
-        />
+    <div className={styles.controlsPanel}>
+      <SliderInput
+        label="Attack"
+        value={attack}
+        min={0.01}
+        max={2}
+        step={0.01}
+        unit="s"
+        onChange={setAttack}
+      />
 
-        <Typography gutterBottom>Decay: {decay.toFixed(2)}s</Typography>
-        <Slider
-          value={decay}
-          min={0.01}
-          max={2}
-          step={0.01}
-          onChange={(e, v) => setDecay(v as number)}
-          valueLabelDisplay="auto"
-        />
+      <SliderInput
+        label="Decay"
+        value={decay}
+        min={0.01}
+        max={2}
+        step={0.01}
+        unit="s"
+        onChange={setDecay}
+      />
 
-        <Typography gutterBottom>Sustain: {sustain.toFixed(2)}</Typography>
-        <Slider
-          value={sustain}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={(e, v) => setSustain(v as number)}
-          valueLabelDisplay="auto"
-        />
+      <SliderInput
+        label="Sustain"
+        value={sustain}
+        min={0}
+        max={1}
+        step={0.01}
+        onChange={setSustain}
+      />
 
-        <Typography gutterBottom>Release: {release.toFixed(2)}s</Typography>
-        <Slider
-          value={release}
-          min={0.01}
-          max={3}
-          step={0.01}
-          onChange={(e, v) => setRelease(v as number)}
-          valueLabelDisplay="auto"
-        />
-      </Box>
-    </LocalMuiTheme>
+      <SliderInput
+        label="Release"
+        value={release}
+        min={0.01}
+        max={3}
+        step={0.01}
+        unit="s"
+        onChange={setRelease}
+      />
+    </div>
   );
 
   return {

@@ -1,12 +1,14 @@
-import React, { FC, ReactNode, useState } from "react";
 import { useColorMode } from "@docusaurus/theme-common";
+import React, { FC, ReactNode, useState } from "react";
 //@ts-ignore
 import CodeBlock from "@theme/CodeBlock";
-import styles from "./styles.module.css";
 
-import Reset from "@site/static/img/reset.svg";
-import ResetDark from "@site/static/img/reset-dark.svg";
 import AnimableIcon, { Animation } from "@site/src/components/AnimableIcon";
+import DetailBox from "@site/src/ui/DetailBox";
+import ResetDark from "@site/static/img/reset-dark.svg";
+import Reset from "@site/static/img/reset.svg";
+
+import styles from "./styles.module.css";
 
 interface PlaygroundHookResult {
   example: FC<any>;
@@ -19,6 +21,7 @@ interface PlaygroundHookResult {
 
 interface InteractivePlaygroundProps {
   usePlayground: () => PlaygroundHookResult;
+  tag: string;
 }
 
 const PlaygroundContent: FC<{ usePlayground: () => PlaygroundHookResult }> = ({
@@ -59,6 +62,7 @@ const PlaygroundContent: FC<{ usePlayground: () => PlaygroundHookResult }> = ({
 
 const InteractivePlayground: FC<InteractivePlaygroundProps> = ({
   usePlayground,
+  tag,
 }) => {
   const [key, setKey] = useState(0);
 
@@ -67,7 +71,7 @@ const InteractivePlayground: FC<InteractivePlaygroundProps> = ({
   };
 
   return (
-    <div className={styles.container}>
+    <DetailBox tag={tag} info="interactive playground" startOpen>
       <div className={styles.resetButtonContainer}>
         <AnimableIcon
           icon={<Reset />}
@@ -83,7 +87,7 @@ const InteractivePlayground: FC<InteractivePlaygroundProps> = ({
       </div>
 
       <PlaygroundContent key={key} usePlayground={usePlayground} />
-    </div>
+    </DetailBox>
   );
 };
 

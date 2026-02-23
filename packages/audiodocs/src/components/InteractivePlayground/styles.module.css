@@ -1,34 +1,18 @@
-.container {
-  padding: 16px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  background-color: var(--swm-card-background);
-  border: 1px solid var(--swm-card-border);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  position: relative;
-  transition: border-color 0.2s;
-}
-
 .topRow {
   display: flex;
   flex-direction: row;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .previewBox {
   flex: 1;
-  border-radius: 8px;
-  border: 1px solid var(--swm-border);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   background-color: var(--swm-off-background);
   color: var(--swm-sidebar-menu-color);
   transition: background-color 0.2s, border-color 0.2s;
-  aspect-ratio: 1;
-  max-width: 350px;
   position: relative;
 }
 
@@ -36,14 +20,18 @@
   flex: 1;
 }
 
+.controlsPanel {
+  padding-right: 16px;
+  background-color: var(--swm-off-background);
+}
+
 .codeContainer {
   margin-top: 16px;
-  background-color: var(--swm-card-background);
   overflow: hidden;
   position: relative;
-  border-radius: 0 0 6px 6px;
-  margin: 16px -16px -16px -16px;
-  padding: 16px;
+  margin: -1px;
+  margin-top: 24px;
+  overflow: scroll;
 }
 
 .loopRows {
@@ -54,9 +42,8 @@
 }
 
 .trackTitle {
-  margin-bottom: 16px;
+  margin: 16px 0;
   font-weight: 600;
-  margin-top: 0;
   color: var(--ifm-heading-color);
   transition: color 0.2s;
 }
@@ -84,7 +71,6 @@
 .select {
   width: 100%;
   padding: 8px;
-  border-radius: 4px;
   border: 1px solid var(--swm-border);
   background-color: var(--ifm-background-color);
   color: var(--ifm-font-color-base);
@@ -108,36 +94,6 @@
   margin: 24px 0;
 }
 
-.slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  background: var(--swm-interactive-slider-rail);
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-}
-
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--swm-interactive-slider);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: var(--swm-interactive-slider);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-}
-
 .playerContainer,
 .oscillatorContainer {
   width: 100%;
@@ -156,8 +112,7 @@
   z-index: 10;
   width: 80px;
   height: 40px;
-  border-radius: 8px;
-  background-color: var(--swm-blue-light-100);
+  background-color: var(--swm-red-light-80);
   color: var(--swm-white);
   font-weight: 600;
   border: none;
@@ -166,11 +121,11 @@
 }
 
 .playButton.playing {
-  background-color: var(--swm-purple-light-80);
+  background-color: var(--swm-red-light-80);
 }
 
 .playButton:disabled {
-  background-color: var(--swm-navy-light-40);
+  background-color: var(--swm-red-light-40);
   cursor: not-allowed;
 }
 
@@ -190,7 +145,8 @@
 .codeBlock {
   box-shadow: none !important;
   margin-bottom: 0 !important;
-  border-radius: 6px !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
 .langPill {
@@ -199,7 +155,6 @@
   top: 12px;
   background-color: var(--swm-navy-light-10);
   padding: 4px 8px;
-  border-radius: 6px;
   z-index: 2;
 }
 

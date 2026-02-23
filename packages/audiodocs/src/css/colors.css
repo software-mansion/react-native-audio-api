@@ -141,9 +141,9 @@
   --ifm-font-color-base: var(--black);
 
   /* Tabs */
-  --swm-tab: var(--swm-navy-light-20);
-  --swm-tab-hover: var(--swm-navy-dark-80);
-  --swm-tab-active: var(--swm-navy-dark-100);
+  --swm-tab: var(--swm-red-light-20);
+  --swm-tab-hover: var(--swm-red-dark-80);
+  --swm-tab-active: var(--swm-red-dark-100);
 
   /* Table of Contents */
   --ifm-toc-border-color: transparent;
@@ -331,9 +331,9 @@
   --ifm-font-color-base: var(--swm-navy-light-10);
 
   /* Tabs */
-  --swm-tab: var(--swm-navy-light-60);
-  --swm-tab-hover: var(--swm-blue-light-60);
-  --swm-tab-active: var(--swm-blue-light-80);
+  --swm-tab: var(--swm-red-light-60);
+  --swm-tab-hover: var(--swm-red-light-60);
+  --swm-tab-active: var(--swm-red-light-80);
 
   /* Table of Contents */
   --ifm-toc-border-color: transparent;

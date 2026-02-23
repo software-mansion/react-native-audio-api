@@ -214,12 +214,10 @@ An envelope describes how a sound's amplitude changes over time. The most widely
 - **Release** — time to fade out after the note ends.
 
 
-import InteractivePlayground from '@site/src/prevComponents/InteractivePlayground';
-import { useGainAdsrPlayground } from '@site/src/prevComponents/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
 
-<details open>
-  <InteractivePlayground usePlayground={useGainAdsrPlayground} />
-</details>
+<InteractivePlayground usePlayground={useGainAdsrPlayground} tag="ADSR Envelope" />
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
 

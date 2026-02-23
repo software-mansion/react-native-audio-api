@@ -85,8 +85,6 @@ a.homepageButtonLink:hover {
   stroke: var(--swm-off-white);
 }
 
-/* Button - red light styling */
-
 .buttonRedStyling {
   background-color: var(--swm-landing-button-red-light);
   color: var(--swm-off-white);
@@ -103,6 +101,10 @@ a.homepageButtonLink:hover {
 .buttonRedStyling:hover {
   background-color: transparent;
   color: var(--swm-landing-button-red-light);
+}
+
+[data-theme='dark'] .buttonRedStyling:hover {
+  color: var(--swm-red-dark-100);
 }
 
 .buttonRedStyling:hover svg {
