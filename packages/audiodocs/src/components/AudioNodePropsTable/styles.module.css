@@ -2,10 +2,17 @@
 .propsDetailBox {
   --audiodocs-detail-box-bg: transparent;
   --audiodocs-detail-box-shadow: transparent;
+  --audiodocs-detail-box-tag-bg: var(--swm-blue-light-20);
   background: transparent;
   box-shadow: none;
   margin: 0;
   padding: 0;
+}
+
+:root[data-theme='dark'] {
+  .propsDetailBox {
+    --audiodocs-detail-box-tag-bg: var(--swm-blue-dark-120);
+  }
 }
 
 .propsDetailBox [class*='detailBoxContent'] {
