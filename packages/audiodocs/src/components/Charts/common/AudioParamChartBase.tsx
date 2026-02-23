@@ -29,7 +29,29 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
     responsive
     data={data}
     margin={{ left: 50, bottom: 20, top: 10 }}>
-    <CartesianGrid strokeDasharray="3 3" />
+    <defs>
+      <marker
+        id="arrow-x"
+        markerWidth="10"
+        markerHeight="10"
+        refX="8"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+      </marker>
+      <marker
+        id="arrow-y"
+        markerWidth="10"
+        markerHeight="10"
+        refX="8"
+        refY="3"
+        orient="270"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+      </marker>
+    </defs>
+    <CartesianGrid strokeDasharray="3 3" className={styles.leadingLine} stroke='currentColor'/>
     <XAxis
       dataKey="time"
       domain={[0, 0.9]}      
@@ -44,6 +66,7 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
       }}
       strokeWidth={2}
       stroke="currentColor"
+      style={{ markerEnd: 'url(#arrow-x)' }}
     />
     <YAxis
       ticks={[]}
@@ -58,6 +81,7 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
       }}
       strokeWidth={2}
       stroke="currentColor"
+      style={{ markerStart: 'url(#arrow-y)' }}
     />
     <Line
       type="linear"
