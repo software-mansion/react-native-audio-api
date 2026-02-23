@@ -58,8 +58,8 @@
 }
 
 :root[data-theme='dark'] {
-  --audiodocs-detail-box-bg: var(--swm-red-dark-120);
-  --audiodocs-detail-box-shadow: var(--swm-red-dark-140);
+  --audiodocs-detail-box-bg: var(--swm-red-dark-140);
+  --audiodocs-detail-box-shadow: var(--swm-red-dark-100);
   --audiodocs-detail-box-tag-bg: var(--swm-red-dark-100);
   --audiodocs-detail-box-tag-color: var(--swm-off-white);
   --audiodocs-detail-box-info-color: var(--swm-off-white);
