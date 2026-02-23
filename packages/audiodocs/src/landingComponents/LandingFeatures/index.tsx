@@ -1,8 +1,8 @@
 import React from "react";
 
+import { Spacer } from "@site/src/ui/Layout";
 import LandingFeature from "./LandingFeature";
 import styles from "./styles.module.css";
-import { Spacer } from "../Layout";
 
 import Clock from '@site/static/icons/clock-forward.svg';
 import Devices from '@site/static/icons/devices.svg';
@@ -55,12 +55,12 @@ const LandingFeatures = () => {
     <section>
       <header>
         <h3 className={styles.title}>Bring sound to life in your React Native apps</h3>
-        <Spacer.V size="1.5rem" />
+        <Spacer.Vertical size="1.5rem" />
         <p className={styles.subtitle}>
           React Native Audio API brings the power of Web Audio API to mobile, giving developers full control over audio – from sound synthesis to playback.
         </p>
       </header>
-      <Spacer.V size="80px" />
+      <Spacer.Vertical size="80px" />
       <div className={styles.features}>
         {features.map((feature, index) => (
           <LandingFeature

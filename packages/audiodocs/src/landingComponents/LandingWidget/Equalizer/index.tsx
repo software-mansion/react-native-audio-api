@@ -1,11 +1,11 @@
 import { useColorMode } from '@docusaurus/theme-common';
 import React, { useCallback, useRef } from 'react';
 
-import useIsPlaying from '@site/src/audio/useIsPlaying';
-import Canvas, { CanvasContext } from '../Canvas';
 import AudioManager from '@site/src/audio/AudioManager';
-import { clearCanvas, createGradient, drawEqGrid, drawShadedCurve, stretchFrequencies, getEqualizerResponse, getDrawingBounds, Point, drawEQControlPoints } from '@site/src/canvasUtils';
 import useEqualizerControls from '@site/src/audio/useEqualizerControls';
+import useIsPlaying from '@site/src/audio/useIsPlaying';
+import { clearCanvas, createGradient, drawEQControlPoints, drawEqGrid, drawShadedCurve, getDrawingBounds, getEqualizerResponse, Point, stretchFrequencies } from '@site/src/canvasUtils';
+import Canvas, { CanvasContext } from '../Canvas';
 import styles from './styles.module.css';
 
 interface EqRenderingContext {

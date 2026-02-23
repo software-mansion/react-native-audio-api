@@ -1,8 +1,8 @@
-import React, { PropsWithChildren } from 'react';
-import clsx from 'clsx';
-import styles from './styles.module.css';
-import QuoteIcon from './QuoteIcon';
 import { useColorMode } from '@docusaurus/theme-common';
+import React, { PropsWithChildren } from 'react';
+
+import QuoteIcon from './QuoteIcon';
+import styles from './styles.module.css';
 
 interface ImageProps {
   alt: string;

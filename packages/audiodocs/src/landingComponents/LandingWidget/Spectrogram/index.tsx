@@ -1,11 +1,12 @@
-import React, { useCallback } from 'react';
 import { useColorMode } from '@docusaurus/theme-common';
+import React, { useCallback } from 'react';
 
-import Canvas, { CanvasContext } from '@site/src/components/Canvas';
-import { downSampleLog } from '@site/src/audio/utils';
 import AudioManager from '@site/src/audio/AudioManager';
-import { drawSpectroLines, getBarWidth, clearCanvas } from '@site/src/canvasUtils';
 import useIsPlaying from '@site/src/audio/useIsPlaying';
+import { downSampleLog } from '@site/src/audio/utils';
+import { clearCanvas, drawSpectroLines, getBarWidth } from '@site/src/canvasUtils';
+
+import Canvas, { CanvasContext } from '../Canvas';
 
 const barSpacing = 8.45;
 const minFrequency = 80;
@@ -90,7 +91,7 @@ const Spectrogram: React.FC = () => {
   }, [isPlaying, colorMode]);
 
   return (
-    <Canvas<SpectrogramRenderingContext>
+    <Canvas
       onDraw={onDraw}
       prepareRenderingContext={prepareRenderingContext}
     />

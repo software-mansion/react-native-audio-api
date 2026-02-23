@@ -1,11 +1,11 @@
 import {
-  ButtonStyling,
   BorderStyling,
+  ButtonStyling,
   HomepageButton,
 } from '@swmansion/t-rex-ui/dist/components/HomepageButton';
 import styles from './styles.module.css';
 
-export const HireUsSection = ({
+const HireUsSection = ({
   content,
   href,
 }: {
@@ -37,3 +37,5 @@ export const HireUsSection = ({
     </div>
   );
 };
+
+export default HireUsSection;
