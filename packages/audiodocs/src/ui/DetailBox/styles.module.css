@@ -2,6 +2,7 @@
 .detailBox {
   background-color: var(--audiodocs-detail-box-bg, var(--swm-red-light-20));
   box-shadow: -10px 10px 0 var(--audiodocs-detail-box-shadow, var(--swm-red-light-100));
+  margin-bottom: 20px;
 }
 
 .detailBoxHeader {

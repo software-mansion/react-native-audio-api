@@ -1,4 +1,3 @@
-import MockAudioContext from '@site/src/audio/MockAudioContext';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -7,12 +6,13 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 
-// @ts-ignore
-import labelImage from '/static/img/logo.png';
-// @ts-ignore
+import MockAudioContext from '@site/src/audio/MockAudioContext';
+import DetailBox from '@site/src/ui/DetailBox';
+import labelImage from '@site/static/img/logo.png';
+import swmLogo from '@site/static/img/swm-text.png';
+
 import { VINYL_CONSTANTS as C } from './consts';
 import styles from './styles.module.css';
-import swmLogo from '/static/img/swm-text.png';
 
 interface SceneRefs {
   recordGroup: THREE.Group;
