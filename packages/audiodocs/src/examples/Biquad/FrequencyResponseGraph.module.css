@@ -55,68 +55,6 @@
   outline-offset: 2px;
 }
 
-.audioToggleContainer {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.labelText {
-  font-size: 14px;
-}
-
-.labelTextLight {
-  color: var(--swm-navy);
-}
-
-.labelTextDark {
-  color: var(--swm-off-white);
-}
-
-.toggleTrack {
-  width: 50px;
-  height: 24px;
-  border: none;
-  border-radius: 12px;
-  padding: 2px;
-  position: relative;
-  cursor: pointer;
-  transition: background-color 200ms ease;
-}
-
-.toggleTrackSpeech {
-  background-color: rgba(145, 159, 207, 0.2);
-}
-
-.toggleTrackMusic {
-  background-color: rgba(145, 159, 207, 0.4);
-}
-
-.toggleTrack:focus-visible {
-  outline: 2px solid var(--swm-red-light-80);
-  outline-offset: 2px;
-}
-
-.toggleThumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  background-color: var(--swm-red-light-80);
-  transition: transform 200ms ease;
-}
-
-.toggleThumbSpeech {
-  transform: translateX(0);
-}
-
-.toggleThumbMusic {
-  transform: translateX(26px);
-}
-
 .sliderSection {
   margin-top: 16px;
 }

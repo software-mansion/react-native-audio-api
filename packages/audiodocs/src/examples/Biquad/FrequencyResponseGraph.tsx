@@ -12,6 +12,7 @@ import FilterList from '@site/src/ui/FilterList';
 import type { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
 import ResponsiveCanvas from '@site/src/ui/ResponsiveCanvas';
 import SliderInput from '@site/src/ui/SliderInput';
+import Switch from '@site/src/ui/Switch';
 import { drawFrequencyResponse } from './drawFrequencyResponse';
 import styles from './FrequencyResponseGraph.module.css';
 
@@ -46,7 +47,6 @@ const FrequencyResponseGraph: React.FC = () => {
   const filterRef = useRef<BiquadFilterNode | null>(null);
 
   const gridColor = colorMode === 'dark' ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.2)';
-  const isDark = colorMode === 'dark';
   const isSpeech = selectedAudio === 'speech';
 
   useEffect(() => {
@@ -183,24 +183,13 @@ const FrequencyResponseGraph: React.FC = () => {
           onChange={setFilterType}
         />
 
-        <div className={styles.audioToggleContainer}>
-          <span className={`${styles.labelText} ${isDark ? styles.labelTextDark : styles.labelTextLight}`}>
-            Speech
-          </span>
-          <button
-            type="button"
-            onClick={() => setSelectedAudio(selectedAudio === 'speech' ? 'music' : 'speech')}
-            className={`${styles.toggleTrack} ${isSpeech ? styles.toggleTrackSpeech : styles.toggleTrackMusic}`}
-            aria-label="Toggle between speech and music samples"
-          >
-            <span
-              className={`${styles.toggleThumb} ${isSpeech ? styles.toggleThumbSpeech : styles.toggleThumbMusic}`}
-            />
-          </button>
-          <span className={`${styles.labelText} ${isDark ? styles.labelTextDark : styles.labelTextLight}`}>
-            Music
-          </span>
-        </div>
+        <Switch
+          checked={!isSpeech}
+          onChange={(isMusic) => setSelectedAudio(isMusic ? 'music' : 'speech')}
+          leftLabel="Speech"
+          rightLabel="Music"
+          ariaLabel="Toggle between speech and music samples"
+        />
 
         <div className={styles.sliderSection}>
           <SliderInput
