@@ -16,7 +16,10 @@
     fill: var(--ifm-font-color-base);
     font-weight: normal;
     font-size: medium;
-    @media screen {max-width: 500;
+}
+
+@media screen and (max-width: 500px) {
+    .label {
         font-size: small;
     }
 }
