@@ -1,8 +1,8 @@
 import { Label, Line, ReferenceLine, Tooltip } from 'recharts';
 
-import AudioParamChartBase, { AudioParamChartBaseProps } from '../common/AudioParamChartBase';
-import styles from '../styles.module.css';
 import { FC } from 'react';
+import AudioParamChartBase from '../common/AudioParamChartBase';
+import styles from '../styles.module.css';
 
 const setValueAtTimeData = [
   { time: 0.0, value: 0.2 },

@@ -2,7 +2,7 @@ import { Label, ReferenceLine } from "recharts";
 
 
 import { FC } from "react";
-import AudioParamChartBase, { AudioParamChartBaseProps } from "../common/AudioParamChartBase";
+import AudioParamChartBase from "../common/AudioParamChartBase";
 import styles from '../styles.module.css';
 
 const linearRampToValueAtTimeData = [

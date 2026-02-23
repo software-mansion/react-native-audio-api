@@ -2,7 +2,6 @@ import {
     CartesianGrid,
     Line,
     LineChart,
-    Tooltip,
     XAxis,
     YAxis
 } from 'recharts';
