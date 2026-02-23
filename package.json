@@ -18,6 +18,7 @@
     "typecheck": "yarn workspaces foreach -A -p run typecheck",
     "test": "bash packages/react-native-audio-api/common/cpp/test/RunTests.sh",
     "test:graph": "bash packages/react-native-audio-api/common/cpp/test/RunTestsGraph.sh",
+    "test:graph:docker": "bash packages/react-native-audio-api/common/cpp/test/RunTestsGraphDocker.sh",
     "check-audio-enum-sync": "bash packages/react-native-audio-api/scripts/check-audio-events-sync.sh"
   },
   "devDependencies": {

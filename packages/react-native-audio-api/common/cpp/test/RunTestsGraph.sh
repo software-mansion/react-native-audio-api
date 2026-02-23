@@ -9,9 +9,12 @@ cleanup() {
 
 trap cleanup EXIT
 
-cd packages/react-native-audio-api/common/cpp/test
 
-GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:SandboxTest.*:Seeds/*"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Allow override of GRAPH_FILTER via environment variable
+GRAPH_FILTER="${GRAPH_FILTER:-AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:SandboxTest.*:Seeds/*}"
 
 cmake -S . -B build -Wno-dev
 
