@@ -48,7 +48,7 @@
 
 .detailBoxContent {
   margin: 0 32px;
-  border: 1px solid var(--swm-tab);
+  border: 1px solid var(--swm-border);
   background: var(--swm-off-background);
 }
 

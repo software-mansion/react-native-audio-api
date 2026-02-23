@@ -15,7 +15,6 @@ interface PlaygroundHookResult {
   props: Record<string, any>;
   code: string;
   controls: ReactNode;
-  title: string;
   upload?: ReactNode;
 }
 
@@ -33,7 +32,6 @@ const PlaygroundContent: FC<{ usePlayground: () => PlaygroundHookResult }> = ({
     props: exampleProps,
     code,
     controls,
-    title,
     upload,
   } = usePlayground();
 
@@ -44,17 +42,18 @@ const PlaygroundContent: FC<{ usePlayground: () => PlaygroundHookResult }> = ({
           <Example {...exampleProps} theme={colorMode} />
         </div>
         <div className={styles.controlsBox}>
-          <p className={styles.trackTitle}>{title}</p>
           {controls}
         </div>
       </div>
 
       {upload && <div className={styles.uploadBox}>{upload}</div>}
 
-      <div className={styles.codeContainer}>
-        <CodeBlock language="tsx" className={styles.codeBlock}>
-          {code}
-        </CodeBlock>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <div className={styles.codeContainer}>
+          <CodeBlock language="tsx" className={styles.codeBlock}>
+            {code}
+          </CodeBlock>
+        </div>
       </div>
     </>
   );

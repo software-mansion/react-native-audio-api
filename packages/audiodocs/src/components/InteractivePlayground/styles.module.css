@@ -1,8 +1,8 @@
 .topRow {
   display: flex;
   flex-direction: row;
-  gap: 24px;
-  align-items: stretch;
+  flex: 1;
+  padding: 16px;
 }
 
 .previewBox {
@@ -10,7 +10,6 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background-color: var(--swm-off-background);
   color: var(--swm-sidebar-menu-color);
   position: relative;
 }
@@ -21,20 +20,23 @@
 
 .controlsPanel {
   padding-right: 16px;
-  background-color: var(--swm-off-background);
 }
 
 .codeContainer {
-  margin-top: 16px;
-  overflow: hidden;
-  position: relative;
-  margin: -1px;
-  margin-top: 24px;
   overflow: scroll;
+  flex: 0 0 auto;
+  background: var(--swm-background);
+  border: 1px solid var(--swm-border);
 }
 
 .codeContainer pre {
-  border-color: var(--swm-tab);
+  border-color: var(--swm-border);
+  border: none;
+  background-color: inherit;
+}
+
+.codeContainer pre code {
+  background: inherit;
 }
 
 .loopRows {
@@ -74,7 +76,7 @@
 .select {
   width: 100%;
   padding: 8px;
-  border: 1px solid var(--swm-tab);
+  border: 1px solid var(--swm-border);
   background-color: var(--ifm-background-color);
   color: var(--ifm-font-color-base);
 }
@@ -112,7 +114,7 @@
 .playButton {
   position: absolute;
   top: 10px;
-  left: 10px;
+  right: 16px;
   z-index: 10;
   width: 80px;
   height: 40px;

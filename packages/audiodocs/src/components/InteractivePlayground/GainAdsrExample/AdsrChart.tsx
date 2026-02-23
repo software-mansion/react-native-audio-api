@@ -239,7 +239,7 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     ctx.restore();
 
     const handleFill =
-      theme === "dark" ? "rgba(193, 189, 204, 1)" : "rgba(193, 189, 204, 1)";
+      theme === "dark" ? "var(--swm-off-white)" : "var(--swm-off-white)";
     ctx.lineWidth = 1.5;
 
     [

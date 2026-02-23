@@ -20,10 +20,6 @@ However, this node is very inexpensive to create, and what is crucial you can re
 
 <InteractivePlayground tag="AudioBufferSourceNode" usePlayground={useAudioBufferSourcePlayground} />
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
-<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={"defined by associated buffer"} channelCountMode={"max"} channelInterpretation={"speakers"} />
-
 ## Constructor
 
 [`BaseAudioContext.createBufferSource(options: AudioBufferBaseSourceNodeOptions)`](/docs/core/base-audio-context#createbuffersource)
@@ -67,6 +63,8 @@ function App() {
 ## Properties
 
 It inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#properties).
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |

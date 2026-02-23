@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import OscillatorExample from "./OscillatorExample";
-import { OscillatorType } from "react-native-audio-api";
-import SliderInput from "@site/src/ui/SliderInput";
 import FilterList from "@site/src/ui/FilterList";
+import SliderInput from "@site/src/ui/SliderInput";
+import React, { useState } from "react";
+import { OscillatorType } from "react-native-audio-api";
 import styles from "../styles.module.css";
+import OscillatorExample from "./OscillatorExample";
 
 const initialState = {
   type: "sine" as OscillatorType,
@@ -30,9 +30,7 @@ export function useOscillatorPlayground() {
   const [detune, setDetune] = useState(initialState.detune);
   const [volume, setVolume] = useState(initialState.volume);
 
-  const code = `import { AudioContext } from 'react-native-audio-api';
-
-const ctx = new AudioContext();
+  const code = `const ctx = new AudioContext();
 const oscillator = ctx.createOscillator();
 const gain = ctx.createGain();
 
@@ -58,8 +56,8 @@ oscillator.start();`;
       <SliderInput
         label="Frequency"
         value={frequency}
-        min={20}
-        max={2000}
+        min={2}
+        max={600}
         step={1}
         unit="Hz"
         onChange={setFrequency}

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import GainAdsrExample from "./GainAdsrExample";
 import SliderInput from "@site/src/ui/SliderInput";
+import React, { useState } from "react";
 import styles from "../styles.module.css";
+import GainAdsrExample from "./GainAdsrExample";
 
 const initialState = {
   attack: 1,
@@ -16,37 +16,21 @@ export function useGainAdsrPlayground() {
   const [sustain, setSustain] = useState(initialState.sustain);
   const [release, setRelease] = useState(initialState.release);
 
-  const code = `import { AudioContext } from 'react-native-audio-api';
+  const code = `const now = ctx.currentTime;
+envelope.gain.setValueAtTime(0.001, now);
 
-const ctx = new AudioContext();
-const osc = ctx.createOscillator();
-const gain = ctx.createGain();
+envelope.gain.exponentialRampToValueAtTime(1, now + ${attack.toFixed(2)});
 
-osc.connect(gain);
-gain.connect(ctx.destination);
-
-const now = ctx.currentTime;
-gain.gain.setValueAtTime(0.00001, now);
-
-// Attack -> peak at ${attack.toFixed(2)}s
-gain.gain.exponentialRampToValueAtTime(1, now + ${attack.toFixed(2)});
-
-// Decay -> to sustain ${sustain.toFixed(2)} at +${decay.toFixed(2)}s
-gain.gain.exponentialRampToValueAtTime(${(sustain + 0.00001).toFixed(
+envelope.gain.exponentialRampToValueAtTime(${(sustain + 0.00001).toFixed(
     5
   )}, now + ${(attack + decay).toFixed(2)});
 
-// Immediate release after decay, release duration ${release.toFixed(2)}s
-gain.gain.setValueAtTime(${sustain.toFixed(2)}, now + ${(
+envelope.gain.setValueAtTime(${sustain.toFixed(2)}, now + ${(
     attack + decay
   ).toFixed(2)});
-gain.gain.linearRampToValueAtTime(0, now + ${(attack + decay + release).toFixed(
+envelope.gain.linearRampToValueAtTime(0, now + ${(attack + decay + release).toFixed(
     2
-  )});
-
-osc.start(now);
-osc.stop(now + ${(attack + decay + release).toFixed(2)});
-`;
+  )});`;
 
   const controls = (
     <div className={styles.controlsPanel}>
