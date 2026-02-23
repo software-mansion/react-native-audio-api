@@ -4,15 +4,13 @@ import React, { useCallback, useRef } from 'react';
 import AudioManager from '@site/src/audio/AudioManager';
 import useEqualizerControls from '@site/src/audio/useEqualizerControls';
 import useIsPlaying from '@site/src/audio/useIsPlaying';
-import { clearCanvas, createGradient, drawEQControlPoints, drawEqGrid, drawShadedCurve, getDrawingBounds, getEqualizerResponse, Point, stretchFrequencies } from '@site/src/canvasUtils';
+import { createGradient, drawEQControlPoints, drawEqGrid, drawShadedCurve, getDrawingBounds, getEqualizerResponse, Point, stretchFrequencies } from '@site/src/canvasUtils';
 import Canvas, { CanvasContext } from '../Canvas';
 import styles from './styles.module.css';
 
 interface EqRenderingContext {
   analyser: AnalyserNode;
   fftOutput: Uint8Array;
-  freqGradient: CanvasGradient;
-  eqGradient: CanvasGradient;
   eqPoints: Point[];
 }
 
@@ -24,24 +22,33 @@ const Equalizer: React.FC = () => {
 
   const { equalizerBands } = useEqualizerControls(canvasRef);
 
-  const prepareRenderingContext = useCallback(({ canvas, ctx }: CanvasContext): EqRenderingContext => {
+  const prepareRenderingContext = useCallback(({ canvas }: CanvasContext): EqRenderingContext => {
     const analyser = AudioManager.analyser;
     const { width, height } = getDrawingBounds(canvas);
 
     return {
       analyser,
       fftOutput: new Uint8Array(analyser.frequencyBinCount),
-      freqGradient: createGradient(ctx, 0, height, [250, 127, 124]), // #FA7F7C in RGB format
-      eqGradient: createGradient(ctx, 0, height, colorMode === 'dark' ? [171, 188, 245] : [0, 26, 114], 0.75), // #AAAAAA or #333333 in RGB format
       eqPoints: getEqualizerResponse(0, width, 0, height),
     };
-  }, [colorMode, equalizerBands]);
+  }, [equalizerBands]);
 
   const onDraw = useCallback(({ canvas, ctx }: CanvasContext, renderingContext: EqRenderingContext) => {
-    const { analyser, fftOutput, freqGradient, eqGradient, eqPoints } = renderingContext;
-    const { x, y, width, height } = getDrawingBounds(canvas);
+    const { analyser, fftOutput, eqPoints } = renderingContext;
 
-    clearCanvas(canvas, ctx);
+    const cssWidth = Math.max(1, canvas.clientWidth || canvas.width);
+    const cssHeight = Math.max(1, canvas.clientHeight || canvas.height);
+    const scaleX = canvas.width / cssWidth;
+    const scaleY = canvas.height / cssHeight;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+
+    const { x, y, width, height } = getDrawingBounds(canvas);
+    const freqGradient = createGradient(ctx, 0, height, [250, 127, 124]); // #FA7F7C in RGB format
+    const eqGradient = createGradient(ctx, 0, height, colorMode === 'dark' ? [171, 188, 245] : [0, 26, 114], 0.75); // #AAAAAA or #333333 in RGB format
+
     drawEqGrid(canvas, ctx);
 
     analyser.getByteFrequencyData(fftOutput);

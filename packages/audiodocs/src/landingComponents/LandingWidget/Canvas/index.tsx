@@ -1,7 +1,6 @@
-import React, { useRef, useState, useLayoutEffect, memo, forwardRef } from 'react';
-
-import styles from './styles.module.css';
-import clsx from 'clsx';
+import React, { forwardRef, useCallback, useEffect, useRef } from 'react';
+import type { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
+import ResponsiveCanvas from '@site/src/ui/ResponsiveCanvas';
 
 export interface CanvasContext {
   canvas: HTMLCanvasElement;
@@ -20,72 +19,67 @@ const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<R
   ref: React.ForwardedRef<HTMLCanvasElement>
 ) {
   const { height = 250, onDraw, prepareRenderingContext, className } = props;
-
-  const canvasWrapperRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef<number | null>(null);
+  const canvasContextRef = useRef<CanvasContext | null>(null);
+  const renderingContextRef = useRef<RenderingContext | null>(null);
 
-  const [width, setWidth] = useState(0);
-
-  // Combine internal ref with forwarded ref
-  const setCanvasRef = (element: HTMLCanvasElement | null) => {
-    canvasRef.current = element;
+  const setCanvasRef = useCallback((element: HTMLCanvasElement | null) => {
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
       ref.current = element;
     }
-  };
+  }, [ref]);
 
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-
-    if (!canvas || !canvas.width || !onDraw) {
-      return;
+  const stopDrawing = useCallback(() => {
+    if (drawingRef.current !== null) {
+      cancelAnimationFrame(drawingRef.current);
+      drawingRef.current = null;
     }
-
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      return;
-    }
-
-    const canvasContext: CanvasContext = { canvas, ctx };
-    const renderingContext = prepareRenderingContext ? prepareRenderingContext(canvasContext) : {} as RenderingContext;
-
-    function draw() {
-      onDraw(canvasContext, renderingContext);
-      drawingRef.current = requestAnimationFrame(draw);
-    }
-
-    drawingRef.current = requestAnimationFrame(draw);
-
-    return () => {
-      if (drawingRef.current) {
-        cancelAnimationFrame(drawingRef.current);
-      }
-    };
-  }, [onDraw, prepareRenderingContext, width]);
-
-  useLayoutEffect(() => {
-    const updateWidth = () => {
-      if (canvasWrapperRef.current) {
-        setWidth(canvasWrapperRef.current.clientWidth);
-      }
-    };
-
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-
-    return () => {
-      window.removeEventListener('resize', updateWidth);
-    };
   }, []);
 
+  const startDrawing = useCallback((canvasContext: CanvasContext) => {
+    stopDrawing();
+
+    if (!onDraw) {
+      return;
+    }
+
+    canvasContextRef.current = canvasContext;
+    renderingContextRef.current = prepareRenderingContext
+      ? prepareRenderingContext(canvasContext)
+      : ({} as RenderingContext);
+
+    const draw = () => {
+      if (!canvasContextRef.current) {
+        return;
+      }
+
+      onDraw(canvasContextRef.current, renderingContextRef.current as RenderingContext);
+      drawingRef.current = requestAnimationFrame(draw);
+    };
+
+    drawingRef.current = requestAnimationFrame(draw);
+  }, [onDraw, prepareRenderingContext, stopDrawing]);
+
+  const handleResponsiveCanvasDraw = useCallback(({ canvas, context }: ResponsiveCanvasDrawParams) => {
+    startDrawing({ canvas, ctx: context });
+  }, [startDrawing]);
+
+  useEffect(() => {
+    return () => {
+      stopDrawing();
+      setCanvasRef(null);
+    };
+  }, [setCanvasRef, stopDrawing]);
+
   return (
-    <div ref={canvasWrapperRef}>
-      <canvas className={clsx(styles.canvas, className)} ref={setCanvasRef} width={width} height={height}></canvas>
-    </div>
+    <ResponsiveCanvas
+      onDraw={handleResponsiveCanvasDraw}
+      height={height}
+      className={className}
+      canvasRef={setCanvasRef}
+    />
   );
 });
 

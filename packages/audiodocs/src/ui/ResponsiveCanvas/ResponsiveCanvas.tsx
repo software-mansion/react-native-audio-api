@@ -18,6 +18,7 @@ export interface ResponsiveCanvasProps
   height?: number;
   throttleMs?: number;
   containerClassName?: string;
+  canvasRef?: React.Ref<HTMLCanvasElement>;
 }
 
 const DEFAULT_ASPECT_RATIO = 16 / 9;
@@ -30,14 +31,28 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
   throttleMs = DEFAULT_THROTTLE_MS,
   className,
   containerClassName,
+  canvasRef: externalCanvasRef,
   ...canvasProps
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const internalCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const timeoutIdRef = useRef<number | null>(null);
   const lastDrawTimeRef = useRef(0);
   const drawRef = useRef<() => void>(() => undefined);
+
+  const setCanvasRef = useCallback((element: HTMLCanvasElement | null) => {
+    internalCanvasRef.current = element;
+
+    if (typeof externalCanvasRef === 'function') {
+      externalCanvasRef(element);
+      return;
+    }
+
+    if (externalCanvasRef) {
+      externalCanvasRef.current = element;
+    }
+  }, [externalCanvasRef]);
 
   const clearScheduledDraw = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -90,7 +105,7 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
   useEffect(() => {
     drawRef.current = () => {
       const container = containerRef.current;
-      const canvas = canvasRef.current;
+      const canvas = internalCanvasRef.current;
 
       if (!container || !canvas) {
         return;
@@ -174,7 +189,7 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
 
   return (
     <div ref={containerRef} className={rootClassName}>
-      <canvas ref={canvasRef} className={canvasClassName} {...canvasProps} />
+      <canvas ref={setCanvasRef} className={canvasClassName} {...canvasProps} />
     </div>
   );
 };
