@@ -15,5 +15,17 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Get changed files in graph folders
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            packages/react-native-audio-api/common/cpp/audioapi/utils/graph/**
+            packages/react-native-audio-api/common/cpp/test/src/graph/**
+
       - name: Run tests
         run: yarn test
+
+      - name: Run graph tests
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: yarn test:graph

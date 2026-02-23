@@ -4,7 +4,7 @@ set -e
 
 cleanup() {
     echo "Cleaning up..."
-    rm -rf build_graph/
+    rm -rf build/
 }
 
 trap cleanup EXIT
@@ -13,9 +13,9 @@ cd packages/react-native-audio-api/common/cpp/test
 
 GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:SandboxTest.*:Seeds/*"
 
-cmake -S . -B build_graph -Wno-dev
+cmake -S . -B build -Wno-dev
 
-cd build_graph
+cd build
 make tests_asan tests -j10
 
 echo ""
@@ -30,4 +30,4 @@ echo ""
 
 cd ..
 
-rm -rf build_graph/
+rm -rf build/
