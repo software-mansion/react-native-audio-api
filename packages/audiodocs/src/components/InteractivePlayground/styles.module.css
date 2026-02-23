@@ -27,6 +27,8 @@
   flex: 0 0 auto;
   background: var(--swm-background);
   border: 1px solid var(--swm-border);
+  max-width: 90%;
+  width: auto;
 }
 
 .codeContainer pre {
