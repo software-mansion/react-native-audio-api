@@ -1,8 +1,8 @@
 import { Label, ReferenceDot, ReferenceLine } from 'recharts';
 
-import AudioParamChartBase, { AudioParamChartBaseProps } from '../common/AudioParamChartBase';
-import styles from '../styles.module.css';
 import { FC } from 'react';
+import AudioParamChartBase from '../common/AudioParamChartBase';
+import styles from '../styles.module.css';
 
 
 const setValueCurveAtTimeData = [
@@ -31,12 +31,12 @@ const SetValueCurveAtTimeChart: FC = () => (
         <Label value="previousValue" position="left" className={styles.label}/>
     </ReferenceLine>
     <ReferenceLine y={0.8} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5"/>
-    <ReferenceDot x={0.2} y={0.5} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[0]', position: 'top', className: styles.label }}/>
-    <ReferenceDot x={0.3} y={0.35} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[1]', position: 'bottom', className: styles.label }}/>
-    <ReferenceDot x={0.4} y={0.6} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[2]', position: 'top', className: styles.label }}/>
-    <ReferenceDot x={0.5} y={0.45} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[3]', position: 'bottom', className: styles.label }}/>
-    <ReferenceDot x={0.6} y={0.8} className={styles.referenceDot} visibility={'hidden'} label={{ value: 'values[4]', position: 'top', className: styles.label }}/>
-</AudioParamChartBase>
+    <ReferenceDot x={0.2} y={0.5}  r={4} stroke='currentColor' fill='currentColor'className={styles.referenceDot} label={{ value: 'values[0]', position: 'left', className: styles.label }}/>
+    <ReferenceDot x={0.3} y={0.35} r={4} stroke='currentColor' fill='currentColor' className={styles.referenceDot} label={{ value: 'values[1]', position: 'bottom', className: styles.label }}/>
+    <ReferenceDot x={0.4} y={0.6} r={4} stroke='currentColor' fill='currentColor' className={styles.referenceDot} label={{ value: 'values[2]', position: 'top', className: styles.label }}/>
+    <ReferenceDot x={0.5} y={0.45} r={4} stroke='currentColor' fill='currentColor' className={styles.referenceDot} label={{ value: 'values[3]', position: 'bottom', className: styles.label }}/>
+    <ReferenceDot x={0.6} y={0.8}  r={4} stroke='currentColor' fill='currentColor' className={styles.referenceDot} label={{ value: 'values[4]', position: 'top', dx: 40, className: styles.label }}/>
+    </AudioParamChartBase>
 );
 
 export default SetValueCurveAtTimeChart;

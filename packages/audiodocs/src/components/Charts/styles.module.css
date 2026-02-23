@@ -16,10 +16,18 @@
     fill: var(--ifm-font-color-base);
     font-weight: normal;
     font-size: medium;
+    @media screen {max-width: 500;
+        font-size: small;
+    }
 }
 
 .referenceLabel {
     fill: var(--ifm-font-color-base);
     font-weight: normal;
     font-size: small;
+}
+
+.referenceDot {
+    fill: var(--ifm-color-primary);
+    color: var(--ifm-color-primary);
 }
