@@ -81,8 +81,9 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
 
   void doProcess() {
     audioGraph.process();
-    // collectDisposedNodes is called inside addEdge/removeEdge,
-    // so ghosts get cleaned up naturally during normal operations.
+    // Note: this test only triggers audioGraph processing here.
+    // Disposed-node collection is handled by higher-level wrappers in production code,
+    // not directly inside the HostGraph addEdge/removeEdge methods used in this test.
   }
 
   HNode *pickRandom() {
