@@ -30,13 +30,13 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto promise = promiseVendor_->createAsyncPromise([data, size, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
 
-    if (!result) {
+    if (result.is_err()) {
       return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
         return std::string("Failed to decode audio data.");
       };
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
     return [audioBufferHostObject = std::move(audioBufferHostObject)](
                jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -55,13 +55,13 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto promise = promiseVendor_->createAsyncPromise([sourcePath, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
 
-    if (!result) {
+    if (result.is_err()) {
       return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
         return std::string("Failed to decode audio data source.");
       };
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
     return [audioBufferHostObject = std::move(audioBufferHostObject)](
                jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -85,13 +85,13 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
         auto result = AudioDecoder::decodeWithPCMInBase64(
             b64, inputSampleRate, inputChannelCount, interleaved);
 
-        if (!result) {
+        if (result.is_err()) {
           return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
             return std::string("Failed to decode audio data source.");
           };
         }
 
-        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
         return [audioBufferHostObject = std::move(audioBufferHostObject)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
