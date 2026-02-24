@@ -236,9 +236,9 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   }
 };
 
-// ── collectDisposedNodes needs friend access, expose it ───────────────────
-// We call it directly in doProcess(). It's already public via HostGraph's
-// friend declaration for TestGraphUtils/tests.
+// ── collectDisposedNodes is private; tests access it via friend declarations ──
+// We call it directly in doProcess(), using HostGraph's friend declarations
+// for TestGraphUtils and these test classes (it is not publicly exposed).
 
 // =========================================================================
 // Single-threaded deterministic cycle finder
