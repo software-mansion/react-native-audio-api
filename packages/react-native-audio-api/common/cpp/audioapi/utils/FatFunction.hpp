@@ -108,17 +108,19 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   /// @brief Move assignment operator
   /// @param other
   FatFunction &operator=(FatFunction &&other) noexcept {
-    // Manual move logic matching constructor
-    if (other.invoker_) {
-      if (other.mover_) {
-        other.mover_(storage_.data(), other.storage_.data());
-      } else {
-        std::memcpy(storage_.data(), other.storage_.data(), N);
+    if (this != &other) {
+      reset();
+      if (other.invoker_) {
+        if (other.mover_) {
+          other.mover_(storage_.data(), other.storage_.data());
+        } else {
+          std::memcpy(storage_.data(), other.storage_.data(), N);
+        }
+        invoker_ = other.invoker_;
+        deleter_ = other.deleter_;
+        mover_ = other.mover_;
+        other.reset();
       }
-      invoker_ = other.invoker_;
-      deleter_ = other.deleter_;
-      mover_ = other.mover_;
-      other.reset();
     }
     return *this;
   }
