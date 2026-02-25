@@ -180,10 +180,11 @@ class Graph {
     auto edges = static_cast<std::uint32_t>(hostGraph.edgeCount());
     if (edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0)) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
-      auto *buf = new InputPool::Slot[newCap];
+      auto buf = std::make_unique<InputPool::Slot[]>(newCap);
       eventSender_.send(
           [buf, newCap](AudioGraph<NodeType> &graph, Disposer<kDisposerPayloadSize> &disposer) {
-            auto *old = graph.pool().adoptBuffer(buf, newCap);
+            auto releasedbuf = buf.release(); // ownership transferred to graph.pool().adoptBuffer
+            auto *old = graph.pool().adoptBuffer(releasedbuf, newCap);
             if (old) {
               disposer.dispose(OwnedSlotBuffer(old));
             }

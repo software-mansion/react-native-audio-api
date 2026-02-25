@@ -19,10 +19,8 @@ namespace audioapi::utils::graph {
 /// throughout instead of pointers.
 ///
 /// ## Growth policy
-/// The pool auto-grows when the free list is exhausted. Growth allocates
-/// on the current thread, so it should ideally only happen during
-/// `processEvents()` (unguarded). HostGraph can pre-grow the pool via
-/// `adoptBuffer()` to avoid even that.
+/// Grow should not be called on audio thread, instead the main thread should allocate a buffer and
+/// send it to adoptBuffer() through some asynchronous channel
 ///
 /// @note Can address up to 2^32 − 2 slots (~4 billion).
 class InputPool {

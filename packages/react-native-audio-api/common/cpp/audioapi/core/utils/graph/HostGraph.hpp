@@ -311,14 +311,8 @@ void HostGraph<NodeType>::collectDisposedNodes() {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
       // ~Node() tears down edges from neighbor lists.
-      // Each edge in n->inputs or n->outputs that connects to a non-ghost
-      // peer was already counted in edgeCount_. Ghost-to-ghost edges were
-      // already decremented when the endpoints became ghosts, but the
-      // destructor still cleans the adjacency lists.
       // We decrement for each unique edge (stored once in outputs).
       edgeCount_ -= n->outputs.size();
-      // Also for edges where this ghost is a destination (stored in inputs).
-      edgeCount_ -= n->inputs.size();
       *it = nodes.back();
       nodes.pop_back();
       delete n;
