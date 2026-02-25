@@ -1,8 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <thread>
-
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
