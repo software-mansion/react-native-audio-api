@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
 #include <audioapi/utils/FatFunction.hpp>
+#include <memory>
 #include <utility>
 #include <stdexcept>
 #include <type_traits>
@@ -159,4 +160,67 @@ TEST(FatFunctionTest, SmallerToLargerMoveWithNonTrivialMoveAndDestruct) {
   }
   EXPECT_EQ(moverCalled, 2);
   EXPECT_EQ(destructorCalled, 3);
+}
+
+TEST(FatFunctionTest, MutableLambdaBasic) {
+  // A mutable lambda that modifies captured state on each call
+  int counter = 0;
+  FatFunction<64, IntOp> func = [counter](int a, int b) mutable {
+    counter++;
+    return a + b + counter;
+  };
+  EXPECT_EQ(func(1, 2), 4);  // 1 + 2 + 1
+  EXPECT_EQ(func(1, 2), 5);  // 1 + 2 + 2
+  EXPECT_EQ(func(1, 2), 6);  // 1 + 2 + 3
+}
+
+TEST(FatFunctionTest, MutableLambdaWithUniquePtr) {
+  // Mutable lambda capturing a unique_ptr — the original Graph.hpp use case
+  auto ptr = std::make_unique<int>(42);
+  FatFunction<64, IntOp> func = [ptr = std::move(ptr)](int a, int b) mutable -> int {
+    int val = *ptr;
+    ptr.reset(); // mutates the captured unique_ptr
+    return a + b + val;
+  };
+  EXPECT_EQ(func(1, 2), 45); // 1 + 2 + 42
+}
+
+TEST(FatFunctionTest, MutableLambdaStateIsolatedAfterMove) {
+  // Verify that state is correctly preserved when a mutable-lambda FatFunction is moved
+  FatFunction<64, IntOp> func = [n = 0](int a, int b) mutable {
+    n++;
+    return a + b + n;
+  };
+  EXPECT_EQ(func(0, 0), 1); // n becomes 1
+  EXPECT_EQ(func(0, 0), 2); // n becomes 2
+
+  FatFunction<64, IntOp> moved = std::move(func);
+  EXPECT_THROW(func(0, 0), std::bad_function_call); // original is empty
+
+  // Moved function should continue from where the state left off
+  EXPECT_EQ(moved(0, 0), 3); // n becomes 3
+  EXPECT_EQ(moved(0, 0), 4); // n becomes 4
+}
+
+TEST(FatFunctionTest, MutableLambdaSmallerToLargerMove) {
+  FatFunction<32, IntOp> small = [n = 0](int a, int b) mutable {
+    n += 10;
+    return a + b + n;
+  };
+  EXPECT_EQ(small(1, 1), 12); // n = 10
+
+  FatFunction<64, IntOp> large = std::move(small);
+  EXPECT_EQ(large(1, 1), 22); // n = 20
+}
+
+TEST(FatFunctionTest, MutableLambdaVoidReturn) {
+  using VoidOp = void(int, int); // NOLINT(readability/casting)
+  int accumulator = 0;
+  FatFunction<64, VoidOp> func = [&accumulator, calls = 0](int a, int b) mutable {
+    calls++;
+    accumulator += (a + b) * calls;
+  };
+  func(1, 2); // calls=1, accumulator += 3*1 = 3
+  func(1, 2); // calls=2, accumulator += 3*2 = 9
+  EXPECT_EQ(accumulator, 9);
 }

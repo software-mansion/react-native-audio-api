@@ -182,9 +182,9 @@ class Graph {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
       auto buf = std::make_unique<InputPool::Slot[]>(newCap);
       eventSender_.send(
-          [buf, newCap](AudioGraph<NodeType> &graph, Disposer<kDisposerPayloadSize> &disposer) {
-            auto releasedbuf = buf.release(); // ownership transferred to graph.pool().adoptBuffer
-            auto *old = graph.pool().adoptBuffer(releasedbuf, newCap);
+          [buf = std::move(buf), newCap](
+              AudioGraph<NodeType> &graph, Disposer<kDisposerPayloadSize> &disposer) mutable {
+            auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
             if (old) {
               disposer.dispose(OwnedSlotBuffer(old));
             }

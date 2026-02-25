@@ -29,7 +29,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   friend class FatFunction;
 
  private:
-  using _InvokerType = _FpReturnType (*)(const std::byte *storage, _FpArgs... args);
+  using _InvokerType = _FpReturnType (*)(std::byte *storage, _FpArgs... args);
   using _DeleterType = void (*)(std::byte *storage);
   using _MoverType = void (*)(std::byte *dest, std::byte *src);
 
@@ -46,9 +46,9 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
     requires CallableConcept<N, _Callable, _FpReturnType, _FpArgs...>
   FatFunction(_Callable &&callable) {
     using DecayedCallable = std::decay_t<_Callable>;
-    new (storage_.data()) DecayedCallable(std::forward<_Callable>(callable));
-    invoker_ = [](const std::byte *storage, _FpArgs... args) -> _FpReturnType {
-      const DecayedCallable *callablePtr = reinterpret_cast<const DecayedCallable *>(storage);
+    new (storage_.data.data()) DecayedCallable(std::forward<_Callable>(callable));
+    invoker_ = [](std::byte *storage, _FpArgs... args) -> _FpReturnType {
+      DecayedCallable *callablePtr = reinterpret_cast<DecayedCallable *>(storage);
       return (*callablePtr)(std::forward<_FpArgs>(args)...);
     };
     if constexpr (std::is_trivially_destructible_v<DecayedCallable>) {
@@ -78,9 +78,9 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   FatFunction(FatFunction &&other) noexcept {
     if (other.invoker_) {
       if (other.mover_) {
-        other.mover_(storage_.data(), other.storage_.data());
+        other.mover_(storage_.data.data(), other.storage_.data.data());
       } else {
-        std::memcpy(storage_.data(), other.storage_.data(), N);
+        std::memcpy(storage_.data.data(), other.storage_.data.data(), N);
       }
       invoker_ = other.invoker_;
       deleter_ = other.deleter_;
@@ -94,9 +94,9 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   FatFunction(FatFunction<M, _FpReturnType(_FpArgs...)> &&other) {
     if (other.invoker_) {
       if (other.mover_) {
-        other.mover_(storage_.data(), other.storage_.data());
+        other.mover_(storage_.data.data(), other.storage_.data.data());
       } else {
-        std::memcpy(storage_.data(), other.storage_.data(), M);
+        std::memcpy(storage_.data.data(), other.storage_.data.data(), M);
       }
       invoker_ = other.invoker_;
       deleter_ = other.deleter_;
@@ -112,9 +112,9 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
       reset();
       if (other.invoker_) {
         if (other.mover_) {
-          other.mover_(storage_.data(), other.storage_.data());
+          other.mover_(storage_.data.data(), other.storage_.data.data());
         } else {
-          std::memcpy(storage_.data(), other.storage_.data(), N);
+          std::memcpy(storage_.data.data(), other.storage_.data.data(), N);
         }
         invoker_ = other.invoker_;
         deleter_ = other.deleter_;
@@ -132,7 +132,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
     if (!invoker_) {
       throw std::bad_function_call();
     }
-    return invoker_(storage_.data(), std::forward<_FpArgs>(args)...);
+    return invoker_(storage_.data.data(), std::forward<_FpArgs>(args)...);
   }
 
   /// @brief Checks if the FatFunction contains a valid callable
@@ -150,7 +150,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   /// @note To clear resources properly after release, the user must call the deleter on the storage.
   std::pair<std::array<std::byte, N>, _DeleterType> release() {
     std::array<std::byte, N> storageCopy;
-    std::memcpy(storageCopy.data(), storage_.data(), N);
+    std::memcpy(storageCopy.data(), storage_.data.data(), N);
     _DeleterType deleterCopy = deleter_;
     deleter_ = nullptr;
     invoker_ = nullptr;
@@ -159,14 +159,17 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   }
 
  private:
-  alignas(std::max_align_t) std::array<std::byte, N> storage_;
+  struct alignas(std::max_align_t) Storage {
+    std::array<std::byte, N> data;
+  };
+  mutable Storage storage_;
   _InvokerType invoker_ = nullptr; // Function pointer to invoke the stored callable
   _DeleterType deleter_ = nullptr; // Function pointer to delete the stored callable
   _MoverType mover_ = nullptr;     // Function pointer to move the stored callable
 
   void reset() {
     if (deleter_) {
-      deleter_(storage_.data());
+      deleter_(storage_.data.data());
     }
     deleter_ = nullptr;
     invoker_ = nullptr;
