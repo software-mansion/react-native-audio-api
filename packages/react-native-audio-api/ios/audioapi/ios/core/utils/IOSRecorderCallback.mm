@@ -152,6 +152,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
         circularBuffer_[i]->push_back(data, numFrames);
       }
 
+      inputBuffer = nullptr;
       if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
@@ -167,6 +168,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
           inputBuffer->mBuffers[i].mDataByteSize);
     }
 
+    inputBuffer = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
