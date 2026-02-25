@@ -81,8 +81,9 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
 
   void doProcess() {
     audioGraph.process();
-    // collectDisposedNodes is called inside addEdge/removeEdge,
-    // so ghosts get cleaned up naturally during normal operations.
+    // Note: this test only triggers audioGraph processing here.
+    // Disposed-node collection is handled by higher-level wrappers in production code,
+    // not directly inside the HostGraph addEdge/removeEdge methods used in this test.
   }
 
   HNode *pickRandom() {
@@ -235,9 +236,9 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   }
 };
 
-// ── collectDisposedNodes needs friend access, expose it ───────────────────
-// We call it directly in doProcess(). It's already public via HostGraph's
-// friend declaration for TestGraphUtils/tests.
+// ── collectDisposedNodes is private; tests access it via friend declarations ──
+// We call it directly in doProcess(), using HostGraph's friend declarations
+// for TestGraphUtils and these test classes (it is not publicly exposed).
 
 // =========================================================================
 // Single-threaded deterministic cycle finder
