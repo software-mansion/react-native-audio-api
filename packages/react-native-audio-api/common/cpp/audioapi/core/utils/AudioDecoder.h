@@ -14,6 +14,7 @@ namespace audioapi {
 class AudioBuffer;
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
+using MADecoderInitializer = std::function<ma_result(ma_decoder *, ma_decoder_config *)>;
 
 static constexpr int CHUNK_SIZE = 4096;
 
@@ -33,6 +34,7 @@ class AudioDecoder {
       bool interleaved);
 
  private:
+  static AudioBufferResult decodeWithMA(float sampleRate, MADecoderInitializer initFunc);
   static Result<std::vector<float>, std::string> readAllPcmFrames(
       ma_decoder &decoder,
       int outputChannels);
@@ -40,7 +42,6 @@ class AudioDecoder {
       const std::vector<float> &buffer,
       float outputSampleRate,
       int outputChannels);
-
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
       return AudioFormat::UNKNOWN;
@@ -77,7 +78,6 @@ class AudioDecoder {
     }
     return AudioFormat::UNKNOWN;
   }
-
   static inline bool pathHasExtension(
       const std::string &path,
       const std::vector<std::string> &extensions) {
@@ -89,7 +89,6 @@ class AudioDecoder {
     }
     return false;
   }
-
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }

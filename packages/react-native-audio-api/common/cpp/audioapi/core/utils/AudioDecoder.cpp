@@ -40,10 +40,8 @@ Result<std::vector<float>, std::string> AudioDecoder::readAllPcmFrames(
     outFramesRead += tempFramesDecoded;
   }
 
-  if (outFramesRead == 0) {
-    return Result<std::vector<float>, std::string>::Err("Failed to decode");
-  }
-  return Result<std::vector<float>, std::string>::Ok(std::move(buffer));
+  return outFramesRead > 0 ? Result<std::vector<float>, std::string>::Ok(std::move(buffer))
+                           : Result<std::vector<float>, std::string>::Err("No frames decoded");
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
@@ -62,18 +60,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
   return audioBuffer;
 }
 
-AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate) {
-  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
-    if (buffer == nullptr) {
-      return AudioBufferResult::Err("Failed to decode with FFmpeg");
-    }
-    return AudioBufferResult::Ok(std::move(buffer));
-#else
-    return AudioBufferResult::Err("FFmpeg is disabled, cannot decode");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-  }
+AudioBufferResult AudioDecoder::decodeWithMA(float sampleRate, MADecoderInitializer initFunc) {
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
   ma_decoding_backend_vtable *customBackends[] = {
@@ -82,26 +69,38 @@ AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, floa
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-  if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
-    ma_decoder_uninit(&decoder);
-    return AudioBufferResult::Err("Failed to initialize decoder");
+  if (initFunc(&decoder, &config) != MA_SUCCESS) {
+    return AudioBufferResult::Err("Failed to initialize miniaudio decoder");
   }
 
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
-  Result<std::vector<float>, std::string> readResult = readAllPcmFrames(decoder, outputChannels);
+  auto readResult = readAllPcmFrames(decoder, outputChannels);
+  ma_decoder_uninit(&decoder);
 
-  if (readResult.is_err()) {
-    ma_decoder_uninit(&decoder);
-    return AudioBufferResult::Err(readResult.unwrap_err());
+  return readResult.is_ok() ? AudioBufferResult::Ok(makeAudioBufferFromFloatBuffer(
+                                  readResult.unwrap(), outputSampleRate, outputChannels))
+                            : AudioBufferResult::Err(readResult.unwrap_err());
+}
+
+AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate) {
+  if (AudioDecoder::pathHasExtension(path, {".mp4", ".m4a", ".aac"})) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+    auto buffer = ffmpegdecoder::decodeWithFilePath(path, static_cast<int>(sampleRate));
+    return buffer != nullptr
+        ? AudioBufferResult::Ok(std::move(buffer))
+        : AudioBufferResult::Err("Failed to decode with file path using FFmpeg");
+#else
+    return AudioBufferResult::Err("FFmpeg is disabled, cannot decode with file path");
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
 
-  std::vector<float> buffer = readResult.unwrap();
+  auto initFromFile = [&](ma_decoder *decoder, ma_decoder_config *config) {
+    return ma_decoder_init_file(path.c_str(), config, decoder);
+  };
 
-  ma_decoder_uninit(&decoder);
-  return AudioBufferResult::Ok(
-      makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels));
+  return decodeWithMA(sampleRate, initFromFile);
 }
 
 AudioBufferResult
@@ -110,43 +109,18 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     auto buffer = ffmpegdecoder::decodeWithMemoryBlock(data, size, static_cast<int>(sampleRate));
-    if (buffer == nullptr) {
-      return AudioBufferResult::Err("Failed to decode with FFmpeg");
-    }
-    return AudioBufferResult::Ok(std::move(buffer));
+    return buffer != nullptr ? AudioBufferResult::Ok(std::move(buffer))
+                             : AudioBufferResult::Err("Failed to decode memory block with FFmpeg");
 #else
     return AudioBufferResult::Err("FFmpeg is disabled, cannot decode memory block");
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
-  ma_decoder decoder;
-  ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
 
-  ma_decoding_backend_vtable *customBackends[] = {
-      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
+  auto initFromMemory = [&](ma_decoder *decoder, ma_decoder_config *config) {
+    return ma_decoder_init_memory(data, size, config, decoder);
+  };
 
-  config.ppCustomBackendVTables = customBackends;
-  config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
-
-  if (ma_decoder_init_memory(data, size, &config, &decoder) != MA_SUCCESS) {
-    ma_decoder_uninit(&decoder);
-    return AudioBufferResult::Err("Failed to initialize decoder for memory block");
-  }
-
-  auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
-  auto outputChannels = static_cast<int>(decoder.outputChannels);
-
-  Result<std::vector<float>, std::string> readResult = readAllPcmFrames(decoder, outputChannels);
-
-  if (readResult.is_err()) {
-    ma_decoder_uninit(&decoder);
-    return AudioBufferResult::Err(readResult.unwrap_err());
-  }
-
-  std::vector<float> buffer = readResult.unwrap();
-
-  ma_decoder_uninit(&decoder);
-  return AudioBufferResult::Ok(
-      makeAudioBufferFromFloatBuffer(buffer, outputSampleRate, outputChannels));
+  return decodeWithMA(sampleRate, initFromMemory);
 }
 
 AudioBufferResult AudioDecoder::decodeWithPCMInBase64(
