@@ -31,8 +31,9 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
     auto result = AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
 
     if (result.is_err()) {
-      return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return std::string("Failed to decode audio data.");
+      return [result = std::move(result)](
+                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+        return result.unwrap_err();
       };
     }
 
@@ -56,8 +57,9 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
     auto result = AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
 
     if (result.is_err()) {
-      return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return std::string("Failed to decode audio data source.");
+      return [result = std::move(result)](
+                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+        return result.unwrap_err();
       };
     }
 
@@ -86,8 +88,9 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
             b64, inputSampleRate, inputChannelCount, interleaved);
 
         if (result.is_err()) {
-          return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-            return std::string("Failed to decode audio data source.");
+          return [result = std::move(result)](
+                     jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+            return result.unwrap_err();
           };
         }
 
