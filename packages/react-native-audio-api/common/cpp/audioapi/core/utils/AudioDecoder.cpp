@@ -81,14 +81,11 @@ AudioBufferResult AudioDecoder::decodeWithMiniaudio(
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
   auto outputChannels = static_cast<int>(decoder.outputChannels);
 
-  auto readResult = readAllPcmFrames(decoder, outputChannels);
-  ma_decoder_uninit(&decoder);
-
-  if (readResult.is_err()) {
-    return Err(readResult.unwrap_err());
-  }
-
-  return makeAudioBufferFromFloatBuffer(readResult.unwrap(), outputSampleRate, outputChannels);
+  return readAllPcmFrames(decoder, outputChannels)
+      .and_then([outputSampleRate, outputChannels, &decoder](std::vector<float> &&buffer) {
+        ma_decoder_uninit(&decoder);
+        return makeAudioBufferFromFloatBuffer(std::move(buffer), outputSampleRate, outputChannels);
+      });
 }
 
 AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, float sampleRate) {
