@@ -3,7 +3,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

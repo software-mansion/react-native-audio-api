@@ -3,17 +3,10 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <algorithm>
 #include <atomic>
 #include <cassert>
-#include <chrono>
 #include <cstddef>
-#include <functional>
-#include <iostream>
-#include <limits>
 #include <memory>
-#include <thread>
-#include <utility>
 
 namespace audioapi {
 

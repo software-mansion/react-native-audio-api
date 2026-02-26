@@ -77,9 +77,9 @@ const AudioFile: FC = () => {
         elapsedTime: 0,
       });
       await PlaybackNotificationManager.enableControl('skipBackward', true);
-      await PlaybackNotificationManager.enableControl('next', true);
+      await PlaybackNotificationManager.enableControl('nextTrack', true);
       await PlaybackNotificationManager.enableControl('skipForward', true);
-      await PlaybackNotificationManager.enableControl('previous', true);
+      await PlaybackNotificationManager.enableControl('previousTrack', true);
       await PlaybackNotificationManager.enableControl('pause', true);
       await PlaybackNotificationManager.enableControl('play', true);
       await PlaybackNotificationManager.enableControl('seekTo', true);

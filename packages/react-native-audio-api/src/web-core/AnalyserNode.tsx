@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode';
-import { WindowType, TAnalyserOptions } from '../types';
+import { WindowType, AnalyserOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class AnalyserNode extends AudioNode {
@@ -9,7 +9,7 @@ export default class AnalyserNode extends AudioNode {
   maxDecibels: number;
   smoothingTimeConstant: number;
 
-  constructor(context: BaseAudioContext, analyserOptions?: TAnalyserOptions) {
+  constructor(context: BaseAudioContext, analyserOptions?: AnalyserOptions) {
     const node = new globalThis.AnalyserNode(context.context, analyserOptions);
     super(context, node);
 

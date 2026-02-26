@@ -1,12 +1,12 @@
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import { TStreamerOptions } from '../types';
+import { StreamerOptions } from '../types';
 import { NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class StreamerNode extends AudioScheduledSourceNode {
   readonly streamPath: string;
 
-  constructor(context: BaseAudioContext, options: TStreamerOptions) {
+  constructor(context: BaseAudioContext, options: StreamerOptions) {
     const node = context.context.createStreamer(options);
     if (!node) {
       throw new NotSupportedError('StreamerNode requires FFmpeg build');

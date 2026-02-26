@@ -14,7 +14,6 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
-#include <chrono>
 #include <cstdio>
 #include <memory>
 #include <string>

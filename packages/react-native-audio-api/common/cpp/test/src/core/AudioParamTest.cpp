@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
-#include <vector>
 
 using namespace audioapi;
 

@@ -36,6 +36,8 @@
     "!**/__mocks__",
     "!**/.*",
     "!**/node_modules",
+    "!common/cpp/cursor",
+    "!common/cpp/test",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
     "scripts/validate-worklets-version.js",

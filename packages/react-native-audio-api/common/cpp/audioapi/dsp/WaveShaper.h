@@ -3,11 +3,7 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/dsp/Resampler.h>
 
-#include <algorithm>
-#include <atomic>
 #include <memory>
-#include <mutex>
-#include <string>
 
 namespace audioapi {
 

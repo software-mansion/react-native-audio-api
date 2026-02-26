@@ -28,7 +28,7 @@
 
 #include <assert.h>
 #include <audioapi/core/utils/Constants.h>
-#include <test/src/biquad/BiquadFilterChromium.h>
+#include <test/src/core/effects/biquad/BiquadFilterChromium.h>
 #include <algorithm>
 #include <cmath>
 #include <complex>

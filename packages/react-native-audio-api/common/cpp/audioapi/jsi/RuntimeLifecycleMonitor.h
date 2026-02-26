@@ -1,10 +1,6 @@
 #pragma once
 
 #include <jsi/jsi.h>
-#include <memory>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 
 namespace audioapi {
 

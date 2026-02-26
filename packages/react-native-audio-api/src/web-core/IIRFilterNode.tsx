@@ -1,10 +1,10 @@
 import { NotSupportedError } from '../errors';
 import AudioNode from './AudioNode';
-import { TIIRFilterOptions } from '../types';
+import { IIRFilterOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class IIRFilterNode extends AudioNode {
-  constructor(context: BaseAudioContext, options: TIIRFilterOptions) {
+  constructor(context: BaseAudioContext, options: IIRFilterOptions) {
     const iirFilterNode = new globalThis.IIRFilterNode(
       context.context,
       options

@@ -9,7 +9,6 @@
 #include <cassert>
 #include <complex>
 #include <cstddef>
-#include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>

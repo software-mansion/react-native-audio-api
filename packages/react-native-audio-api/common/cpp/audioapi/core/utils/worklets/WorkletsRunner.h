@@ -3,7 +3,6 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <jsi/jsi.h>
 
-#include <atomic>
 #include <functional>
 #include <memory>
 #include <optional>

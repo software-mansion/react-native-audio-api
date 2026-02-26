@@ -4,9 +4,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 
-#include <algorithm>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 

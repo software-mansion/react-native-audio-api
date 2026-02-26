@@ -1,11 +1,12 @@
 #pragma once
 
 #include <functional>
-#include <new>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
+
+namespace audioapi {
 
 struct NoneType {};
 inline constexpr NoneType None{};
@@ -321,3 +322,5 @@ class Result {
   };
   bool is_ok_;
 };
+
+} // namespace audioapi

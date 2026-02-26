@@ -24,7 +24,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 
 #include <memory>
-#include <utility>
 #include <vector>
 
 namespace audioapi {

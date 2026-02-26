@@ -4,7 +4,6 @@
 #include <audioapi/core/effects/WorkletNode.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

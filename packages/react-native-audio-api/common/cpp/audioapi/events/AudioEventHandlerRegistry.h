@@ -4,7 +4,6 @@
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <jsi/jsi.h>
-#include <array>
 #include <atomic>
 #include <memory>
 #include <string>

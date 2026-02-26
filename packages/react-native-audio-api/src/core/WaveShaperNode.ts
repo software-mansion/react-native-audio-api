@@ -2,13 +2,13 @@ import AudioNode from './AudioNode';
 import BaseAudioContext from './BaseAudioContext';
 import { InvalidStateError } from '../errors';
 import { IWaveShaperNode } from '../interfaces';
-import { TWaveShaperOptions } from '../types';
+import { WaveShaperOptions } from '../types';
 
 export default class WaveShaperNode extends AudioNode {
   private isCurveSet: boolean = false;
   private _curve: Float32Array | null = null;
 
-  constructor(context: BaseAudioContext, options?: TWaveShaperOptions) {
+  constructor(context: BaseAudioContext, options?: WaveShaperOptions) {
     const node = context.context.createWaveShaper(options || {});
     super(context, node);
     if (options?.curve) {

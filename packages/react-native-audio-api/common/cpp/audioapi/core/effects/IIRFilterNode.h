@@ -30,6 +30,8 @@
 #include <vector>
 
 #include <memory>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 namespace audioapi {
 
@@ -57,15 +59,15 @@ class IIRFilterNode : public AudioNode {
  private:
   static constexpr size_t bufferLength = 32;
 
-  const std::vector<float> feedforward_;
-  const std::vector<float> feedback_;
+  const AudioArray feedforward_;
+  const AudioArray feedback_;
 
-  std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
-  std::vector<std::vector<float>> yBuffers_;
-  std::vector<size_t> bufferIndices;
+  AudioBuffer xBuffers_;
+  AudioBuffer yBuffers_;
+  AudioArray bufferIndices_;
 
   static std::complex<float>
-  evaluatePolynomial(const std::vector<float> coefficients, std::complex<float> z, int order) {
+  evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
     for (int k = order; k >= 0; --k)
@@ -73,11 +75,11 @@ class IIRFilterNode : public AudioNode {
     return result;
   }
 
-  static std::vector<float> createNormalizedVector(
+  static AudioArray createNormalizedArray(
       const std::vector<float> &inputVector,
       float scaleFactor) {
-    std::vector<float> result = inputVector;
-    if (scaleFactor != 1.0f && scaleFactor != 0.0f && !result.empty()) {
+    AudioArray result(inputVector.data(), inputVector.size());
+    if (scaleFactor != 1.0f && scaleFactor != 0.0f && result.getSize() > 0) {
       for (float &val : result) {
         val /= scaleFactor;
       }

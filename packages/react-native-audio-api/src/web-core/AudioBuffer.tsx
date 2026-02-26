@@ -1,5 +1,5 @@
 import { IndexSizeError, NotSupportedError } from '../errors';
-import { TAudioBufferOptions } from '../types';
+import { AudioBufferOptions } from '../types';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -10,13 +10,13 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: globalThis.AudioBuffer;
 
-  constructor(options: TAudioBufferOptions);
+  constructor(options: AudioBufferOptions);
 
   /** @internal */
   constructor(buffer: globalThis.AudioBuffer);
 
   /** @internal */
-  constructor(arg: TAudioBufferOptions | globalThis.AudioBuffer) {
+  constructor(arg: AudioBufferOptions | globalThis.AudioBuffer) {
     this.buffer = this.isAudioBuffer(arg)
       ? arg
       : AudioBuffer.createBufferFromOptions(arg);
@@ -85,7 +85,7 @@ export default class AudioBuffer {
   }
 
   private static createBufferFromOptions(
-    options: TAudioBufferOptions
+    options: AudioBufferOptions
   ): globalThis.AudioBuffer {
     const { numberOfChannels = 1, length, sampleRate } = options;
     if (numberOfChannels < 1 || numberOfChannels >= 32) {

@@ -32,8 +32,6 @@
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioBuffer.h>
 
-#include <algorithm>
-#include <cmath>
 #include <complex>
 #include <memory>
 #include <vector>

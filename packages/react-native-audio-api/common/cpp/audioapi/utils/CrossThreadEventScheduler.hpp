@@ -4,7 +4,6 @@
 #include <audioapi/utils/SpscChannel.hpp>
 
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 namespace audioapi {

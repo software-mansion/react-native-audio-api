@@ -3,9 +3,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 
-#include <cmath>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 

@@ -28,8 +28,6 @@
 // Defines the interface for several vector math functions whose implementation
 // will ideally be optimized.
 
-#include <algorithm>
-#include <cmath>
 #include <cstddef>
 
 namespace audioapi::dsp {

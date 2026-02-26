@@ -55,10 +55,6 @@ const config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        gtag: {
-          trackingID: 'G-4BDHB978P1',
-          anonymizeIP: true,
-        },
       },
     ],
   ],
@@ -125,6 +121,12 @@ const config = {
   ],
 
   plugins: [
+    [
+      '@docusaurus/plugin-google-tag-manager',
+      {
+        containerId: 'GTM-K8VRM8H4',
+      },
+    ],
     ...[
       process.env.NODE_ENV === 'production' && '@docusaurus/plugin-debug',
     ].filter(Boolean),

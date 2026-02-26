@@ -26,7 +26,6 @@ extern "C" {
 
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
-#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>

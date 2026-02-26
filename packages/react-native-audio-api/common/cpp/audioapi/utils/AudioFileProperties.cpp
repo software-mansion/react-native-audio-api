@@ -2,7 +2,6 @@
 
 #include <audioapi/jsi/JsiHostObject.h>
 #include <jsi/jsi.h>
-#include <algorithm>
 #include <memory>
 #include <string>
 

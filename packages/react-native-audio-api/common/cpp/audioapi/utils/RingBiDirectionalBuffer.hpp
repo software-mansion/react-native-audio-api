@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bit>
-#include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 

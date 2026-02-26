@@ -4,8 +4,6 @@
 #include <audioapi/core/types/OscillatorType.h>
 
 #include <memory>
-#include <string>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

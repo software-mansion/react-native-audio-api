@@ -4,7 +4,6 @@
 #include <audioapi/core/types/WindowType.h>
 
 #include <memory>
-#include <string>
 
 namespace audioapi {
 using namespace facebook;

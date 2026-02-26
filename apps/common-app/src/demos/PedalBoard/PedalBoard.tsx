@@ -119,10 +119,7 @@ export default function PedalBoard() {
     } else {
       if (!permissionsGranted) {
         const recPerm = await AudioManager.requestRecordingPermissions();
-        const notPerm = await AudioManager.requestNotificationPermissions();
-        console.log('Recording permission:', recPerm);
-        // @ts-ignore
-        permissionsGranted = recPerm === 'Granted' && notPerm === 'granted';
+        permissionsGranted = recPerm === 'Granted';
       }
       if (permissionsGranted) {
         const recorder = new AudioRecorder();

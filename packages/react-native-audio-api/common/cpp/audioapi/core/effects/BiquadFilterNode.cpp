@@ -32,7 +32,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
-#include <string>
+#include <audioapi/core/utils/Constants.h>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
@@ -42,23 +42,16 @@ namespace audioapi {
 BiquadFilterNode::BiquadFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BiquadFilterOptions &options)
-    : AudioNode(context, options) {
-  frequencyParam_ = std::make_shared<AudioParam>(
-      options.frequency, 0.0f, context->getNyquistFrequency(), context);
-  detuneParam_ = std::make_shared<AudioParam>(
-      options.detune,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      context);
-  QParam_ = std::make_shared<AudioParam>(
-      options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  gainParam_ = std::make_shared<AudioParam>(
-      options.gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = options.type;
-  x1_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  x2_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  y1_.resize(MAX_CHANNEL_COUNT, 0.0f);
-  y2_.resize(MAX_CHANNEL_COUNT, 0.0f);
+    : AudioNode(context, options),
+      frequencyParam_(std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context)),
+      detuneParam_(std::make_shared<AudioParam>(options.detune, -OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT, OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT, context)),
+      QParam_(std::make_shared<AudioParam>(options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context)),
+      gainParam_(std::make_shared<AudioParam>(options.gain, MOST_NEGATIVE_SINGLE_FLOAT, BIQUAD_GAIN_DB_FACTOR * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context)),
+      type_(options.type),
+      x1_(MAX_CHANNEL_COUNT),
+      x2_(MAX_CHANNEL_COUNT),
+      y1_(MAX_CHANNEL_COUNT),
+      y2_(MAX_CHANNEL_COUNT) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -385,7 +378,7 @@ void BiquadFilterNode::applyFilter() {
 std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  int numChannels = processingBuffer->getNumberOfChannels();
+  auto numChannels = processingBuffer->getNumberOfChannels();
 
   applyFilter();
 
@@ -398,7 +391,7 @@ std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
 
   float x1, x2, y1, y2;
 
-  for (int c = 0; c < numChannels; ++c) {
+  for (size_t c = 0; c < numChannels; ++c) {
     auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
 
     x1 = x1_[c];
