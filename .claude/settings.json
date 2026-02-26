@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "respectGitignore": true,
+  "permissions": {
+    "allow": [
+      "Bash(yarn build)",
+      "Bash(yarn lint*)",
+      "Bash(yarn format*)",
+      "Bash(yarn typecheck)",
+      "Bash(yarn test)",
+      "Bash(yarn check-audio-enum-sync)",
+      "Bash(yarn workspace *)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(cmake *)",
+      "Bash(clang-format *)",
+      "Bash(node *)",
+      "Bash(npx prettier*)"
+    ],
+    "ask": [
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)",
+      "Bash(git reset*)",
+      "Bash(git checkout *)",
+      "Bash(git stash*)",
+      "Bash(yarn clean)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+
+      "Read(**/node_modules/**)",
+      "Read(**/Pods/**)",
+      "Read(**/vendor/bundle/**)",
+
+      "Read(**/build/**)",
+      "Read(**/lib/**)",
+      "Read(**/.turbo/**)",
+      "Read(**/.gradle/**)",
+      "Read(**/.cxx/**)",
+      "Read(**/.kotlin/**)",
+      "Read(**/DerivedData/**)",
+      "Read(**/*.xcuserstate)",
+      "Read(**/*.pbxuser)",
+      "Read(**/*.hmap)",
+      "Read(**/*.ipa)",
+
+      "Read(**/jniLibs/**)",
+      "Read(**/*.a)",
+      "Read(**/*.xcframework/**)",
+      "Read(**/ffmpeg_ios/**)",
+      "Read(**/openssl-prebuilt/**)",
+      "Read(**/prebuilt_libs/**)",
+      "Read(**/output/**)",
+
+      "Read(**/CMakeFiles/**)",
+
+      "Read(yarn.lock)",
+      "Read(**/Gemfile.lock)",
+      "Read(**/Podfile.lock)",
+
+      "Read(**/*.png)",
+      "Read(**/*.jpg)",
+      "Read(**/*.jpeg)",
+      "Read(**/*.gif)",
+      "Read(**/*.webp)",
+      "Read(**/*.ico)",
+      "Read(**/*.svg)",
+      "Read(**/*.ttf)",
+      "Read(**/*.otf)",
+      "Read(**/*.woff)",
+      "Read(**/*.woff2)",
+      "Read(**/*.mp3)",
+      "Read(**/*.wav)",
+      "Read(**/*.ogg)",
+      "Read(**/*.aac)"
+    ]
+  }
+}
