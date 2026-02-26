@@ -1,4 +1,8 @@
-import { InvalidStateError, NotSupportedError } from '../errors';
+import {
+  InvalidAccessError,
+  InvalidStateError,
+  NotSupportedError,
+} from '../errors';
 import { IIIRFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { IIRFilterOptions } from '../types';
@@ -20,7 +24,7 @@ export default class IIRFilterNode extends AudioNode {
       frequencyArray.length !== magResponseOutput.length ||
       frequencyArray.length !== phaseResponseOutput.length
     ) {
-      throw new NotSupportedError(
+      throw new InvalidAccessError(
         `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
       );
     }
