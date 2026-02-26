@@ -14,7 +14,7 @@ namespace audioapi {
 class AudioBuffer;
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
-using MADecoderInitializer = std::function<ma_result(ma_decoder *, ma_decoder_config *)>;
+using MiniaudioDecoderInitializer = std::function<ma_result(ma_decoder *, ma_decoder_config *)>;
 
 static constexpr int CHUNK_SIZE = 4096;
 
@@ -34,11 +34,13 @@ class AudioDecoder {
       bool interleaved);
 
  private:
-  static AudioBufferResult decodeWithMA(float sampleRate, MADecoderInitializer initFunc);
+  static AudioBufferResult decodeWithMiniaudio(
+      float sampleRate,
+      MiniaudioDecoderInitializer initFunc);
   static Result<std::vector<float>, std::string> readAllPcmFrames(
       ma_decoder &decoder,
       int outputChannels);
-  static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
+  static AudioBufferResult makeAudioBufferFromFloatBuffer(
       const std::vector<float> &buffer,
       float outputSampleRate,
       int outputChannels);

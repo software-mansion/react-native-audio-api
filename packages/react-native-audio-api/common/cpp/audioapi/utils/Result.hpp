@@ -8,6 +8,26 @@
 
 namespace audioapi {
 
+template <typename T>
+struct Ok_wrapper {
+  T value;
+};
+
+template <typename E>
+struct Err_wrapper {
+  E value;
+};
+
+template <typename T>
+auto Ok(T &&value) {
+  return Ok_wrapper<std::decay_t<T>>{std::forward<T>(value)};
+}
+
+template <typename E>
+auto Err(E &&error) {
+  return Err_wrapper<std::decay_t<E>>{std::forward<E>(error)};
+}
+
 struct NoneType {};
 inline constexpr NoneType None{};
 
@@ -53,6 +73,16 @@ class Result {
     } else {
       new (&err_value) E(std::move(other.err_value));
     }
+  }
+
+  template <typename U>
+  explicit Result(Ok_wrapper<U> &&ok) : is_ok_(true) {
+    new (&ok_value) T(std::move(ok.value));
+  }
+
+  template <typename F>
+  explicit Result(Err_wrapper<F> &&err) : is_ok_(false) {
+    new (&err_value) E(std::move(err.value));
   }
 
   Result &operator=(const Result &other) {
