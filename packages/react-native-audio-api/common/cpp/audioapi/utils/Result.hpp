@@ -56,6 +56,16 @@ class Result {
   explicit Result(ErrTag, E &&error) : err_value(std::move(error)), is_ok_(false) {}
 
  public:
+  template <typename U>
+  Result(Ok_wrapper<U> &&ok) : is_ok_(true) { // NOLINT(runtime/explicit)
+    new (&ok_value) T(std::move(ok.value));
+  }
+
+  template <typename F>
+  Result(Err_wrapper<F> &&err) : is_ok_(false) { // NOLINT(runtime/explicit)
+    new (&err_value) E(std::move(err.value));
+  }
+
   Result(const Result<T, E> &other) {
     is_ok_ = other.is_ok_;
     if (is_ok_) {
@@ -73,16 +83,6 @@ class Result {
     } else {
       new (&err_value) E(std::move(other.err_value));
     }
-  }
-
-  template <typename U>
-  explicit Result(Ok_wrapper<U> &&ok) : is_ok_(true) {
-    new (&ok_value) T(std::move(ok.value));
-  }
-
-  template <typename F>
-  explicit Result(Err_wrapper<F> &&err) : is_ok_(false) {
-    new (&err_value) E(std::move(err.value));
   }
 
   Result &operator=(const Result &other) {
