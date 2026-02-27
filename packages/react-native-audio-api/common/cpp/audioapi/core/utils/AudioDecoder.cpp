@@ -130,7 +130,7 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
     return Err("FFmpeg is disabled, cannot decode memory block");
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
-  return decodeWithMiniaudio(sampleRate, MemorySource(data, size));
+  return decodeWithMiniaudio(sampleRate, MemorySource{.data = data, .size = size});
 }
 
 AudioBufferResult AudioDecoder::decodeWithPCMInBase64(
