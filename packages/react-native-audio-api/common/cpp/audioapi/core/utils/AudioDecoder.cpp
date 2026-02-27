@@ -72,19 +72,23 @@ AudioBufferResult AudioDecoder::decodeWithMiniaudio(float sampleRate, DecoderSou
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-  ma_result initRes;
+  ma_result initResult = std::visit(
+      [&config, &decoder](auto &&arg) -> ma_result {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, MemorySource>) {
+          return ma_decoder_init_memory(arg.data, arg.size, &config, &decoder);
+        } else if constexpr (std::is_same_v<T, std::string>) {
+          return ma_decoder_init_file(arg.c_str(), &config, &decoder);
+        } else {
+          return MA_INVALID_ARGS;
+        }
+      },
+      source);
 
-  if (auto *mem = std::get_if<MemorySource>(&source)) {
-    initRes = ma_decoder_init_memory(mem->data, mem->size, &config, &decoder);
-  } else if (auto *path = std::get_if<std::string>(&source)) {
-    initRes = ma_decoder_init_file(path->c_str(), &config, &decoder);
-  } else {
-    return Err("Invalid decoder source");
-  }
-
-  if (initRes != MA_SUCCESS) {
+  if (initResult != MA_SUCCESS) {
     return Err(
-        "Failed to initialize miniaudio decoder: " + std::string(ma_result_description(initRes)));
+        "Failed to initialize miniaudio decoder: " +
+        std::string(ma_result_description(initResult)));
   }
 
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
