@@ -66,7 +66,7 @@ class AnalyserNode : public AudioNode {
   };
 
   TripleBuffer<AnalysisFrame> analysisBuffer_;
-  size_t publishSequence_ = 0; // audio thread only
+  size_t publishSequence_ = 0;      // audio thread only
   size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
