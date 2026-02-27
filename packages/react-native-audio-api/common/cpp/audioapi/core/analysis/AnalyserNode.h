@@ -1,18 +1,22 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/dsp/Windows.hpp>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/TripleBuffer.hpp>
 
+#include <atomic>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
 
 class AudioBuffer;
-class AudioArray;
 class CircularAudioArray;
 struct AnalyserOptions;
 
@@ -22,13 +26,7 @@ class AnalyserNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const AnalyserOptions &options);
 
-  void setFFTSize(
-      int fftSize,
-      const std::shared_ptr<dsp::FFT> &fft,
-      const std::vector<std::complex<float>> &complexData,
-      const std::shared_ptr<AudioArray> &magnitudeArray,
-      const std::shared_ptr<AudioArray> &tempArray,
-      const std::shared_ptr<AudioArray> &windowData);
+  void setFFTSize(int fftSize);
   void setMinDecibels(float minDecibels);
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
@@ -38,32 +36,38 @@ class AnalyserNode : public AudioNode {
   void getFloatTimeDomainData(float *data, int length);
   void getByteTimeDomainData(uint8_t *data, int length);
 
-  static inline std::shared_ptr<AudioArray> createWindowData(int fftSize) {
-    auto windowData = std::make_shared<AudioArray>(fftSize);
-    dsp::Blackman().apply(windowData->span());
-    return windowData;
-  }
-
  protected:
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
-  int fftSize_;
-  float minDecibels_;
-  float maxDecibels_;
-  float smoothingTimeConstant_;
+  std::atomic<int> fftSize_;
+  std::atomic<float> minDecibels_;
+  std::atomic<float> maxDecibels_;
+  std::atomic<float> smoothingTimeConstant_;
 
+  // Audio Thread data structures
   std::unique_ptr<CircularAudioArray> inputArray_;
   std::unique_ptr<AudioBuffer> downMixBuffer_;
 
-  std::shared_ptr<dsp::FFT> fft_;
-  std::shared_ptr<AudioArray> tempArray_;
-  std::shared_ptr<AudioArray> windowData_;
+  // JS Thread data structures
+  std::unique_ptr<dsp::FFT> fft_;
+  std::unique_ptr<AudioArray> tempArray_;
+  std::unique_ptr<AudioArray> windowData_;
   std::vector<std::complex<float>> complexData_;
-  std::shared_ptr<AudioArray> magnitudeArray_;
-  bool shouldDoFFTAnalysis_{true};
+  std::unique_ptr<AudioArray> magnitudeArray_;
+
+  struct AnalysisFrame {
+    AudioArray timeDomain;
+    size_t sequenceNumber = 0;
+
+    AnalysisFrame() : timeDomain(MAX_FFT_SIZE) {}
+  };
+
+  TripleBuffer<AnalysisFrame> analysisBuffer_;
+  size_t publishSequence_ = 0; // audio thread only
+  size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
 };

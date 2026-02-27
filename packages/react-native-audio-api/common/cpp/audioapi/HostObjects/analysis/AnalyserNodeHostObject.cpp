@@ -61,7 +61,8 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
     return;
   }
 
-  setFFTSize(fftSize);
+  fftSize_ = fftSize;
+  analyserNode->setFFTSize(fftSize);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
@@ -140,36 +141,6 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteTimeDomainData) {
   analyserNode->getByteTimeDomainData(data, length);
 
   return jsi::Value::undefined();
-}
-
-void AnalyserNodeHostObject::setFFTSize(int fftSize) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-
-  auto fft = std::make_shared<dsp::FFT>(fftSize);
-  auto complexData = std::vector<std::complex<float>>(fftSize);
-  auto magnitudeArray = std::make_shared<AudioArray>(fftSize / 2);
-  auto tempArray = std::make_shared<AudioArray>(fftSize);
-  auto windowData = AnalyserNode::createWindowData(fftSize);
-
-  auto event = [
-          analyserNode,
-          fftSize,
-          fft,
-          complexData,
-          magnitudeArray,
-          tempArray,
-          windowData](BaseAudioContext&) {
-    analyserNode->setFFTSize(
-            fftSize,
-            fft,
-            complexData,
-            magnitudeArray,
-            tempArray,
-            windowData);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-
-  fftSize_ = fftSize;
 }
 
 } // namespace audioapi

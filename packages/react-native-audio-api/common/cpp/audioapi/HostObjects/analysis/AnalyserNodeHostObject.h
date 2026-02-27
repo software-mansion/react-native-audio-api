@@ -36,8 +36,6 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
-
-  void setFFTSize(int fftSize);
 };
 
 } // namespace audioapi
