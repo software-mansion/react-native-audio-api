@@ -1,11 +1,12 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -53,16 +54,16 @@ int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
 
 double AudioBufferBaseSourceNode::getInputLatency() const {
   if (pitchCorrection_) {
-    return static_cast<double>(stretch_->inputLatency()) / getContextSampleRate();
+    return std::max(static_cast<double>(stretch_->inputLatency()) / getContextSampleRate(), 0.0);
   }
-  return 0;
+  return 0.0;
 }
 
 double AudioBufferBaseSourceNode::getOutputLatency() const {
   if (pitchCorrection_) {
-    return static_cast<double>(stretch_->outputLatency()) / getContextSampleRate();
+    return std::max(static_cast<double>(stretch_->outputLatency()) / getContextSampleRate(), 0.0);
   }
-  return 0;
+  return 0.0;
 }
 
 void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {

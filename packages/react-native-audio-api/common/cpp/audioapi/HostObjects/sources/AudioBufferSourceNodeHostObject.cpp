@@ -178,6 +178,9 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
     audioBuffer = std::make_shared<AudioBuffer>(
         RENDER_QUANTUM_SIZE, 1, audioBufferSourceNode->getContextSampleRate());
   } else {
+    inputLatency_ = audioBufferSourceNode->getInputLatency();
+    outputLatency_ = audioBufferSourceNode->getOutputLatency();
+
     if (pitchCorrection_) {
       int extraTailFrames =
           static_cast<int>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
