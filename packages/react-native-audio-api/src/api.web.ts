@@ -25,7 +25,6 @@ export {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
-  WindowType,
 } from './types';
 
 export {

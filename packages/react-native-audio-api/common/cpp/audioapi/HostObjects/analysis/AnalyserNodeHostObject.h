@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
-#include <audioapi/core/types/WindowType.h>
 
 #include <memory>
 
@@ -21,13 +20,11 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_GETTER_DECL(minDecibels);
   JSI_PROPERTY_GETTER_DECL(maxDecibels);
   JSI_PROPERTY_GETTER_DECL(smoothingTimeConstant);
-  JSI_PROPERTY_GETTER_DECL(window);
 
   JSI_PROPERTY_SETTER_DECL(fftSize);
   JSI_PROPERTY_SETTER_DECL(minDecibels);
   JSI_PROPERTY_SETTER_DECL(maxDecibels);
   JSI_PROPERTY_SETTER_DECL(smoothingTimeConstant);
-  JSI_PROPERTY_SETTER_DECL(window);
 
   JSI_HOST_FUNCTION_DECL(getFloatFrequencyData);
   JSI_HOST_FUNCTION_DECL(getByteFrequencyData);
@@ -39,7 +36,8 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
-  WindowType windowType_;
+
+  void setFFTSize(int fftSize);
 };
 
 } // namespace audioapi

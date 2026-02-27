@@ -3,9 +3,11 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/dsp/Windows.hpp>
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -14,21 +16,18 @@ AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioCo
       fftSize_(options.fftSize),
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
-      smoothingTimeConstant_(options.smoothingTimeConstant),
-      windowType_(options.windowType) {
+      smoothingTimeConstant_(options.smoothingTimeConstant) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, maxDecibels),
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant),
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, window));
+      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant));
 
   addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, minDecibels),
       JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, maxDecibels),
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, smoothingTimeConstant),
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, window));
+      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, smoothingTimeConstant));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getFloatFrequencyData),
@@ -53,19 +52,16 @@ JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
   return {smoothingTimeConstant_};
 }
 
-JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, window) {
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::windowTypeToString(windowType_));
-}
-
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
 
   auto fftSize = static_cast<int>(value.getNumber());
-  auto event = [analyserNode, fftSize](BaseAudioContext&) {
-    analyserNode->setFftSize(fftSize);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-  fftSize_ = fftSize;
+
+  if (fftSize == fftSize_) {
+    return;
+  }
+
+  setFFTSize(fftSize);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
@@ -96,16 +92,6 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
     };
         analyserNode->scheduleAudioEvent(std::move(event));
         smoothingTimeConstant_ = smoothingTimeConstant;
-}
-
-JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, window) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  auto windowType = js_enum_parser::windowTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [analyserNode, windowType](BaseAudioContext&) {
-    analyserNode->setWindowType(windowType);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-  windowType_ = windowType;
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
@@ -154,6 +140,36 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteTimeDomainData) {
   analyserNode->getByteTimeDomainData(data, length);
 
   return jsi::Value::undefined();
+}
+
+void AnalyserNodeHostObject::setFFTSize(int fftSize) {
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+
+  auto fft = std::make_shared<dsp::FFT>(fftSize);
+  auto complexData = std::vector<std::complex<float>>(fftSize);
+  auto magnitudeArray = std::make_shared<AudioArray>(fftSize / 2);
+  auto tempArray = std::make_shared<AudioArray>(fftSize);
+  auto windowData = AnalyserNode::createWindowData(fftSize);
+
+  auto event = [
+          analyserNode,
+          fftSize,
+          fft,
+          complexData,
+          magnitudeArray,
+          tempArray,
+          windowData](BaseAudioContext&) {
+    analyserNode->setFFTSize(
+            fftSize,
+            fft,
+            complexData,
+            magnitudeArray,
+            tempArray,
+            windowData);
+  };
+  analyserNode->scheduleAudioEvent(std::move(event));
+
+  fftSize_ = fftSize;
 }
 
 } // namespace audioapi

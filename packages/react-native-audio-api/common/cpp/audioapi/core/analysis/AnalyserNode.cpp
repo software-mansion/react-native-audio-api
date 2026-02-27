@@ -2,7 +2,6 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/dsp/Windows.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
@@ -22,29 +21,30 @@ AnalyserNode::AnalyserNode(
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant),
-      windowType_(options.windowType),
       inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
           std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
-      tempArray_(std::make_unique<AudioArray>(fftSize_)),
-      fft_(std::make_unique<dsp::FFT>(fftSize_)),
+      fft_(std::make_shared<dsp::FFT>(fftSize_)),
+      tempArray_(std::make_shared<AudioArray>(fftSize_)),
+      windowData_(createWindowData(fftSize_)),
       complexData_(std::vector<std::complex<float>>(fftSize_)),
-      magnitudeArray_(std::make_unique<AudioArray>(fftSize_ / 2)) {
-  setWindowData(windowType_, fftSize_);
+      magnitudeArray_(std::make_shared<AudioArray>(fftSize_ / 2)) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void AnalyserNode::setFftSize(int fftSize) {
-  if (fftSize_ == fftSize) {
-    return;
-  }
-
+void AnalyserNode::setFFTSize(
+        int fftSize,
+        const std::shared_ptr<dsp::FFT> &fft,
+        const std::vector<std::complex<float>> &complexData,
+        const std::shared_ptr<AudioArray> &magnitudeArray,
+        const std::shared_ptr<AudioArray> &tempArray,
+        const std::shared_ptr<AudioArray> &windowData) {
   fftSize_ = fftSize;
-  fft_ = std::make_unique<dsp::FFT>(fftSize_);
-  complexData_ = std::vector<std::complex<float>>(fftSize_);
-  magnitudeArray_ = std::make_unique<AudioArray>(fftSize_ / 2);
-  tempArray_ = std::make_unique<AudioArray>(fftSize_);
-  setWindowData(windowType_, fftSize_);
+  fft_ = fft;
+  complexData_ = complexData;
+  magnitudeArray_ = magnitudeArray;
+  tempArray_ = tempArray;
+  windowData_ = windowData;
 }
 
 void AnalyserNode::setMinDecibels(float minDecibels) {
@@ -57,10 +57,6 @@ void AnalyserNode::setMaxDecibels(float maxDecibels) {
 
 void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
   smoothingTimeConstant_ = smoothingTimeConstant;
-}
-
-void AnalyserNode::setWindowType(WindowType type) {
-  setWindowData(type, fftSize_);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
@@ -172,23 +168,4 @@ void AnalyserNode::doFFTAnalysis() {
   }
 }
 
-void AnalyserNode::setWindowData(WindowType type, int size) {
-  if (windowType_ == type && windowData_ != nullptr && windowData_->getSize() == size) {
-    return;
-  }
-
-  windowType_ = type;
-  if (windowData_ == nullptr || windowData_->getSize() != size) {
-    windowData_ = std::make_shared<AudioArray>(size);
-  }
-
-  switch (windowType_) {
-    case WindowType::BLACKMAN:
-      dsp::Blackman().apply(windowData_->span());
-      break;
-    case WindowType::HANN:
-      dsp::Hann().apply(windowData_->span());
-      break;
-  }
-}
 } // namespace audioapi

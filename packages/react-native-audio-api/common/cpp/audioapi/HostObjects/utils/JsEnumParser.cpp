@@ -3,29 +3,6 @@
 
 namespace audioapi::js_enum_parser {
 
-  WindowType windowTypeFromString(const std::string &type) {
-    if (type == "blackman") {
-      return WindowType::BLACKMAN;
-    }
-    if (type == "hann") {
-      return WindowType::HANN;
-    }
-
-    throw std::invalid_argument("Unknown window type");
-  }
-
-
-  std::string windowTypeToString(WindowType type) {
-    switch (type) {
-      case WindowType::BLACKMAN:
-        return "blackman";
-      case WindowType::HANN:
-        return "hann";
-      default:
-        throw std::invalid_argument("Unknown window type");
-    }
-  }
-
   BiquadFilterType filterTypeFromString(const std::string &type) {
     if (type == "lowpass")
       return BiquadFilterType::LOWPASS;

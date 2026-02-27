@@ -11,7 +11,6 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/core/types/WindowType.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
@@ -77,7 +76,6 @@ struct AnalyserOptions : AudioNodeOptions {
   float minDecibels = -100.0f;
   float maxDecibels = -30.0f;
   float smoothingTimeConstant = 0.8f;
-  WindowType windowType = WindowType::BLACKMAN;
 };
 
 struct BiquadFilterOptions : AudioNodeOptions {

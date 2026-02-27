@@ -106,8 +106,6 @@ export interface FileInfo {
   duration: number;
 }
 
-export type WindowType = 'blackman' | 'hann';
-
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
 export interface AudioNodeOptions {

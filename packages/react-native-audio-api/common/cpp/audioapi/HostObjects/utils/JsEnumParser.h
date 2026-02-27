@@ -7,13 +7,10 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/core/types/WindowType.h>
 #include <audioapi/events/AudioEvent.h>
 #include <string>
 
 namespace audioapi::js_enum_parser {
-std::string windowTypeToString(WindowType type);
-WindowType windowTypeFromString(const std::string &type);
 std::string overSampleTypeToString(OverSampleType type);
 OverSampleType overSampleTypeFromString(const std::string &type);
 std::string oscillatorTypeToString(OscillatorType type);
