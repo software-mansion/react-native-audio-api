@@ -72,12 +72,19 @@ AudioBufferResult AudioDecoder::decodeWithMiniaudio(float sampleRate, DecoderSou
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-  ma_result initRes = source.path
-      ? ma_decoder_init_file(source.path->c_str(), &config, &decoder)
-      : ma_decoder_init_memory(source.memory.data, source.memory.size, &config, &decoder);
+  ma_result initRes;
+
+  if (auto *mem = std::get_if<MemorySource>(&source)) {
+    initRes = ma_decoder_init_memory(mem->data, mem->size, &config, &decoder);
+  } else if (auto *path = std::get_if<std::string>(&source)) {
+    initRes = ma_decoder_init_file(path->c_str(), &config, &decoder);
+  } else {
+    return Err("Invalid decoder source");
+  }
 
   if (initRes != MA_SUCCESS) {
-    return Err("Failed to initialize miniaudio decoder");
+    return Err(
+        "Failed to initialize miniaudio decoder: " + std::string(ma_result_description(initRes)));
   }
 
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
@@ -106,7 +113,7 @@ AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, floa
     return Err("FFmpeg is disabled, cannot decode with file path");
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
-  return decodeWithMiniaudio(sampleRate, {.path = &path});
+  return decodeWithMiniaudio(sampleRate, path);
 }
 
 AudioBufferResult
@@ -123,7 +130,7 @@ AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleR
     return Err("FFmpeg is disabled, cannot decode memory block");
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
-  return decodeWithMiniaudio(sampleRate, {.memory = {data, size}});
+  return decodeWithMiniaudio(sampleRate, MemorySource(data, size));
 }
 
 AudioBufferResult AudioDecoder::decodeWithPCMInBase64(

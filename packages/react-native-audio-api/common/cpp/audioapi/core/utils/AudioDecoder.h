@@ -15,13 +15,12 @@ class AudioBuffer;
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 
-struct DecoderSource {
-  const std::string *path = nullptr;
-  struct {
-    const void *data;
-    size_t size;
-  } memory = {nullptr, 0};
+struct MemorySource {
+  const void *data;
+  size_t size;
 };
+
+using DecoderSource = std::variant<MemorySource, std::string>;
 
 static constexpr int CHUNK_SIZE = 4096;
 
