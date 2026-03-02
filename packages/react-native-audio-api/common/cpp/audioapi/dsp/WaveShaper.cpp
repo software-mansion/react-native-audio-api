@@ -89,8 +89,7 @@ void WaveShaper::process2x(AudioArray &channelData, int framesToProcess) {
   downSampler_->process(*tempBuffer2x_, channelData, outputFrames);
 }
 
-void WaveShaper::process4x(
-        AudioArray &channelData, int framesToProcess) {
+void WaveShaper::process4x(AudioArray &channelData, int framesToProcess) {
   auto upSamplerOutputFrames = upSampler_->process(channelData, *tempBuffer2x_, framesToProcess);
   auto upSampler2OutputFrames =
       upSampler2_->process(*tempBuffer2x_, *tempBuffer4x_, upSamplerOutputFrames);

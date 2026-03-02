@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <numeric>
-#include <vector>
 #include <utility>
+#include <vector>
 
 using namespace audioapi;
 

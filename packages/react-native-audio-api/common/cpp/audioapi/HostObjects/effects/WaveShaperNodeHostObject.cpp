@@ -1,8 +1,8 @@
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <memory>

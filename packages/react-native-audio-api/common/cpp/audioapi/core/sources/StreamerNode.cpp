@@ -8,10 +8,10 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <cstdio>
@@ -149,7 +149,8 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     }
   }
   if (bufferedAudioBuffer_ != nullptr) {
-    processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
+    processingBuffer->copy(
+        *bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED

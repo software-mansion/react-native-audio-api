@@ -128,21 +128,21 @@ void AudioArray::copy(
 }
 
 void AudioArray::copyReverse(
-        const audioapi::AudioArray &source,
-        size_t sourceStart,
-        size_t destinationStart,
-        size_t length) {
-    if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
-        throw std::out_of_range("Not enough space to copy to destination or from source.");
-    }
+    const audioapi::AudioArray &source,
+    size_t sourceStart,
+    size_t destinationStart,
+    size_t length) {
+  if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
+    throw std::out_of_range("Not enough space to copy to destination or from source.");
+  }
 
-    auto dstView = this->subSpan(length, destinationStart);
-    auto srcView = source.span();
-    const float *__restrict srcPtr = &srcView[sourceStart];
+  auto dstView = this->subSpan(length, destinationStart);
+  auto srcView = source.span();
+  const float *__restrict srcPtr = &srcView[sourceStart];
 
-    for (size_t i = 0; i < length; ++i) {
-        dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
-    }
+  for (size_t i = 0; i < length; ++i) {
+    dstView[i] = srcPtr[-static_cast<ptrdiff_t>(i)];
+  }
 }
 
 void AudioArray::copyTo(
