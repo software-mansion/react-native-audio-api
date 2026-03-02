@@ -17,8 +17,8 @@ set_source_files_properties(
 )
 
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
-set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
-set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
+set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
+set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external/android)
 set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
