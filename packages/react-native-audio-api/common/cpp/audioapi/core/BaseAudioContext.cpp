@@ -220,10 +220,6 @@ std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(
   return waveShaper;
 }
 
-float BaseAudioContext::getNyquistFrequency() const {
-  return getSampleRate() / 2.0f;
-}
-
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:

@@ -45,6 +45,10 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
     return DEFAULT_SAMPLE_RATE;
   }
 
+  float getNyquistFrequency() const {
+      return getContextSampleRate() / 2.0f;
+  }
+
   /// @note JS Thread only
   bool isEnabled() const;
   /// @note JS Thread only

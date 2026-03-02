@@ -70,11 +70,11 @@ class BiquadFilterNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> frequencyParam_;
-  std::shared_ptr<AudioParam> detuneParam_;
-  std::shared_ptr<AudioParam> QParam_;
-  std::shared_ptr<AudioParam> gainParam_;
-  BiquadFilterType type_;
+  const std::shared_ptr<AudioParam> frequencyParam_;
+  const std::shared_ptr<AudioParam> detuneParam_;
+  const std::shared_ptr<AudioParam> QParam_;
+  const std::shared_ptr<AudioParam> gainParam_;
+  std::atomic<BiquadFilterType> type_;
 
   // delayed samples, one per channel
   AudioArray x1_;
@@ -82,23 +82,20 @@ class BiquadFilterNode : public AudioNode {
   AudioArray y1_;
   AudioArray y2_;
 
-  // coefficients
-  float b0_ = 1.0;
-  float b1_ = 0;
-  float b2_ = 0;
-  float a1_ = 0;
-  float a2_ = 0;
+  struct alignas(64) FilterCoefficients {
+    double b0, b1, b2, a1, a2;
+  };
 
-  void setNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
-  void setLowpassCoefficients(float frequency, float Q);
-  void setHighpassCoefficients(float frequency, float Q);
-  void setBandpassCoefficients(float frequency, float Q);
-  void setLowshelfCoefficients(float frequency, float gain);
-  void setHighshelfCoefficients(float frequency, float gain);
-  void setPeakingCoefficients(float frequency, float Q, float gain);
-  void setNotchCoefficients(float frequency, float Q);
-  void setAllpassCoefficients(float frequency, float Q);
-  void applyFilter();
+  static FilterCoefficients setLowpassCoefficients(float frequency, float Q);
+  static FilterCoefficients setHighpassCoefficients(float frequency, float Q);
+  static FilterCoefficients setBandpassCoefficients(float frequency, float Q);
+  static FilterCoefficients setLowshelfCoefficients(float frequency, float gain);
+  static FilterCoefficients setHighshelfCoefficients(float frequency, float gain);
+  static FilterCoefficients setPeakingCoefficients(float frequency, float Q, float gain);
+  static FilterCoefficients setNotchCoefficients(float frequency, float Q);
+  static FilterCoefficients setAllpassCoefficients(float frequency, float Q);
+  static FilterCoefficients setNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
+  FilterCoefficients applyFilter(float frequency, float Q, float gain, float detune, BiquadFilterType type);
 };
 
 } // namespace audioapi

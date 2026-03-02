@@ -107,7 +107,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  [[nodiscard]] float getNyquistFrequency() const;
   std::shared_ptr<AudioGraphManager> getGraphManager() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;

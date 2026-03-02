@@ -13,7 +13,7 @@ OscillatorNode::OscillatorNode(
     const OscillatorOptions &options)
     : AudioScheduledSourceNode(context, options) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      options.frequency, -context->getNyquistFrequency(), context->getNyquistFrequency(), context);
+      options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,

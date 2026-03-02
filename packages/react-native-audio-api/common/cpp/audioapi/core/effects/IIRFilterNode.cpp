@@ -69,10 +69,7 @@ void IIRFilterNode::getFrequencyResponse(
     float *magResponseOutput,
     float *phaseResponseOutput,
     size_t length) const {
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return;
-  float nyquist = context->getNyquistFrequency();
+  float nyquist = getNyquistFrequency();
 
   for (size_t k = 0; k < length; ++k) {
     float normalizedFreq = frequencyArray[k] / nyquist;
