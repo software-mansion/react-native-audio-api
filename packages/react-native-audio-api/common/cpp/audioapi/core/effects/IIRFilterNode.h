@@ -44,7 +44,7 @@ class IIRFilterNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const IIRFilterOptions &options);
 
-  /// @note Thread safe, because feedforward_ and feedback_ are readonly after construction.
+  /// @note Audio Thread only
   void getFrequencyResponse(
       const float *frequencyArray,
       float *magResponseOutput,

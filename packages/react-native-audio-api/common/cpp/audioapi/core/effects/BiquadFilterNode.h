@@ -58,6 +58,8 @@ class BiquadFilterNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getQParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
+
+  /// @note JS Thread only
   void getFrequencyResponse(
       const float *frequencyArray,
       float *magResponseOutput,

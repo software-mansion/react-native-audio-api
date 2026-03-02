@@ -24,6 +24,6 @@ class ConstantSourceNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> offsetParam_;
+  const std::shared_ptr<AudioParam> offsetParam_;
 };
 } // namespace audioapi

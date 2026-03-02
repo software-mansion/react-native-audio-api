@@ -19,16 +19,21 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
+    /// @note JS Thread only
   void initStretch(const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
+  /// @note Audio Thread only
   void setOnPositionChangedCallbackId(uint64_t callbackId);
+
+  /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
+
+  /// TODO remove and refactor
   [[nodiscard]] int getOnPositionChangedInterval() const;
 
-  /// @note Thread safe, because does not access state of the node.
   void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
  protected:
@@ -40,8 +45,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   std::shared_ptr<AudioBuffer> playbackRateBuffer_;
 
   // k-rate params
-  std::shared_ptr<AudioParam> detuneParam_;
-  std::shared_ptr<AudioParam> playbackRateParam_;
+  const std::shared_ptr<AudioParam> detuneParam_;
+  const std::shared_ptr<AudioParam> playbackRateParam_;
 
   // internal helper
   double vReadIndex_;

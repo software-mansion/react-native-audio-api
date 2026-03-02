@@ -26,14 +26,23 @@ class AnalyserNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const AnalyserOptions &options);
 
-  void setFFTSize(int fftSize);
   void setMinDecibels(float minDecibels);
   void setMaxDecibels(float maxDecibels);
   void setSmoothingTimeConstant(float smoothingTimeConstant);
 
+  /// @note JS Thread only
+  void setFFTSize(int fftSize);
+
+  /// @note JS Thread only
   void getFloatFrequencyData(float *data, int length);
+
+  /// @note JS Thread only
   void getByteFrequencyData(uint8_t *data, int length);
+
+    /// @note JS Thread only
   void getFloatTimeDomainData(float *data, int length);
+
+    /// @note JS Thread only
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:

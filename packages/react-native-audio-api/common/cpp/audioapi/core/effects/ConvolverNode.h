@@ -25,7 +25,10 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const ConvolverOptions &options);
 
+  /// @note Audio Thread only
   void setNormalize(bool normalize);
+
+  /// @note Audio Thread only
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
  protected:

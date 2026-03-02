@@ -21,23 +21,32 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
+    /// @note Audio Thread only
   void stop(double when) override;
 
   void start(double when) override;
+    /// @note Audio Thread only
   void start(double when, double offset);
+    /// @note Audio Thread only
   void pause();
 
+    /// @note Audio Thread only
   void enqueueBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
       size_t bufferId,
       const std::shared_ptr<AudioBuffer> &tailBuffer);
+
+    /// @note Audio Thread only
   void dequeueBuffer(size_t bufferId);
+    /// @note Audio Thread only
   void clearBuffers();
+
+    /// @note Audio Thread only
   void disable() override;
 
+  /// @note Audio Thread only
   void setOnBufferEndedCallbackId(uint64_t callbackId);
 
-  /// @note Thread safe, because does not access state of the node.
   void unregisterOnBufferEndedCallback(uint64_t callbackId);
 
  protected:

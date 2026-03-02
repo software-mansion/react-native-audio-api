@@ -13,7 +13,7 @@ namespace audioapi {
 AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
     const std::shared_ptr<AudioBufferBaseSourceNode> &node,
     const BaseAudioBufferSourceOptions &options)
-    : AudioScheduledSourceNodeHostObject(node, options), pitchCorrection_(options.pitchCorrection)  {
+    : AudioScheduledSourceNodeHostObject(node, options), pitchCorrection_(options.pitchCorrection) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   detuneParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getDetuneParam());
   playbackRateParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getPlaybackRateParam());
