@@ -72,10 +72,22 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   //  when the same buffer is reused across threads and
   // buffer modification is not allowed on JS thread
   auto copiedBuffer = std::make_shared<AudioBuffer>(*audioBufferHostObject->audioBuffer_);
+  std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
+
+  if (pitchCorrection_ && !stretchHasBeenInit_) {
+    initStretch(copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
+    int extraTailFrames =
+          static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
+    tailBuffer = std::make_shared<AudioBuffer>(copiedBuffer->getNumberOfChannels(), extraTailFrames, copiedBuffer->getSampleRate());
+    tailBuffer->zero();
+    stretchHasBeenInit_ = true;
+  }
+
   auto event = [audioBufferQueueSourceNode,
                 copiedBuffer,
-                bufferId = bufferId_](BaseAudioContext &) {
-    audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId);
+                bufferId = bufferId_,
+                tailBuffer](BaseAudioContext &) {
+    audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
 

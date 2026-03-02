@@ -27,7 +27,10 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset);
   void pause();
 
-  void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t bufferId);
+  void enqueueBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      size_t bufferId,
+      const std::shared_ptr<AudioBuffer> &tailBuffer);
   void dequeueBuffer(size_t bufferId);
   void clearBuffers();
   void disable() override;
@@ -48,7 +51,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
  private:
   // User provided buffers
-  std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
+  std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_{};
 
   bool isPaused_ = false;
   bool addExtraTailFrames_ = false;

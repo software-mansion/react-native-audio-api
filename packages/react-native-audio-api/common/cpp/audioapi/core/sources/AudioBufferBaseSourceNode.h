@@ -19,14 +19,14 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
+  void initStretch(const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch);
+
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
   void setOnPositionChangedCallbackId(uint64_t callbackId);
   void setOnPositionChangedInterval(int interval);
   [[nodiscard]] int getOnPositionChangedInterval() const;
-  [[nodiscard]] double getInputLatency() const;
-  [[nodiscard]] double getOutputLatency() const;
 
   /// @note Thread safe, because does not access state of the node.
   void unregisterOnPositionChangedCallback(uint64_t callbackId);

@@ -23,17 +23,10 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options) {
-  buffers_ = {};
-  stretch_->presetDefault(static_cast<int>(channelCount_), context->getSampleRate());
-
   if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
-    int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    tailBuffer_ = std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
-
-    tailBuffer_->zero();
   }
 
   isInitialized_.store(true, std::memory_order_release);
@@ -66,8 +59,12 @@ void AudioBufferQueueSourceNode::pause() {
   isPaused_ = true;
 }
 
-void AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t bufferId) {
+void AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t bufferId, const std::shared_ptr<AudioBuffer> &tailBuffer) {
   buffers_.emplace_back(bufferId, buffer);
+
+  if (tailBuffer != nullptr) {
+    tailBuffer_ = tailBuffer;
+  }
 
   if (tailBuffer_ != nullptr) {
     addExtraTailFrames_ = true;

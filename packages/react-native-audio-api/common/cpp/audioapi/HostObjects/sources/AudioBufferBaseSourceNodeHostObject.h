@@ -36,11 +36,12 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   int onPositionChangedInterval_;
   uint64_t onPositionChangedCallbackId_ = 0;
 
-  double inputLatency_;
-  double outputLatency_;
+  double inputLatency_ = 0;
+  double outputLatency_ = 0;
   bool pitchCorrection_;
 
   void setOnPositionChangedCallbackId(uint64_t callbackId);
+  void initStretch(int channelCount, float sampleRate);
 };
 
 } // namespace audioapi

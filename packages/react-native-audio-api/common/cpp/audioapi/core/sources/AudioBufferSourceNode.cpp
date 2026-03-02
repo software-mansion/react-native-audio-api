@@ -83,7 +83,6 @@ void AudioBufferSourceNode::setBuffer(
   audioBuffer_ = audioBuffer;
   channelCount_ = buffer_->getNumberOfChannels();
   loopEnd_ = buffer_->getDuration();
-  stretch_->presetDefault(static_cast<int>(channelCount_), buffer_->getSampleRate());
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
