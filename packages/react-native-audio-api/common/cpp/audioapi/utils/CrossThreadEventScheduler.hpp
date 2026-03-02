@@ -3,7 +3,6 @@
 #include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
-#include <functional>
 #include <utility>
 
 namespace audioapi {

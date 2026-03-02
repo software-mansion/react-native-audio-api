@@ -28,7 +28,6 @@
 #include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
