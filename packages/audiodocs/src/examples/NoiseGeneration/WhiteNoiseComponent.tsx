@@ -56,7 +56,7 @@ const WhiteNoise: FC = () => {
 
     if (!gainRef.current) {
       gainRef.current = aCtxRef.current.createGain();
-      gainRef.current.gain.value = 0.3;
+      gainRef.current.gain.value = 0.05;
       gainRef.current.connect(aCtxRef.current.destination);
     }
   }, []);
