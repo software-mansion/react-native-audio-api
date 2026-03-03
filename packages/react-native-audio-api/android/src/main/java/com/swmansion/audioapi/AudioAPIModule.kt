@@ -32,14 +32,16 @@ class AudioAPIModule(
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
 
-  private val mHybridData: HybridData
+  private lateinit var mHybridData: HybridData
 
-  external fun initHybrid(
+  @OptIn(markerClass = [FrameworkAPI::class])
+  private external fun initHybrid(
     workletsModule: Any?,
     jsContext: Long,
     callInvoker: CallInvokerHolderImpl,
   ): HybridData
 
+  @OptIn(markerClass = [FrameworkAPI::class])
   private external fun injectJSIBindings()
 
   external fun invokeHandlerWithEventNameAndEventBody(
@@ -50,23 +52,29 @@ class AudioAPIModule(
   init {
     try {
       System.loadLibrary("react-native-audio-api")
-      val jsCallInvokerHolder = reactContext.jsCallInvokerHolder as CallInvokerHolderImpl
-
-      var workletsModule: Any? = null
-      if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
-        try {
-          workletsModule = reactContext.getNativeModule("WorkletsModule")
-        } catch (ex: Exception) {
-          throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
-        }
-      }
-      mHybridData = initHybrid(workletsModule, reactContext.javaScriptContextHolder!!.get(), jsCallInvokerHolder)
     } catch (exception: UnsatisfiedLinkError) {
       throw RuntimeException("Could not load native module AudioAPIModule", exception)
     }
   }
 
+  @OptIn(markerClass = [FrameworkAPI::class])
   override fun install(): Boolean {
+    val context = reactContext.get() ?: return false
+    context.assertOnJSQueueThread()
+
+    val jsContext = context.javaScriptContextHolder!!.get()
+    val jsCallInvokerHolder = context.jsCallInvokerHolder as CallInvokerHolderImpl
+
+    var workletsModule: Any? = null
+    if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
+      try {
+        workletsModule = context.getNativeModule("WorkletsModule")
+      } catch (_: Exception) {
+        throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
+      }
+    }
+
+    mHybridData = initHybrid(workletsModule, jsContext, jsCallInvokerHolder)
     MediaSessionManager.initialize(WeakReference(this), reactContext)
     NativeFileInfo.initialize(reactContext)
     injectJSIBindings()
@@ -244,7 +252,7 @@ class AudioAPIModule(
 
       val isActive = MediaSessionManager.isNotificationActive(key)
       promise?.resolve(isActive)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       promise?.resolve(false)
     }
   }
