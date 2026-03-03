@@ -6,7 +6,7 @@ import {
   useCanvasRef,
   useCanvasSize,
 } from '@shopify/react-native-skia';
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AudioBuffer } from 'react-native-audio-api';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
