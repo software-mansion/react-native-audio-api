@@ -1,10 +1,10 @@
 # How to create new AudioNode
 
-In this docs we present recommended design pattern for creating new AudioNode.
+In this docs we present recommended patterns for creating new AudioNodes.
 
 ## Layers
 
-In common each AudioNode has three layers:
+Ususally, each AudioNode has three layers:
 
 - Core (C++)
 
@@ -59,7 +59,7 @@ class GainNode extends AudioNode {
   readonly gain: AudioParam;
 
   constructor(context: BaseAudioContext, options?: TGainOptions) {
-    const gainNode: IGainNode = context.context.createGain(options || {});
+    const gainNode: IGainNode = context.context.createGain(options || {}); // context.context is C++ HO
     super(context, gainNode);
     this.gain = new AudioParam(gainNode.gain, context);
   }
@@ -101,13 +101,13 @@ There are a few rules that should be followed when implementing C++ AudioNode co
 
 - **Thread safety**: Each AudioNode should be created in thread safe manner.
 
-- **Heap allocations**: Heap allocations are not allowed on Audio Thread, so all necessary data should be allocated in constructor, or pre-allocated on other thread and passed to AudioNode.
+- **Heap allocations**: Heap allocations are not allowed on the Audio Thread, so all necessary data should be allocated in constructor, or pre-allocated on other thread and passed to AudioNode.
 
-- **Destructions** No destructions are allowed to happen on Audio Thread. In common AudioNode destruction are handled by already active AudioDestructor. If you need to perform some cleanup, you have to delegate it to AudioDestructor.
+- **Destructions** No destructions are allowed to happen on the Audio Thread. AudioNode destruction are handled by already active AudioDestructor. If you need to perform some cleanup, you have to delegate it to AudioDestructor.
 
-- **No locks on Audio Thread**: Locks are not allowed on Audio Thread. Audio procssing have to be highly performant and efficient.
+- **No locks on Audio Thread**: Locks are not allowed on the Audio Thread. Audio procssing have to be highly performant and efficient.
 
-- **No syscalls** Syscalls are not allowed on Audio Thread, so if you need to perform some work that requires syscalls, you have to delegate it to other thread.
+- **No syscalls** Syscalls are not allowed on the Audio Thread, so if you need to perform some work that requires syscalls, you have to delegate it to other thread.
 
 ## HostObject implementation
 
@@ -148,7 +148,7 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
 ```
 
 
-1. **function**
+3. **function**
 
 C++ counterpart is `JSI_HOST_FUNCTION`. It is a common function that can receive arguments and return some value.
 
@@ -158,7 +158,7 @@ analyserNode.getByteFrequencyData(fftOutput);
 ```
 
 ```cpp
-SI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
+JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = arrayBuffer.data(runtime);
@@ -184,7 +184,7 @@ AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioCo
 
 #### Shadow state (C++)
 
-Shadow state is mechanism introduced in order to make communication between JS and Audio thread lock-free. AudioNodeHostObject stores the set of properties modified only by JS thread (the same set C++ AudioNode has). Everytime we want to access some property from JS, we can just return property from shadow state, when we modify some property we have to update shadow state and schedule update event on Audio Event Loop (SPSC). By following that manner we can skip accessing AudioNode state, that is also accessed by Audio Thread - no need to lock or use atomic variables.
+Shadow state is a mechanism introduced in order to make communication between JS and the Audio Thread lock-free. AudioNodeHostObject stores the set of properties, which are  modified only by JS thread (the same set C++ AudioNode has). Everytime we want to access some property from JS, we can just return property from shadow state, when we modify some property we have to update shadow state and schedule update event on Audio Event Loop (SPSC). By following that manner we can skip accessing AudioNode state, that is also accessed by the Audio Thread - no need to lock or use atomic variables.
 
 ```cpp
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
@@ -222,15 +222,15 @@ JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
 
 **getters** and **setters**
 
-1. Property is primitive and is not modified by Audio Thread.
+1. Property is primitive and is not modified by the Audio Thread.
 
    Shadow state design pattern should be followed.
 
-2. Property is not primitive and is not modified by Audio Thread.
+2. Property is not primitive and is not modified by the Audio Thread.
 
-  In common it should be stored in TS layer and copied to AudioNode
+  It should be stored in TS layer and copied to AudioNode
 
-3. Property is primitive and can be modified by Audio Thread.
+3. Property is primitive and can be modified by the Audio Thread.
 
   In C++ core it should be an atomic variable that allows to access it in thread-safe manner from both threads.
 
@@ -270,10 +270,10 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 }
 ```
 
-4. Property is not primitive and can be modified by Audio Thread.
+4. Property is not primitive and can be modified by the Audio Thread.
   In C++ core triple buffer pattern should be followed. It allows to have one copy of property for reader, one for writer and one for pending update. On each update we just swap pending update with writer, and on each read we just read from reader. In that manner we can skip locks and just operate on atomic indices.
 
-  Check AnalyserNode implementation for example.
+  Check AnalyserNode implementation for example or this [article](https://medium.com/@sgn00/triple-buffer-lock-free-concurrency-primitive-611848627a1e) for more details.
 
 **functions**
 

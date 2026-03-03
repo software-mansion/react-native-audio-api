@@ -104,13 +104,7 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 
   for (int i = 0; i < size; i++) {
     float scaledValue = 128 * (values[i] + 1);
-
-    if (scaledValue < 0) {
-      scaledValue = 0;
-    }
-    if (scaledValue > UINT8_MAX) {
-      scaledValue = UINT8_MAX;
-    }
+    scaledValue = std::clamp(scaledValue, 0.0f, static_cast<float>(UINT8_MAX));
 
     data[i] = static_cast<uint8_t>(scaledValue);
   }
