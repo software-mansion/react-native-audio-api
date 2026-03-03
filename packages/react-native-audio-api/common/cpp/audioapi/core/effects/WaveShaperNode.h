@@ -24,10 +24,10 @@ class WaveShaperNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const WaveShaperOptions &options);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setOversample(OverSampleType);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setCurve(const std::shared_ptr<AudioArray> &curve);
 
  protected:

@@ -27,22 +27,22 @@ class AudioScheduledSourceNode : public AudioNode {
   virtual void start(double when);
   virtual void stop(double when);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   bool isUnscheduled();
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   bool isScheduled();
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   bool isPlaying();
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   bool isFinished();
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   bool isStopScheduled();
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;

@@ -43,29 +43,29 @@ class AudioParam {
     value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setValueAtTime(float value, double startTime);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void linearRampToValueAtTime(float value, double endTime);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void exponentialRampToValueAtTime(float value, double endTime);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setTargetAtTime(float target, double startTime, double timeConstant);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setValueCurveAtTime(
       const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
       double duration);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void cancelScheduledValues(double cancelTime);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
   template <
@@ -85,13 +85,13 @@ class AudioParam {
   /// @note Audio Thread only
   void addInputNode(AudioNode *node);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void removeInputNode(AudioNode *node);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   float processKRateParam(int framesToProcess, double time);
 
  private:

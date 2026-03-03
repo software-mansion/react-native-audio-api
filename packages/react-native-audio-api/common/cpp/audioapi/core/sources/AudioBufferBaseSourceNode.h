@@ -19,7 +19,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
-    /// @note JS Thread only
+  /// @note JS Thread only
   void initStretch(const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;

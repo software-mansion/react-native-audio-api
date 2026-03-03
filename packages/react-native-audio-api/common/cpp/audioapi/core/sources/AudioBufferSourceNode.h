@@ -19,16 +19,16 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioBufferSourceOptions &options);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setLoop(bool loop);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setLoopSkip(bool loopSkip);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setLoopStart(double loopStart);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setLoopEnd(double loopEnd);
 
   /// @note Audio Thread only
@@ -38,13 +38,13 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<AudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void start(double when, double offset, double duration = -1);
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void disable() override;
 
-    /// @note Audio Thread only
+  /// @note Audio Thread only
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
   void unregisterOnLoopEndedCallback(uint64_t callbackId);

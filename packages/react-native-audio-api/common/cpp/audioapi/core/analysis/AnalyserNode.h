@@ -39,10 +39,10 @@ class AnalyserNode : public AudioNode {
   /// @note JS Thread only
   void getByteFrequencyData(uint8_t *data, int length);
 
-    /// @note JS Thread only
+  /// @note JS Thread only
   void getFloatTimeDomainData(float *data, int length);
 
-    /// @note JS Thread only
+  /// @note JS Thread only
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
