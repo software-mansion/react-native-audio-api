@@ -81,7 +81,6 @@ class AnalyserNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  // Audio Thread parameters
   std::atomic<int> fftSize_;
 
   // Audio Thread data structures
@@ -103,11 +102,15 @@ class AnalyserNode : public AudioNode {
   struct AnalysisFrame {
     AudioArray timeDomain;
     size_t sequenceNumber = 0;
+    int fftSize = 0;
 
-    AnalysisFrame() : timeDomain(MAX_FFT_SIZE) {}
+    explicit AnalysisFrame(size_t size) : timeDomain(size) {}
+
+    AnalysisFrame(const AnalysisFrame &) = delete;
+    AnalysisFrame &operator=(const AnalysisFrame &) = delete;
   };
 
-  TripleBuffer<AnalysisFrame> analysisBuffer_;
+  TripleBuffer<AnalysisFrame> analysisBuffer_{MAX_FFT_SIZE};
   size_t publishSequence_ = 0;      // audio thread only
   size_t lastAnalyzedSequence_ = 0; // JS thread only
 

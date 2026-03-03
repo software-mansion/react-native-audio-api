@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <numbers>
+#include <new>
 
 // https://webaudio.github.io/web-audio-api/
 
@@ -32,4 +33,13 @@ static constexpr float PI = std::numbers::pi_v<float>;
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
+
+// Cache line size
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_constructive_interference_size;
+using std::hardware_destructive_interference_size;
+#else
+constexpr std::size_t hardware_constructive_interference_size = 64;
+constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
 } // namespace audioapi

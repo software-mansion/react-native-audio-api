@@ -1,7 +1,9 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <atomic>
-#include <utility>
+#include <cstddef>
+#include <new>
 
 namespace audioapi {
 
@@ -13,8 +15,24 @@ namespace audioapi {
 template <typename T>
 class TripleBuffer {
  public:
+  template <typename... Args>
+  explicit TripleBuffer(Args &&...args) {
+    new (&buffers_[0]) T(args...);
+    new (&buffers_[1]) T(args...);
+    new (&buffers_[2]) T(args...);
+  }
+
+  ~TripleBuffer() {
+    std::launder(reinterpret_cast<T *>(&buffers_[0]))->~T();
+    std::launder(reinterpret_cast<T *>(&buffers_[1]))->~T();
+    std::launder(reinterpret_cast<T *>(&buffers_[2]))->~T();
+  }
+
+  TripleBuffer(const TripleBuffer &) = delete;
+  TripleBuffer &operator=(const TripleBuffer &) = delete;
+
   T *getForWriter() {
-    return &buffers_[backIndex_];
+    return std::launder(reinterpret_cast<T *>(&buffers_[backIndex_]));
   }
 
   void publish() {
@@ -31,19 +49,23 @@ class TripleBuffer {
       frontIndex_ = prevState.index;
     }
 
-    return &buffers_[frontIndex_];
+    return std::launder(reinterpret_cast<T *>(&buffers_[frontIndex_]));
   }
 
  private:
   struct State {
-    int index;
-    bool hasUpdate;
+    uint32_t index : 2;
+    uint32_t hasUpdate : 1;
   };
 
-  T buffers_[3];
-  int frontIndex_ = 0;
-  std::atomic<State> state_{{1, false}};
-  int backIndex_ = 2;
+  struct alignas(hardware_constructive_interference_size) AlignedBuffer {
+    alignas(T) std::byte data[sizeof(T)];
+  };
+
+  AlignedBuffer buffers_[3];
+  alignas(hardware_constructive_interference_size) uint32_t frontIndex_{0};
+  alignas(hardware_constructive_interference_size) std::atomic<State> state_{{1, false}};
+  alignas(hardware_constructive_interference_size) uint32_t backIndex_{2};
 };
 
 } // namespace audioapi

@@ -65,31 +65,22 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
         magnitudeBufferData[i] == 0 ? minDecibels_ : dsp::linearToDecibels(magnitudeBufferData[i]);
     auto scaledValue = UINT8_MAX * (dbMag - minDecibels_) * rangeScaleFactor;
 
-    if (scaledValue < 0) {
-      scaledValue = 0;
-    }
-    if (scaledValue > UINT8_MAX) {
-      scaledValue = UINT8_MAX;
-    }
-
-    data[i] = static_cast<uint8_t>(scaledValue);
+    data[i] = static_cast<uint8_t>(std::clamp(scaledValue, 0.0f, static_cast<float>(UINT8_MAX)));
   }
 }
 
 void AnalyserNode::getFloatTimeDomainData(float *data, int length) {
   auto *frame = analysisBuffer_.getForReader();
-  auto size = std::min(fftSize_.load(std::memory_order_relaxed), length);
+  auto size = std::min(frame->fftSize, length);
 
   frame->timeDomain.copyTo(data, 0, 0, size);
 }
 
 void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   auto *frame = analysisBuffer_.getForReader();
-  auto size = std::min(fftSize_.load(std::memory_order_relaxed), length);
+  auto size = std::min(frame->fftSize, length);
 
-  tempArray_->copy(frame->timeDomain, 0, 0, size);
-
-  auto values = tempArray_->span();
+  auto values = frame->timeDomain.span();
 
   for (int i = 0; i < size; i++) {
     float scaledValue = 128 * (values[i] + 1);
@@ -113,6 +104,7 @@ std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
   // Snapshot the latest fftSize_ samples into the triple buffer for the JS thread.
   auto *frame = analysisBuffer_.getForWriter();
   auto fftSize = fftSize_.load(std::memory_order_acquire);
+  frame->fftSize = fftSize;
   frame->sequenceNumber = ++publishSequence_;
   inputArray_->pop_back(frame->timeDomain, fftSize, 0, true);
   analysisBuffer_.publish();
@@ -127,9 +119,14 @@ void AnalyserNode::doFFTAnalysis() {
     return;
   }
 
-  lastAnalyzedSequence_ = frame->sequenceNumber;
+  auto fftSize = frame->fftSize;
 
-  auto fftSize = fftSize_.load(std::memory_order_relaxed);
+  // relaxed because fftSize_ is only updated on the JS thread.
+  if (fftSize != fftSize_.load(std::memory_order_relaxed)) {
+    return;
+  }
+
+  lastAnalyzedSequence_ = frame->sequenceNumber;
 
   // Copy the snapshot from the triple buffer and apply the window.
   tempArray_->copy(frame->timeDomain, 0, 0, fftSize);
