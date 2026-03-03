@@ -17,7 +17,7 @@
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(
-    const std::shared_ptr<BaseAudioContext>& context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const AudioScheduledSourceNodeOptions &options)
     : AudioNode(context, options),
       startTime_(-1.0),

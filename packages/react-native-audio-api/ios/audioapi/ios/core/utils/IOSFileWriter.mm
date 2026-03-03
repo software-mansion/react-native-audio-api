@@ -179,6 +179,8 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
             audioBufferList->mBuffers[i].mData,
             audioBufferList->mBuffers[i].mDataByteSize);
       }
+
+      audioBufferList = nullptr;
       converterInputBuffer_.frameLength = numFrames;
 
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
@@ -201,6 +203,7 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
           audioBufferList->mBuffers[i].mDataByteSize);
     }
 
+    audioBufferList = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;

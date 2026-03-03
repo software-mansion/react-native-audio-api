@@ -1,4 +1,3 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
@@ -6,6 +5,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
@@ -21,7 +21,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(false),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-        setBuffer(options.buffer);
+  setBuffer(options.buffer);
   isInitialized_ = true;
 }
 
@@ -94,7 +94,8 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
         static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
     size_t totalSize = buffer_->getSize() + extraTailFrames;
 
-    alignedBuffer_ = std::make_shared<AudioBuffer>(totalSize, channelCount_, buffer_->getSampleRate());
+    alignedBuffer_ =
+        std::make_shared<AudioBuffer>(totalSize, channelCount_, buffer_->getSampleRate());
     alignedBuffer_->copy(*buffer_, 0, 0, buffer_->getSize());
 
     alignedBuffer_->zero(buffer_->getSize(), extraTailFrames);
@@ -120,8 +121,8 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     return;
   }
 
-  offset =
-      std::min(offset, static_cast<double>(alignedBuffer_->getSize()) / alignedBuffer_->getSampleRate());
+  offset = std::min(
+      offset, static_cast<double>(alignedBuffer_->getSize()) / alignedBuffer_->getSampleRate());
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);

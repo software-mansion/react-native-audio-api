@@ -1,9 +1,9 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -135,7 +135,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
 
   stretch_->process(
-      playbackRateBuffer_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
+      playbackRateBuffer_.get()[0],
+      framesNeededToStretch,
+      processingBuffer.get()[0],
+      framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);

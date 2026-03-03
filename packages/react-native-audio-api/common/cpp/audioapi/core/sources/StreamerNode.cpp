@@ -8,10 +8,10 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <cstdint>
@@ -152,7 +152,8 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     }
   }
   if (bufferedAudioBuffer_ != nullptr) {
-    processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
+    processingBuffer->copy(
+        *bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -163,7 +164,8 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 bool StreamerNode::setupResampler(float outSampleRate) {
   int n = codecCtx_->ch_layout.nb_channels;
-  resampler_ = std::make_unique<r8b::MultiChannelResampler>(codecCtx_->sample_rate, outSampleRate, n);
+  resampler_ =
+      std::make_unique<r8b::MultiChannelResampler>(codecCtx_->sample_rate, outSampleRate, n);
   outSampleRate_ = outSampleRate;
   return true;
 }
@@ -192,18 +194,13 @@ void StreamerNode::streamAudio() {
   }
 }
 
-static void extractChannelAsFloat(
-    const AVFrame *frame,
-    int channel,
-    float *output) {
+static void extractChannelAsFloat(const AVFrame *frame, int channel, float *output) {
   const int nb = frame->nb_samples;
 
   switch (frame->format) {
     case AV_SAMPLE_FMT_FLTP: {
       std::memcpy(
-          output,
-          reinterpret_cast<const float *>(frame->data[channel]),
-          nb * sizeof(float));
+          output, reinterpret_cast<const float *>(frame->data[channel]), nb * sizeof(float));
       break;
     }
     case AV_SAMPLE_FMT_DBLP: {
@@ -249,11 +246,9 @@ bool StreamerNode::processFrameWithResampler(
 
   const int numChannels = frame->ch_layout.nb_channels;
   const int nbSamples = frame->nb_samples;
-  const bool needsResample =
-      static_cast<int>(outSampleRate_) != frame->sample_rate;
+  const bool needsResample = static_cast<int>(outSampleRate_) != frame->sample_rate;
 
-  std::vector<std::vector<float>> inputBuffers(
-      numChannels, std::vector<float>(nbSamples));
+  std::vector<std::vector<float>> inputBuffers(numChannels, std::vector<float>(nbSamples));
   for (int ch = 0; ch < numChannels; ++ch) {
     extractChannelAsFloat(frame, ch, inputBuffers[ch].data());
   }
@@ -275,8 +270,7 @@ bool StreamerNode::processFrameWithResampler(
     }
   }
 
-  auto buffer =
-  AudioBuffer(outSamples, numChannels, context->getSampleRate());
+  auto buffer = AudioBuffer(outSamples, numChannels, context->getSampleRate());
   for (int ch = 0; ch < numChannels; ++ch) {
     buffer.getChannel(ch)->copy(copyVector[ch], 0, 0, outSamples);
   }

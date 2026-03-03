@@ -10,7 +10,8 @@
 
 namespace audioapi {
 
-WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate) : curve_(curve), sampleRate_(sampleRate) {
+WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate)
+    : curve_(curve), sampleRate_(sampleRate) {
   tempBuffer2x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 2);
   tempBuffer2x_->zero();
   tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
@@ -21,11 +22,15 @@ WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRat
 
 void WaveShaper::createResamplers(OverSampleType type) {
   if (type == OverSampleType::OVERSAMPLE_2X) {
-    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(sampleRate_, sampleRate_ * 2, 1, RENDER_QUANTUM_SIZE);
-    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(sampleRate_ * 2, sampleRate_, 1, RENDER_QUANTUM_SIZE * 2);
+    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(
+        sampleRate_, sampleRate_ * 2, 1, RENDER_QUANTUM_SIZE);
+    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(
+        sampleRate_ * 2, sampleRate_, 1, RENDER_QUANTUM_SIZE * 2);
   } else if (type == OverSampleType::OVERSAMPLE_4X) {
-    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(sampleRate_, sampleRate_ * 4, 1, RENDER_QUANTUM_SIZE * 2);
-    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(sampleRate_ * 4, sampleRate_, 1, RENDER_QUANTUM_SIZE * 4);
+    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(
+        sampleRate_, sampleRate_ * 4, 1, RENDER_QUANTUM_SIZE * 2);
+    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(
+        sampleRate_ * 4, sampleRate_, 1, RENDER_QUANTUM_SIZE * 4);
   }
 }
 

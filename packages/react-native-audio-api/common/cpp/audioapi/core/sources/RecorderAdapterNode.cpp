@@ -20,10 +20,7 @@ RecorderAdapterNode::RecorderAdapterNode(const std::shared_ptr<BaseAudioContext>
   isInitialized_ = false;
 }
 
-void RecorderAdapterNode::init(
-    size_t bufferSize,
-    int channelCount,
-    float sampleRate) {
+void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sampleRate) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (isInitialized_ || context == nullptr) {
     return;
@@ -38,21 +35,20 @@ void RecorderAdapterNode::init(
   }
 
   float contextSampleRate = context->getSampleRate();
-  needsResampling_ =
-      static_cast<int>(sampleRate) != static_cast<int>(contextSampleRate);
+  needsResampling_ = static_cast<int>(sampleRate) != static_cast<int>(contextSampleRate);
 
-  adapterOutputBuffer_ = std::make_shared<AudioBuffer>(
-      RENDER_QUANTUM_SIZE, channelCount_, contextSampleRate);
+  adapterOutputBuffer_ =
+      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, contextSampleRate);
 
   if (needsResampling_) {
-    inputChunkSize_ = static_cast<size_t>(
-        std::ceil(RENDER_QUANTUM_SIZE * sampleRate / contextSampleRate)) + 4;
+    inputChunkSize_ =
+        static_cast<size_t>(std::ceil(RENDER_QUANTUM_SIZE * sampleRate / contextSampleRate)) + 4;
 
     resampler_ = std::make_unique<r8b::MultiChannelResampler>(
         sampleRate, contextSampleRate, channelCount_, inputChunkSize_);
 
-    resamplerInputBuffer_ = std::make_shared<AudioBuffer>(
-        inputChunkSize_, channelCount_, sampleRate);
+    resamplerInputBuffer_ =
+        std::make_shared<AudioBuffer>(inputChunkSize_, channelCount_, sampleRate);
 
     overflowBuffers_.resize(channelCount_);
     overflowSize_ = 0;
@@ -101,8 +97,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
     size_t toCopy = std::min(overflowSize_, needed);
 
     for (int ch = 0; ch < channelCount_; ++ch) {
-      adapterOutputBuffer_->getChannel(ch)->copy(
-          overflowBuffers_[ch].data(), 0, 0, toCopy);
+      adapterOutputBuffer_->getChannel(ch)->copy(overflowBuffers_[ch].data(), 0, 0, toCopy);
     }
     outputWritten = toCopy;
 
@@ -128,8 +123,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
       inputPtrs[ch] = resamplerInputBuffer_->getChannel(ch)->begin();
     }
 
-    int outLen = resampler_->process(
-        inputPtrs, static_cast<int>(inputChunkSize_), outputPtrs);
+    int outLen = resampler_->process(inputPtrs, static_cast<int>(inputChunkSize_), outputPtrs);
 
     if (outLen <= 0) {
       continue;
@@ -140,8 +134,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
 
     // Write resampled frames into the output buffer
     for (int ch = 0; ch < channelCount_; ++ch) {
-      adapterOutputBuffer_->getChannel(ch)->copy(
-          outputPtrs[ch], 0, outputWritten, toCopy);
+      adapterOutputBuffer_->getChannel(ch)->copy(outputPtrs[ch], 0, outputWritten, toCopy);
     }
     outputWritten += toCopy;
 

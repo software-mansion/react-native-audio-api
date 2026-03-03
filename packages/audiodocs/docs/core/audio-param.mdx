@@ -3,6 +3,7 @@ sidebar_position: 4
 ---
 
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import { SetValueAtTimeChart, LinearRampToValueAtTimeChart, ExponentialRampToValueAtTimeChart, SetTargetAtTimeChart, SetValueCurveAtTimeChart } from '@site/src/components/Charts';
 
 # AudioParam
 
@@ -36,7 +37,7 @@ as they are more efficient for continuous changes. For more specific use cases, 
 
 :::
 
-![](/img/setValueAtTime.png)
+<SetValueAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -56,7 +57,7 @@ as they are more efficient for continuous changes. For more specific use cases, 
 Schedules a gradual linear change to the new value.
 The change begins at the time designated for the previous event. It follows a linear ramp to the `value`, achieving it by the specified `endTime`.
 
-![](/img/linearRampToValueAtTime.png)
+<LinearRampToValueAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -76,7 +77,7 @@ The change begins at the time designated for the previous event. It follows a li
 Schedules a gradual exponential change to the new value.
 The change begins at the time designated for the previous event. It follows an exponential ramp to the `value`, achieving it by the specified `endTime`.
 
-![](/img/exponentialRampToValueAtTime.png)
+<ExponentialRampToValueAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -96,7 +97,7 @@ The change begins at the time designated for the previous event. It follows an e
 Schedules a gradual change to the new value at the start time.
 This method is useful for decay or release portions of [ADSR envelopes](/docs/effects/gain-node#envelope---adsr).
 
-![](/img/setTargetAtTime.png)
+<SetTargetAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -117,7 +118,7 @@ This method is useful for decay or release portions of [ADSR envelopes](/docs/ef
 
 Schedules the parameters's value change following a curve defined by given array.
 
-![](/img/setValueCurveAtTime.png)
+<SetValueCurveAtTimeChart />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
