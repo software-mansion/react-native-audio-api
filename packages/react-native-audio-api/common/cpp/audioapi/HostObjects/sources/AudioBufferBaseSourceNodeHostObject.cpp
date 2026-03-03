@@ -1,12 +1,12 @@
-#include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/types/NodeOptions.h>
 
+#include <algorithm>
 #include <memory>
 #include <utility>
-#include <algorithm>
 
 namespace audioapi {
 
@@ -53,21 +53,21 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
-    auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-    setOnPositionChangedCallbackId(callbackId);
+  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
+  setOnPositionChangedCallbackId(callbackId);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
-    auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
-    auto interval = static_cast<int>(value.getNumber());
+  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  auto interval = static_cast<int>(value.getNumber());
 
-    sourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
-    auto event = [sourceNode, interval](BaseAudioContext &) {
-        sourceNode->setOnPositionChangedInterval(interval);
-    };
+  sourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
+  auto event = [sourceNode, interval](BaseAudioContext &) {
+    sourceNode->setOnPositionChangedInterval(interval);
+  };
 
-    sourceNode->scheduleAudioEvent(std::move(event));
-    onPositionChangedInterval_ = interval;
+  sourceNode->scheduleAudioEvent(std::move(event));
+  onPositionChangedInterval_ = interval;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getInputLatency) {
@@ -79,26 +79,28 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
 }
 
 void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
-    auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
-    auto event = [sourceNode, callbackId](BaseAudioContext &) {
-        sourceNode->setOnPositionChangedCallbackId(callbackId);
-    };
+  auto event = [sourceNode, callbackId](BaseAudioContext &) {
+    sourceNode->setOnPositionChangedCallbackId(callbackId);
+  };
 
-    sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-    sourceNode->scheduleAudioEvent(std::move(event));
-    onPositionChangedCallbackId_ = callbackId;
+  sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
+  sourceNode->scheduleAudioEvent(std::move(event));
+  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   auto stretch = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
   stretch->presetDefault(channelCount, sampleRate);
-  inputLatency_ = std::max(dsp::sampleFrameToTime(stretch->inputLatency(), node_->getContextSampleRate()), 0.0);
-  outputLatency_ = std::max(dsp::sampleFrameToTime(stretch->outputLatency(), node_->getContextSampleRate()), 0.0);
+  inputLatency_ =
+      std::max(dsp::sampleFrameToTime(stretch->inputLatency(), node_->getContextSampleRate()), 0.0);
+  outputLatency_ = std::max(
+      dsp::sampleFrameToTime(stretch->outputLatency(), node_->getContextSampleRate()), 0.0);
 
-  auto event = [sourceNode, stretch] (BaseAudioContext&) {
-      sourceNode->initStretch(stretch);
+  auto event = [sourceNode, stretch](BaseAudioContext &) {
+    sourceNode->initStretch(stretch);
   };
   sourceNode->scheduleAudioEvent(std::move(event));
 }

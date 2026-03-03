@@ -9,7 +9,10 @@
 namespace audioapi {
 
 AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &param)
-    : param_(param), defaultValue_(param->getDefaultValue()), minValue_(param->getMinValue()), maxValue_(param->getMaxValue()) {
+    : param_(param),
+      defaultValue_(param->getDefaultValue()),
+      minValue_(param->getMinValue()),
+      maxValue_(param->getMaxValue()) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
@@ -45,46 +48,55 @@ JSI_PROPERTY_GETTER_IMPL(AudioParamHostObject, maxValue) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
-    auto event = [param = param_, value = static_cast<float>(value.getNumber())](BaseAudioContext &) {
-        param->setValue(value);
-    };
+  auto event = [param = param_, value = static_cast<float>(value.getNumber())](BaseAudioContext &) {
+    param->setValue(value);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
-    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber()](BaseAudioContext &) {
-        param->setValueAtTime(value, startTime);
-    };
+  auto event = [param = param_,
+                value = static_cast<float>(args[0].getNumber()),
+                startTime = args[1].getNumber()](BaseAudioContext &) {
+    param->setValueAtTime(value, startTime);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
-    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
-        param->linearRampToValueAtTime(value, endTime);
-    };
+  auto event = [param = param_,
+                value = static_cast<float>(args[0].getNumber()),
+                endTime = args[1].getNumber()](BaseAudioContext &) {
+    param->linearRampToValueAtTime(value, endTime);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
-    auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime = args[1].getNumber()](BaseAudioContext &) {
-        param->exponentialRampToValueAtTime(value, endTime);
-    };
+  auto event = [param = param_,
+                value = static_cast<float>(args[0].getNumber()),
+                endTime = args[1].getNumber()](BaseAudioContext &) {
+    param->exponentialRampToValueAtTime(value, endTime);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
-    auto event = [param = param_, target = static_cast<float>(args[0].getNumber()), startTime = args[1].getNumber(), timeConstant = args[2].getNumber()](BaseAudioContext &) {
-        param->setTargetAtTime(target, startTime, timeConstant);
-    };
+  auto event = [param = param_,
+                target = static_cast<float>(args[0].getNumber()),
+                startTime = args[1].getNumber(),
+                timeConstant = args[2].getNumber()](BaseAudioContext &) {
+    param->setTargetAtTime(target, startTime, timeConstant);
+  };
 
-    param_->scheduleAudioEvent(std::move(event));
+  param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
@@ -95,9 +107,13 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
   auto length = static_cast<int>(arrayBuffer.size(runtime));
   auto values = std::make_shared<AudioArray>(rawValues, length);
 
-    auto event = [param = param_, values, length, startTime = args[1].getNumber(), duration = args[2].getNumber()](BaseAudioContext &) {
-        param->setValueCurveAtTime(values, length, startTime, duration);
-    };
+  auto event = [param = param_,
+                values,
+                length,
+                startTime = args[1].getNumber(),
+                duration = args[2].getNumber()](BaseAudioContext &) {
+    param->setValueCurveAtTime(values, length, startTime, duration);
+  };
 
   param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();

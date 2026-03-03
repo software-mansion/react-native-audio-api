@@ -1,14 +1,15 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/core/AudioNode.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/core/AudioNode.h>
 
 #include <memory>
 
 namespace audioapi {
 
-AudioNodeHostObject::AudioNodeHostObject(const std::shared_ptr<AudioNode> &node,
-                                         const AudioNodeOptions &options)
+AudioNodeHostObject::AudioNodeHostObject(
+    const std::shared_ptr<AudioNode> &node,
+    const AudioNodeOptions &options)
     : node_(node),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
@@ -46,11 +47,13 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCount) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCountMode) {
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::channelCountModeToString(channelCountMode_));
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::channelCountModeToString(channelCountMode_));
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::channelInterpretationToString(channelInterpretation_));
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::channelInterpretationToString(channelInterpretation_));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {

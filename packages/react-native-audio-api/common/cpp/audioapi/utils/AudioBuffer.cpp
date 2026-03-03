@@ -27,7 +27,7 @@ AudioBuffer::AudioBuffer(const AudioBuffer &other)
       sampleRate_(other.sampleRate_),
       size_(other.size_) {
   channels_.reserve(numberOfChannels_);
-  for (const auto& channel : other.channels_) {
+  for (const auto &channel : other.channels_) {
     channels_.emplace_back(std::make_shared<AudioArrayBuffer>(*channel));
   }
 }
@@ -48,7 +48,7 @@ AudioBuffer &AudioBuffer::operator=(const AudioBuffer &other) {
       channels_.clear();
       channels_.reserve(numberOfChannels_);
 
-      for (const auto& channel : other.channels_) {
+      for (const auto &channel : other.channels_) {
         channels_.emplace_back(std::make_shared<AudioArrayBuffer>(*channel));
       }
 
@@ -83,18 +83,18 @@ AudioArray *AudioBuffer::getChannel(size_t index) const {
 }
 
 AudioArray *AudioBuffer::getChannelByType(int channelType) const {
-    auto it = kChannelLayouts.find(getNumberOfChannels());
-    if (it == kChannelLayouts.end()) {
-        return nullptr;
-    }
-    const auto& channelOrder = it->second;
-    for (size_t i = 0; i < channelOrder.size(); ++i) {
-        if (channelOrder[i] == channelType) {
-            return getChannel(i);
-        }
-    }
-
+  auto it = kChannelLayouts.find(getNumberOfChannels());
+  if (it == kChannelLayouts.end()) {
     return nullptr;
+  }
+  const auto &channelOrder = it->second;
+  for (size_t i = 0; i < channelOrder.size(); ++i) {
+    if (channelOrder[i] == channelType) {
+      return getChannel(i);
+    }
+  }
+
+  return nullptr;
 }
 
 std::shared_ptr<AudioArrayBuffer> AudioBuffer::getSharedChannel(size_t index) const {
@@ -303,14 +303,14 @@ void AudioBuffer::sumByUpMixing(
   if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
     mix(ChannelMono, ChannelLeft);
     mix(ChannelMono, ChannelRight);
-  // Mono to 5.1 (1 -> 6)
+    // Mono to 5.1 (1 -> 6)
   } else if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
     mix(ChannelMono, ChannelCenter);
-  // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
+    // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
   } else if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
     mix(ChannelLeft, ChannelLeft);
     mix(ChannelRight, ChannelRight);
-  // Stereo 4 to 5.1 (4 -> 6)
+    // Stereo 4 to 5.1 (4 -> 6)
   } else if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
     mix(ChannelLeft, ChannelLeft);
     mix(ChannelRight, ChannelRight);
@@ -338,26 +338,26 @@ void AudioBuffer::sumByDownMixing(
   if (numberOfSourceChannels == 2 && numberOfChannels == 1) {
     mix(ChannelLeft, ChannelMono, 0.5f);
     mix(ChannelRight, ChannelMono, 0.5f);
-  // Stereo 4 to mono (4 -> 1): output += 0.25 * (input.L + input.R + input.SL + input.SR)
+    // Stereo 4 to mono (4 -> 1): output += 0.25 * (input.L + input.R + input.SL + input.SR)
   } else if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
     mix(ChannelLeft, ChannelMono, 0.25f);
     mix(ChannelRight, ChannelMono, 0.25f);
     mix(ChannelSurroundLeft, ChannelMono, 0.25f);
     mix(ChannelSurroundRight, ChannelMono, 0.25f);
-  // 5.1 to mono (6 -> 1): output += sqrt(0.5)*(L+R) + C + 0.5*(SL+SR)
+    // 5.1 to mono (6 -> 1): output += sqrt(0.5)*(L+R) + C + 0.5*(SL+SR)
   } else if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
     mix(ChannelLeft, ChannelMono, SQRT_HALF);
     mix(ChannelRight, ChannelMono, SQRT_HALF);
     mix(ChannelCenter, ChannelMono);
     mix(ChannelSurroundLeft, ChannelMono, 0.5f);
     mix(ChannelSurroundRight, ChannelMono, 0.5f);
-  // Stereo 4 to stereo 2 (4 -> 2): L += 0.5*(L+SL), R += 0.5*(R+SR)
+    // Stereo 4 to stereo 2 (4 -> 2): L += 0.5*(L+SL), R += 0.5*(R+SR)
   } else if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
     mix(ChannelLeft, ChannelLeft, 0.5f);
     mix(ChannelSurroundLeft, ChannelLeft, 0.5f);
     mix(ChannelRight, ChannelRight, 0.5f);
     mix(ChannelSurroundRight, ChannelRight, 0.5f);
-  // 5.1 to stereo (6 -> 2): L += L + sqrt(0.5)*(C+SL), R += R + sqrt(0.5)*(C+SR)
+    // 5.1 to stereo (6 -> 2): L += L + sqrt(0.5)*(C+SL), R += R + sqrt(0.5)*(C+SR)
   } else if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
     mix(ChannelLeft, ChannelLeft);
     mix(ChannelCenter, ChannelLeft, SQRT_HALF);
@@ -365,7 +365,7 @@ void AudioBuffer::sumByDownMixing(
     mix(ChannelRight, ChannelRight);
     mix(ChannelCenter, ChannelRight, SQRT_HALF);
     mix(ChannelSurroundRight, ChannelRight, SQRT_HALF);
-  // 5.1 to stereo 4 (6 -> 4): L += L + sqrt(0.5)*C, R += R + sqrt(0.5)*C, SL += SL, SR += SR
+    // 5.1 to stereo 4 (6 -> 4): L += L + sqrt(0.5)*C, R += R + sqrt(0.5)*C, SL += SL, SR += SR
   } else if (numberOfSourceChannels == 6 && numberOfChannels == 4) {
     mix(ChannelLeft, ChannelLeft);
     mix(ChannelCenter, ChannelLeft, SQRT_HALF);

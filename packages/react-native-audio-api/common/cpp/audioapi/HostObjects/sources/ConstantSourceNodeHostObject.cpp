@@ -1,8 +1,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
 
 namespace audioapi {

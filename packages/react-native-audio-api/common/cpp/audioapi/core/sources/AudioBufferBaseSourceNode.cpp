@@ -17,17 +17,28 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
       pitchCorrection_(options.pitchCorrection),
-      playbackRateBuffer_(std::make_shared<AudioBuffer>(
-              RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate())),
-      detuneParam_(std::make_shared<AudioParam>(
-              options.detune, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context)),
-      playbackRateParam_(std::make_shared<AudioParam>(
-                  options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context)),
+      playbackRateBuffer_(
+          std::make_shared<AudioBuffer>(
+              RENDER_QUANTUM_SIZE * 3,
+              channelCount_,
+              context->getSampleRate())),
+      detuneParam_(
+          std::make_shared<AudioParam>(
+              options.detune,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      playbackRateParam_(
+          std::make_shared<AudioParam>(
+              options.playbackRate,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       vReadIndex_(0.0),
       onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1)) {}
 
 void AudioBufferBaseSourceNode::initStretch(
-            const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch) {
+    const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch) {
   stretch_ = stretch;
 }
 
@@ -53,7 +64,7 @@ int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
 }
 
 void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
-    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
+  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
@@ -106,7 +117,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
 
   stretch_->process(
-      playbackRateBuffer_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
+      playbackRateBuffer_.get()[0],
+      framesNeededToStretch,
+      processingBuffer.get()[0],
+      framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);

@@ -3,9 +3,9 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
 #include <utility>
 
@@ -14,10 +14,10 @@ namespace audioapi {
 OscillatorNodeHostObject::OscillatorNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options), type_(options.type) {
+    : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options),
+      type_(options.type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  frequencyParam_ =
-      std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
+  frequencyParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
 
   addGetters(

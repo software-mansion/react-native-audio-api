@@ -8,14 +8,22 @@
 namespace audioapi {
 
 OfflineAudioContextHostObject::OfflineAudioContextHostObject(
-        int numberOfChannels,
-        size_t length,
-        float sampleRate,
-        const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-        const RuntimeRegistry &runtimeRegistry,
-        jsi::Runtime *runtime,
-        const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : BaseAudioContextHostObject(std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, audioEventHandlerRegistry, runtimeRegistry), runtime, callInvoker) {
+    int numberOfChannels,
+    size_t length,
+    float sampleRate,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const RuntimeRegistry &runtimeRegistry,
+    jsi::Runtime *runtime,
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : BaseAudioContextHostObject(
+          std::make_shared<OfflineAudioContext>(
+              numberOfChannels,
+              length,
+              sampleRate,
+              audioEventHandlerRegistry,
+              runtimeRegistry),
+          runtime,
+          callInvoker) {
   addFunctions(
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),

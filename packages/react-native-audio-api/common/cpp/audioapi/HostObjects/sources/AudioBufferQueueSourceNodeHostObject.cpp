@@ -4,9 +4,9 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
-#include <utility>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace audioapi {
 
@@ -41,10 +41,9 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
   auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-  auto event = [
-          audioBufferQueueSourceNode,
-          when = args[0].getNumber(),
-          offset = args[1].isNumber() ? args[1].getNumber() : -1](BaseAudioContext &) {
+  auto event = [audioBufferQueueSourceNode,
+                when = args[0].getNumber(),
+                offset = args[1].isNumber() ? args[1].getNumber() : -1](BaseAudioContext &) {
     audioBufferQueueSourceNode->start(when, offset);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
@@ -77,16 +76,15 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   if (pitchCorrection_ && !stretchHasBeenInit_) {
     initStretch(copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
     int extraTailFrames =
-          static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
-    tailBuffer = std::make_shared<AudioBuffer>(copiedBuffer->getNumberOfChannels(), extraTailFrames, copiedBuffer->getSampleRate());
+        static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
+    tailBuffer = std::make_shared<AudioBuffer>(
+        copiedBuffer->getNumberOfChannels(), extraTailFrames, copiedBuffer->getSampleRate());
     tailBuffer->zero();
     stretchHasBeenInit_ = true;
   }
 
-  auto event = [audioBufferQueueSourceNode,
-                copiedBuffer,
-                bufferId = bufferId_,
-                tailBuffer](BaseAudioContext &) {
+  auto event = [audioBufferQueueSourceNode, copiedBuffer, bufferId = bufferId_, tailBuffer](
+                   BaseAudioContext &) {
     audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
@@ -118,15 +116,15 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
 }
 
 void AudioBufferQueueSourceNodeHostObject::setOnBufferEndedCallbackId(uint64_t callbackId) {
-    auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+  auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
 
-    auto event = [audioBufferQueueSourceNode, callbackId](BaseAudioContext &) {
-        audioBufferQueueSourceNode->setOnBufferEndedCallbackId(callbackId);
-    };
+  auto event = [audioBufferQueueSourceNode, callbackId](BaseAudioContext &) {
+    audioBufferQueueSourceNode->setOnBufferEndedCallbackId(callbackId);
+  };
 
-    audioBufferQueueSourceNode->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
-    audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
-    onBufferEndedCallbackId_ = callbackId;
+  audioBufferQueueSourceNode->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
+  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  onBufferEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi

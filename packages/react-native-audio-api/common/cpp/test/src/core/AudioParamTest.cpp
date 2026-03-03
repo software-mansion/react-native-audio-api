@@ -121,7 +121,7 @@ TEST_F(AudioParamTest, SetValueCurveAtTime) {
   auto param = AudioParam(0.0, 0.0, 1.0, context);
   param.setValue(0.5);
   auto curve = std::make_shared<AudioArray>(5);
-  auto curveSpan = curve ->span();
+  auto curveSpan = curve->span();
   curveSpan[0] = 0.1f;
   curveSpan[1] = 0.4f;
   curveSpan[2] = 0.2f;

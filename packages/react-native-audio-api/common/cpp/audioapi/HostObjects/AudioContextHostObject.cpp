@@ -12,7 +12,10 @@ AudioContextHostObject::AudioContextHostObject(
     const RuntimeRegistry &runtimeRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : BaseAudioContextHostObject(std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, runtimeRegistry), runtime, callInvoker) {
+    : BaseAudioContextHostObject(
+          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
+          runtime,
+          callInvoker) {
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),

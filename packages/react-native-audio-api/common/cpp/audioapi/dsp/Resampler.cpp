@@ -39,21 +39,21 @@
 
 namespace audioapi {
 
-Resampler::Resampler(int maxBlockSize, int kernelSize):
-    kernelSize_(kernelSize),
-    kernel_(std::make_shared<AudioArray>(kernelSize)),
-    stateBuffer_(std::make_unique<AudioArray>(2 * maxBlockSize)) {
+Resampler::Resampler(int maxBlockSize, int kernelSize)
+    : kernelSize_(kernelSize),
+      kernel_(std::make_shared<AudioArray>(kernelSize)),
+      stateBuffer_(std::make_unique<AudioArray>(2 * maxBlockSize)) {
   stateBuffer_->zero();
 }
 
 // https://en.wikipedia.org/wiki/Window_function
 float Resampler::computeBlackmanWindow(double x) const {
-    double alpha = 0.16;
-    double a0 = 0.5 * (1.0 - alpha);
-    double a1 = 0.5;
-    double a2 = 0.5 * alpha;
-    double n = x / kernelSize_;
-    return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
+  double alpha = 0.16;
+  double a0 = 0.5 * (1.0 - alpha);
+  double a1 = 0.5;
+  double a2 = 0.5 * alpha;
+  double n = x / kernelSize_;
+  return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
 }
 
 void Resampler::reset() {
@@ -86,10 +86,7 @@ void UpSampler::initializeKernel() {
   kernel_->reverse();
 }
 
-int UpSampler::process(
-    AudioArray& input,
-    AudioArray& output,
-    int framesToProcess) {
+int UpSampler::process(AudioArray &input, AudioArray &output, int framesToProcess) {
   // copy new input [ HISTORY | NEW DATA ]
   stateBuffer_->copy(input, 0, kernelSize_, framesToProcess);
 
@@ -111,7 +108,7 @@ int UpSampler::process(
 }
 
 DownSampler::DownSampler(int maxBlockSize, int kernelSize) : Resampler(maxBlockSize, kernelSize) {
-    initializeKernel();
+  initializeKernel();
 }
 
 void DownSampler::initializeKernel() {
@@ -134,10 +131,7 @@ void DownSampler::initializeKernel() {
   kernel_->reverse();
 }
 
-int DownSampler::process(
-    AudioArray& input,
-    AudioArray& output,
-    int framesToProcess) {
+int DownSampler::process(AudioArray &input, AudioArray &output, int framesToProcess) {
   // copy new input [ HISTORY | NEW DATA ]
   stateBuffer_->copy(input, 0, kernelSize_, framesToProcess);
 

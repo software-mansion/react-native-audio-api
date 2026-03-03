@@ -17,7 +17,7 @@
 namespace audioapi {
 
 AudioScheduledSourceNode::AudioScheduledSourceNode(
-    const std::shared_ptr<BaseAudioContext>& context,
+    const std::shared_ptr<BaseAudioContext> &context,
     const AudioScheduledSourceNodeOptions &options)
     : AudioNode(context, options),
       startTime_(-1.0),
@@ -67,7 +67,7 @@ void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
 }
 
 void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
-    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
+  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -161,7 +161,7 @@ void AudioScheduledSourceNode::disable() {
 
   if (onEndedCallbackId_ != 0) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-            AudioEvent::ENDED, onEndedCallbackId_, {});
+        AudioEvent::ENDED, onEndedCallbackId_, {});
   }
 }
 

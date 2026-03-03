@@ -68,8 +68,7 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   auto minDecibels = minDecibels_.load(std::memory_order_acquire);
   auto maxDecibels = maxDecibels_.load(std::memory_order_acquire);
 
-  const auto rangeScaleFactor =
-      maxDecibels == minDecibels ? 1 : 1 / (maxDecibels - minDecibels);
+  const auto rangeScaleFactor = maxDecibels == minDecibels ? 1 : 1 / (maxDecibels - minDecibels);
 
   for (int i = 0; i < length; i++) {
     auto dbMag =

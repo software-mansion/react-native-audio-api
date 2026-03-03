@@ -20,7 +20,7 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
   if (options.buffer != nullptr) {
-      setBuffer(options.buffer);
+    setBuffer(options.buffer);
   }
 
   addGetters(

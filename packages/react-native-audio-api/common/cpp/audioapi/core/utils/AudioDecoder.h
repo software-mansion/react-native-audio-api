@@ -2,15 +2,26 @@
 
 #include <audioapi/core/types/AudioFormat.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/Result.hpp>
 #include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace audioapi {
 
 class AudioBuffer;
+
+using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
+
+struct MemorySource {
+  const void *data;
+  size_t size;
+};
+
+using DecoderSource = std::variant<MemorySource, std::string>;
 
 static constexpr int CHUNK_SIZE = 4096;
 
@@ -18,24 +29,26 @@ class AudioDecoder {
  public:
   AudioDecoder() = delete;
 
-  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithFilePath(
+  [[nodiscard]] static AudioBufferResult decodeWithFilePath(
       const std::string &path,
       float sampleRate);
-  [[nodiscard]] static std::shared_ptr<AudioBuffer>
+  [[nodiscard]] static AudioBufferResult
   decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
-  [[nodiscard]] static std::shared_ptr<AudioBuffer> decodeWithPCMInBase64(
+  [[nodiscard]] static AudioBufferResult decodeWithPCMInBase64(
       const std::string &data,
       float inputSampleRate,
       int inputChannelCount,
       bool interleaved);
 
  private:
-  static std::vector<float> readAllPcmFrames(ma_decoder &decoder, int outputChannels);
-  static std::shared_ptr<AudioBuffer> makeAudioBufferFromFloatBuffer(
+  static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
+  static Result<std::vector<float>, std::string> readAllPcmFrames(
+      ma_decoder &decoder,
+      int outputChannels);
+  static AudioBufferResult makeAudioBufferFromFloatBuffer(
       const std::vector<float> &buffer,
       float outputSampleRate,
       int outputChannels);
-
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
       return AudioFormat::UNKNOWN;
@@ -72,7 +85,6 @@ class AudioDecoder {
     }
     return AudioFormat::UNKNOWN;
   }
-
   static inline bool pathHasExtension(
       const std::string &path,
       const std::vector<std::string> &extensions) {
@@ -84,7 +96,6 @@ class AudioDecoder {
     }
     return false;
   }
-
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }
