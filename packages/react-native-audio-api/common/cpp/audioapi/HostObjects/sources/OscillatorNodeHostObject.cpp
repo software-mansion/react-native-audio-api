@@ -3,9 +3,9 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
 
 namespace audioapi {

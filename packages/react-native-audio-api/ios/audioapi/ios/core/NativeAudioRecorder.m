@@ -88,7 +88,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop recorder very frequently
   [audioEngine stopIfNecessary];
-  [audioEngine attachInputNode:self.sinkNode];
+  [audioEngine attachInputNode:self.sinkNode format:self.getInputFormat];
   [audioEngine startIfNecessary];
 }
 

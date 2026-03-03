@@ -1,5 +1,5 @@
-#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/types/NodeOptions.h>
@@ -8,7 +8,9 @@
 
 namespace audioapi {
 
-DelayNodeHostObject::DelayNodeHostObject(const std::shared_ptr<BaseAudioContext>& context, const DelayOptions &options)
+DelayNodeHostObject::DelayNodeHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const DelayOptions &options)
     : AudioNodeHostObject(context->createDelay(options), options) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }

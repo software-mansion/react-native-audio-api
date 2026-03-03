@@ -1,4 +1,3 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
@@ -6,6 +5,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 
@@ -30,7 +30,8 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    tailBuffer_ = std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
+    tailBuffer_ =
+        std::make_shared<AudioBuffer>(channelCount_, extraTailFrames, context->getSampleRate());
 
     tailBuffer_->zero();
   }

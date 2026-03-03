@@ -26,9 +26,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -47,10 +47,30 @@ BiquadFilterNode::BiquadFilterNode(
       x2_(MAX_CHANNEL_COUNT),
       y1_(MAX_CHANNEL_COUNT),
       y2_(MAX_CHANNEL_COUNT),
-      frequencyParam_(std::make_shared<AudioParam>(options.frequency, 0.0f, context->getNyquistFrequency(), context)),
-      detuneParam_(std::make_shared<AudioParam>(options.detune, -OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT, OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT, context)),
-      QParam_(std::make_shared<AudioParam>(options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context)),
-      gainParam_(std::make_shared<AudioParam>(options.gain, MOST_NEGATIVE_SINGLE_FLOAT, BIQUAD_GAIN_DB_FACTOR * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context)),
+      frequencyParam_(
+          std::make_shared<AudioParam>(
+              options.frequency,
+              0.0f,
+              context->getNyquistFrequency(),
+              context)),
+      detuneParam_(
+          std::make_shared<AudioParam>(
+              options.detune,
+              -OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              OCTAVE_RANGE * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      QParam_(
+          std::make_shared<AudioParam>(
+              options.Q,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      gainParam_(
+          std::make_shared<AudioParam>(
+              options.gain,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              BIQUAD_GAIN_DB_FACTOR * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       type_(options.type) {
   isInitialized_ = true;
 }
