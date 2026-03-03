@@ -26,9 +26,39 @@ class AnalyserNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const AnalyserOptions &options);
 
-  void setMinDecibels(float minDecibels);
-  void setMaxDecibels(float maxDecibels);
-  void setSmoothingTimeConstant(float smoothingTimeConstant);
+  /// @note JS Thread only
+  float getMinDecibels() const {
+    return minDecibels_;
+  }
+
+  /// @note JS Thread only
+  float getMaxDecibels() const {
+    return maxDecibels_;
+  }
+
+  /// @note JS Thread only
+  float getSmoothingTimeConstant() const {
+    return smoothingTimeConstant_;
+  }
+
+  int getFFTSize() const {
+    return fftSize_.load(std::memory_order_acquire);
+  }
+
+  /// @note JS Thread only
+  void setMinDecibels(float minDecibels) {
+    minDecibels_ = minDecibels;
+  }
+
+  /// @note JS Thread only
+  void setMaxDecibels(float maxDecibels) {
+    maxDecibels_ = maxDecibels;
+  }
+
+  /// @note JS Thread only
+  void setSmoothingTimeConstant(float smoothingTimeConstant) {
+    smoothingTimeConstant_ = smoothingTimeConstant;
+  }
 
   /// @note JS Thread only
   void setFFTSize(int fftSize);
@@ -51,14 +81,17 @@ class AnalyserNode : public AudioNode {
       int framesToProcess) override;
 
  private:
+  // Audio Thread parameters
   std::atomic<int> fftSize_;
-  std::atomic<float> minDecibels_;
-  std::atomic<float> maxDecibels_;
-  std::atomic<float> smoothingTimeConstant_;
 
   // Audio Thread data structures
   std::unique_ptr<CircularAudioArray> inputArray_;
   std::unique_ptr<AudioBuffer> downMixBuffer_;
+
+  // JS Thread parameters
+  float minDecibels_;
+  float maxDecibels_;
+  float smoothingTimeConstant_;
 
   // JS Thread data structures
   std::unique_ptr<dsp::FFT> fft_;

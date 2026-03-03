@@ -112,7 +112,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   virtual void initialize();
 
   void inline processAudioEvents() {
-    audioEventScheduler_->processAllEvents(*this);
+    audioEventScheduler_.processAllEvents(*this);
   }
 
   template <typename F>
@@ -123,7 +123,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       return true;
     }
 
-    return audioEventScheduler_->scheduleEvent(std::forward<F>(event));
+    return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 
  protected:
@@ -142,7 +142,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
 
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
-  std::unique_ptr<CrossThreadEventScheduler<BaseAudioContext>> audioEventScheduler_;
+  CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

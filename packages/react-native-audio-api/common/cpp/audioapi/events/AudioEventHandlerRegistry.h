@@ -58,7 +58,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
  private:
   std::atomic<uint64_t> listenerIdCounter_{1}; // Atomic counter for listener IDs
 
-  std::shared_ptr<react::CallInvoker> callInvoker_;
+  const std::shared_ptr<react::CallInvoker> callInvoker_;
   jsi::Runtime *runtime_;
   std::unordered_map<AudioEvent, std::unordered_map<uint64_t, std::shared_ptr<jsi::Function>>>
       eventHandlers_;

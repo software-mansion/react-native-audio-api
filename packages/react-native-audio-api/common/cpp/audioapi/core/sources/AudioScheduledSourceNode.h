@@ -3,7 +3,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -56,7 +55,7 @@ class AudioScheduledSourceNode : public AudioNode {
   PlaybackState playbackState_;
 
   uint64_t onEndedCallbackId_ = 0;
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBuffer> &processingBuffer,

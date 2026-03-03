@@ -21,8 +21,8 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
     const std::shared_ptr<jsi::Function> &handler) {
   auto listenerId = listenerIdCounter_.fetch_add(1, std::memory_order_relaxed);
 
-  if (callInvoker_ == nullptr || runtime_ == nullptr) {
-    // If callInvoker or runtime is not valid, we cannot register the handler
+  if (runtime_ == nullptr) {
+    // If runtime is not valid, we cannot register the handler
     return 0;
   }
 
@@ -39,8 +39,8 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t listenerId) {
-  if (callInvoker_ == nullptr || runtime_ == nullptr) {
-    // If callInvoker or runtime is not valid, we cannot unregister the handler
+  if (runtime_ == nullptr) {
+    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 
@@ -68,9 +68,8 @@ void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     const std::unordered_map<std::string, EventValue> &body) {
-  // callInvoker_ and runtime_ must be valid to invoke handlers
-  // this might happen when react-native is reloaded or the app is closed
-  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+  if (runtime_ == nullptr) {
+    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 
@@ -127,9 +126,8 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     uint64_t listenerId,
     const std::unordered_map<std::string, EventValue> &body) {
-  // callInvoker_ and runtime_ must be valid to invoke handlers
-  // this might happen when react-native is reloaded or the app is closed
-  if (callInvoker_ == nullptr || runtime_ == nullptr) {
+  if (runtime_ == nullptr) {
+    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 

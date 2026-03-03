@@ -64,7 +64,8 @@ class BiquadFilterNode : public AudioNode {
       const float *frequencyArray,
       float *magResponseOutput,
       float *phaseResponseOutput,
-      size_t length);
+      size_t length,
+      BiquadFilterType type);
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -76,7 +77,7 @@ class BiquadFilterNode : public AudioNode {
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> QParam_;
   const std::shared_ptr<AudioParam> gainParam_;
-  std::atomic<BiquadFilterType> type_;
+  BiquadFilterType type_;
 
   // delayed samples, one per channel
   AudioArray x1_;

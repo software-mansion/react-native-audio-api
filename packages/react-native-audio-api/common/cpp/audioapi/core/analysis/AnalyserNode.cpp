@@ -16,17 +16,21 @@ AnalyserNode::AnalyserNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
     : AudioNode(context, options),
-      minDecibels_(options.minDecibels),
-      maxDecibels_(options.maxDecibels),
-      smoothingTimeConstant_(options.smoothingTimeConstant),
       inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
-          std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
+          std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      minDecibels_(options.minDecibels),
+      maxDecibels_(options.maxDecibels),
+      smoothingTimeConstant_(options.smoothingTimeConstant) {
   setFFTSize(options.fftSize);
   isInitialized_.store(true, std::memory_order_release);
 }
 
 void AnalyserNode::setFFTSize(int fftSize) {
+  if (fftSize == fftSize_.load(std::memory_order_acquire)) {
+    return;
+  }
+
   fft_ = std::make_unique<dsp::FFT>(fftSize);
   complexData_ = std::vector<std::complex<float>>(fftSize);
   magnitudeArray_ = std::make_unique<AudioArray>(fftSize / 2);
@@ -34,18 +38,6 @@ void AnalyserNode::setFFTSize(int fftSize) {
   windowData_ = std::make_unique<AudioArray>(fftSize);
   dsp::Blackman().apply(windowData_->span());
   fftSize_.store(fftSize, std::memory_order_release);
-}
-
-void AnalyserNode::setMinDecibels(float minDecibels) {
-  minDecibels_.store(minDecibels, std::memory_order_release);
-}
-
-void AnalyserNode::setMaxDecibels(float maxDecibels) {
-  maxDecibels_.store(maxDecibels, std::memory_order_release);
-}
-
-void AnalyserNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
-  smoothingTimeConstant_.store(smoothingTimeConstant, std::memory_order_release);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
@@ -65,15 +57,13 @@ void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   auto magnitudeBufferData = magnitudeArray_->span();
   length = std::min(static_cast<int>(magnitudeArray_->getSize()), length);
 
-  auto minDecibels = minDecibels_.load(std::memory_order_acquire);
-  auto maxDecibels = maxDecibels_.load(std::memory_order_acquire);
-
-  const auto rangeScaleFactor = maxDecibels == minDecibels ? 1 : 1 / (maxDecibels - minDecibels);
+  const auto rangeScaleFactor =
+      maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
 
   for (int i = 0; i < length; i++) {
     auto dbMag =
-        magnitudeBufferData[i] == 0 ? minDecibels : dsp::linearToDecibels(magnitudeBufferData[i]);
-    auto scaledValue = UINT8_MAX * (dbMag - minDecibels) * rangeScaleFactor;
+        magnitudeBufferData[i] == 0 ? minDecibels_ : dsp::linearToDecibels(magnitudeBufferData[i]);
+    auto scaledValue = UINT8_MAX * (dbMag - minDecibels_) * rangeScaleFactor;
 
     if (scaledValue < 0) {
       scaledValue = 0;
@@ -154,13 +144,11 @@ void AnalyserNode::doFFTAnalysis() {
   const float magnitudeScale = 1.0f / static_cast<float>(fftSize);
   auto magnitudeBufferData = magnitudeArray_->span();
 
-  auto smoothingTimeConstant = smoothingTimeConstant_.load(std::memory_order_acquire);
-
   for (int i = 0; i < magnitudeArray_->getSize(); i++) {
     auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
     magnitudeBufferData[i] = static_cast<float>(
-        smoothingTimeConstant * magnitudeBufferData[i] +
-        (1 - smoothingTimeConstant) * scalarMagnitude);
+        smoothingTimeConstant_ * magnitudeBufferData[i] +
+        (1 - smoothingTimeConstant_) * scalarMagnitude);
   }
 }
 

@@ -233,7 +233,8 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
       TestFrequencies.data(),
       magResponseNode.data(),
       phaseResponseNode.data(),
-      TestFrequencies.size());
+      TestFrequencies.size(),
+      BiquadFilterType::LOWPASS);
   getFrequencyResponse(
       coeffs, TestFrequencies, magResponseExpected, phaseResponseExpected, nyquistFrequency);
 

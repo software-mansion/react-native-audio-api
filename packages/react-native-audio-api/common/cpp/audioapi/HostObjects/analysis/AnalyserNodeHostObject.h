@@ -30,12 +30,6 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   JSI_HOST_FUNCTION_DECL(getByteFrequencyData);
   JSI_HOST_FUNCTION_DECL(getFloatTimeDomainData);
   JSI_HOST_FUNCTION_DECL(getByteTimeDomainData);
-
- private:
-  int fftSize_;
-  float minDecibels_;
-  float maxDecibels_;
-  float smoothingTimeConstant_;
 };
 
 } // namespace audioapi

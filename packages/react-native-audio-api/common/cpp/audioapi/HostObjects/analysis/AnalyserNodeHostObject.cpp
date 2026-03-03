@@ -6,18 +6,13 @@
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 
 AnalyserNodeHostObject::AnalyserNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
-    : AudioNodeHostObject(context->createAnalyser(options), options),
-      fftSize_(options.fftSize),
-      minDecibels_(options.minDecibels),
-      maxDecibels_(options.maxDecibels),
-      smoothingTimeConstant_(options.smoothingTimeConstant) {
+    : AudioNodeHostObject(context->createAnalyser(options), options) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
@@ -38,62 +33,48 @@ AnalyserNodeHostObject::AnalyserNodeHostObject(
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, fftSize) {
-  return {fftSize_};
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  return {analyserNode->getFFTSize()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
-  return {minDecibels_};
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  return {analyserNode->getMinDecibels()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
-  return {maxDecibels_};
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  return {analyserNode->getMaxDecibels()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
-  return {smoothingTimeConstant_};
+  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
+  return {analyserNode->getSmoothingTimeConstant()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
 
   auto fftSize = static_cast<int>(value.getNumber());
-
-  if (fftSize == fftSize_) {
-    return;
-  }
-
-  fftSize_ = fftSize;
   analyserNode->setFFTSize(fftSize);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto minDecibels = static_cast<float>(value.getNumber());
-  auto event = [analyserNode, minDecibels](BaseAudioContext &) {
-    analyserNode->setMinDecibels(minDecibels);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-  minDecibels_ = minDecibels;
+  analyserNode->setMinDecibels(minDecibels);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto maxDecibels = static_cast<float>(value.getNumber());
-  auto event = [analyserNode, maxDecibels](BaseAudioContext &) {
-    analyserNode->setMaxDecibels(maxDecibels);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-  maxDecibels_ = maxDecibels;
+  analyserNode->setMaxDecibels(maxDecibels);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   auto smoothingTimeConstant = static_cast<float>(value.getNumber());
-  auto event = [analyserNode, smoothingTimeConstant](BaseAudioContext &) {
-    analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
-  };
-  analyserNode->scheduleAudioEvent(std::move(event));
-  smoothingTimeConstant_ = smoothingTimeConstant;
+  analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {

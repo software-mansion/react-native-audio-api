@@ -72,7 +72,7 @@ BiquadFilterNode::BiquadFilterNode(
 }
 
 void BiquadFilterNode::setType(BiquadFilterType type) {
-  type_.store(type, std::memory_order_release);
+  type_ = type;
 }
 
 std::shared_ptr<AudioParam> BiquadFilterNode::getFrequencyParam() const {
@@ -114,12 +114,12 @@ void BiquadFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
-    const size_t length) {
+    const size_t length,
+    BiquadFilterType type) {
   auto frequency = frequencyParam_->getValue();
   auto Q = QParam_->getValue();
   auto gain = gainParam_->getValue();
   auto detune = detuneParam_->getValue();
-  auto type = type_.load(std::memory_order_acquire);
 
   auto coeffs = applyFilter(frequency, Q, gain, detune, type);
 
@@ -389,9 +389,8 @@ std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
     float detune = detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
     auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
     auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-    auto type = type_.load(std::memory_order_relaxed);
 
-    auto coeffs = applyFilter(frequency, Q, gain, detune, type);
+    auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
 
     float x1, x2, y1, y2;
 

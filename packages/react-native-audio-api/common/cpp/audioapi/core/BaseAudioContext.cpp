@@ -42,9 +42,7 @@ BaseAudioContext::BaseAudioContext(
       graphManager_(std::make_shared<AudioGraphManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry),
-      audioEventScheduler_(
-          std::make_unique<CrossThreadEventScheduler<BaseAudioContext>>(AUDIO_SCHEDULER_CAPACITY)) {
-}
+      audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY) {}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());

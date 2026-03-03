@@ -80,7 +80,8 @@ JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
   auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
   auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
-  biquadFilterNode->getFrequencyResponse(frequencyArray, magResponseOut, phaseResponseOut, length);
+  biquadFilterNode->getFrequencyResponse(
+      frequencyArray, magResponseOut, phaseResponseOut, length, type_);
 
   return jsi::Value::undefined();
 }
