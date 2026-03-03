@@ -97,3 +97,5 @@ packages/react-native-audio-api/android/src/main/jniLibs/
 packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
 packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework
 packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
+
+.cache
