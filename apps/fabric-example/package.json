@@ -12,15 +12,15 @@
   "dependencies": {
     "common-app": "workspace:*",
     "lucide-react-native": "^0.555.0",
-    "react": "19.2.0",
-    "react-native": "0.83.1",
-    "react-native-svg": "15.14.0"
+    "react": "19.2.3",
+    "react-native": "0.84.1",
+    "react-native-svg": "15.15.3"
   },
   "devDependencies": {
     "prettier": "^3.3.3"
   },
   "engines": {
-    "node": ">=20.13.0"
+    "node": ">=22.11.0"
   },
   "reactNativeVectorIcons": {
     "fontDir": "./assets/fonts"
