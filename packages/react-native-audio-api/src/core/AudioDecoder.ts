@@ -1,4 +1,5 @@
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
+import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../interfaces';
@@ -25,6 +26,7 @@ class AudioDecoder {
   ): Promise<AudioBuffer | null | undefined> {
     if (input instanceof ArrayBuffer) {
       const buffer = await this.decoder.decodeWithMemoryBlock(
+        // @ts-ignore internal function
         new Uint8Array(input),
         sampleRate ?? 0
       );
@@ -55,6 +57,7 @@ class AudioDecoder {
       );
 
       const buffer = await this.decoder.decodeWithMemoryBlock(
+        // @ts-ignore internal function
         new Uint8Array(arrayBuffer),
         sampleRate ?? 0
       );
@@ -67,9 +70,19 @@ class AudioDecoder {
     }
 
     // Local file path
-    const filePath = stringSource.startsWith('file://')
+    let filePath = stringSource.startsWith('file://')
       ? stringSource.replace('file://', '')
       : stringSource;
+
+    // android release has different way of assets resolving
+    if (Platform.OS === 'android' && !__DEV__) {
+      filePath = NativeAudioAPIModule.resolveAndroidReleaseAsset(filePath);
+      if (!filePath) {
+        throw new AudioApiError(
+          'Failed to resolve asset for android release build.'
+        );
+      }
+    }
 
     const buffer = await this.decoder.decodeWithFilePath(
       filePath,

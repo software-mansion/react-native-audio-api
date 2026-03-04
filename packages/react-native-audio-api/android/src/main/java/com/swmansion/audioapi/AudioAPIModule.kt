@@ -248,4 +248,22 @@ class AudioAPIModule(
       promise?.resolve(false)
     }
   }
+
+  override fun resolveAndroidReleaseAsset(assetPath: String?): String? {
+    val context = reactContext.get() ?: return null
+    val packageName = context.packageName
+
+    val resourceId =
+      context.resources.getIdentifier(
+        assetPath,
+        "raw",
+        packageName,
+      )
+
+    return if (resourceId != 0) {
+      "android.resource://$packageName/$resourceId"
+    } else {
+      null
+    }
+  }
 }
