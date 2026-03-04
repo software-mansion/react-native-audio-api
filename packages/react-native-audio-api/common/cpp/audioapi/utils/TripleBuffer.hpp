@@ -31,6 +31,9 @@ class TripleBuffer {
   TripleBuffer(const TripleBuffer &) = delete;
   TripleBuffer &operator=(const TripleBuffer &) = delete;
 
+  TripleBuffer(TripleBuffer &&) = delete;
+  TripleBuffer &operator=(TripleBuffer &&) = delete;
+
   T *getForWriter() {
     return std::launder(reinterpret_cast<T *>(&buffers_[backIndex_]));
   }
@@ -58,14 +61,14 @@ class TripleBuffer {
     uint32_t hasUpdate : 1;
   };
 
-  struct alignas(hardware_constructive_interference_size) AlignedBuffer {
+  struct alignas(hardware_destructive_interference_size) AlignedBuffer {
     alignas(T) std::byte data[sizeof(T)];
   };
 
   AlignedBuffer buffers_[3];
-  alignas(hardware_constructive_interference_size) uint32_t frontIndex_{0};
-  alignas(hardware_constructive_interference_size) std::atomic<State> state_{{1, false}};
-  alignas(hardware_constructive_interference_size) uint32_t backIndex_{2};
+  alignas(hardware_destructive_interference_size) uint32_t frontIndex_{0};
+  alignas(hardware_destructive_interference_size) std::atomic<State> state_{{1, false}};
+  alignas(hardware_destructive_interference_size) uint32_t backIndex_{2};
 };
 
 } // namespace audioapi
