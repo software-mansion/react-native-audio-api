@@ -118,6 +118,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(resolveAndroidReleaseAsset : (NSString *)assetPath)
+{
+  return NULL; //noop
+}
+
 RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
