@@ -17,29 +17,22 @@ RotatingFileWriter::RotatingFileWriter(
       baseFileName_(fileProperties->fileNamePrefix) {}
 
 OpenFileResult RotatingFileWriter::openFile() {
-  if (currentWriter_) {
-    return currentWriter_->openFile();
+  if (currentWriter_ == nullptr) {
+    openNewFile();
   }
-  openNewFile();
   return currentWriter_->openFile();
 }
 
 CloseFileResult RotatingFileWriter::closeFile() {
-  if (currentWriter_) {
-    return currentWriter_->closeFile();
-  }
-  return CloseFileResult::Err("No file open");
+  return currentWriter_ != nullptr ? currentWriter_->closeFile() : CloseFileResult::Err("No file open");
 }
 
 std::string RotatingFileWriter::getFilePath() const {
-  if (currentWriter_) {
-    return currentWriter_->getFilePath();
-  }
-  return "";
+  return currentWriter_ != nullptr ? currentWriter_->getFilePath() : "";
 }
 
 bool RotatingFileWriter::writeAudioData(AudioDataType data, int numFrames) {
-  if (!currentWriter_) {
+  if (currentWriter_ == nullptr) {
     return false;
   }
 
@@ -66,14 +59,11 @@ double RotatingFileWriter::getCurrentDuration() const {
 }
 
 size_t RotatingFileWriter::getFileSizeBytes() const {
-  if (currentWriter_) {
-    return currentWriter_->getFileSizeBytes();
-  }
-  return 0;
+  return currentWriter_ != nullptr ? currentWriter_->getFileSizeBytes() : 0;
 }
 
 void RotatingFileWriter::rotateFiles() {
-  if (currentWriter_) {
+  if (currentWriter_ != nullptr) {
     currentWriter_->closeFile();
     // Start new file
     openNewFile();

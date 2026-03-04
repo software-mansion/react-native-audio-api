@@ -39,7 +39,7 @@ class IOSFileWriter : public AudioFileWriter {
   Result<std::string, std::string> openFile();
   Result<std::tuple<double, double>, std::string> closeFile() override;
 
-  void writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
+  bool writeAudioData(AudioDataType data, int numFrames) override;
   double getCurrentDuration() const override;
   size_t getFileSizeBytes() const override;
 

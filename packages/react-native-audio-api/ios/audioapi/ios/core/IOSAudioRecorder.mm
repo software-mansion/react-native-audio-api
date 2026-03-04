@@ -71,7 +71,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @brief Starts the audio recording process and prepares necessary resources.
 /// This method should be called from the JS thread only.
 /// @returns Result containing the file path if recording started successfully, or an error message.
-Result<std::string, std::string> IOSAudioRecorder::start()
+Result<std::string, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
 {
   if (!isIdle()) {
     return Result<std::string, std::string>::Err("Recorder is already recording");
@@ -103,36 +103,10 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    auto createWriter =
-        [this, maxInputBufferLength](
-            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
-      return std::make_shared<IOSFileWriter>(
-          audioEventHandlerRegistry_,
-          props,
-          [nativeRecorder_ getInputFormat],
-          maxInputBufferLength);
-    };
-
-    if (fileProperties_->rotateIntervalBytes > 0) {
-      fileWriter_ = std::make_shared<RotatingFileWriter>(
-          audioEventHandlerRegistry_,
-          fileProperties_,
-          fileProperties_->rotateIntervalBytes,
-          createWriter);
-    } else {
-      fileWriter_ = createWriter(fileProperties_);
+    auto writerResult = setupFileWriter(fileProperties_, maxInputBufferLength);
+    if (writerResult.is_err()) {
+      return Result<std::string, std::string>::Err(writerResult.unwrap_err());
     }
-
-    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-
-    auto fileResult = fileWriter_->openFile();
-
-    if (fileResult.is_err()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
-    }
-
-    filePath_ = fileResult.unwrap();
     NSLog(@"[IOSAudioRecorder] File created successfully at path: %s", filePath_.c_str());
   }
 
@@ -213,33 +187,43 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   fileProperties_ = properties;
 
   if (!isIdle()) {
-    size_t bufferSize = [nativeRecorder_ getBufferSize];
-    auto createWriter =
-        [this, bufferSize](
-            const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
-      return std::make_shared<IOSFileWriter>(
-          audioEventHandlerRegistry_, props, [nativeRecorder_ getInputFormat], bufferSize);
-    };
-
-    if (properties->rotateIntervalBytes > 0) {
-      fileWriter_ = std::make_shared<RotatingFileWriter>(
-          audioEventHandlerRegistry_, properties, properties->rotateIntervalBytes, createWriter);
-    } else {
-      fileWriter_ = createWriter(properties);
+    auto writerResult = setupFileWriter(properties, [nativeRecorder_ getBufferSize]);
+    if (writerResult.is_err()) {
+      return Result<std::string, std::string>::Err(writerResult.unwrap_err());
     }
-
-    auto result = fileWriter_->openFile();
-
-    if (result.is_err()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + result.unwrap_err());
-    }
-
-    filePath_ = result.unwrap();
-    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   }
 
   fileOutputEnabled_.store(true, std::memory_order_release);
+  return Result<std::string, std::string>::Ok(filePath_);
+}
+
+Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
+    const std::shared_ptr<AudioFileProperties> &properties,
+    size_t bufferSize)
+{
+  auto createWriter =
+      [this, bufferSize](
+          const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
+    return std::make_shared<IOSFileWriter>(
+        audioEventHandlerRegistry_, props, [nativeRecorder_ getInputFormat], bufferSize);
+  };
+
+  if (properties->rotateIntervalBytes > 0) {
+    fileWriter_ = std::make_shared<RotatingFileWriter>(
+        audioEventHandlerRegistry_, properties, properties->rotateIntervalBytes, createWriter);
+  } else {
+    fileWriter_ = createWriter(properties);
+  }
+
+  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+
+  auto fileResult = fileWriter_->openFile();
+  if (fileResult.is_err()) {
+    return Result<std::string, std::string>::Err(
+        "Failed to open file for writing: " + fileResult.unwrap_err());
+  }
+
+  filePath_ = fileResult.unwrap();
   return Result<std::string, std::string>::Ok(filePath_);
 }
 

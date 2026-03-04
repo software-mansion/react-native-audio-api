@@ -53,6 +53,11 @@ class IOSAudioRecorder : public AudioRecorder {
 
  protected:
   NativeAudioRecorder *nativeRecorder_;
+
+ private:
+  Result<std::string, std::string> setupFileWriter(
+      const std::shared_ptr<AudioFileProperties> &properties,
+      size_t bufferSize);
 };
 
 } // namespace audioapi

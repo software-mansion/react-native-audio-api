@@ -65,6 +65,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   Result<NoneType, std::string> openAudioStream();
+  std::shared_ptr<AudioFileWriter> createFileWriter(const std::shared_ptr<AudioFileProperties> &props);
+  Result<std::string, std::string> setupFileWriter(const std::shared_ptr<AudioFileProperties> &properties);
 };
 
 } // namespace audioapi

@@ -251,7 +251,7 @@ size_t FFmpegAudioFileWriter::getFileSizeBytes() const {
     return 0;
   }
 
-  if (formatCtx_ && formatCtx_->pb) {
+  if (formatCtx_ != nullptr && formatCtx_->pb != nullptr) {
     return static_cast<size_t>(avio_tell(formatCtx_->pb));
   }
 

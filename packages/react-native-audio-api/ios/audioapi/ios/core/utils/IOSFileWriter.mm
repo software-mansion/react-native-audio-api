@@ -16,10 +16,10 @@ IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     AVAudioFormat *bufferFormat,
     size_t maxInputBufferLength)
-    : AudioFileWriter(audioEventHandlerRegistry, fileProperties)
+    : AudioFileWriter(audioEventHandlerRegistry, fileProperties),
+      bufferFormat_(bufferFormat),
+      converterInputBufferSize_(maxInputBufferLength)
 {
-  bufferFormat_ = bufferFormat;
-  converterInputBufferSize_ = maxInputBufferLength;
 }
 
 IOSFileWriter::~IOSFileWriter()
@@ -49,7 +49,7 @@ Result<std::string, std::string> IOSFileWriter::openFile()
 
     NSError *error = nil;
     NSDictionary *settings = ios::fileoptions::getFileSettings(fileProperties_);
-    fileURL_ = ios::fileoptions::getFileURL(fileProperties_);
+    fileURL_ = ios::fileoptions::getFileURL(fileProperties_, "");
 
     if (fileProperties_->sampleRate == 0 || fileProperties_->channelCount == 0) {
       return OpenFileResult::Err(
@@ -169,13 +169,14 @@ size_t IOSFileWriter::getFileSizeBytes() const
 
 /// @brief Writes audio data to the open audio file, performing format conversion if necessary.
 /// This method should be called from the audio thread.
-void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
+bool IOSFileWriter::writeAudioData(AudioDataType data, int numFrames)
 {
   if (audioFile_ == nil) {
     invokeOnErrorCallback("Attempted to write audio data when file is not open");
-  } else {
-    offloader_->getSender()->send({audioBufferList, numFrames});
+    return false;
   }
+  offloader_->getSender()->send({data, numFrames});
+  return true;
 }
 
 void IOSFileWriter::taskOffloaderFunction(WriterData data)
