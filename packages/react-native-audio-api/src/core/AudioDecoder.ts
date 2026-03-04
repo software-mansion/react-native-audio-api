@@ -1,4 +1,5 @@
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
+import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../interfaces';
@@ -23,59 +24,92 @@ class AudioDecoder {
     sampleRate?: number,
     fetchOptions?: RequestInit
   ): Promise<AudioBuffer | null | undefined> {
+    const rate = sampleRate ?? 0;
+
     if (input instanceof ArrayBuffer) {
-      const buffer = await this.decoder.decodeWithMemoryBlock(
-        new Uint8Array(input),
-        sampleRate ?? 0
-      );
-      return new AudioBuffer(buffer);
+      return this.decodeFromArrayBuffer(input, rate);
     }
 
-    const stringSource =
-      typeof input === 'number' ? Image.resolveAssetSource(input).uri : input;
+    const stringSource = this.resolveStringSource(input);
+    this.assertSupportedStringSource(stringSource);
 
-    // input is data:audio/...;base64,...
-    if (isBase64Source(stringSource)) {
+    if (isRemoteSource(stringSource)) {
+      return this.decodeFromRemoteUrl(stringSource, rate, fetchOptions);
+    }
+
+    return this.decodeFromLocalFile(stringSource, rate);
+  }
+
+  private async decodeFromArrayBuffer(
+    arrayBuffer: ArrayBuffer,
+    sampleRate: number
+  ): Promise<AudioBuffer> {
+    const buffer = await this.decoder.decodeWithMemoryBlock(
+      // @ts-ignore internal function
+      new Uint8Array(arrayBuffer),
+      sampleRate
+    );
+    return new AudioBuffer(buffer);
+  }
+
+  private resolveStringSource(input: number | string): string | number {
+    return typeof input === 'number'
+      ? Image.resolveAssetSource(input).uri
+      : input;
+  }
+
+  private assertSupportedStringSource(
+    source: string | number
+  ): asserts source is string {
+    if (typeof source !== 'string') {
+      throw new TypeError('Input must be a module, uri or ArrayBuffer');
+    }
+    if (isBase64Source(source)) {
       throw new AudioApiError(
         'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
       );
     }
-
-    // input is blob:...
-    if (isDataBlobString(stringSource)) {
+    if (isDataBlobString(source)) {
       throw new AudioApiError(
         'Data Blob string decoding is not currently supported.'
       );
     }
+  }
 
-    // input is http(s)://...
-    if (isRemoteSource(stringSource)) {
-      const arrayBuffer = await fetch(stringSource, fetchOptions).then((res) =>
-        res.arrayBuffer()
-      );
+  private async decodeFromRemoteUrl(
+    url: string,
+    sampleRate: number,
+    fetchOptions?: RequestInit
+  ): Promise<AudioBuffer> {
+    const arrayBuffer = await fetch(url, fetchOptions).then((res) =>
+      res.arrayBuffer()
+    );
+    return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
+  }
 
-      const buffer = await this.decoder.decodeWithMemoryBlock(
-        new Uint8Array(arrayBuffer),
-        sampleRate ?? 0
-      );
-
-      return new AudioBuffer(buffer);
-    }
-
-    if (!(typeof stringSource === 'string')) {
-      throw new TypeError('Input must be a module, uri or ArrayBuffer');
-    }
-
-    // Local file path
-    const filePath = stringSource.startsWith('file://')
+  private resolveLocalFilePath(stringSource: string): string {
+    let filePath = stringSource.startsWith('file://')
       ? stringSource.replace('file://', '')
       : stringSource;
 
-    const buffer = await this.decoder.decodeWithFilePath(
-      filePath,
-      sampleRate ?? 0
-    );
+    if (Platform.OS === 'android' && !__DEV__) {
+      filePath = NativeAudioAPIModule.resolveAndroidReleaseAsset(filePath);
+      if (!filePath) {
+        throw new AudioApiError(
+          'Failed to resolve asset for android release build.'
+        );
+      }
+    }
 
+    return filePath;
+  }
+
+  private async decodeFromLocalFile(
+    stringSource: string,
+    sampleRate: number
+  ): Promise<AudioBuffer> {
+    const filePath = this.resolveLocalFilePath(stringSource);
+    const buffer = await this.decoder.decodeWithFilePath(filePath, sampleRate);
     return new AudioBuffer(buffer);
   }
 
