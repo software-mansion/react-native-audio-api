@@ -115,16 +115,19 @@ const Record: FC = () => {
   const onStopRecording = useCallback(async () => {
     const info = Recorder.stop();
     RecordingNotificationManager.hide();
-    setState(RecordingState.ReadyToPlay);
+    setState(RecordingState.Loading);
 
     if (info.status !== 'success') {
       Alert.alert('Error', `Failed to stop recording: ${info.message}`);
       setRecordedBuffer(null);
+      setState(RecordingState.Idle);
       return;
     }
 
     const audioBuffer = await audioContext.decodeAudioData(info.path);
     setRecordedBuffer(audioBuffer);
+    setState(RecordingState.ReadyToPlay);
+    currentPositionSV.value = 0;
   }, []);
 
   const onPlayRecording = useCallback(() => {
@@ -140,16 +143,14 @@ const Record: FC = () => {
     const source = audioContext.createBufferSource();
     source.buffer = recordedBuffer;
     source.connect(audioContext.destination);
-    source.start(audioContext.currentTime + 0.1);
+    source.start(audioContext.currentTime);
 
     source.onEnded = () => {
       setState(RecordingState.Idle);
     };
 
     setTimeout(() => {
-      currentPositionSV.value = 0;
-
-      withTiming(recordedBuffer.duration, {
+      currentPositionSV.value = withTiming(recordedBuffer.duration, {
         duration: recordedBuffer.duration * 1000,
         easing: Easing.linear,
       });
