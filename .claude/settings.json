@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "respectGitignore": true,
+  "respectGitIgnore": true,
   "permissions": {
     "allow": [
       "Bash(yarn build)",
@@ -18,7 +18,36 @@
       "Bash(cmake *)",
       "Bash(clang-format *)",
       "Bash(node *)",
-      "Bash(npx prettier*)"
+      "Bash(npx prettier*)",
+
+      "Bash(ls*)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(type *)",
+      "Bash(file *)",
+      "Bash(wc *)",
+      "Bash(bash scripts/collect-knowledge-changes.sh*)",
+      "Bash(printf '%s' * > .claude/last-knowledge-update)",
+      "Bash(> .claude/last-knowledge-update)",
+
+      "Read(**)",
+
+      "WebFetch(https://webaudio.github.io/*)",
+      "WebFetch(https://developer.mozilla.org/*)",
+      "WebFetch(https://en.cppreference.com/*)",
+      "WebFetch(https://reactnative.dev/*)",
+      "WebSearch(*)",
+
+      "Write(.claude/**)",
+      "Edit(.claude/**)",
+      "Write(CLAUDE.md)",
+      "Edit(CLAUDE.md)",
+      "Write(apps/CLAUDE.md)",
+      "Edit(apps/CLAUDE.md)",
+      "Write(packages/*/CLAUDE.md)",
+      "Edit(packages/*/CLAUDE.md)",
+      "Write(packages/react-native-audio-api/tests/CLAUDE.md)",
+      "Edit(packages/react-native-audio-api/tests/CLAUDE.md)"
     ],
     "ask": [
       "Bash(git add*)",
@@ -82,5 +111,36 @@
       "Read(**/*.ogg)",
       "Read(**/*.aac)"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/double-prompt.js"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/poneciak/Desktop/react-native-audio-api"
+      ]
+    },
+    "lsp": {
+      "command": "npx",
+      "args": ["-y", "mcp-language-server", "--stdio"],
+      "env": {
+        "LSP_COMMAND": "typescript-language-server",
+        "LSP_ARGS": "--stdio"
+      }
+    }
   }
 }
