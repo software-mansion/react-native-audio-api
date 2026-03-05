@@ -149,19 +149,19 @@ void AnalyserNode::doFFTAnalysis() {
 }
 
 void AnalyserNode::initializeWindowData(int fftSize) {
-    windowData_ = std::make_unique<AudioArray>(fftSize);
-    auto data = windowData_->span();
-    auto size = windowData_->getSize();
+  windowData_ = std::make_unique<AudioArray>(fftSize);
+  auto data = windowData_->span();
+  auto size = windowData_->getSize();
 
-    const auto invSizeMinusOne = 1.0f / static_cast<float>(size - 1);
-    const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
+  const auto invSizeMinusOne = 1.0f / static_cast<float>(size - 1);
+  const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
 
-    for (size_t i = 0; i < size; ++i) {
-        const auto phase = alpha * i;
-        // 4*PI*x is just 2 * (2*PI*x)
-        const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
-        data[i] = window;
-    }
+  for (size_t i = 0; i < size; ++i) {
+    const auto phase = alpha * i;
+    // 4*PI*x is just 2 * (2*PI*x)
+    const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
+    data[i] = window;
+  }
 }
 
 } // namespace audioapi
