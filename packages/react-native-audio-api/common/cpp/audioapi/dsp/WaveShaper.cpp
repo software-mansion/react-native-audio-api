@@ -6,7 +6,7 @@
 
 #include <cstring>
 #include <memory>
-#include <vector>
+#include "audioapi/dsp/r8brain/Resampler.h"
 
 namespace audioapi {
 
@@ -22,15 +22,15 @@ WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRat
 
 void WaveShaper::createResamplers(OverSampleType type) {
   if (type == OverSampleType::OVERSAMPLE_2X) {
-    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate_, sampleRate_ * 2, 1, RENDER_QUANTUM_SIZE);
-    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate_ * 2, sampleRate_, 1, RENDER_QUANTUM_SIZE * 2);
+    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_, sampleRate_ * 2, RENDER_QUANTUM_SIZE);
+    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_ * 2, sampleRate_, RENDER_QUANTUM_SIZE * 2);
   } else if (type == OverSampleType::OVERSAMPLE_4X) {
-    upSampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate_, sampleRate_ * 4, 1, RENDER_QUANTUM_SIZE * 2);
-    downSampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate_ * 4, sampleRate_, 1, RENDER_QUANTUM_SIZE * 4);
+    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_, sampleRate_ * 4, RENDER_QUANTUM_SIZE * 2);
+    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_ * 4, sampleRate_, RENDER_QUANTUM_SIZE * 4);
   }
 }
 
@@ -83,24 +83,11 @@ void WaveShaper::processNone(AudioArray &channelData, int framesToProcess) {
 }
 
 void WaveShaper::processResampled(AudioArray &channelData, int framesToProcess) {
-  std::vector<float *> in = {channelData.begin()};
-  std::vector<float *> out = {nullptr};
-
-  auto outputFrames = upSampler_->process(in, framesToProcess, out);
-
-  std::vector<float *> in2;
-  if (oversample_ == OverSampleType::OVERSAMPLE_2X) {
-    tempBuffer2x_->copy(out[0], 0, 0, static_cast<size_t>(outputFrames));
-    processNone(*tempBuffer2x_, outputFrames);
-    in2 = {tempBuffer2x_->begin()};
-  } else if (oversample_ == OverSampleType::OVERSAMPLE_4X) {
-    tempBuffer4x_->copy(out[0], 0, 0, static_cast<size_t>(outputFrames));
-    processNone(*tempBuffer4x_, outputFrames);
-    in2 = {tempBuffer4x_->begin()};
-  }
-
-  downSampler_->process(in2, outputFrames, in);
-  channelData.copy(in[0], 0, 0, static_cast<size_t>(framesToProcess));
+  AudioArray &outArray =
+      (oversample_ == OverSampleType::OVERSAMPLE_4X) ? *tempBuffer4x_ : *tempBuffer2x_;
+  const int outputFrames = upSampler_->process(channelData, framesToProcess, outArray);
+  processNone(outArray, outputFrames);
+  downSampler_->process(outArray, outputFrames, channelData);
 }
 
 } // namespace audioapi

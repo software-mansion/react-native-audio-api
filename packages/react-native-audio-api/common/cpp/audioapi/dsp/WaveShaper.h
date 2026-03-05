@@ -24,8 +24,8 @@ class WaveShaper {
   std::shared_ptr<AudioArray> curve_;
   float sampleRate_;
 
-  std::unique_ptr<r8b::MultiChannelResampler> upSampler_;
-  std::unique_ptr<r8b::MultiChannelResampler> downSampler_;
+  std::unique_ptr<r8b::SingleChannelResampler> upSampler_;
+  std::unique_ptr<r8b::SingleChannelResampler> downSampler_;
 
   std::shared_ptr<AudioArray> tempBuffer2x_;
   std::shared_ptr<AudioArray> tempBuffer4x_;

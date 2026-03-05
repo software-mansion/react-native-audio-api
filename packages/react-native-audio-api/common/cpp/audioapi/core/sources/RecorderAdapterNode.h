@@ -49,10 +49,11 @@ class RecorderAdapterNode : public AudioNode {
 
   // Number of input frames (at recorder rate) to feed per render quantum
   size_t inputChunkSize_ = 0;
-  std::shared_ptr<AudioBuffer> resamplerInputBuffer_;
+  AudioBuffer resamplerInputBuffer_;
+  AudioBuffer resamplerOutputBuffer_;
 
   // Accumulates resampled output across calls
-  std::vector<std::vector<float>> overflowBuffers_;
+  AudioBuffer overflowBuffer_;
   size_t overflowSize_ = 0;
 };
 

@@ -14,13 +14,13 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -35,9 +35,7 @@ StreamerNode::StreamerNode(
       pkt_(nullptr),
       frame_(nullptr),
       swrCtx_(nullptr),
-      resampledData_(nullptr),
-      bufferedAudioBuffer_(nullptr),
-      bufferedAudioBufferSize_(0),
+      hasBufferedAudioData_(false),
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {}
@@ -133,27 +131,26 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
     return processingBuffer;
   }
 
-  int bufferRemaining = bufferedAudioBufferSize_ - processedSamples_;
+  auto bufferRemaining = static_cast<int>(bufferedAudioData_.size - processedSamples_);
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
-    if (bufferedAudioBuffer_ != nullptr) {
-      processingBuffer->copy(*bufferedAudioBuffer_, processedSamples_, 0, bufferRemaining);
+    if (hasBufferedAudioData_) {
+      processingBuffer->copy(bufferedAudioData_.buffer, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
     }
     StreamingData data;
     auto res = receiver_.try_receive(data);
-    if (res == channels::spsc::ResponseStatus::SUCCESS) {
-      bufferedAudioBuffer_ = std::make_shared<AudioBuffer>(std::move(data.buffer));
-      bufferedAudioBufferSize_ = data.size;
+    auto success = res == channels::spsc::ResponseStatus::SUCCESS;
+    hasBufferedAudioData_ = success;
+    if (success) {
+      bufferedAudioData_ = std::move(data);
       processedSamples_ = 0;
-    } else {
-      bufferedAudioBuffer_ = nullptr;
     }
   }
-  if (bufferedAudioBuffer_ != nullptr) {
+  if (hasBufferedAudioData_ && framesToProcess > 0) {
     processingBuffer->copy(
-        *bufferedAudioBuffer_, processedSamples_, alreadyProcessed, framesToProcess);
+        bufferedAudioData_.buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -163,9 +160,17 @@ std::shared_ptr<AudioBuffer> StreamerNode::processNode(
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 bool StreamerNode::setupResampler(float outSampleRate) {
-  int n = codecCtx_->ch_layout.nb_channels;
-  resampler_ =
-      std::make_unique<r8b::MultiChannelResampler>(codecCtx_->sample_rate, outSampleRate, n);
+  const int n = codecCtx_->ch_layout.nb_channels;
+  const int maxInLen = codecCtx_->frame_size > 0 ? codecCtx_->frame_size : 8192;
+
+  resampler_ = std::make_unique<r8b::MultiChannelResampler>(
+      codecCtx_->sample_rate, outSampleRate, n, maxInLen);
+
+  const int maxOutLen = resampler_->getMaxOutLen();
+  const size_t outputBufferSize = static_cast<size_t>(std::max(maxInLen, maxOutLen));
+
+  resamplerInputBuffer_ = AudioBuffer(static_cast<size_t>(maxInLen), n, codecCtx_->sample_rate);
+  resamplerOutputBuffer_ = AudioBuffer(outputBufferSize, n, outSampleRate);
   outSampleRate_ = outSampleRate;
   return true;
 }
@@ -186,9 +191,7 @@ void StreamerNode::streamAudio() {
       if (context == nullptr) {
         return;
       }
-      if (!processFrameWithResampler(frame_, context)) {
-        return;
-      }
+      processFrameWithResampler(frame_, context);
     }
     av_packet_unref(pkt_);
   }
@@ -237,48 +240,38 @@ static void extractChannelAsFloat(const AVFrame *frame, int channel, float *outp
   }
 }
 
-bool StreamerNode::processFrameWithResampler(
+void StreamerNode::processFrameWithResampler(
     AVFrame *frame,
     const std::shared_ptr<BaseAudioContext> &context) {
   if (this->isFinished()) {
-    return true;
+    return;
   }
 
   const int numChannels = frame->ch_layout.nb_channels;
   const int nbSamples = frame->nb_samples;
   const bool needsResample = static_cast<int>(outSampleRate_) != frame->sample_rate;
 
-  std::vector<std::vector<float>> inputBuffers(numChannels, std::vector<float>(nbSamples));
   for (int ch = 0; ch < numChannels; ++ch) {
-    extractChannelAsFloat(frame, ch, inputBuffers[ch].data());
+    extractChannelAsFloat(frame, ch, resamplerInputBuffer_[ch].begin());
   }
 
   int outSamples;
-  std::vector<float *> copyVector(numChannels, nullptr);
-
   if (needsResample) {
-    std::vector<float *> inputPtrs(numChannels);
-    for (int ch = 0; ch < numChannels; ++ch) {
-      inputPtrs[ch] = inputBuffers[ch].data();
-    }
-
-    outSamples = resampler_->process(inputPtrs, nbSamples, copyVector);
+    outSamples = resampler_->process(resamplerInputBuffer_, nbSamples, resamplerOutputBuffer_);
   } else {
     outSamples = nbSamples;
     for (int ch = 0; ch < numChannels; ++ch) {
-      copyVector[ch] = inputBuffers[ch].data();
+      resamplerOutputBuffer_[ch].copy(resamplerInputBuffer_[ch], 0, 0, nbSamples);
     }
   }
 
   auto buffer = AudioBuffer(outSamples, numChannels, context->getSampleRate());
   for (int ch = 0; ch < numChannels; ++ch) {
-    buffer.getChannel(ch)->copy(copyVector[ch], 0, 0, outSamples);
+    buffer[ch].copy(resamplerOutputBuffer_[ch], 0, 0, outSamples);
   }
 
   StreamingData data{std::move(buffer), static_cast<size_t>(outSamples)};
   sender_.send(std::move(data));
-
-  return true;
 }
 
 bool StreamerNode::openInput(const std::string &input_url) {
@@ -332,11 +325,6 @@ void StreamerNode::cleanup() {
   }
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
-  }
-
-  if (resampledData_ != nullptr) {
-    av_freep(&resampledData_[0]);
-    av_freep(&resampledData_);
   }
 
   if (frame_ != nullptr) {

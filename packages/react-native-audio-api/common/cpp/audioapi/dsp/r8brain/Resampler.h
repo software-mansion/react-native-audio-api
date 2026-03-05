@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <cstddef>
 #include <memory>
@@ -10,21 +11,37 @@
 
 namespace r8b {
 
-class MultiChannelResampler {
- public:
-  MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
-  ~MultiChannelResampler() = default;
-  MultiChannelResampler(const MultiChannelResampler &) = delete;
-  MultiChannelResampler &operator=(const MultiChannelResampler &) = delete;
-  MultiChannelResampler(MultiChannelResampler &&) noexcept = default;
-  MultiChannelResampler &operator=(MultiChannelResampler &&) noexcept = default;
-
-  int process(const std::vector<float *> &input, int l, std::vector<float *> &output);
-  int process(const audioapi::AudioBuffer &input, int l, audioapi::AudioBuffer &output);
+class BaseResampler {
+  BaseResampler(const BaseResampler &) = delete;
+  BaseResampler &operator=(const BaseResampler &) = delete;
+  BaseResampler(BaseResampler &&) noexcept = default;
+  BaseResampler &operator=(BaseResampler &&) noexcept = default;
 
  private:
   std::vector<std::unique_ptr<CDSPResampler24>> resamplers_;
   std::vector<std::vector<double>> inputBuffers_;
-  std::vector<std::vector<float>> outputBuffers_;
+
+ protected:
+  BaseResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
+  int process(const std::vector<float *> &input, int l, std::vector<float *> &output);
+
+ public:
+  virtual ~BaseResampler() = default;
+  /** @return Maximum number of output samples per channel for one process() call (for the maxInLen passed to the constructor). */
+  int getMaxOutLen() const;
+};
+
+class MultiChannelResampler : public BaseResampler {
+ public:
+  MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
+  ~MultiChannelResampler() = default;
+  int process(const audioapi::AudioBuffer &input, int l, audioapi::AudioBuffer &output);
+};
+
+class SingleChannelResampler : public BaseResampler {
+ public:
+  SingleChannelResampler(double srcRate, double dstRate, int maxInLen = 2048);
+  ~SingleChannelResampler() = default;
+  int process(const audioapi::AudioArray &input, int l, audioapi::AudioArray &output);
 };
 } // namespace r8b

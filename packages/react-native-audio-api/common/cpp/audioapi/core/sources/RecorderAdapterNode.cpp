@@ -45,12 +45,14 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
         static_cast<size_t>(std::ceil(RENDER_QUANTUM_SIZE * sampleRate / contextSampleRate)) + 4;
 
     resampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate, contextSampleRate, channelCount_, inputChunkSize_);
+        sampleRate, contextSampleRate, channelCount_, static_cast<int>(inputChunkSize_));
 
-    resamplerInputBuffer_ =
-        std::make_shared<AudioBuffer>(inputChunkSize_, channelCount_, sampleRate);
+    const int maxOutLen = resampler_->getMaxOutLen();
 
-    overflowBuffers_.resize(channelCount_);
+    resamplerInputBuffer_ = AudioBuffer(inputChunkSize_, channelCount_, sampleRate);
+    resamplerOutputBuffer_ =
+        AudioBuffer(static_cast<size_t>(maxOutLen), channelCount_, contextSampleRate);
+    overflowBuffer_ = AudioBuffer(2 * maxOutLen, channelCount_, contextSampleRate);
     overflowSize_ = 0;
   }
 
@@ -61,10 +63,7 @@ void RecorderAdapterNode::cleanup() {
   isInitialized_ = false;
   needsResampling_ = false;
   buff_.clear();
-  adapterOutputBuffer_.reset();
-  resamplerInputBuffer_.reset();
   resampler_.reset();
-  overflowBuffers_.clear();
   overflowSize_ = 0;
 }
 
@@ -90,23 +89,19 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
   adapterOutputBuffer_->zero();
 
   size_t outputWritten = 0;
-  size_t needed = static_cast<size_t>(framesToProcess);
+  const size_t needed = static_cast<size_t>(framesToProcess);
 
   // Drain leftover resampled samples from the previous call
   if (overflowSize_ > 0) {
-    size_t toCopy = std::min(overflowSize_, needed);
+    const size_t toCopy = std::min(overflowSize_, needed);
 
-    for (int ch = 0; ch < channelCount_; ++ch) {
-      adapterOutputBuffer_->getChannel(ch)->copy(overflowBuffers_[ch].data(), 0, 0, toCopy);
-    }
+    adapterOutputBuffer_->copy(overflowBuffer_, 0, 0, toCopy);
     outputWritten = toCopy;
 
     if (toCopy < overflowSize_) {
+      const size_t remaining = overflowSize_ - toCopy;
       for (int ch = 0; ch < channelCount_; ++ch) {
-        std::memmove(
-            overflowBuffers_[ch].data(),
-            overflowBuffers_[ch].data() + toCopy,
-            (overflowSize_ - toCopy) * sizeof(float));
+        overflowBuffer_[ch].copyWithin(toCopy, 0, remaining);
       }
     }
     overflowSize_ -= toCopy;
@@ -114,41 +109,24 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
 
   // Feed the resampler until we have enough output frames
   while (outputWritten < needed) {
-    readFrames(*resamplerInputBuffer_, inputChunkSize_);
+    readFrames(resamplerInputBuffer_, inputChunkSize_);
 
-    std::vector<float *> inputPtrs(channelCount_);
-    std::vector<float *> outputPtrs(channelCount_, nullptr);
+    const int outLen = resampler_->process(
+        resamplerInputBuffer_, static_cast<int>(inputChunkSize_), resamplerOutputBuffer_);
 
-    for (int ch = 0; ch < channelCount_; ++ch) {
-      inputPtrs[ch] = resamplerInputBuffer_->getChannel(ch)->begin();
-    }
-
-    int outLen = resampler_->process(inputPtrs, static_cast<int>(inputChunkSize_), outputPtrs);
-
-    if (outLen <= 0) {
-      continue;
-    }
-
-    size_t remaining = needed - outputWritten;
-    size_t toCopy = std::min(static_cast<size_t>(outLen), remaining);
+    const size_t remaining = needed - outputWritten;
+    const size_t toCopy = std::min(static_cast<size_t>(outLen), remaining);
 
     // Write resampled frames into the output buffer
-    for (int ch = 0; ch < channelCount_; ++ch) {
-      adapterOutputBuffer_->getChannel(ch)->copy(outputPtrs[ch], 0, outputWritten, toCopy);
-    }
+    adapterOutputBuffer_->copy(resamplerOutputBuffer_, 0, outputWritten, toCopy);
     outputWritten += toCopy;
 
     // Stash excess for the next processNode call
-    int excess = outLen - toCopy;
+    const int excess = outLen - static_cast<int>(toCopy);
     if (excess > 0) {
-      for (int ch = 0; ch < channelCount_; ++ch) {
-        overflowBuffers_[ch].resize(overflowSize_ + excess);
-        std::memcpy(
-            overflowBuffers_[ch].data() + overflowSize_,
-            outputPtrs[ch] + toCopy,
-            excess * sizeof(float));
-      }
-      overflowSize_ += excess;
+      overflowBuffer_.copy(
+          resamplerOutputBuffer_, toCopy, overflowSize_, static_cast<size_t>(excess));
+      overflowSize_ += static_cast<size_t>(excess);
     }
   }
 }
