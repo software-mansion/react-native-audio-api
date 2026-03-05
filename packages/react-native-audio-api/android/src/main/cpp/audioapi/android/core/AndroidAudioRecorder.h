@@ -4,11 +4,8 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
-#include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <tuple>
 
 namespace audioapi {
 

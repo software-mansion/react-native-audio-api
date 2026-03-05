@@ -4,9 +4,8 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <atomic>
-#include <string>
 #include <memory>
-#include <tuple>
+#include <string>
 
 namespace audioapi {
 
@@ -17,9 +16,12 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~MiniAudioFileWriter();
 
-  OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize, const std::string &fileNameOverride) override;
+  OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize,
+      const std::string &fileNameOverride) override;
   CloseFileResult closeFile() override;
-
 
  private:
   std::atomic<bool> isConverterRequired_{false};

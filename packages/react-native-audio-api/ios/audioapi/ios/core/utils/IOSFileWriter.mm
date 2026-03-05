@@ -145,7 +145,7 @@ CloseFileResult IOSFileWriter::closeFile()
     framesWritten_.store(0, std::memory_order_release);
     offloader_.reset();
 
-    return CloseFileResult::Ok(std::make_tuple(fileDuration, fileSizeBytesMb));
+    return CloseFileResult::Ok(std::make_tuple(fileSizeBytesMb, fileDuration));
   }
 }
 
