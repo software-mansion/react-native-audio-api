@@ -73,8 +73,6 @@ void AudioBufferSourceNode::setBuffer(
 
     buffer_ = nullptr;
     playbackRateBuffer_ = nullptr;
-    audioBuffer_ =
-        std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
     return;
   }
 

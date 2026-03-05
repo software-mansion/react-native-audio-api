@@ -89,16 +89,16 @@ class BiquadFilterNode : public AudioNode {
     double b0, b1, b2, a1, a2;
   };
 
-  static FilterCoefficients setLowpassCoefficients(float frequency, float Q);
-  static FilterCoefficients setHighpassCoefficients(float frequency, float Q);
-  static FilterCoefficients setBandpassCoefficients(float frequency, float Q);
-  static FilterCoefficients setLowshelfCoefficients(float frequency, float gain);
-  static FilterCoefficients setHighshelfCoefficients(float frequency, float gain);
-  static FilterCoefficients setPeakingCoefficients(float frequency, float Q, float gain);
-  static FilterCoefficients setNotchCoefficients(float frequency, float Q);
-  static FilterCoefficients setAllpassCoefficients(float frequency, float Q);
+  static FilterCoefficients getLowpassCoefficients(float frequency, float Q);
+  static FilterCoefficients getHighpassCoefficients(float frequency, float Q);
+  static FilterCoefficients getBandpassCoefficients(float frequency, float Q);
+  static FilterCoefficients getLowshelfCoefficients(float frequency, float gain);
+  static FilterCoefficients getHighshelfCoefficients(float frequency, float gain);
+  static FilterCoefficients getPeakingCoefficients(float frequency, float Q, float gain);
+  static FilterCoefficients getNotchCoefficients(float frequency, float Q);
+  static FilterCoefficients getAllpassCoefficients(float frequency, float Q);
   static FilterCoefficients
-  setNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
+  getNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
   FilterCoefficients
   applyFilter(float frequency, float Q, float gain, float detune, BiquadFilterType type);
 };

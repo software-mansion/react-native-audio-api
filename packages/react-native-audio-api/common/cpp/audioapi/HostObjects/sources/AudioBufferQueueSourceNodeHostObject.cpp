@@ -43,7 +43,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
 
   auto event = [audioBufferQueueSourceNode,
                 when = args[0].getNumber(),
-                offset = args[1].isNumber() ? args[1].getNumber() : -1](BaseAudioContext &) {
+                offset = args[1].getNumber()](BaseAudioContext &) {
     audioBufferQueueSourceNode->start(when, offset);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));

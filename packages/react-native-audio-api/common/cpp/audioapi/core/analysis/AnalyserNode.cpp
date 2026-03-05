@@ -35,8 +35,7 @@ void AnalyserNode::setFFTSize(int fftSize) {
   complexData_ = std::vector<std::complex<float>>(fftSize);
   magnitudeArray_ = std::make_unique<AudioArray>(fftSize / 2);
   tempArray_ = std::make_unique<AudioArray>(fftSize);
-  windowData_ = std::make_unique<AudioArray>(fftSize);
-  dsp::Blackman().apply(windowData_->span());
+  initializeWindowData(fftSize);
   fftSize_.store(fftSize, std::memory_order_release);
 }
 
@@ -147,6 +146,22 @@ void AnalyserNode::doFFTAnalysis() {
         smoothingTimeConstant_ * magnitudeBufferData[i] +
         (1 - smoothingTimeConstant_) * scalarMagnitude);
   }
+}
+
+void AnalyserNode::initializeWindowData(int fftSize) {
+    windowData_ = std::make_unique<AudioArray>(fftSize);
+    auto data = windowData_->span();
+    auto size = windowData_->getSize();
+
+    const auto invSizeMinusOne = 1.0f / static_cast<float>(size - 1);
+    const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
+
+    for (size_t i = 0; i < size; ++i) {
+        const auto phase = alpha * i;
+        // 4*PI*x is just 2 * (2*PI*x)
+        const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
+        data[i] = window;
+    }
 }
 
 } // namespace audioapi

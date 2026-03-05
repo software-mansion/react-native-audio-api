@@ -3,7 +3,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
-#include <audioapi/dsp/Windows.hpp>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/TripleBuffer.hpp>
 
@@ -115,6 +114,8 @@ class AnalyserNode : public AudioNode {
   size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
+
+  void initializeWindowData(int fftSize);
 };
 
 } // namespace audioapi

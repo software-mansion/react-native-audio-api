@@ -80,9 +80,7 @@ class IIRFilterNode : public AudioNode {
       float scaleFactor) {
     AudioArray result(inputVector.data(), inputVector.size());
     if (scaleFactor != 1.0f && scaleFactor != 0.0f && result.getSize() > 0) {
-      for (float &val : result) {
-        val /= scaleFactor;
-      }
+      result.scale(1.0f / scaleFactor);
     }
 
     return result;
