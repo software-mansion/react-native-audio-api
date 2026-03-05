@@ -4,8 +4,12 @@
 #include <atomic>
 #include <cstddef>
 #include <new>
+#include <concepts>
 
 namespace audioapi {
+
+template <typename T, typename... Args>
+concept ConstructibleFromCopyable = std::constructible_from<T, Args...> && (std::copy_constructible<std::remove_cvref_t<Args>> && ...);
 
 /// @brief A lock-free triple buffer for single producer and single consumer scenarios.
 /// The producer can write to one buffer while the consumer reads from another buffer, and the third buffer is idle.
@@ -16,6 +20,7 @@ template <typename T>
 class TripleBuffer {
  public:
   template <typename... Args>
+  requires ConstructibleFromCopyable<T, Args...>
   explicit TripleBuffer(Args &&...args) {
     new (&buffers_[0]) T(args...);
     new (&buffers_[1]) T(args...);
