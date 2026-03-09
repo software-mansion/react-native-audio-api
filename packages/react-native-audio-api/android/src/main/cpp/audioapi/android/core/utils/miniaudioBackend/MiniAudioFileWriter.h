@@ -33,6 +33,7 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
 
   ma_result initializeConverterIfNeeded();
   ma_result initializeEncoder(const std::string &fileNameOverride);
+  // TODO: rewrite to use r8brain resampler
   ma_uint64 convertBuffer(void *data, int numFrames);
 
   bool isConverterRequired();

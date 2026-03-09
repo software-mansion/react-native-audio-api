@@ -55,6 +55,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   Result<NoneType, std::string> configureAndOpenCodec(const AVCodec *codec);
   Result<NoneType, std::string> initializeStream();
   Result<NoneType, std::string> openIOAndWriteHeader();
+  // TODO: rewrite to use r8brain resampler
   Result<NoneType, std::string> initializeResampler(float inputRate, int inputChannels);
   void initializeBuffers(int32_t maxBufferSize);
 

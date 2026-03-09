@@ -4,6 +4,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/dsp/r8brain/Resampler.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
 #include <vector>
@@ -25,7 +26,8 @@ class RecorderAdapterNode : public AudioNode {
   /// @note This method should be called ONLY ONCE when the buffer size is known.
   /// @param bufferSize The size of the buffer to be used.
   /// @param channelCount The number of channels.
-  void init(size_t bufferSize, int channelCount);
+  /// @param sampleRate The recorder's native sample rate.
+  void init(size_t bufferSize, int channelCount, float sampleRate);
   void cleanup();
 
   // TODO: CircularOverflowableAudioBuffer
@@ -38,10 +40,20 @@ class RecorderAdapterNode : public AudioNode {
   std::shared_ptr<AudioBuffer> adapterOutputBuffer_;
 
  private:
-  /// @brief Read audio frames from the recorder's internal circular buffer into output buffers.
-  /// @note If `framesToRead` is greater than the number of available frames, it will fill empty space with silence.
-  /// @param framesToRead Number of frames to read.
-  void readFrames(size_t framesToRead);
+  void readFrames(AudioBuffer &target, size_t framesToRead);
+  void processResampled(int framesToProcess);
+
+  std::unique_ptr<r8b::MultiChannelResampler> resampler_;
+  bool needsResampling_ = false;
+
+  // Number of input frames (at recorder rate) to feed per render quantum
+  size_t inputChunkSize_ = 0;
+  AudioBuffer resamplerInputBuffer_;
+  AudioBuffer resamplerOutputBuffer_;
+
+  // Accumulates resampled output across calls
+  AudioBuffer overflowBuffer_;
+  size_t overflowSize_ = 0;
 };
 
 } // namespace audioapi

@@ -4,20 +4,34 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 
+#include <cstring>
 #include <memory>
+#include "audioapi/dsp/r8brain/Resampler.h"
 
 namespace audioapi {
 
-WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve) : curve_(curve) {
+WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate)
+    : curve_(curve), sampleRate_(sampleRate) {
   tempBuffer2x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 2);
   tempBuffer2x_->zero();
   tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
   tempBuffer4x_->zero();
 
-  upSampler_ = std::make_unique<UpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
-  downSampler_ = std::make_unique<DownSampler>(2 * RENDER_QUANTUM_SIZE, 2 * RENDER_QUANTUM_SIZE);
-  upSampler2_ = std::make_unique<UpSampler>(2 * RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
-  downSampler2_ = std::make_unique<DownSampler>(4 * RENDER_QUANTUM_SIZE, 2 * RENDER_QUANTUM_SIZE);
+  createResamplers(OverSampleType::OVERSAMPLE_NONE);
+}
+
+void WaveShaper::createResamplers(OverSampleType type) {
+  if (type == OverSampleType::OVERSAMPLE_2X) {
+    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_, sampleRate_ * 2, RENDER_QUANTUM_SIZE);
+    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_ * 2, sampleRate_, RENDER_QUANTUM_SIZE * 2);
+  } else if (type == OverSampleType::OVERSAMPLE_4X) {
+    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_, sampleRate_ * 4, RENDER_QUANTUM_SIZE * 2);
+    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
+        sampleRate_ * 4, sampleRate_, RENDER_QUANTUM_SIZE * 4);
+  }
 }
 
 void WaveShaper::setCurve(const std::shared_ptr<AudioArray> &curve) {
@@ -26,22 +40,7 @@ void WaveShaper::setCurve(const std::shared_ptr<AudioArray> &curve) {
 
 void WaveShaper::setOversample(OverSampleType type) {
   oversample_ = type;
-
-  if (upSampler_) {
-    upSampler_->reset();
-  }
-
-  if (downSampler_) {
-    downSampler_->reset();
-  }
-
-  if (upSampler2_) {
-    upSampler2_->reset();
-  }
-
-  if (downSampler2_) {
-    downSampler2_->reset();
-  }
+  createResamplers(type);
 }
 
 void WaveShaper::process(AudioArray &channelData, int framesToProcess) {
@@ -51,10 +50,10 @@ void WaveShaper::process(AudioArray &channelData, int framesToProcess) {
 
   switch (oversample_) {
     case OverSampleType::OVERSAMPLE_2X:
-      process2x(channelData, framesToProcess);
+      processResampled(channelData, framesToProcess);
       break;
     case OverSampleType::OVERSAMPLE_4X:
-      process4x(channelData, framesToProcess);
+      processResampled(channelData, framesToProcess);
       break;
     case OverSampleType::OVERSAMPLE_NONE:
     default:
@@ -83,20 +82,12 @@ void WaveShaper::processNone(AudioArray &channelData, int framesToProcess) {
   }
 }
 
-void WaveShaper::process2x(AudioArray &channelData, int framesToProcess) {
-  auto outputFrames = upSampler_->process(channelData, *tempBuffer2x_, framesToProcess);
-  processNone(*tempBuffer2x_, outputFrames);
-  downSampler_->process(*tempBuffer2x_, channelData, outputFrames);
-}
-
-void WaveShaper::process4x(AudioArray &channelData, int framesToProcess) {
-  auto upSamplerOutputFrames = upSampler_->process(channelData, *tempBuffer2x_, framesToProcess);
-  auto upSampler2OutputFrames =
-      upSampler2_->process(*tempBuffer2x_, *tempBuffer4x_, upSamplerOutputFrames);
-  processNone(*tempBuffer4x_, upSampler2OutputFrames);
-  auto downSampler2OutputFrames =
-      downSampler2_->process(*tempBuffer4x_, *tempBuffer2x_, upSampler2OutputFrames);
-  downSampler_->process(*tempBuffer2x_, channelData, downSampler2OutputFrames);
+void WaveShaper::processResampled(AudioArray &channelData, int framesToProcess) {
+  AudioArray &outArray =
+      (oversample_ == OverSampleType::OVERSAMPLE_4X) ? *tempBuffer4x_ : *tempBuffer2x_;
+  const int outputFrames = upSampler_->process(channelData, framesToProcess, outArray);
+  processNone(outArray, outputFrames);
+  downSampler_->process(outArray, outputFrames, channelData);
 }
 
 } // namespace audioapi

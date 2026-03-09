@@ -5,10 +5,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
-
-#include <algorithm>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
@@ -19,7 +16,7 @@ WaveShaperNode::WaveShaperNode(
 
   waveShapers_.reserve(6);
   for (size_t i = 0; i < channelCount_; i++) {
-    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
+    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
   }
   setCurve(options.curve);
   isInitialized_.store(true, std::memory_order_release);

@@ -24,6 +24,7 @@ extern "C" {
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
+#include <audioapi/dsp/r8brain/Resampler.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
@@ -74,6 +75,8 @@ class StreamerNode : public AudioScheduledSourceNode {
 
  private:
   std::string streamPath_;
+  std::unique_ptr<r8b::MultiChannelResampler> resampler_;
+  float outSampleRate_;
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
@@ -83,10 +86,12 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVPacket *pkt_;
   AVFrame *frame_; // Frame that is currently being processed
   SwrContext *swrCtx_;
-  uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBuffer> bufferedAudioBuffer_; // audio buffer for buffering hls frames
-  size_t bufferedAudioBufferSize_;                   // size of currently buffered buffer
+  // --resampling--
+  AudioBuffer resamplerInputBuffer_;
+  AudioBuffer resamplerOutputBuffer_;
+  StreamingData bufferedAudioData_; // audio data for buffering hls frames
+  bool hasBufferedAudioData_;
   int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
@@ -119,9 +124,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   /**
    * @brief Resample the audio frame, change its sample format and channel layout
    * @param frame The AVFrame to resample
-   * @return true if successful, false otherwise
+   * @param context The context
    */
-  bool processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
+  void processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
 
   /**
    * @brief Thread function to continuously read and process audio frames
