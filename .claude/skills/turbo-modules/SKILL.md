@@ -12,6 +12,21 @@ description: >
 
 # Skill: TurboModules & JSI Installation
 
+## When to Use TurboModule vs HostObjects
+
+**Rule**: if it needs `AVAudioSession`, `AudioManager`, `MediaSession`, or OS permissions → TurboModule. If it's audio processing → HostObject installed by `AudioAPIModuleInstaller`.
+
+| Use TurboModule method | Use HostObject property/method |
+|---|---|
+| Platform system APIs (audio session, permissions, notifications, device routing) | All audio graph operations (create/connect/disconnect nodes, AudioParam, scheduling) |
+| One-time initialization (`install`) | Real-time playback control |
+| Features that need native UI thread or system callbacks | Features that only need the JSI runtime |
+| Android-only or iOS-only behavior | Cross-platform C++ engine behavior |
+
+Most audio nodes do **not** need a TurboModule method — they are exposed entirely through JSI HostObjects injected by `injectJSIBindings`.
+
+---
+
 ## Reference
 
 - RN TurboModules (new arch): https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules
@@ -213,17 +228,6 @@ void AudioAPIModule::registerNatives() {
 The JSI injection itself (`AudioAPIModuleInstaller`) is identical for both architectures — it only needs the `jsi::Runtime *` and `CallInvoker`, which are obtained differently but behave the same.
 
 ---
-
-## What Belongs in the TurboModule vs HostObjects
-
-| Use TurboModule method | Use HostObject property/method |
-|---|---|
-| Platform system APIs (audio session, permissions, notifications, device routing) | All audio graph operations (create/connect/disconnect nodes, AudioParam, scheduling) |
-| One-time initialization (`install`) | Real-time playback control |
-| Features that need native UI thread or system callbacks | Features that only need the JSI runtime |
-| Android-only or iOS-only behavior | Cross-platform C++ engine behavior |
-
-**Rule**: if it needs `AVAudioSession`, `AudioManager`, `MediaSession`, or OS permissions → TurboModule. If it's audio processing → HostObject installed by `AudioAPIModuleInstaller`.
 
 ---
 

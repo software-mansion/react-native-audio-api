@@ -126,14 +126,6 @@
     ]
   },
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/poneciak/Desktop/react-native-audio-api"
-      ]
-    },
     "lsp": {
       "command": "npx",
       "args": ["-y", "mcp-language-server", "--stdio"],

@@ -27,43 +27,6 @@ apps/
         └── styles.ts         # Shared colors and layout constants
 ```
 
-## Running the App
-
-### First-time setup
-
-```bash
-# From repo root
-yarn install
-
-# iOS only
-cd apps/fabric-example
-bundle install
-bundle exec pod install
-```
-
-### Daily workflow
-
-```bash
-cd apps/fabric-example
-yarn start          # Terminal 1 — Metro bundler
-yarn ios            # Terminal 2 — build + launch on iOS
-yarn android        # Terminal 2 — build + launch on Android
-```
-
-Or open natively:
-- **iOS**: `apps/fabric-example/ios/FabricExample.xcworkspace` in Xcode
-- **Android**: `apps/fabric-example/android/` in Android Studio
-
-### Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| Pod install fails | `rm -rf ios/Pods ios/Podfile.lock && bundle exec pod install` |
-| Metro can't find `common-app` | Restart Metro: `Ctrl+C` then `yarn start` |
-| Audio not playing on iOS simulator | Use a real device — simulator audio is often broken |
-| Android permission denied | `adb kill-server && adb start-server` |
-| Stale build artifacts | From repo root: `yarn clean && yarn install && yarn build` |
-
 ## Navigation
 
 ```

@@ -6,13 +6,35 @@ description: >
 
 # Skill: Feature Implementation Flow
 
+## Quick Reference
+
+**Feature checklist (all 9 steps required for a PR):**
+1. Read spec → define exactly what you're building
+2. TypeScript interface + option types (`src/interfaces/`, `src/types/`)
+3. C++ AudioNode (`core/<category>/MyNode.h/.cpp`) — see `audio-nodes` skill
+4. HostObject (`HostObjects/MyNodeHostObject.h/.cpp`) — see `host-objects` skill
+5. TypeScript class (`src/core/MyNode.ts`)
+6. TurboModule spec entry — **only** if a new RN native method is needed
+7. C++ tests (Google Test) — **write tests first, confirm they fail, then implement**
+8. JS/TS tests (Jest)
+9. Docs page (`packages/audiodocs/`)
+Then: `post-work-checks` skill
+
+**Bug fix checklist:**
+1. Reproduce (write failing test or MRE first)
+2. Identify the layer (use the table in §Bug Fix Flow)
+3. Fix + verify tests pass
+4. Post-mortem (update skill if a new pitfall discovered)
+
+---
+
 ## Feature Implementation Flow
 
 ### 1 — Define exactly what you are building
 
-Before touching any code:
+Before touching any code. **If spec behavior is unclear → fetch https://webaudio.github.io/web-audio-api/ before proceeding.**
 
-- Read the [Web Audio API spec](https://webaudio.github.io/web-audio-api/) section for the node/feature. Nail down:
+- Read the Web Audio API spec section for the node/feature. Nail down:
   - All properties and methods
   - Parameter default values, min/max, and automation behaviour
   - Edge cases (what happens when `start()` is called twice? what if feedback[0] === 0?)
@@ -48,7 +70,7 @@ Files: `packages/react-native-audio-api/src/`
 
 Files: `packages/react-native-audio-api/common/cpp/audioapi/core/`
 
-See the `audio-nodes` skill for the full contract. Summary:
+See the `audio-nodes` skill for the full contract. **If unsure which base class to use → check the class hierarchy in that skill.** Summary:
 
 1. Create `core/<category>/MyNode.h` and `MyNode.cpp`.
 2. Subclass the right base (`AudioNode`, `AudioScheduledSourceNode`, `AudioBufferBaseSourceNode`).
@@ -66,7 +88,7 @@ See the `audio-nodes` skill for the full contract. Summary:
 
 Files: `packages/react-native-audio-api/common/cpp/audioapi/HostObjects/`
 
-See the `host-objects` skill for the full macro system and shadow state patterns. Summary:
+See the `host-objects` skill for the full macro system and shadow state patterns. **If unsure whether to use shadow state or atomics → check the decision table in that skill.** Summary:
 
 1. Create `HostObjects/MyNodeHostObject.h` and `MyNodeHostObject.cpp`.
 2. Extend `AudioNodeHostObject`.

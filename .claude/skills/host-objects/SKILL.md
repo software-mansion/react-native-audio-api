@@ -17,7 +17,19 @@ Scope: C++ JSI HostObject layer — `packages/react-native-audio-api/common/cpp/
 
 HostObjects are the middle layer between the TypeScript API and the C++ audio engine. They expose C++ audio node state and methods to JavaScript via JSI (no bridge serialization), and route state changes to the audio thread via a lock-free SPSC event queue.
 
-See [full examples](examples.md) for complete GainNode and OscillatorNode implementations.
+Golden references: `GainNodeHostObject.h/.cpp` (effect node), `OscillatorNodeHostObject.h/.cpp` (source node). Mirror their structure for any new HostObject. See [full examples](examples.md) for annotated implementations.
+
+---
+
+## Critical Pitfalls — Read Before Writing Any Code
+
+- **NEVER read from `node_` in a getter** if the property can be written by the audio thread. Use shadow state or atomics instead.
+- **NEVER call `node_->someMethod()` directly from a setter** — always schedule via `scheduleAudioEvent`. The audio thread may be mid-render.
+- **ALWAYS register getters/setters/functions in the constructor.** Anything not added to `addGetters`/`addSetters`/`addFunctions` is silently missing from JS.
+- **Match property names exactly.** The string in `JSI_EXPORT_PROPERTY_GETTER` becomes the JS property name. A typo means the property doesn't exist in JS.
+- **Clear callback IDs in the destructor** for any HO that registers audio events. Otherwise the audio thread fires into a destroyed JS function.
+- **Call `setExternalMemoryPressure`** when returning HOs or typed arrays backed by large native buffers.
+- **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
 
 ---
 
@@ -439,16 +451,6 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createMyNode) {
 Also add `createMyNode()` to the C++ `BaseAudioContext` factory — see the `audio-nodes` skill.
 
 ---
-
-## Common Pitfalls
-
-- **Never read from `node_` in a getter** if the property can be written by the audio thread. Use shadow state or atomics instead.
-- **Never call `node_->someMethod()` directly from a setter** — always schedule via `scheduleAudioEvent`. The audio thread may be mid-render.
-- **Always register in the constructor.** A getter/setter/function not added to `addGetters`/`addSetters`/`addFunctions` is silently missing from JS.
-- **Match property names exactly.** The string in `JSI_EXPORT_PROPERTY_GETTER` becomes the JS property name. A typo means the property doesn't exist.
-- **Clear callback IDs in the destructor** for any HO that registers audio events.
-- **Call `setExternalMemoryPressure`** when returning HOs or typed arrays backed by large native buffers.
-- **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
 
 ---
 

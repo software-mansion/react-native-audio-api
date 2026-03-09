@@ -212,8 +212,10 @@ Review this skill when `pre-push-update` reports changes in:
 - **Under 500 lines** — non-negotiable. If the file exceeds 500 lines, move verbose content to a supporting file in the same directory.
 - **Imperative form**: "Use `AudioParam`", "Declare in protected:", "Call `scheduleAudioEvent`". Not: "You should use", "It is recommended to call".
 - **Code over prose**: a 5-line snippet teaches faster than two paragraphs. Prefer concrete examples.
-- **Critical first**: the most important constraint or invariant must appear in the first two sections, not buried at the bottom.
+- **Critical first**: MUST NOT lists, common pitfalls, and hard constraints go in the FIRST section, not buried at the bottom. Readers stop reading early.
 - **No scope blockquotes**: do not add `> **Scope**: ...` / `> **What this skill covers**: ...` / `> **When Claude should consult this skill**: ...` — this duplicates the frontmatter and wastes lines.
+- **Escape hatches**: add "If unsure → [do X]" guidance wherever a wrong choice causes hard-to-debug bugs (e.g. "If unsure which ITC primitive → check the decision table in `thread-safety-itc`").
+- **Golden references**: link to one or two existing files that exemplify the patterns in the skill. These let Claude anchor new code to proven implementations.
 
 ### What belongs in the skill body vs supporting files
 

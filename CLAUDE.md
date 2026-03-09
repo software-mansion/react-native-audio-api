@@ -6,37 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `react-native-audio-api` is a high-performance Web Audio API-compatible audio engine for React Native, maintained by Software Mansion. It provides audio playback, recording, DSP processing, and real-time analysis across iOS, Android, and Web.
 
-## Commands
-
-### Root (Monorepo)
-```bash
-yarn build          # Build all workspaces
-yarn lint           # Lint all workspaces
-yarn format         # Format all code
-yarn typecheck      # TypeScript type checking
-yarn test           # Run C++ tests via RunTests.sh
-yarn clean          # Remove build artifacts and node_modules
-yarn check-audio-enum-sync  # Validate AudioEvent enum synchronization
-```
-
-### Main Package (`packages/react-native-audio-api`)
-```bash
-yarn lint:js        # ESLint for TypeScript/JavaScript
-yarn lint:cpp       # C++ linting (cpplint)
-yarn lint:ios       # iOS Objective-C++ format checks
-yarn lint:kotlin    # Kotlin linting (Android)
-
-yarn format:js      # Prettier
-yarn format:common  # clang-format for shared C++
-yarn format:android:cpp     # clang-format for Android C++
-yarn format:android:kotlin  # KtLint
-yarn format:ios             # clang-format for iOS
-```
-
-### Tests
-- **C++ tests**: `yarn test` from root runs `packages/react-native-audio-api/common/cpp/test/RunTests.sh` using CMake + Google Test
-- **JS tests**: Jest with preset `react-native`, test files in `packages/react-native-audio-api/tests/` matching `**/*.test.ts`
-
 ## Architecture
 
 ### Monorepo Structure
@@ -50,32 +19,10 @@ packages/custom-node-generator/    # Code generation tooling
 
 ### Layers (from JS to hardware)
 
-1. **TypeScript API** (`packages/react-native-audio-api/src/`)
-   - `src/core/` — Web Audio API node implementations (GainNode, BiquadFilterNode, etc.)
-   - `src/web-core/` / `src/web-system/` — Browser Web Audio API passthrough
-   - `src/system/` — Platform-specific session/permission/device management
-   - `src/specs/` — TurboModule specs (native method signatures)
-   - `src/hooks/`, `src/events/`, `src/utils/`, `src/mock/`
-
-2. **C++ Engine** (`packages/react-native-audio-api/common/cpp/audioapi/`)
-   - `core/` — Audio node engine (sources, destinations, effects, analysis, inputs)
-   - `dsp/` — DSP algorithms with SIMD optimization (ARM NEON, x86 SSE2)
-   - `HostObjects/` — JSI bridge objects (C++ ↔ JavaScript)
-   - `jsi/` — JavaScript Interface bindings
-   - `events/` — Audio thread event system
-   - `libs/` — Third-party library wrappers
-   - `external/` — Prebuilt binaries: FFmpeg, Opus, Ogg, Vorbis, OpenSSL
-
-3. **Android Native** (`android/`)
-   - CMake + Gradle build
-   - Kotlin modules in `src/main/java/com/swmansion/audioapi/`
-   - C++ glue in `src/main/cpp/audioapi/`
-   - Uses Oboe 1.9.3 for high-performance audio I/O
-
-4. **iOS Native** (`ios/audioapi/ios/`)
-   - Objective-C++ (`.mm` files)
-   - CocoaPods via `RNAudioAPI.podspec`
-   - Prebuilt FFmpeg frameworks downloaded at pod install
+1. **TypeScript API** (`src/`) — node implementations (`src/core/`), browser passthrough (`src/web-core/`), platform system APIs (`src/system/`), TurboModule specs (`src/specs/`), hooks, events, utils
+2. **C++ Engine** (`common/cpp/audioapi/`) — node engine (`core/`), SIMD DSP (`dsp/`), JSI HostObjects, audio events, prebuilt external libraries (`external/`)
+3. **Android Native** (`android/`) — CMake + Gradle, Kotlin module, C++ JNI glue (`src/main/cpp/`), Oboe 1.9.3 audio I/O
+4. **iOS Native** (`ios/audioapi/ios/`) — Objective-C++ (`.mm`), CocoaPods (`RNAudioAPI.podspec`), CoreAudio I/O
 
 ### Key Architectural Patterns
 - **JSI**: Audio nodes are exposed as C++ JSI HostObjects — no bridge serialization
@@ -115,13 +62,18 @@ Claude MUST decide independently whether to parallelize work and run subagents �
 
 The user expects Claude to make these parallelization decisions without being prompted. Spawning a subagent costs less than waiting for sequential work.
 
-## Development Notes
+## Golden Reference Implementations
 
-- **Node version**: 18 (see `.nvmrc`)
-- **Package manager**: Yarn 4.5.0 (workspaces)
-- **Pre-commit hooks**: `lefthook` runs format, lint, typecheck, and commitlint automatically
-- **C++ formatting**: `.clang-format` at repo root defines the style; always run `yarn format:common` after editing shared C++
-- **Minimum targets**: iOS 14.0+, Android API 21+, React Native 0.76+
+When implementing anything new, mirror structure and style from these proven files. Ask the agent to explain any intentional deviation.
+
+| Task | Reference file(s) |
+|---|---|
+| New C++ effect/analysis node | `common/cpp/audioapi/core/effects/GainNode.h` + `.cpp` |
+| New JSI HostObject | `common/cpp/audioapi/HostObjects/effects/GainNodeHostObject.h` + `.cpp` |
+| New scheduled source node | `common/cpp/audioapi/core/sources/OscillatorNode.h` + `.cpp` |
+| New TypeScript API class | `packages/react-native-audio-api/src/core/GainNode.ts` |
+
+---
 
 ## Skills
 
@@ -131,8 +83,6 @@ Detailed skill files live in `.claude/skills/`. Each skill lives in its own dire
 |---|---|
 | `host-objects/` | C++ JSI HostObject layer — creating and maintaining HostObjects |
 | `audio-nodes/` | C++ audio node engine — implementing and connecting audio nodes |
-| `native-ios/` | iOS native layer — Objective-C++, CocoaPods, AVFoundation |
-| `native-android/` | Android native layer — Kotlin, CMake, Oboe, JNI |
 | `turbo-modules/` | TurboModule/JSI wiring — spec → native → HostObject installation |
 | `web-audio-api/` | Web Audio API spec conformance and browser passthrough layer |
 | `build-compilation-dependencies/` | CMake, Gradle, podspec, prebuilt libraries |
@@ -141,11 +91,6 @@ Detailed skill files live in `.claude/skills/`. Each skill lives in its own dire
 | `flow/` | End-to-end feature implementation flow (tests + docs required) |
 | `utilities/` | Shared DSP and C++/TS utility helpers |
 | `writing-skills/` | How to write, structure, and maintain skill files |
-
-Additional context CLAUDE.md files exist in subdirectories:
-- `apps/CLAUDE.md` — working with example apps
-- `packages/audiodocs/CLAUDE.md` — working with the documentation site
-- `packages/react-native-audio-api/tests/CLAUDE.md` — JS/TS test suite
 
 See `.claude/README.md` for a full description of the Claude Code setup and the `/pre-push-update` command.
 

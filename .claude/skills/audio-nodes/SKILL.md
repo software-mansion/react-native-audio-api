@@ -6,6 +6,12 @@ description: >
 
 # Skill: AudioNodes
 
+Golden references: `GainNode.h/.cpp` (effect node), `OscillatorNode.h/.cpp` (scheduled source). Mirror their structure for any new node. See [gainnode-example.md](gainnode-example.md) for an annotated header + .cpp.
+
+**If spec defaults or parameter ranges are unclear → fetch https://webaudio.github.io/web-audio-api/ before writing any constructor code.**
+
+---
+
 ## Directory Structure
 
 ```

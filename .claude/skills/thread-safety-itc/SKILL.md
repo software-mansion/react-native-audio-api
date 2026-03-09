@@ -17,6 +17,8 @@ description: >
 
 Three threads interact in this codebase. Every line of code that crosses a thread boundary must use the correct primitive or it is a bug.
 
+**When in doubt about which ITC primitive to use → go to the Decision Table below first.**
+
 ---
 
 ## The Three Threads
