@@ -23,7 +23,7 @@ class BaseResampler {
 
  protected:
   BaseResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
-  int process(const std::vector<float *> &input, int l, std::vector<float *> &output);
+  int process(const std::vector<float *> &input, int length, std::vector<float *> &output);
 
  public:
   virtual ~BaseResampler() = default;
@@ -35,13 +35,13 @@ class MultiChannelResampler : public BaseResampler {
  public:
   MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
   ~MultiChannelResampler() = default;
-  int process(const audioapi::AudioBuffer &input, int l, audioapi::AudioBuffer &output);
+  int process(const audioapi::AudioBuffer &input, int length, audioapi::AudioBuffer &output);
 };
 
 class SingleChannelResampler : public BaseResampler {
  public:
   SingleChannelResampler(double srcRate, double dstRate, int maxInLen = 2048);
   ~SingleChannelResampler() = default;
-  int process(const audioapi::AudioArray &input, int l, audioapi::AudioArray &output);
+  int process(const audioapi::AudioArray &input, int length, audioapi::AudioArray &output);
 };
 } // namespace r8b
