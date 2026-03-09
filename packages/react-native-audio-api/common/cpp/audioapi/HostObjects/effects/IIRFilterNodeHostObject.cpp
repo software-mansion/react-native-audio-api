@@ -18,7 +18,7 @@ JSI_HOST_FUNCTION_IMPL(IIRFilterNodeHostObject, getFrequencyResponse) {
   auto arrayBufferFrequency =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
-  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime));
+  auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime) / sizeof(float));
 
   auto arrayBufferMag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);

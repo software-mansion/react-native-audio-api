@@ -2588,7 +2588,7 @@ SPEC CHECKSUMS:
   ReactCodegen: f66521b131699d6af0790f10653933b3f1f79a6f
   ReactCommon: 07572bf9e687c8a52fbe4a3641e9e3a1a477c78e
   ReactNativeDependencies: 3467a1fea6f7a524df13b30430bebcc254d9aee2
-  RNAudioAPI: cb97b644449ba63f7ae31c02f73e9cf1ab8fd259
+  RNAudioAPI: fa5c075d2fcdb1ad9a695754b38f07c8c3074396
   RNGestureHandler: 07de6f059e0ee5744ae9a56feb07ee345338cc31
   RNReanimated: d75c81956bf7531fe08ba4390149002ab8bdd127
   RNScreens: 6cb648bdad8fe9bee9259fe144df95b6d1d5b707
