@@ -27,7 +27,6 @@
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
 #include <memory>

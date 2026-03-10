@@ -2,7 +2,6 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <memory>

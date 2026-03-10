@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <algorithm>
 #include <cassert>

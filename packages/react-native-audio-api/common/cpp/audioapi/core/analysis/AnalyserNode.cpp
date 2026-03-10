@@ -3,7 +3,6 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
-
 #include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>

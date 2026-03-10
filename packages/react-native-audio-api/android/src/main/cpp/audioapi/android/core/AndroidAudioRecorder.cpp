@@ -11,8 +11,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioArray.hpp>
-
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
