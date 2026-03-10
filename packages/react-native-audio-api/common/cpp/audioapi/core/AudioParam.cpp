@@ -154,6 +154,10 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
     // Exponential decay function towards target value
     auto calculateValue = [timeConstant, target](
                               double startTime, double, float startValue, float, double time) {
+      if (timeConstant == 0) {
+        return target;
+      }
+
       if (time < startTime) {
         return startValue;
       }
