@@ -1,7 +1,7 @@
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>

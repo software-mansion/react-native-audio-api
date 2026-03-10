@@ -2,7 +2,7 @@
 
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AlignedAllocator.hpp>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <complex>
 #include <cstring>
 #include <memory>

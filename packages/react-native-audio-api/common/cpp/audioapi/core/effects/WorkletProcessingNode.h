@@ -3,7 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <jsi/jsi.h>

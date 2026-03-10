@@ -15,7 +15,7 @@
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>

@@ -12,7 +12,7 @@
 #include <audioapi/core/sources/StreamerNode.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
 #include <cstdint>

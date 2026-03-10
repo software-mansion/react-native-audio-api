@@ -11,7 +11,7 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 

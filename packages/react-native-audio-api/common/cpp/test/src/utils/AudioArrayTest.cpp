@@ -1,4 +1,4 @@
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <gtest/gtest.h>
 
 #include <numeric>

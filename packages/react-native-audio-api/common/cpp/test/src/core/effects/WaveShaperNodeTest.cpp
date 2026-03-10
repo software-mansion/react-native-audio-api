@@ -3,7 +3,7 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>

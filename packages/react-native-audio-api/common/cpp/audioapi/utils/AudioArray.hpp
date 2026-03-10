@@ -1,15 +1,15 @@
 #pragma once
 
+#include <audioapi/dsp/VectorMath.h>
+#include <audioapi/utils/AlignedAllocator.hpp>
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <memory>
 #include <span>
-#include <vector>
 #include <stdexcept>
-#include <algorithm>
 #include <utility>
-#include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AlignedAllocator.hpp>
+#include <vector>
 
 namespace audioapi {
 
@@ -216,7 +216,8 @@ class AlignedAudioArray {
 
   /// @brief Copies data from this array to a raw float pointer.
   /// @note Assumes destination and this are in distinct, non-overlapping memory locations.
-  void copyTo(float *destination, size_t sourceStart, size_t destinationStart, size_t length) const {
+  void copyTo(float *destination, size_t sourceStart, size_t destinationStart, size_t length)
+      const {
     if (size_ - sourceStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough data to copy from source.");
     }

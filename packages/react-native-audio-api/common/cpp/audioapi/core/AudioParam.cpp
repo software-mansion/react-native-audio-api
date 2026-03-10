@@ -2,7 +2,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
 

@@ -7,7 +7,7 @@
 
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
 #include <memory>

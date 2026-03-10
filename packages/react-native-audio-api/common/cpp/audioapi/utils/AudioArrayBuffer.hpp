@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 
 #if !RN_AUDIO_API_TEST
@@ -23,14 +23,14 @@ class AudioArrayBuffer : public JsiBuffer, public AudioArray {
     return size_ * sizeof(float);
   }
   uint8_t *data() override {
-    return reinterpret_cast<uint8_t *>(data_.get());
+    return reinterpret_cast<uint8_t *>(data_.data());
   }
 #else
   [[nodiscard]] size_t size() const {
     return size_ * sizeof(float);
   }
   uint8_t *data() {
-    return reinterpret_cast<uint8_t *>(data_.get());
+    return reinterpret_cast<uint8_t *>(data_.data());
   }
 #endif
 };

@@ -2,7 +2,7 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 

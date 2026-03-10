@@ -2,6 +2,7 @@
 
 #include <audioapi/android/core/NativeAudioRecorder.hpp>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
 #include <memory>
@@ -10,7 +11,6 @@
 namespace audioapi {
 
 class AudioBuffer;
-class AudioArray;
 class CircularAudioArray;
 class AudioFileProperties;
 class AndroidRecorderCallback;

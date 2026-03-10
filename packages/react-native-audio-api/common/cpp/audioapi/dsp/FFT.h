@@ -2,7 +2,7 @@
 
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/pffft/pffft.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 
 #include <complex>
 #include <vector>

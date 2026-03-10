@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/types/ChannelInterpretation.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <cstddef>

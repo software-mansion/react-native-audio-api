@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.h>
 #include <cstddef>
 #include <memory>
