@@ -122,6 +122,10 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
     // Exponential curve function using power law
     auto calculateValue =
         [](double startTime, double endTime, float startValue, float endValue, double time) {
+          if (startValue * endValue < 0 || startValue == 0) {
+            return startValue;
+          }
+
           if (time < startTime) {
             return startValue;
           }
