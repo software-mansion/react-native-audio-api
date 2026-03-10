@@ -30,7 +30,7 @@
 
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/dsp/FFT.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <complex>
 #include <memory>

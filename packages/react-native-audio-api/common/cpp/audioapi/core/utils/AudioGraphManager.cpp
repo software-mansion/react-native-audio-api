@@ -5,7 +5,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 #include <utility>
 #include <vector>

@@ -5,7 +5,7 @@
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <jsi/jsi.h>
 
 #include <memory>

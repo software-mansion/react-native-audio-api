@@ -2,6 +2,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -9,7 +10,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {

@@ -2,12 +2,12 @@
 
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {

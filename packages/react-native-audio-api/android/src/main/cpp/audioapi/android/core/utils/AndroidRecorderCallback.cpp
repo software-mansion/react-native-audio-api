@@ -4,7 +4,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>

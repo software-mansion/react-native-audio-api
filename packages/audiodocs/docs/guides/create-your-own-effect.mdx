@@ -43,9 +43,9 @@ For the sake of a simplicity, we will use value as a raw `double` type, not wrap
 ```cpp
 #pragma once
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
-class AudioBuffer;
 
 class MyProcessorNode : public AudioNode {
 public:
@@ -70,7 +70,7 @@ private:
 
 ```cpp
 #include "MyProcessorNode.h"
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 
 namespace audioapi {

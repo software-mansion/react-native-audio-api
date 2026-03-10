@@ -3,7 +3,6 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <cmath>

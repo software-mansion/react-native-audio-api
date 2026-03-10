@@ -3,7 +3,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm

@@ -13,7 +13,7 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 struct AudioNodeOptions {

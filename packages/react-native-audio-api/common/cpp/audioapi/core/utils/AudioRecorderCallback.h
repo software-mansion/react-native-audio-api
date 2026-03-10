@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -11,7 +12,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 

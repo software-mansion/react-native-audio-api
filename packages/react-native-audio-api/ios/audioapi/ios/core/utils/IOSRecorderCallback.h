@@ -7,9 +7,9 @@ typedef struct objc_object AVAudioConverter;
 #endif
 
 #include <audioapi/core/utils/AudioRecorderCallback.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <memory>
-#include <vector>
 
 struct CallbackData {
   const AudioBufferList *audioBufferList;
@@ -18,7 +18,6 @@ struct CallbackData {
 
 namespace audioapi {
 
-class AudioBuffer;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 

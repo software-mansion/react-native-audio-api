@@ -2,13 +2,13 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cassert>
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {

@@ -9,7 +9,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 struct OscillatorOptions;
 
 class OscillatorNode : public AudioScheduledSourceNode {

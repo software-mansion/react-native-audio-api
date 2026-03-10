@@ -12,8 +12,6 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
-#include <functional>
 
 namespace audioapi::ffmpegdecoder {
 

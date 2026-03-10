@@ -1,8 +1,9 @@
 #pragma once
+
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
-class AudioBuffer;
 
 class MyProcessorNode : public AudioNode {
 public:

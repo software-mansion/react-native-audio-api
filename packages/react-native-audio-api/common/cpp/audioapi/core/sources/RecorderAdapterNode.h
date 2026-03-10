@@ -5,13 +5,12 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/dsp/r8brain/Resampler.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 /// @brief RecorderAdapterNode is an AudioNode which adapts push Recorder into pull graph.
 /// It uses RingBuffer to store audio data and AudioParam to provide audio data in pull mode.

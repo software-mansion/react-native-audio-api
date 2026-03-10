@@ -8,7 +8,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <algorithm>
 #include <memory>
 #include <utility>

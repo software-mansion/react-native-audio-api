@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <cstddef>
 #include <memory>
 #include <vector>

@@ -2,16 +2,14 @@
 
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cstddef>
 #include <list>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
 

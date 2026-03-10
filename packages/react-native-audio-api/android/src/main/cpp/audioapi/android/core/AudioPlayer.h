@@ -6,13 +6,13 @@
 #include <memory>
 
 #include <audioapi/android/core/NativeAudioPlayer.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 
 using namespace oboe;
 
 class AudioContext;
-class AudioBuffer;
 
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:

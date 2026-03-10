@@ -3,12 +3,11 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/dsp/r8brain/Resampler.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 class WaveShaper {
  public:

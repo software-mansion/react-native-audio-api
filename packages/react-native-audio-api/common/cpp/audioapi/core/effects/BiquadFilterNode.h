@@ -31,6 +31,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/types/BiquadFilterType.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #if RN_AUDIO_API_TEST
 #include <gtest/gtest_prod.h>
 #endif // RN_AUDIO_API_TEST
@@ -39,7 +40,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 struct BiquadFilterOptions;
 
 class BiquadFilterNode : public AudioNode {

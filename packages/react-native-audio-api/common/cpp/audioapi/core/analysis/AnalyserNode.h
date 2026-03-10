@@ -4,6 +4,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/TripleBuffer.hpp>
 
 #include <atomic>
@@ -15,7 +16,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class CircularAudioArray;
 struct AnalyserOptions;
 

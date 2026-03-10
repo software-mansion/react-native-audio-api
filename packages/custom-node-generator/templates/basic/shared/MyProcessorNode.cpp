@@ -1,5 +1,4 @@
 #include "MyProcessorNode.h"
-#include <audioapi/utils/AudioBuffer.h>
 
 namespace audioapi {
 MyProcessorNode::MyProcessorNode(

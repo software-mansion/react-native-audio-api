@@ -11,7 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -58,7 +58,6 @@ struct StreamingData {
 
 namespace audioapi {
 
-class AudioBuffer;
 struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {

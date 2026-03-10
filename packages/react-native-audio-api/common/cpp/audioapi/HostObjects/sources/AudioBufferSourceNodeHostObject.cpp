@@ -5,7 +5,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 #include <utility>
 

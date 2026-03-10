@@ -4,13 +4,13 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/dsp/WaveShaper.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 #include <vector>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct WaveShaperOptions;
 
 class WaveShaperNode : public AudioNode {

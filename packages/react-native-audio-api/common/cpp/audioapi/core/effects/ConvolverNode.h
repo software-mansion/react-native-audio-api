@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/dsp/Convolver.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 #include <vector>
@@ -15,8 +16,6 @@ static constexpr double MIN_IR_POWER = 0.000125;
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioBuffer;
 struct ConvolverOptions;
 
 class ConvolverNode : public AudioNode {

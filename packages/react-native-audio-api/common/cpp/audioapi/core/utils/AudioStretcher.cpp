@@ -2,7 +2,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <cstdint>
 #include <memory>
 #include <vector>

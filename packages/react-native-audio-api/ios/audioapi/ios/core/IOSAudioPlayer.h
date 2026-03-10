@@ -6,11 +6,11 @@
 typedef struct objc_object NativeAudioPlayer;
 #endif // __OBJC__
 
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <functional>
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioContext;
 
 class IOSAudioPlayer {

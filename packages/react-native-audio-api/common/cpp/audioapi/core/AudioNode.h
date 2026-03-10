@@ -5,6 +5,7 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -15,7 +16,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioParam;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {

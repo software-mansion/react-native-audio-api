@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/AudioDestructor.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
 #include <concepts>
@@ -13,7 +14,6 @@ namespace audioapi {
 class AudioNode;
 class AudioScheduledSourceNode;
 class AudioParam;
-class AudioBuffer;
 
 #define AUDIO_GRAPH_MANAGER_SPSC_OPTIONS \
   std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \

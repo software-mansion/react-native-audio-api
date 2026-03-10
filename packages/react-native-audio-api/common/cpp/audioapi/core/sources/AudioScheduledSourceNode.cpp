@@ -4,7 +4,6 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.h>
 
 #if !RN_AUDIO_API_TEST
 #include <audioapi/core/AudioContext.h>
