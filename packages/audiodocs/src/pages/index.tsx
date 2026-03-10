@@ -11,7 +11,7 @@ import LandingWidget from '@site/src/components/LandingWidget';
 import LandingFeatures from '@site/src/components/LandingFeatures';
 // import LandingExamples from '@site/src/components/LandingExamples';
 import FooterBackground from '@site/src/components/FooterBackground';
-import { HireUsSection } from '@site/src/components/HireUsSection';
+import { HireUsSectionWrapper } from '@site/src/components/HireUsSection';
 
 import styles from './styles.module.css';
 import AudioManager from '../audio/AudioManager';
@@ -48,7 +48,7 @@ function Home() {
       <Spacer.V size="12rem" className={styles.hideOnMobile}  />
       <Spacer.V size="6rem" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
-        <HireUsSection
+        <HireUsSectionWrapper
           href={
             'https://swmansion.com/contact/projects?utm_source=gesture-handler&utm_medium=docs'
           }

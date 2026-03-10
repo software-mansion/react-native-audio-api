@@ -1,9 +1,3 @@
----
-sidebar_position: 1
----
-
-import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
-
 # BaseAudioContext
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
@@ -15,10 +9,11 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 An audio graph is a structured representation of audio processing elements and their connections within an audio context.
 The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
 In general we can distinguish four types of nodes:
-- Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node))
-- Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), [`BiquadFilterNode`](/docs/effects/biquad-filter-node))
-- Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
-- Destination nodes (e.g [`AudioDestinationNode`](/docs/destinations/audio-destination-node))
+
+* Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node))
+* Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), [`BiquadFilterNode`](/docs/effects/biquad-filter-node))
+* Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
+* Destination nodes (e.g [`AudioDestinationNode`](/docs/destinations/audio-destination-node))
 
 ![](/img/audio-graph.png)
 
@@ -31,18 +26,18 @@ The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a s
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
-:::info
-Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context).
-:::
+> **Info**
+>
+> Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context).
 
 ## Properties
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
-| `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
-| `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
+| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. |  |
+| `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. |  |
+| `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. |  |
+| `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. |  |
 
 ## Methods
 
@@ -72,8 +67,8 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 | Error type | Description |
 | :---: | :---- |
-| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range \[1, 32]. |
+| `NotSupportedError` | `sampleRate` is outside the nominal range \[8000, 96000]. |
 | `NotSupportedError` | `length` is less then 1. |
 
 #### Returns `AudioBuffer`.
@@ -84,17 +79,17 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
+| `options`  | `{ pitchCorrection: boolean }` | Boolean that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferSourceNode`.
 
-### `createBufferQueueSource` <MobileOnly />
+### `createBufferQueueSource`&#x20;
 
 Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
+| `options`  | `{ pitchCorrection: boolean }` | Boolean that specifies if pitch correction has to be available. |
 
 #### Returns `AudioBufferQueueSourceNode`.
 
@@ -116,7 +111,7 @@ Creates [`DelayNode`](/docs/effects/delay-node)
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `maxDelayTime` <Optional /> | `number` | Maximum amount of time to buffer delayed values|
+| `maxDelayTime`  | `number` | Maximum amount of time to buffer delayed values|
 
 #### Returns `DelayNode`
 
@@ -146,7 +141,7 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+| `constraints`  | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
 
 #### Errors
 
@@ -168,13 +163,13 @@ Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 #### Returns `StereoPannerNode`.
 
-### `createStreamer` <MobileOnly />
+### `createStreamer`&#x20;
 
 Creates [`StreamerNode`](/docs/sources/streamer-node).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | [`StreamerOptions`](/docs/sources/streamer-node#streameroptions) | Streamer options to initialize. |
+| `options`  | [`StreamerOptions`](/docs/sources/streamer-node#streameroptions) | Streamer options to initialize. |
 
 #### Returns `StreamerNode`.
 
@@ -184,7 +179,7 @@ Creates [`WaveShaperNode`](/docs/effects/wave-shaper-node).
 
 #### Returns `WaveShaperNode`.
 
-### `createWorkletNode` <MobileOnly />
+### `createWorkletNode`&#x20;
 
 Creates [`WorkletNode`](/docs/worklets/worklet-node).
 
@@ -200,12 +195,12 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | Error type | Description |
 | :---: | :---- |
 | `Error` | `react-native-worklet` is not found as dependency. |
-| `NotSupportedError` | `bufferLength` < 1. |
-| `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
+| `NotSupportedError` | `bufferLength` \< 1. |
+| `NotSupportedError` | `inputChannelCount` is not in range \[1, 32]. |
 
 #### Returns `WorkletNode`.
 
-### `createWorkletSourceNode` <MobileOnly />
+### `createWorkletSourceNode`&#x20;
 
 Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 
@@ -222,7 +217,7 @@ Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 
 #### Returns `WorkletSourceNode`.
 
-### `createWorkletProcessingNode` <MobileOnly />
+### `createWorkletProcessingNode`&#x20;
 
 Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 
@@ -246,46 +241,33 @@ If not provided, the audio will be automatically resampled to match the audio co
 
 **For the list of supported formats visit [this page](/docs/utils/decoding).**
 
-<table>
-  <thead>
-    <tr>
-      <th align="center">Parameter</th>
-      <th align="center">Type</th>
-      <th align="center">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="3" align="center"><code>input</code></td>
-      <td align="center"><code>ArrayBuffer</code></td>
-      <td align="center">ArrayBuffer with audio data.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>string</code></td>
-      <td align="center">Path to remote or local audio file.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>number</code></td>
-      <td align="center">Asset module id. <MobileOnly/> </td>
-    </tr>
-    <tr>
-      <td align="center"><code>fetchOptions</code><Optional /></td>
-      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
-      <td align="center">Additional headers parameters when passing url to fetch.</td>
-    </tr>
-  </tbody>
-</table>
+Parameter
+Type
+Description
+
+input
+ArrayBuffer
+ArrayBuffer with audio data.
+
+string
+Path to remote or local audio file.
+
+number
+Asset module id. &#x20;
+
+fetchOptions
+[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)
+Additional headers parameters when passing url to fetch.
 
 #### Returns `Promise<AudioBuffer>`.
 
-<details>
-<summary>Example decoding</summary>
+Example decoding
+
 ```tsx
 const url = ... // url to an audio
 
 const buffer = await audioContext.decodeAudioData(url);
 ```
-</details>
 
 ### `decodePCMInBase64`
 
@@ -296,40 +278,38 @@ Decodes base64-encoded PCM audio data.
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
-| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+| `isInterleaved` | `boolean` | Whether the PCM data is interleaved. Default is `true`. |
 
 #### Returns `Promise<AudioBuffer>`
 
-<details>
-<summary>Example decoding with data in base64 format </summary>
+Example decoding with data in base64 format&#x20;
+
 ```tsx
 const data = ... // data encoded in base64 string
 // data is not interleaved (Channel1, Channel1, ..., Channel2, Channel2, ...)
 const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 ```
-</details>
 
 ## Remarks
 
 #### `currentTime`
 
-- Timer starts when context is created, stops when context is suspended.
+* Timer starts when context is created, stops when context is suspended.
 
 ### `ContextState`
 
-<details>
-<summary>Details</summary>
+Details
 
 **Acceptable values:**
-  - `suspended`
 
-  The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
+* `suspended`
 
-  - `running`
+The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
 
-  The audio context is running normally.
+* `running`
 
-  - `closed`
+The audio context is running normally.
 
-  The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
-</details>
+* `closed`
+
+The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
