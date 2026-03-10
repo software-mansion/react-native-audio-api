@@ -57,7 +57,7 @@ export default class AudioParam {
     endTime: number
   ): AudioParam {
     if (value === 0) {
-      throw new RangeError(`value must be a finite positive number: ${value}`);
+      throw new RangeError(`value must be a non-zero number: ${value}`);
     }
 
     if (endTime <= 0) {
