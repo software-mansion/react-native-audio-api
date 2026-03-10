@@ -151,7 +151,7 @@ void AudioGraphManager::addAudioParam(const std::shared_ptr<AudioParam> &param) 
   sender_.send(std::move(event));
 }
 
-void AudioGraphManager::addAudioBuffeForDestruction(std::shared_ptr<AudioBuffer> buffer) {
+void AudioGraphManager::addAudioBufferForDestruction(std::shared_ptr<AudioBuffer> buffer) {
   // direct access because this is called from the Audio thread
   audioBuffers_.emplace_back(std::move(buffer));
 }

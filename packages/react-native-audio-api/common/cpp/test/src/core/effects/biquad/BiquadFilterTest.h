@@ -23,7 +23,9 @@ class BiquadFilterTest : public ::testing::Test {
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  void expectCoefficientsNear(const BiquadFilterNode &node, const BiquadCoefficients &expected);
+  void expectCoefficientsNear(
+      const BiquadFilterNode::FilterCoefficients &actual,
+      const BiquadCoefficients &expected);
   void testLowpass(float frequency, float Q);
   void testHighpass(float frequency, float Q);
   void testBandpass(float frequency, float Q);

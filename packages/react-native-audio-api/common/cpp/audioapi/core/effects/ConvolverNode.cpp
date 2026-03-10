@@ -1,12 +1,12 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/dsp/AudioUtils.hpp>
-#include <audioapi/dsp/FFT.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -17,59 +17,75 @@ ConvolverNode::ConvolverNode(
       gainCalibrationSampleRate_(context->getSampleRate()),
       remainingSegments_(0),
       internalBufferIndex_(0),
-      normalize_(!options.disableNormalization),
       signalledToStop_(false),
       scaleFactor_(1.0f),
       intermediateBuffer_(nullptr),
       buffer_(nullptr),
       internalBuffer_(nullptr) {
-  setBuffer(options.buffer);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
-bool ConvolverNode::getNormalize_() const {
-  return normalize_;
-}
-
-const std::shared_ptr<AudioBuffer> &ConvolverNode::getBuffer() const {
-  return buffer_;
-}
-
-void ConvolverNode::setNormalize(bool normalize) {
-  if (normalize_ != normalize) {
-    normalize_ = normalize;
-    if (normalize_ && buffer_)
-      calculateNormalizationScale();
+void ConvolverNode::setBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    std::vector<Convolver> convolvers,
+    const std::shared_ptr<ThreadPool> &threadPool,
+    const std::shared_ptr<AudioBuffer> &internalBuffer,
+    const std::shared_ptr<AudioBuffer> &intermediateBuffer,
+    float scaleFactor) {
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    return;
   }
-  if (!normalize_) {
-    scaleFactor_ = 1.0f;
+
+  auto graphManager = context->getGraphManager();
+
+  if (buffer_) {
+    graphManager->addAudioBufferForDestruction(std::move(buffer_));
   }
+  if (internalBuffer_) {
+    graphManager->addAudioBufferForDestruction(std::move(internalBuffer_));
+  }
+  if (intermediateBuffer_) {
+    graphManager->addAudioBufferForDestruction(std::move(intermediateBuffer_));
+  }
+
+  // TODO move convolvers and thread destruction to graph manager as well
+
+  buffer_ = buffer;
+  convolvers_ = std::move(convolvers);
+  threadPool_ = threadPool;
+  internalBuffer_ = internalBuffer;
+  intermediateBuffer_ = intermediateBuffer;
+  scaleFactor_ = scaleFactor;
+  internalBufferIndex_ = 0;
 }
 
-void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  if (buffer_ != buffer && buffer != nullptr) {
-    buffer_ = buffer;
-    if (normalize_)
-      calculateNormalizationScale();
-    threadPool_ = std::make_shared<ThreadPool>(4);
-    convolvers_.clear();
-    for (size_t i = 0; i < buffer->getNumberOfChannels(); ++i) {
-      convolvers_.emplace_back();
-      AudioArray channelData(*buffer->getChannel(i));
-      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getSize());
+float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) {
+  int numberOfChannels = buffer->getNumberOfChannels();
+  auto length = buffer->getSize();
+
+  float power = 0;
+
+  for (size_t channel = 0; channel < numberOfChannels; ++channel) {
+    float channelPower = 0;
+    auto channelData = buffer->getChannel(channel)->span();
+    for (int i = 0; i < length; ++i) {
+      float sample = channelData[i];
+      channelPower += sample * sample;
     }
-    if (buffer->getNumberOfChannels() == 1) {
-      // add one more convolver, because right now input is always stereo
-      convolvers_.emplace_back();
-      AudioArray channelData(*buffer->getChannel(0));
-      convolvers_.back().init(RENDER_QUANTUM_SIZE, channelData, buffer->getSize());
-    }
-    internalBuffer_ = std::make_shared<AudioBuffer>(
-        RENDER_QUANTUM_SIZE * 2, channelCount_, buffer->getSampleRate());
-    intermediateBuffer_ = std::make_shared<AudioBuffer>(
-        RENDER_QUANTUM_SIZE, convolvers_.size(), buffer->getSampleRate());
-    internalBufferIndex_ = 0;
+    power += channelPower;
   }
+
+  power = std::sqrt(power / (numberOfChannels * length));
+  if (power < MIN_IR_POWER) {
+    power = MIN_IR_POWER;
+  }
+
+  auto scaleFactor = 1 / power;
+  scaleFactor *= std::pow(10, GAIN_CALIBRATION * 0.05f);
+  scaleFactor *= gainCalibrationSampleRate_ / buffer->getSampleRate();
+
+  return scaleFactor;
 }
 
 void ConvolverNode::onInputDisabled() {
@@ -128,31 +144,6 @@ std::shared_ptr<AudioBuffer> ConvolverNode::processNode(
   }
 
   return audioBuffer_;
-}
-
-void ConvolverNode::calculateNormalizationScale() {
-  int numberOfChannels = buffer_->getNumberOfChannels();
-  auto length = buffer_->getSize();
-
-  float power = 0;
-
-  for (size_t channel = 0; channel < numberOfChannels; ++channel) {
-    float channelPower = 0;
-    auto channelData = buffer_->getChannel(channel)->span();
-    for (int i = 0; i < length; ++i) {
-      float sample = channelData[i];
-      channelPower += sample * sample;
-    }
-    power += channelPower;
-  }
-
-  power = std::sqrt(power / (numberOfChannels * length));
-  if (power < MIN_IR_POWER) {
-    power = MIN_IR_POWER;
-  }
-  scaleFactor_ = 1 / power;
-  scaleFactor_ *= std::pow(10, GAIN_CALIBRATION * 0.05f);
-  scaleFactor_ *= gainCalibrationSampleRate_ / buffer_->getSampleRate();
 }
 
 void ConvolverNode::performConvolution(const std::shared_ptr<AudioBuffer> &processingBuffer) {

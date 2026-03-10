@@ -106,8 +106,6 @@ export interface FileInfo {
   duration: number;
 }
 
-export type WindowType = 'blackman' | 'hann';
-
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
 export interface AudioNodeOptions {
@@ -188,7 +186,7 @@ export interface ConstantSourceOptions {
 }
 
 export interface StreamerOptions {
-  streamPath?: string;
+  streamPath: string;
 }
 
 export interface PeriodicWaveConstraints {

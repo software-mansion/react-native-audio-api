@@ -19,37 +19,42 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
+  /// @note JS Thread only
+  void initStretch(const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch);
+
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
+  /// @note Audio Thread only
   void setOnPositionChangedCallbackId(uint64_t callbackId);
+
+  /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
+
+  /// TODO remove and refactor
   [[nodiscard]] int getOnPositionChangedInterval() const;
-  [[nodiscard]] double getInputLatency() const;
-  [[nodiscard]] double getOutputLatency() const;
+
+  void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
  protected:
   // pitch correction
-  bool pitchCorrection_;
-
-  std::mutex bufferLock_;
+  const bool pitchCorrection_;
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
   std::shared_ptr<AudioBuffer> playbackRateBuffer_;
 
   // k-rate params
-  std::shared_ptr<AudioParam> detuneParam_;
-  std::shared_ptr<AudioParam> playbackRateParam_;
+  const std::shared_ptr<AudioParam> detuneParam_;
+  const std::shared_ptr<AudioParam> playbackRateParam_;
 
   // internal helper
   double vReadIndex_;
 
-  std::atomic<uint64_t> onPositionChangedCallbackId_ = 0; // 0 means no callback
+  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
 
-  std::mutex &getBufferLock();
   virtual double getCurrentPosition() const = 0;
 
   void sendOnPositionChangedEvent();

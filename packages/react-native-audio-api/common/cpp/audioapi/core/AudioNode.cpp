@@ -24,29 +24,13 @@ AudioNode::AudioNode(
 }
 
 AudioNode::~AudioNode() {
-  if (isInitialized_) {
+  if (isInitialized_.load(std::memory_order_acquire)) {
     cleanup();
   }
 }
 
-int AudioNode::getNumberOfInputs() const {
-  return numberOfInputs_;
-}
-
-int AudioNode::getNumberOfOutputs() const {
-  return numberOfOutputs_;
-}
-
 size_t AudioNode::getChannelCount() const {
   return channelCount_;
-}
-
-ChannelCountMode AudioNode::getChannelCountMode() const {
-  return channelCountMode_;
-}
-
-ChannelInterpretation AudioNode::getChannelInterpretation() const {
-  return channelInterpretation_;
 }
 
 void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
@@ -120,7 +104,7 @@ std::shared_ptr<AudioBuffer> AudioNode::processAudio(
     const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return outputBuffer;
   }
 
@@ -272,7 +256,7 @@ void AudioNode::onInputDisabled() {
 }
 
 void AudioNode::onInputConnected(AudioNode *node) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -284,7 +268,7 @@ void AudioNode::onInputConnected(AudioNode *node) {
 }
 
 void AudioNode::onInputDisconnected(AudioNode *node) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -300,7 +284,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 }
 
 void AudioNode::cleanup() {
-  isInitialized_ = false;
+  isInitialized_.store(false, std::memory_order_release);
 
   for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisconnected(this);

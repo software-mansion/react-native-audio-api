@@ -1,7 +1,7 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
-#include "BaseAudioContext.h"
 
 #include <memory>
 #include <mutex>
@@ -22,9 +22,13 @@ class OfflineAudioContext : public BaseAudioContext {
       const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
+  /// @note JS Thread only
   void resume();
+
+  /// @note JS Thread only
   void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
 
+  /// @note JS Thread only
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:

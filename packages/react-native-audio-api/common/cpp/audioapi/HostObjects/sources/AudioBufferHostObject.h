@@ -28,7 +28,8 @@ class AudioBufferHostObject : public JsiHostObject {
   }
 
   [[nodiscard]] inline size_t getSizeInBytes() const {
-    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float);
+    // *2 because every time buffer is passed we create a copy of it.
+    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

@@ -3,7 +3,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -27,15 +26,27 @@ class AudioScheduledSourceNode : public AudioNode {
   virtual void start(double when);
   virtual void stop(double when);
 
+  /// @note Audio Thread only
   bool isUnscheduled();
+
+  /// @note Audio Thread only
   bool isScheduled();
+
+  /// @note Audio Thread only
   bool isPlaying();
+
+  /// @note Audio Thread only
   bool isFinished();
+
+  /// @note Audio Thread only
   bool isStopScheduled();
 
+  /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;
+
+  void unregisterOnEndedCallback(uint64_t callbackId);
 
  protected:
   double startTime_;
@@ -43,8 +54,8 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
-  std::atomic<uint64_t> onEndedCallbackId_ = 0;
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  uint64_t onEndedCallbackId_ = 0;
+  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<AudioBuffer> &processingBuffer,

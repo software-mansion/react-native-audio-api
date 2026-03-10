@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
-#include <vector>
 #include <utility>
+#include <vector>
 
 using namespace audioapi;
 
@@ -26,19 +26,13 @@ class AudioBufferTest : public ::testing::Test {
     }
   }
 
-  static void expectChannel(
-      const AudioBuffer &buf,
-      size_t ch,
-      float expected,
-      float tol = 0.0f) {
+  static void expectChannel(const AudioBuffer &buf, size_t ch, float expected, float tol = 0.0f) {
     auto *channel = buf.getChannel(ch);
     for (size_t i = 0; i < buf.getSize(); ++i) {
       if (tol > 0.0f) {
-        EXPECT_NEAR((*channel)[i], expected, tol)
-            << "ch=" << ch << " i=" << i;
+        EXPECT_NEAR((*channel)[i], expected, tol) << "ch=" << ch << " i=" << i;
       } else {
-        EXPECT_FLOAT_EQ((*channel)[i], expected)
-            << "ch=" << ch << " i=" << i;
+        EXPECT_FLOAT_EQ((*channel)[i], expected) << "ch=" << ch << " i=" << i;
       }
     }
   }
@@ -315,7 +309,7 @@ TEST_F(AudioBufferTest, UpMix_1_to_6) {
   dst.sum(src);
   expectChannel(dst, 0, 0.0f);
   expectChannel(dst, 1, 0.0f);
-  expectChannel(dst, 2, 1.0f);  // Center
+  expectChannel(dst, 2, 1.0f); // Center
   expectChannel(dst, 3, 0.0f);
   expectChannel(dst, 4, 0.0f);
   expectChannel(dst, 5, 0.0f);
@@ -377,7 +371,7 @@ TEST_F(AudioBufferTest, DownMix_2_to_1) {
   fillChannel(src, 1, 1.0f);
 
   dst.sum(src);
-  expectChannel(dst, 0, 1.0f);  // 0.5 + 0.5
+  expectChannel(dst, 0, 1.0f); // 0.5 + 0.5
 }
 
 TEST_F(AudioBufferTest, DownMix_2_to_1_Asymmetric) {
@@ -387,7 +381,7 @@ TEST_F(AudioBufferTest, DownMix_2_to_1_Asymmetric) {
   fillChannel(src, 1, 4.0f);
 
   dst.sum(src);
-  expectChannel(dst, 0, 3.0f);  // 0.5*2 + 0.5*4
+  expectChannel(dst, 0, 3.0f); // 0.5*2 + 0.5*4
 }
 
 TEST_F(AudioBufferTest, DownMix_4_to_1) {
@@ -396,14 +390,14 @@ TEST_F(AudioBufferTest, DownMix_4_to_1) {
   fillAllChannels(src, 1.0f);
 
   dst.sum(src);
-  expectChannel(dst, 0, 1.0f);  // 0.25 * 4
+  expectChannel(dst, 0, 1.0f); // 0.25 * 4
 }
 
 TEST_F(AudioBufferTest, DownMix_6_to_1) {
   AudioBuffer src(BUF_SIZE, 6, SR);
   AudioBuffer dst(BUF_SIZE, 1, SR);
   fillAllChannels(src, 1.0f);
-  fillChannel(src, 3, 0.0f);  // LFE not part of the formula
+  fillChannel(src, 3, 0.0f); // LFE not part of the formula
 
   dst.sum(src);
   // sqrt(0.5)*L + sqrt(0.5)*R + C + 0.5*SL + 0.5*SR
@@ -426,7 +420,7 @@ TEST_F(AudioBufferTest, DownMix_6_to_2) {
   AudioBuffer src(BUF_SIZE, 6, SR);
   AudioBuffer dst(BUF_SIZE, 2, SR);
   fillAllChannels(src, 1.0f);
-  fillChannel(src, 3, 0.0f);  // LFE
+  fillChannel(src, 3, 0.0f); // LFE
 
   dst.sum(src);
   // L += L + sqrt(0.5)*(C + SL), R += R + sqrt(0.5)*(C + SR)
@@ -439,7 +433,7 @@ TEST_F(AudioBufferTest, DownMix_6_to_4) {
   AudioBuffer src(BUF_SIZE, 6, SR);
   AudioBuffer dst(BUF_SIZE, 4, SR);
   fillAllChannels(src, 1.0f);
-  fillChannel(src, 3, 0.0f);  // LFE
+  fillChannel(src, 3, 0.0f); // LFE
 
   dst.sum(src);
   // L += L + sqrt(0.5)*C, R += R + sqrt(0.5)*C
@@ -476,7 +470,7 @@ TEST_F(AudioBufferTest, DiscreteSum_SourceFewerChannels) {
 
   dst.sum(src, ChannelInterpretation::DISCRETE);
   expectChannel(dst, 0, 1.0f);
-  expectChannel(dst, 1, 5.0f);  // untouched
+  expectChannel(dst, 1, 5.0f); // untouched
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +508,7 @@ TEST_F(AudioBufferTest, CopyWithDownMixing) {
   fillChannel(src, 1, 1.0f);
 
   dst.copy(src);
-  expectChannel(dst, 0, 1.0f);  // 0.5 + 0.5
+  expectChannel(dst, 0, 1.0f); // 0.5 + 0.5
 }
 
 TEST_F(AudioBufferTest, CopySelfIsNoop) {
@@ -626,9 +620,7 @@ TEST_F(AudioBufferTest, DeinterleaveMultichannel) {
   buf.deinterleaveFrom(interleaved, FRAMES);
   for (size_t f = 0; f < FRAMES; ++f) {
     for (size_t ch = 0; ch < CHANNELS; ++ch) {
-      EXPECT_FLOAT_EQ(
-          (*buf.getChannel(ch))[f],
-          static_cast<float>(f * CHANNELS + ch));
+      EXPECT_FLOAT_EQ((*buf.getChannel(ch))[f], static_cast<float>(f * CHANNELS + ch));
     }
   }
 }

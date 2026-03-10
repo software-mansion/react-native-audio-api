@@ -20,8 +20,11 @@ class OscillatorNode : public AudioScheduledSourceNode {
 
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
-  [[nodiscard]] OscillatorType getType();
+
+  /// @note Audio Thread only
   void setType(OscillatorType);
+
+  /// @note Audio Thread only
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:

@@ -1,7 +1,7 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -19,7 +19,7 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
                   1), // +1 to enable delayTime equal to maxDelayTime
               channelCount_,
               context->getSampleRate())) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> DelayNode::getDelayTimeParam() const {
@@ -30,11 +30,7 @@ void DelayNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      remainingFrames_ = delayTimeParam_->getValue() * context->getSampleRate();
-    } else {
-      remainingFrames_ = 0;
-    }
+    remainingFrames_ = delayTimeParam_->getValue() * getContextSampleRate();
   }
 }
 
@@ -98,8 +94,11 @@ std::shared_ptr<AudioBuffer> DelayNode::processNode(
 
   // normal processing
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
+    processingBuffer->zero();
     return processingBuffer;
+  }
+
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();

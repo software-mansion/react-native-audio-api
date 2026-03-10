@@ -17,7 +17,7 @@ WorkletNode::WorkletNode(
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
       curBuffIndex_(0) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioBuffer> WorkletNode::processNode(

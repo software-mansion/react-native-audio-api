@@ -25,7 +25,7 @@ class StereoPannerNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> panParam_;
+  const std::shared_ptr<AudioParam> panParam_;
 };
 
 } // namespace audioapi

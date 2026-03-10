@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/AudioParamEventQueue.h>
 #include <audioapi/core/utils/ParamChangeEvent.hpp>
@@ -22,72 +23,75 @@ class AudioParam {
       float maxValue,
       const std::shared_ptr<BaseAudioContext> &context);
 
-  /// JS-Thread only methods
-  /// These methods are called only from HostObjects invoked on the JS thread.
-
-  // JS-Thread only
   [[nodiscard]] inline float getValue() const noexcept {
     return value_.load(std::memory_order_relaxed);
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getDefaultValue() const noexcept {
     return defaultValue_;
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getMinValue() const noexcept {
     return minValue_;
   }
 
-  // JS-Thread only
   [[nodiscard]] inline float getMaxValue() const noexcept {
     return maxValue_;
   }
 
-  // JS-Thread only
   inline void setValue(float value) {
     value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void setValueAtTime(float value, double startTime);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void linearRampToValueAtTime(float value, double endTime);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void exponentialRampToValueAtTime(float value, double endTime);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void setTargetAtTime(float target, double startTime, double timeConstant);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void setValueCurveAtTime(
       const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
       double duration);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void cancelScheduledValues(double cancelTime);
 
-  // JS-Thread only
+  /// @note Audio Thread only
   void cancelAndHoldAtTime(double cancelTime);
+
+  template <
+      typename F,
+      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  bool inline scheduleAudioEvent(F &&event) noexcept {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->scheduleAudioEvent(std::forward<F>(event));
+    }
+
+    return false;
+  }
 
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
-  // Audio-Thread only (indirectly through AudioNode::connectParam by AudioGraphManager)
+  /// @note Audio Thread only
   void addInputNode(AudioNode *node);
 
-  // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioGraphManager)
+  /// @note Audio Thread only
   void removeInputNode(AudioNode *node);
 
-  // Audio-Thread only
+  /// @note Audio Thread only
   std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
 
-  // Audio-Thread only
+  /// @note Audio Thread only
   float processKRateParam(int framesToProcess, double time);
 
  private:
@@ -99,7 +103,6 @@ class AudioParam {
   float maxValue_;
 
   AudioParamEventQueue eventsQueue_;
-  CrossThreadEventScheduler<AudioParam> eventScheduler_;
 
   // Current automation state (cached for performance)
   double startTime_;
@@ -129,11 +132,6 @@ class AudioParam {
       return endValue_;
     }
     return eventsQueue_.back().getEndValue();
-  }
-
-  /// @brief Process all scheduled events.
-  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this))) {
-    eventScheduler_.processAllEvents(*this);
   }
 
   /// @brief Update the parameter queue with a new event.

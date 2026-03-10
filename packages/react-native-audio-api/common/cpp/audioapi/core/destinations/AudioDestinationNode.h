@@ -16,9 +16,13 @@ class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context);
 
+  /// @note Thread safe
   std::size_t getCurrentSampleFrame() const;
+
+  /// @note Thread safe
   double getCurrentTime() const;
 
+  /// @note Audio Thread only
   void renderAudio(const std::shared_ptr<AudioBuffer> &audioData, int numFrames);
 
  protected:

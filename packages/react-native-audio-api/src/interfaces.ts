@@ -23,7 +23,6 @@ import type {
   StereoPannerOptions,
   StreamerOptions,
   WaveShaperOptions,
-  WindowType,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -101,7 +100,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions?: IConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions?: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
+  createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: WaveShaperOptions) => IWaveShaperNode;
 }
 
@@ -195,10 +194,7 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
-export interface IStreamerNode extends IAudioNode {
-  readonly streamPath: string;
-  initialize(streamPath: string): boolean;
-}
+export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;
@@ -289,7 +285,6 @@ export interface IAnalyserNode extends IAudioNode {
   minDecibels: number;
   maxDecibels: number;
   smoothingTimeConstant: number;
-  window: WindowType;
 
   getFloatFrequencyData: (array: Float32Array) => void;
   getByteFrequencyData: (array: Uint8Array) => void;

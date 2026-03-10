@@ -1,11 +1,12 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -16,18 +17,29 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
       pitchCorrection_(options.pitchCorrection),
-      vReadIndex_(0.0) {
-  onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);
+      playbackRateBuffer_(
+          std::make_shared<AudioBuffer>(
+              RENDER_QUANTUM_SIZE * 3,
+              channelCount_,
+              context->getSampleRate())),
+      detuneParam_(
+          std::make_shared<AudioParam>(
+              options.detune,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      playbackRateParam_(
+          std::make_shared<AudioParam>(
+              options.playbackRate,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      vReadIndex_(0.0),
+      onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1)) {}
 
-  detuneParam_ = std::make_shared<AudioParam>(
-      options.detune, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  playbackRateParam_ = std::make_shared<AudioParam>(
-      options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-
-  playbackRateBuffer_ = std::make_shared<AudioBuffer>(
-      RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
-
-  stretch_ = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
+void AudioBufferBaseSourceNode::initStretch(
+    const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch) {
+  stretch_ = stretch;
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -39,58 +51,28 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam() co
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto oldCallbackId = onPositionChangedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
-
-  if (oldCallbackId != 0) {
-    audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, oldCallbackId);
-  }
+  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    onPositionChangedInterval_ =
-        static_cast<int>(context->getSampleRate() * static_cast<float>(interval) / 1000);
-  }
+  onPositionChangedInterval_ =
+      static_cast<int>(getContextSampleRate() * static_cast<float>(interval) / 1000);
 }
 
 int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
   return onPositionChangedInterval_;
 }
 
-std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
-  return bufferLock_;
-}
-
-double AudioBufferBaseSourceNode::getInputLatency() const {
-  if (pitchCorrection_) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      return static_cast<double>(stretch_->inputLatency()) / context->getSampleRate();
-    } else {
-      return 0;
-    }
-  }
-  return 0;
-}
-
-double AudioBufferBaseSourceNode::getOutputLatency() const {
-  if (pitchCorrection_) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      return static_cast<double>(stretch_->outputLatency()) / context->getSampleRate();
-    } else {
-      return 0;
-    }
-  }
-  return 0;
+void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
+  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  auto onPositionChangedCallbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
-
-  if (onPositionChangedCallbackId != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
+  if (onPositionChangedCallbackId_ != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId, body);
+        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
 
     onPositionChangedTime_ = 0;
   }
@@ -127,7 +109,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       context->getSampleRate(),
       context->getCurrentSampleFrame());
 
-  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
+  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled()) || stretch_ == nullptr) {
     processingBuffer->zero();
     return;
   }
@@ -135,7 +117,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
 
   stretch_->process(
-      playbackRateBuffer_.get()[0], framesNeededToStretch, processingBuffer.get()[0], framesToProcess);
+      playbackRateBuffer_.get()[0],
+      framesNeededToStretch,
+      processingBuffer.get()[0],
+      framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);

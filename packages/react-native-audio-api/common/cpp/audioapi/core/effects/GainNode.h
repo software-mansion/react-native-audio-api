@@ -22,7 +22,7 @@ class GainNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> gainParam_;
+  const std::shared_ptr<AudioParam> gainParam_;
 };
 
 } // namespace audioapi

@@ -5,29 +5,32 @@ import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
 
 export default class ConvolverNode extends AudioNode {
+  private _buffer: AudioBuffer | null = null;
+
   constructor(context: BaseAudioContext, options?: ConvolverOptions) {
-    const convolverNode: IConvolverNode = context.context.createConvolver({
-      ...options,
-      ...(options?.buffer ? { buffer: options.buffer.buffer } : {}),
-    });
+    const convolverNode: IConvolverNode = context.context.createConvolver(
+      options || {}
+    );
     super(context, convolverNode);
+
+    if (options?.buffer) {
+      this.buffer = options.buffer;
+    }
     this.normalize = convolverNode.normalize;
   }
 
   public get buffer(): AudioBuffer | null {
-    const buffer = (this.node as IConvolverNode).buffer;
-    if (!buffer) {
-      return null;
-    }
-    return new AudioBuffer(buffer);
+    return this._buffer;
   }
 
   public set buffer(buffer: AudioBuffer | null) {
     if (!buffer) {
       (this.node as IConvolverNode).setBuffer(null);
+      this._buffer = null;
       return;
     }
     (this.node as IConvolverNode).setBuffer(buffer.buffer);
+    this._buffer = buffer;
   }
 
   public get normalize(): boolean {

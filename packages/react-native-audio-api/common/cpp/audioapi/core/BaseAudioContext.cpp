@@ -1,4 +1,3 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -16,6 +15,7 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/types/NodeOptions.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -28,7 +28,6 @@
 #include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -42,7 +41,8 @@ BaseAudioContext::BaseAudioContext(
       sampleRate_(sampleRate),
       graphManager_(std::make_shared<AudioGraphManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      runtimeRegistry_(runtimeRegistry) {}
+      runtimeRegistry_(runtimeRegistry),
+      audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY) {}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
@@ -215,10 +215,6 @@ std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(
   auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this(), options);
   graphManager_->addProcessingNode(waveShaper);
   return waveShaper;
-}
-
-float BaseAudioContext::getNyquistFrequency() const {
-  return getSampleRate() / 2.0f;
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {

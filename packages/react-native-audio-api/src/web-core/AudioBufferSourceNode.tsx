@@ -212,6 +212,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   private _loopEnd: number = -1;
 
   private _buffer: AudioBuffer | null = null;
+  private bufferHasBeenSet: boolean = false;
 
   constructor(context: BaseAudioContext) {
     const promise = async () => {
@@ -421,7 +422,16 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   }
 
   set buffer(buffer: AudioBuffer | null) {
+    if (buffer !== null && this.bufferHasBeenSet) {
+      throw new InvalidStateError(
+        'The buffer can only be set once and cannot be changed afterwards.'
+      );
+    }
+
     this._buffer = buffer;
+    if (buffer !== null) {
+      this.bufferHasBeenSet = true;
+    }
 
     const action = (node: IStretcherNode) => {
       node.dropBuffers();

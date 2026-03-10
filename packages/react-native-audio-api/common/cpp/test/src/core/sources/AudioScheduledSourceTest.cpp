@@ -29,7 +29,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
  public:
   explicit TestableAudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
       : AudioScheduledSourceNode(context) {
-    isInitialized_ = true;
+    isInitialized_.store(true, std::memory_order_release);
   }
 
   void updatePlaybackInfo(

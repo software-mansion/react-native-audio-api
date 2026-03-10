@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/dsp/Resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.h>
 
 #include <memory>
 
@@ -12,7 +12,7 @@ class AudioArray;
 
 class WaveShaper {
  public:
-  explicit WaveShaper(const std::shared_ptr<AudioArray> &curve);
+  explicit WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate);
 
   void process(AudioArray &channelData, int framesToProcess);
 
@@ -22,21 +22,17 @@ class WaveShaper {
  private:
   OverSampleType oversample_ = OverSampleType::OVERSAMPLE_NONE;
   std::shared_ptr<AudioArray> curve_;
+  float sampleRate_;
 
-  // stage 1 Filters (1x <-> 2x)
-  std::unique_ptr<Resampler> upSampler_;
-  std::unique_ptr<Resampler> downSampler_;
-
-  // stage 2 Filters (2x <-> 4x)
-  std::unique_ptr<Resampler> upSampler2_;
-  std::unique_ptr<Resampler> downSampler2_;
+  std::unique_ptr<r8b::SingleChannelResampler> upSampler_;
+  std::unique_ptr<r8b::SingleChannelResampler> downSampler_;
 
   std::shared_ptr<AudioArray> tempBuffer2x_;
   std::shared_ptr<AudioArray> tempBuffer4x_;
 
+  void createResamplers(OverSampleType type);
   void processNone(AudioArray &channelData, int framesToProcess);
-  void process2x(AudioArray &channelData, int framesToProcess);
-  void process4x(AudioArray &channelData, int framesToProcess);
+  void processResampled(AudioArray &channelData, int framesToProcess);
 };
 
 } // namespace audioapi

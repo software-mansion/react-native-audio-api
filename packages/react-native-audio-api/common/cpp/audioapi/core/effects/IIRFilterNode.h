@@ -27,10 +27,11 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <complex>
+#include <vector>
 
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
-#include "audioapi/utils/AudioArray.h"
-#include "audioapi/utils/AudioBuffer.h"
 
 namespace audioapi {
 
@@ -43,11 +44,12 @@ class IIRFilterNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const IIRFilterOptions &options);
 
+  /// @note Audio Thread only
   void getFrequencyResponse(
       const float *frequencyArray,
       float *magResponseOutput,
       float *phaseResponseOutput,
-      size_t length);
+      size_t length) const;
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -57,8 +59,8 @@ class IIRFilterNode : public AudioNode {
  private:
   static constexpr size_t bufferLength = 32;
 
-  AudioArray feedforward_;
-  AudioArray feedback_;
+  const AudioArray feedforward_;
+  const AudioArray feedback_;
 
   AudioBuffer xBuffers_;
   AudioBuffer yBuffers_;
@@ -70,6 +72,17 @@ class IIRFilterNode : public AudioNode {
     std::complex<float> result = 0;
     for (int k = order; k >= 0; --k)
       result = result * z + std::complex<float>(coefficients[k]);
+    return result;
+  }
+
+  static AudioArray createNormalizedArray(
+      const std::vector<float> &inputVector,
+      float scaleFactor) {
+    AudioArray result(inputVector.data(), inputVector.size());
+    if (scaleFactor != 1.0f && scaleFactor != 0.0f && result.getSize() > 0) {
+      result.scale(1.0f / scaleFactor);
+    }
+
     return result;
   }
 };

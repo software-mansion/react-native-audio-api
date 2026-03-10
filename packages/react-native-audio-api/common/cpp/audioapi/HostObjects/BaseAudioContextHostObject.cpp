@@ -263,7 +263,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
   auto arrayBufferReal =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
-  auto length = static_cast<int>(arrayBufferReal.size(runtime));
+  auto length = static_cast<int>(arrayBufferReal.size(runtime) / sizeof(float));
 
   auto arrayBufferImag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);

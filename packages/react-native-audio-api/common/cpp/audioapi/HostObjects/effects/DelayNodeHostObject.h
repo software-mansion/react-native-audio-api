@@ -9,6 +9,7 @@ using namespace facebook;
 
 struct DelayOptions;
 class BaseAudioContext;
+class AudioParamHostObject;
 
 class DelayNodeHostObject : public AudioNodeHostObject {
  public:
@@ -19,5 +20,8 @@ class DelayNodeHostObject : public AudioNodeHostObject {
   [[nodiscard]] size_t getSizeInBytes() const;
 
   JSI_PROPERTY_GETTER_DECL(delayTime);
+
+ private:
+  std::shared_ptr<AudioParamHostObject> delayTimeParam_;
 };
 } // namespace audioapi

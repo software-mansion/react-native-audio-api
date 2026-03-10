@@ -77,7 +77,7 @@ namespace audioapi {
     MyProcessorNode::MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context)
         //highlight-next-line
         : AudioNode(context), gain(0.5) {
-        isInitialized_ = true;
+        isInitialized_.store(true, std::memory_order_release);
     }
 
     std::shared_ptr<AudioBuffer> MyProcessorNode::processNode(const std::shared_ptr<AudioBuffer> &buffer,

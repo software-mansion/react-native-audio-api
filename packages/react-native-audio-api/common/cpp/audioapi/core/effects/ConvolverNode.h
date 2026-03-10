@@ -25,10 +25,16 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const ConvolverOptions &options);
 
-  [[nodiscard]] bool getNormalize_() const;
-  [[nodiscard]] const std::shared_ptr<AudioBuffer> &getBuffer() const;
-  void setNormalize(bool normalize);
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  /// @note Audio Thread only
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      std::vector<Convolver> convolvers,
+      const std::shared_ptr<ThreadPool> &threadPool,
+      const std::shared_ptr<AudioBuffer> &internalBuffer,
+      const std::shared_ptr<AudioBuffer> &intermediateBuffer,
+      float scaleFactor);
+
+  float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer);
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -41,10 +47,9 @@ class ConvolverNode : public AudioNode {
       int framesToProcess,
       bool checkIsAlreadyProcessed) override;
   void onInputDisabled() override;
-  float gainCalibrationSampleRate_;
+  const float gainCalibrationSampleRate_;
   size_t remainingSegments_;
   size_t internalBufferIndex_;
-  bool normalize_;
   bool signalledToStop_;
   float scaleFactor_;
   std::shared_ptr<AudioBuffer> intermediateBuffer_;
@@ -57,7 +62,6 @@ class ConvolverNode : public AudioNode {
   std::vector<Convolver> convolvers_;
   std::shared_ptr<ThreadPool> threadPool_;
 
-  void calculateNormalizationScale();
   void performConvolution(const std::shared_ptr<AudioBuffer> &processingBuffer);
 };
 

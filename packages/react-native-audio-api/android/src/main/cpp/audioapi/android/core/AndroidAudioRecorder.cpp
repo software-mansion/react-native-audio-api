@@ -145,7 +145,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   if (isConnected()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
+    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   auto result = mStream_->requestStart();
@@ -327,7 +327,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &n
   if (!isIdle()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
+    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   isConnected_.store(true, std::memory_order_release);

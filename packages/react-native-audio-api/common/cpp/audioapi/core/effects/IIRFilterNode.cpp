@@ -23,10 +23,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <algorithm>
@@ -39,26 +39,12 @@ IIRFilterNode::IIRFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const IIRFilterOptions &options)
     : AudioNode(context, options),
-      feedforward_(options.feedforward.data(), options.feedforward.size()),
-      feedback_(options.feedback.data(), options.feedback.size()),
-      bufferIndices_(bufferLength),
+      feedforward_(createNormalizedArray(options.feedforward, options.feedback[0])),
+      feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
       xBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()) {
-
-  size_t feedforwardLength = feedforward_.getSize();
-  size_t feedbackLength = feedback_.getSize();
-
-  if (feedback_[0] != 1) {
-    float scale = feedback_[0];
-    for (unsigned k = 1; k < feedbackLength; ++k)
-      feedback_[k] /= scale;
-
-    for (unsigned k = 0; k < feedforwardLength; ++k)
-      feedforward_[k] /= scale;
-
-    feedback_[0] = 1.0f;
-  }
-  isInitialized_ = true;
+      yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
+      bufferIndices_(bufferLength) {
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 // Compute Z-transform of the filter
@@ -82,11 +68,8 @@ void IIRFilterNode::getFrequencyResponse(
     const float *frequencyArray,
     float *magResponseOutput,
     float *phaseResponseOutput,
-    size_t length) {
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return;
-  float nyquist = context->getNyquistFrequency();
+    size_t length) const {
+  float nyquist = getNyquistFrequency();
 
   for (size_t k = 0; k < length; ++k) {
     float normalizedFreq = frequencyArray[k] / nyquist;

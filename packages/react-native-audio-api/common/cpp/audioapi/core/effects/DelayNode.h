@@ -29,7 +29,7 @@ class DelayNode : public AudioNode {
       int framesToProcess,
       size_t &operationStartingIndex,
       BufferAction action);
-  std::shared_ptr<AudioParam> delayTimeParam_;
+  const std::shared_ptr<AudioParam> delayTimeParam_;
   std::shared_ptr<AudioBuffer> delayBuffer_;
   size_t readIndex_ = 0;
   bool signalledToStop_ = false;

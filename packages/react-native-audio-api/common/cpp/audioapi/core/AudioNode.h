@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
@@ -9,12 +10,12 @@
 #include <cstddef>
 #include <memory>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
 
 class AudioBuffer;
-class BaseAudioContext;
 class AudioParam;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
@@ -24,11 +25,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       const AudioNodeOptions &options = AudioNodeOptions());
   virtual ~AudioNode();
 
-  int getNumberOfInputs() const;
-  int getNumberOfOutputs() const;
   size_t getChannelCount() const;
-  ChannelCountMode getChannelCountMode() const;
-  ChannelInterpretation getChannelInterpretation() const;
   void connect(const std::shared_ptr<AudioNode> &node);
   void connect(const std::shared_ptr<AudioParam> &param);
   void disconnect();
@@ -39,10 +36,31 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
+  float getContextSampleRate() const {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->getSampleRate();
+    }
+
+    return DEFAULT_SAMPLE_RATE;
+  }
+
+  float getNyquistFrequency() const {
+    return getContextSampleRate() / 2.0f;
+  }
+
+  /// @note JS Thread only
   bool isEnabled() const;
+  /// @note JS Thread only
   bool requiresTailProcessing() const;
-  void enable();
-  virtual void disable();
+
+  template <typename F>
+  bool inline scheduleAudioEvent(F &&event) noexcept {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->scheduleAudioEvent(std::forward<F>(event));
+    }
+
+    return false;
+  }
 
  protected:
   friend class AudioGraphManager;
@@ -65,12 +83,15 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
 
   int numberOfEnabledInputNodes_ = 0;
-  bool isInitialized_ = false;
-  bool isEnabled_ = true;
+  std::atomic<bool> isInitialized_ = false;
 
   std::size_t lastRenderedFrame_{SIZE_MAX};
 
+  void enable();
+  virtual void disable();
+
  private:
+  bool isEnabled_ = true;
   std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_ = {};
 
   virtual std::shared_ptr<AudioBuffer> processInputs(
