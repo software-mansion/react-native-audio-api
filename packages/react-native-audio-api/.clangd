@@ -1,0 +1,6 @@
+Documentation:
+  CommentFormat: Doxygen
+
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: Loose

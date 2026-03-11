@@ -1,0 +1,20 @@
+# Full clang-tidy configuration for react-native-audio-api C++.
+# See: https://clang.llvm.org/extra/clang-tidy/checks/list.html
+# Tweak checks in .clangd (Diagnostics.ClangTidy.Remove) to disable noisy ones.
+
+Checks: '-*,
+        bugprone-*,
+        modernize-*,
+        -modernize-use-trailing-return-type,
+        performance-*,
+        readability-*,
+        portability-*,
+        cppcoreguidelines-*,
+        -cppcoreguidelines-non-private-member-variables-in-classes,
+        concurrency-*'
+
+# Only report in our source (exclude external/, node_modules, build dirs)
+HeaderFilterRegex: '.*/(audioapi|common/cpp|src/main/cpp)/.*'
+
+# Apply .clang-format when applying fixes
+FormatStyle: file
