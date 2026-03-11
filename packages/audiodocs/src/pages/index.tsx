@@ -3,8 +3,7 @@ import React, { useEffect } from 'react';
 // @ts-ignore
 import Layout from '@theme/Layout';
 
-import { FooterBackground, Hero, HireUsSection, LandingBlog, LandingFeatures, LandingWidget, Testimonials } from '@site/src/landingComponents';
-
+import { FooterBackground, Hero, LandingBlog, HireUsSectionWrapper, LandingFeatures, LandingWidget, Testimonials } from '@site/src/landingComponents';
 import { Spacer } from '@site/src/ui/Layout';
 
 import AudioManager from '../audio/AudioManager';
@@ -42,7 +41,7 @@ function Home() {
       <Spacer.Vertical size="12rem" className={styles.hideOnMobile}  />
       <Spacer.Vertical size="6rem" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
-        <HireUsSection
+        <HireUsSectionWrapper
           href={
             'https://swmansion.com/contact/projects?utm_source=gesture-handler&utm_medium=docs'
           }
