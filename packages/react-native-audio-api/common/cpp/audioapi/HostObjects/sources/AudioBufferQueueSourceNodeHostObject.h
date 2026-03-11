@@ -25,6 +25,13 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   JSI_HOST_FUNCTION_DECL(enqueueBuffer);
   JSI_HOST_FUNCTION_DECL(dequeueBuffer);
   JSI_HOST_FUNCTION_DECL(clearBuffers);
+
+ protected:
+  size_t bufferId_ = 0;
+  uint64_t onBufferEndedCallbackId_ = 0;
+  bool stretchHasBeenInit_ = false;
+
+  void setOnBufferEndedCallbackId(uint64_t callbackId);
 };
 
 } // namespace audioapi

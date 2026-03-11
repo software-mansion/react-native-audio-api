@@ -9,14 +9,14 @@ WorkletSourceNode::WorkletSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     WorkletsRunner &&workletRunner)
     : AudioScheduledSourceNode(context), workletRunner_(std::move(workletRunner)) {
-  isInitialized_ = true;
-
   // Prepare buffers for audio processing
   size_t outputChannelCount = this->getChannelCount();
   outputBuffsHandles_.resize(outputChannelCount);
   for (size_t i = 0; i < outputChannelCount; ++i) {
     outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(RENDER_QUANTUM_SIZE);
   }
+
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(

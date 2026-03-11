@@ -1,7 +1,7 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -15,7 +15,7 @@ StereoPannerNode::StereoPannerNode(
     const StereoPannerOptions &options)
     : AudioNode(context, options),
       panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {

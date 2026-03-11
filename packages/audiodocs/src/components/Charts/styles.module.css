@@ -1,0 +1,36 @@
+.chart {
+    width: 100%;
+    max-height: 70vh;
+    aspect-ratio: 3/2;
+}
+
+.leadingLine {
+  color: var(--ifm-color-primary);
+}
+
+.referenceLine {
+    color: var(--ifm-color-primary);
+}
+
+.label {
+    fill: var(--ifm-font-color-base);
+    font-weight: normal;
+    font-size: medium;
+}
+
+@media screen and (max-width: 500px) {
+    .label {
+        font-size: small;
+    }
+}
+
+.referenceLabel {
+    fill: var(--ifm-font-color-base);
+    font-weight: normal;
+    font-size: small;
+}
+
+.referenceDot {
+    fill: var(--ifm-color-primary);
+    color: var(--ifm-color-primary);
+}

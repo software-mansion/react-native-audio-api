@@ -1,4 +1,4 @@
-#include "OfflineAudioContext.h"
+#include <audioapi/core/OfflineAudioContext.h>
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>

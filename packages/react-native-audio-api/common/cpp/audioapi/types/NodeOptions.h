@@ -104,6 +104,12 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
   bool loop = false;
+  bool loopSkip = false;
+
+  explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions &&options)
+      : BaseAudioBufferSourceOptions(options) {
+    channelCount = 1;
+  }
 };
 
 struct StreamerOptions : AudioScheduledSourceNodeOptions {

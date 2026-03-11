@@ -6,6 +6,28 @@
 #include <type_traits>
 #include <utility>
 
+namespace audioapi {
+
+template <typename T>
+struct Ok_wrapper {
+  T value;
+};
+
+template <typename E>
+struct Err_wrapper {
+  E value;
+};
+
+template <typename T>
+auto Ok(T &&value) {
+  return Ok_wrapper<std::decay_t<T>>{std::forward<T>(value)};
+}
+
+template <typename E>
+auto Err(E &&error) {
+  return Err_wrapper<std::decay_t<E>>{std::forward<E>(error)};
+}
+
 struct NoneType {};
 inline constexpr NoneType None{};
 
@@ -34,6 +56,16 @@ class Result {
   explicit Result(ErrTag, E &&error) : err_value(std::move(error)), is_ok_(false) {}
 
  public:
+  template <typename U>
+  Result(Ok_wrapper<U> &&ok) : is_ok_(true) { // NOLINT(runtime/explicit)
+    new (&ok_value) T(std::move(ok.value));
+  }
+
+  template <typename F>
+  Result(Err_wrapper<F> &&err) : is_ok_(false) { // NOLINT(runtime/explicit)
+    new (&err_value) E(std::move(err.value));
+  }
+
   Result(const Result<T, E> &other) {
     is_ok_ = other.is_ok_;
     if (is_ok_) {
@@ -320,3 +352,5 @@ class Result {
   };
   bool is_ok_;
 };
+
+} // namespace audioapi

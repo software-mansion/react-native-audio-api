@@ -34,5 +34,8 @@ class AudioParamHostObject : public JsiHostObject {
   friend class AudioNodeHostObject;
 
   std::shared_ptr<AudioParam> param_;
+  float defaultValue_;
+  float minValue_;
+  float maxValue_;
 };
 } // namespace audioapi

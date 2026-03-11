@@ -1,7 +1,7 @@
 import BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
-import { WindowType, AnalyserOptions } from '../types';
+import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
 import { AnalyserOptionsValidator } from '../options-validators';
 
@@ -74,16 +74,8 @@ export default class AnalyserNode extends AudioNode {
     (this.node as IAnalyserNode).smoothingTimeConstant = value;
   }
 
-  public get window(): WindowType {
-    return (this.node as IAnalyserNode).window;
-  }
-
-  public set window(value: WindowType) {
-    (this.node as IAnalyserNode).window = value;
-  }
-
   public get frequencyBinCount(): number {
-    return (this.node as IAnalyserNode).frequencyBinCount;
+    return Math.floor((this.node as IAnalyserNode).fftSize / 2);
   }
 
   public getFloatFrequencyData(array: Float32Array): void {

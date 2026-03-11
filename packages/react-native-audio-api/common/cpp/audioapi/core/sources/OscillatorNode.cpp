@@ -1,7 +1,7 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -13,7 +13,7 @@ OscillatorNode::OscillatorNode(
     const OscillatorOptions &options)
     : AudioScheduledSourceNode(context, options) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      options.frequency, -context->getNyquistFrequency(), context->getNyquistFrequency(), context);
+      options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
@@ -28,7 +28,7 @@ OscillatorNode::OscillatorNode(
 
   audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -37,10 +37,6 @@ std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
 
 std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
   return detuneParam_;
-}
-
-OscillatorType OscillatorNode::getType() {
-  return type_;
 }
 
 void OscillatorNode::setType(OscillatorType type) {

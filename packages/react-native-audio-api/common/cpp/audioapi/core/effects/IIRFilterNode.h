@@ -29,6 +29,8 @@
 #include <complex>
 #include <vector>
 
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
@@ -42,11 +44,12 @@ class IIRFilterNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const IIRFilterOptions &options);
 
+  /// @note Audio Thread only
   void getFrequencyResponse(
       const float *frequencyArray,
       float *magResponseOutput,
       float *phaseResponseOutput,
-      size_t length);
+      size_t length) const;
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(
@@ -56,19 +59,30 @@ class IIRFilterNode : public AudioNode {
  private:
   static constexpr size_t bufferLength = 32;
 
-  std::vector<float> feedforward_;
-  std::vector<float> feedback_;
+  const AudioArray feedforward_;
+  const AudioArray feedback_;
 
-  std::vector<std::vector<float>> xBuffers_; // xBuffers_[channel][index]
-  std::vector<std::vector<float>> yBuffers_;
-  std::vector<size_t> bufferIndices;
+  AudioBuffer xBuffers_;
+  AudioBuffer yBuffers_;
+  AudioArray bufferIndices_;
 
   static std::complex<float>
-  evaluatePolynomial(const std::vector<float> coefficients, std::complex<float> z, int order) {
+  evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
     for (int k = order; k >= 0; --k)
       result = result * z + std::complex<float>(coefficients[k]);
+    return result;
+  }
+
+  static AudioArray createNormalizedArray(
+      const std::vector<float> &inputVector,
+      float scaleFactor) {
+    AudioArray result(inputVector.data(), inputVector.size());
+    if (scaleFactor != 1.0f && scaleFactor != 0.0f && result.getSize() > 0) {
+      result.scale(1.0f / scaleFactor);
+    }
+
     return result;
   }
 };

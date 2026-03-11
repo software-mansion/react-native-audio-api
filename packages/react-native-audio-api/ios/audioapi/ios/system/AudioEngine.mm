@@ -70,11 +70,9 @@ static AudioEngine *_sharedInstance = nil;
   [self.sourceFormats removeObjectForKey:sourceNodeId];
 }
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format
 {
   self.inputNode = inputNode;
-  AVAudioFormat *format = [self.audioEngine.inputNode inputFormatForBus:0];
-
   [self.audioEngine attachNode:inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:format];
 }

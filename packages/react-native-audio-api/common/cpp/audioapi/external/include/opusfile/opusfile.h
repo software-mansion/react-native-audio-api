@@ -147,18 +147,18 @@ typedef struct OggOpusFile       OggOpusFile;
 /**@endcond*/
 
 /**\defgroup error_codes Error Codes*/
-/**@{*/
+/*@{*/
 /**\name List of possible error codes
    Many of the functions in this library return a negative error code when a
     function fails.
    This list provides a brief explanation of the common errors.
    See each individual function for more details on what a specific error code
     means in that context.*/
-/**@{*/
+/*@{*/
 
 /**A request did not succeed.*/
 #define OP_FALSE         (-1)
-/**Currently not used externally.**/
+/*Currently not used externally.*/
 #define OP_EOF           (-2)
 /**There was a hole in the page sequence numbers (e.g., a page was corrupt or
     missing).*/
@@ -185,7 +185,7 @@ typedef struct OggOpusFile       OggOpusFile;
 #define OP_EBADHEADER    (-133)
 /**The ID header contained an unrecognized version number.*/
 #define OP_EVERSION      (-134)
-/**Currently not used at all.**/
+/*Currently not used at all.*/
 #define OP_ENOTAUDIO     (-135)
 /**An audio packet failed to decode properly.
    This is usually caused by a multistream Ogg packet where the durations of
@@ -200,11 +200,11 @@ typedef struct OggOpusFile       OggOpusFile;
 /**The first or last granule position of a link failed basic validity checks.*/
 #define OP_EBADTIMESTAMP (-139)
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup header_info Header Information*/
-/**@{*/
+/*@{*/
 
 /**The maximum number of channels in an Ogg Opus stream.*/
 #define OPUS_CHANNEL_COUNT_MAX (255)
@@ -311,7 +311,7 @@ struct OpusTags{
 };
 
 /**\name Picture tag image formats*/
-/**@{*/
+/*@{*/
 
 /**The MIME type was not recognized, or the image data did not match the
     declared MIME type.*/
@@ -325,7 +325,7 @@ struct OpusTags{
 /**The image is a GIF.*/
 #define OP_PIC_FORMAT_GIF     (3)
 
-/**@}*/
+/*@}*/
 
 /**The contents of a METADATA_BLOCK_PICTURE tag.*/
 struct OpusPictureTag{
@@ -398,7 +398,7 @@ struct OpusPictureTag{
    These can be used to query the headers returned by <tt>libopusfile</tt>, or
     to parse Opus headers from sources other than an Ogg Opus stream, provided
     they use the same format.*/
-/**@{*/
+/*@{*/
 
 /**Parses the contents of the ID header packet of an Ogg Opus stream.
    \param[out] _head Returns the contents of the parsed packet.
@@ -671,12 +671,12 @@ void opus_picture_tag_init(OpusPictureTag *_pic) OP_ARG_NONNULL(1);
    \param _pic The #OpusPictureTag structure to clear.*/
 void opus_picture_tag_clear(OpusPictureTag *_pic) OP_ARG_NONNULL(1);
 
-/**@}*/
+/*@}*/
 
-/**@}*/
+/*@}*/
 
 /**\defgroup url_options URL Reading Options*/
-/**@{*/
+/*@{*/
 /**\name URL reading options
    Options for op_url_stream_create() and associated functions.
    These allow you to provide proxy configuration parameters, skip SSL
@@ -685,7 +685,7 @@ void opus_picture_tag_clear(OpusPictureTag *_pic) OP_ARG_NONNULL(1);
     times, only the value specified by the last occurrence has an effect
     (unless otherwise specified).
    They may be expanded in the future.*/
-/**@{*/
+/*@{*/
 
 /**@cond PRIVATE*/
 
@@ -843,11 +843,11 @@ void opus_server_info_clear(OpusServerInfo *_info) OP_ARG_NONNULL(1);
 #define OP_GET_SERVER_INFO(_info) \
  OP_URL_OPT(OP_GET_SERVER_INFO_REQUEST),OP_CHECK_SERVER_INFO_PTR(_info)
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup stream_callbacks Abstract Stream Reading Interface*/
-/**@{*/
+/*@{*/
 /**\name Functions for reading from streams
    These functions define the interface used to read from and seek in a stream
     of data.
@@ -856,7 +856,7 @@ void opus_server_info_clear(OpusServerInfo *_info) OP_ARG_NONNULL(1);
    These functions also include some convenience routines for working with
     standard <code>FILE</code> pointers, complete streams stored in a single
     block of memory, or URLs.*/
-/**@{*/
+/*@{*/
 
 /**Reads up to \a _nbytes bytes of data from \a _stream.
    \param      _stream The stream to read from.
@@ -1034,18 +1034,18 @@ OP_WARN_UNUSED_RESULT void *op_url_stream_vcreate(OpusFileCallbacks *_cb,
 OP_WARN_UNUSED_RESULT void *op_url_stream_create(OpusFileCallbacks *_cb,
  const char *_url,...) OP_ARG_NONNULL(1) OP_ARG_NONNULL(2);
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup stream_open_close Opening and Closing*/
-/**@{*/
+/*@{*/
 /**\name Functions for opening and closing streams
 
    These functions allow you to test a stream to see if it is Opus, open it,
     and close it.
    Several flavors are provided for each of the built-in stream types, plus a
     more general version which takes a set of application-provided callbacks.*/
-/**@{*/
+/*@{*/
 
 /**Test to see if this is an Opus stream.
    For good results, you will need at least 57 bytes (for a pure Opus-only
@@ -1159,16 +1159,20 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_open_url(const char *_url,
                          This value will be passed verbatim as the first
                           argument to all of the callbacks.
    \param _cb            The callbacks with which to access the stream.
-                         \ref op_read_func "read()" must be implemented.
-                         \ref op_seek_func "seek()" and \ref op_tell_func
-                          "tell()" may be <code>NULL</code>, or may always
-                          return -1 to indicate a stream is unseekable, but if
-                          \ref op_seek_func "seek()" is implemented and
-                          succeeds on a particular stream, then \ref
-                          op_tell_func "tell()" must also.
-                         \ref op_close_func "close()" may be <code>NULL</code>,
-                          but if it is not, it will be called when the \c
-                          OggOpusFile is destroyed by op_free().
+                         <code><a href="#op_read_func">read()</a></code> must
+                          be implemented.
+                         <code><a href="#op_seek_func">seek()</a></code> and
+                          <code><a href="#op_tell_func">tell()</a></code> may
+                          be <code>NULL</code>, or may always return -1 to
+                          indicate a stream is unseekable, but if
+                          <code><a href="#op_seek_func">seek()</a></code> is
+                          implemented and succeeds on a particular stream, then
+                          <code><a href="#op_tell_func">tell()</a></code> must
+                          also.
+                         <code><a href="#op_close_func">close()</a></code> may
+                          be <code>NULL</code>, but if it is not, it will be
+                          called when the \c OggOpusFile is destroyed by
+                          op_free().
                          It will not be called if op_open_callbacks() fails
                           with an error.
    \param _initial_data  An initial buffer of data from the start of the
@@ -1179,8 +1183,10 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_open_url(const char *_url,
                           stream to be opened, even if it is unseekable.
    \param _initial_bytes The number of bytes in \a _initial_data.
                          If the stream is seekable, its current position (as
-                          reported by \ref op_tell_func "tell()" at the start
-                          of this function) must be equal to \a _initial_bytes.
+                          reported by
+                          <code><a href="#opus_tell_func">tell()</a></code>
+                          at the start of this function) must be equal to
+                          \a _initial_bytes.
                          Otherwise, seeking to absolute positions will
                           generate inconsistent results.
    \param[out] _error    Returns 0 on success, or a failure code on error.
@@ -1200,10 +1206,11 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_open_url(const char *_url,
                             implemented, such as an unsupported channel
                             family.</dd>
                            <dt>#OP_EINVAL</dt>
-                           <dd>\ref op_seek_func "seek()" was implemented and
-                            succeeded on this source, but \ref op_tell_func
-                            "tell()" did not, or the starting position
-                            indicator was not equal to \a _initial_bytes.</dd>
+                           <dd><code><a href="#op_seek_func">seek()</a></code>
+                            was implemented and succeeded on this source, but
+                            <code><a href="#op_tell_func">tell()</a></code>
+                            did not, or the starting position indicator was
+                            not equal to \a _initial_bytes.</dd>
                            <dt>#OP_ENOTFORMAT</dt>
                            <dd>The stream contained a link that did not have
                             any logical Opus streams in it.</dd>
@@ -1334,16 +1341,20 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_test_url(const char *_url,
                          This value will be passed verbatim as the first
                           argument to all of the callbacks.
    \param _cb            The callbacks with which to access the stream.
-                         \ref op_read_func "read()" must be implemented.
-                         \ref op_seek_func "seek()" and \ref op_tell_func
-                          "tell()" may be <code>NULL</code>, or may always
-                          return -1 to indicate a stream is unseekable, but if
-                          \ref op_seek_func "seek()" is implemented and
-                          succeeds on a particular stream, then \ref
-                          op_tell_func "tell()" must also.
-                         \ref op_close_func "close()" may be <code>NULL</code>,
-                          but if it is not, it will be called when the \c
-                          OggOpusFile is destroyed by op_free().
+                         <code><a href="#op_read_func">read()</a></code> must
+                          be implemented.
+                         <code><a href="#op_seek_func">seek()</a></code> and
+                          <code><a href="#op_tell_func">tell()</a></code> may
+                          be <code>NULL</code>, or may always return -1 to
+                          indicate a stream is unseekable, but if
+                          <code><a href="#op_seek_func">seek()</a></code> is
+                          implemented and succeeds on a particular stream, then
+                          <code><a href="#op_tell_func">tell()</a></code> must
+                          also.
+                         <code><a href="#op_close_func">close()</a></code> may
+                          be <code>NULL</code>, but if it is not, it will be
+                          called when the \c OggOpusFile is destroyed by
+                          op_free().
                          It will not be called if op_open_callbacks() fails
                           with an error.
    \param _initial_data  An initial buffer of data from the start of the
@@ -1356,8 +1367,9 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_test_url(const char *_url,
    \param _initial_bytes The number of bytes in \a _initial_data.
                          If the stream is seekable, its current position (as
                           reported by
-                          \ref op_tell_func "tell()" at the start of this
-                          function) must be equal to \a _initial_bytes.
+                          <code><a href="#opus_tell_func">tell()</a></code>
+                          at the start of this function) must be equal to
+                          \a _initial_bytes.
                          Otherwise, seeking to absolute positions will
                           generate inconsistent results.
    \param[out] _error    Returns 0 on success, or a failure code on error.
@@ -1406,11 +1418,11 @@ int op_test_open(OggOpusFile *_of) OP_ARG_NONNULL(1);
    \param _of The \c OggOpusFile to free.*/
 void op_free(OggOpusFile *_of);
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup stream_info Stream Information*/
-/**@{*/
+/*@{*/
 /**\name Functions for obtaining information about streams
 
    These functions allow you to get basic information about a stream, including
@@ -1425,17 +1437,18 @@ void op_free(OggOpusFile *_of);
     streams returned by op_test_callbacks() or one of the associated
     convenience functions.
    Their documention will indicate so explicitly.*/
-/**@{*/
+/*@{*/
 
 /**Returns whether or not the stream being read is seekable.
    This is true if
    <ol>
-   <li>The \ref op_seek_func "seek()" and \ref op_tell_func "tell()"
-    callbacks are both non-<code>NULL</code>,</li>
-   <li>The \ref op_seek_func "seek()" callback was successfully executed at
-    least once, and</li>
-   <li>The \ref op_tell_func "tell()" callback was successfully able to report
-    the position indicator afterwards.</li>
+   <li>The <code><a href="#op_seek_func">seek()</a></code> and
+    <code><a href="#op_tell_func">tell()</a></code> callbacks are both
+    non-<code>NULL</code>,</li>
+   <li>The <code><a href="#op_seek_func">seek()</a></code> callback was
+    successfully executed at least once, and</li>
+   <li>The <code><a href="#op_tell_func">tell()</a></code> callback was
+    successfully able to report the position indicator afterwards.</li>
    </ol>
    This function may be called on partially-opened streams.
    \param _of The \c OggOpusFile whose seekable status is to be returned.
@@ -1625,11 +1638,11 @@ opus_int64 op_raw_tell(const OggOpusFile *_of) OP_ARG_NONNULL(1);
    \retval #OP_EINVAL The stream was only partially open.*/
 ogg_int64_t op_pcm_tell(const OggOpusFile *_of) OP_ARG_NONNULL(1);
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup stream_seeking Seeking*/
-/**@{*/
+/*@{*/
 /**\name Functions for seeking in Opus streams
 
    These functions let you seek in Opus streams, if the underlying stream
@@ -1654,7 +1667,7 @@ ogg_int64_t op_pcm_tell(const OggOpusFile *_of) OP_ARG_NONNULL(1);
     values as would be obtained by decoding the stream straight through.
    However, such differences are expected to be smaller than the loss
     introduced by Opus's lossy compression.*/
-/**@{*/
+/*@{*/
 
 /**Seek to a byte offset relative to the <b>compressed</b> data.
    This also scans packets to update the PCM cursor.
@@ -1689,11 +1702,11 @@ int op_raw_seek(OggOpusFile *_of,opus_int64 _byte_offset) OP_ARG_NONNULL(1);
                          seeking to the target destination was impossible.*/
 int op_pcm_seek(OggOpusFile *_of,ogg_int64_t _pcm_offset) OP_ARG_NONNULL(1);
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 /**\defgroup stream_decoding Decoding*/
-/**@{*/
+/*@{*/
 /**\name Functions for decoding audio data
 
    These functions retrieve actual decoded audio data from the stream.
@@ -1731,7 +1744,7 @@ int op_pcm_seek(OggOpusFile *_of,ogg_int64_t _pcm_offset) OP_ARG_NONNULL(1);
    If you are reading from an <https:> URL (particularly if seeking is not
     supported), you should make sure to check for this error and warn the user
     appropriately.*/
-/**@{*/
+/*@{*/
 
 /**Indicates that the decoding callback should produce signed 16-bit
     native-endian output samples.*/
@@ -1816,7 +1829,7 @@ void op_set_decode_callback(OggOpusFile *_of,
 #define OP_TRACK_GAIN    (3008)
 
 /**Gain offset type that indicates that the provided offset should be used as
-    the gain directly, without applying any of the header or track gains.*/
+    the gain directly, without applying any the header or track gains.*/
 #define OP_ABSOLUTE_GAIN (3009)
 
 /**Sets the gain to be used for decoded output.
@@ -2137,8 +2150,8 @@ OP_WARN_UNUSED_RESULT int op_read_stereo(OggOpusFile *_of,
 OP_WARN_UNUSED_RESULT int op_read_float_stereo(OggOpusFile *_of,
  float *_pcm,int _buf_size) OP_ARG_NONNULL(1);
 
-/**@}*/
-/**@}*/
+/*@}*/
+/*@}*/
 
 # if OP_GNUC_PREREQ(4,0)
 #  pragma GCC visibility pop

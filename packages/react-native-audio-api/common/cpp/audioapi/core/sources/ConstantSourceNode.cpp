@@ -1,7 +1,7 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <memory>
@@ -10,10 +10,14 @@ namespace audioapi {
 ConstantSourceNode::ConstantSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNode(context) {
-  offsetParam_ = std::make_shared<AudioParam>(
-      options.offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  isInitialized_ = true;
+    : AudioScheduledSourceNode(context),
+      offsetParam_(
+          std::make_shared<AudioParam>(
+              options.offset,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)) {
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {

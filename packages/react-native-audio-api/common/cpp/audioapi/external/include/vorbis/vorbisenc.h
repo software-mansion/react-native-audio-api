@@ -24,7 +24,8 @@
 #define _OV_ENC_H_
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif /* __cplusplus */
 
 #include "codec.h"
@@ -45,26 +46,23 @@ extern "C" {
  * \param channels         The number of channels to be encoded.
  * \param rate             The sampling rate of the source audio.
  * \param max_bitrate      Desired maximum bitrate (limit). -1 indicates unset.
- * \param nominal_bitrate  Desired average, or central, bitrate. -1 indicates
- * unset.
+ * \param nominal_bitrate  Desired average, or central, bitrate. -1 indicates unset.
  * \param min_bitrate      Desired minimum bitrate. -1 indicates unset.
  *
  * \return Zero for success, and negative values for failure.
  *
  * \retval 0          Success.
- * \retval OV_EFAULT  Internal logic fault; indicates a bug or heap/stack
- * corruption.
+ * \retval OV_EFAULT  Internal logic fault; indicates a bug or heap/stack corruption.
  * \retval OV_EINVAL  Invalid setup request, eg, out of range argument.
  * \retval OV_EIMPL   Unimplemented mode; unable to comply with bitrate request.
  */
-extern int vorbis_encode_init(
-    vorbis_info *vi,
-    long channels,
-    long rate,
+extern int vorbis_encode_init(vorbis_info *vi,
+                              long channels,
+                              long rate,
 
-    long max_bitrate,
-    long nominal_bitrate,
-    long min_bitrate);
+                              long max_bitrate,
+                              long nominal_bitrate,
+                              long min_bitrate);
 
 /**
  * This function performs step-one of a three-step bitrate-managed encode
@@ -85,27 +83,23 @@ extern int vorbis_encode_init(
  * \param channels          The number of channels to be encoded.
  * \param rate              The sampling rate of the source audio.
  * \param max_bitrate       Desired maximum bitrate (limit). -1 indicates unset.
- * \param nominal_bitrate   Desired average, or central, bitrate. -1 indicates
- * unset.
+ * \param nominal_bitrate   Desired average, or central, bitrate. -1 indicates unset.
  * \param min_bitrate       Desired minimum bitrate. -1 indicates unset.
  *
  * \return Zero for success, and negative for failure.
  *
  * \retval 0           Success
- * \retval OV_EFAULT   Internal logic fault; indicates a bug or heap/stack
- * corruption.
+ * \retval OV_EFAULT   Internal logic fault; indicates a bug or heap/stack corruption.
  * \retval OV_EINVAL   Invalid setup request, eg, out of range argument.
- * \retval OV_EIMPL    Unimplemented mode; unable to comply with bitrate
- * request.
+ * \retval OV_EIMPL    Unimplemented mode; unable to comply with bitrate request.
  */
-extern int vorbis_encode_setup_managed(
-    vorbis_info *vi,
-    long channels,
-    long rate,
+extern int vorbis_encode_setup_managed(vorbis_info *vi,
+                                       long channels,
+                                       long rate,
 
-    long max_bitrate,
-    long nominal_bitrate,
-    long min_bitrate);
+                                       long max_bitrate,
+                                       long nominal_bitrate,
+                                       long min_bitrate);
 
 /**
  * This function performs step-one of a three-step variable bitrate
@@ -122,24 +116,21 @@ extern int vorbis_encode_setup_managed(
  * \param vi        Pointer to an initialized vorbis_info struct.
  * \param channels  The number of channels to be encoded.
  * \param rate      The sampling rate of the source audio.
- * \param quality   Desired quality level, currently from -0.1 to 1.0 (lo to
- * hi).
+ * \param quality   Desired quality level, currently from -0.1 to 1.0 (lo to hi).
  *
  * \return Zero for success, and negative values for failure.
  *
  * \retval  0          Success
- * \retval  OV_EFAULT  Internal logic fault; indicates a bug or heap/stack
- * corruption.
+ * \retval  OV_EFAULT  Internal logic fault; indicates a bug or heap/stack corruption.
  * \retval  OV_EINVAL  Invalid setup request, eg, out of range argument.
- * \retval  OV_EIMPL   Unimplemented mode; unable to comply with quality level
- * request.
+ * \retval  OV_EIMPL   Unimplemented mode; unable to comply with quality level request.
  */
-extern int vorbis_encode_setup_vbr(
-    vorbis_info *vi,
-    long channels,
-    long rate,
+extern int vorbis_encode_setup_vbr(vorbis_info *vi,
+                                  long channels,
+                                  long rate,
 
-    float quality);
+                                  float quality
+                                  );
 
 /**
  * This is the primary function within libvorbisenc for setting up variable
@@ -153,25 +144,22 @@ extern int vorbis_encode_setup_vbr(
  * \param vi           Pointer to an initialized vorbis_info struct.
  * \param channels     The number of channels to be encoded.
  * \param rate         The sampling rate of the source audio.
- * \param base_quality Desired quality level, currently from -0.1 to 1.0 (lo to
- * hi).
+ * \param base_quality Desired quality level, currently from -0.1 to 1.0 (lo to hi).
  *
  *
  * \return Zero for success, or a negative number for failure.
  *
  * \retval 0           Success
- * \retval OV_EFAULT   Internal logic fault; indicates a bug or heap/stack
- * corruption.
+ * \retval OV_EFAULT   Internal logic fault; indicates a bug or heap/stack corruption.
  * \retval OV_EINVAL   Invalid setup request, eg, out of range argument.
- * \retval OV_EIMPL    Unimplemented mode; unable to comply with quality level
- * request.
+ * \retval OV_EIMPL    Unimplemented mode; unable to comply with quality level request.
  */
-extern int vorbis_encode_init_vbr(
-    vorbis_info *vi,
-    long channels,
-    long rate,
+extern int vorbis_encode_init_vbr(vorbis_info *vi,
+                                  long channels,
+                                  long rate,
 
-    float base_quality);
+                                  float base_quality
+                                  );
 
 /**
  * This function performs the last stage of three-step encoding setup, as
@@ -179,8 +167,8 @@ extern int vorbis_encode_init_vbr(
  *
  * Before this function is called, the \ref vorbis_info struct should be
  * initialized by using vorbis_info_init() from the libvorbis API, one of
- * \ref vorbis_encode_setup_managed() or \ref vorbis_encode_setup_vbr() called
- * to initialize the high-level encoding setup, and \ref vorbis_encode_ctl()
+ * \ref vorbis_encode_setup_managed() or \ref vorbis_encode_setup_vbr() called to
+ * initialize the high-level encoding setup, and \ref vorbis_encode_ctl()
  * called if necessary to make encoding setup changes.
  * vorbis_encode_setup_init() finalizes the highlevel encoding structure into
  * a complete encoding setup after which the application may make no further
@@ -193,8 +181,7 @@ extern int vorbis_encode_init_vbr(
  * \return Zero for success, and negative values for failure.
  *
  * \retval  0           Success.
- * \retval  OV_EFAULT  Internal logic fault; indicates a bug or heap/stack
- * corruption.
+ * \retval  OV_EFAULT  Internal logic fault; indicates a bug or heap/stack corruption.
  *
  * \retval OV_EINVAL   Attempt to use vorbis_encode_setup_init() without first
  * calling one of vorbis_encode_setup_managed() or vorbis_encode_setup_vbr() to
@@ -221,15 +208,15 @@ extern int vorbis_encode_setup_init(vorbis_info *vi);
  * \param arg void * pointing to a data structure matching the request
  * argument.
  *
- * \retval 0          Success. Any further return information (such as the
- * result of a query) is placed into the storage pointed to by *arg.
+ * \retval 0          Success. Any further return information (such as the result of a
+ * query) is placed into the storage pointed to by *arg.
  *
  * \retval OV_EINVAL  Invalid argument, or an attempt to modify a setting after
  * calling vorbis_encode_setup_init().
  *
  * \retval OV_EIMPL   Unimplemented or unknown request
  */
-extern int vorbis_encode_ctl(vorbis_info *vi, int number, void *arg);
+extern int vorbis_encode_ctl(vorbis_info *vi,int number,void *arg);
 
 /**
  * \deprecated This is a deprecated interface. Please use vorbis_encode_ctl()
@@ -241,32 +228,32 @@ extern int vorbis_encode_ctl(vorbis_info *vi, int number, void *arg);
  * OV_ECTL_RATEMANAGE_AVG, \ref OV_ECTL_RATEMANAGE_HARD calls in order to
  * query and modify specifics of the encoder's bitrate management
  * configuration.
- */
+*/
 struct ovectl_ratemanage_arg {
-  int management_active; /**< nonzero if bitrate management is active*/
-  /** hard lower limit (in kilobits per second) below which the stream bitrate
-      will never be allowed for any given bitrate_hard_window seconds of time.*/
-  long bitrate_hard_min;
-  /** hard upper limit (in kilobits per second) above which the stream bitrate
-      will never be allowed for any given bitrate_hard_window seconds of time.*/
-  long bitrate_hard_max;
-  /** the window period (in seconds) used to regulate the hard bitrate minimum
-      and maximum*/
+  int    management_active; /**< nonzero if bitrate management is active*/
+/** hard lower limit (in kilobits per second) below which the stream bitrate
+    will never be allowed for any given bitrate_hard_window seconds of time.*/
+  long   bitrate_hard_min;
+/** hard upper limit (in kilobits per second) above which the stream bitrate
+    will never be allowed for any given bitrate_hard_window seconds of time.*/
+  long   bitrate_hard_max;
+/** the window period (in seconds) used to regulate the hard bitrate minimum
+    and maximum*/
   double bitrate_hard_window;
-  /** soft lower limit (in kilobits per second) below which the average bitrate
-      tracker will start nudging the bitrate higher.*/
-  long bitrate_av_lo;
-  /** soft upper limit (in kilobits per second) above which the average bitrate
-      tracker will start nudging the bitrate lower.*/
-  long bitrate_av_hi;
-  /** the window period (in seconds) used to regulate the average bitrate
-      minimum and maximum.*/
+/** soft lower limit (in kilobits per second) below which the average bitrate
+    tracker will start nudging the bitrate higher.*/
+  long   bitrate_av_lo;
+/** soft upper limit (in kilobits per second) above which the average bitrate
+    tracker will start nudging the bitrate lower.*/
+  long   bitrate_av_hi;
+/** the window period (in seconds) used to regulate the average bitrate
+    minimum and maximum.*/
   double bitrate_av_window;
-  /** Regulates the relative centering of the average and hard windows; in
-      libvorbis 1.0 and 1.0.1, the hard window regulation overlapped but
-      followed the average window regulation. In libvorbis 1.1 a bit-reservoir
-      interface replaces the old windowing interface; the older windowing
-      interface is simulated and this field has no effect.*/
+/** Regulates the relative centering of the average and hard windows; in
+    libvorbis 1.0 and 1.0.1, the hard window regulation overlapped but
+    followed the average window regulation. In libvorbis 1.1 a bit-reservoir
+    interface replaces the old windowing interface; the older windowing
+    interface is simulated and this field has no effect.*/
   double bitrate_av_window_center;
 };
 
@@ -278,29 +265,29 @@ struct ovectl_ratemanage_arg {
  * query and modify specifics of the encoder's bitrate management
  * configuration.
  *
- */
+*/
 struct ovectl_ratemanage2_arg {
-  int management_active; /**< nonzero if bitrate management is active */
-  /** Lower allowed bitrate limit in kilobits per second */
-  long bitrate_limit_min_kbps;
-  /** Upper allowed bitrate limit in kilobits per second */
-  long bitrate_limit_max_kbps;
-  long
-      bitrate_limit_reservoir_bits; /**<Size of the bitrate reservoir in bits */
-  /** Regulates the bitrate reservoir's preferred fill level in a range from 0.0
-   * to 1.0; 0.0 tries to bank bits to buffer against future bitrate spikes, 1.0
-   * buffers against future sudden drops in instantaneous bitrate. Default is
-   * 0.1
-   */
+  int    management_active; /**< nonzero if bitrate management is active */
+/** Lower allowed bitrate limit in kilobits per second */
+  long   bitrate_limit_min_kbps;
+/** Upper allowed bitrate limit in kilobits per second */
+  long   bitrate_limit_max_kbps;
+  long   bitrate_limit_reservoir_bits; /**<Size of the bitrate reservoir in bits */
+/** Regulates the bitrate reservoir's preferred fill level in a range from 0.0
+ * to 1.0; 0.0 tries to bank bits to buffer against future bitrate spikes, 1.0
+ * buffers against future sudden drops in instantaneous bitrate. Default is
+ * 0.1
+ */
   double bitrate_limit_reservoir_bias;
-  /** Average bitrate setting in kilobits per second */
-  long bitrate_average_kbps;
-  /** Slew rate limit setting for average bitrate adjustment; sets the minimum
-   *  time in seconds the bitrate tracker may swing from one extreme to the
-   *  other when boosting or damping average bitrate.
-   */
+/** Average bitrate setting in kilobits per second */
+  long   bitrate_average_kbps;
+/** Slew rate limit setting for average bitrate adjustment; sets the minimum
+ *  time in seconds the bitrate tracker may swing from one extreme to the
+ *  other when boosting or damping average bitrate.
+ */
   double bitrate_average_damping;
 };
+
 
 /**
  * \name vorbis_encode_ctl() codes
@@ -322,7 +309,7 @@ struct ovectl_ratemanage2_arg {
  * initialize fields of an ovectl_ratemanage2_arg structure for use with
  * \ref OV_ECTL_RATEMANAGE2_SET.
  */
-#define OV_ECTL_RATEMANAGE2_GET 0x14
+#define OV_ECTL_RATEMANAGE2_GET      0x14
 
 /**
  * Set the current encoder bitrate management settings.
@@ -332,32 +319,32 @@ struct ovectl_ratemanage2_arg {
  * Used to set the current encoder bitrate management settings to the values
  * listed in the ovectl_ratemanage2_arg. Passing a NULL pointer will disable
  * bitrate management.
- */
-#define OV_ECTL_RATEMANAGE2_SET 0x15
+*/
+#define OV_ECTL_RATEMANAGE2_SET      0x15
 
 /**
  * Returns the current encoder hard-lowpass setting (kHz) in the double
  * pointed to by arg.
  *
  * Argument: <tt>double *</tt>
- */
-#define OV_ECTL_LOWPASS_GET 0x20
+*/
+#define OV_ECTL_LOWPASS_GET          0x20
 
 /**
  *  Sets the encoder hard-lowpass to the value (kHz) pointed to by arg. Valid
  *  lowpass settings range from 2 to 99.
  *
  * Argument: <tt>double *</tt>
- */
-#define OV_ECTL_LOWPASS_SET 0x21
+*/
+#define OV_ECTL_LOWPASS_SET          0x21
 
 /**
  *  Returns the current encoder impulse block setting in the double pointed
  *  to by arg.
  *
  * Argument: <tt>double *</tt>
- */
-#define OV_ECTL_IBLOCK_GET 0x30
+*/
+#define OV_ECTL_IBLOCK_GET           0x30
 
 /**
  *  Sets the impulse block bias to the the value pointed to by arg.
@@ -368,15 +355,15 @@ struct ovectl_ratemanage2_arg {
  *  direct to encoder to use more bits when incoding short blocks that contain
  *  strong impulses, thus improving the accuracy of impulse encoding.
  */
-#define OV_ECTL_IBLOCK_SET 0x31
+#define OV_ECTL_IBLOCK_SET           0x31
 
 /**
  *  Returns the current encoder coupling setting in the int pointed
  *  to by arg.
  *
  * Argument: <tt>int *</tt>
- */
-#define OV_ECTL_COUPLING_GET 0x40
+*/
+#define OV_ECTL_COUPLING_GET         0x40
 
 /**
  *  Enables/disables channel coupling in multichannel encoding according to arg.
@@ -388,9 +375,9 @@ struct ovectl_ratemanage2_arg {
  *  multichannel counts that do not offer coupling.  At present, coupling is
  *  available for stereo and 5.1 encoding.
  */
-#define OV_ECTL_COUPLING_SET 0x41
+#define OV_ECTL_COUPLING_SET         0x41
 
-/* deprecated rate management supported only for compatibility */
+  /* deprecated rate management supported only for compatibility */
 
 /**
  * Old interface to querying bitrate management settings.
@@ -402,7 +389,7 @@ struct ovectl_ratemanage2_arg {
  *
  * Argument: <tt>struct ovectl_ratemanage_arg *</tt>
  */
-#define OV_ECTL_RATEMANAGE_GET 0x10
+#define OV_ECTL_RATEMANAGE_GET       0x10
 /**
  * Old interface to modifying bitrate management settings.
  *
@@ -413,7 +400,7 @@ struct ovectl_ratemanage2_arg {
  *
  * Argument: <tt>struct ovectl_ratemanage_arg *</tt>
  */
-#define OV_ECTL_RATEMANAGE_SET 0x11
+#define OV_ECTL_RATEMANAGE_SET       0x11
 /**
  * Old interface to setting average-bitrate encoding mode.
  *
@@ -424,7 +411,7 @@ struct ovectl_ratemanage2_arg {
  *
  * Argument: <tt>struct ovectl_ratemanage_arg *</tt>
  */
-#define OV_ECTL_RATEMANAGE_AVG 0x12
+#define OV_ECTL_RATEMANAGE_AVG       0x12
 /**
  * Old interface to setting bounded-bitrate encoding modes.
  *
@@ -435,9 +422,11 @@ struct ovectl_ratemanage2_arg {
  *
  * Argument: <tt>struct ovectl_ratemanage_arg *</tt>
  */
-#define OV_ECTL_RATEMANAGE_HARD 0x13
+#define OV_ECTL_RATEMANAGE_HARD      0x13
 
 /*@}*/
+
+
 
 #ifdef __cplusplus
 }
