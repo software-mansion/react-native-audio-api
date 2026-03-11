@@ -2,8 +2,6 @@
 
 The `StereoPannerNode` interface represents the change in ratio between two output channels (f. e. left and right speaker).
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 ## Constructor
 
 ```tsx

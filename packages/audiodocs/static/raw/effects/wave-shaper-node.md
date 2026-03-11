@@ -3,8 +3,6 @@
 The `WaveShaperNode` interface represents non-linear signal distortion effects.
 Non-linear distortion is commonly used for both subtle non-linear warming, or more obvious distortion effects.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 ## Constructor
 
 ```tsx

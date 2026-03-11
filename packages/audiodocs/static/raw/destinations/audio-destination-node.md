@@ -9,8 +9,6 @@ it is stored in an [`AudioBuffer`](/docs/sources/audio-buffer).
 Each `AudioContext` has exactly one AudioDestinationNode, which can be accessed through its
 [`AudioContext.destination`](/docs/core/base-audio-context/#properties) property.
 
-#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
-
 ## Properties
 
 `AudioDestinationNode` does not define any additional properties.

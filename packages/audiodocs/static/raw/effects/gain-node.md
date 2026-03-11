@@ -6,8 +6,6 @@ The `GainNode` interface represents a change in volume (amplitude) of the audio 
 >
 > Direct, immediate gain changes often cause audible clicks. Use the scheduling methods of [`AudioParam`](/docs/core/audio-param) (e.g. `linearRampToValueAtTime`, `exponentialRampToValueAtTime`) to smoothly interpolate volume transitions.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 ## Constructor
 
 ```tsx
@@ -70,4 +68,4 @@ gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 2);
 
 ## Advanced usage — Envelope (ADSR)
 
-`GainNode` is the key building block for implementing sound envelopes. For a practical, step-by-step walkthrough of ADSR envelopes and how to apply them in a real app, see the [Making a piano keyboard](/docs/guides/making-a-piano-keyboard#envelopes-) guide.
+`GainNode` is the key building block for implementing sound envelopes. For a practical, step-by-step walkthrough of ADSR envelopes and how to apply them in a real app, see the [Making a piano keyboard](/docs/guides/making-a-piano-keyboard#envelopes-%EF%B8%8F) guide.

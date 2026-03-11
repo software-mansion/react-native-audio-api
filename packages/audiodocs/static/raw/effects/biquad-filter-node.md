@@ -3,8 +3,6 @@
 The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](/docs/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
 
-#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
-
 ## Constructor
 
 ```tsx
@@ -40,7 +38,6 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 #### BiquadFilterType enumeration description
 
-Note: The detune parameter behaves the same way for all filter types, so it is not repeated below.
 | `type` | Description | `frequency` | `Q` | `gain` |
 |:------:|:-----------:|:-----------:|:---:|:------:|
 | `lowpass` | Second-order resonant lowpass filter with 12dB/octave rolloff. Frequencies below the cutoff pass through; higher frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak. | Not used |
@@ -51,6 +48,8 @@ Note: The detune parameter behaves the same way for all filter types, so it is n
 | `peaking` | Frequencies around a center frequency are boosted or attenuated; others remain unchanged. | The center of the frequency range where the boost (or an attenuation) is applied. | Controls the bandwidth. Higher values result in a narrower band. | The boost (in dB) to be applied. Negative values attenuate the frequencies. |
 | `notch` | Notch (band-stop) filter. Opposite of a bandpass filter: frequencies around the center are attenuated; others remain unchanged. | The center of the frequency range where the notch is applied. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
 | `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
+
+Note: The detune parameter behaves the same way for all filter types, so it is not included above
 
 ## Methods
 

@@ -3,8 +3,6 @@
 The `DelayNode` interface represents the latency of the audio signal by given time. It is an [`AudioNode`](/docs/core/audio-node) that applies time shift to incoming signal f.e.
 if `delayTime` value is 0.5, it means that audio will be played after 0.5 seconds.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 > **Info**
 >
 > Delay is a node with tail-time, which means, that it continues to output non-silent audio with zero input for the duration of `delayTime`.

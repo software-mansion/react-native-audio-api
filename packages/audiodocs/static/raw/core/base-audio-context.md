@@ -141,7 +141,7 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints`  | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+| `constraints`  | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
 
 #### Errors
 

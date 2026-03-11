@@ -5,8 +5,6 @@ The `offset` parameter controls this value. Although the node is called "constan
 for controlling multiple other [`AudioParam`](/docs/core/audio-param) values in an audio graph.
 Just like `AudioScheduledSourceNode`, it can be started only once.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 ## Constructor
 
 ```tsx

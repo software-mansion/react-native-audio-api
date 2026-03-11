@@ -3,8 +3,6 @@
 The `AnalyserNode` interface represents a node providing two core functionalities: extracting time-domain data and frequency-domain data from audio signals.
 It is an [`AudioNode`](/docs/core/audio-node) that passes the audio data unchanged from input to output, but allows to take passed data and process it.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 #### Time domain vs Frequency domain
 
 ![time-domain-vs-frequency-domain](/img/time_domain_vs_frequency_domain.jpg)

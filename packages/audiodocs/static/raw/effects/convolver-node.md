@@ -3,8 +3,6 @@
 The `ConvolverNode` interface represents a linear convolution effect, that can be applied to a signal given an impulse response.
 This is the easiest way to achieve `echo` or [`reverb`](https://en.wikipedia.org/wiki/Reverb_effect) effects.
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
 > **Info**
 >
 > Convolver is a node with tail-time, which means, that it continues to output non-silent audio with zero input for the length of the buffer.

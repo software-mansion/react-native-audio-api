@@ -1,6 +1,7 @@
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 import { useOscillatorPlayground } from '@site/src/components/InteractivePlayground/OscillatorExample/useOscilatorPlayground';
 
@@ -9,16 +10,7 @@ import { useOscillatorPlayground } from '@site/src/components/InteractivePlaygro
 The `OscillatorNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
 Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If you want to play the same sound again you have to create a new one.
 
-<details open>
-<summary><code>OscillatorNode</code> interactive playground</summary>
-
-<InteractivePlayground usePlayground={useOscillatorPlayground} />
-
-</details>
-
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
-<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+<InteractivePlayground tag="OscillatorNode" usePlayground={useOscillatorPlayground} />
 
 ## Constructor
 
@@ -62,6 +54,8 @@ function App() {
 ## Properties
 
 It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
 | :----: | :----: | :-------- | :------- |
