@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.hpp>
+#include <concepts>
 
 namespace audioapi {
 

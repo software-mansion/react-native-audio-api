@@ -3,7 +3,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <memory>
 #include <utility>

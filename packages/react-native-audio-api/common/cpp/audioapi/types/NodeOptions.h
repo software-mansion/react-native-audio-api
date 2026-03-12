@@ -12,7 +12,6 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
@@ -145,7 +144,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 };
 
 struct WaveShaperOptions : AudioNodeOptions {
-  std::shared_ptr<AudioArrayBuffer> curve;
+  std::shared_ptr<AudioArray> curve;
   OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
 
   WaveShaperOptions() {
