@@ -25,7 +25,7 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <memory>
 #include <utility>
 #include <vector>

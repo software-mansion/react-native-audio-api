@@ -19,8 +19,8 @@ WorkletSourceNode::WorkletSourceNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer> WorkletSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (isUnscheduled() || isFinished() || !isEnabled()) {
     processingBuffer->zero();

@@ -3,7 +3,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 
 #include <algorithm>
 #include <memory>

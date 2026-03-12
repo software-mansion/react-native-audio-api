@@ -12,7 +12,7 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio),
@@ -42,7 +42,7 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
-  buffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   return true;
 }
 

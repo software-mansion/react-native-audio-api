@@ -8,7 +8,7 @@
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
 #include <utility>

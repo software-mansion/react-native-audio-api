@@ -44,7 +44,7 @@ void Convolver::reset() {
   }
 }
 
-bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t irLen) {
+bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   reset();
   // blockSize must be a power of two
   if ((blockSize & (blockSize - 1))) {
@@ -72,7 +72,7 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
   // complex-conjugate symmetricity
   _fftComplexSize = _segSize / 2 + 1;
   _fft = std::make_shared<dsp::FFT>(static_cast<int>(_segSize));
-  _fftBuffer = std::make_unique<AudioArray>(_segSize);
+  _fftBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
   // segments preparation
   for (int i = 0; i < _segCount; ++i) {
@@ -98,7 +98,7 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
   }
 
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
-  _inputBuffer = std::make_unique<AudioArray>(_segSize);
+  _inputBuffer = std::make_unique<DSPAudioArray>(_segSize);
   _current = 0;
 
   return true;
@@ -166,7 +166,7 @@ void pairwise_complex_multiply_fast(
 #endif
 }
 
-void Convolver::process(const AudioArray &input, AudioArray &output) {
+void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
   // The input buffer acts as a 2B-point sliding window of the input signal.
   // With each new input block, the right half of the input buffer is shifted
   // to the left and the new block is stored in the right half.

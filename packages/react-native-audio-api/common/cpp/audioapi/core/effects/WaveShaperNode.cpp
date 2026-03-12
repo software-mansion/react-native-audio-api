@@ -37,8 +37,8 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> WaveShaperNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (curve_ == nullptr) {
     return processingBuffer;

@@ -16,7 +16,7 @@ class AudioContext;
 class IOSAudioPlayer {
  public:
   IOSAudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount);
   ~IOSAudioPlayer();
@@ -30,9 +30,9 @@ class IOSAudioPlayer {
   bool isRunning() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> audioBuffer_;
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio_;
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
   int channelCount_;
   std::atomic<bool> isRunning_;
 };

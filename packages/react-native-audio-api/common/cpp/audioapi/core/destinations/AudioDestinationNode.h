@@ -23,13 +23,13 @@ class AudioDestinationNode : public AudioNode {
   double getCurrentTime() const;
 
   /// @note Audio Thread only
-  void renderAudio(const std::shared_ptr<AudioBuffer> &audioData, int numFrames);
+  void renderAudio(const std::shared_ptr<DSPAudioBuffer> &audioData, int numFrames);
 
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int) final {
     return processingBuffer;
   };

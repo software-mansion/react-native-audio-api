@@ -26,8 +26,8 @@ class WaveShaperNode : public AudioNode {
   void setCurve(const std::shared_ptr<AudioArray> &curve);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

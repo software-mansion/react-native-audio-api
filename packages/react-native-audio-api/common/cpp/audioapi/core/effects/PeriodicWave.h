@@ -39,8 +39,8 @@
 namespace audioapi {
 
 struct WaveTableSource {
-  const AudioArray *lower;
-  const AudioArray *higher;
+  const DSPAudioArray *lower;
+  const DSPAudioArray *higher;
   float interpolationFactor;
 };
 
@@ -86,7 +86,8 @@ class PeriodicWave {
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given
   // fundamental frequency.
-  WaveTableSource getWaveDataForFundamentalFrequency(float fundamentalFrequency) const;
+  [[nodiscard]] WaveTableSource getWaveDataForFundamentalFrequency(
+      float fundamentalFrequency) const;
 
   // This function performs interpolation between the lower and higher range
   // data based on the interpolation factor and current buffer index. Type of
@@ -96,8 +97,8 @@ class PeriodicWave {
       float bufferIndex,
       float phaseIncrement,
       float waveTableInterpolationFactor,
-      const AudioArray &lowerWaveData,
-      const AudioArray &higherWaveData) const;
+      const DSPAudioArray &lowerWaveData,
+      const DSPAudioArray &higherWaveData) const;
 
   // determines the time resolution of the waveform.
   float sampleRate_;
@@ -110,7 +111,7 @@ class PeriodicWave {
   // rate.
   float scale_;
   // array of band-limited waveforms.
-  std::unique_ptr<AudioBuffer> bandLimitedTables_;
+  std::unique_ptr<DSPAudioBuffer> bandLimitedTables_;
   std::unique_ptr<dsp::FFT> fft_;
   // if true, the waveTable is not normalized.
   bool disableNormalization_;

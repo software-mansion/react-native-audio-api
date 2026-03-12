@@ -7,8 +7,8 @@ MyProcessorNode::MyProcessorNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer>
-MyProcessorNode::processNode(const std::shared_ptr<AudioBuffer> &buffer,
+std::shared_ptr<DSPAudioBuffer>
+MyProcessorNode::processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
                              int framesToProcess) {
   // put your processing logic here
 }

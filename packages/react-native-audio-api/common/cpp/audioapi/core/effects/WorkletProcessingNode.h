@@ -22,8 +22,8 @@ class WorkletProcessingNode : public AudioNode {
       : AudioNode(context) {}
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return processingBuffer;
   }
@@ -39,8 +39,8 @@ class WorkletProcessingNode : public AudioNode {
       WorkletsRunner &&workletRunner);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

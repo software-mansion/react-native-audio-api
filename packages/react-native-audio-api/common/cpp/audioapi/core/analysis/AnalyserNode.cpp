@@ -3,7 +3,6 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/CircularAudioArray.h>
 
 #include <algorithm>
 #include <memory>
@@ -15,9 +14,9 @@ AnalyserNode::AnalyserNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
     : AudioNode(context, options),
-      inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
+      inputArray_(std::make_unique<CircularDSPAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
-          std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+          std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant) {
@@ -32,8 +31,8 @@ void AnalyserNode::setFFTSize(int fftSize) {
 
   fft_ = std::make_unique<dsp::FFT>(fftSize);
   complexData_ = std::vector<std::complex<float>>(fftSize);
-  magnitudeArray_ = std::make_unique<AudioArray>(fftSize / 2);
-  tempArray_ = std::make_unique<AudioArray>(fftSize);
+  magnitudeArray_ = std::make_unique<DSPAudioArray>(fftSize / 2);
+  tempArray_ = std::make_unique<DSPAudioArray>(fftSize);
   initializeWindowData(fftSize);
   fftSize_.store(fftSize, std::memory_order_release);
 }
@@ -88,8 +87,8 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   }
 }
 
-std::shared_ptr<AudioBuffer> AnalyserNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> AnalyserNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   // Analyser should behave like a sniffer node, it should not modify the
   // processingBuffer but instead copy the data to its own input buffer.
@@ -148,7 +147,7 @@ void AnalyserNode::doFFTAnalysis() {
 }
 
 void AnalyserNode::initializeWindowData(int fftSize) {
-  windowData_ = std::make_unique<AudioArray>(fftSize);
+  windowData_ = std::make_unique<DSPAudioArray>(fftSize);
   auto data = windowData_->span();
   auto size = windowData_->getSize();
 
@@ -156,7 +155,7 @@ void AnalyserNode::initializeWindowData(int fftSize) {
   const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
 
   for (size_t i = 0; i < size; ++i) {
-    const auto phase = alpha * i;
+    const auto phase = alpha * static_cast<float>(i);
     // 4*PI*x is just 2 * (2*PI*x)
     const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
     data[i] = window;

@@ -12,7 +12,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 #include <memory>

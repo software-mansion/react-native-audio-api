@@ -380,8 +380,8 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
   return coeffs;
 }
 
-std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     auto currentTime = context->getCurrentTime();

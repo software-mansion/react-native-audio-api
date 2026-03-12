@@ -35,7 +35,7 @@ void DelayNode::onInputDisabled() {
 }
 
 void DelayNode::delayBufferOperation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
     size_t &operationStartingIndex,
     DelayNode::BufferAction action) {
@@ -75,8 +75,8 @@ void DelayNode::delayBufferOperation(
 // processing is split into two parts
 // 1. writing to delay buffer (mixing if needed) from processing buffer
 // 2. reading from delay buffer to processing buffer (mixing if needed) with delay
-std::shared_ptr<AudioBuffer> DelayNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> DelayNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   // handling tail processing
   if (signalledToStop_) {

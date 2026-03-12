@@ -26,8 +26,6 @@ OscillatorNode::OscillatorNode(
     periodicWave_ = context->getBasicWaveForm(type_);
   }
 
-  audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
-
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -51,8 +49,8 @@ void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &period
   type_ = OscillatorType::CUSTOM;
 }
 
-std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> OscillatorNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;

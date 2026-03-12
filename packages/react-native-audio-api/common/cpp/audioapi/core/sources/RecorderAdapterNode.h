@@ -4,7 +4,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/dsp/r8brain/Resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
@@ -33,8 +33,8 @@ class RecorderAdapterNode : public AudioNode {
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
   std::shared_ptr<AudioBuffer> adapterOutputBuffer_;
 

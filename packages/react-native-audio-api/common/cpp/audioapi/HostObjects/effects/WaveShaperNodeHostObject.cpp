@@ -47,8 +47,8 @@ JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
     thisValue.asObject(runtime).setExternalMemoryPressure(runtime, arrayBuffer.size(runtime) * 2);
 
     auto size = static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float));
-    curve = std::make_shared<AudioArrayBuffer>(
-        reinterpret_cast<float *>(arrayBuffer.data(runtime)), size);
+    curve =
+        std::make_shared<AudioArray>(reinterpret_cast<float *>(arrayBuffer.data(runtime)), size);
   }
 
   auto event = [waveShaperNode, curve](BaseAudioContext &) {

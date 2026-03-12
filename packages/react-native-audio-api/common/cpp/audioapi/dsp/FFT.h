@@ -14,8 +14,10 @@ class FFT {
   explicit FFT(int size);
   ~FFT();
 
-  template <typename Allocator>
-  void doFFT(const AudioArray &in, std::vector<std::complex<float>, Allocator> &out) {
+  template <typename Allocator, size_t Alignment>
+  void doFFT(
+      const AlignedAudioArray<Alignment> &in,
+      std::vector<std::complex<float>, Allocator> &out) {
     pffft_transform_ordered(
         pffftSetup_, in.begin(), reinterpret_cast<float *>(&out[0]), work_, PFFFT_FORWARD);
     // this is a possible place for bugs and mistakes
@@ -25,8 +27,10 @@ class FFT {
     // out[0].imag = Nyquist component - should be pure real
   }
 
-  template <typename Allocator>
-  void doInverseFFT(std::vector<std::complex<float>, Allocator> &in, AudioArray &out) {
+  template <typename Allocator, size_t Alignment>
+  void doInverseFFT(
+      std::vector<std::complex<float>, Allocator> &in,
+      AlignedAudioArray<Alignment> &out) {
     pffft_transform_ordered(
         pffftSetup_, reinterpret_cast<float *>(&in[0]), out.begin(), work_, PFFFT_BACKWARD);
 

@@ -11,7 +11,6 @@
 
 namespace audioapi {
 
-class CircularAudioArray;
 class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;

@@ -68,8 +68,8 @@ class BiquadFilterNode : public AudioNode {
       BiquadFilterType type);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
@@ -80,10 +80,10 @@ class BiquadFilterNode : public AudioNode {
   BiquadFilterType type_;
 
   // delayed samples, one per channel
-  AudioArray x1_;
-  AudioArray x2_;
-  AudioArray y1_;
-  AudioArray y2_;
+  DSPAudioArray x1_;
+  DSPAudioArray x2_;
+  DSPAudioArray y1_;
+  DSPAudioArray y2_;
 
   struct alignas(64) FilterCoefficients {
     double b0, b1, b2, a1, a2;

@@ -89,7 +89,7 @@ class AudioParam {
   void removeInputNode(AudioNode *node);
 
   /// @note Audio Thread only
-  std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
+  std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
 
   /// @note Audio Thread only
   float processKRateParam(int framesToProcess, double time);
@@ -113,8 +113,8 @@ class AudioParam {
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
-  std::shared_ptr<AudioBuffer> audioBuffer_;
-  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_;
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
+  std::vector<std::shared_ptr<DSPAudioBuffer>> inputBuffers_;
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
@@ -142,12 +142,12 @@ class AudioParam {
   }
   float getValueAtTime(double time);
   void processInputs(
-      const std::shared_ptr<AudioBuffer> &outputBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  void mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer);
-  std::shared_ptr<AudioBuffer> calculateInputs(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  void mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  std::shared_ptr<DSPAudioBuffer> calculateInputs(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 };
 

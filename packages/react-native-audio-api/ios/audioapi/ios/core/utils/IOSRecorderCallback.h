@@ -18,7 +18,6 @@ struct CallbackData {
 
 namespace audioapi {
 
-class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
 class IOSRecorderCallback : public AudioRecorderCallback {

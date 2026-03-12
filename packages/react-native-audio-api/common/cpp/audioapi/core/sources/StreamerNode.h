@@ -24,7 +24,7 @@ extern "C" {
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
-#include <audioapi/dsp/r8brain/Resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
@@ -68,8 +68,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   ~StreamerNode() override;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

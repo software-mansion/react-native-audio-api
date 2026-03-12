@@ -67,8 +67,8 @@ void RecorderAdapterNode::cleanup() {
   isInitialized_.store(false, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer> RecorderAdapterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> RecorderAdapterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
     processingBuffer->zero();

@@ -40,7 +40,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
-  std::shared_ptr<AudioBuffer> playbackRateBuffer_;
+  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
 
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
@@ -58,22 +58,22 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   void sendOnPositionChangedEvent();
 
   void processWithPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
   void processWithoutPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 
   float getComputedPlaybackRateValue(int framesToProcess, double time);
 
   virtual void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;
 
   virtual void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;

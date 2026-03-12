@@ -56,8 +56,8 @@ StreamerNode::~StreamerNode() {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<AudioBuffer> StreamerNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
@@ -144,8 +144,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,

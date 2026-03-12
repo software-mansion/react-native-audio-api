@@ -10,7 +10,6 @@
 
 namespace audioapi {
 
-class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
 struct CallbackData {

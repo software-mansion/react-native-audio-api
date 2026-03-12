@@ -24,8 +24,8 @@ std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> ConstantSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;

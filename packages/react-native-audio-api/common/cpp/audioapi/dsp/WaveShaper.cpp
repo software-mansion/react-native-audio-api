@@ -1,7 +1,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/WaveShaper.h>
-#include <audioapi/dsp/r8brain/Resampler.h>
 
 #include <cstring>
 #include <memory>
@@ -10,9 +9,9 @@ namespace audioapi {
 
 WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate)
     : curve_(curve), sampleRate_(sampleRate) {
-  tempBuffer2x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 2);
+  tempBuffer2x_ = std::make_shared<DSPAudioArray>(RENDER_QUANTUM_SIZE * 2);
   tempBuffer2x_->zero();
-  tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
+  tempBuffer4x_ = std::make_shared<DSPAudioArray>(RENDER_QUANTUM_SIZE * 4);
   tempBuffer4x_->zero();
 
   createResamplers(OverSampleType::OVERSAMPLE_NONE);
@@ -41,7 +40,7 @@ void WaveShaper::setOversample(OverSampleType type) {
   createResamplers(type);
 }
 
-void WaveShaper::process(AudioArray &channelData, int framesToProcess) {
+void WaveShaper::process(DSPAudioArray &channelData, int framesToProcess) {
   if (curve_ == nullptr) {
     return;
   }
@@ -61,7 +60,7 @@ void WaveShaper::process(AudioArray &channelData, int framesToProcess) {
 }
 
 // based on https://webaudio.github.io/web-audio-api/#WaveShaperNode
-void WaveShaper::processNone(AudioArray &channelData, int framesToProcess) {
+void WaveShaper::processNone(DSPAudioArray &channelData, int framesToProcess) {
   auto curveSize = curve_->getSize();
 
   for (int i = 0; i < framesToProcess; i++) {
@@ -80,9 +79,8 @@ void WaveShaper::processNone(AudioArray &channelData, int framesToProcess) {
   }
 }
 
-void WaveShaper::processResampled(AudioArray &channelData, int framesToProcess) {
-  AudioArray &outArray =
-      (oversample_ == OverSampleType::OVERSAMPLE_4X) ? *tempBuffer4x_ : *tempBuffer2x_;
+void WaveShaper::processResampled(DSPAudioArray &channelData, int framesToProcess) {
+  auto &outArray = (oversample_ == OverSampleType::OVERSAMPLE_4X) ? *tempBuffer4x_ : *tempBuffer2x_;
   const int outputFrames = upSampler_->process(channelData, framesToProcess, outArray);
   processNone(outArray, outputFrames);
   downSampler_->process(outArray, outputFrames, channelData);

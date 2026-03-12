@@ -18,7 +18,7 @@ namespace audioapi {
 
 /// @brief AlignedAudioBuffer is a multi-channel audio buffer backed by AlignedAudioArray channels.
 /// @tparam Alignment The memory alignment in bytes for the underlying channel arrays.
-template <size_t Alignment = alignof(std::max_align_t)>
+template <size_t Alignment>
 class AlignedAudioBuffer {
  public:
   enum {
@@ -30,6 +30,9 @@ class AlignedAudioBuffer {
     ChannelSurroundLeft = 4,
     ChannelSurroundRight = 5,
   };
+
+  template <size_t A>
+  friend class AlignedAudioBuffer;
 
   explicit AlignedAudioBuffer() = default;
 
@@ -158,20 +161,24 @@ class AlignedAudioBuffer {
 
   /// @brief Sums audio data from a source buffer into this buffer.
   /// @note Handles up-mixing and down-mixing based on channel counts.
+  template <size_t OtherAlignment>
   void sum(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS) {
     sum(source, 0, 0, getSize(), interpretation);
   }
 
+  template <size_t OtherAlignment>
   void sum(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length,
       ChannelInterpretation interpretation = ChannelInterpretation::SPEAKERS) {
-    if (&source == this) {
-      return;
+    if constexpr (OtherAlignment == Alignment) {
+      if (&source == this) {
+        return;
+      }
     }
 
     auto numberOfSourceChannels = source.getNumberOfChannels();
@@ -199,17 +206,22 @@ class AlignedAudioBuffer {
 
   /// @brief Copies audio data from a source buffer into this buffer.
   /// @note Handles up-mixing and down-mixing based on channel counts.
-  void copy(const AlignedAudioBuffer &source) { // NOLINT(build/include_what_you_use)
+  template <size_t OtherAlignment>
+  void copy(
+      const AlignedAudioBuffer<OtherAlignment> &source) { // NOLINT(build/include_what_you_use)
     copy(source, 0, 0, getSize());
   }
 
+  template <size_t OtherAlignment>
   void copy(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) { // NOLINT(build/include_what_you_use)
-    if (&source == this) {
-      return;
+    if constexpr (OtherAlignment == Alignment) {
+      if (&source == this) {
+        return;
+      }
     }
 
     if (source.getNumberOfChannels() == getNumberOfChannels()) {
@@ -333,19 +345,21 @@ class AlignedAudioBuffer {
         ChannelSurroundLeft,
         ChannelSurroundRight}}};
 
+  template <size_t OtherAlignment>
   void discreteSum(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) const {
     auto numberOfChannels = std::min(getNumberOfChannels(), source.getNumberOfChannels());
     for (size_t i = 0; i < numberOfChannels; i++) {
-      channels_[i]->sum(*source.channels_[i], sourceStart, destinationStart, length);
+      channels_[i]->sum(*source.getChannel(i), sourceStart, destinationStart, length);
     }
   }
 
+  template <size_t OtherAlignment>
   void sumByUpMixing(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) {
@@ -379,8 +393,9 @@ class AlignedAudioBuffer {
     }
   }
 
+  template <size_t OtherAlignment>
   void sumByDownMixing(
-      const AlignedAudioBuffer &source,
+      const AlignedAudioBuffer<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) {

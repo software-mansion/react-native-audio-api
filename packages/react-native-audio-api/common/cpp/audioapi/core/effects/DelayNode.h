@@ -17,15 +17,15 @@ class DelayNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   void onInputDisabled() override;
   enum class BufferAction { READ, WRITE };
   void delayBufferOperation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &operationStartingIndex,
       BufferAction action);

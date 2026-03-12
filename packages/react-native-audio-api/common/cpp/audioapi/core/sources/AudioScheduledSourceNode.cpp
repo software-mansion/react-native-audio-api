@@ -70,7 +70,7 @@ void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
     size_t &startOffset,
     size_t &nonSilentFramesToProcess,

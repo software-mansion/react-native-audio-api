@@ -18,7 +18,7 @@
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <audioapi/utils/Result.hpp>
 

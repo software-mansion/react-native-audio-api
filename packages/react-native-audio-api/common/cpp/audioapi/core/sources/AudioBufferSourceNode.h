@@ -33,8 +33,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<AudioBuffer> &playbackRateBuffer,
-      const std::shared_ptr<AudioBuffer> &audioBuffer);
+      const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
   /// @note Audio Thread only
@@ -49,8 +49,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void unregisterOnLoopEndedCallback(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
   double getCurrentPosition() const override;
 
@@ -68,13 +68,13 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;
 
   void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;

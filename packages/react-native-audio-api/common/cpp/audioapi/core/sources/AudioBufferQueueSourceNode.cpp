@@ -132,8 +132,8 @@ void AudioBufferQueueSourceNode::unregisterOnBufferEndedCallback(uint64_t callba
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, callbackId);
 }
 
-std::shared_ptr<AudioBuffer> AudioBufferQueueSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioBufferQueueSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   // no audio data to fill, zero the output and return.
   if (buffers_.empty()) {
@@ -172,7 +172,7 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
  */
 
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -237,7 +237,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
 }
 
 void AudioBufferQueueSourceNode::processWithInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {

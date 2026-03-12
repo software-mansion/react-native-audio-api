@@ -97,8 +97,8 @@ void IIRFilterNode::getFrequencyResponse(
 
 // TODO: tail
 
-std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   int numChannels = processingBuffer->getNumberOfChannels();
 

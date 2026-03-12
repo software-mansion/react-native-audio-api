@@ -188,7 +188,7 @@ class AudioAPIModuleInstaller {
   static jsi::Function getCreateAudioBufferFunction(jsi::Runtime *jsiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioBuffer"),
         3,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {

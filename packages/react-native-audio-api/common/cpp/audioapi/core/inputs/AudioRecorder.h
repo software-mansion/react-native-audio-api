@@ -11,7 +11,6 @@
 namespace audioapi {
 
 class AudioFileWriter;
-class CircularAudioArray;
 class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioRecorderCallback;

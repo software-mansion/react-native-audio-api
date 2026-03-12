@@ -52,8 +52,8 @@ public:
   explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context, );
 
 protected:
-  std::shared_ptr<AudioBuffer>
-  processNode(const std::shared_ptr<AudioBuffer> &buffer,
+  std::shared_ptr<DSPAudioBuffer>
+  processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
               int framesToProcess) override;
 
 // highlight-start
@@ -80,7 +80,7 @@ namespace audioapi {
         isInitialized_.store(true, std::memory_order_release);
     }
 
-    std::shared_ptr<AudioBuffer> MyProcessorNode::processNode(const std::shared_ptr<AudioBuffer> &buffer,
+    std::shared_ptr<DSPAudioBuffer> MyProcessorNode::processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
                                     int framesToProcess) {
       // highlight-start
       for (int channel = 0; channel < buffer->getNumberOfChannels(); ++channel) {

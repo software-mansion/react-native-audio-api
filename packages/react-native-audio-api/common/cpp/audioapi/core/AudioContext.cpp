@@ -89,8 +89,8 @@ bool AudioContext::start() {
   return false;
 }
 
-std::function<void(std::shared_ptr<AudioBuffer>, int)> AudioContext::renderAudio() {
-  return [this](const std::shared_ptr<AudioBuffer> &data, int frames) {
+std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> AudioContext::renderAudio() {
+  return [this](const std::shared_ptr<DSPAudioBuffer> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }

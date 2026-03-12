@@ -22,7 +22,7 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<AudioBuffer> &destinationBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &destinationBuffer,
     int numFrames) {
   if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;
