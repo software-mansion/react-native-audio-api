@@ -81,7 +81,8 @@ std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedCallbackId_ != 0 && onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
+  if (onPositionChangedCallbackId_ != 0 &&
+      onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
