@@ -3,6 +3,8 @@
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/ParamChangeEvent.hpp>
 #include <audioapi/utils/BoundedPriorityQueue.hpp>
+#include <string>
+#include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 
@@ -16,7 +18,7 @@ class AudioParamEventQueue {
 
   /// @brief Push a new event to the back of the queue.
   /// @note Handles connecting the start value of the new event to the end value of the last event in the queue.
-  void push(ParamChangeEvent &&event);
+  Result<NoneType, std::string> push(ParamChangeEvent &&event);
 
   /// @brief Pop the front event from the queue.
   /// @return The front event in the queue.
@@ -62,6 +64,9 @@ class AudioParamEventQueue {
   };
 
   BoundedPriorityQueue<ParamChangeEvent, 32, ParamEventComparator> eventQueue_;
+
+  Result<NoneType, std::string> satisfiesCurveExclusion(const ParamChangeEvent &event) const;
+  inline void setEventEndValueToCurrentValue(ParamChangeEvent &event);
 };
 
 } // namespace audioapi

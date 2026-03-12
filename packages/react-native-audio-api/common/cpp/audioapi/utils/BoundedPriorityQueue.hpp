@@ -131,6 +131,12 @@ class BoundedPriorityQueue {
     return capacity_;
   }
 
+  /// @brief Peek at the i-th element in the internal buffer (heap order, not sorted).
+  /// @note Intended for iterating over all elements without removing them.
+  [[nodiscard]] inline const T &peekAt(size_t i) const noexcept {
+    return buffer_[i].data;
+  }
+
  private:
   // Internal wrapper to track arrival order
   struct TimestampedElement {
