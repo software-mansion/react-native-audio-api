@@ -263,7 +263,7 @@ class AlignedAudioArray {
       const AlignedAudioArray<OtherAlignment> &kernel,
       size_t startIndex = 0) const {
     if (kernel.size_ > size_ - startIndex) [[unlikely]] {
-      throw std::out_of_range("Kernal size exceeds available data for convolution.");
+      throw std::out_of_range("Kernel size exceeds available data for convolution.");
     }
     return dsp::computeConvolution(alignedData() + startIndex, kernel.alignedData(), kernel.size_);
   }
