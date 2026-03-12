@@ -8,10 +8,10 @@
 
 namespace audioapi {
 
-/// @brief A bounded priority queue (min-heap) with fixed capacity.
+/// @brief A bounded priority queue (min-heap) with fixed capacity. When full, new elements are rejected. When popping, the highest priority element is removed and returned.
 /// @tparam T The type of elements stored in the queue.
 /// @tparam capacity_ The maximum number of elements. Must be a power of two greater than zero.
-/// @tparam Compare Comparator type. Defaults to std::less<T> (min-heap: smallest element at top).
+/// @tparam Compare Comparator type. Defaults to std::less<T> (min-heap: smallest element at top). The queue implements a stable priority order meaning that if two elements compare equal, the one that was inserted earlier will be popped first.
 /// @note This implementation is NOT thread-safe.
 /// @note Capacity must be a power of two and greater than zero.
 template <typename T, size_t capacity_, typename Compare = std::less<T>>
@@ -42,7 +42,7 @@ class BoundedPriorityQueue {
     if (isFull()) [[unlikely]] {
       return false;
     }
-    new (&buffer_[size_]) T(std::forward<U>(value));
+    new (&buffer_[size_]) TimestampedElement(std::forward<U>(value), globalCounter_++);
     siftUp(size_);
     ++size_;
     return true;
@@ -51,8 +51,8 @@ class BoundedPriorityQueue {
   /// @brief Pop the top (highest priority) element and retrieve it.
   /// @param out The popped element.
   /// @return True if popped successfully, false if the queue is empty.
-  bool pop(T &out) noexcept(std::is_nothrow_move_constructible_v<T> &&
-                            std::is_nothrow_destructible_v<T>) {
+  bool pop(T &out) noexcept(
+      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[unlikely]] {
       return false;
     }
@@ -85,14 +85,26 @@ class BoundedPriorityQueue {
 
   /// @brief Peek at the top (highest priority) element without removing it.
   /// @return A const reference to the top element.
-  [[nodiscard]] inline const T &peek() const noexcept {
+  [[nodiscard]] inline const T &peekFront() const noexcept {
     return buffer_[0];
   }
 
-  /// @brief Peek at the top (highest priority) element without removing it.
-  /// @return A mutable reference to the top element.
-  [[nodiscard]] inline T &peekMut() noexcept {
-    return buffer_[0];
+  /// @brief Peek at the last (lowest priority) element without removing it.
+  /// @return A reference to the last element.
+  [[nodiscard]] inline T &peekFrontMut() noexcept {
+    return buffer_[size_ - 1];
+  }
+
+  /// @brief Peek at the last (lowest priority) element without removing it.
+  /// @return A reference to the last element.
+  [[nodiscard]] inline const T &peekBack() const noexcept {
+    return buffer_[size_ - 1];
+  }
+
+  /// @brief Peek at the last (lowest priority) element without removing it.
+  /// @return A reference to the last element.
+  [[nodiscard]] inline T &peekBackMut() noexcept {
+    return buffer_[size_ - 1];
   }
 
   /// @brief Check if the queue is empty.
@@ -120,9 +132,30 @@ class BoundedPriorityQueue {
   }
 
  private:
-  T *buffer_;
+  // Internal wrapper to track arrival order
+  struct TimestampedElement {
+    T data;
+    uint64_t insertionOrder;
+
+    // Use the provided Compare for T, but fall back to insertionOrder for ties
+    struct InternalCompare {
+      Compare userComp;
+      bool operator()(const TimestampedElement &a, const TimestampedElement &b) const {
+        if (userComp(a.data, b.data)) {
+          return true;
+        }
+        if (userComp(b.data, a.data)) {
+          return false;
+        }
+        return a.insertionOrder < b.insertionOrder;
+      }
+    };
+  };
+
+  TimestampedElement *buffer_;
   size_t size_;
-  Compare compare_;
+  uint64_t globalCounter_ = 0;
+  typename TimestampedElement::InternalCompare compare_;
 
   static constexpr bool isPowerOfTwo(size_t n) {
     return std::has_single_bit(n);
