@@ -6,9 +6,9 @@ namespace audioapi {
 
 AudioParamEventQueue::AudioParamEventQueue() : eventQueue_() {}
 
-void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
+void AudioParamEventQueue::push(ParamChangeEvent &&event) {
   if (eventQueue_.isEmpty()) {
-    eventQueue_.pushBack(std::move(event));
+    eventQueue_.push(std::move(event));
     return;
   }
   auto &prev = eventQueue_.peekBackMut();
@@ -24,11 +24,11 @@ void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
         event.getStartTime()));
   }
   event.setStartValue(prev.getEndValue());
-  eventQueue_.pushBack(std::move(event));
+  eventQueue_.push(std::move(event));
 }
 
-bool AudioParamEventQueue::popFront(ParamChangeEvent &event) {
-  return eventQueue_.popFront(event);
+bool AudioParamEventQueue::pop(ParamChangeEvent &event) {
+  return eventQueue_.pop(event);
 }
 
 void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
@@ -39,7 +39,7 @@ void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
     }
     if (back.getStartTime() >= cancelTime ||
         back.getType() == ParamChangeEventType::SET_VALUE_CURVE) {
-      eventQueue_.popBack();
+      eventQueue_.pop();
     }
   }
 }
@@ -50,7 +50,7 @@ void AudioParamEventQueue::cancelAndHoldAtTime(double cancelTime, double &endTim
     if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {
       break;
     }
-    eventQueue_.popBack();
+    eventQueue_.pop();
   }
 
   if (eventQueue_.isEmpty()) {

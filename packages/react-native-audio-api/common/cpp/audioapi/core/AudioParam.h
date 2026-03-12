@@ -138,7 +138,7 @@ class AudioParam {
   /// @param event The new event to add to the queue.
   /// @note Handles connecting start value of the new event to the end value of the previous event.
   inline void updateQueue(ParamChangeEvent &&event) {
-    eventsQueue_.pushBack(std::move(event));
+    eventsQueue_.push(std::move(event));
   }
   float getValueAtTime(double time);
   void processInputs(

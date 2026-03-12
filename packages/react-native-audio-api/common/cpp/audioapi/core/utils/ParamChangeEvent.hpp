@@ -47,6 +47,12 @@ class ParamChangeEvent {
     return *this;
   }
 
+  [[nodiscard]] inline double getAutomationEventTime() const noexcept {
+    bool isRamp = type_ == ParamChangeEventType::LINEAR_RAMP ||
+        type_ == ParamChangeEventType::EXPONENTIAL_RAMP;
+
+    return isRamp ? endTime_ : startTime_;
+  }
   [[nodiscard]] inline double getEndTime() const noexcept {
     return endTime_;
   }

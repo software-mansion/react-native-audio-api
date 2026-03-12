@@ -2,7 +2,7 @@
 
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/ParamChangeEvent.hpp>
-#include <audioapi/utils/RingBiDirectionalBuffer.hpp>
+#include <audioapi/utils/BoundedPriorityQueue.hpp>
 
 namespace audioapi {
 
@@ -16,11 +16,11 @@ class AudioParamEventQueue {
 
   /// @brief Push a new event to the back of the queue.
   /// @note Handles connecting the start value of the new event to the end value of the last event in the queue.
-  void pushBack(ParamChangeEvent &&event);
+  void push(ParamChangeEvent &&event);
 
   /// @brief Pop the front event from the queue.
   /// @return The front event in the queue.
-  bool popFront(ParamChangeEvent &event);
+  bool pop(ParamChangeEvent &event);
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
@@ -55,9 +55,13 @@ class AudioParamEventQueue {
   }
 
  private:
-  /// @brief The queue of parameter change events.
-  /// @note INVARIANT it always holds non-overlapping events sorted by start time.
-  RingBiDirectionalBuffer<ParamChangeEvent, 32> eventQueue_;
+  struct ParamEventComparator {
+    bool operator()(const ParamChangeEvent &a, const ParamChangeEvent &b) const {
+      return a.getAutomationEventTime() < b.getAutomationEventTime();
+    }
+  };
+
+  BoundedPriorityQueue<ParamChangeEvent, 32, ParamEventComparator> eventQueue_;
 };
 
 } // namespace audioapi

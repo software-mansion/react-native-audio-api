@@ -38,7 +38,7 @@ float AudioParam::getValueAtTime(double time) {
   // next event
   if (endTime_ < time && !eventsQueue_.isEmpty()) {
     ParamChangeEvent event;
-    eventsQueue_.popFront(event);
+    eventsQueue_.pop(event);
     startTime_ = event.getStartTime();
     endTime_ = event.getEndTime();
     startValue_ = event.getStartValue();
