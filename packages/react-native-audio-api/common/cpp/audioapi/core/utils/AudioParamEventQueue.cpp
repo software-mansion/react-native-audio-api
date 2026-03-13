@@ -95,16 +95,15 @@ Result<NoneType, std::string> AudioParamEventQueue::satisfiesCurveExclusion(
     // 1. Check if existing curve blocks the new event
     // Any automation method called at a time in [T, T+D) of an existing curve is not allowed
     if (existing.getType() == ParamChangeEventType::SET_VALUE_CURVE) {
-      double existingD = existing.getEndTime() -
-          existing.getStartTime(); // TODO: is arthimetic on floating point safe here?
-      if (newT >= existingT && newT < (existingT + existingD)) {
+      double existingEndTime = existing.getEndTime();
+      if (newT >= existingT && newT < existingEndTime) {
         return Err(
             std::format(
                 "Cannot schedule event {} at time {} because it overlaps with an existing SetValueCurveAtTime event from {} to {}",
                 static_cast<int>(event.getType()), // TODO add event type to string conversion
                 newT,
                 existingT,
-                existingT + existingD));
+                existingEndTime));
       }
     }
 
