@@ -18,7 +18,7 @@ namespace audioapi::utils::graph {
 /// @tparam N Maximum size in bytes of the object that can be stored.
 template <size_t N>
 struct DisposalPayload {
-  alignas(std::max_align_t) unsigned char data[N];
+  alignas(std::max_align_t) std::byte data[N];
   void (*destructor)(void *); // type-erased destructor
 
   /// @brief Sentinel check — a null destructor means "shutdown".
@@ -64,10 +64,6 @@ template <size_t N>
 class DisposerImpl : public Disposer<N> {
   using Payload = DisposalPayload<N>;
 
-  using Receiver = audioapi::channels::spsc::Receiver<
-      Payload,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
   using Sender = audioapi::channels::spsc::Sender<
       Payload,
       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,

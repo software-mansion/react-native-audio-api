@@ -136,8 +136,9 @@ class HostGraph {
 
 template <AudioGraphNode NodeType>
 bool HostGraph<NodeType>::TraversalState::visit(size_t currentTerm) {
-  if (term == currentTerm)
+  if (term == currentTerm) {
     return false;
+  }
   term = currentTerm;
   return true;
 }
@@ -158,8 +159,9 @@ HostGraph<NodeType>::Node::~Node() {
 
 template <AudioGraphNode NodeType>
 HostGraph<NodeType>::~HostGraph() {
-  for (Node *n : nodes)
+  for (Node *n : nodes) {
     delete n;
+  }
   nodes.clear();
 }
 
@@ -173,8 +175,9 @@ HostGraph<NodeType>::HostGraph(HostGraph &&other) noexcept
 template <AudioGraphNode NodeType>
 auto HostGraph<NodeType>::operator=(HostGraph &&other) noexcept -> HostGraph & {
   if (this != &other) {
-    for (Node *n : nodes)
+    for (Node *n : nodes) {
       delete n;
+    }
     nodes = std::move(other.nodes);
     edgeCount_ = other.edgeCount_;
     last_term = other.last_term;
@@ -251,8 +254,9 @@ auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
   }
 
   auto itOut = std::find(from->outputs.begin(), from->outputs.end(), to);
-  if (itOut == from->outputs.end())
+  if (itOut == from->outputs.end()) {
     return Res::Err(ResultError::EDGE_NOT_FOUND);
+  }
 
   auto itIn = std::find(to->inputs.begin(), to->inputs.end(), from);
   if (itIn != to->inputs.end()) {
@@ -269,8 +273,9 @@ auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
 
 template <AudioGraphNode NodeType>
 bool HostGraph<NodeType>::hasPath(Node *start, Node *end) {
-  if (start == end)
+  if (start == end) {
     return true;
+  }
 
   last_term++;
   size_t term = last_term;
@@ -283,8 +288,9 @@ bool HostGraph<NodeType>::hasPath(Node *start, Node *end) {
     Node *curr = stack.back();
     stack.pop_back();
 
-    if (curr == end)
+    if (curr == end) {
       return true;
+    }
 
     for (Node *out : curr->outputs) {
       if (out->traversalState.visit(term)) {

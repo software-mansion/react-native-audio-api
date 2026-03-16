@@ -153,8 +153,8 @@ class Graph {
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
 
   // Aligning to cache line size to prevent false sharing between audio and main thread
-  alignas(64) AudioGraph<NodeType> audioGraph;
-  alignas(64) HostGraph<NodeType> hostGraph;
+  alignas(hardware_destructive_interference_size) AudioGraph<NodeType> audioGraph;
+  alignas(hardware_destructive_interference_size) HostGraph<NodeType> hostGraph;
 
   // ── Channel (immutable after construction — no false sharing) ───────────
 
@@ -178,7 +178,8 @@ class Graph {
   /// on a separate thread — never on the audio thread.
   void sendPoolGrowIfNeeded() {
     auto edges = static_cast<std::uint32_t>(hostGraph.edgeCount());
-    if (edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0)) {
+    // edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0) left for clarity
+    if (edges > poolCapacity_ / 2) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
       auto buf = std::make_unique<InputPool::Slot[]>(newCap);
       eventSender_.send(

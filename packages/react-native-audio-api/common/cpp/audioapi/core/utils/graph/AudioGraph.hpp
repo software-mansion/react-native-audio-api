@@ -1,10 +1,12 @@
 #pragma once
 
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/InputPool.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
 #include <algorithm>
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <iterator>
 #include <memory>
@@ -15,9 +17,7 @@
 namespace audioapi::utils::graph {
 
 template <typename T>
-concept AudioGraphNode = requires(T t) {
-  { t.canBeDestructed() } -> std::convertible_to<bool>;
-};
+concept AudioGraphNode = std::derived_from<T, ::audioapi::AudioNode>;
 
 /// @brief Cache-friendly, index-stable node storage with in-place topological sort.
 ///

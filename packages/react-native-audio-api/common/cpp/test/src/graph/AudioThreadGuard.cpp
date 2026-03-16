@@ -102,38 +102,40 @@ bool AudioThreadGuard::Scope::clean() const {
 #if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \
     !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer)
 
-void *operator new(std::size_t size) {
+void *allocate_with_thread_guard(std::size_t size) {
   audioapi::test::AudioThreadGuard::recordAllocation();
   void *p = std::malloc(size);
   if (!p) throw std::bad_alloc();
   return p;
+}
+
+void deallocate_with_thread_guard(void *p) noexcept {
+  audioapi::test::AudioThreadGuard::recordDeallocation();
+  std::free(p);
+}
+
+void *operator new(std::size_t size) {
+  return allocate_with_thread_guard(size);
 }
 
 void *operator new[](std::size_t size) {
-  audioapi::test::AudioThreadGuard::recordAllocation();
-  void *p = std::malloc(size);
-  if (!p) throw std::bad_alloc();
-  return p;
+  return allocate_with_thread_guard(size);
 }
 
 void operator delete(void *p) noexcept {
-  audioapi::test::AudioThreadGuard::recordDeallocation();
-  std::free(p);
+  deallocate_with_thread_guard(p);
 }
 
 void operator delete[](void *p) noexcept {
-  audioapi::test::AudioThreadGuard::recordDeallocation();
-  std::free(p);
+  deallocate_with_thread_guard(p);
 }
 
 void operator delete(void *p, std::size_t) noexcept {
-  audioapi::test::AudioThreadGuard::recordDeallocation();
-  std::free(p);
+  deallocate_with_thread_guard(p);
 }
 
 void operator delete[](void *p, std::size_t) noexcept {
-  audioapi::test::AudioThreadGuard::recordDeallocation();
-  std::free(p);
+  deallocate_with_thread_guard(p);
 }
 
 #endif // sanitizer guard

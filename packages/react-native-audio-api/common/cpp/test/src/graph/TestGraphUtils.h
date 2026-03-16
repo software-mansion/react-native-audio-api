@@ -5,9 +5,11 @@
 #define RN_AUDIO_API_TEST true // for intellisense
 #endif
 
+#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
 #include <audioapi/core/utils/graph/HostNode.hpp>
+#include <test/src/MockAudioEventHandlerRegistry.h>
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -19,12 +21,24 @@
 namespace audioapi::utils::graph {
 
 // ── MockNode ──────────────────────────────────────────────────────────────
-// Minimal type satisfying AudioGraphNode concept. No dependency on AudioNode.
+// Minimal AudioNode-derived type used by graph tests.
 
-struct MockNode {
-  explicit MockNode(bool destructible = true) : destructible_(destructible) {}
+inline std::shared_ptr<BaseAudioContext> getGraphTestContext() {
+  static std::shared_ptr<BaseAudioContext> context = [] {
+    auto eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
+    auto ctx =
+        std::make_shared<OfflineAudioContext>(2, 1024, 44100.0f, eventRegistry, RuntimeRegistry{});
+    ctx->initialize();
+    return ctx;
+  }();
+  return context;
+}
 
-  [[nodiscard]] bool canBeDestructed() const {
+struct MockNode : AudioNode {
+  explicit MockNode(bool destructible = true)
+      : AudioNode(getGraphTestContext()), destructible_(destructible) {}
+
+  [[nodiscard]] bool canBeDestructed() const override {
     return destructible_.load(std::memory_order_acquire);
   }
 
@@ -34,6 +48,11 @@ struct MockNode {
   }
 
  private:
+  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int)
+      override {
+    return processingBus;
+  }
+
   std::atomic<bool> destructible_;
 };
 

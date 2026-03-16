@@ -16,7 +16,7 @@ yarn test:graph:docker
 
 
 ## Tips and tricks
-As running docker tests takes forevewer it is recommended to relly on CI/CD. Tests without docker does not have ASAN and may not catch memory leaks or address realated issues. So if anny of these issues occur in CI/CD here is how you can run single test with docker to debug it locally:
+As running docker tests takes forevewer it is recommended to relly on CI/CD. Tests without docker does not have ASAN and may not catch memory leaks or address realated issues. So if any of these issues occur in CI/CD here is how you can run single test with docker to debug it locally:
 add the following line to the `RunTestsGraphDocker.sh` file in docker command:
 
 ```bash

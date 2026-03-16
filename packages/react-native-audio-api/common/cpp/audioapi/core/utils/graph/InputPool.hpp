@@ -108,6 +108,7 @@ class InputPool {
 
   /// @brief Remove all elements where `pred(val)` returns true.
   template <typename Pred>
+    requires(std::predicate<Pred, std::uint32_t>)
   void removeIf(std::uint32_t &head, Pred pred);
 
   /// @brief Free every slot in the list back to the free list.
@@ -258,6 +259,7 @@ inline bool InputPool::remove(std::uint32_t &head, std::uint32_t inputVal) {
 }
 
 template <typename Pred>
+  requires(std::predicate<Pred, std::uint32_t>)
 void InputPool::removeIf(std::uint32_t &head, Pred pred) {
   std::uint32_t *prev = &head;
   std::uint32_t curr = head;

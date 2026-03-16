@@ -1,6 +1,6 @@
-
 #include <gtest/gtest.h>
 #include <audioapi/utils/FatFunction.hpp>
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <stdexcept>
@@ -26,10 +26,13 @@ class FatFunctionTest : public ::testing::Test {
 TEST(FatFunctionTest, BasicFunctionality) {
   FatFunction<64, IntOp> add = [](int a, int b) { return a + b; };
   EXPECT_EQ(add(2, 3), 5);
-  // Account for alignment padding
+  // FatFunction contains both raw storage and function pointers.
+  // The compiler may add tail padding so each instance still satisfies
+  // alignof(std::max_align_t), especially when objects are placed in arrays.
+  // We therefore compare against the aligned size, not just the raw field sum.
   constexpr size_t dataSize = 64 + sizeof(void*) * 3;
   constexpr size_t alignment = alignof(std::max_align_t);
-  constexpr size_t expectedSize = (dataSize + alignment - 1) & ~(alignment - 1);
+  constexpr size_t expectedSize = ((dataSize + alignment - 1) / alignment) * alignment;
   EXPECT_EQ(sizeof(add), expectedSize);
 }
 
