@@ -32,25 +32,25 @@ class AudioParamEventQueue {
 
   /// @brief Get the first event in the queue.
   /// @return The first event in the queue.
-  inline const ParamChangeEvent &front() const noexcept {
+  [[nodiscard]] const ParamChangeEvent &front() const noexcept {
     return eventQueue_.peekFront();
   }
 
   /// @brief Get the last event in the queue.
   /// @return The last event in the queue.
-  inline const ParamChangeEvent &back() const noexcept {
+  [[nodiscard]] const ParamChangeEvent &back() const noexcept {
     return eventQueue_.peekBack();
   }
 
   /// @brief Check if the event queue is empty.
   /// @return True if the queue is empty, false otherwise.
-  inline bool isEmpty() const noexcept {
+  [[nodiscard]] bool isEmpty() const noexcept {
     return eventQueue_.isEmpty();
   }
 
   /// @brief Check if the event queue is full.
   /// @return True if the queue is full, false otherwise.
-  inline bool isFull() const noexcept {
+  [[nodiscard]] bool isFull() const noexcept {
     return eventQueue_.isFull();
   }
 

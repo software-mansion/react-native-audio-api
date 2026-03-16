@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Macros.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
 #include <cstddef>
@@ -20,10 +21,11 @@ class BaseResampler {
  private:
   std::vector<std::unique_ptr<CDSPResampler24>> resamplers_;
   std::vector<std::vector<double>> inputBuffers_;
+  static constexpr int DEFAULT_MAX_IN_LEN = 2048;
 
  protected:
-  BaseResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
-  int process(const std::vector<float *> &input, int length, std::vector<float *> &output);
+  BaseResampler(double srcRate, double dstRate, int numChannels, int maxInLen = DEFAULT_MAX_IN_LEN);
+  int process(std::vector<float *> &input, int length, std::vector<float *> &output);
 
  public:
   virtual ~BaseResampler() = default;
@@ -33,15 +35,17 @@ class BaseResampler {
 
 class MultiChannelResampler : public BaseResampler {
  public:
-  MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048);
+  MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen);
   ~MultiChannelResampler() = default;
-  int process(const audioapi::AudioBuffer &input, int length, audioapi::AudioBuffer &output);
+  DELETE_COPY_AND_MOVE(MultiChannelResampler);
+  int process(audioapi::AudioBuffer &input, int length, audioapi::AudioBuffer &output);
 };
 
 class SingleChannelResampler : public BaseResampler {
  public:
-  SingleChannelResampler(double srcRate, double dstRate, int maxInLen = 2048);
+  SingleChannelResampler(double srcRate, double dstRate, int maxInLen);
   ~SingleChannelResampler() = default;
-  int process(const audioapi::AudioArray &input, int length, audioapi::AudioArray &output);
+  DELETE_COPY_AND_MOVE(SingleChannelResampler);
+  int process(audioapi::AudioArray &input, int length, audioapi::AudioArray &output);
 };
 } // namespace r8b

@@ -79,7 +79,7 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer;
   playbackRateBuffer_ = playbackRateBuffer;
   audioBuffer_ = audioBuffer;
-  channelCount_ = buffer_->getNumberOfChannels();
+  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
 }
 
@@ -150,6 +150,7 @@ void AudioBufferSourceNode::sendOnLoopEndedEvent() {
  * Helper functions
  */
 
+// todo: refactor so its less complex and more readable
 void AudioBufferSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,

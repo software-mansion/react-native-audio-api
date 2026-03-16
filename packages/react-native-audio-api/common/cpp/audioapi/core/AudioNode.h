@@ -78,7 +78,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  size_t channelCount_ = 2;
+  int channelCount_ = 2;
   const ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;

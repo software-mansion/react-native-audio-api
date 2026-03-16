@@ -18,7 +18,6 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      eventsQueue_(),
       startTime_(0),
       endTime_(0),
       startValue_(defaultValue),
@@ -236,16 +235,17 @@ std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, 
   auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return processingBuffer;
+  }
   float sampleRate = context->getSampleRate();
   auto bufferData = processingBuffer->getChannel(0)->span();
-  float timeCache = time;
+  double timeCache = time;
   float timeStep = 1.0f / sampleRate;
   float sample = 0.0f;
 
   // Add automated parameter value to each sample
-  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     sample = getValueAtTime(timeCache);
     bufferData[i] += sample;
   }
@@ -264,8 +264,7 @@ void AudioParam::processInputs(
     const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
-    auto inputNode = *it;
+  for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {

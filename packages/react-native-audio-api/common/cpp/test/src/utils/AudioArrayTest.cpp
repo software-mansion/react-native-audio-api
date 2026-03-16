@@ -9,6 +9,8 @@ using namespace audioapi;
 
 static constexpr size_t ARR_SIZE = 128;
 
+// NOLINTBEGIN
+
 class AudioArrayTest : public ::testing::Test {
  protected:
   static void fill(AudioArray &arr, float value) {
@@ -611,3 +613,5 @@ TEST_F(AudioArrayTest, ComputeConvolutionThrowsOnOutOfRange) {
   AudioArray kernel(4);
   EXPECT_THROW(auto x = signal.computeConvolution(kernel, 2), std::out_of_range);
 }
+
+// NOLINTEND

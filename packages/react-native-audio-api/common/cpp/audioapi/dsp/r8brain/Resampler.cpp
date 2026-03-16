@@ -11,7 +11,7 @@ BaseResampler::BaseResampler(double srcRate, double dstRate, int numChannels, in
   }
 }
 
-int BaseResampler::process(const std::vector<float *> &input, int l, std::vector<float *> &output) {
+int BaseResampler::process(std::vector<float *> &input, int l, std::vector<float *> &output) {
   int outLen = 0;
   const size_t numChannels = resamplers_.size();
 
@@ -55,7 +55,7 @@ MultiChannelResampler::MultiChannelResampler(
     : BaseResampler(srcRate, dstRate, numChannels, maxInLen) {}
 
 int MultiChannelResampler::process(
-    const audioapi::AudioBuffer &input,
+    audioapi::AudioBuffer &input,
     int l,
     audioapi::AudioBuffer &output) {
   const size_t numChannels = input.getNumberOfChannels();
@@ -72,12 +72,12 @@ SingleChannelResampler::SingleChannelResampler(double srcRate, double dstRate, i
     : BaseResampler(srcRate, dstRate, 1, maxInLen) {}
 
 int SingleChannelResampler::process(
-    const audioapi::AudioArray &input,
+    audioapi::AudioArray &input,
     int l,
     audioapi::AudioArray &output) {
   std::vector<float *> inputPtrs(1);
   std::vector<float *> outputPtrs(1);
-  inputPtrs[0] = const_cast<float *>(input.begin());
+  inputPtrs[0] = input.begin();
   outputPtrs[0] = output.begin();
   return BaseResampler::process(inputPtrs, l, outputPtrs);
 }

@@ -7,6 +7,7 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
 static const float SQRT_HALF = sqrtf(0.5f);
 static constexpr size_t BUF_SIZE = 10;
 static constexpr float SR = 44100.0f;
@@ -632,3 +633,5 @@ TEST_F(AudioBufferTest, DeinterleaveZeroFramesIsNoop) {
   buf.deinterleaveFrom(dummy, 0);
   expectChannel(buf, 0, 42.0f);
 }
+
+// NOLINTEND

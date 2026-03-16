@@ -47,33 +47,33 @@ class ParamChangeEvent {
     return *this;
   }
 
-  [[nodiscard]] inline double getEndTime() const noexcept {
+  [[nodiscard]] double getEndTime() const noexcept {
     return endTime_;
   }
-  [[nodiscard]] inline double getStartTime() const noexcept {
+  [[nodiscard]] double getStartTime() const noexcept {
     return startTime_;
   }
-  [[nodiscard]] inline float getEndValue() const noexcept {
+  [[nodiscard]] float getEndValue() const noexcept {
     return endValue_;
   }
-  [[nodiscard]] inline float getStartValue() const noexcept {
+  [[nodiscard]] float getStartValue() const noexcept {
     return startValue_;
   }
-  [[nodiscard]] inline const std::function<float(double, double, float, float, double)> &
+  [[nodiscard]] const std::function<float(double, double, float, float, double)> &
   getCalculateValue() const noexcept {
     return calculateValue_;
   }
-  [[nodiscard]] inline ParamChangeEventType getType() const noexcept {
+  [[nodiscard]] ParamChangeEventType getType() const noexcept {
     return type_;
   }
 
-  inline void setEndTime(double endTime) noexcept {
+  void setEndTime(double endTime) noexcept {
     endTime_ = endTime;
   }
-  inline void setStartValue(float startValue) noexcept {
+  void setStartValue(float startValue) noexcept {
     startValue_ = startValue;
   }
-  inline void setEndValue(float endValue) noexcept {
+  void setEndValue(float endValue) noexcept {
     endValue_ = endValue;
   }
 
@@ -83,7 +83,7 @@ class ParamChangeEvent {
   std::function<float(double, double, float, float, double)> calculateValue_;
   float startValue_ = 0.0f;
   float endValue_ = 0.0f;
-  ParamChangeEventType type_;
+  ParamChangeEventType type_ = ParamChangeEventType::SET_VALUE;
 };
 
 } // namespace audioapi

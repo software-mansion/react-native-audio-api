@@ -163,8 +163,7 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
   processingBuffer->zero();
 
   size_t maxNumberOfChannels = 0;
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
-    auto inputNode = *it;
+  for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {

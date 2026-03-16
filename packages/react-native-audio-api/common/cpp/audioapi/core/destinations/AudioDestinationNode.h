@@ -30,7 +30,7 @@ class AudioDestinationNode : public AudioNode {
   // processNode function is not necessary and is never called.
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
-      int) final {
+      int framesToProcess) final {
     return processingBuffer;
   };
 

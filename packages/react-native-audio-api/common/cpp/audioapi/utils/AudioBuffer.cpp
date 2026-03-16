@@ -9,9 +9,11 @@
 #include <utility>
 #include <vector>
 
+//NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+
 namespace audioapi {
 
-const float SQRT_HALF = sqrtf(0.5f);
+const float SQRT_HALF = sqrtf(0.5f); //NOLINT(bugprone-throwing-static-initialization)
 constexpr int BLOCK_SIZE = 64;
 
 AudioBuffer::AudioBuffer(size_t size, int numberOfChannels, float sampleRate)
@@ -192,7 +194,7 @@ void AudioBuffer::deinterleaveFrom(const float *source, size_t frames) {
     return;
   }
 
-  float *channelsPtrs[MAX_CHANNEL_COUNT];
+  std::array<float *, MAX_CHANNEL_COUNT> channelsPtrs{};
   for (size_t i = 0; i < numberOfChannels_; ++i) {
     channelsPtrs[i] = channels_[i]->begin();
   }
@@ -223,7 +225,7 @@ void AudioBuffer::interleaveTo(float *destination, size_t frames) const {
     return;
   }
 
-  float *channelsPtrs[MAX_CHANNEL_COUNT];
+  std::array<float *, MAX_CHANNEL_COUNT> channelsPtrs{};
   for (size_t i = 0; i < numberOfChannels_; ++i) {
     channelsPtrs[i] = channels_[i]->begin();
   }
@@ -379,3 +381,5 @@ void AudioBuffer::sumByDownMixing(
 }
 
 } // namespace audioapi
+
+//NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)

@@ -4,7 +4,7 @@
 
 namespace audioapi {
 
-AudioParamEventQueue::AudioParamEventQueue() : eventQueue_() {}
+AudioParamEventQueue::AudioParamEventQueue() = default;
 
 void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
   if (eventQueue_.isEmpty()) {
@@ -33,7 +33,7 @@ bool AudioParamEventQueue::popFront(ParamChangeEvent &event) {
 
 void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
   while (!eventQueue_.isEmpty()) {
-    auto &back = eventQueue_.peekBack();
+    const auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime) {
       break;
     }
@@ -46,7 +46,7 @@ void AudioParamEventQueue::cancelScheduledValues(double cancelTime) {
 
 void AudioParamEventQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
-    auto &back = eventQueue_.peekBack();
+    const auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {
       break;
     }

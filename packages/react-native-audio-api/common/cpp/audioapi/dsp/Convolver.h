@@ -21,7 +21,7 @@ class Convolver {
   bool init(size_t blockSize, const AudioArray &ir, size_t irLen);
   void process(const AudioArray &input, AudioArray &output);
   void reset();
-  [[nodiscard]] inline size_t getSegCount() const {
+  [[nodiscard]] size_t getSegCount() const {
     return _trueSegmentCount;
   }
 

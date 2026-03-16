@@ -15,7 +15,8 @@ class AudioArrayBuffer;
 
 class AudioBuffer {
  public:
-  enum {
+  //NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+  enum : uint8_t {
     ChannelMono = 0,
     ChannelLeft = 0,
     ChannelRight = 1,
@@ -147,6 +148,7 @@ class AudioBuffer {
   float sampleRate_ = 0.0f;
   size_t size_ = 0;
 
+  //NOLINTNEXTLINE(bugprone-throwing-static-initialization)
   inline static const std::unordered_map<size_t, std::vector<int>> kChannelLayouts = {
       {1, {ChannelMono}},
       {2, {ChannelLeft, ChannelRight}},

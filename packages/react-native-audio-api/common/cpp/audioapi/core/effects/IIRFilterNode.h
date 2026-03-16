@@ -64,7 +64,7 @@ class IIRFilterNode : public AudioNode {
 
   AudioBuffer xBuffers_;
   AudioBuffer yBuffers_;
-  AudioArray bufferIndices_;
+  std::array<size_t, bufferLength> bufferIndices_;
 
   static std::complex<float>
   evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {

@@ -193,7 +193,7 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
   auto eventObject = jsi::Object(*runtime_);
 
   for (const auto &pair : body) {
-    const auto name = pair.first.data();
+    const auto *name = pair.first.data();
     const auto &value = pair.second;
 
     if (std::holds_alternative<int>(value)) {

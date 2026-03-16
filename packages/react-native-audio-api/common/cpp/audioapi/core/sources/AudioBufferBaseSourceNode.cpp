@@ -35,8 +35,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               MOST_POSITIVE_SINGLE_FLOAT,
               context)),
       vReadIndex_(0.0),
-      onPositionChangedInterval_(static_cast<int>(context->getSampleRate() * 0.1)) {}
-
+      onPositionChangedInterval_(
+          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL_SECONDS)) {}
 void AudioBufferBaseSourceNode::initStretch(
     const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch) {
   stretch_ = stretch;
@@ -55,8 +55,9 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedInterval_ =
-      static_cast<int>(getContextSampleRate() * static_cast<float>(interval) / 1000);
+  onPositionChangedInterval_ = static_cast<int>(
+      getContextSampleRate() * static_cast<float>(interval) *
+      1e-3f); //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 }
 
 int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
@@ -92,10 +93,14 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
   auto time = context->getCurrentTime();
-  auto playbackRate =
-      std::clamp(playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
-  auto detune =
-      std::clamp(detuneParam_->processKRateParam(framesToProcess, time) / 100.0f, -12.0f, 12.0f);
+  auto playbackRate = std::clamp(
+      playbackRateParam_->processKRateParam(framesToProcess, time),
+      MIN_PLAYBACK_RATE,
+      MAX_PLAYBACK_RATE);
+  auto detune = std::clamp(
+      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
+      static_cast<float>(-SEMITONES_PER_OCTAVE),
+      static_cast<float>(SEMITONES_PER_OCTAVE));
 
   playbackRateBuffer_->zero();
 
@@ -166,7 +171,9 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
 
 float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess, double time) {
   auto playbackRate = playbackRateParam_->processKRateParam(framesToProcess, time);
-  auto detune = std::pow(2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
+  auto detune = std::pow(
+      2.0f, //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+      detuneParam_->processKRateParam(framesToProcess, time) / static_cast<float>(OCTAVE_RANGE));
 
   return playbackRate * detune;
 }

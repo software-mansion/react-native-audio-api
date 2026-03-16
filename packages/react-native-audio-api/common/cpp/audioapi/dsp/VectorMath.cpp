@@ -41,7 +41,7 @@
 
 namespace audioapi::dsp {
 
-#if defined(HAVE_ACCELERATE)
+#ifdef HAVE_ACCELERATE
 
 void multiplyByScalar(
     const float *inputVector,
@@ -125,7 +125,7 @@ void interleaveStereo(
 
 #else
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 static inline bool is16ByteAligned(const float *vector) {
   return !(reinterpret_cast<uintptr_t>(vector) & 0x0F);
 }
@@ -205,7 +205,7 @@ void addScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -273,7 +273,7 @@ void add(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -378,7 +378,7 @@ void subtract(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -481,7 +481,7 @@ void multiply(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector1 address is not 16-byte aligned, the first several
   // frames (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -550,7 +550,7 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   size_t n = numberOfElementsToProcess;
   float max = 0;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -717,7 +717,7 @@ void deinterleaveStereo(
 
   size_t n = numberOfFrames;
 
-#if defined(HAVE_ARM_NEON_INTRINSICS)
+#ifdef HAVE_ARM_NEON_INTRINSICS
   // process 4 frames (8 samples) at a time using NEON
   size_t group = n / 4;
   while (group--) {

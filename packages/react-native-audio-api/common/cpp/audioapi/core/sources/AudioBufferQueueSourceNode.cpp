@@ -172,6 +172,7 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
  * Helper functions
  */
 
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -237,6 +238,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   }
 }
 
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithInterpolation(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -304,7 +306,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
         }
 
         context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
-        vReadIndex_ = vReadIndex_ - buffer->getSize();
+        vReadIndex_ = vReadIndex_ - static_cast<double>(buffer->getSize());
         data = buffers_.front();
         bufferId = data.first;
         buffer = data.second;

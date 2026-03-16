@@ -43,7 +43,7 @@ IIRFilterNode::IIRFilterNode(
       feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
       xBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
       yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      bufferIndices_(bufferLength) {
+      bufferIndices_() {
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -84,8 +84,10 @@ void IIRFilterNode::getFrequencyResponse(
     float omega = -PI * normalizedFreq;
     auto z = std::complex<float>(std::cos(omega), std::sin(omega));
 
-    auto numerator = IIRFilterNode::evaluatePolynomial(feedforward_, z, feedforward_.getSize() - 1);
-    auto denominator = IIRFilterNode::evaluatePolynomial(feedback_, z, feedback_.getSize() - 1);
+    auto numerator = IIRFilterNode::evaluatePolynomial(
+        feedforward_, z, static_cast<int>(feedforward_.getSize() - 1));
+    auto denominator =
+        IIRFilterNode::evaluatePolynomial(feedback_, z, static_cast<int>(feedback_.getSize() - 1));
     auto response = numerator / denominator;
 
     magResponseOutput[k] = std::abs(response);
@@ -101,7 +103,7 @@ void IIRFilterNode::getFrequencyResponse(
 std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
     const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  int numChannels = processingBuffer->getNumberOfChannels();
+  int numChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
 
   size_t feedforwardLength = feedforward_.getSize();
   size_t feedbackLength = feedback_.getSize();
@@ -122,7 +124,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
       float y_n = feedforward_[0] * sample;
 
       for (k = 1; k < minLength; ++k) {
-        int m = (bufferIndex - k) & mask;
+        size_t m = (bufferIndex - k) & mask;
         y_n = std::fma(feedforward_[k], x[m], y_n);
         y_n = std::fma(-feedback_[k], y[m], y_n);
       }
@@ -135,6 +137,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
       }
 
       // Avoid denormalized numbers
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       if (std::abs(y_n) < 1e-15f) {
         y_n = 0.0f;
       }

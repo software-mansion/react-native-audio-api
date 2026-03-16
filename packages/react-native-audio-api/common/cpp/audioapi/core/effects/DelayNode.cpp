@@ -43,7 +43,8 @@ void DelayNode::delayBufferOperation(
 
   // handle buffer wrap around
   if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
-    int framesToEnd = operationStartingIndex + framesToProcess - delayBuffer_->getSize();
+    int framesToEnd =
+        static_cast<int>(operationStartingIndex + framesToProcess - delayBuffer_->getSize());
 
     if (action == BufferAction::WRITE) {
       delayBuffer_->sum(

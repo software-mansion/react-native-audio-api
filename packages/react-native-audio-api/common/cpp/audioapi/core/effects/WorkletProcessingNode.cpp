@@ -27,7 +27,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
     int framesToProcess) {
   size_t channelCount = std::min(
       static_cast<size_t>(2), // Fixed to stereo for now
-      static_cast<size_t>(processingBuffer->getNumberOfChannels()));
+      processingBuffer->getNumberOfChannels());
 
   // Copy input data to pre-allocated input buffers
   for (size_t ch = 0; ch < channelCount; ch++) {
@@ -53,7 +53,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
-        float time = 0.0f;
+        double time = 0.0f;
         if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
           time = context->getCurrentTime();
         }
@@ -66,7 +66,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
 
   // Copy processed output data back to the processing buffer or zero on failure
   for (size_t ch = 0; ch < channelCount; ch++) {
-    auto channelData = processingBuffer->getChannel(ch);
+    auto *channelData = processingBuffer->getChannel(ch);
 
     if (result.has_value()) {
       // Copy processed output data

@@ -3,9 +3,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 
-#include <atomic>
 #include <memory>
-#include <mutex>
 
 namespace audioapi {
 
@@ -43,6 +41,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
   std::shared_ptr<AudioBuffer> playbackRateBuffer_;
+  static constexpr float MAX_PLAYBACK_RATE = 3.0f;
+  static constexpr float MIN_PLAYBACK_RATE = 0.0f;
 
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
@@ -54,6 +54,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
+  static constexpr float ON_POSITION_CHANGED_INTERVAL_SECONDS = 0.1f;
 
   virtual double getCurrentPosition() const = 0;
 

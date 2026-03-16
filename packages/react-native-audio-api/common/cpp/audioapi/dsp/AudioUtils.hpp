@@ -35,6 +35,7 @@ namespace audioapi::dsp {
 
 [[nodiscard]] inline float decibelsToLinear(float value) {
   constexpr float kDecibelsDenominator = 20.0f;
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
   return static_cast<float>(pow(10, value / kDecibelsDenominator));
 }
 

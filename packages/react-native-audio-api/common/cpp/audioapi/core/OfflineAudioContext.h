@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/Macros.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
@@ -21,6 +22,7 @@ class OfflineAudioContext : public BaseAudioContext {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
+  DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
   /// @note JS Thread only
   void resume();

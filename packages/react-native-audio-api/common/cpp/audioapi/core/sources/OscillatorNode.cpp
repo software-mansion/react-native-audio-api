@@ -11,15 +11,14 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNode(context, options) {
+    : AudioScheduledSourceNode(context, options), type_(options.type) {
   frequencyParam_ = std::make_shared<AudioParam>(
       options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      -static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
-  type_ = options.type;
   if (options.periodicWave) {
     periodicWave_ = options.periodicWave;
   } else {
@@ -92,7 +91,9 @@ std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
     float currentPhase = phase_;
 
     for (size_t i = startOffset; i < offsetLength; i += 1) {
-      auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : std::pow(2.0f, detuneSpan[i] / 1200.0f);
+      auto detuneRatio = detuneSpan[i] == 0
+          ? 1.0f
+          : std::pow(2.0f, detuneSpan[i] / static_cast<float>(OCTAVE_RANGE));
       auto detunedFrequency = freqSpan[i] * detuneRatio;
       auto phaseIncrement = detunedFrequency * tableScale;
 
