@@ -82,9 +82,9 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 
   auto values = frame->timeDomain.span();
 
-  constexpr float byteCenter = 128.0f;
+  constexpr float BYTE_CENTER = 128.0f;
   for (int i = 0; i < size; i++) {
-    float scaledValue = byteCenter * (values[i] + 1);
+    float scaledValue = BYTE_CENTER * (values[i] + 1);
     scaledValue = std::clamp(scaledValue, 0.0f, static_cast<float>(UINT8_MAX));
 
     data[i] = static_cast<uint8_t>(scaledValue);
