@@ -19,15 +19,19 @@ class BoundedPriorityQueue {
  public:
   explicit BoundedPriorityQueue() : size_(0) {
     static_assert(isPowerOfTwo(capacity_), "BoundedPriorityQueue's capacity must be a power of 2");
-    buffer_ = static_cast<T *>(
-        ::operator new[](capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T))));
+    buffer_ = static_cast<TimestampedElement *>(::operator new[](
+        capacity_ * sizeof(TimestampedElement),
+        static_cast<std::align_val_t>(alignof(TimestampedElement))));
   }
 
   ~BoundedPriorityQueue() {
     for (size_t i = 0; i < size_; ++i) {
-      buffer_[i].~T();
+      buffer_[i].data.~T();
     }
-    ::operator delete[](buffer_, capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T)));
+    ::operator delete[](
+        buffer_,
+        capacity_ * sizeof(TimestampedElement),
+        static_cast<std::align_val_t>(alignof(TimestampedElement)));
   }
 
   BoundedPriorityQueue(const BoundedPriorityQueue &) = delete;
@@ -56,12 +60,12 @@ class BoundedPriorityQueue {
     if (isEmpty()) [[unlikely]] {
       return false;
     }
-    out = std::move(buffer_[0]);
-    buffer_[0].~T();
+    out = std::move(buffer_[0].data);
+    buffer_[0].~TimestampedElement();
     --size_;
     if (size_ > 0) {
-      new (&buffer_[0]) T(std::move(buffer_[size_]));
-      buffer_[size_].~T();
+      new (&buffer_[0]) TimestampedElement(std::move(buffer_[size_]));
+      buffer_[size_].~TimestampedElement();
       siftDown(0);
     }
     return true;
@@ -73,11 +77,11 @@ class BoundedPriorityQueue {
     if (isEmpty()) [[unlikely]] {
       return false;
     }
-    buffer_[0].~T();
+    buffer_[0].~TimestampedElement();
     --size_;
     if (size_ > 0) {
-      new (&buffer_[0]) T(std::move(buffer_[size_]));
-      buffer_[size_].~T();
+      new (&buffer_[0]) TimestampedElement(std::move(buffer_[size_]));
+      buffer_[size_].~TimestampedElement();
       siftDown(0);
     }
     return true;
@@ -86,25 +90,25 @@ class BoundedPriorityQueue {
   /// @brief Peek at the top (highest priority) element without removing it.
   /// @return A const reference to the top element.
   [[nodiscard]] inline const T &peekFront() const noexcept {
-    return buffer_[0];
+    return buffer_[0].data;
   }
 
   /// @brief Peek at the last (lowest priority) element without removing it.
   /// @return A reference to the last element.
   [[nodiscard]] inline T &peekFrontMut() noexcept {
-    return buffer_[size_ - 1];
+    return buffer_[size_ - 1].data;
   }
 
   /// @brief Peek at the last (lowest priority) element without removing it.
   /// @return A reference to the last element.
   [[nodiscard]] inline const T &peekBack() const noexcept {
-    return buffer_[size_ - 1];
+    return buffer_[size_ - 1].data;
   }
 
   /// @brief Peek at the last (lowest priority) element without removing it.
   /// @return A reference to the last element.
   [[nodiscard]] inline T &peekBackMut() noexcept {
-    return buffer_[size_ - 1];
+    return buffer_[size_ - 1].data;
   }
 
   /// @brief Check if the queue is empty.
@@ -200,11 +204,11 @@ class BoundedPriorityQueue {
   }
 
   void swapAt(size_t a, size_t b) noexcept {
-    T tmp(std::move(buffer_[a]));
-    buffer_[a].~T();
-    new (&buffer_[a]) T(std::move(buffer_[b]));
-    buffer_[b].~T();
-    new (&buffer_[b]) T(std::move(tmp));
+    TimestampedElement tmp(std::move(buffer_[a]));
+    buffer_[a].~TimestampedElement();
+    new (&buffer_[a]) TimestampedElement(std::move(buffer_[b]));
+    buffer_[b].~TimestampedElement();
+    new (&buffer_[b]) TimestampedElement(std::move(tmp));
   }
 };
 
