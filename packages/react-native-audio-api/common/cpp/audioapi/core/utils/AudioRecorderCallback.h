@@ -23,6 +23,10 @@ class AudioRecorderCallback {
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
+  AudioRecorderCallback(const AudioRecorderCallback &) = delete;
+  AudioRecorderCallback(AudioRecorderCallback &&) = delete;
+  AudioRecorderCallback &operator=(const AudioRecorderCallback &) = delete;
+  AudioRecorderCallback &operator=(AudioRecorderCallback &&) = delete;
   virtual ~AudioRecorderCallback();
 
   virtual void cleanup() = 0;

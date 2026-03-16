@@ -88,8 +88,8 @@ void IIRFilterNode::getFrequencyResponse(
     auto denominator = IIRFilterNode::evaluatePolynomial(feedback_, z, feedback_.getSize() - 1);
     auto response = numerator / denominator;
 
-    magResponseOutput[k] = static_cast<float>(std::abs(response));
-    phaseResponseOutput[k] = static_cast<float>(atan2(imag(response), real(response)));
+    magResponseOutput[k] = std::abs(response);
+    phaseResponseOutput[k] = atan2(imag(response), real(response));
   }
 }
 
@@ -105,7 +105,7 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
 
   size_t feedforwardLength = feedforward_.getSize();
   size_t feedbackLength = feedback_.getSize();
-  int minLength = std::min(feedbackLength, feedforwardLength);
+  auto minLength = static_cast<size_t>(std::min(feedbackLength, feedforwardLength));
 
   int mask = bufferLength - 1;
 
@@ -115,21 +115,22 @@ std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];
     size_t bufferIndex = bufferIndices_[c];
+    size_t k;
 
     for (float &sample : channel) {
       const float x_n = sample;
       float y_n = feedforward_[0] * sample;
 
-      for (int k = 1; k < minLength; ++k) {
+      for (k = 1; k < minLength; ++k) {
         int m = (bufferIndex - k) & mask;
         y_n = std::fma(feedforward_[k], x[m], y_n);
         y_n = std::fma(-feedback_[k], y[m], y_n);
       }
 
-      for (int k = minLength; k < feedforwardLength; ++k) {
+      for (k = minLength; k < feedforwardLength; ++k) {
         y_n = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], y_n);
       }
-      for (int k = minLength; k < feedbackLength; ++k) {
+      for (k = minLength; k < feedbackLength; ++k) {
         y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], y_n);
       }
 

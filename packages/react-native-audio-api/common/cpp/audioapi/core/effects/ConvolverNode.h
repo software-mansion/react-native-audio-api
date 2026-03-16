@@ -11,7 +11,7 @@
 
 static constexpr int GAIN_CALIBRATION =
     -58; // magic number so that processed signal and dry signal have roughly the same volume
-static constexpr double MIN_IR_POWER = 0.000125;
+static constexpr float MIN_IR_POWER = 0.000125;
 
 namespace audioapi {
 
@@ -34,7 +34,7 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<AudioBuffer> &intermediateBuffer,
       float scaleFactor);
 
-  float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer);
+  float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const;
 
  protected:
   std::shared_ptr<AudioBuffer> processNode(

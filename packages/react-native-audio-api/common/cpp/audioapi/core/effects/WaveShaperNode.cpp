@@ -46,7 +46,7 @@ std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
   }
 
   for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
-    auto channelData = processingBuffer->getChannel(channel);
+    auto *channelData = processingBuffer->getChannel(channel);
 
     waveShapers_[channel]->process(*channelData, framesToProcess);
   }

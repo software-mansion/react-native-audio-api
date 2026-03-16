@@ -5,6 +5,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBuffer.h>
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -60,8 +61,8 @@ void ConvolverNode::setBuffer(
   internalBufferIndex_ = 0;
 }
 
-float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) {
-  int numberOfChannels = buffer->getNumberOfChannels();
+float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const {
+  auto numberOfChannels = buffer->getNumberOfChannels();
   auto length = buffer->getSize();
 
   float power = 0;
@@ -69,7 +70,7 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   for (size_t channel = 0; channel < numberOfChannels; ++channel) {
     float channelPower = 0;
     auto channelData = buffer->getChannel(channel)->span();
-    for (int i = 0; i < length; ++i) {
+    for (size_t i = 0; i < length; ++i) {
       float sample = channelData[i];
       channelPower += sample * sample;
     }
@@ -77,15 +78,12 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   }
 
   power = std::sqrt(power / (numberOfChannels * length));
-  if (power < MIN_IR_POWER) {
-    power = MIN_IR_POWER;
-  }
+  power = std::max(power, MIN_IR_POWER);
+  power = 1 / power;
+  power *= std::pow(10, GAIN_CALIBRATION * 0.05f);
+  power *= gainCalibrationSampleRate_ / buffer->getSampleRate();
 
-  auto scaleFactor = 1 / power;
-  scaleFactor *= std::pow(10, GAIN_CALIBRATION * 0.05f);
-  scaleFactor *= gainCalibrationSampleRate_ / buffer->getSampleRate();
-
-  return scaleFactor;
+  return power;
 }
 
 void ConvolverNode::onInputDisabled() {

@@ -13,6 +13,7 @@ AudioNode::AudioNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioNodeOptions &options)
     : context_(context),
+      audioBuffer_(nullptr),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
       channelCount_(options.channelCount),
@@ -33,35 +34,43 @@ size_t AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
-void AudioNode::disconnect() {
+void AudioNode::disconnect() { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
@@ -127,7 +136,7 @@ std::shared_ptr<AudioBuffer> AudioNode::processAudio(
   return processNode(processingBuffer, framesToProcess);
 }
 
-bool AudioNode::isAlreadyProcessed() {
+bool AudioNode::isAlreadyProcessed() { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     std::size_t currentSampleFrame = context->getCurrentSampleFrame();
 
@@ -143,13 +152,13 @@ bool AudioNode::isAlreadyProcessed() {
   }
 
   // If context is invalid, consider it as already processed to avoid processing
-  return true;
+  return true; // NOLINT(readability-simplify-boolean-expr)
 }
 
 std::shared_ptr<AudioBuffer> AudioNode::processInputs(
     const std::shared_ptr<AudioBuffer> &outputBuffer,
     int framesToProcess,
-    bool checkIsAlreadyProcessed) {
+    bool checkIsAlreadyProcessed) { // NOLINT(readability-convert-member-functions-to-static)
   auto processingBuffer = audioBuffer_;
   processingBuffer->zero();
 

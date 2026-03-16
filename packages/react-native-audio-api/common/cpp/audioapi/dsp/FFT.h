@@ -14,6 +14,11 @@ class FFT {
   explicit FFT(int size);
   ~FFT();
 
+  FFT(const FFT &) = delete;
+  FFT &operator=(const FFT &) = delete;
+  FFT(FFT &&) = delete;
+  FFT &operator=(FFT &&) = delete;
+
   template <typename Allocator>
   void doFFT(const AudioArray &in, std::vector<std::complex<float>, Allocator> &out) {
     pffft_transform_ordered(

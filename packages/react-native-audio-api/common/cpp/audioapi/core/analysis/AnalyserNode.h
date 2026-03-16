@@ -26,21 +26,21 @@ class AnalyserNode : public AudioNode {
       const AnalyserOptions &options);
 
   /// @note JS Thread only
-  float getMinDecibels() const {
+  [[nodiscard]] float getMinDecibels() const {
     return minDecibels_;
   }
 
   /// @note JS Thread only
-  float getMaxDecibels() const {
+  [[nodiscard]] float getMaxDecibels() const {
     return maxDecibels_;
   }
 
   /// @note JS Thread only
-  float getSmoothingTimeConstant() const {
+  [[nodiscard]] float getSmoothingTimeConstant() const {
     return smoothingTimeConstant_;
   }
 
-  int getFFTSize() const {
+  [[nodiscard]] int getFFTSize() const {
     return fftSize_.load(std::memory_order_acquire);
   }
 
@@ -107,6 +107,9 @@ class AnalyserNode : public AudioNode {
 
     AnalysisFrame(const AnalysisFrame &) = delete;
     AnalysisFrame &operator=(const AnalysisFrame &) = delete;
+    AnalysisFrame(AnalysisFrame &&) noexcept = default;
+    AnalysisFrame &operator=(AnalysisFrame &&) noexcept = default;
+    ~AnalysisFrame() = default;
   };
 
   TripleBuffer<AnalysisFrame> analysisBuffer_{MAX_FFT_SIZE};

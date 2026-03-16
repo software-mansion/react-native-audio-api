@@ -12,7 +12,7 @@
 namespace audioapi::channels::spsc {
 
 /// @brief Overflow strategy for sender when the channel is full
-enum class OverflowStrategy {
+enum class OverflowStrategy : uint8_t {
   /// @brief Block and wait for space (default behavior)
   WAIT_ON_FULL,
 
@@ -21,7 +21,7 @@ enum class OverflowStrategy {
 };
 
 /// @brief Wait strategy for receiver and sender when looping and trying
-enum class WaitStrategy {
+enum class WaitStrategy : uint8_t {
   /// @brief Busy loop waiting strategy
   /// @note should be used when low latency is required and channel is not expected to wait
   /// @note should be definitely used with OverflowStrategy::OVERWRITE_ON_FULL
@@ -40,7 +40,7 @@ enum class WaitStrategy {
 };
 
 /// @brief Response status for channel operations
-enum class ResponseStatus {
+enum class ResponseStatus : uint8_t {
   SUCCESS,
   CHANNEL_FULL,
   CHANNEL_EMPTY,
@@ -230,11 +230,6 @@ class InnerChannel {
         capacity_mask_(capacity_ - 1),
         buffer_(
             static_cast<T *>(operator new[](capacity_ * sizeof(T), std::align_val_t{alignof(T)}))) {
-
-    // Initialize cache values for better performance
-    rcvCursorCache_ = 0;
-    sendCursorCache_ = 0;
-
     // Initialize reader state for overwrite strategy
     if constexpr (Strategy == OverflowStrategy::OVERWRITE_ON_FULL) {
       oldestOccupied_.store(false, std::memory_order_relaxed);
@@ -319,7 +314,7 @@ class InnerChannel {
  private:
   /// @brief Try to send with WAIT_ON_FULL strategy (original behavior)
   template <typename U>
-  inline ResponseStatus try_send_wait_on_full(U &&value) noexcept(
+  ResponseStatus try_send_wait_on_full(U &&value) noexcept(
       std::is_nothrow_constructible_v<T, U &&>) {
     size_t sendCursor =
         sendCursor_.load(std::memory_order_relaxed); // only sender thread writes this
@@ -328,8 +323,9 @@ class InnerChannel {
     if (next_sendCursor == rcvCursorCache_) {
       // Refresh the cache
       rcvCursorCache_ = rcvCursor_.load(std::memory_order_acquire);
-      if (next_sendCursor == rcvCursorCache_)
+      if (next_sendCursor == rcvCursorCache_) {
         return ResponseStatus::CHANNEL_FULL;
+      }
     }
 
     // Construct the new element in place
@@ -346,7 +342,7 @@ class InnerChannel {
 
   /// @brief Try to send with OVERWRITE_ON_FULL strategy
   template <typename U>
-  inline ResponseStatus try_send_overwrite_on_full(U &&value) noexcept(
+  ResponseStatus try_send_overwrite_on_full(U &&value) noexcept(
       std::is_nothrow_constructible_v<T, U &&>) {
     size_t sendCursor =
         sendCursor_.load(std::memory_order_relaxed); // only sender thread writes this
@@ -391,12 +387,12 @@ class InnerChannel {
   /// @param n The input value
   /// @return The next power of 2
   static constexpr size_t next_power_of_2(const size_t n) noexcept {
-    if (n <= 1)
+    if (n <= 1) {
       return 1;
-
+    }
     // Use bit manipulation for efficiency
     size_t power = 1;
-    while (power < n) {
+    while (power < n) [[likely]] {
       power <<= 1;
     }
     return power;
@@ -406,7 +402,7 @@ class InnerChannel {
   /// @param val The current index
   /// @return The next index
   /// @note it might not be used for performance but it is a good reference
-  inline size_t next_index(const size_t val) const noexcept {
+  size_t next_index(const size_t val) const noexcept {
     return (val + 1) & capacity_mask_;
   }
 

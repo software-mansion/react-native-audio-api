@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
+
 namespace audioapi {
 
-enum class ChannelInterpretation { SPEAKERS, DISCRETE };
+enum class ChannelInterpretation : std::uint8_t { SPEAKERS, DISCRETE };
 
 }

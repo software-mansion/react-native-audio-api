@@ -16,6 +16,7 @@ AnalyserNode::AnalyserNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
     : AudioNode(context, options),
+      fftSize_(0),
       inputArray_(std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
           std::make_unique<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
@@ -81,8 +82,9 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 
   auto values = frame->timeDomain.span();
 
+  constexpr float byteCenter = 128.0f;
   for (int i = 0; i < size; i++) {
-    float scaledValue = 128 * (values[i] + 1);
+    float scaledValue = byteCenter * (values[i] + 1);
     scaledValue = std::clamp(scaledValue, 0.0f, static_cast<float>(UINT8_MAX));
 
     data[i] = static_cast<uint8_t>(scaledValue);
@@ -142,9 +144,8 @@ void AnalyserNode::doFFTAnalysis() {
 
   for (int i = 0; i < magnitudeArray_->getSize(); i++) {
     auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
-    magnitudeBufferData[i] = static_cast<float>(
-        smoothingTimeConstant_ * magnitudeBufferData[i] +
-        (1 - smoothingTimeConstant_) * scalarMagnitude);
+    magnitudeBufferData[i] = smoothingTimeConstant_ * magnitudeBufferData[i] +
+        (1 - smoothingTimeConstant_) * scalarMagnitude;
   }
 }
 
@@ -157,7 +158,7 @@ void AnalyserNode::initializeWindowData(int fftSize) {
   const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
 
   for (size_t i = 0; i < size; ++i) {
-    const auto phase = alpha * i;
+    const auto phase = alpha * static_cast<float>(i);
     // 4*PI*x is just 2 * (2*PI*x)
     const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
     data[i] = window;

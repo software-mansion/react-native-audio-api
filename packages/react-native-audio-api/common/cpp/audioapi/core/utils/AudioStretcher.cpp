@@ -38,10 +38,10 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
 
   std::vector<int16_t> int16Buffer = castToInt16Buffer(buffer);
 
-  auto stretcher = stretch_init(
+  auto *stretcher = stretch_init(
       static_cast<int>(sampleRate / UPPER_FREQUENCY_LIMIT_DETECTION),
       static_cast<int>(sampleRate / LOWER_FREQUENCY_LIMIT_DETECTION),
-      outputChannels,
+      static_cast<int>(outputChannels),
       0x1);
 
   int maxOutputFrames =
@@ -55,7 +55,7 @@ std::shared_ptr<AudioBuffer> AudioStretcher::changePlaybackSpeed(
       stretchedBuffer.data(),
       1 / playbackSpeed);
 
-  outputFrames += stretch_flush(stretcher, stretchedBuffer.data() + (outputFrames));
+  outputFrames += stretch_flush(stretcher, stretchedBuffer.data() + outputFrames);
   stretchedBuffer.resize(outputFrames * outputChannels);
   stretch_deinit(stretcher);
 

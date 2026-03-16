@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
+
 namespace audioapi {
 
-enum class ParamChangeEventType {
+enum class ParamChangeEventType : std::uint8_t {
   LINEAR_RAMP,
   EXPONENTIAL_RAMP,
   SET_VALUE,

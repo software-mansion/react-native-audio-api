@@ -4,6 +4,7 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/Macros.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <cassert>
@@ -25,7 +26,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       const AudioNodeOptions &options = AudioNodeOptions());
   virtual ~AudioNode();
 
-  size_t getChannelCount() const;
+  DELETE_COPY_AND_MOVE(AudioNode);
+
+  [[nodiscard]] size_t getChannelCount() const;
   void connect(const std::shared_ptr<AudioNode> &node);
   void connect(const std::shared_ptr<AudioParam> &param);
   void disconnect();
@@ -36,7 +39,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
-  float getContextSampleRate() const {
+  [[nodiscard]] float getContextSampleRate()
+      const { // NOLINT(readability-convert-member-functions-to-static)
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->getSampleRate();
     }
@@ -44,17 +48,18 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
     return DEFAULT_SAMPLE_RATE;
   }
 
-  float getNyquistFrequency() const {
-    return getContextSampleRate() / 2.0f;
+  [[nodiscard]] float getNyquistFrequency() const {
+    constexpr float kNyquistDivisor = 2.0f;
+    return getContextSampleRate() / kNyquistDivisor;
   }
 
   /// @note JS Thread only
-  bool isEnabled() const;
+  [[nodiscard]] bool isEnabled() const;
   /// @note JS Thread only
-  bool requiresTailProcessing() const;
+  [[nodiscard]] bool requiresTailProcessing() const;
 
   template <typename F>
-  bool inline scheduleAudioEvent(F &&event) noexcept {
+  bool scheduleAudioEvent(F &&event) noexcept {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
     }
@@ -78,9 +83,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;
 
-  std::unordered_set<AudioNode *> inputNodes_ = {};
-  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_ = {};
-  std::unordered_set<std::shared_ptr<AudioParam>> outputParams_ = {};
+  std::unordered_set<AudioNode *> inputNodes_;
+  std::unordered_set<std::shared_ptr<AudioNode>> outputNodes_;
+  std::unordered_set<std::shared_ptr<AudioParam>> outputParams_;
 
   int numberOfEnabledInputNodes_ = 0;
   std::atomic<bool> isInitialized_ = false;
@@ -92,7 +97,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  private:
   bool isEnabled_ = true;
-  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_ = {};
+  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_;
 
   virtual std::shared_ptr<AudioBuffer> processInputs(
       const std::shared_ptr<AudioBuffer> &outputBuffer,

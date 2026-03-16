@@ -70,8 +70,9 @@ class IIRFilterNode : public AudioNode {
   evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
-    for (int k = order; k >= 0; --k)
+    for (int k = order; k >= 0; --k) {
       result = result * z + std::complex<float>(coefficients[k]);
+    }
     return result;
   }
 

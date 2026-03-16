@@ -58,7 +58,7 @@ class AudioArray {
     return {data_.get(), size_};
   }
 
-  [[nodiscard]] std::span<float> subSpan(size_t length, size_t offset = 0) {
+  [[nodiscard]] std::span<float> subSpan(size_t length, size_t offset = 0) const {
     if (offset + length > size_) {
       throw std::out_of_range("AudioArray::subSpan - offset + length exceeds array size");
     }

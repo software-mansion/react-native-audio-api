@@ -2,6 +2,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/Macros.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
@@ -40,7 +41,7 @@ class WorkletNode : public AudioNode {
       size_t bufferLength,
       size_t inputChannelCount,
       WorkletsRunner &&workletRunner);
-
+  DELETE_COPY_AND_MOVE(WorkletNode);
   ~WorkletNode() override = default;
 
  protected:

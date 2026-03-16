@@ -4,9 +4,7 @@
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/dsp/WaveShaper.h>
 
-#include <atomic>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 namespace audioapi {
@@ -36,7 +34,7 @@ class WaveShaperNode : public AudioNode {
   OverSampleType oversample_;
   std::shared_ptr<AudioArray> curve_;
 
-  std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};
+  std::vector<std::unique_ptr<WaveShaper>> waveShapers_;
 };
 
 } // namespace audioapi
