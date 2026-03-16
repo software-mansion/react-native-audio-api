@@ -103,12 +103,10 @@ class MockGraphProcessor {
     AudioThreadGuard::disarm();
 
     while (running_.load(std::memory_order_acquire)) {
-      // Drain events (grow + graph-mutation). May allocate — unguarded.
-      graph_.processEvents();
-
-      // Everything below must be allocation-free
+      // Everything below must be allocation-free.
       {
         AudioThreadGuard::Scope guard;
+        graph_.processEvents();
 
         // Toposort + compact orphaned nodes
         graph_.process();

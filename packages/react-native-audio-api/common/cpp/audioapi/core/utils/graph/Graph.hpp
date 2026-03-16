@@ -28,8 +28,7 @@ namespace audioapi::utils::graph {
 ///
 /// ## Audio-thread call order
 /// ```
-/// graph.processEvents();       // may allocate (grow events) — outside guard
-/// // ── allocation-free zone ──
+/// graph.processEvents();       // apply pending graph mutations (if any) — in FIFO order
 /// graph.process();             // toposort + compaction
 /// for (auto&& [node, inputs] : graph.iter()) { ... }
 /// ```
@@ -61,6 +60,21 @@ class Graph {
         eventQueueCapacity);
     eventSender_ = std::move(es);
     eventReceiver_ = std::move(er);
+  }
+
+  Graph(
+      size_t eventQueueCapacity,
+      std::uint32_t initialNodeCapacity,
+      std::uint32_t initialEdgeCapacity)
+      : Graph(eventQueueCapacity) {
+    if (initialNodeCapacity > 0) {
+      audioGraph.reserveNodes(initialNodeCapacity);
+      nodeCapacity_ = initialNodeCapacity;
+    }
+    if (initialEdgeCapacity > 0) {
+      audioGraph.pool().grow(initialEdgeCapacity);
+      poolCapacity_ = initialEdgeCapacity;
+    }
   }
 
   // ── Audio-thread API ────────────────────────────────────────────────────

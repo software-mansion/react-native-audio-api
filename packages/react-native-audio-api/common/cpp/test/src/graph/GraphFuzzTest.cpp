@@ -42,10 +42,14 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   void SetUp() override {
     rng.seed(GetParam());
-    graph = std::make_unique<Graph<PNode>>(4096);
 
     initialNodeCount = std::uniform_int_distribution<size_t>(16, 128)(rng);
     operationCount = std::uniform_int_distribution<size_t>(200, 2000)(rng);
+
+    // Ensure graph growth does not happen on the audio thread during this fuzz run.
+    const auto maxNodes = static_cast<std::uint32_t>(initialNodeCount + operationCount + 64);
+    const auto maxEdges = static_cast<std::uint32_t>(operationCount * 2 + 64);
+    graph = std::make_unique<Graph<PNode>>(4096, maxNodes, maxEdges);
 
     // Randomly partition the range 0..99 into 4 operation weights
     size_t total = 100;
