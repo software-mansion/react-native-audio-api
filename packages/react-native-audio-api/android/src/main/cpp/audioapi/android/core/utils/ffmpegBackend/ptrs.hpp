@@ -13,37 +13,43 @@ extern "C" {
 
 namespace audioapi::android::ffmpeg {
 
-template<> inline void AvDtor<AVCodecContext>::operator()(AVCodecContext* ctx) const {
+template <>
+inline void AvDtor<AVCodecContext>::operator()(AVCodecContext *ctx) const {
   if (ctx != nullptr) {
     avcodec_free_context(&ctx);
   }
 }
 
-template<> inline void AvDtor<AVFormatContext>::operator()(AVFormatContext* ctx) const {
+template <>
+inline void AvDtor<AVFormatContext>::operator()(AVFormatContext *ctx) const {
   if (ctx != nullptr) {
     avformat_free_context(ctx);
   }
 }
 
-template<> inline void AvDtor<AVFrame>::operator()(AVFrame* frame) const {
+template <>
+inline void AvDtor<AVFrame>::operator()(AVFrame *frame) const {
   if (frame != nullptr) {
     av_frame_free(&frame);
   }
 }
 
-template<> inline void AvDtor<AVPacket>::operator()(AVPacket* packet) const {
+template <>
+inline void AvDtor<AVPacket>::operator()(AVPacket *packet) const {
   if (packet != nullptr) {
     av_packet_free(&packet);
   }
 }
 
-template<> inline void AvDtor<SwrContext>::operator()(SwrContext* ctx) const {
+template <>
+inline void AvDtor<SwrContext>::operator()(SwrContext *ctx) const {
   if (ctx != nullptr) {
     swr_free(&ctx);
   }
 }
 
-template<> inline void AvDtor<AVAudioFifo>::operator()(AVAudioFifo* fifo) const {
+template <>
+inline void AvDtor<AVAudioFifo>::operator()(AVAudioFifo *fifo) const {
   if (fifo != nullptr) {
     av_audio_fifo_free(fifo);
   }

@@ -76,6 +76,15 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     return OpenFileResult::Err("Unsupported codec for the given file format");
   }
 
+  auto offloaderLambda = [this](WriterData data) {
+    taskOffloaderFunction(data);
+  };
+
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+
   return initializeFormatContext(codec)
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
       .and_then([this](auto) { return initializeStream(); })
@@ -119,31 +128,27 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
   if (writeEncodedPackets() < 0) {
     return CloseFileResult::Err("Failed to drain encoder packets");
   }
+  offloader_.reset();
 
   return finalizeOutput();
 }
 
 /// @brief Writes audio data to the currently opened file.
-/// This method should be called only from the audio thread (or audio side-effect thread in the future).
-/// @param data Pointer to the audio data buffer (interleaved float samples) as returned by Oboe stream.
-/// @param numFrames Number of audio frames in the data buffer.
-/// @returns True if the data was written successfully, false otherwise.
-bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
+void FFmpegAudioFileWriter::taskOffloaderFunction(WriterData data) {
+  auto [audioData, numFrames] = data;
   if (!isFileOpen()) {
-    return false;
+    return;
   }
 
-  if (!resampleAndPushToFifo(data, numFrames)) {
-    return false;
+  if (!resampleAndPushToFifo(audioData, numFrames)) {
+    return;
   }
 
   framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
 
   if (processFifo(false) < 0) {
-    return false;
+    return;
   }
-
-  return true;
 }
 
 /// @brief Initializes the FFmpeg format context for the output file.

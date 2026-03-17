@@ -9,6 +9,7 @@ using namespace facebook;
 
 struct ConvolverOptions;
 class BaseAudioContext;
+class AudioBuffer;
 
 class ConvolverNodeHostObject : public AudioNodeHostObject {
  public:
@@ -16,8 +17,11 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
       const std::shared_ptr<BaseAudioContext> &context,
       const ConvolverOptions &options);
   JSI_PROPERTY_GETTER_DECL(normalize);
-  JSI_PROPERTY_GETTER_DECL(buffer);
   JSI_PROPERTY_SETTER_DECL(normalize);
   JSI_HOST_FUNCTION_DECL(setBuffer);
+
+ private:
+  bool normalize_;
+  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 };
 } // namespace audioapi

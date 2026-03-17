@@ -89,33 +89,6 @@ const buffer = await decodeAudioData(url);
 ```
 </details>
 
-:::caution
-Internally decoding local files uses Image component to retrieve asset uri, but it does not work on the web platform.
-You can use expo-asset library for this purpose or retrieve ArrayBuffer on your own and pass it to decoding function.
-:::
-<details>
-<summary>Example using expo-asset library</summary>
-```tsx
-import { Asset } from 'expo-asset';
-import { AudioContext } from 'react-native-audio-api';
-
-const uri = await Asset.fromModule(require('@/assets/music/example.mp3'))
-  .downloadAsync()
-  .then((asset) =>  {
-    if (!asset.localUri) {
-      console.error('Failed to load audio asset');
-    }
-    return asset.localUri;
-  })
-
-const context = new AudioContext();
-if (uri) {
-  const buffer = await context.decodeAudioData(uri);
-}
-
-```
-</details>
-
 ### `decodePCMInBase64`
 
 Decodes base64-encoded PCM audio data.

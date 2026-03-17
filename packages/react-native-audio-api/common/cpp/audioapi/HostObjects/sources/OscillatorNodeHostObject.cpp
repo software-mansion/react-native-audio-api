@@ -3,17 +3,23 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/types/NodeOptions.h>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 OscillatorNodeHostObject::OscillatorNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createOscillator(options)) {
+    : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options),
+      type_(options.type) {
+  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
+  frequencyParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
+  detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),
@@ -25,35 +31,39 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
 }
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, frequency) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto frequencyParam_ =
-      std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
   return jsi::Object::createFromHostObject(runtime, frequencyParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, detune) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto waveType = oscillatorNode->getType();
-  return jsi::String::createFromUtf8(runtime, js_enum_parser::oscillatorTypeToString(waveType));
+  return jsi::String::createFromUtf8(runtime, js_enum_parser::oscillatorTypeToString(type_));
 }
 
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
   auto periodicWave = args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(runtime);
-  oscillatorNode->setPeriodicWave(periodicWave->periodicWave_);
+
+  auto event = [oscillatorNode, periodicWave = periodicWave->periodicWave_](BaseAudioContext &) {
+    oscillatorNode->setPeriodicWave(periodicWave);
+  };
+  oscillatorNode->scheduleAudioEvent(std::move(event));
+
   return jsi::Value::undefined();
 }
 
 JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
-  auto type = value.asString(runtime).utf8(runtime);
-  oscillatorNode->setType(js_enum_parser::oscillatorTypeFromString(type));
+  auto type = js_enum_parser::oscillatorTypeFromString(value.asString(runtime).utf8(runtime));
+
+  auto event = [oscillatorNode, type](BaseAudioContext &) {
+    oscillatorNode->setType(type);
+  };
+  type_ = type;
+
+  oscillatorNode->scheduleAudioEvent(std::move(event));
 }
 
 } // namespace audioapi

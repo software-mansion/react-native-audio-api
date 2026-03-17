@@ -48,7 +48,7 @@ struct MockNode : AudioNode {
   }
 
  private:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int)
+  std::shared_ptr<AudioBuffer> processNode(const std::shared_ptr<AudioBuffer> &processingBus, int)
       override {
     return processingBus;
   }

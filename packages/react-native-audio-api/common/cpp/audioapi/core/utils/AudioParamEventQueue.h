@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/types/ParamChangeEventType.h>
-#include <audioapi/core/utils/ParamChangeEvent.h>
+#include <audioapi/core/utils/ParamChangeEvent.hpp>
 #include <audioapi/utils/RingBiDirectionalBuffer.hpp>
 
 namespace audioapi {

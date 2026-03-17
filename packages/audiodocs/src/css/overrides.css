@@ -231,3 +231,7 @@ button[class*='DocSearch-Button'] {
   border-collapse: collapse;
   box-sizing: border-box;
 }
+
+[class*='headerWithBadges'] {
+  align-items: baseline;
+}

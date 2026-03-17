@@ -1,17 +1,16 @@
 import BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
-import { TWebConvolverOptions } from '../types';
+import { ConvolverOptions } from '../types';
 
 export default class ConvolverNode extends AudioNode {
-  constructor(
-    context: BaseAudioContext,
-    convolverOptions?: TWebConvolverOptions
-  ) {
-    const convolver = new globalThis.ConvolverNode(
-      context.context,
-      convolverOptions
-    );
+  constructor(context: BaseAudioContext, convolverOptions?: ConvolverOptions) {
+    const convolver = new globalThis.ConvolverNode(context.context, {
+      ...convolverOptions,
+      ...(convolverOptions?.buffer
+        ? { buffer: convolverOptions.buffer.buffer }
+        : {}),
+    });
 
     const node = convolver;
     super(context, node);

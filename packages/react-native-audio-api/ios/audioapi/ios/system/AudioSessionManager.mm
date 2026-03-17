@@ -406,7 +406,12 @@ static AudioSessionManager *_sharedInstance = nil;
     }
 
     if ([option isEqualToString:@"allowBluetoothHFP"]) {
-      options |= AVAudioSessionCategoryOptionAllowBluetoothHFP;
+      // XCode 26.x (default support SDK >= 26.x) uses AVAudioSessionCategoryOptionAllowBluetoothHFP as new standard for every platfrom (down to iOS 1.0)
+      // Older Xcode (default support SDKs) versions doesn't define it at all.
+      // Both (AVAudioSessionCategoryOptionAllowBluetooth in SDK < 26.x) and (AVAudioSessionCategoryOptionAllowBluetoothHFP in SDK >= 26.x) resolve to this value
+      // We use it here directly as there is no reliable way to switch between them (no @available for this).
+      // TODO: replace with AVAudioSessionCategoryOptionAllowBluetoothHFP once XCode 16.x will dig its grave
+      options |= 0x4;
     }
 
     if ([option isEqualToString:@"defaultToSpeaker"]) {

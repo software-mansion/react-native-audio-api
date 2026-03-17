@@ -1,17 +1,15 @@
-#include "OfflineAudioContext.h"
+#include <audioapi/core/OfflineAudioContext.h>
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -28,10 +26,10 @@ OfflineAudioContext::OfflineAudioContext(
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0),
-      resultBus_(std::make_shared<AudioBus>(length, numberOfChannels, sampleRate)) {}
+      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
-    getGraphManager()->cleanup();
+  getGraphManager()->cleanup();
 }
 
 void OfflineAudioContext::resume() {
@@ -65,21 +63,17 @@ void OfflineAudioContext::renderAudio() {
   setState(ContextState::RUNNING);
 
   std::thread([this]() {
-    auto audioBus = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
+    auto audioBuffer =
+        std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
 
     while (currentSampleFrame_ < length_) {
       Locker locker(mutex_);
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
-      destination_->renderAudio(audioBus, framesToProcess);
+      destination_->renderAudio(audioBuffer, framesToProcess);
 
-      for (int i = 0; i < framesToProcess; i++) {
-        for (int channel = 0; channel < numberOfChannels_; channel += 1) {
-          resultBus_->getChannel(channel)->getData()[currentSampleFrame_ + i] =
-              audioBus->getChannel(channel)->getData()[i];
-        }
-      }
+      resultBuffer_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 
@@ -96,8 +90,7 @@ void OfflineAudioContext::renderAudio() {
     }
 
     // Rendering completed
-    auto buffer = std::make_shared<AudioBuffer>(resultBus_);
-    resultCallback_(buffer);
+    resultCallback_(resultBuffer_);
   }).detach();
 }
 

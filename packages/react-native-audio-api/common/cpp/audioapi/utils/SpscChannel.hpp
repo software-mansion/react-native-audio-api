@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <algorithm>
 #include <atomic>
 #include <memory>
@@ -7,14 +8,6 @@
 #include <thread>
 #include <type_traits>
 #include <utility>
-
-#ifdef __cpp_lib_hardware_interference_size
-using std::hardware_constructive_interference_size;
-using std::hardware_destructive_interference_size;
-#else
-constexpr std::size_t hardware_constructive_interference_size = 64;
-constexpr std::size_t hardware_destructive_interference_size = 64;
-#endif
 
 namespace audioapi::channels::spsc {
 

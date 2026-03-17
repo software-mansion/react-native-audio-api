@@ -6,8 +6,7 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
-import { TAudioBufferSourceOptions } from '../types';
-import { AudioBufferSourceOptions } from '../defaults';
+import { AudioBufferSourceOptions } from '../types';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
 interface ScheduleOptions {
@@ -213,6 +212,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   private _loopEnd: number = -1;
 
   private _buffer: AudioBuffer | null = null;
+  private bufferHasBeenSet: boolean = false;
 
   constructor(context: BaseAudioContext) {
     const promise = async () => {
@@ -422,7 +422,16 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   }
 
   set buffer(buffer: AudioBuffer | null) {
+    if (buffer !== null && this.bufferHasBeenSet) {
+      throw new InvalidStateError(
+        'The buffer can only be set once and cannot be changed afterwards.'
+      );
+    }
+
     this._buffer = buffer;
+    if (buffer !== null) {
+      this.bufferHasBeenSet = true;
+    }
 
     const action = (node: IStretcherNode) => {
       node.dropBuffers();
@@ -480,8 +489,11 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    this.node = new globalThis.AudioBufferSourceNode(context.context, options);
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+    this.node = new globalThis.AudioBufferSourceNode(context.context, {
+      ...options,
+      ...(options?.buffer ? { buffer: options.buffer.buffer } : {}),
+    });
     this.detune = new AudioParam(this.node.detune, context);
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
   }
@@ -609,12 +621,8 @@ export default class AudioBufferSourceNode
   implements IAudioAPIBufferSourceNodeWeb
 {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
-  constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    const finalOptions: TAudioBufferSourceOptions = {
-      ...AudioBufferSourceOptions,
-      ...options,
-    };
-    this.node = finalOptions.pitchCorrection
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+    this.node = options?.pitchCorrection
       ? new AudioBufferSourceNodeStretcher(context)
       : new AudioBufferSourceNodeWeb(context, options);
   }

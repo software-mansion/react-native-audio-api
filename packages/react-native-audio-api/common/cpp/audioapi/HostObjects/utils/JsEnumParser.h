@@ -11,8 +11,6 @@
 #include <string>
 
 namespace audioapi::js_enum_parser {
-std::string windowTypeToString(AnalyserNode::WindowType type);
-AnalyserNode::WindowType windowTypeFromString(const std::string &type);
 std::string overSampleTypeToString(OverSampleType type);
 OverSampleType overSampleTypeFromString(const std::string &type);
 std::string oscillatorTypeToString(OscillatorType type);

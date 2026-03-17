@@ -12,7 +12,15 @@ class AudioAPIModule implements IAudioAPIModule {
   #workletsVersion = 'unknown';
   #workletsAvailable_ = false;
 
-  public supportedWorkletsVersion = ['0.6.0', '0.6.1', '0.7.0', '0.7.1'];
+  public supportedWorkletsVersion = [
+    '0.6.0',
+    '0.6.1',
+    '0.7.0',
+    '0.7.1',
+    '0.7.2',
+    '0.7.3',
+    '0.7.4',
+  ];
 
   constructor() {
     // Important! Verify and import worklets first
@@ -60,6 +68,7 @@ class AudioAPIModule implements IAudioAPIModule {
       global.createAudioContext != null &&
       global.createOfflineAudioContext != null &&
       global.createAudioRecorder != null &&
+      global.createAudioBuffer != null &&
       global.createAudioDecoder != null &&
       global.createAudioStretcher != null &&
       global.AudioEventEmitter != null

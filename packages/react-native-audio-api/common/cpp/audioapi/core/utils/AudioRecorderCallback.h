@@ -10,7 +10,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioArray;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
@@ -28,7 +28,7 @@ class AudioRecorderCallback {
   virtual void cleanup() = 0;
 
   void emitAudioData(bool flush = false);
-  void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
+  void invokeCallback(const std::shared_ptr<AudioBuffer> &buffer, int numFrames);
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
@@ -47,8 +47,8 @@ class AudioRecorderCallback {
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
-  // TODO: CircularAudioBus
-  std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
+  // TODO: CircularAudioBuffer
+  std::vector<std::shared_ptr<CircularAudioArray>> circularBuffer_;
   static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =

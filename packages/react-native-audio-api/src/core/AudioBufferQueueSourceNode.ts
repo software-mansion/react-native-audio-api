@@ -3,8 +3,7 @@ import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
-import { TBaseAudioBufferSourceOptions } from '../types';
-import { BaseAudioBufferSourceOptions } from '../defaults';
+import { BaseAudioBufferSourceOptions } from '../types';
 import { AudioEventSubscription } from '../events';
 import { OnBufferEndEventType } from '../events/types';
 
@@ -14,13 +13,9 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
 
   constructor(
     context: BaseAudioContext,
-    options?: TBaseAudioBufferSourceOptions
+    options?: BaseAudioBufferSourceOptions
   ) {
-    const finalOptions: TBaseAudioBufferSourceOptions = {
-      ...BaseAudioBufferSourceOptions,
-      ...options,
-    };
-    const node = context.context.createBufferQueueSource(finalOptions);
+    const node = context.context.createBufferQueueSource(options || {});
     super(context, node);
   }
 
@@ -44,7 +39,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     (this.node as IAudioBufferQueueSourceNode).clearBuffers();
   }
 
-  public override start(when: number = 0, offset?: number): void {
+  public override start(when: number = 0, offset: number = -1): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`

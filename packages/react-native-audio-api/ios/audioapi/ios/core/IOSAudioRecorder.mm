@@ -16,7 +16,7 @@
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
@@ -50,10 +50,10 @@ IOSAudioRecorder::IOSAudioRecorder(
 
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-        for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
-          float *channelData = (float *)inputBuffer->mBuffers[channel].mData;
+        for (size_t channel = 0; channel < adapterNode_->getChannelCount(); ++channel) {
+          auto data = (float *)inputBuffer->mBuffers[channel].mData;
 
-          adapterNode_->buff_[channel]->write(channelData, numFrames);
+          adapterNode_->buff_[channel]->write(data, numFrames);
         }
       }
     }
@@ -125,8 +125,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
-    // TODO: pass sample rate, in case conversion is necessary
-    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
+    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
   }
 
   [nativeRecorder_ start];
@@ -227,7 +226,9 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 
   if (!isIdle()) {
     adapterNode_->init(
-        [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
+        [nativeRecorder_ getBufferSize],
+        [nativeRecorder_ getInputFormat].channelCount,
+        [nativeRecorder_ getInputFormat].sampleRate);
   }
 
   isConnected_.store(true, std::memory_order_release);

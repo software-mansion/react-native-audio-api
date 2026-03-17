@@ -1,13 +1,11 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
-
-#include <algorithm>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
@@ -17,35 +15,22 @@ WaveShaperNode::WaveShaperNode(
     : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
-  for (int i = 0; i < channelCount_; i++) {
-    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
+  for (size_t i = 0; i < channelCount_; i++) {
+    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
   }
   setCurve(options.curve);
-  // to change after graph processing improvement - should be max
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  isInitialized_ = true;
-}
-
-OverSampleType WaveShaperNode::getOversample() const {
-  return oversample_.load(std::memory_order_acquire);
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 void WaveShaperNode::setOversample(OverSampleType type) {
-  std::scoped_lock<std::mutex> lock(mutex_);
-  oversample_.store(type, std::memory_order_release);
+  oversample_ = type;
 
   for (int i = 0; i < waveShapers_.size(); i++) {
     waveShapers_[i]->setOversample(type);
   }
 }
 
-std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
-  std::scoped_lock<std::mutex> lock(mutex_);
-  return curve_;
-}
-
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
-  std::scoped_lock<std::mutex> lock(mutex_);
   curve_ = curve;
 
   for (int i = 0; i < waveShapers_.size(); i++) {
@@ -53,30 +38,20 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<AudioBus> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
+    const std::shared_ptr<AudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (!isInitialized_) {
-    return processingBus;
-  }
-
-  std::unique_lock<std::mutex> lock(mutex_, std::try_to_lock);
-
-  if (!lock.owns_lock()) {
-    return processingBus;
-  }
-
   if (curve_ == nullptr) {
-    return processingBus;
+    return processingBuffer;
   }
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
-    auto channelData = processingBus->getSharedChannel(channel);
+  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
+    auto channelData = processingBuffer->getChannel(channel);
 
-    waveShapers_[channel]->process(channelData, framesToProcess);
+    waveShapers_[channel]->process(*channelData, framesToProcess);
   }
 
-  return processingBus;
+  return processingBuffer;
 }
 
 } // namespace audioapi

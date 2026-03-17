@@ -5,8 +5,6 @@
 
 #include <concepts>
 #include <memory>
-#include <mutex>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -55,8 +53,8 @@ class AudioGraphManager {
     EventPayloadType payloadType;
     EventPayload payload;
 
-    Event(Event &&other);
-    Event &operator=(Event &&other);
+    Event(Event &&other) noexcept;
+    Event &operator=(Event &&other) noexcept;
     Event() : type(ConnectionType::CONNECT), payloadType(EventPayloadType::NODES), payload() {}
     ~Event();
   };
@@ -103,7 +101,7 @@ class AudioGraphManager {
 
   /// @brief Adds an audio buffer to the manager for destruction.
   /// @note Called directly from the Audio thread (bypasses SPSC).
-  void addAudioBuffeForDestruction(std::shared_ptr<AudioBuffer> buffer);
+  void addAudioBufferForDestruction(std::shared_ptr<AudioBuffer> buffer);
 
   void cleanup();
 

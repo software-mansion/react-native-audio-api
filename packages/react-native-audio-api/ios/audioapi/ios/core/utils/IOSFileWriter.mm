@@ -99,6 +99,15 @@ OpenFileResult IOSFileWriter::openFile(
       return OpenFileResult::Err("Error creating converter buffers");
     }
 
+    auto offloaderLambda = [this](WriterData data) {
+      taskOffloaderFunction(data);
+    };
+
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        WriterData,
+        FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+        FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+
     return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
   }
 }
@@ -134,23 +143,28 @@ CloseFileResult IOSFileWriter::closeFile()
 
     fileURL_ = nil;
     framesWritten_.store(0, std::memory_order_release);
+    offloader_.reset();
 
-    return CloseFileResult::Ok(std::make_tuple(fileDuration, fileSizeBytesMb));
+    return CloseFileResult::Ok(std::make_tuple(fileSizeBytesMb, fileDuration));
   }
 }
 
 /// @brief Writes audio data to the open audio file, performing format conversion if necessary.
 /// This method should be called from the audio thread.
-/// @param audioBufferList Pointer to the AudioBufferList containing the audio data to write.
-/// @param numFrames Number of audio frames in the audioBufferList.
-/// @returns True if the write operation was successful, false otherwise.
-bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
+void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
   if (audioFile_ == nil) {
     invokeOnErrorCallback("Attempted to write audio data when file is not open");
-    return false;
+  } else {
+    offloader_->getSender()->send({audioBufferList, numFrames});
   }
+}
 
+void IOSFileWriter::taskOffloaderFunction(WriterData data)
+{
+  auto [audioBufferList, numFrames] = data;
+  if (audioBufferList == nullptr)
+    return;
   @autoreleasepool {
     NSError *error = nil;
     AVAudioFormat *fileFormat = [audioFile_ processingFormat];
@@ -165,6 +179,8 @@ bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
             audioBufferList->mBuffers[i].mData,
             audioBufferList->mBuffers[i].mDataByteSize);
       }
+
+      audioBufferList = nullptr;
       converterInputBuffer_.frameLength = numFrames;
 
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
@@ -173,11 +189,11 @@ bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
         invokeOnErrorCallback(
             std::string("Error writing audio data to file, native error: ") +
             [[error debugDescription] UTF8String]);
-        return false;
+        return;
       }
 
       framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
-      return true;
+      return;
     }
 
     for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
@@ -187,6 +203,7 @@ bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
           audioBufferList->mBuffers[i].mDataByteSize);
     }
 
+    audioBufferList = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
@@ -211,7 +228,7 @@ bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
       invokeOnErrorCallback(
           std::string("Error during audio conversion, native error: ") +
           [[error debugDescription] UTF8String]);
-      return false;
+      return;
     }
 
     [audioFile_ writeFromBuffer:converterOutputBuffer_ error:&error];
@@ -220,11 +237,10 @@ bool IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
       invokeOnErrorCallback(
           std::string("Error writing audio data to file, native error: ") +
           [[error debugDescription] UTF8String]);
-      return false;
+      return;
     }
 
     framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
-    return true;
   }
 }
 

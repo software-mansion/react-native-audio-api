@@ -1,4 +1,3 @@
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -11,12 +10,12 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/types/NodeOptions.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -26,10 +25,9 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -43,7 +41,8 @@ BaseAudioContext::BaseAudioContext(
       sampleRate_(sampleRate),
       graphManager_(std::make_shared<AudioGraphManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      runtimeRegistry_(runtimeRegistry) {}
+      runtimeRegistry_(runtimeRegistry),
+      audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY) {}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
@@ -78,7 +77,7 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
 }
 
 void BaseAudioContext::setState(audioapi::ContextState state) {
-    state_.store(state, std::memory_order_release);
+  state_.store(state, std::memory_order_release);
 }
 
 std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
@@ -122,7 +121,8 @@ std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
   return recorderAdapter;
 }
 
-std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(const OscillatorOptions &options) {
+std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(
+    const OscillatorOptions &options) {
   auto oscillator = std::make_shared<OscillatorNode>(shared_from_this(), options);
   graphManager_->addSourceNode(oscillator);
   return oscillator;
@@ -191,10 +191,6 @@ std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueS
   return bufferSource;
 }
 
-std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(const AudioBufferOptions &options) {
-  return std::make_shared<AudioBuffer>(options);
-}
-
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
@@ -214,14 +210,11 @@ std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(const Convolver
   return convolver;
 }
 
-std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(const WaveShaperOptions &options) {
+std::shared_ptr<WaveShaperNode> BaseAudioContext::createWaveShaper(
+    const WaveShaperOptions &options) {
   auto waveShaper = std::make_shared<WaveShaperNode>(shared_from_this(), options);
   graphManager_->addProcessingNode(waveShaper);
   return waveShaper;
-}
-
-float BaseAudioContext::getNyquistFrequency() const {
-  return getSampleRate() / 2.0f;
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
@@ -261,7 +254,7 @@ std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandl
 }
 
 const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
-    return runtimeRegistry_;
+  return runtimeRegistry_;
 }
 
 } // namespace audioapi

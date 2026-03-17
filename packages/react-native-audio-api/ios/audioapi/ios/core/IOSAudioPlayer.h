@@ -10,13 +10,13 @@ typedef struct objc_object NativeAudioPlayer;
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioContext;
 
 class IOSAudioPlayer {
  public:
   IOSAudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount);
   ~IOSAudioPlayer();
@@ -30,9 +30,9 @@ class IOSAudioPlayer {
   bool isRunning() const;
 
  protected:
-  std::shared_ptr<AudioBus> audioBus_;
+  std::shared_ptr<AudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
+  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio_;
   int channelCount_;
   std::atomic<bool> isRunning_;
 };

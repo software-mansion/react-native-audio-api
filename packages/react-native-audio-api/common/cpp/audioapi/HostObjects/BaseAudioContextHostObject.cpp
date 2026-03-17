@@ -1,6 +1,4 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
-#include <audioapi/HostObjects/effects/WorkletNodeHostObject.h>
-#include <audioapi/HostObjects/effects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
@@ -11,6 +9,8 @@
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
@@ -24,7 +24,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 
 #include <memory>
-#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -60,7 +59,6 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
@@ -78,7 +76,8 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-    return jsi::String::createFromUtf8(runtime, js_enum_parser::contextStateToString(context_->getState()));
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::contextStateToString(context_->getState()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
@@ -260,24 +259,11 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
   return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);
 }
 
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBuffer) {
-  const auto options = args[0].asObject(runtime);
-  const auto audioBufferOptions =
-      audioapi::option_parser::parseAudioBufferOptions(runtime, options);
-  auto buffer = BaseAudioContext::createBuffer(audioBufferOptions);
-  auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-
-  auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
-  jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
-
-  return jsiObject;
-}
-
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
   auto arrayBufferReal =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
-  auto length = static_cast<int>(arrayBufferReal.size(runtime));
+  auto length = static_cast<int>(arrayBufferReal.size(runtime) / sizeof(float));
 
   auto arrayBufferImag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
@@ -309,7 +295,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   const auto convolverOptions = audioapi::option_parser::parseConvolverOptions(runtime, options);
   auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(context_, convolverOptions);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);
-  if (convolverOptions.bus != nullptr) {
+  if (convolverOptions.buffer != nullptr) {
     auto bufferHostObject = options.getProperty(runtime, "buffer")
                                 .getObject(runtime)
                                 .asHostObject<AudioBufferHostObject>(runtime);

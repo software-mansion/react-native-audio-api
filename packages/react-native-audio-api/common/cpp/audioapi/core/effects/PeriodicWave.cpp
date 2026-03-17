@@ -47,7 +47,8 @@ PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
   lowestFundamentalFrequency_ =
       static_cast<float>(nyquistFrequency) / static_cast<float>(getMaxNumberOfPartials());
   scale_ = static_cast<float>(getPeriodicWaveSize()) / static_cast<float>(sampleRate_);
-  bandLimitedTables_ = new float *[numberOfRanges_];
+  bandLimitedTables_ =
+      std::make_unique<AudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
 
   fft_ = std::make_unique<dsp::FFT>(getPeriodicWaveSize());
 }
@@ -69,14 +70,6 @@ PeriodicWave::PeriodicWave(
   createBandLimitedTables(complexData, length);
 }
 
-PeriodicWave::~PeriodicWave() {
-  for (int i = 0; i < numberOfRanges_; i++) {
-    delete[] bandLimitedTables_[i];
-  }
-  delete[] bandLimitedTables_;
-  bandLimitedTables_ = nullptr;
-}
-
 int PeriodicWave::getPeriodicWaveSize() const {
   if (sampleRate_ <= 24000) {
     return 2048;
@@ -94,13 +87,10 @@ float PeriodicWave::getScale() const {
 }
 
 float PeriodicWave::getSample(float fundamentalFrequency, float phase, float phaseIncrement) {
-  float *lowerWaveData = nullptr;
-  float *higherWaveData = nullptr;
+  WaveTableSource source = getWaveDataForFundamentalFrequency(fundamentalFrequency);
 
-  auto interpolationFactor =
-      getWaveDataForFundamentalFrequency(fundamentalFrequency, lowerWaveData, higherWaveData);
-
-  return doInterpolation(phase, phaseIncrement, interpolationFactor, lowerWaveData, higherWaveData);
+  return doInterpolation(
+      phase, phaseIncrement, source.interpolationFactor, *source.lower, *source.higher);
 }
 
 int PeriodicWave::getMaxNumberOfPartials() const {
@@ -217,31 +207,24 @@ void PeriodicWave::createBandLimitedTables(
     // Zero out the DC and nquist components.
     complexFFTData[0] = {0.0f, 0.0f};
 
-    bandLimitedTables_[rangeIndex] = new float[fftSize];
+    auto channel = bandLimitedTables_->getChannel(rangeIndex);
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
-    fft_->doInverseFFT(complexFFTData, bandLimitedTables_[rangeIndex]);
+    fft_->doInverseFFT(complexFFTData, *channel);
 
     if (!disableNormalization_ && rangeIndex == 0) {
-      float maxValue = dsp::maximumMagnitude(bandLimitedTables_[rangeIndex], fftSize);
+      float maxValue = channel->getMaxAbsValue();
       if (maxValue != 0) {
         normalizationFactor = 1.0f / maxValue;
       }
     }
 
-    dsp::multiplyByScalar(
-        bandLimitedTables_[rangeIndex],
-        normalizationFactor,
-        bandLimitedTables_[rangeIndex],
-        fftSize);
+    channel->scale(normalizationFactor);
   }
 }
 
-float PeriodicWave::getWaveDataForFundamentalFrequency(
-    float fundamentalFrequency,
-    float *&lowerWaveData,
-    float *&higherWaveData) {
+WaveTableSource PeriodicWave::getWaveDataForFundamentalFrequency(float fundamentalFrequency) const {
   // negative frequencies are allowed and will be treated as positive.
   fundamentalFrequency = std::fabs(fundamentalFrequency);
 
@@ -260,19 +243,19 @@ float PeriodicWave::getWaveDataForFundamentalFrequency(
       lowerRangeIndex < numberOfRanges_ - 1 ? lowerRangeIndex + 1 : lowerRangeIndex;
 
   // get the wave data for the lower and higher range index.
-  lowerWaveData = bandLimitedTables_[lowerRangeIndex];
-  higherWaveData = bandLimitedTables_[higherRangeIndex];
-
   // calculate the interpolation factor between the lower and higher range data.
-  return pitchRange - static_cast<float>(lowerRangeIndex);
+  return {
+      bandLimitedTables_->getChannel(lowerRangeIndex),
+      bandLimitedTables_->getChannel(higherRangeIndex),
+      pitchRange - static_cast<float>(lowerRangeIndex)};
 }
 
 float PeriodicWave::doInterpolation(
     float phase,
     float phaseIncrement,
     float waveTableInterpolationFactor,
-    const float *lowerWaveData,
-    const float *higherWaveData) const {
+    const AudioArray &lowerWaveData,
+    const AudioArray &higherWaveData) const {
   float lowerWaveDataSample = 0;
   float higherWaveDataSample = 0;
 
@@ -336,7 +319,6 @@ float PeriodicWave::doInterpolation(
     }
   }
 
-  return (1 - waveTableInterpolationFactor) * higherWaveDataSample +
-      waveTableInterpolationFactor * lowerWaveDataSample;
+  return std::lerp(higherWaveDataSample, lowerWaveDataSample, waveTableInterpolationFactor);
 }
 } // namespace audioapi

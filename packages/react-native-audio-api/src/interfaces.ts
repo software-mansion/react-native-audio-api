@@ -10,21 +10,19 @@ import type {
   OscillatorType,
   OverSampleType,
   Result,
-  TAnalyserOptions,
-  TAudioBufferOptions,
-  TAudioBufferSourceOptions,
-  TBaseAudioBufferSourceOptions,
-  TBiquadFilterOptions,
-  TConstantSourceOptions,
-  TConvolverOptions,
-  TDelayOptions,
-  TGainOptions,
-  TIIRFilterOptions,
-  TOscillatorOptions,
-  TStereoPannerOptions,
-  TStreamerOptions,
-  TWaveShaperOptions,
-  WindowType,
+  AnalyserOptions,
+  BaseAudioBufferSourceOptions,
+  BiquadFilterOptions,
+  ConstantSourceOptions,
+  DelayOptions,
+  GainOptions,
+  IAudioBufferSourceOptions,
+  IConvolverOptions,
+  IIRFilterOptions,
+  OscillatorOptions,
+  StereoPannerOptions,
+  StreamerOptions,
+  WaveShaperOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -76,35 +74,34 @@ export interface IBaseAudioContext {
     shareableWorklet: ShareableWorkletCallback,
     shouldUseUiRuntime: boolean
   ): IWorkletProcessingNode;
-  createOscillator(oscillatorOptions: TOscillatorOptions): IOscillatorNode;
+  createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
   createConstantSource(
-    constantSourceOptions: TConstantSourceOptions
+    constantSourceOptions: ConstantSourceOptions
   ): IConstantSourceNode;
-  createGain(gainOptions: TGainOptions): IGainNode;
+  createGain(gainOptions: GainOptions): IGainNode;
   createStereoPanner(
-    stereoPannerOptions: TStereoPannerOptions
+    stereoPannerOptions: StereoPannerOptions
   ): IStereoPannerNode;
   createBiquadFilter: (
-    biquadFilterOptions: TBiquadFilterOptions
+    biquadFilterOptions: BiquadFilterOptions
   ) => IBiquadFilterNode;
   createBufferSource: (
-    audioBufferSourceOptions: TAudioBufferSourceOptions
+    audioBufferSourceOptions: IAudioBufferSourceOptions
   ) => IAudioBufferSourceNode;
-  createDelay(delayOptions: TDelayOptions): IDelayNode;
-  createIIRFilter: (IIRFilterOptions: TIIRFilterOptions) => IIIRFilterNode;
+  createDelay(delayOptions: DelayOptions): IDelayNode;
+  createIIRFilter: (IIRFilterOptions: IIRFilterOptions) => IIIRFilterNode;
   createBufferQueueSource: (
-    audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
+    audioBufferQueueSourceOptions: BaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
-  createBuffer: (audioBufferOptions: TAudioBufferOptions) => IAudioBuffer;
   createPeriodicWave: (
     real: Float32Array,
     imag: Float32Array,
     disableNormalization: boolean
   ) => IPeriodicWave;
-  createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
-  createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
-  createWaveShaper: (waveShaperOptions?: TWaveShaperOptions) => IWaveShaperNode;
+  createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
+  createConvolver: (convolverOptions?: IConvolverOptions) => IConvolverNode;
+  createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
+  createWaveShaper: (waveShaperOptions?: WaveShaperOptions) => IWaveShaperNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -197,10 +194,7 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
-export interface IStreamerNode extends IAudioNode {
-  readonly streamPath: string;
-  initialize(streamPath: string): boolean;
-}
+export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;
@@ -291,7 +285,6 @@ export interface IAnalyserNode extends IAudioNode {
   minDecibels: number;
   maxDecibels: number;
   smoothingTimeConstant: number;
-  window: WindowType;
 
   getFloatFrequencyData: (array: Float32Array) => void;
   getByteFrequencyData: (array: Uint8Array) => void;

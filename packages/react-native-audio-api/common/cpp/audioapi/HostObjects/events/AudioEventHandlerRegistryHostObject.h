@@ -5,9 +5,6 @@
 #include <ReactCommon/CallInvoker.h>
 #include <jsi/jsi.h>
 #include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

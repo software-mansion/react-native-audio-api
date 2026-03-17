@@ -1,5 +1,6 @@
-#ifndef SIGNALSMITH_LINEAR_PLATFORM_FFT_PFFFT_H
-#define SIGNALSMITH_LINEAR_PLATFORM_FFT_PFFFT_H
+#pragma once
+
+#include <audioapi/libs/signalsmith-stretch/fft.h>
 
 #if defined(__has_include) && !__has_include("pffft/pffft.h")
 #	include <audioapi/libs/pffft/pffft.h>
@@ -8,7 +9,6 @@
 #endif
 
 #include <memory>
-#include <cmath>
 #include <complex>
 #include <cassert>
 #include <cstring>
@@ -219,4 +219,3 @@ private:
 };
 
 }} // namespace
-#endif // include guard

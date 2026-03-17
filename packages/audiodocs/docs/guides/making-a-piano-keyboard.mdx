@@ -3,6 +3,8 @@ sidebar_position: 3
 ---
 
 import InteractiveExample from '@site/src/components/InteractiveExample';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
 
 # Making a piano keyboard
 
@@ -194,7 +196,7 @@ It leaves a bit of an unpleasant feeling, right? So let’s try to make it a bit
 ## Envelopes ✉️
 
 We will start from the end this time, and finally, we will use new type of audio node - [`GainNode`](/docs/effects/gain-node) :tada: <br />
-`GainNode` is a simple node that can change the volume of any node (or nodes) connected to it. The `GainNode` has a single element called [`AudioParam`](/docs/core/audio-param) , which is also named `gain`..., a bit lame, but we have to live with that.
+`GainNode` is a simple node that can change the volume of any node (or nodes) connected to it. The `GainNode` has a single element called [`AudioParam`](/docs/core/audio-param), which is also named `gain`.
 
 ## What is an AudioParam?
 
@@ -203,10 +205,18 @@ For our use case, we are interested in two methods of an AudioParam:
 - [`setValueAtTime`](/docs/core/audio-param/#setvalueattime)
 - [`exponentialRampToValueAtTime`](/docs/core/audio-param/#exponentialramptovalueattime).
 
-So, how can we use that for our piano? <br />
-The title of one of the previous sections might ring a bell 🔔. <br />
+## What is an Envelope?
 
-Please read [`ADSR and envelope`](/docs/effects/gain-node#envelope---adsr) section to become familiar with common sound manipulation techniques.
+An envelope describes how a sound's amplitude changes over time. The most widely used model is **ADSR**, which stands for **Attack**, **Decay**, **Sustain**, and **Release**:
+
+- **Attack** — time to ramp from silence to peak volume.
+- **Decay** — time to fall from peak down to the sustain level.
+- **Sustain** — volume level held while the note is active.
+- **Release** — time to fade out after the note ends.
+
+<InteractivePlayground usePlayground={useGainAdsrPlayground} />
+
+You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
 
 ## Implementing the envelope
 

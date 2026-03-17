@@ -8,8 +8,7 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/utils/AudioBus.h>
-#include <iostream>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 #include <vector>
 
@@ -57,19 +56,15 @@ void convertFrameToBuffer(
 bool setupDecoderContext(
     AVFormatContext *fmt_ctx,
     int &audio_stream_index,
-    std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)>
-        &codec_ctx);
+    std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)> &codec_ctx);
 std::shared_ptr<AudioBuffer> decodeAudioFrames(
     AVFormatContext *fmt_ctx,
     AVCodecContext *codec_ctx,
     int audio_stream_index,
     int sample_rate);
 
-std::shared_ptr<AudioBuffer>
-decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
+std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
 
-std::shared_ptr<AudioBuffer> decodeWithFilePath(
-    const std::string &path,
-    int sample_rate);
+std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
 
 } // namespace audioapi::ffmpegdecoder

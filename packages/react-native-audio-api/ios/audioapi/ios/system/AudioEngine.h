@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode;
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format;
 - (void)detachInputNode;
 
 - (void)onInterruptionBegin;

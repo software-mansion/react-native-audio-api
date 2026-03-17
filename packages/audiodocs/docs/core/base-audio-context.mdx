@@ -172,6 +172,10 @@ Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 Creates [`StreamerNode`](/docs/sources/streamer-node).
 
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`StreamerOptions`](/docs/sources/streamer-node#streameroptions) | Streamer options to initialize. |
+
 #### Returns `StreamerNode`.
 
 ### `createWaveShaper`
@@ -275,33 +279,11 @@ If not provided, the audio will be automatically resampled to match the audio co
 #### Returns `Promise<AudioBuffer>`.
 
 <details>
-<summary>Example decoding with memory block</summary>
+<summary>Example decoding</summary>
 ```tsx
 const url = ... // url to an audio
 
-const buffer = await fetch(url)
-  .then((response) => response.arrayBuffer())
-  .then((arrayBuffer) => this.audioContext.decodeAudioData(arrayBuffer))
-  .catch((error) => {
-    console.error('Error decoding audio data source:', error);
-    return null;
-  });
-```
-</details>
-
-<details>
-<summary>Example using expo-asset library</summary>
-```tsx
-import { Asset } from 'expo-asset';
-
-const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
-    .downloadAsync()
-    .then((asset) =>  {
-      if (!asset.localUri) {
-        throw new Error('Failed to load audio asset');
-      }
-      return this.audioContext.decodeAudioData(asset.localUri);
-    })
+const buffer = await audioContext.decodeAudioData(url);
 ```
 </details>
 
@@ -336,6 +318,7 @@ const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 ### `ContextState`
 
 <details>
+<summary>Details</summary>
 
 **Acceptable values:**
   - `suspended`

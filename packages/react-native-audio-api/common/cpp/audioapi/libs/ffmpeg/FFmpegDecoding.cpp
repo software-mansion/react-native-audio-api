@@ -8,12 +8,11 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/core/sources/AudioBuffer.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <functional>
 
 namespace audioapi::ffmpegdecoder {
@@ -25,8 +24,7 @@ int read_packet(void *opaque, uint8_t *buf, int buf_size) {
     return AVERROR_EOF;
   }
 
-  int bytes_to_read =
-      std::min(buf_size, static_cast<int>(ctx->size - ctx->pos));
+  int bytes_to_read = std::min(buf_size, static_cast<int>(ctx->size - ctx->pos));
   memcpy(buf, ctx->data + ctx->pos, bytes_to_read);
   ctx->pos += bytes_to_read;
 
@@ -91,13 +89,9 @@ void convertFrameToBuffer(
 
   if (converted_samples > 0) {
     const size_t current_size = buffer.size();
-    const size_t new_samples =
-        static_cast<size_t>(converted_samples) * output_channel_count;
+    const size_t new_samples = static_cast<size_t>(converted_samples) * output_channel_count;
     buffer.resize(current_size + new_samples);
-    memcpy(
-        buffer.data() + current_size,
-        resampled_data[0],
-        new_samples * sizeof(float));
+    memcpy(buffer.data() + current_size, resampled_data[0], new_samples * sizeof(float));
     framesRead += converted_samples;
   }
 }
@@ -206,8 +200,7 @@ inline int findAudioStreamIndex(AVFormatContext *fmt_ctx) {
 bool setupDecoderContext(
     AVFormatContext *fmt_ctx,
     int &audio_stream_index,
-    std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>>
-        &codec_ctx) {
+    std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>> &codec_ctx) {
   audio_stream_index = findAudioStreamIndex(fmt_ctx);
   if (audio_stream_index == -1) {
     return false;
@@ -241,37 +234,30 @@ std::shared_ptr<AudioBuffer> decodeAudioFrames(
     int audio_stream_index,
     int sample_rate) {
   size_t framesRead = 0;
-  int output_sample_rate =
-      (sample_rate > 0) ? sample_rate : codec_ctx->sample_rate;
+  int output_sample_rate = (sample_rate > 0) ? sample_rate : codec_ctx->sample_rate;
   int output_channel_count = codec_ctx->ch_layout.nb_channels;
 
   std::vector<float> decoded_buffer = readAllPcmFrames(
-      fmt_ctx,
-      codec_ctx,
-      output_sample_rate,
-      output_channel_count,
-      audio_stream_index,
-      framesRead);
+      fmt_ctx, codec_ctx, output_sample_rate, output_channel_count, audio_stream_index, framesRead);
 
   if (framesRead == 0 || decoded_buffer.empty()) {
     return nullptr;
   }
 
   auto outputFrames = decoded_buffer.size() / output_channel_count;
-  auto audioBus = std::make_shared<AudioBus>(
-      outputFrames, output_channel_count, output_sample_rate);
+  auto audioBuffer =
+      std::make_shared<AudioBuffer>(outputFrames, output_channel_count, output_sample_rate);
 
-  for (int ch = 0; ch < output_channel_count; ++ch) {
-    auto channelData = audioBus->getChannel(ch)->getData();
+  for (size_t ch = 0; ch < output_channel_count; ++ch) {
+    auto channelData = audioBuffer->getChannel(ch)->span();
     for (int i = 0; i < outputFrames; ++i) {
       channelData[i] = decoded_buffer[i * output_channel_count + ch];
     }
   }
-  return std::make_shared<AudioBuffer>(audioBus);
+  return audioBuffer;
 }
 
-std::shared_ptr<AudioBuffer>
-decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
+std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
   if (data == nullptr || size == 0) {
     return nullptr;
   }
@@ -284,17 +270,9 @@ decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
     return nullptr;
   }
 
-  auto avio_ctx =
-      std::unique_ptr<AVIOContext, std::function<void(AVIOContext *)>>(
-          avio_alloc_context(
-              io_buffer,
-              buffer_size,
-              0,
-              &io_ctx,
-              read_packet,
-              nullptr,
-              seek_packet),
-          [](AVIOContext *ctx) { avio_context_free(&ctx); });
+  auto avio_ctx = std::unique_ptr<AVIOContext, std::function<void(AVIOContext *)>>(
+      avio_alloc_context(io_buffer, buffer_size, 0, &io_ctx, read_packet, nullptr, seek_packet),
+      [](AVIOContext *ctx) { avio_context_free(&ctx); });
   if (avio_ctx == nullptr) {
     return nullptr;
   }
@@ -310,29 +288,24 @@ decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
     return nullptr;
   }
 
-  auto fmt_ctx =
-      std::unique_ptr<AVFormatContext, decltype(&avformat_free_context)>(
-          raw_fmt_ctx, &avformat_free_context);
+  auto fmt_ctx = std::unique_ptr<AVFormatContext, decltype(&avformat_free_context)>(
+      raw_fmt_ctx, &avformat_free_context);
 
   if (avformat_find_stream_info(fmt_ctx.get(), nullptr) < 0) {
     return nullptr;
   }
 
-  auto codec_ctx =
-      std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>>(
-          nullptr, [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
+  auto codec_ctx = std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>>(
+      nullptr, [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
   int audio_stream_index = -1;
   if (!setupDecoderContext(fmt_ctx.get(), audio_stream_index, codec_ctx)) {
     return nullptr;
   }
 
-  return decodeAudioFrames(
-      fmt_ctx.get(), codec_ctx.get(), audio_stream_index, sample_rate);
+  return decodeAudioFrames(fmt_ctx.get(), codec_ctx.get(), audio_stream_index, sample_rate);
 }
 
-std::shared_ptr<AudioBuffer> decodeWithFilePath(
-    const std::string &path,
-    int sample_rate) {
+std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate) {
   if (path.empty()) {
     return nullptr;
   }
@@ -341,25 +314,21 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(
   if (avformat_open_input(&raw_fmt_ctx, path.c_str(), nullptr, nullptr) < 0)
     return nullptr;
 
-  auto fmt_ctx =
-      std::unique_ptr<AVFormatContext, std::function<void(AVFormatContext *)>>(
-          raw_fmt_ctx,
-          [](AVFormatContext *ctx) { avformat_close_input(&ctx); });
+  auto fmt_ctx = std::unique_ptr<AVFormatContext, std::function<void(AVFormatContext *)>>(
+      raw_fmt_ctx, [](AVFormatContext *ctx) { avformat_close_input(&ctx); });
 
   if (avformat_find_stream_info(fmt_ctx.get(), nullptr) < 0) {
     return nullptr;
   }
 
-  auto codec_ctx =
-      std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>>(
-          nullptr, [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
+  auto codec_ctx = std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext *)>>(
+      nullptr, [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
   int audio_stream_index = -1;
   if (!setupDecoderContext(fmt_ctx.get(), audio_stream_index, codec_ctx)) {
     return nullptr;
   }
 
-  return decodeAudioFrames(
-      fmt_ctx.get(), codec_ctx.get(), audio_stream_index, sample_rate);
+  return decodeAudioFrames(fmt_ctx.get(), codec_ctx.get(), audio_stream_index, sample_rate);
 }
 
 } // namespace audioapi::ffmpegdecoder

@@ -4,14 +4,13 @@
 #include <audioapi/core/types/OscillatorType.h>
 
 #include <memory>
-#include <string>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
 struct OscillatorOptions;
 class BaseAudioContext;
+class AudioParamHostObject;
 
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
@@ -26,5 +25,10 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   JSI_HOST_FUNCTION_DECL(setPeriodicWave);
 
   JSI_PROPERTY_SETTER_DECL(type);
+
+ private:
+  std::shared_ptr<AudioParamHostObject> frequencyParam_;
+  std::shared_ptr<AudioParamHostObject> detuneParam_;
+  OscillatorType type_;
 };
 } // namespace audioapi

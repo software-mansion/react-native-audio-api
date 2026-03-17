@@ -2,17 +2,15 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.h>
 #include <memory>
 
 namespace audioapi {
 
 AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
-    : AudioNode(context), currentSampleFrame_(0) {
-  numberOfOutputs_ = 0;
-  numberOfInputs_ = 1;
-  channelCountMode_ = ChannelCountMode::EXPLICIT;
-  isInitialized_ = true;
+    : AudioNode(context, AudioDestinationOptions()), currentSampleFrame_(0) {
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
@@ -20,33 +18,30 @@ std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
 }
 
 double AudioDestinationNode::getCurrentTime() const {
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    return static_cast<double>(getCurrentSampleFrame()) / context->getSampleRate();
-  } else {
-    return 0.0;
-  }
+  return static_cast<double>(getCurrentSampleFrame()) / getContextSampleRate();
 }
 
 void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<AudioBus> &destinationBus,
+    const std::shared_ptr<AudioBuffer> &destinationBuffer,
     int numFrames) {
-  if (numFrames < 0 || !destinationBus || !isInitialized_) {
+  if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      context->getGraphManager()->preProcessGraph();
+    context->processAudioEvents();
+    context->getGraphManager()->preProcessGraph();
   }
 
-  destinationBus->zero();
+  destinationBuffer->zero();
 
-  auto processedBus = processAudio(destinationBus, numFrames, true);
+  auto processedBuffer = processAudio(destinationBuffer, numFrames, true);
 
-  if (processedBus && processedBus != destinationBus) {
-    destinationBus->copy(processedBus.get());
+  if (processedBuffer && processedBuffer != destinationBuffer) {
+    destinationBuffer->copy(*processedBuffer);
   }
 
-  destinationBus->normalize();
+  destinationBuffer->normalize();
 
   currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 }

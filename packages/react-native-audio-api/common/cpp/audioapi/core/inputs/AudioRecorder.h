@@ -9,7 +9,7 @@
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioFileWriter;
 class CircularAudioArray;
 class RecorderAdapterNode;

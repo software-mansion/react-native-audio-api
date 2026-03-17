@@ -1,17 +1,15 @@
 #pragma once
 
-#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+#include <audioapi/utils/AudioBuffer.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
-class AudioBus;
+class AudioBuffer;
 class AudioParam;
 struct AudioBufferSourceOptions;
 
@@ -20,29 +18,40 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   explicit AudioBufferSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioBufferSourceOptions &options);
-  ~AudioBufferSourceNode() override;
 
-  [[nodiscard]] bool getLoop() const;
-  [[nodiscard]] bool getLoopSkip() const;
-  [[nodiscard]] double getLoopStart() const;
-  [[nodiscard]] double getLoopEnd() const;
-  [[nodiscard]] std::shared_ptr<AudioBuffer> getBuffer() const;
-
+  /// @note Audio Thread only
   void setLoop(bool loop);
+
+  /// @note Audio Thread only
   void setLoopSkip(bool loopSkip);
+
+  /// @note Audio Thread only
   void setLoopStart(double loopStart);
+
+  /// @note Audio Thread only
   void setLoopEnd(double loopEnd);
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+
+  /// @note Audio Thread only
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      const std::shared_ptr<AudioBuffer> &playbackRateBuffer,
+      const std::shared_ptr<AudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
+  /// @note Audio Thread only
   void start(double when, double offset, double duration = -1);
+
+  /// @note Audio Thread only
   void disable() override;
 
+  /// @note Audio Thread only
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
+  void unregisterOnLoopEndedCallback(uint64_t callbackId);
+
  protected:
-  std::shared_ptr<AudioBus> processNode(
-      const std::shared_ptr<AudioBus> &processingBus,
+  std::shared_ptr<AudioBuffer> processNode(
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
   double getCurrentPosition() const override;
 
@@ -55,19 +64,18 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  std::shared_ptr<AudioBus> alignedBus_;
 
-  std::atomic<uint64_t> onLoopEndedCallbackId_ = 0; // 0 means no callback
+  uint64_t onLoopEndedCallbackId_ = 0; // 0 means no callback
   void sendOnLoopEndedEvent();
 
   void processWithoutInterpolation(
-      const std::shared_ptr<AudioBus> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;
 
   void processWithInterpolation(
-      const std::shared_ptr<AudioBus> &processingBus,
+      const std::shared_ptr<AudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) override;

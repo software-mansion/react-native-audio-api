@@ -6,8 +6,6 @@
 
 #include <jsi/jsi.h>
 #include <memory>
-#include <utility>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

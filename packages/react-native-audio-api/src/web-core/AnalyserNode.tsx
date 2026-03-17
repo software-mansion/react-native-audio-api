@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode';
-import { WindowType, TAnalyserOptions } from '../types';
+import { AnalyserOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class AnalyserNode extends AudioNode {
@@ -9,7 +9,7 @@ export default class AnalyserNode extends AudioNode {
   maxDecibels: number;
   smoothingTimeConstant: number;
 
-  constructor(context: BaseAudioContext, analyserOptions?: TAnalyserOptions) {
+  constructor(context: BaseAudioContext, analyserOptions?: AnalyserOptions) {
     const node = new globalThis.AnalyserNode(context.context, analyserOptions);
     super(context, node);
 
@@ -18,16 +18,6 @@ export default class AnalyserNode extends AudioNode {
     this.minDecibels = node.minDecibels;
     this.maxDecibels = node.maxDecibels;
     this.smoothingTimeConstant = node.smoothingTimeConstant;
-  }
-
-  public get window(): WindowType {
-    return 'blackman';
-  }
-
-  public set window(value: WindowType) {
-    console.log(
-      'React Native Audio API: setting window is not supported on web'
-    );
   }
 
   public getByteFrequencyData(array: Uint8Array): void {

@@ -1,9 +1,8 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
-#include "BaseAudioContext.h"
 
-#include <map>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -23,9 +22,13 @@ class OfflineAudioContext : public BaseAudioContext {
       const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
 
+  /// @note JS Thread only
   void resume();
+
+  /// @note JS Thread only
   void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
 
+  /// @note JS Thread only
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:
@@ -38,7 +41,7 @@ class OfflineAudioContext : public BaseAudioContext {
   int numberOfChannels_;
   size_t currentSampleFrame_;
 
-  std::shared_ptr<AudioBus> resultBus_;
+  std::shared_ptr<AudioBuffer> resultBuffer_;
 
   void renderAudio();
 
