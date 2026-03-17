@@ -57,6 +57,7 @@ const config = {
         },
       },
     ],
+    require.resolve('@swmansion/t-rex-ui/preset'),
   ],
 
   stylesheets: [

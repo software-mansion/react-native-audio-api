@@ -80,7 +80,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
-  auto length = static_cast<int>(arrayBuffer.size(runtime));
+  auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
 
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   analyserNode->getFloatFrequencyData(data, length);
@@ -104,7 +104,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
-  auto length = static_cast<int>(arrayBuffer.size(runtime));
+  auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
 
   auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
   analyserNode->getFloatTimeDomainData(data, length);
