@@ -438,6 +438,6 @@ class AlignedAudioBuffer {
 };
 
 using AudioBuffer = AlignedAudioBuffer<alignof(std::max_align_t)>;
-using DSPAudioBuffer = AlignedAudioBuffer<64>;
+using DSPAudioBuffer = AlignedAudioBuffer<kDSPAlignment>;
 
 } // namespace audioapi
