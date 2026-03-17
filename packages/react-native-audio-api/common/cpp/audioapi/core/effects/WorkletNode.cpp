@@ -20,8 +20,8 @@ WorkletNode::WorkletNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer> WorkletNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t processed = 0;
   size_t channelCount_ =

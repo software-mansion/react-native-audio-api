@@ -2,6 +2,7 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <functional>
 #include <memory>
@@ -37,7 +38,7 @@ class AudioContext : public BaseAudioContext {
 
   bool isDriverRunning() const override;
 
-  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio();
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
 };
 
 } // namespace audioapi

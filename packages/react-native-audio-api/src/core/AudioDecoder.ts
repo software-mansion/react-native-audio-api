@@ -92,7 +92,11 @@ class AudioDecoder {
       ? stringSource.replace('file://', '')
       : stringSource;
 
-    if (Platform.OS === 'android' && !__DEV__) {
+    if (
+      Platform.OS === 'android' &&
+      !__DEV__ &&
+      !stringSource.startsWith('file://')
+    ) {
       filePath = NativeAudioAPIModule.resolveAndroidReleaseAsset(filePath);
       if (!filePath) {
         throw new AudioApiError(

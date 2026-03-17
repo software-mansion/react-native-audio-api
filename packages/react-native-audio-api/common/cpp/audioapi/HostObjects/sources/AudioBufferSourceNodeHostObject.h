@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
@@ -10,7 +11,6 @@ using namespace facebook;
 struct AudioBufferSourceOptions;
 class BaseAudioContext;
 class AudioBufferHostObject;
-class AudioBuffer;
 
 class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:

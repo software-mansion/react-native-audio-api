@@ -1,8 +1,8 @@
 #include <audioapi/core/utils/AudioStretcher.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/libs/audio-stretch/stretch.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <cstdint>
 #include <memory>
 #include <vector>

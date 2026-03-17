@@ -2,8 +2,8 @@
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 namespace audioapi {
@@ -25,8 +25,6 @@ OscillatorNode::OscillatorNode(
   } else {
     periodicWave_ = context->getBasicWaveForm(type_);
   }
-
-  audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 
   isInitialized_.store(true, std::memory_order_release);
 }
@@ -51,8 +49,8 @@ void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &period
   type_ = OscillatorType::CUSTOM;
 }
 
-std::shared_ptr<AudioBuffer> OscillatorNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> OscillatorNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;

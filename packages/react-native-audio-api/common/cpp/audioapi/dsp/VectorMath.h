@@ -67,8 +67,6 @@ void multiply(
 // Finds the maximum magnitude of a float vector.
 float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
 
-float computeConvolution(const float *state, const float *kernel, size_t kernelSize);
-
 void interleaveStereo(
     const float *inputLeft,
     const float *inputRight,

@@ -5,8 +5,8 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <audioapi/utils/ThreadPool.hpp>
 
 #include <memory>
@@ -80,17 +80,17 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     convolvers.back().init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
 
-  auto internalBuffer = std::make_shared<AudioBuffer>(
+  auto internalBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE * 2, convolverNode->getChannelCount(), copiedBuffer->getSampleRate());
-  auto intermediateBuffer = std::make_shared<AudioBuffer>(
+  auto intermediateBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE, convolvers.size(), copiedBuffer->getSampleRate());
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
     std::vector<Convolver> convolvers;
     std::shared_ptr<ThreadPool> threadPool;
-    std::shared_ptr<AudioBuffer> internalBuffer;
-    std::shared_ptr<AudioBuffer> intermediateBuffer;
+    std::shared_ptr<DSPAudioBuffer> internalBuffer;
+    std::shared_ptr<DSPAudioBuffer> intermediateBuffer;
     float scaleFactor;
   };
 

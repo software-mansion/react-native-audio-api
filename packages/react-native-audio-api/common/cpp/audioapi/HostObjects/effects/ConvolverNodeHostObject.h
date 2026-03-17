@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
@@ -9,7 +10,6 @@ using namespace facebook;
 
 struct ConvolverOptions;
 class BaseAudioContext;
-class AudioBuffer;
 
 class ConvolverNodeHostObject : public AudioNodeHostObject {
  public:

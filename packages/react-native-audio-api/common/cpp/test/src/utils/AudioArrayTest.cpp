@@ -1,4 +1,4 @@
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <gtest/gtest.h>
 
 #include <numeric>
@@ -568,46 +568,4 @@ TEST_F(AudioArrayTest, GetMaxAbsValue) {
   arr[2] = 1.0f;
   arr[3] = -2.0f;
   EXPECT_FLOAT_EQ(arr.getMaxAbsValue(), 5.0f);
-}
-
-// ---------------------------------------------------------------------------
-// ComputeConvolution
-// ---------------------------------------------------------------------------
-
-TEST_F(AudioArrayTest, ComputeConvolutionBasic) {
-  AudioArray signal(4);
-  signal[0] = 1.0f;
-  signal[1] = 2.0f;
-  signal[2] = 3.0f;
-  signal[3] = 4.0f;
-
-  AudioArray kernel(2);
-  kernel[0] = 1.0f;
-  kernel[1] = 0.5f;
-
-  // convolution at startIndex=0: signal[0]*kernel[0] + signal[1]*kernel[1] = 1*1 + 2*0.5 = 2.0
-  float result = signal.computeConvolution(kernel, 0);
-  EXPECT_FLOAT_EQ(result, 2.0f);
-}
-
-TEST_F(AudioArrayTest, ComputeConvolutionWithOffset) {
-  AudioArray signal(4);
-  signal[0] = 1.0f;
-  signal[1] = 2.0f;
-  signal[2] = 3.0f;
-  signal[3] = 4.0f;
-
-  AudioArray kernel(2);
-  kernel[0] = 1.0f;
-  kernel[1] = 1.0f;
-
-  // at startIndex=2: signal[2]*kernel[0] + signal[3]*kernel[1] = 3 + 4 = 7.0
-  float result = signal.computeConvolution(kernel, 2);
-  EXPECT_FLOAT_EQ(result, 7.0f);
-}
-
-TEST_F(AudioArrayTest, ComputeConvolutionThrowsOnOutOfRange) {
-  AudioArray signal(4);
-  AudioArray kernel(4);
-  EXPECT_THROW(auto x = signal.computeConvolution(kernel, 2), std::out_of_range);
 }

@@ -4,8 +4,8 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -17,8 +17,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
       pitchCorrection_(options.pitchCorrection),
-      playbackRateBuffer_(
-          std::make_shared<AudioBuffer>(
+      playbackRateBuffer_( // TODO refactor init
+          std::make_shared<DSPAudioBuffer>(
               RENDER_QUANTUM_SIZE * 3,
               channelCount_,
               context->getSampleRate())),
@@ -81,7 +81,7 @@ void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -130,7 +130,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 }
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;

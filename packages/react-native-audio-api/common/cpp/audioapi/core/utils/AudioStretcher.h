@@ -1,11 +1,10 @@
 #pragma once
 
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 class AudioStretcher {
  public:
