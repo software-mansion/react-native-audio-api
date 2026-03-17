@@ -7,7 +7,7 @@ namespace audioapi {
 
 class MyProcessorNode : public AudioNode {
 public:
-  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context, );
+  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context);
 
 protected:
   std::shared_ptr<DSPAudioBuffer>
