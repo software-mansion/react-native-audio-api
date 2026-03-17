@@ -51,7 +51,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 
     if (isConnected()) {
       isConnected_.store(false, std::memory_order_release);
-      adapterNode_->cleanup();
+      adapterNode_->adapterCleanup();
     }
   }
 
@@ -200,7 +200,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   }
 
   if (isConnected()) {
-    adapterNode_->cleanup();
+    adapterNode_->adapterCleanup();
   }
 
   filePath_ = "";

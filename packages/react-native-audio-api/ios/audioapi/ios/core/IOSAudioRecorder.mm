@@ -170,7 +170,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   }
 
   if (isConnected()) {
-    adapterNode_->cleanup();
+    adapterNode_->adapterCleanup();
   }
 
   filePath_ = "";
