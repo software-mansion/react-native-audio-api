@@ -113,6 +113,7 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 
 struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   std::vector<uint8_t> data;
+  std::string filePath;
 };
 
 struct StreamerOptions : AudioScheduledSourceNodeOptions {

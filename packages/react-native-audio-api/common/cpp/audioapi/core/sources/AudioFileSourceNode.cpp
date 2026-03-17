@@ -6,6 +6,7 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <cstdio>
 #include <memory>
 #include <utility>
 
@@ -15,9 +16,14 @@ AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options) {
-  if (!options.data.empty()) {
+  const bool useFilePath = !options.filePath.empty();
+  const bool useData = !options.data.empty();
+
+  if (useFilePath || useData) {
     auto state = std::make_shared<AudioFileDecoderState>();
-    state->memoryData = options.data;
+    if (useData) {
+      state->memoryData = options.data;
+    }
 
     ma_decoder_config config =
         ma_decoder_config_init(ma_format_f32, 0, static_cast<ma_uint32>(context->getSampleRate()));
@@ -26,8 +32,14 @@ AudioFileSourceNode::AudioFileSourceNode(
     config.ppCustomBackendVTables = customBackends;
     config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
 
-    ma_result result = ma_decoder_init_memory(
-        state->memoryData.data(), state->memoryData.size(), &config, &state->decoder);
+    ma_result result;
+    if (useFilePath) {
+      result = ma_decoder_init_file(options.filePath.c_str(), &config, &state->decoder);
+    } else {
+      result = ma_decoder_init_memory(
+          state->memoryData.data(), state->memoryData.size(), &config, &state->decoder);
+    }
+
     if (result == MA_SUCCESS) {
       state->channels = static_cast<int>(state->decoder.outputChannels);
       state->sampleRate = static_cast<float>(state->decoder.outputSampleRate);

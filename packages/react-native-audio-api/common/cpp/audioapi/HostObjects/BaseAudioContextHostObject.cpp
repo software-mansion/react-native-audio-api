@@ -255,12 +255,16 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
   AudioFileSourceOptions options;
   if (count > 0 && !args[0].isUndefined() && !args[0].isNull()) {
-    auto obj = args[0].asObject(runtime);
-    if (obj.isArrayBuffer(runtime)) {
-      auto arrayBuffer = obj.getArrayBuffer(runtime);
-      auto *data = arrayBuffer.data(runtime);
-      auto size = arrayBuffer.size(runtime);
-      options.data = std::vector<uint8_t>(data, data + size);
+    if (args[0].isString()) {
+      options.filePath = args[0].getString(runtime).utf8(runtime);
+    } else {
+      auto obj = args[0].asObject(runtime);
+      if (obj.isArrayBuffer(runtime)) {
+        auto arrayBuffer = obj.getArrayBuffer(runtime);
+        auto *data = arrayBuffer.data(runtime);
+        auto size = arrayBuffer.size(runtime);
+        options.data = std::vector<uint8_t>(data, data + size);
+      }
     }
   }
   const auto fileSourceHostObject =

@@ -135,8 +135,8 @@ export default class BaseAudioContext {
     return new StreamerNode(this, { streamPath });
   }
 
-  createAudioFileSource(arrayBuffer: ArrayBuffer): AudioFileSourceNode {
-    return new AudioFileSourceNode(this, arrayBuffer);
+  createAudioFileSource(source: ArrayBuffer | string): AudioFileSourceNode {
+    return new AudioFileSourceNode(this, source);
   }
 
   createConstantSource(): ConstantSourceNode {
