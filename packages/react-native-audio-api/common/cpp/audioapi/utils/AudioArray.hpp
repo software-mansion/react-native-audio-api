@@ -258,16 +258,6 @@ class AlignedAudioArray {
     return dsp::maximumMagnitude(alignedData(), size_);
   }
 
-  template <size_t OtherAlignment>
-  [[nodiscard]] float computeConvolution(
-      const AlignedAudioArray<OtherAlignment> &kernel,
-      size_t startIndex = 0) const {
-    if (kernel.size_ > size_ - startIndex) [[unlikely]] {
-      throw std::out_of_range("Kernel size exceeds available data for convolution.");
-    }
-    return dsp::computeConvolution(alignedData() + startIndex, kernel.alignedData(), kernel.size_);
-  }
-
  private:
   [[nodiscard]] float *alignedData() noexcept {
     return std::assume_aligned<Alignment>(data_.data());
