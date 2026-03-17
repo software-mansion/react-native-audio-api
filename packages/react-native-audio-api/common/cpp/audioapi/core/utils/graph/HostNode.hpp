@@ -38,8 +38,8 @@ template <AudioGraphNode NodeType>
 class HostNode {
  public:
   using GraphType = Graph<NodeType>;
-  using HNode = typename HostGraph<NodeType>::Node;
-  using ResultError = typename HostGraph<NodeType>::ResultError;
+  using HNode = HostGraph<NodeType>::Node;
+  using ResultError = HostGraph<NodeType>::ResultError;
   using Res = Result<NoneType, ResultError>;
 
   /// @brief Constructs a HostNode, adding it to the graph.
@@ -48,9 +48,7 @@ class HostNode {
   /// @param audioNode the audio processing payload (ownership transferred
   ///                  through to AudioGraph via NodeHandle)
   explicit HostNode(std::shared_ptr<GraphType> graph, std::unique_ptr<NodeType> audioNode = nullptr)
-      : graph_(std::move(graph)) {
-    node_ = graph_->addNode(std::move(audioNode));
-  }
+      : graph_(std::move(graph)), node_(graph_->addNode(std::move(audioNode))) {}
 
   /// @brief Destructor removes the node from the graph.
   /// This marks the node as a ghost in HostGraph, and schedules an event

@@ -34,7 +34,7 @@ namespace audioapi::utils::graph {
 /// ```
 template <AudioGraphNode NodeType>
 class Graph {
-  using AGEvent = typename HostGraph<NodeType>::AGEvent;
+  using AGEvent = HostGraph<NodeType>::AGEvent;
 
   // ── Event channel (main → audio): grow + graph mutations ───────────────
 
@@ -47,10 +47,10 @@ class Graph {
       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
 
-  using HNode = typename HostGraph<NodeType>::Node;
+  using HNode = HostGraph<NodeType>::Node;
 
  public:
-  using ResultError = typename HostGraph<NodeType>::ResultError;
+  using ResultError = HostGraph<NodeType>::ResultError;
   using Res = Result<NoneType, ResultError>;
 
   explicit Graph(size_t eventQueueCapacity) {
