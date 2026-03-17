@@ -3,6 +3,7 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/core/utils/Constants.h>
 
 #include <memory>
 
@@ -85,10 +86,9 @@ std::shared_ptr<DSPAudioBuffer> OscillatorNode::processNode(
 
   auto channelSpan = processingBuffer->getChannel(0)->span();
   float currentPhase = phase_;
-  constexpr float kCentsToRatio = 1.0f / 1200.0f;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : exp2f(detuneSpan[i] * kCentsToRatio);
+    auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : exp2f(detuneSpan[i] * CENTS_TO_RATIO);
     auto detunedFrequency = freqSpan[i] * detuneRatio;
     auto phaseIncrement = detunedFrequency * tableScale;
 

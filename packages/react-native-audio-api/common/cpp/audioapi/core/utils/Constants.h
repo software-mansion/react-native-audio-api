@@ -15,6 +15,7 @@ static constexpr int MAX_CHANNEL_COUNT = 32;
 static constexpr float DEFAULT_SAMPLE_RATE = 44100.0f;
 static constexpr int OCTAVE_RANGE = 1200;
 static constexpr int BIQUAD_GAIN_DB_FACTOR = 40;
+constexpr float CENTS_TO_RATIO = 1.0f / 1200.0f;
 
 // stretcher
 static constexpr float UPPER_FREQUENCY_LIMIT_DETECTION = 333.0f;

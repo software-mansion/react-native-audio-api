@@ -271,8 +271,8 @@ class AlignedAudioArray {
   size_t size_ = 0;
 };
 
-inline constexpr size_t kDSPAlignment = 64;
+inline constexpr size_t DSP_ALIGNMENT = 64;
 using AudioArray = AlignedAudioArray<alignof(std::max_align_t)>;
-using DSPAudioArray = AlignedAudioArray<kDSPAlignment>;
+using DSPAudioArray = AlignedAudioArray<DSP_ALIGNMENT>;
 
 } // namespace audioapi
