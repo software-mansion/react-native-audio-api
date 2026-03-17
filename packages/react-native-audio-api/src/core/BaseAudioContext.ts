@@ -10,6 +10,7 @@ import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioFileSourceNode from './AudioFileSourceNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
@@ -132,6 +133,10 @@ export default class BaseAudioContext {
 
   createStreamer(streamPath: string): StreamerNode {
     return new StreamerNode(this, { streamPath });
+  }
+
+  createAudioFileSource(arrayBuffer: ArrayBuffer): AudioFileSourceNode {
+    return new AudioFileSourceNode(this, arrayBuffer);
   }
 
   createConstantSource(): ConstantSourceNode {

@@ -14,6 +14,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
@@ -58,6 +59,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createFileSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
@@ -248,6 +250,22 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
   auto bufferSourceHostObject =
       std::make_shared<AudioBufferSourceNodeHostObject>(context_, audioBufferSourceOptions);
   return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
+  AudioFileSourceOptions options;
+  if (count > 0 && !args[0].isUndefined() && !args[0].isNull()) {
+    auto obj = args[0].asObject(runtime);
+    if (obj.isArrayBuffer(runtime)) {
+      auto arrayBuffer = obj.getArrayBuffer(runtime);
+      auto *data = arrayBuffer.data(runtime);
+      auto size = arrayBuffer.size(runtime);
+      options.data = std::vector<uint8_t>(data, data + size);
+    }
+  }
+  const auto fileSourceHostObject =
+      std::make_shared<AudioFileSourceNodeHostObject>(context_, options);
+  return jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {

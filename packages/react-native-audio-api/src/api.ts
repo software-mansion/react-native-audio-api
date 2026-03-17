@@ -4,6 +4,7 @@ export { default as AnalyserNode } from './core/AnalyserNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferQueueSourceNode } from './core/AudioBufferQueueSourceNode';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
+export { default as AudioFileSourceNode } from './core/AudioFileSourceNode';
 export { default as AudioContext } from './core/AudioContext';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';

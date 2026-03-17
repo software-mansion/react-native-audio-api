@@ -102,6 +102,7 @@ export interface IBaseAudioContext {
   createConvolver: (convolverOptions?: IConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: WaveShaperOptions) => IWaveShaperNode;
+  createFileSource: (arrayBuffer: ArrayBuffer) => IAudioFileSourceNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -227,6 +228,8 @@ export interface IAudioBufferQueueSourceNode
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onBufferEnded: string;
 }
+
+export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IConvolverNode extends IAudioNode {
   readonly buffer: IAudioBuffer | null;
