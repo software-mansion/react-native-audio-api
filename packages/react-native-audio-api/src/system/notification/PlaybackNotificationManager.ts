@@ -1,7 +1,7 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
 import { NativeAudioAPIModule } from '../../specs';
 import type {
-  NotificationEvents,
+  NotificationCallback,
   NotificationManager,
   PlaybackControlName,
   PlaybackNotificationEventName,
@@ -113,7 +113,7 @@ class PlaybackNotificationManager
    */
   addEventListener<T extends PlaybackNotificationEventName>(
     eventName: T,
-    callback: (event: NotificationEvents[T]) => void
+    callback: NotificationCallback<T>
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
   }
