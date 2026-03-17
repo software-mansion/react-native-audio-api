@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
+#include <gtest/gtest.h>
 #include "TestGraphUtils.h"
 
 #include <algorithm>
@@ -52,8 +52,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // pickLive() will skip it because it checks orphaned status.
   }
 
-  void doAddEdge(std::shared_ptr<NodeHandle<MNode>> &from,
-                 std::shared_ptr<NodeHandle<MNode>> &to) {
+  void doAddEdge(std::shared_ptr<NodeHandle<MNode>> &from, std::shared_ptr<NodeHandle<MNode>> &to) {
     auto fromIdx = from->index;
     auto toIdx = to->index;
     // Verify at point-of-add that this edge doesn't create a duplicate
@@ -68,8 +67,9 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     graph.markDirty();
   }
 
-  void doRemoveEdge(std::shared_ptr<NodeHandle<MNode>> &from,
-                    std::shared_ptr<NodeHandle<MNode>> &to) {
+  void doRemoveEdge(
+      std::shared_ptr<NodeHandle<MNode>> &from,
+      std::shared_ptr<NodeHandle<MNode>> &to) {
     // Same as what HostGraph's removeEdge event does
     graph.pool().remove(graph[to->index].input_head, from->index);
     graph.markDirty();
@@ -82,9 +82,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     auto n = static_cast<uint32_t>(graph.size());
     for (uint32_t i = 0; i < n; i++) {
       for (auto inp : graph.pool().view(graph[i].input_head)) {
-        ASSERT_LT(inp, n)
-            << "Node[" << i << "] (id=" << graph[i].test_node_identifier__
-            << ") has OOB input index " << inp << " (graph size=" << n << ")";
+        ASSERT_LT(inp, n) << "Node[" << i << "] (id=" << graph[i].test_node_identifier__
+                          << ") has OOB input index " << inp << " (graph size=" << n << ")";
       }
     }
   }
@@ -161,7 +160,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
                 << " orphaned=" << graph[i].orphaned << " inputs={";
       bool first = true;
       for (auto inp : graph.pool().view(graph[i].input_head)) {
-        if (!first) std::cerr << ",";
+        if (!first)
+          std::cerr << ",";
         first = false;
         if (inp < n)
           std::cerr << inp << "(id=" << graph[inp].test_node_identifier__ << ")";
@@ -191,11 +191,11 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   int pickLive() {
     std::vector<int> live;
     for (int i = 0; i < static_cast<int>(handles.size()); i++) {
-      if (handles[i] && handles[i]->index < graph.size() &&
-          !graph[handles[i]->index].orphaned)
+      if (handles[i] && handles[i]->index < graph.size() && !graph[handles[i]->index].orphaned)
         live.push_back(i);
     }
-    if (live.empty()) return -1;
+    if (live.empty())
+      return -1;
     return live[std::uniform_int_distribution<size_t>(0, live.size() - 1)(rng)];
   }
 
@@ -206,7 +206,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // If adding fromIdx as input of toIdx, check if toIdx can reach fromIdx
     // through existing inputs (meaning fromIdx depends on toIdx already).
     auto n = static_cast<uint32_t>(graph.size());
-    if (fromIdx == toIdx) return true;
+    if (fromIdx == toIdx)
+      return true;
 
     std::vector<bool> visited(n, false);
     std::vector<uint32_t> stack;
@@ -217,7 +218,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
       auto cur = stack.back();
       stack.pop_back();
       for (auto inp : graph.pool().view(graph[cur].input_head)) {
-        if (inp == toIdx) return true;
+        if (inp == toIdx)
+          return true;
         if (inp < n && !visited[inp]) {
           visited[inp] = true;
           stack.push_back(inp);
@@ -230,7 +232,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   /// Check if edge already exists
   bool edgeExists(uint32_t fromIdx, uint32_t toIdx) {
     for (auto inp : graph.pool().view(graph[toIdx].input_head)) {
-      if (inp == fromIdx) return true;
+      if (inp == fromIdx)
+        return true;
     }
     return false;
   }
@@ -289,7 +292,8 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
         }
         if (!inputVals.empty()) {
           // Pick a random input to remove
-          auto inputIdx = inputVals[std::uniform_int_distribution<size_t>(0, inputVals.size() - 1)(rng)];
+          auto inputIdx =
+              inputVals[std::uniform_int_distribution<size_t>(0, inputVals.size() - 1)(rng)];
           // Find the handle with this index
           for (auto &h : handles) {
             if (h && h->index == inputIdx) {

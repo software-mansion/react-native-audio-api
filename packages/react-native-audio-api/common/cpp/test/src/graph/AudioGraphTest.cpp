@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
-#include "TestGraphUtils.h"
-#include <vector>
+#include <gtest/gtest.h>
 #include <algorithm>
-#include <utility>
 #include <memory>
+#include <utility>
+#include <vector>
+#include "TestGraphUtils.h"
 
 namespace audioapi::utils::graph {
 
@@ -30,7 +30,9 @@ class AudioGraphTest : public ::testing::Test {
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
-  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(size_t n, bool withAudioNode = false) {
+  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(
+      size_t n,
+      bool withAudioNode = false) {
     std::vector<std::shared_ptr<NodeHandle<MockNode>>> handles;
     handles.reserve(n);
     for (size_t i = 0; i < n; i++) {
@@ -55,7 +57,8 @@ class AudioGraphTest : public ::testing::Test {
   /// @brief Returns position of testId in the current order
   int posOf(size_t testId) {
     for (uint32_t i = 0; i < graph.size(); i++) {
-      if (graph[i].test_node_identifier__ == testId) return static_cast<int>(i);
+      if (graph[i].test_node_identifier__ == testId)
+        return static_cast<int>(i);
     }
     return -1;
   }

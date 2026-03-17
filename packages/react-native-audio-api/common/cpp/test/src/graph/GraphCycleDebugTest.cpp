@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/Graph.hpp>
-#include "TestGraphUtils.h"
+#include <gtest/gtest.h>
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -9,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "TestGraphUtils.h"
 
 namespace audioapi::utils::graph {
 
@@ -37,8 +37,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   HNode *doAddNode() {
-    auto handle = std::make_shared<NodeHandle<MNode>>(
-        0, std::make_unique<MNode>());
+    auto handle = std::make_shared<NodeHandle<MNode>>(0, std::make_unique<MNode>());
     auto [hostNode, event] = hostGraph.addNode(handle);
     size_t id = nextId++;
     hostNode->test_node_identifier__ = id;
@@ -55,8 +54,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
       event(audioGraph, disposer_);
     }
     // Remove from live tracking
-    liveNodes.erase(
-        std::remove(liveNodes.begin(), liveNodes.end(), node), liveNodes.end());
+    liveNodes.erase(std::remove(liveNodes.begin(), liveNodes.end(), node), liveNodes.end());
   }
 
   bool doAddEdge(HNode *from, HNode *to) {
@@ -189,7 +187,8 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
       if (id < hostAdj.size()) {
         std::cerr << "  id=" << id << " outputs={";
         for (size_t j = 0; j < hostAdj[id].size(); j++) {
-          if (j) std::cerr << ",";
+          if (j)
+            std::cerr << ",";
           std::cerr << hostAdj[id][j];
         }
         std::cerr << "}\n";
@@ -202,21 +201,23 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     std::cerr << "\n=== HostGraph node details ===\n";
     for (auto *hn : hostGraph.nodes) {
       if (cycleIds.count(hn->test_node_identifier__)) {
-        std::cerr << "  id=" << hn->test_node_identifier__
-                  << " ghost=" << hn->ghost
-                  << " handle.idx=" << hn->handle->index
-                  << " use_count=" << hn->handle.use_count()
+        std::cerr << "  id=" << hn->test_node_identifier__ << " ghost=" << hn->ghost
+                  << " handle.idx=" << hn->handle->index << " use_count=" << hn->handle.use_count()
                   << " inputs={";
         for (size_t j = 0; j < hn->inputs.size(); j++) {
-          if (j) std::cerr << ",";
+          if (j)
+            std::cerr << ",";
           std::cerr << hn->inputs[j]->test_node_identifier__;
-          if (hn->inputs[j]->ghost) std::cerr << "(ghost)";
+          if (hn->inputs[j]->ghost)
+            std::cerr << "(ghost)";
         }
         std::cerr << "} outputs={";
         for (size_t j = 0; j < hn->outputs.size(); j++) {
-          if (j) std::cerr << ",";
+          if (j)
+            std::cerr << ",";
           std::cerr << hn->outputs[j]->test_node_identifier__;
-          if (hn->outputs[j]->ghost) std::cerr << "(ghost)";
+          if (hn->outputs[j]->ghost)
+            std::cerr << "(ghost)";
         }
         std::cerr << "}\n";
       }
@@ -286,8 +287,7 @@ TEST_P(GraphCycleDebugTest, FindCycleFormation) {
       if (from && to) {
         bool ok = doAddEdge(from, to);
         opName = "addEdge(id=" + std::to_string(from->test_node_identifier__) +
-                 "->id=" + std::to_string(to->test_node_identifier__) +
-                 (ok ? " OK)" : " REJECTED)");
+            "->id=" + std::to_string(to->test_node_identifier__) + (ok ? " OK)" : " REJECTED)");
       } else {
         opName = "addEdge(skip)";
       }
@@ -297,8 +297,7 @@ TEST_P(GraphCycleDebugTest, FindCycleFormation) {
       if (from && to) {
         bool ok = doRemoveEdge(from, to);
         opName = "removeEdge(id=" + std::to_string(from->test_node_identifier__) +
-                 "->id=" + std::to_string(to->test_node_identifier__) +
-                 (ok ? " OK)" : " REJECTED)");
+            "->id=" + std::to_string(to->test_node_identifier__) + (ok ? " OK)" : " REJECTED)");
       } else {
         opName = "removeEdge(skip)";
       }

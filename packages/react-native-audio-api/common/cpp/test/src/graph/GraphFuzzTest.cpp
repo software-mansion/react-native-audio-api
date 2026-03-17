@@ -1,8 +1,5 @@
-#include <gtest/gtest.h>
 #include <audioapi/core/utils/graph/Graph.hpp>
-#include "TestGraphUtils.h"
-#include "MockGraphProcessor.h"
-#include "AudioThreadGuard.h"
+#include <gtest/gtest.h>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -12,6 +9,9 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include "AudioThreadGuard.h"
+#include "MockGraphProcessor.h"
+#include "TestGraphUtils.h"
 
 using namespace audioapi::utils::graph;
 using audioapi::test::MockGraphProcessor;
@@ -54,21 +54,13 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // Randomly partition the range 0..99 into 4 operation weights
     size_t total = 100;
     chances.addNode = std::uniform_int_distribution<size_t>(0, total)(rng);
-    chances.removeNode =
-        std::uniform_int_distribution<size_t>(0, total - chances.addNode)(rng);
-    chances.addEdge = std::uniform_int_distribution<size_t>(
-        0, total - chances.addNode - chances.removeNode)(rng);
-    chances.removeEdge =
-        total - chances.addNode - chances.removeNode - chances.addEdge;
+    chances.removeNode = std::uniform_int_distribution<size_t>(0, total - chances.addNode)(rng);
+    chances.addEdge =
+        std::uniform_int_distribution<size_t>(0, total - chances.addNode - chances.removeNode)(rng);
+    chances.removeEdge = total - chances.addNode - chances.removeNode - chances.addEdge;
   }
 
-  enum class Operation {
-    AddNode,
-    RemoveNode,
-    AddEdge,
-    RemoveEdge,
-    None
-  };
+  enum class Operation { AddNode, RemoveNode, AddEdge, RemoveEdge, None };
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -88,7 +80,8 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
           }
           // Sum inputs
           int sum = 0;
-          for (int v : inputs) sum += v;
+          for (int v : inputs)
+            sum += v;
           return sum;
         },
         initialValue);
@@ -96,11 +89,13 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   /// @brief Pick two distinct random nodes from the live set.
   std::pair<HNode *, HNode *> pickTwoNodes() {
-    if (nodes.size() < 2) return {nullptr, nullptr};
+    if (nodes.size() < 2)
+      return {nullptr, nullptr};
     auto dist = std::uniform_int_distribution<size_t>(0, nodes.size() - 1);
     size_t a = dist(rng);
     size_t b = dist(rng);
-    if (a == b) return {nullptr, nullptr};
+    if (a == b)
+      return {nullptr, nullptr};
     return {nodes[a], nodes[b]};
   }
 
@@ -125,8 +120,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
     if (op < chances.addNode + chances.removeNode) {
       if (!nodes.empty()) {
-        size_t idx =
-            std::uniform_int_distribution<size_t>(0, nodes.size() - 1)(rng);
+        size_t idx = std::uniform_int_distribution<size_t>(0, nodes.size() - 1)(rng);
         HNode *target = nodes[idx];
         nodes.erase(nodes.begin() + static_cast<std::ptrdiff_t>(idx));
         (void)graph->removeNode(target);
@@ -171,8 +165,8 @@ TEST_P(GraphFuzzTest, AudioThreadDoesNotAllocate) {
   for (size_t i = 0; i < operationCount; ++i) {
     performRandomOperation();
     // Small sleep to spread mutations over time (50–200 µs)
-    std::this_thread::sleep_for(std::chrono::microseconds(
-        std::uniform_int_distribution<int>(50, 200)(rng)));
+    std::this_thread::sleep_for(
+        std::chrono::microseconds(std::uniform_int_distribution<int>(50, 200)(rng)));
   }
 
   // Let the audio thread drain remaining work
@@ -241,8 +235,7 @@ TEST_P(GraphFuzzTest, RapidAddRemoveCycles) {
 
   EXPECT_GT(processor.cyclesCompleted(), 0u);
   EXPECT_TRUE(processor.allocationClean())
-      << "Audio thread had " << processor.allocationViolations()
-      << " allocation violations";
+      << "Audio thread had " << processor.allocationViolations() << " allocation violations";
 }
 
 // =========================================================================

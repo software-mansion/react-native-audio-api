@@ -1,9 +1,9 @@
 #include "AudioThreadGuard.h"
 
+#include <sys/resource.h>
 #include <cstdint>
 #include <cstdlib>
 #include <new>
-#include <sys/resource.h>
 
 namespace audioapi::test {
 
@@ -30,17 +30,19 @@ size_t AudioThreadGuard::allocationViolations() {
 }
 
 void AudioThreadGuard::recordAllocation() {
-  if (g_armed) ++g_violations;
+  if (g_armed)
+    ++g_violations;
 }
 
 void AudioThreadGuard::recordDeallocation() {
-  if (g_armed) ++g_violations;
+  if (g_armed)
+    ++g_violations;
 }
 
 // ── Context switches ──────────────────────────────────────────────────────
 
 AudioThreadGuard::ContextSwitchSnapshot AudioThreadGuard::contextSwitches() {
-  struct rusage usage {};
+  struct rusage usage{};
 #if defined(__linux__)
   getrusage(RUSAGE_THREAD, &usage); // per-thread (Linux-only)
 #else
@@ -51,8 +53,7 @@ AudioThreadGuard::ContextSwitchSnapshot AudioThreadGuard::contextSwitches() {
 
 // ── Scope ─────────────────────────────────────────────────────────────────
 
-AudioThreadGuard::Scope::Scope()
-    : startSnapshot_(contextSwitches()) {
+AudioThreadGuard::Scope::Scope() : startSnapshot_(contextSwitches()) {
   arm();
 }
 
@@ -105,7 +106,8 @@ bool AudioThreadGuard::Scope::clean() const {
 void *allocate_with_thread_guard(std::size_t size) {
   audioapi::test::AudioThreadGuard::recordAllocation();
   void *p = std::malloc(size);
-  if (!p) throw std::bad_alloc();
+  if (!p)
+    throw std::bad_alloc();
   return p;
 }
 

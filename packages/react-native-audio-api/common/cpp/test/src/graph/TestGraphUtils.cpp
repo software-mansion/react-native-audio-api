@@ -1,8 +1,8 @@
 #include "TestGraphUtils.h"
 
 #include <algorithm>
-#include <memory>
 #include <map>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -132,4 +132,3 @@ AudioGraph<MockNode> TestGraphUtils::createAudioGraphFromHostGraph(
 }
 
 } // namespace audioapi::utils::graph
-
