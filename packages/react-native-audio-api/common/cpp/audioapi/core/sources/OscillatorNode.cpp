@@ -1,9 +1,9 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/core/utils/Constants.h>
 
 #include <memory>
 
