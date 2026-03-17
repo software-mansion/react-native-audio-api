@@ -6,7 +6,6 @@ import {
   GainNode,
   AudioContext,
 } from 'react-native-audio-api';
-
 import {
   StyleSheet,
   Text,
@@ -21,7 +20,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedReaction,
-  withSpring
+  withSpring,
 } from 'react-native-reanimated';
 import { Heart, SkipBack, SkipForward } from 'lucide-react-native';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -32,85 +31,89 @@ import { colors } from '../../styles';
 
 const ARTWORK_SIZE = Dimensions.get('window').width * 0.7;
 const TILE_OFFSET = 60;
+const TILE_DISTANCE = ARTWORK_SIZE + TILE_OFFSET;
+const MAX_GAIN = 0.5;
+
+const TRACKS = [
+  { title: 'Up-Beat', cover: require('./images/image_1.jpeg'), uri: require('./tracks/track1.mp3') },
+  { title: 'Chill', cover: require('./images/image_2.jpg'), uri: require('./tracks/track2.mp3') },
+] as const;
 
 function equalPowerGain1(progress: number): number {
-  return Math.cos(progress * 0.5 * Math.PI);
+  return Math.cos(progress * 0.5 * Math.PI) * MAX_GAIN;
 }
+
 function equalPowerGain2(progress: number): number {
-  return Math.cos((1 - progress) * 0.5 * Math.PI);
+  return Math.cos((1 - progress) * 0.5 * Math.PI) * MAX_GAIN;
 }
 
-const TRACK1 = require('./tracks/track1.mp3');
-const TRACK2 = require('./tracks/track2.mp3');
-
-const TRACK_TITLE1 = 'Up-Beat';
-const TRACK_TITLE2 = 'Chill';
-
-const COVER1 = require('./images/image_1.jpeg');
-const COVER2 = require('./images/image_2.jpg');
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 const Crossfade: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [trackDuration, setTrackDuration] = useState(0);
+  const [visibleTrack, setVisibleTrack] = useState<1 | 2>(1);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
 
   const audioContext = useRef<AudioContext | null>(null);
   const sourceNode1 = useRef<AudioBufferSourceNode | null>(null);
   const sourceNode2 = useRef<AudioBufferSourceNode | null>(null);
   const gainNode1 = useRef<GainNode | null>(null);
   const gainNode2 = useRef<GainNode | null>(null);
-
   const buffer1 = useRef<AudioBuffer | null>(null);
   const buffer2 = useRef<AudioBuffer | null>(null);
-
-  const [visibleTrack, setVisibleTrack] = useState<1 | 2>(1);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
+  const visibleTrackRef = useRef<1 | 2>(1);
 
   const progress = useSharedValue(0);
   const swipeStartProgress = useSharedValue(0);
   const isPlayingShared = useSharedValue(0);
   const swipeEndSnapTo = useSharedValue(-1);
-  const visibleTrackRef = useRef(1);
 
   useEffect(() => {
     isPlayingShared.value = isPlaying ? 1 : 0;
-  }, [isPlaying, isPlayingShared]);
-
-  useEffect(() => {
     visibleTrackRef.current = visibleTrack;
-  }, [visibleTrack]);
+  }, [isPlaying, visibleTrack, isPlayingShared]);
 
   const applyGainFromProgress = useCallback((p: number) => {
     const ctx = audioContext.current;
     const g1 = gainNode1.current;
     const g2 = gainNode2.current;
-    if (!ctx || !g1 || !g2) return;
+    if (!ctx || !g1 || !g2) {
+      return;
+    }
     const now = ctx.currentTime;
     g1.gain.setValueAtTime(equalPowerGain1(p), now);
     g2.gain.setValueAtTime(equalPowerGain2(p), now);
   }, []);
 
   const commitSwipeEnd = useCallback((snapTo: number) => {
-    const track = snapTo < 0.5 ? 1 : 2;
+    const track: 1 | 2 = snapTo < 0.5 ? 1 : 2;
     setVisibleTrack(track);
     visibleTrackRef.current = track;
-    if (track === 1 && buffer1.current) {
-      setTrackDuration(buffer1.current.duration);
+
+    const buf = track === 1 ? buffer1.current : buffer2.current;
+    if (buf) {
+      setTrackDuration(buf.duration);
     }
-    if (track === 2 && buffer2.current) {
-      setTrackDuration(buffer2.current.duration);
-    }
+
     const ctx = audioContext.current;
     const g1 = gainNode1.current;
     const g2 = gainNode2.current;
-    if (!ctx || !g1 || !g2) return;
+    if (!ctx || !g1 || !g2) {
+      return;
+    }
     const now = ctx.currentTime;
     if (track === 1) {
-      g1.gain.setValueAtTime(1, now);
+      g1.gain.setValueAtTime(MAX_GAIN, now);
       g2.gain.setValueAtTime(0, now);
     } else {
       g1.gain.setValueAtTime(0, now);
-      g2.gain.setValueAtTime(1, now);
+      g2.gain.setValueAtTime(MAX_GAIN, now);
     }
   }, []);
 
@@ -120,7 +123,7 @@ const Crossfade: FC = () => {
       if (isPlayingShared.value === 1) {
         scheduleOnRN(applyGainFromProgress, p);
       }
-    }
+    },
   );
 
   useAnimatedReaction(
@@ -130,7 +133,7 @@ const Crossfade: FC = () => {
         scheduleOnRN(commitSwipeEnd, snapTo);
         swipeEndSnapTo.value = -1;
       }
-    }
+    },
   );
 
   useEffect(() => {
@@ -142,8 +145,8 @@ const Crossfade: FC = () => {
         return;
       }
 
-      buffer1.current = await audioContext.current.decodeAudioData(TRACK1);
-      buffer2.current = await audioContext.current.decodeAudioData(TRACK2);
+      buffer1.current = await audioContext.current.decodeAudioData(TRACKS[0].uri);
+      buffer2.current = await audioContext.current.decodeAudioData(TRACKS[1].uri);
       setTrackDuration(buffer1.current.duration);
       setPlaybackPosition(0);
       setIsLoading(false);
@@ -157,13 +160,8 @@ const Crossfade: FC = () => {
     };
   }, []);
 
-  const playAudio = async () => {
-    if (
-      !audioContext.current ||
-      !buffer1.current ||
-      !buffer2.current ||
-      isPlaying
-    ) {
+  const playAudio = useCallback(async () => {
+    if (!audioContext.current || !buffer1.current || !buffer2.current || isPlaying) {
       return;
     }
 
@@ -172,7 +170,6 @@ const Crossfade: FC = () => {
       iosMode: 'default',
       iosOptions: [],
     });
-
     await AudioManager.setAudioSessionActivity(true);
 
     if (audioContext.current.state === 'suspended') {
@@ -181,10 +178,8 @@ const Crossfade: FC = () => {
 
     sourceNode1.current = audioContext.current.createBufferSource();
     sourceNode1.current.buffer = buffer1.current;
-
     sourceNode2.current = audioContext.current.createBufferSource();
     sourceNode2.current.buffer = buffer2.current;
-
     gainNode1.current = audioContext.current.createGain();
     gainNode2.current = audioContext.current.createGain();
 
@@ -196,49 +191,45 @@ const Crossfade: FC = () => {
       .connect(audioContext.current.destination);
 
     const now = audioContext.current.currentTime;
+    const maxOffset = Math.max(
+      0,
+      Math.min(buffer1.current.duration, buffer2.current.duration) - 0.01,
+    );
+    const startOffset = Math.min(Math.max(0, playbackPosition), maxOffset);
 
-    gainNode1.current.gain.setValueAtTime(1, now);
-    gainNode2.current.gain.setValueAtTime(0, now);
+    if (visibleTrack === 1) {
+      gainNode1.current.gain.setValueAtTime(MAX_GAIN, now);
+      gainNode2.current.gain.setValueAtTime(0, now);
+    } else {
+      gainNode1.current.gain.setValueAtTime(0, now);
+      gainNode2.current.gain.setValueAtTime(MAX_GAIN, now);
+    }
+    progress.value = visibleTrack === 1 ? 0 : 1;
 
     sourceNode1.current.onPositionChanged = (event) => {
-      if (visibleTrackRef.current === 1) setPlaybackPosition(event.value);
+      if (visibleTrackRef.current === 1) {
+        setPlaybackPosition(event.value);
+      }
     };
-    sourceNode1.current.onEnded = () => {
-      if (buffer2.current) setTrackDuration(buffer2.current.duration);
-    };
-    sourceNode1.current.start(now);
+    sourceNode1.current.start(now, startOffset);
 
     sourceNode2.current.onPositionChanged = (event) => {
-      if (visibleTrackRef.current === 2) setPlaybackPosition(event.value);
+      if (visibleTrackRef.current === 2) {
+        setPlaybackPosition(event.value);
+      }
     };
-    sourceNode2.current.onEnded = () => {
-      if (buffer1.current) setTrackDuration(buffer1.current.duration);
-    };
-    sourceNode2.current.start(now);
+    sourceNode2.current.start(now, startOffset);
 
-    progress.value = 0;
-    setVisibleTrack(1);
-    setPlaybackPosition(0);
-    setTrackDuration(buffer1.current.duration);
     setIsPlaying(true);
-  };
+  }, [isPlaying, visibleTrack, playbackPosition]);
 
-  const stopAudio = async () => {
-    if (!isPlaying || !audioContext.current) return;
+  const stopAudio = useCallback(async () => {
+    if (!isPlaying || !audioContext.current) {
+      return;
+    }
 
-    progress.value = 0;
-    setVisibleTrack(1);
-    setPlaybackPosition(0);
-    if (buffer1.current) setTrackDuration(buffer1.current.duration);
-
-    sourceNode1.current?.stop();
-    sourceNode2.current?.stop();
-
-    sourceNode1.current?.disconnect();
-    sourceNode2.current?.disconnect();
     gainNode1.current?.disconnect();
     gainNode2.current?.disconnect();
-
     sourceNode1.current = null;
     sourceNode2.current = null;
     gainNode1.current = null;
@@ -246,17 +237,16 @@ const Crossfade: FC = () => {
 
     await audioContext.current.suspend();
     await AudioManager.setAudioSessionActivity(false);
-
     setIsPlaying(false);
-  };
+  }, [isPlaying]);
 
-  const togglePlayPause = () => {
+  const togglePlayPause = useCallback(() => {
     if (isPlaying) {
       stopAudio();
     } else {
       playAudio();
     }
-  };
+  }, [isPlaying, playAudio, stopAudio]);
 
   const progressPercent =
     trackDuration > 0 ? (playbackPosition / trackDuration) * 100 : 0;
@@ -264,19 +254,16 @@ const Crossfade: FC = () => {
   const panGesture = Gesture.Pan()
     .activeOffsetX([-20, 20])
     .onStart(() => {
-      if (isPlayingShared.value !== 1) return;
       swipeStartProgress.value = progress.value;
     })
     .onUpdate((event) => {
-      if (isPlayingShared.value !== 1) return;
       const p = Math.max(
         0,
-        Math.min(1, swipeStartProgress.value - event.translationX / ARTWORK_SIZE)
+        Math.min(1, swipeStartProgress.value - event.translationX / ARTWORK_SIZE),
       );
       progress.value = p;
     })
     .onEnd(() => {
-      if (isPlayingShared.value !== 1) return;
       const p = progress.value;
       const snapTo = p < 0.5 ? 0 : 1;
       progress.value = withSpring(snapTo, {
@@ -288,35 +275,19 @@ const Crossfade: FC = () => {
 
   const track1TileStyle = useAnimatedStyle(() => {
     const p = progress.value;
-    const isOnTop = p <= 0.5;
     return {
-      zIndex: isOnTop ? 2 : 1,
-      transform: [
-        {
-          translateX: -p * (ARTWORK_SIZE + TILE_OFFSET),
-        },
-      ],
-    };
-  });
-  const track2TileStyle = useAnimatedStyle(() => {
-    const p = progress.value;
-    const isOnTop = p >= 0.5;
-    return {
-      zIndex: isOnTop ? 2 : 1,
-      transform: [
-        {
-          translateX:
-            (1 - p) * (ARTWORK_SIZE + TILE_OFFSET),
-        },
-      ],
+      transform: [{ translateX: -p * TILE_DISTANCE }],
     };
   });
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
+  const track2TileStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      transform: [{ translateX: (1 - p) * TILE_DISTANCE }],
+    };
+  });
+
+  const currentTrackTitle = TRACKS[visibleTrack - 1].title;
 
   return (
     <Container centered>
@@ -324,32 +295,33 @@ const Crossfade: FC = () => {
         <ActivityIndicator color={colors.white} />
       ) : (
         <View style={styles.content}>
-
-          <GestureDetector gesture={panGesture}>
-            <View style={styles.artworkContainer}>
-              <Animated.View style={[styles.tile, track1TileStyle]}>
-                <Image
-                  source={COVER1}
-                  style={styles.albumCover}
-                  resizeMode="cover"
-                />
-              </Animated.View>
-              <Animated.View style={[styles.tile, track2TileStyle]}>
-                <Image
-                  source={COVER2}
-                  style={styles.albumCover}
-                  resizeMode="cover"
-                />
-              </Animated.View>
-            </View>
-          </GestureDetector>
+          <View style={styles.artworkWrapper}>
+            <GestureDetector gesture={panGesture}>
+              <View style={styles.artworkContainer}>
+                <Animated.View style={[styles.tile, track1TileStyle]}>
+                  <Image
+                    source={TRACKS[0].cover}
+                    style={styles.albumCover}
+                    resizeMode="cover"
+                  />
+                </Animated.View>
+                <Animated.View style={[styles.tile, track2TileStyle]}>
+                  <Image
+                    source={TRACKS[1].cover}
+                    style={styles.albumCover}
+                    resizeMode="cover"
+                  />
+                </Animated.View>
+              </View>
+            </GestureDetector>
+          </View>
 
           <Spacer.Vertical size={40} />
 
           <View style={styles.trackInfo}>
             <View style={styles.trackInfoText}>
               <Text style={styles.trackTitle} numberOfLines={1}>
-                {visibleTrack === 1 ? TRACK_TITLE1 : TRACK_TITLE2}
+                {currentTrackTitle}
               </Text>
               <Text style={styles.trackArtist} numberOfLines={1}>
                 Lo-Fi Boy
@@ -372,8 +344,12 @@ const Crossfade: FC = () => {
               />
             </View>
             <View style={styles.timeRow}>
-              <Text style={styles.timeText}>{formatTime(playbackPosition)}</Text>
-              <Text style={styles.timeText}>{formatTime(trackDuration)}</Text>
+              <Text style={styles.timeText}>
+                {formatTime(playbackPosition)}
+              </Text>
+              <Text style={styles.timeText}>
+                {formatTime(trackDuration)}
+              </Text>
             </View>
           </View>
 
@@ -420,23 +396,23 @@ const Crossfade: FC = () => {
 
 export default Crossfade;
 
+// -----------------------------------------------------------------------------
+// Styles
+// -----------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
   content: {
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  title: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  description: {
-    color: colors.white,
-    fontSize: 14,
-    opacity: 0.8,
-    textAlign: 'center',
+  artworkWrapper: {
+    width: ARTWORK_SIZE + 48,
+    height: ARTWORK_SIZE + 48,
+    borderRadius: 12,
+    backgroundColor: `${colors.main}12`,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   artworkContainer: {
     width: ARTWORK_SIZE,
