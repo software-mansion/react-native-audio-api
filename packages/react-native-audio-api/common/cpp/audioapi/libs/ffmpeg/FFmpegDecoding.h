@@ -8,8 +8,12 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
+#pragma once
+
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <cstddef>
 #include <memory>
+#include <string>
 #include <vector>
 
 extern "C" {
@@ -18,53 +22,104 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 }
+
 class AudioBuffer;
 
 namespace audioapi::ffmpegdecoder {
-// Custom IO context for reading from memory
+
+/// Opaque IO state for openMemory (must outlive decode until close).
 struct MemoryIOContext {
-  const uint8_t *data;
-  size_t size;
-  size_t pos;
+  const uint8_t *data = nullptr;
+  size_t size = 0;
+  size_t pos = 0;
 };
 
-struct AudioStreamContext {
-  AVFormatContext *fmt_ctx = nullptr;
-  AVCodecContext *codec_ctx = nullptr;
-  int audio_stream_index = -1;
+/// Step 1 — like ma_decoder_config_init: desired output sample rate (0 = use stream rate).
+struct FFmpegDecoderConfig {
+  int outputSampleRate = 0;
 };
 
-int read_packet(void *opaque, uint8_t *buf, int buf_size);
-int64_t seek_packet(void *opaque, int64_t offset, int whence);
-inline int findAudioStreamIndex(AVFormatContext *fmt_ctx);
-std::vector<float> readAllPcmFrames(
-    AVFormatContext *fmt_ctx,
-    AVCodecContext *codec_ctx,
-    int out_sample_rate,
-    int output_channel_count,
-    int audio_stream_index,
-    size_t &framesRead);
+/// Initialize decoder config (mirrors miniaudio-style config step).
+void ffmpegDecoderConfigInit(FFmpegDecoderConfig *cfg, int outputSampleRate) {
+  if (cfg != nullptr) {
+    cfg->outputSampleRate = outputSampleRate;
+  }
+}
 
-void convertFrameToBuffer(
-    SwrContext *swr,
-    AVFrame *frame,
-    int output_channel_count,
-    std::vector<float> &buffer,
-    size_t &framesRead,
-    uint8_t **&resampled_data,
-    int &max_resampled_samples);
-bool setupDecoderContext(
-    AVFormatContext *fmt_ctx,
-    int &audio_stream_index,
-    std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)> &codec_ctx);
-std::shared_ptr<AudioBuffer> decodeAudioFrames(
-    AVFormatContext *fmt_ctx,
-    AVCodecContext *codec_ctx,
-    int audio_stream_index,
-    int sample_rate);
+/**
+ * FFmpeg decoder with incremental read, analogous to ma_decoder:
+ *   1) ffmpegDecoderConfigInit
+ *   2) openFile or openMemory
+ *   3) readPcmFrames repeatedly; 0 returned = end of stream
+ *   4) close when done
+ *
+ * For openMemory, \p data must remain valid until close().
+ */
+class FFmpegDecoder {
+ public:
+  FFmpegDecoder() = default;
+  FFmpegDecoder(const FFmpegDecoder &) = delete;
+  FFmpegDecoder &operator=(const FFmpegDecoder &) = delete;
+  FFmpegDecoder(FFmpegDecoder &&other) noexcept;
+  FFmpegDecoder &operator=(FFmpegDecoder &&other) noexcept;
+  ~FFmpegDecoder();
+
+  /// @brief Opens a file for decoding.
+  /// @param cfg The configuration for the decoder.
+  /// @param path The path to the file.
+  /// @return True if the file was opened successfully, false otherwise.
+  [[nodiscard]] bool openFile(const FFmpegDecoderConfig &cfg, const std::string &path);
+
+  /// @brief Opens a memory block for decoding.
+  /// @param cfg The configuration for the decoder.
+  /// @param data The data to decode.
+  /// @param size The size of the data.
+  /// @return True if the memory block was opened successfully, false otherwise.
+  [[nodiscard]] bool openMemory(const FFmpegDecoderConfig &cfg, const void *data, size_t size);
+
+  /// @brief Reads frames from the decoder.
+  /// @param outInterleaved The output buffer for the frames.
+  /// @param frameCount The maximum number of frames to read.
+  /// @return The number of frames actually read (0 = EOF).
+  [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount);
+
+  /// @brief Closes the decoder.
+  void close();
+
+  /// @brief Checks if the decoder is open.
+  /// @return True if the decoder is open, false otherwise.
+  [[nodiscard]] bool isOpen() const { return fmt_ctx_ != nullptr && codec_ctx_ != nullptr; }
+  [[nodiscard]] int outputChannels() const { return output_channels_; }
+  [[nodiscard]] int outputSampleRate() const { return output_sample_rate_; }
+
+  static constexpr size_t CHUNK_SIZE = 4096;
+
+ private:
+  bool setupSwr();
+  bool feedPipeline();
+  void appendFrameResampled(AVFrame *frame);
+
+  AVFormatContext *fmt_ctx_ = nullptr;
+  AVCodecContext *codec_ctx_ = nullptr;
+  SwrContext *swr_ = nullptr;
+  AVPacket *packet_ = nullptr;
+  AVFrame *frame_ = nullptr;
+
+  uint8_t **resampled_data_ = nullptr;
+  int max_resampled_samples_ = 0;
+
+  std::unique_ptr<MemoryIOContext> mem_io_;
+  AVIOContext *avio_ctx_ = nullptr;
+
+  std::vector<float> leftover_;
+  int audio_stream_index_ = -1;
+  int output_channels_ = 0;
+  int output_sample_rate_ = 0;
+};
+
+// --- One-shot decode (existing API) ----------------------------------------
 
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
-
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
 
 } // namespace audioapi::ffmpegdecoder

@@ -16,7 +16,7 @@ list(REMOVE_ITEM COMMON_CPP_SOURCES
 )
 
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
-set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/ffmpeg_include)
+set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
 set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
 

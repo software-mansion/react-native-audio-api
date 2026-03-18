@@ -12,6 +12,7 @@ import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
+import AudioStream from './AudioStream/AudioStream';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -26,6 +27,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  AudioStream: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -110,4 +112,10 @@ export const Examples: Example[] = [
     Icon: icons.Radio,
     screen: Streaming,
   },
+  {
+    key: 'AudioStream',
+    title: 'Audio Stream',
+    Icon: icons.Music,
+    screen: AudioStream,
+  }
 ] as const;

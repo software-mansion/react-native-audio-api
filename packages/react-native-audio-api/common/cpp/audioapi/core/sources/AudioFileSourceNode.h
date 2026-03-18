@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <memory>
@@ -41,6 +42,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
  private:
   std::shared_ptr<AudioFileDecoderState> decoderState_;
+  bool FFmpegNeeded_;
+  ffmpegdecoder::FFmpegDecoder decoder;
+  ffmpegdecoder::FFmpegDecoderConfig cfg;
 };
 
 } // namespace audioapi

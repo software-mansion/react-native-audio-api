@@ -39,16 +39,7 @@ class AudioDecoder {
       int inputChannelCount,
       bool interleaved);
 
- private:
-  static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
-  static Result<std::vector<float>, std::string> readAllPcmFrames(
-      ma_decoder &decoder,
-      int outputChannels);
-  static AudioBufferResult makeAudioBufferFromFloatBuffer(
-      const std::vector<float> &buffer,
-      float outputSampleRate,
-      int outputChannels);
-  static AudioFormat detectAudioFormat(const void *data, size_t size) {
+  [[nodiscard]] static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
       return AudioFormat::UNKNOWN;
     const auto *bytes = static_cast<const unsigned char *>(data);
@@ -84,7 +75,8 @@ class AudioDecoder {
     }
     return AudioFormat::UNKNOWN;
   }
-  static inline bool pathHasExtension(
+
+  [[nodiscard]] static inline bool pathHasExtension(
       const std::string &path,
       const std::vector<std::string> &extensions) {
     std::string pathLower = path;
@@ -95,6 +87,16 @@ class AudioDecoder {
     }
     return false;
   }
+
+ private:
+  static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
+  static Result<std::vector<float>, std::string> readAllPcmFrames(
+      ma_decoder &decoder,
+      int outputChannels);
+  static AudioBufferResult makeAudioBufferFromFloatBuffer(
+      const std::vector<float> &buffer,
+      float outputSampleRate,
+      int outputChannels);
   [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }

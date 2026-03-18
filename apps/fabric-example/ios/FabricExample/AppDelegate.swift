@@ -28,6 +28,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       in: window,
       launchOptions: launchOptions
     )
+    let fileManager = FileManager.default
+    let docsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let filePath = docsURL.appendingPathComponent("audio.wav").path
+    
+    print(filePath);
 
     return true
   }
