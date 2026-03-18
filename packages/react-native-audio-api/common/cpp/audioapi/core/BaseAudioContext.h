@@ -3,6 +3,7 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
 #include <atomic>
@@ -15,10 +16,8 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class GainNode;
 class DelayNode;
-class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
 class ConstantSourceNode;

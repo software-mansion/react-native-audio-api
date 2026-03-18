@@ -2,7 +2,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
 
@@ -23,7 +23,7 @@ AudioParam::AudioParam(
       startValue_(defaultValue),
       endValue_(defaultValue),
       audioBuffer_(
-          std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
+          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
   inputBuffers_.reserve(4);
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
@@ -219,8 +219,8 @@ void AudioParam::removeInputNode(AudioNode *node) {
   }
 }
 
-std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioParam::calculateInputs(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   processingBuffer->zero();
   if (inputNodes_.empty()) {
@@ -231,7 +231,7 @@ std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
   return processingBuffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
+std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
   auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
@@ -261,7 +261,7 @@ float AudioParam::processKRateParam(int framesToProcess, double time) {
 }
 
 void AudioParam::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   for (auto *inputNode : inputNodes_) {
@@ -278,7 +278,7 @@ void AudioParam::processInputs(
   }
 }
 
-void AudioParam::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+void AudioParam::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
   // Sum all input buffers into the processing buffer

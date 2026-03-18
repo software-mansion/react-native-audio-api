@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/dsp/Convolver.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 #include <vector>
@@ -15,8 +16,6 @@ static constexpr float MIN_IR_POWER = 0.000125;
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioBuffer;
 struct ConvolverOptions;
 
 class ConvolverNode : public AudioNode {
@@ -30,20 +29,20 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<AudioBuffer> &buffer,
       std::vector<Convolver> convolvers,
       const std::shared_ptr<ThreadPool> &threadPool,
-      const std::shared_ptr<AudioBuffer> &internalBuffer,
-      const std::shared_ptr<AudioBuffer> &intermediateBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
       float scaleFactor);
 
   float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioBuffer> processInputs(
-      const std::shared_ptr<AudioBuffer> &outputBuffer,
+  std::shared_ptr<DSPAudioBuffer> processInputs(
+      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed) override;
   void onInputDisabled() override;
@@ -52,17 +51,17 @@ class ConvolverNode : public AudioNode {
   size_t internalBufferIndex_;
   bool signalledToStop_;
   float scaleFactor_;
-  std::shared_ptr<AudioBuffer> intermediateBuffer_;
+  std::shared_ptr<DSPAudioBuffer> intermediateBuffer_;
 
   // impulse response buffer
   std::shared_ptr<AudioBuffer> buffer_;
   // buffer to hold internal processed data
-  std::shared_ptr<AudioBuffer> internalBuffer_;
+  std::shared_ptr<DSPAudioBuffer> internalBuffer_;
   // vectors of convolvers, one per channel
   std::vector<Convolver> convolvers_;
   std::shared_ptr<ThreadPool> threadPool_;
 
-  void performConvolution(const std::shared_ptr<AudioBuffer> &processingBuffer);
+  void performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
 };
 
 } // namespace audioapi

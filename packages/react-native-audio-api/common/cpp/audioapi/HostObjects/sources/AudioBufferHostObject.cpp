@@ -1,7 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 
 #include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
 
 #include <memory>
 #include <utility>

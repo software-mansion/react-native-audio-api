@@ -30,7 +30,7 @@
 
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/dsp/FFT.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <complex>
 #include <memory>
@@ -39,8 +39,8 @@
 namespace audioapi {
 
 struct WaveTableSource {
-  const AudioArray *lower;
-  const AudioArray *higher;
+  const DSPAudioArray *lower;
+  const DSPAudioArray *higher;
   float interpolationFactor;
 };
 
@@ -100,8 +100,8 @@ class PeriodicWave {
       float phase,
       float phaseIncrement,
       float waveTableInterpolationFactor,
-      const AudioArray &lowerWaveData,
-      const AudioArray &higherWaveData) const;
+      const DSPAudioArray &lowerWaveData,
+      const DSPAudioArray &higherWaveData) const;
 
   // determines the time resolution of the waveform.
   float sampleRate_;
@@ -114,7 +114,7 @@ class PeriodicWave {
   // rate.
   float scale_;
   // array of band-limited waveforms.
-  std::unique_ptr<AudioBuffer> bandLimitedTables_;
+  std::unique_ptr<DSPAudioBuffer> bandLimitedTables_;
   std::unique_ptr<dsp::FFT> fft_;
   // if true, the waveTable is not normalized.
   bool disableNormalization_;

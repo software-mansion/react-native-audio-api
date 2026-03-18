@@ -51,7 +51,8 @@ PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
           static_cast<float>(sampleRate_ / 2) / static_cast<float>(getMaxNumberOfPartials())),
       scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_) {
   bandLimitedTables_ =
-      std::make_unique<AudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
+      std::make_unique<DSPAudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
+
   fft_ = std::make_unique<dsp::FFT>(getPeriodicWaveSize());
 }
 
@@ -257,8 +258,8 @@ float PeriodicWave::doInterpolation(
     float phase,
     float phaseIncrement,
     float waveTableInterpolationFactor,
-    const AudioArray &lowerWaveData,
-    const AudioArray &higherWaveData) const {
+    const DSPAudioArray &lowerWaveData,
+    const DSPAudioArray &higherWaveData) const {
   float lowerWaveDataSample = 0;
   float higherWaveDataSample = 0;
 

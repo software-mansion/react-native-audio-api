@@ -2,12 +2,12 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct GainOptions;
 
 class GainNode : public AudioNode {
@@ -17,8 +17,8 @@ class GainNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

@@ -2,12 +2,12 @@
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
 
@@ -40,7 +40,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   // pitch correction
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
-  std::shared_ptr<AudioBuffer> playbackRateBuffer_;
+  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   static constexpr float MAX_PLAYBACK_RATE = 3.0f;
   static constexpr float MIN_PLAYBACK_RATE = 0.0f;
 
@@ -61,22 +61,22 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   void sendOnPositionChangedEvent();
 
   void processWithPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
   void processWithoutPitchCorrection(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 
   float getComputedPlaybackRateValue(int framesToProcess, double time);
 
   virtual void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;
 
   virtual void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate) = 0;

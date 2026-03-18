@@ -27,8 +27,7 @@
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <algorithm>
 #include <memory>
 #include <vector>
@@ -100,8 +99,8 @@ void IIRFilterNode::getFrequencyResponse(
 
 // TODO: tail
 
-std::shared_ptr<AudioBuffer> IIRFilterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   int numChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>
@@ -9,9 +10,7 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioFileWriter;
-class CircularAudioArray;
 class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioRecorderCallback;

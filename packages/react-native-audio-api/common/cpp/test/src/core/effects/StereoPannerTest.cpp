@@ -2,8 +2,8 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -35,8 +35,8 @@ class TestableStereoPannerNode : public StereoPannerNode {
     getPanParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return StereoPannerNode::processNode(processingBuffer, framesToProcess);
   }
@@ -53,7 +53,7 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
   }
@@ -80,7 +80,7 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
@@ -108,7 +108,7 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
   auto panNode = TestableStereoPannerNode(context);
   panNode.setPanParam(PAN_VALUE);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;

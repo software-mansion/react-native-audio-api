@@ -7,8 +7,8 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -47,8 +47,8 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    const std::shared_ptr<AudioBuffer> &playbackRateBuffer,
-    const std::shared_ptr<AudioBuffer> &audioBuffer) {
+    const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (context == nullptr) {
@@ -61,11 +61,7 @@ void AudioBufferSourceNode::setBuffer(
     graphManager->addAudioBufferForDestruction(std::move(buffer_));
   }
 
-  if (playbackRateBuffer_ != nullptr) {
-    graphManager->addAudioBufferForDestruction(std::move(playbackRateBuffer_));
-  }
-
-  graphManager->addAudioBufferForDestruction(std::move(audioBuffer_));
+  // TODO move DSPAudioBuffers destruction to graph manager as well
 
   if (buffer == nullptr) {
     loopEnd_ = 0;
@@ -115,8 +111,8 @@ void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, callbackId);
 }
 
-std::shared_ptr<AudioBuffer> AudioBufferSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioBufferSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   // No audio data to fill, zero the output and return.
   if (buffer_ == nullptr) {
@@ -152,7 +148,7 @@ void AudioBufferSourceNode::sendOnLoopEndedEvent() {
 
 // todo: refactor so its less complex and more readable
 void AudioBufferSourceNode::processWithoutInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {
@@ -219,7 +215,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
 }
 
 void AudioBufferSourceNode::processWithInterpolation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
     float playbackRate) {

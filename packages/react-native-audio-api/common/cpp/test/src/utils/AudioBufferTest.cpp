@@ -1,4 +1,4 @@
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 
 #include <cmath>

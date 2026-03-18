@@ -2,6 +2,7 @@
 
 #include <audioapi/core/types/AudioFormat.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
 #include <cstring>
@@ -11,8 +12,6 @@
 #include <vector>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 

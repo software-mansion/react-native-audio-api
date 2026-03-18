@@ -2,8 +2,8 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -35,8 +35,8 @@ class TestableConstantSourceNode : public ConstantSourceNode {
     getOffsetParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return ConstantSourceNode::processNode(processingBuffer, framesToProcess);
   }
@@ -50,7 +50,7 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   // constantSource.start(context->getCurrentTime());
   // auto resultBuffer = constantSource.processNode(buffer, FRAMES_TO_PROCESS);

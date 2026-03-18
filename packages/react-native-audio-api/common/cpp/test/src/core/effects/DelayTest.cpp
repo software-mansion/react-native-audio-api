@@ -2,8 +2,8 @@
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -35,8 +35,8 @@ class TestableDelayNode : public DelayNode {
     getDelayTimeParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return DelayNode::processNode(processingBuffer, framesToProcess);
   }
@@ -55,7 +55,7 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
@@ -74,7 +74,7 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
@@ -100,7 +100,7 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannel(0))[i] = i + 1;
   }

@@ -3,6 +3,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/Macros.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 #include <mutex>
@@ -39,10 +40,11 @@ class OfflineAudioContext : public BaseAudioContext {
   std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
-  size_t length_;
-  int numberOfChannels_;
+  const size_t length_;
+  const int numberOfChannels_;
   size_t currentSampleFrame_;
 
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   std::shared_ptr<AudioBuffer> resultBuffer_;
 
   void renderAudio();

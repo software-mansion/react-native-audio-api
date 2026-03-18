@@ -29,8 +29,8 @@
 #include <complex>
 #include <vector>
 
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <memory>
 
 namespace audioapi {
@@ -52,8 +52,8 @@ class IIRFilterNode : public AudioNode {
       size_t length) const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
@@ -64,7 +64,7 @@ class IIRFilterNode : public AudioNode {
 
   AudioBuffer xBuffers_;
   AudioBuffer yBuffers_;
-  std::array<size_t, bufferLength> bufferIndices_;
+  DSPAudioArray bufferIndices_;
 
   static std::complex<float>
   evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {

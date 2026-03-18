@@ -3,9 +3,9 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <jsi/jsi.h>
 
 #include <memory>
@@ -22,8 +22,8 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
       : AudioScheduledSourceNode(context) {}
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return processingBuffer;
   }
@@ -37,8 +37,8 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
       WorkletsRunner &&workletRunner);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

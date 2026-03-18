@@ -4,9 +4,9 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/Macros.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <jsi/jsi.h>
 
 #include <memory>
@@ -24,8 +24,8 @@ class WorkletNode : public AudioNode {
       : AudioNode(context) {}
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return processingBuffer;
   }
@@ -45,8 +45,8 @@ class WorkletNode : public AudioNode {
   ~WorkletNode() override = default;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

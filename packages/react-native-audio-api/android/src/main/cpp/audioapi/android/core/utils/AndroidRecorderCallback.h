@@ -2,15 +2,14 @@
 
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
 #include <memory>
 #include <string>
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioArray;
-class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
 struct CallbackData {

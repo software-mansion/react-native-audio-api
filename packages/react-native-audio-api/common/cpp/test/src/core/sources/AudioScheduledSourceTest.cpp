@@ -2,7 +2,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -36,7 +36,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
   }
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess,
@@ -51,7 +51,8 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
         currentSampleFrame);
   }
 
-  std::shared_ptr<AudioBuffer> processNode(const std::shared_ptr<AudioBuffer> &, int) override {
+  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &, int)
+      override {
     return nullptr;
   }
 
@@ -64,7 +65,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
       size_t startOffset = 0;
       size_t nonSilentFramesToProcess = 0;
       auto processingBuffer =
-          std::make_shared<AudioBuffer>(128, 2, static_cast<float>(SAMPLE_RATE));
+          std::make_shared<DSPAudioBuffer>(128, 2, static_cast<float>(SAMPLE_RATE));
       updatePlaybackInfo(
           processingBuffer,
           frames,

@@ -11,9 +11,8 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 struct AudioNodeOptions {
@@ -49,7 +48,7 @@ struct StereoPannerOptions : AudioNodeOptions {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 
-  explicit StereoPannerOptions(AudioNodeOptions &&options) : AudioNodeOptions(std::move(options)) {
+  explicit StereoPannerOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 };
@@ -62,7 +61,7 @@ struct ConvolverOptions : AudioNodeOptions {
     requiresTailProcessing = true;
   }
 
-  explicit ConvolverOptions(AudioNodeOptions &&options) : AudioNodeOptions(std::move(options)) {
+  explicit ConvolverOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
 };
@@ -112,14 +111,14 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   bool loop = false;
   bool loopSkip = false;
 
-  explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions &&options)
-      : BaseAudioBufferSourceOptions(std::move(options)) {
+  explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions options)
+      : BaseAudioBufferSourceOptions(options) {
     channelCount = 1;
   }
 };
 
 struct StreamerOptions : AudioScheduledSourceNodeOptions {
-  std::string streamPath = {};
+  std::string streamPath;
 };
 
 struct DelayOptions : AudioNodeOptions {
@@ -130,18 +129,18 @@ struct DelayOptions : AudioNodeOptions {
     requiresTailProcessing = true;
   }
 
-  explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+  explicit DelayOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
 };
 
 struct IIRFilterOptions : AudioNodeOptions {
-  std::vector<float> feedforward = {};
-  std::vector<float> feedback = {};
+  std::vector<float> feedforward;
+  std::vector<float> feedback;
 
   IIRFilterOptions() = default;
 
-  explicit IIRFilterOptions(const AudioNodeOptions options) : AudioNodeOptions(options) {}
+  explicit IIRFilterOptions(AudioNodeOptions options) : AudioNodeOptions(options) {}
 
   IIRFilterOptions(const std::vector<float> &ff, const std::vector<float> &fb)
       : feedforward(ff), feedback(fb) {}

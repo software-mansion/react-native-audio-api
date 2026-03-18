@@ -23,7 +23,7 @@ const Hero = () => {
         <div className={styles.lowerHeading}>
           <div className={styles.buttonContainer}>
             <HomepageButton
-              href="/react-native-audio-api/docs/"
+              href="/react-native-audio-api/docs/fundamentals/introduction"
               title="Get started"
             />
           </div>

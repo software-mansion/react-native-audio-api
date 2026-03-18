@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 
 #include <memory>
 #include <utility>
