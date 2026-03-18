@@ -132,7 +132,7 @@ void multiplyByScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
@@ -734,7 +734,7 @@ void interleaveStereo(
 
   size_t n = numberOfFrames;
 
-#if defined(HAVE_ARM_NEON_INTRINSICS)
+#ifdef HAVE_ARM_NEON_INTRINSICS
   // process 4 frames (8 samples) at a time
   size_t group = n / 4;
   while (group--) {
