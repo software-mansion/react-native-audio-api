@@ -99,7 +99,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
  private:
   bool isEnabled_ = true;
-  std::vector<std::shared_ptr<AudioBuffer>> inputBuffers_;
+  std::vector<std::shared_ptr<DSPAudioBuffer>> inputBuffers_;
 
   virtual std::shared_ptr<DSPAudioBuffer> processInputs(
       const std::shared_ptr<DSPAudioBuffer> &outputBuffer,

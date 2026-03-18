@@ -42,7 +42,7 @@ IIRFilterNode::IIRFilterNode(
       feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
       xBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
       yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      bufferIndices_() {
+      bufferIndices_(bufferLength) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
