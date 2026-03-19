@@ -5,6 +5,7 @@
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/AudioParamEventQueue.h>
 #include <audioapi/core/utils/ParamChangeEvent.hpp>
+#include <audioapi/core/utils/graph/GraphObject.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -15,7 +16,7 @@
 
 namespace audioapi {
 
-class AudioParam {
+class AudioParam : public utils::graph::GraphObject {
  public:
   explicit AudioParam(
       float defaultValue,
@@ -77,6 +78,19 @@ class AudioParam {
     }
 
     return false;
+  }
+
+  /// @brief Temporary lifecycle policy for GraphObject-based graph storage.
+  [[nodiscard]] bool canBeDestructed() const override {
+    return true;
+  }
+
+  [[nodiscard]] AudioParam *asAudioParam() override {
+    return this;
+  }
+
+  [[nodiscard]] const AudioParam *asAudioParam() const override {
+    return this;
   }
 
   /// Audio-Thread only methods

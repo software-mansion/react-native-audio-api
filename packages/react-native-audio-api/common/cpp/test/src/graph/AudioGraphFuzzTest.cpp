@@ -9,6 +9,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace audioapi::utils::graph {
@@ -24,11 +25,11 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using MNode = MockNode;
 
-  AudioGraph<MNode> graph;
+  AudioGraph graph;
   std::mt19937_64 rng;
 
   // Track live handles so we can reference them
-  std::vector<std::shared_ptr<NodeHandle<MNode>>> handles;
+  std::vector<std::shared_ptr<NodeHandle>> handles;
   size_t nextId = 0;
 
   void SetUp() override {
@@ -37,8 +38,9 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  std::shared_ptr<NodeHandle<MNode>> doAddNode() {
-    auto h = std::make_shared<NodeHandle<MNode>>(0, std::make_unique<MNode>());
+  std::shared_ptr<NodeHandle> doAddNode() {
+    std::unique_ptr<GraphObject> obj = std::make_unique<MNode>();
+    auto h = std::make_shared<NodeHandle>(0, std::move(obj));
     graph.addNode(h);
     graph[h->index].test_node_identifier__ = nextId++;
     handles.push_back(h);
@@ -52,7 +54,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // pickLive() will skip it because it checks orphaned status.
   }
 
-  void doAddEdge(std::shared_ptr<NodeHandle<MNode>> &from, std::shared_ptr<NodeHandle<MNode>> &to) {
+  void doAddEdge(std::shared_ptr<NodeHandle> &from, std::shared_ptr<NodeHandle> &to) {
     auto fromIdx = from->index;
     auto toIdx = to->index;
     // Verify at point-of-add that this edge doesn't create a duplicate
@@ -67,9 +69,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     graph.markDirty();
   }
 
-  void doRemoveEdge(
-      std::shared_ptr<NodeHandle<MNode>> &from,
-      std::shared_ptr<NodeHandle<MNode>> &to) {
+  void doRemoveEdge(std::shared_ptr<NodeHandle> &from, std::shared_ptr<NodeHandle> &to) {
     // Same as what HostGraph's removeEdge event does
     graph.pool().remove(graph[to->index].input_head, from->index);
     graph.markDirty();

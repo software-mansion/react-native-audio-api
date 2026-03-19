@@ -32,9 +32,8 @@ namespace audioapi::utils::graph {
 /// graph.process();             // toposort + compaction
 /// for (auto&& [node, inputs] : graph.iter()) { ... }
 /// ```
-template <AudioGraphNode NodeType>
 class Graph {
-  using AGEvent = HostGraph<NodeType>::AGEvent;
+  using AGEvent = HostGraph::AGEvent;
 
   // ── Event channel (main → audio): grow + graph mutations ───────────────
 
@@ -47,10 +46,10 @@ class Graph {
       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
 
-  using HNode = HostGraph<NodeType>::Node;
+  using HNode = HostGraph::Node;
 
  public:
-  using ResultError = HostGraph<NodeType>::ResultError;
+  using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
   explicit Graph(size_t eventQueueCapacity) {
@@ -106,8 +105,8 @@ class Graph {
 
   /// @brief Returns an iterable view of nodes in topological order.
   ///
-  /// Each entry contains a reference to the NodeType and an immutable view
-  /// of its inputs (as references to NodeType).
+  /// Each entry contains a reference to GraphObject and an immutable view
+  /// of its inputs (as references to GraphObject).
   /// Allocation-free.
   ///
   /// @note Should be called only from the audio thread, after process().
@@ -120,16 +119,21 @@ class Graph {
   /// @brief Adds a new node to the graph and returns a pointer to it.
   /// @param audioNode the audio processing node to add (ownership transferred)
   /// @return pointer to the newly added HostGraph::Node
-  HNode *addNode(std::unique_ptr<NodeType> audioNode = nullptr) {
+  HNode *addNode(std::unique_ptr<GraphObject> audioNode = nullptr) {
     hostGraph.collectDisposedNodes();
 
-    auto handle = std::make_shared<NodeHandle<NodeType>>(0, std::move(audioNode));
+    auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
     auto [hostNode, event] = hostGraph.addNode(handle);
 
     sendNodeGrowIfNeeded();
 
     eventSender_.send(std::move(event));
     return hostNode;
+  }
+
+  template <typename TObject, typename = std::enable_if_t<std::derived_from<TObject, GraphObject>>>
+  HNode *addNode(std::unique_ptr<TObject> audioNode) {
+    return addNode(std::unique_ptr<GraphObject>(std::move(audioNode)));
   }
 
   /// @brief Removes a node (marks as ghost). Pointer remains valid until
@@ -162,13 +166,13 @@ class Graph {
   }
 
  private:
-  static constexpr size_t kDisposerPayloadSize = HostGraph<NodeType>::kDisposerPayloadSize;
+  static constexpr size_t kDisposerPayloadSize = HostGraph::kDisposerPayloadSize;
 
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
 
   // Aligning to cache line size to prevent false sharing between audio and main thread
-  alignas(hardware_destructive_interference_size) AudioGraph<NodeType> audioGraph;
-  alignas(hardware_destructive_interference_size) HostGraph<NodeType> hostGraph;
+  alignas(hardware_destructive_interference_size) AudioGraph audioGraph;
+  alignas(hardware_destructive_interference_size) HostGraph hostGraph;
 
   // ── Channel (immutable after construction — no false sharing) ───────────
 
@@ -196,14 +200,13 @@ class Graph {
     if (edges > poolCapacity_ / 2) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
       auto buf = std::make_unique<InputPool::Slot[]>(newCap);
-      eventSender_.send(
-          [buf = std::move(buf), newCap](
-              AudioGraph<NodeType> &graph, Disposer<kDisposerPayloadSize> &disposer) mutable {
-            auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
-            if (old) {
-              disposer.dispose(OwnedSlotBuffer(old));
-            }
-          });
+      eventSender_.send([buf = std::move(buf), newCap](
+                            AudioGraph &graph, Disposer<kDisposerPayloadSize> &disposer) mutable {
+        auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
+        if (old) {
+          disposer.dispose(OwnedSlotBuffer(old));
+        }
+      });
       poolCapacity_ = newCap;
     }
   }
@@ -215,8 +218,7 @@ class Graph {
     auto nodes = static_cast<std::uint32_t>(hostGraph.nodeCount());
     if (nodes > nodeCapacity_) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(nodes * 2), std::uint32_t{64});
-      eventSender_.send(
-          [newCap](AudioGraph<NodeType> &graph, auto &) { graph.reserveNodes(newCap); });
+      eventSender_.send([newCap](AudioGraph &graph, auto &) { graph.reserveNodes(newCap); });
       nodeCapacity_ = newCap;
     }
   }
